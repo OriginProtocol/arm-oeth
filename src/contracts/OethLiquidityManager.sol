@@ -24,4 +24,10 @@ contract OethLiquidityManager is OwnableOperable {
     function claimWithdrawal(uint256 requestId) external onlyOperatorOrOwner {
         vault.claimWithdrawal(requestId);
     }
+
+    function claimWithdrawals(
+        uint256[] memory requestIds
+    ) external onlyOperatorOrOwner {
+        vault.claimWithdrawals(requestIds);
+    }
 }

@@ -64,13 +64,21 @@ interface IOethARM {
         uint256 amount
     ) external returns (uint256 requestId, uint256 queued);
     function claimWithdrawal(uint256 requestId) external;
+    function claimWithdrawals(uint256[] calldata requestIds) external;
 }
 
 interface IOETHVault {
     function requestWithdrawal(
         uint256 amount
     ) external returns (uint256 requestId, uint256 queued);
+
     function claimWithdrawal(
         uint256 requestId
     ) external returns (uint256 amount);
+
+    function claimWithdrawals(
+        uint256[] memory requestIds
+    ) external returns (uint256[] memory amounts, uint256 totalAmount);
+
+    function addWithdrawalQueueLiquidity() external;
 }

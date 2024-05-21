@@ -1,110 +1,105 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-// import {Test, console2} from "forge-std/Test.sol";
+import {Test, console2} from "forge-std/Test.sol";
 
 import {IERC20} from "../src/contracts/Interfaces.sol";
 import {OEthARM} from "../src/contracts/OEthARM.sol";
 import {Proxy} from "../src/contracts/Proxy.sol";
 
-// // Tests for the Uniswap V2 Router compatible interface of OSwap.
-// contract UniswapV2Test is Test {
-//     IERC20 weth = IERC20(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
-//     IERC20 steth = IERC20(0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84);
+// Tests for the Uniswap V2 Router compatible interface of OSwap.
+contract UniswapV2Test is Test {
+    IERC20 weth = IERC20(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
+    IERC20 oeth = IERC20(0x856c4Efb76C1D1AE02e20CEB03A2A6a08b0b8dC3);
 
-//     Proxy proxy;
-//     OEthARM oethARM;
+    Proxy proxy;
+    OEthARM oethARM;
 
-//     function setUp() public {
-//         OEthARM implementation = new OEthARM();
-//         proxy = new Proxy();
-//         proxy.initialize(address(implementation), address(this), "");
+    function setUp() public {
+        OEthARM implementation = new OEthARM();
+        proxy = new Proxy();
+        proxy.initialize(address(implementation), address(this), "");
 
-//         oethARM = OEthARM(payable(proxy));
+        oethARM = OEthARM(address(proxy));
 
-//         // Add liquidity to the test contract.
-//         _dealWETH(address(this), 1000 ether);
-//         _dealStETH(address(this), 1000 ether);
+        // Add liquidity to the test contract.
+        _dealWETH(address(this), 120 ether);
+        _dealOEth(address(this), 120 ether);
 
-//         // Add liquidity to the pool.
-//         _dealWETH(address(oswap), 1000 ether);
-//         _dealStETH(address(oswap), 1000 ether);
+        // Add liquidity to the pool.
+        _dealWETH(address(oethARM), 120 ether);
+        _dealOEth(address(oethARM), 120 ether);
 
-//         // Set prices.
-//         oswap.setPrices(997 * 1e33, 998 * 1e33);
+        weth.approve(address(oethARM), type(uint256).max);
+        oeth.approve(address(oethARM), type(uint256).max);
+        vm.label(address(weth), "WETH");
+        vm.label(address(oeth), "stETH");
+    }
 
-//         weth.approve(address(oswap), type(uint256).max);
-//         steth.approve(address(oswap), type(uint256).max);
-//         vm.label(address(weth), "WETH");
-//         vm.label(address(steth), "stETH");
-//     }
+    function _dealOEth(address to, uint256 amount) internal {
+        vm.prank(0x8E02247D3eE0E6153495c971FFd45Aa131f4D7cB); // OETH whale
+        oeth.transfer(to, amount);
+    }
 
-//     function _dealStETH(address to, uint256 amount) internal {
-//         vm.prank(0xEB9c1CE881F0bDB25EAc4D74FccbAcF4Dd81020a);
-//         steth.transfer(to, amount);
-//     }
+    function _dealWETH(address to, uint256 amount) internal {
+        deal(address(weth), to, amount);
+    }
 
-//     function _dealWETH(address to, uint256 amount) internal {
-//         deal(address(weth), to, amount);
-//     }
+    function test_swapExactOEthForWeth() external {
+        address[] memory path = new address[](2);
+        path[0] = address(oeth);
+        path[1] = address(weth);
+        uint256 balanceBefore = weth.balanceOf(address(this));
 
-//     function test_swapExactStEthForWeth() external {
-//         address[] memory path = new address[](2);
-//         path[0] = address(steth);
-//         path[1] = address(weth);
-//         uint256 balanceBefore = weth.balanceOf(address(this));
+        uint256[] memory amounts = oethARM.swapExactTokensForTokens(
+            100 ether,
+            99,
+            path,
+            address(this),
+            block.timestamp
+        );
 
-//         uint256[] memory amounts = oswap.swapExactTokensForTokens(100 ether, 99, path, address(this), block.timestamp);
+        assertGt(amounts[0], 0, "amount[0] should not be zero");
+        assertGt(amounts[1], 0, "amount[1] should not be zero");
+        assertGe(
+            weth.balanceOf(address(this)),
+            balanceBefore + amounts[1],
+            "received all output amount"
+        );
+    }
 
-//         assertGt(amounts[0], 0, "amount[0] should not be zero");
-//         assertGt(amounts[1], 0, "amount[1] should not be zero");
-//         assertGe(weth.balanceOf(address(this)), balanceBefore + amounts[1], "received all output amount");
-//     }
+    function test_swapStEthForExactWeth() external {
+        address[] memory path = new address[](2);
+        path[0] = address(oeth);
+        path[1] = address(weth);
+        uint256 balanceBefore = weth.balanceOf(address(this));
 
-//     function test_swapExactWethFoStEth() external {
-//         address[] memory path = new address[](2);
-//         path[0] = address(weth);
-//         path[1] = address(steth);
-//         uint256 balanceBefore = steth.balanceOf(address(this));
+        uint256[] memory amounts = oethARM.swapTokensForExactTokens(
+            100 ether,
+            101 ether,
+            path,
+            address(this),
+            block.timestamp
+        );
 
-//         uint256[] memory amounts = oswap.swapExactTokensForTokens(100 ether, 99, path, address(this), block.timestamp);
+        assertGt(amounts[0], 0, "amount[0] should not be zero");
+        assertGt(amounts[1], 0, "amount[1] should not be zero");
+        assertGe(
+            weth.balanceOf(address(this)),
+            balanceBefore + amounts[1],
+            "received all output amount"
+        );
+    }
 
-//         assertGt(amounts[0], 0, "amount[0] should not be zero");
-//         assertGt(amounts[1], 0, "amount[1] should not be zero");
-//         assertGe(steth.balanceOf(address(this)), balanceBefore + amounts[1], "received all output amount");
-//     }
-
-//     function test_swapWethForExactStEth() external {
-//         address[] memory path = new address[](2);
-//         path[0] = address(weth);
-//         path[1] = address(steth);
-//         uint256 balanceBefore = steth.balanceOf(address(this));
-
-//         uint256[] memory amounts =
-//             oswap.swapTokensForExactTokens(100 ether, 101 ether, path, address(this), block.timestamp);
-
-//         assertGt(amounts[0], 0, "amount[0] should not be zero");
-//         assertGt(amounts[1], 0, "amount[1] should not be zero");
-//         assertGe(steth.balanceOf(address(this)), balanceBefore + amounts[1], "received all output amount");
-//     }
-
-//     function test_swapStEthForExactWeth() external {
-//         address[] memory path = new address[](2);
-//         path[0] = address(steth);
-//         path[1] = address(weth);
-//         uint256 balanceBefore = weth.balanceOf(address(this));
-
-//         uint256[] memory amounts =
-//             oswap.swapTokensForExactTokens(100 ether, 101 ether, path, address(this), block.timestamp);
-
-//         assertGt(amounts[0], 0, "amount[0] should not be zero");
-//         assertGt(amounts[1], 0, "amount[1] should not be zero");
-//         assertGe(weth.balanceOf(address(this)), balanceBefore + amounts[1], "received all output amount");
-//     }
-
-//     function test_deadline() external {
-//         address[] memory path = new address[](2);
-//         vm.expectRevert("OSwap: Deadline expired");
-//         oswap.swapExactTokensForTokens(0, 0, path, address(this), block.timestamp - 1);
-//     }
-// }
+    function test_deadline() external {
+        address[] memory path = new address[](2);
+        vm.expectRevert("ARM: Deadline expired");
+        oethARM.swapExactTokensForTokens(
+            0,
+            0,
+            path,
+            address(this),
+            block.timestamp - 1
+        );
+    }
+}
