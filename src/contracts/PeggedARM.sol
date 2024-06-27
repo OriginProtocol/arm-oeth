@@ -129,12 +129,7 @@ contract PeggedARM is OwnableOperable {
         amounts[1] = amountOut;
     }
 
-    function _swap(
-        IERC20 inToken,
-        IERC20 outToken,
-        uint256 amount,
-        address to
-    ) internal {
+    function _swap(IERC20 inToken, IERC20 outToken, uint256 amount, address to) internal {
         require(inToken == token0 && outToken == token1, "ARM: Invalid swap");
 
         // Transfer the input tokens from the caller to this ARM contract
@@ -151,11 +146,7 @@ contract PeggedARM is OwnableOperable {
     /**
      * @notice Rescue token.
      */
-    function transferToken(
-        address token,
-        address to,
-        uint256 amount
-    ) external onlyOwner {
+    function transferToken(address token, address to, uint256 amount) external onlyOwner {
         IERC20(token).transfer(to, amount);
     }
 
@@ -163,7 +154,7 @@ contract PeggedARM is OwnableOperable {
      * @notice Rescue ETH.
      */
     function transferEth(address to, uint256 amount) external onlyOwner {
-        (bool success, ) = to.call{value: amount}(new bytes(0));
+        (bool success,) = to.call{value: amount}(new bytes(0));
         require(success, "ARM: ETH transfer failed");
     }
 }

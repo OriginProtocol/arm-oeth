@@ -8,8 +8,7 @@ import {OEthARM} from "../src/contracts/OEthARM.sol";
 import {Proxy} from "../src/contracts/Proxy.sol";
 
 contract ProxyTest is Test {
-    address constant RANDOM_ADDRESS =
-        0xfEEDBeef00000000000000000000000000000000;
+    address constant RANDOM_ADDRESS = 0xfEEDBeef00000000000000000000000000000000;
 
     Proxy proxy;
     OEthARM oethARM;
@@ -42,10 +41,7 @@ contract ProxyTest is Test {
 
     function test_upgradeAndCall() external {
         OEthARM newImplementation2 = new OEthARM();
-        bytes memory data = abi.encodeWithSignature(
-            "setOperator(address)",
-            address(this)
-        );
+        bytes memory data = abi.encodeWithSignature("setOperator(address)", address(this));
         proxy.upgradeToAndCall(address(newImplementation2), data);
         assertEq(proxy.implementation(), address(newImplementation2));
 
