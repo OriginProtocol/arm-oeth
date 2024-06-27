@@ -36,9 +36,6 @@ contract DeployCoreScript is BaseMainnetScript {
 
         // 3. Initialize proxy
         proxy.initialize(address(implementation), Addresses.TIMELOCK, "");
-
-        // // 4. Operator
-        // proxy.setOperator(Addresses.STRATEGIST);
     }
 
     function _buildGovernanceProposal() internal override {
