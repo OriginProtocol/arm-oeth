@@ -30,6 +30,8 @@ jobs:
   foundry-tests:
     name: Foundry fork tests
     runs-on: ubuntu-latest
+    env:
+      PROVIDER_URL: ${{ secrets.PROVIDER_URL }}
     steps:
       - uses: actions/checkout@v4
         with:
