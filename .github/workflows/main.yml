@@ -28,7 +28,7 @@ jobs:
         run: forge fmt --check
 
   foundry-tests:
-    name: Foundry tests
+    name: Foundry fork tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -38,5 +38,5 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
 
-      - name: Run tests
-        run: forge test --no-match-contract "(Fork)" -vvv
+      - name: Run fork tests
+        run: forge test --fork-url $PROVIDER_URL -vvv
