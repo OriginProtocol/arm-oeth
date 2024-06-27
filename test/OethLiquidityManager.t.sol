@@ -4,7 +4,7 @@ pragma solidity ^0.8.23;
 import {Test, console2} from "forge-std/Test.sol";
 
 import {IERC20, IOethARM, IOETHVault} from "../src/contracts/Interfaces.sol";
-import {OEthARM} from "../src/contracts/OEthARM.sol";
+import {OEthARM} from "../src/contracts/OethARM.sol";
 import {Proxy} from "../src/contracts/Proxy.sol";
 
 contract OethLiquidityManagerTest is Test {
