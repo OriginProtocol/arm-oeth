@@ -7,7 +7,7 @@ import {Vm} from "forge-std/Vm.sol";
 
 import {Addresses} from "contracts/utils/Addresses.sol";
 
-import {OEthARM} from "contracts/OEthARM.sol";
+import {OEthARM} from "contracts/OethARM.sol";
 import {Proxy} from "contracts/Proxy.sol";
 
 import {GovProposal, GovSixHelper} from "contracts/utils/GovSixHelper.sol";
