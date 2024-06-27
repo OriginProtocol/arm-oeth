@@ -54,3 +54,15 @@ The following will upload the different Autotask bundles to Defender.
 
 `rollup` and `defender-autotask` can be installed globally to avoid the `npx` prefix.
 
+
+## Deployment
+
+### Dry-run on fork
+```
+$ DEPLOYER_PRIVATE_KEY=$DEPLOYER_PRIVATE_KEY forge script script/deploy/DeployManager.sol:DeployManager --fork-url $ALCHEMY_PROVIDER_URL
+```
+
+### Deployment with Verification
+```
+$ DEPLOYER_PRIVATE_KEY=$DEPLOYER_PRIVATE_KEY forge script script/deploy/DeployManager.sol:DeployManager --fork-url $ALCHEMY_PROVIDER_URL --slow --legacy --broadcast --verify --etherscan-api-key $ETHERSCAN_API_KEY
+```

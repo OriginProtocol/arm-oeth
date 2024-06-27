@@ -51,21 +51,11 @@ contract UniswapV2Test is Test {
         path[1] = address(weth);
         uint256 balanceBefore = weth.balanceOf(address(this));
 
-        uint256[] memory amounts = oethARM.swapExactTokensForTokens(
-            100 ether,
-            99,
-            path,
-            address(this),
-            block.timestamp
-        );
+        uint256[] memory amounts = oethARM.swapExactTokensForTokens(100 ether, 99, path, address(this), block.timestamp);
 
         assertGt(amounts[0], 0, "amount[0] should not be zero");
         assertGt(amounts[1], 0, "amount[1] should not be zero");
-        assertGe(
-            weth.balanceOf(address(this)),
-            balanceBefore + amounts[1],
-            "received all output amount"
-        );
+        assertGe(weth.balanceOf(address(this)), balanceBefore + amounts[1], "received all output amount");
     }
 
     function test_swapStEthForExactWeth() external {
@@ -74,32 +64,17 @@ contract UniswapV2Test is Test {
         path[1] = address(weth);
         uint256 balanceBefore = weth.balanceOf(address(this));
 
-        uint256[] memory amounts = oethARM.swapTokensForExactTokens(
-            100 ether,
-            101 ether,
-            path,
-            address(this),
-            block.timestamp
-        );
+        uint256[] memory amounts =
+            oethARM.swapTokensForExactTokens(100 ether, 101 ether, path, address(this), block.timestamp);
 
         assertGt(amounts[0], 0, "amount[0] should not be zero");
         assertGt(amounts[1], 0, "amount[1] should not be zero");
-        assertGe(
-            weth.balanceOf(address(this)),
-            balanceBefore + amounts[1],
-            "received all output amount"
-        );
+        assertGe(weth.balanceOf(address(this)), balanceBefore + amounts[1], "received all output amount");
     }
 
     function test_deadline() external {
         address[] memory path = new address[](2);
         vm.expectRevert("ARM: Deadline expired");
-        oethARM.swapExactTokensForTokens(
-            0,
-            0,
-            path,
-            address(this),
-            block.timestamp - 1
-        );
+        oethARM.swapExactTokensForTokens(0, 0, path, address(this), block.timestamp - 1);
     }
 }

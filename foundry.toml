@@ -6,3 +6,15 @@ libs = ["lib"]
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
 
 gas_reports = ["OEthARM", "Proxy" ]
+
+remappings = [
+  "contracts/=./src/contracts",
+  "script/=./script",
+  "test/=./test",
+  "utils/=./src/contracts/utils"
+]
+
+fs_permissions = [{ access = "read-write", path = "./build"}]
+extra_output_files = [
+  "metadata"
+]

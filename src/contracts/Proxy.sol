@@ -15,8 +15,7 @@ contract Proxy is Ownable {
      * This is the keccak-256 hash of "eip1967.proxy.implementation" subtracted by 1, and is
      * validated in the constructor.
      */
-    bytes32 internal constant IMPLEMENTATION_SLOT =
-        0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
+    bytes32 internal constant IMPLEMENTATION_SLOT = 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
 
     /**
      * @dev Emitted when the implementation is upgraded.
@@ -36,19 +35,12 @@ contract Proxy is Ownable {
      * This parameter is optional, if no data is given the initialization call
      * to proxied contract will be skipped.
      */
-    function initialize(
-        address _logic,
-        address _initOwner,
-        bytes calldata _data
-    ) public onlyOwner {
+    function initialize(address _logic, address _initOwner, bytes calldata _data) public onlyOwner {
         require(_implementation() == address(0));
-        assert(
-            IMPLEMENTATION_SLOT ==
-                bytes32(uint256(keccak256("eip1967.proxy.implementation")) - 1)
-        );
+        assert(IMPLEMENTATION_SLOT == bytes32(uint256(keccak256("eip1967.proxy.implementation")) - 1));
         _upgradeTo(_logic);
         if (_data.length > 0) {
-            (bool success, ) = _logic.delegatecall(_data);
+            (bool success,) = _logic.delegatecall(_data);
             require(success);
         }
         _setOwner(_initOwner);
@@ -86,12 +78,9 @@ contract Proxy is Ownable {
      * It should include the signature and the parameters of the function to be called, as described in
      * https://solidity.readthedocs.io/en/v0.4.24/abi-spec.html#function-selector-and-argument-encoding.
      */
-    function upgradeToAndCall(
-        address newImplementation,
-        bytes calldata data
-    ) external onlyOwner {
+    function upgradeToAndCall(address newImplementation, bytes calldata data) external onlyOwner {
         _upgradeTo(newImplementation);
-        (bool success, ) = newImplementation.delegatecall(data);
+        (bool success,) = newImplementation.delegatecall(data);
         require(success);
     }
 
@@ -126,12 +115,8 @@ contract Proxy is Ownable {
 
             switch result
             // delegatecall returns 0 on error.
-            case 0 {
-                revert(0, returndatasize())
-            }
-            default {
-                return(0, returndatasize())
-            }
+            case 0 { revert(0, returndatasize()) }
+            default { return(0, returndatasize()) }
         }
     }
 
@@ -152,10 +137,7 @@ contract Proxy is Ownable {
      * @param newImplementation Address of the new implementation.
      */
     function _upgradeTo(address newImplementation) internal {
-        require(
-            newImplementation.code.length > 0,
-            "Cannot set a proxy implementation to a non-contract address"
-        );
+        require(newImplementation.code.length > 0, "Cannot set a proxy implementation to a non-contract address");
         bytes32 slot = IMPLEMENTATION_SLOT;
         // solhint-disable-next-line no-inline-assembly
         assembly {

@@ -43,12 +43,9 @@ contract OethARMTest is Test {
         _swapTokensForExactTokens(oeth, weth, 10 ether, 10 ether);
     }
 
-    function _swapExactTokensForTokens(
-        IERC20 inToken,
-        IERC20 outToken,
-        uint256 amountIn,
-        uint256 expectedOut
-    ) internal {
+    function _swapExactTokensForTokens(IERC20 inToken, IERC20 outToken, uint256 amountIn, uint256 expectedOut)
+        internal
+    {
         if (inToken == weth) {
             _dealWETH(address(this), amountIn + 1000);
         } else {
@@ -59,31 +56,14 @@ contract OethARMTest is Test {
 
         uint256 startIn = inToken.balanceOf(address(this));
         uint256 startOut = outToken.balanceOf(address(this));
-        oethARM.swapExactTokensForTokens(
-            inToken,
-            outToken,
-            amountIn,
-            0,
-            address(this)
-        );
-        assertEq(
-            inToken.balanceOf(address(this)),
-            startIn - amountIn,
-            "In actual"
-        );
-        assertEq(
-            outToken.balanceOf(address(this)),
-            startOut + expectedOut,
-            "Out actual"
-        );
+        oethARM.swapExactTokensForTokens(inToken, outToken, amountIn, 0, address(this));
+        assertEq(inToken.balanceOf(address(this)), startIn - amountIn, "In actual");
+        assertEq(outToken.balanceOf(address(this)), startOut + expectedOut, "Out actual");
     }
 
-    function _swapTokensForExactTokens(
-        IERC20 inToken,
-        IERC20 outToken,
-        uint256 amountIn,
-        uint256 expectedOut
-    ) internal {
+    function _swapTokensForExactTokens(IERC20 inToken, IERC20 outToken, uint256 amountIn, uint256 expectedOut)
+        internal
+    {
         if (inToken == weth) {
             _dealWETH(address(this), amountIn + 1000);
         } else {
@@ -94,18 +74,8 @@ contract OethARMTest is Test {
 
         uint256 startIn = inToken.balanceOf(address(this));
 
-        oethARM.swapTokensForExactTokens(
-            inToken,
-            outToken,
-            expectedOut,
-            3 * expectedOut,
-            address(this)
-        );
-        assertEq(
-            inToken.balanceOf(address(this)),
-            startIn - amountIn,
-            "In actual"
-        );
+        oethARM.swapTokensForExactTokens(inToken, outToken, expectedOut, 3 * expectedOut, address(this));
+        assertEq(inToken.balanceOf(address(this)), startIn - amountIn, "In actual");
         assertEq(outToken.balanceOf(address(this)), expectedOut, "Out actual");
     }
 
@@ -133,158 +103,54 @@ contract OethARMTest is Test {
 
     function test_wrongInTokenExactIn() external {
         vm.expectRevert("ARM: Invalid swap");
-        oethARM.swapExactTokensForTokens(
-            BAD_TOKEN,
-            oeth,
-            10 ether,
-            0,
-            address(this)
-        );
+        oethARM.swapExactTokensForTokens(BAD_TOKEN, oeth, 10 ether, 0, address(this));
         vm.expectRevert("ARM: Invalid swap");
-        oethARM.swapExactTokensForTokens(
-            BAD_TOKEN,
-            weth,
-            10 ether,
-            0,
-            address(this)
-        );
+        oethARM.swapExactTokensForTokens(BAD_TOKEN, weth, 10 ether, 0, address(this));
         vm.expectRevert("ARM: Invalid swap");
-        oethARM.swapExactTokensForTokens(
-            weth,
-            weth,
-            10 ether,
-            0,
-            address(this)
-        );
+        oethARM.swapExactTokensForTokens(weth, weth, 10 ether, 0, address(this));
         vm.expectRevert("ARM: Invalid swap");
-        oethARM.swapExactTokensForTokens(
-            oeth,
-            oeth,
-            10 ether,
-            0,
-            address(this)
-        );
+        oethARM.swapExactTokensForTokens(oeth, oeth, 10 ether, 0, address(this));
     }
 
     function test_wrongOutTokenExactIn() external {
         vm.expectRevert("ARM: Invalid swap");
-        oethARM.swapTokensForExactTokens(
-            weth,
-            BAD_TOKEN,
-            10 ether,
-            10 ether,
-            address(this)
-        );
+        oethARM.swapTokensForExactTokens(weth, BAD_TOKEN, 10 ether, 10 ether, address(this));
         vm.expectRevert("ARM: Invalid swap");
-        oethARM.swapTokensForExactTokens(
-            oeth,
-            BAD_TOKEN,
-            10 ether,
-            10 ether,
-            address(this)
-        );
+        oethARM.swapTokensForExactTokens(oeth, BAD_TOKEN, 10 ether, 10 ether, address(this));
         vm.expectRevert("ARM: Invalid swap");
-        oethARM.swapTokensForExactTokens(
-            weth,
-            weth,
-            10 ether,
-            10 ether,
-            address(this)
-        );
+        oethARM.swapTokensForExactTokens(weth, weth, 10 ether, 10 ether, address(this));
         vm.expectRevert("ARM: Invalid swap");
-        oethARM.swapTokensForExactTokens(
-            oeth,
-            oeth,
-            10 ether,
-            10 ether,
-            address(this)
-        );
+        oethARM.swapTokensForExactTokens(oeth, oeth, 10 ether, 10 ether, address(this));
     }
 
     function test_wrongInTokenExactOut() external {
         vm.expectRevert("ARM: Invalid swap");
-        oethARM.swapTokensForExactTokens(
-            BAD_TOKEN,
-            oeth,
-            10 ether,
-            10 ether,
-            address(this)
-        );
+        oethARM.swapTokensForExactTokens(BAD_TOKEN, oeth, 10 ether, 10 ether, address(this));
         vm.expectRevert("ARM: Invalid swap");
-        oethARM.swapTokensForExactTokens(
-            BAD_TOKEN,
-            weth,
-            10 ether,
-            10 ether,
-            address(this)
-        );
+        oethARM.swapTokensForExactTokens(BAD_TOKEN, weth, 10 ether, 10 ether, address(this));
         vm.expectRevert("ARM: Invalid swap");
-        oethARM.swapTokensForExactTokens(
-            weth,
-            weth,
-            10 ether,
-            10 ether,
-            address(this)
-        );
+        oethARM.swapTokensForExactTokens(weth, weth, 10 ether, 10 ether, address(this));
         vm.expectRevert("ARM: Invalid swap");
-        oethARM.swapTokensForExactTokens(
-            oeth,
-            oeth,
-            10 ether,
-            10 ether,
-            address(this)
-        );
+        oethARM.swapTokensForExactTokens(oeth, oeth, 10 ether, 10 ether, address(this));
     }
 
     function test_wrongOutTokenExactOut() external {
         vm.expectRevert("ARM: Invalid swap");
-        oethARM.swapTokensForExactTokens(
-            weth,
-            BAD_TOKEN,
-            10 ether,
-            10 ether,
-            address(this)
-        );
+        oethARM.swapTokensForExactTokens(weth, BAD_TOKEN, 10 ether, 10 ether, address(this));
         vm.expectRevert("ARM: Invalid swap");
-        oethARM.swapTokensForExactTokens(
-            oeth,
-            BAD_TOKEN,
-            10 ether,
-            10 ether,
-            address(this)
-        );
+        oethARM.swapTokensForExactTokens(oeth, BAD_TOKEN, 10 ether, 10 ether, address(this));
         vm.expectRevert("ARM: Invalid swap");
-        oethARM.swapTokensForExactTokens(
-            weth,
-            weth,
-            10 ether,
-            10 ether,
-            address(this)
-        );
+        oethARM.swapTokensForExactTokens(weth, weth, 10 ether, 10 ether, address(this));
         vm.expectRevert("ARM: Invalid swap");
-        oethARM.swapTokensForExactTokens(
-            oeth,
-            oeth,
-            10 ether,
-            10 ether,
-            address(this)
-        );
+        oethARM.swapTokensForExactTokens(oeth, oeth, 10 ether, 10 ether, address(this));
     }
 
     function test_collectTokens() external {
-        oethARM.transferToken(
-            address(weth),
-            address(this),
-            weth.balanceOf(address(oethARM))
-        );
+        oethARM.transferToken(address(weth), address(this), weth.balanceOf(address(oethARM)));
         assertGt(weth.balanceOf(address(this)), 50 ether);
         assertEq(weth.balanceOf(address(oethARM)), 0);
 
-        oethARM.transferToken(
-            address(oeth),
-            address(this),
-            oeth.balanceOf(address(oethARM))
-        );
+        oethARM.transferToken(address(oeth), address(this), oeth.balanceOf(address(oethARM)));
         assertGt(oeth.balanceOf(address(this)), 50 ether);
         assertLt(oeth.balanceOf(address(oethARM)), 3);
     }
