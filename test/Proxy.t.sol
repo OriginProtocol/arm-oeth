@@ -4,8 +4,8 @@ pragma solidity ^0.8.23;
 import {Vm} from "forge-std/Vm.sol";
 import {Test, console2} from "forge-std/Test.sol";
 
-import {OEthARM} from "../src/contracts/OethARM.sol";
-import {Proxy} from "../src/contracts/Proxy.sol";
+import {OEthARM} from "contracts/OethARM.sol";
+import {Proxy} from "contracts/Proxy.sol";
 
 contract ProxyTest is Test {
     address constant RANDOM_ADDRESS = 0xfEEDBeef00000000000000000000000000000000;
