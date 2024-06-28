@@ -3,9 +3,9 @@ pragma solidity ^0.8.23;
 
 import {Test, console2} from "forge-std/Test.sol";
 
-import {IERC20} from "../src/contracts/Interfaces.sol";
-import {OEthARM} from "../src/contracts/OEthARM.sol";
-import {Proxy} from "../src/contracts/Proxy.sol";
+import {IERC20} from "contracts/Interfaces.sol";
+import {OEthARM} from "contracts/OethARM.sol";
+import {Proxy} from "contracts/Proxy.sol";
 
 contract OethARMTest is Test {
     IERC20 weth = IERC20(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);

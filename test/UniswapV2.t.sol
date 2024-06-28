@@ -3,9 +3,9 @@ pragma solidity ^0.8.23;
 
 import {Test, console2} from "forge-std/Test.sol";
 
-import {IERC20} from "../src/contracts/Interfaces.sol";
-import {OEthARM} from "../src/contracts/OEthARM.sol";
-import {Proxy} from "../src/contracts/Proxy.sol";
+import {IERC20} from "contracts/Interfaces.sol";
+import {OEthARM} from "contracts/OethARM.sol";
+import {Proxy} from "contracts/Proxy.sol";
 
 // Tests for the Uniswap V2 Router compatible interface of OSwap.
 contract UniswapV2Test is Test {

@@ -8,6 +8,6 @@ library Addresses {
 
     address public constant STRATEGIST = 0xF14BBdf064E3F67f51cd9BD646aE3716aD938FDC;
     address public constant GOV_MULTISIG = 0xbe2AB3d3d8F6a32b96414ebbd865dBD276d3d899;
-    
+
     address public constant INITIAL_DEPLOYER = address(0x1001);
 }
