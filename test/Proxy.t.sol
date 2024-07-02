@@ -2,37 +2,42 @@
 pragma solidity ^0.8.23;
 
 import {Vm} from "forge-std/Vm.sol";
-import {Test, console2} from "forge-std/Test.sol";
+import {console2} from "forge-std/Test.sol";
+import {AbstractForkTest} from "./AbstractForkTest.sol";
 
 import {OEthARM} from "contracts/OethARM.sol";
 import {Proxy} from "contracts/Proxy.sol";
+import {Addresses} from "contracts/utils/Addresses.sol";
 
-contract ProxyTest is Test {
+contract ProxyTest is AbstractForkTest {
     address constant RANDOM_ADDRESS = 0xfEEDBeef00000000000000000000000000000000;
 
     Proxy proxy;
     OEthARM oethARM;
 
-    address weth = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
-    address oeth = 0x856c4Efb76C1D1AE02e20CEB03A2A6a08b0b8dC3;
+    address constant weth = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    address constant oeth = 0x856c4Efb76C1D1AE02e20CEB03A2A6a08b0b8dC3;
+
+    address constant owner = Addresses.TIMELOCK;
+    address constant operator = Addresses.STRATEGIST;
 
     function setUp() public {
-        // Deploy a OSwap contract implementation and a proxy.
-        OEthARM implementation = new OEthARM();
-        proxy = new Proxy();
-        proxy.initialize(address(implementation), address(this), "");
+        vm.label(weth, "WETH");
+        vm.label(oeth, "OETH");
 
-        oethARM = OEthARM(address(proxy));
+        proxy = Proxy(deployManager.getDeployment("OETH_ARM"));
+        oethARM = OEthARM(deployManager.getDeployment("OETH_ARM"));
     }
 
     function test_upgrade() external {
         OEthARM newImplementation1 = new OEthARM();
+        vm.prank(owner);
         proxy.upgradeTo(address(newImplementation1));
         assertEq(proxy.implementation(), address(newImplementation1));
 
         // Ensure ownership was preserved.
-        assertEq(proxy.owner(), address(this));
-        assertEq(oethARM.owner(), address(this));
+        assertEq(proxy.owner(), owner);
+        assertEq(oethARM.owner(), owner);
 
         // Ensure the storage was preserved through the upgrade.
         assertEq(address(oethARM.token0()), oeth);
@@ -41,24 +46,27 @@ contract ProxyTest is Test {
 
     function test_upgradeAndCall() external {
         OEthARM newImplementation2 = new OEthARM();
-        bytes memory data = abi.encodeWithSignature("setOperator(address)", address(this));
+        bytes memory data = abi.encodeWithSignature("setOperator(address)", address(0x123));
+
+        vm.prank(owner);
         proxy.upgradeToAndCall(address(newImplementation2), data);
         assertEq(proxy.implementation(), address(newImplementation2));
 
         // Ensure ownership was preserved.
-        assertEq(proxy.owner(), address(this));
-        assertEq(oethARM.owner(), address(this));
+        assertEq(proxy.owner(), owner);
+        assertEq(oethARM.owner(), owner);
 
         // Ensure the post upgrade code was run
-        assertEq(oethARM.operator(), address(this));
+        assertEq(oethARM.operator(), address(0x123));
     }
 
     function test_setOwner() external {
-        assertEq(proxy.owner(), address(this));
-        assertEq(oethARM.owner(), address(this));
+        assertEq(proxy.owner(), owner);
+        assertEq(oethARM.owner(), owner);
 
         // Update the owner.
         address newOwner = RANDOM_ADDRESS;
+        vm.prank(owner);
         proxy.setOwner(newOwner);
         assertEq(proxy.owner(), newOwner);
         assertEq(oethARM.owner(), newOwner);
