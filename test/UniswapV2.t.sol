@@ -2,25 +2,26 @@
 pragma solidity ^0.8.23;
 
 import {Test, console2} from "forge-std/Test.sol";
+import {AbstractForkTest} from "./AbstractForkTest.sol";
 
 import {IERC20} from "contracts/Interfaces.sol";
 import {OEthARM} from "contracts/OethARM.sol";
 import {Proxy} from "contracts/Proxy.sol";
+import {Addresses} from "contracts/utils/Addresses.sol";
 
 // Tests for the Uniswap V2 Router compatible interface of OSwap.
-contract UniswapV2Test is Test {
+contract UniswapV2Test is AbstractForkTest {
     IERC20 weth = IERC20(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
     IERC20 oeth = IERC20(0x856c4Efb76C1D1AE02e20CEB03A2A6a08b0b8dC3);
+
+    address constant operator = Addresses.STRATEGIST;
 
     Proxy proxy;
     OEthARM oethARM;
 
     function setUp() public {
-        OEthARM implementation = new OEthARM();
-        proxy = new Proxy();
-        proxy.initialize(address(implementation), address(this), "");
-
-        oethARM = OEthARM(address(proxy));
+        proxy = Proxy(deployManager.getDeployment("OETH_ARM"));
+        oethARM = OEthARM(deployManager.getDeployment("OETH_ARM"));
 
         // Add liquidity to the test contract.
         _dealWETH(address(this), 120 ether);
