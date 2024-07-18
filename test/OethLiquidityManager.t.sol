@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import {Test, console2} from "forge-std/Test.sol";
+import {console2} from "forge-std/Test.sol";
+import {AbstractForkTest} from "./AbstractForkTest.sol";
 
 import {IERC20, IOethARM, IOETHVault} from "contracts/Interfaces.sol";
 import {OEthARM} from "contracts/OethARM.sol";
 import {Proxy} from "contracts/Proxy.sol";
+import {Addresses} from "contracts/utils/Addresses.sol";
 
-contract OethLiquidityManagerTest is Test {
+contract OethLiquidityManagerTest is AbstractForkTest {
     address constant RANDOM_ADDRESS = 0xfEEDBeef00000000000000000000000000000000;
 
     address constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
@@ -20,16 +22,14 @@ contract OethLiquidityManagerTest is Test {
     Proxy proxy;
     OEthARM oethARM;
 
+    address constant operator = Addresses.STRATEGIST;
+
     function setUp() public {
         vm.label(WETH, "WETH");
         vm.label(OETH, "OETH");
 
-        OEthARM implementation = new OEthARM();
-        proxy = new Proxy();
-        proxy.initialize(address(implementation), address(this), "");
-        oethARM = OEthARM(address(proxy));
-
-        oethARM.setOperator(address(this));
+        proxy = Proxy(deployManager.getDeployment("OETH_ARM"));
+        oethARM = OEthARM(deployManager.getDeployment("OETH_ARM"));
     }
 
     function test_withdrawal() external {
@@ -38,6 +38,7 @@ contract OethLiquidityManagerTest is Test {
         // put some WETH in the vault
         _dealWEth(address(vault), 10 ether);
 
+        vm.startPrank(operator);
         (uint256 requestId, uint256 queued) = oethARM.requestWithdrawal(1 ether);
 
         // Snapshot WETH balance
@@ -50,6 +51,8 @@ contract OethLiquidityManagerTest is Test {
 
         // Ensure the balance increased.
         assertGt(weth.balanceOf(address(oethARM)), startBalance, "Withdrawal did not increase WETH balance");
+
+        vm.stopPrank();
     }
 
     /*

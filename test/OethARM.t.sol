@@ -2,32 +2,30 @@
 pragma solidity ^0.8.23;
 
 import {Test, console2} from "forge-std/Test.sol";
+import {AbstractForkTest} from "./AbstractForkTest.sol";
 
 import {IERC20} from "contracts/Interfaces.sol";
 import {OEthARM} from "contracts/OethARM.sol";
 import {Proxy} from "contracts/Proxy.sol";
+import {Addresses} from "contracts/utils/Addresses.sol";
 
-contract OethARMTest is Test {
-    IERC20 weth = IERC20(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
-    IERC20 oeth = IERC20(0x856c4Efb76C1D1AE02e20CEB03A2A6a08b0b8dC3);
+contract OethARMTest is AbstractForkTest {
+    IERC20 constant weth = IERC20(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
+    IERC20 constant oeth = IERC20(0x856c4Efb76C1D1AE02e20CEB03A2A6a08b0b8dC3);
     IERC20 BAD_TOKEN = IERC20(makeAddr("bad token"));
 
-    address operator = makeAddr("operator");
+    address constant operator = Addresses.STRATEGIST;
 
     Proxy proxy;
     OEthARM oethARM;
 
     function setUp() public {
-        OEthARM implementation = new OEthARM();
-        proxy = new Proxy();
-        proxy.initialize(address(implementation), address(this), "");
-        oethARM = OEthARM(address(proxy));
+        proxy = Proxy(deployManager.getDeployment("OETH_ARM"));
+        oethARM = OEthARM(deployManager.getDeployment("OETH_ARM"));
 
         _dealWETH(address(oethARM), 100 ether);
         _dealOETH(address(oethARM), 100 ether);
 
-        // Set operator
-        oethARM.setOperator(operator);
         vm.label(address(weth), "WETH");
         vm.label(address(oeth), "OETH");
 
@@ -146,6 +144,8 @@ contract OethARMTest is Test {
     }
 
     function test_collectTokens() external {
+        vm.startPrank(Addresses.TIMELOCK);
+
         oethARM.transferToken(address(weth), address(this), weth.balanceOf(address(oethARM)));
         assertGt(weth.balanceOf(address(this)), 50 ether);
         assertEq(weth.balanceOf(address(oethARM)), 0);
@@ -153,6 +153,8 @@ contract OethARMTest is Test {
         oethARM.transferToken(address(oeth), address(this), oeth.balanceOf(address(oethARM)));
         assertGt(oeth.balanceOf(address(this)), 50 ether);
         assertLt(oeth.balanceOf(address(oethARM)), 3);
+
+        vm.stopPrank();
     }
 
     function _dealOETH(address to, uint256 amount) internal {
@@ -167,6 +169,7 @@ contract OethARMTest is Test {
     /* Operator Tests */
 
     function test_setOperator() external {
+        vm.prank(Addresses.TIMELOCK);
         oethARM.setOperator(address(this));
         assertEq(oethARM.operator(), address(this));
     }
