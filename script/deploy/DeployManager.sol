@@ -139,20 +139,28 @@ contract DeployManager is Script {
                 deployedContracts[name] = addr;
             }
 
-            // Sleep 0.5s so that the previous write is complete
-            vm.sleep(500);
-            vm.writeJson(networkDeployments, deploymentsFilePath, contractsKey);
-            console.log("> Deployment addresses stored.");
-
             /**
              * Write Execution History
              */
             currentExecutions = vm.serializeUint(executionsKey, deployScript.DEPLOY_NAME(), block.timestamp);
 
-            // Sleep 0.5s so that the previous write is complete
-            vm.sleep(500);
-            vm.writeJson(currentExecutions, deploymentsFilePath, executionsKey);
-            console.log("> Deploy script execution complete.");
+            // Write to file instead of using writeJson to avoid "EOF while parsing a value at line 1 column 0" error.
+            vm.writeFile(
+                getForkDeploymentFilePath(),
+                string(
+                    abi.encodePacked(
+                        '{ "',
+                        chainIdStr,
+                        '": { "executions": ',
+                        currentExecutions,
+                        ', "contracts": ',
+                        networkDeployments,
+                        "}}"
+                    )
+                )
+            );
+
+            console.log("> Deployment addresses stored and Deploy script execution complete.");
         }
     }
 
