@@ -14,7 +14,5 @@ abstract contract AbstractForkTest is Test {
         // Run deployments
         deployManager.setUp();
         deployManager.run();
-
-        revert("1234");
     }
 }
