@@ -46,6 +46,8 @@ contract OethLiquidityManagerTest is AbstractForkTest {
 
         vault.addWithdrawalQueueLiquidity();
 
+        skip(10 minutes);
+
         // Claim the ETH.
         oethARM.claimWithdrawal(requestId);
 
