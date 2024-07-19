@@ -1,0 +1,129 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.23;
+
+// Test imports
+import {Fork_Shared_Test_} from "../shared/Shared.sol";
+
+// Interfaces
+import {IERC20} from "contracts/Interfaces.sol";
+
+contract Fork_Concrete_OethARM_SwapExactTokensForTokens_Test_ is Fork_Shared_Test_ {
+    //////////////////////////////////////////////////////
+    /// --- SETUP
+    //////////////////////////////////////////////////////
+    function setUp() public override {
+        super.setUp();
+
+        // Deal tokens
+        deal(address(oeth), address(this), 100 ether);
+        deal(address(weth), address(oethARM), 100 ether);
+        deal(address(oeth), address(oethARM), 100 ether);
+
+        // Approve OETH token to ARM contract
+        oeth.approve(address(oethARM), type(uint256).max);
+    }
+
+    //////////////////////////////////////////////////////
+    /// --- REVERTING TESTS
+    //////////////////////////////////////////////////////
+
+    function test_RevertWhen_SwapExactTokensForTokens_Simple_Because_InsuficientOutputAmount() public {
+        vm.expectRevert("ARM: Insufficient output amount");
+        oethARM.swapExactTokensForTokens(weth, oeth, 10 ether, 11 ether, address(this));
+    }
+
+    function test_RevertWhen_SwapExactTokensForTokens_Simple_Because_InvalidSwap_TokenIn() public {
+        vm.expectRevert("ARM: Invalid swap");
+        oethARM.swapExactTokensForTokens(weth, weth, 10 ether, 10 ether, address(this));
+    }
+
+    function test_RevertWhen_SwapExactTokensForTokens_Simple_Because_InvalidSwap_TokenOut() public {
+        vm.expectRevert("ARM: Invalid swap");
+        oethARM.swapExactTokensForTokens(oeth, oeth, 10 ether, 10 ether, address(this));
+    }
+
+    function test_RevertWhen_SwapExactTokensForTokens_Complex_Because_InsuficientOutputAmount() public {
+        vm.expectRevert("ARM: Insufficient output amount");
+        oethARM.swapExactTokensForTokens(10 ether, 11 ether, new address[](2), address(this), 0);
+    }
+
+    function test_RevertWhen_SwapExactTokensForTokens_Complex_Because_InvalidPathLength() public {
+        vm.expectRevert("ARM: Invalid path length");
+        oethARM.swapExactTokensForTokens(10 ether, 10 ether, new address[](3), address(this), 0);
+    }
+
+    function test_RevertWhen_SwapExactTokensForTokens_Complex_Because_DeadlineExpired() public {
+        vm.expectRevert("ARM: Deadline expired");
+        oethARM.swapExactTokensForTokens(10 ether, 10 ether, new address[](2), address(this), 0);
+    }
+
+    function test_RevertWhen_SwapExactTokensForTokens_Complex_Because_InvalideSwap_TokenIn() public {
+        address[] memory path = new address[](2);
+        path[0] = address(weth);
+        path[1] = address(weth);
+        vm.expectRevert("ARM: Invalid swap");
+        oethARM.swapExactTokensForTokens(10 ether, 10 ether, new address[](2), address(this), block.timestamp + 1000);
+    }
+
+    function test_RevertWhen_SwapExactTokensForTokens_Complex_Because_InvalideSwap_TokenOut() public {
+        address[] memory path = new address[](2);
+        path[0] = address(oeth);
+        path[1] = address(oeth);
+        vm.expectRevert("ARM: Invalid swap");
+        oethARM.swapExactTokensForTokens(10 ether, 10 ether, new address[](2), address(this), block.timestamp + 1000);
+    }
+
+    //////////////////////////////////////////////////////
+    /// --- PASSING TESTS
+    //////////////////////////////////////////////////////
+    function test_SwapExactTokensForTokens_Simple() public {
+        // Assertions before
+        assertEq(weth.balanceOf(address(this)), 0 ether, "WETH balance user");
+        assertEq(oeth.balanceOf(address(this)), 100 ether, "OETH balance user");
+        assertEq(weth.balanceOf(address(oethARM)), 100 ether, "OETH balance ARM");
+        assertEq(weth.balanceOf(address(oethARM)), 100 ether, "WETH balance ARM");
+
+        // Expected events
+        vm.expectEmit({emitter: address(oeth)});
+        emit IERC20.Transfer(address(this), address(oethARM), 10 ether);
+        vm.expectEmit({emitter: address(weth)});
+        emit IERC20.Transfer(address(oethARM), address(this), 10 ether);
+        // Main call
+        oethARM.swapExactTokensForTokens(oeth, weth, 10 ether, 10 ether, address(this));
+
+        // Assertions after
+        assertEq(weth.balanceOf(address(this)), 10 ether, "WETH balance user");
+        assertEq(oeth.balanceOf(address(this)), 90 ether, "OETH balance");
+        assertEq(weth.balanceOf(address(oethARM)), 90 ether, "WETH balance ARM");
+        assertEq(oeth.balanceOf(address(oethARM)), 110 ether, "OETH balance ARM");
+    }
+
+    function test_SwapExactTokensForTokens_Complex() public {
+        // Assertions before
+        assertEq(weth.balanceOf(address(this)), 0 ether, "WETH balance user");
+        assertEq(oeth.balanceOf(address(this)), 100 ether, "OETH balance user");
+        assertEq(weth.balanceOf(address(oethARM)), 100 ether, "OETH balance ARM");
+        assertEq(weth.balanceOf(address(oethARM)), 100 ether, "WETH balance ARM");
+
+        address[] memory path = new address[](2);
+        path[0] = address(oeth);
+        path[1] = address(weth);
+
+        // Expected events
+        vm.expectEmit({emitter: address(oeth)});
+        emit IERC20.Transfer(address(this), address(oethARM), 10 ether);
+        vm.expectEmit({emitter: address(weth)});
+        emit IERC20.Transfer(address(oethARM), address(this), 10 ether);
+        // Main call
+        uint256[] memory amounts =
+            oethARM.swapExactTokensForTokens(10 ether, 10 ether, path, address(this), block.timestamp + 1000);
+
+        // Assertions after
+        assertEq(amounts[0], 10 ether, "Amounts[0]");
+        assertEq(amounts[1], 10 ether, "Amounts[1]");
+        assertEq(weth.balanceOf(address(this)), 10 ether, "WETH balance user");
+        assertEq(oeth.balanceOf(address(this)), 90 ether, "OETH balance");
+        assertEq(weth.balanceOf(address(oethARM)), 90 ether, "WETH balance ARM");
+        assertEq(oeth.balanceOf(address(oethARM)), 110 ether, "OETH balance ARM");
+    }
+}

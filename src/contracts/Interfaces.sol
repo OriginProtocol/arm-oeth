@@ -9,6 +9,7 @@ interface IERC20 {
     function approve(address spender, uint256 value) external returns (bool);
     function transferFrom(address from, address to, uint256 value) external returns (bool);
     function decimals() external view returns (uint8);
+    event Transfer(address indexed from, address indexed to, uint256 value);
 }
 
 interface IERC20Metadata is IERC20 {
@@ -48,6 +49,12 @@ interface IOETHVault {
         returns (uint256[] memory amounts, uint256 totalAmount);
 
     function addWithdrawalQueueLiquidity() external;
+
+    function setMaxSupplyDiff(uint256 _maxSupplyDiff) external;
+
+    function governor() external returns (address);
+
+    function dripper() external returns (address);
 }
 
 interface IGovernance {
