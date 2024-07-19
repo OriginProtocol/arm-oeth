@@ -2,7 +2,7 @@
 pragma solidity 0.8.23;
 
 // Test imports
-import {Fork_Shared_Test_} from "../shared/Shared.sol";
+import {Fork_Shared_Test_} from "test/fork/shared/Shared.sol";
 
 // Utils
 import {Mainnet} from "test/utils/Addresses.sol";

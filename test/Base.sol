@@ -9,8 +9,8 @@ import {Proxy} from "contracts/Proxy.sol";
 import {OEthARM} from "contracts/OethARM.sol";
 
 // Interfaces
-import {IERC20} from "./../src/contracts/Interfaces.sol";
-import {IOETHVault} from "./../src/contracts/Interfaces.sol";
+import {IERC20} from "contracts/Interfaces.sol";
+import {IOETHVault} from "contracts/Interfaces.sol";
 
 abstract contract Base_Test_ is Test {
     //////////////////////////////////////////////////////
