@@ -5,7 +5,7 @@ pragma solidity 0.8.23;
 import {console} from "forge-std/console.sol";
 import {Script} from "forge-std/Script.sol";
 
-import {OethARM} from "contracts/OethARM.sol";
+import {OEthARM} from "contracts/OethARM.sol";
 
 // Utils
 import {Mainnet} from "test/utils/Addresses.sol";
