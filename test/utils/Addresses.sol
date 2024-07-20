@@ -16,4 +16,5 @@ library Mainnet {
     address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address public constant TIMELOCK = 0x35918cDE7233F2dD33fA41ae3Cb6aE0e42E0e69F;
     address public constant OETHVAULT = 0x39254033945AA2E4809Cc2977E7087BEE48bd7Ab;
+    address public constant OETHARM = 0x8Ad159a275AEE56fb2334DBb69036E9c7baCEe9b;
 }

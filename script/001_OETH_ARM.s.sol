@@ -2,6 +2,7 @@
 pragma solidity 0.8.23;
 
 // Foundry
+import {console} from "forge-std/console.sol";
 import {Script} from "forge-std/Script.sol";
 
 // Contracts
@@ -21,11 +22,13 @@ contract _001_OETHARMScript is Script {
     //////////////////////////////////////////////////////
     /// --- SETUP
     //////////////////////////////////////////////////////
-    function setUp() public {
+    function setUp() public virtual{
         if (vm.envExists("DEPLOYER_PRIVATE_KEY")) {
+            console.log("Using real deployer address");
             // Fetch PK from env and derive the deployer address
             deployer = vm.addr(vm.envUint("DEPLOYER_PRIVATE_KEY"));
         } else {
+            console.log("Using default deployer address");
             // If no PK is provided, use a default deployer address
             deployer = makeAddr("deployer");
         }
