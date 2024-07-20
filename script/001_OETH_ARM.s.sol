@@ -22,7 +22,7 @@ contract _001_OETHARMScript is Script {
     //////////////////////////////////////////////////////
     /// --- SETUP
     //////////////////////////////////////////////////////
-    function setUp() public virtual{
+    function setUp() public virtual {
         if (vm.envExists("DEPLOYER_PRIVATE_KEY")) {
             console.log("Using real deployer address");
             // Fetch PK from env and derive the deployer address
