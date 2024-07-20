@@ -5,12 +5,16 @@ pragma solidity 0.8.23;
 import {console} from "forge-std/console.sol";
 import {Script} from "forge-std/Script.sol";
 
+// Contracts
 import {OEthARM} from "contracts/OethARM.sol";
+
+// Interfaces
+import {IERC20} from "contracts/Interfaces.sol";
 
 // Utils
 import {Mainnet} from "test/utils/Addresses.sol";
 
-contract SwapScript is Script {
+contract _999_TasksScript is Script {
     address public deployer;
 
     bytes32 emptyStringHash = keccak256(abi.encodePacked(""));
@@ -58,7 +62,35 @@ contract SwapScript is Script {
             );
 
             console.log(message);
-            //OethARM(Mainnet.)
+
+            // Execute the swap
+            OEthARM(Mainnet.OETHARM).swapExactTokensForTokens(IERC20(from), IERC20(to), amount, 0, deployer);
+        } else if (to != address(0)) {
+            require(to == Mainnet.OETH || to == Mainnet.WETH, "Invalid to asset");
+
+            from = to == Mainnet.OETH ? Mainnet.WETH : Mainnet.OETH;
+
+            string memory message = string(
+                abi.encodePacked(
+                    "About to swap ",
+                    vm.toString(from),
+                    " to ",
+                    vm.toString(amount),
+                    " ",
+                    vm.toString(to),
+                    " for ",
+                    vm.toString(deployer)
+                )
+            );
+
+            console.log(message);
+
+            // Execute the swap
+            OEthARM(Mainnet.OETHARM).swapTokensForExactTokens(
+                IERC20(from), IERC20(to), amount, type(uint256).max, deployer
+            );
+        } else {
+            revert("Must specify either from or to asset");
         }
 
         vm.stopBroadcast();
