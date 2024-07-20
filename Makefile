@@ -34,12 +34,21 @@ coverage-html:
 	@make coverage
 	@genhtml ./lcov.info.pruned -o report --branch-coverage --output-dir ./coverage
 
-# Running scripts
-simulate-%:
+# Deploy contract
+simulate-c-%:
 	@forge script script/$*.s.sol --fork-url $(PROVIDER_URL) -vvvvv
 
-deploy-%:
+deploy-c-%:
 	@forge script script/$*.s.sol --rpc-url  $(PROVIDER_URL) --private-key ${DEPLOYER_PRIVATE_KEY} --broadcast --slow --verify -vvvvv
+
+# Tasks
+simulate-t-swap:
+	forge clean
+	forge script script/999_Tasks.s.sol --fork-url $(PROVIDER_URL) -vvvvv -s "swap(address,address,uint256)" $(FROM) $(TO) $(AMOUNT)
+
+run-t-swap:
+	forge clean
+	forge script script/999_Tasks.s.sol --rpc-url $(PROVIDER_URL) --private-key ${DEPLOYER_PRIVATE_KEY} --broadcast --slow --verify -vvvvv -s "swap(address,address,uint256)" $(FROM) $(TO) $(AMOUNT)
 
 # Override default `test` and `coverage` targets
 .PHONY: test coverage
