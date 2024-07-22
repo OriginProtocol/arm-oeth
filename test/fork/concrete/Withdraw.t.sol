@@ -23,9 +23,6 @@ contract Fork_Concrete_OethARM_Withdraw_Test_ is Fork_Shared_Test_ {
         // Remove solvency check
         vm.prank(vault.governor());
         vault.setMaxSupplyDiff(0);
-
-        // Bypass call to the dripper
-        vm.mockCall({callee: vault.dripper(), data: abi.encodeWithSignature("collect()"), returnData: abi.encode(true)});
     }
 
     //////////////////////////////////////////////////////
@@ -49,7 +46,7 @@ contract Fork_Concrete_OethARM_Withdraw_Test_ is Fork_Shared_Test_ {
     //////////////////////////////////////////////////////
     /// --- PASSING TESTS
     //////////////////////////////////////////////////////
-    function test_RequestWithdraw() public asOwner {
+    function test_RequestWithdraw() public asOwner mockCallDripperCollect {
         vm.expectEmit({emitter: address(oeth)});
         emit IERC20.Transfer(address(oethARM), address(0), 1 ether);
         (uint256 requestId, uint256 queued) = oethARM.requestWithdrawal(1 ether);
@@ -60,7 +57,7 @@ contract Fork_Concrete_OethARM_Withdraw_Test_ is Fork_Shared_Test_ {
         assertEq(oeth.balanceOf(address(oethARM)), 9 ether, "OETH balance should be 99 ether");
     }
 
-    function test_ClaimWithdraw_() public asOwner {
+    function test_ClaimWithdraw_() public asOwner mockCallDripperCollect {
         // First request withdrawal
         (uint256 requestId,) = oethARM.requestWithdrawal(1 ether);
 
@@ -74,7 +71,7 @@ contract Fork_Concrete_OethARM_Withdraw_Test_ is Fork_Shared_Test_ {
         assertEq(weth.balanceOf(address(oethARM)), 1 ether, "WETH balance should be 1 ether");
     }
 
-    function test_ClaimWithdraws() public asOwner {
+    function test_ClaimWithdraws() public asOwner mockCallDripperCollect {
         // First request withdrawal
         oethARM.requestWithdrawal(1 ether);
         oethARM.requestWithdrawal(1 ether);

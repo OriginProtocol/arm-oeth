@@ -3,6 +3,7 @@ pragma solidity 0.8.23;
 
 // Test imports
 import {Helpers} from "test/fork/utils/Helpers.sol";
+import {MockCall} from "test/fork/utils/MockCall.sol";
 
 abstract contract Modifiers is Helpers {
     /// @notice Impersonate the owner of the contract.
@@ -17,5 +18,11 @@ abstract contract Modifiers is Helpers {
         vm.startPrank(vault.governor());
         _;
         vm.stopPrank();
+    }
+
+    /// @notice Mock the call to the dripper's `collect` function, bypass it and return `true`.
+    modifier mockCallDripperCollect() {
+        MockCall.mockCallDripperCollect(vault.dripper());
+        _;
     }
 }
