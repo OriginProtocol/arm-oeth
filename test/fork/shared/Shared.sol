@@ -2,7 +2,7 @@
 pragma solidity 0.8.23;
 
 // Test imports
-import {Base_Test_} from "test/Base.sol";
+import {Modifiers} from "test/fork/utils/Modifiers.sol";
 
 // Contracts
 import {Proxy} from "contracts/Proxy.sol";
@@ -15,7 +15,8 @@ import {IOETHVault} from "contracts/Interfaces.sol";
 // Utils
 import {Mainnet} from "test/utils/Addresses.sol";
 
-/// @notice This contract should inherit from `Base_Test_`. It should be used to setup the FORK test ONLY!
+/// @notice This contract should inherit (directly or indirectly) from `Base_Test_`. 
+///         It should be used to setup the FORK test ONLY!
 /// @dev This contract will be used to:
 ///         - Create and select a fork.
 ///         - Create users (generating addresses).
@@ -29,7 +30,7 @@ import {Mainnet} from "test/utils/Addresses.sol";
 ///         - etc.
 /// @dev This contract should be inherited by `Concrete` and `Fuzz` test contracts.
 /// @dev `setUp()` function should be marked as `virtual` to allow overriding in child contracts.
-abstract contract Fork_Shared_Test_ is Base_Test_ {
+abstract contract Fork_Shared_Test_ is Modifiers {
     uint256 public forkId;
 
     //////////////////////////////////////////////////////
@@ -99,20 +100,5 @@ abstract contract Fork_Shared_Test_ is Base_Test_ {
         vm.label(Mainnet.WHALE_OETH, "WHALE OETH");
         vm.label(Mainnet.TIMELOCK, "TIMELOCK");
         vm.label(Mainnet.NULL, "NULL");
-    }
-
-    /// @notice Override `deal()` function to handle OETH special case.
-    function deal(address token, address to, uint256 amount) internal override {
-        // Handle OETH special case, as rebasing tokens are not supported by the VM.
-        if (token == address(oeth)) {
-            // Check than whale as enough OETH.
-            require(oeth.balanceOf(Mainnet.WHALE_OETH) >= amount, "Fork_Shared_Test_: Not enough OETH in WHALE_OETH");
-
-            // Transfer OETH from WHALE_OETH to the user.
-            vm.prank(Mainnet.WHALE_OETH);
-            oeth.transfer(to, amount);
-        } else {
-            super.deal(token, to, amount);
-        }
     }
 }
