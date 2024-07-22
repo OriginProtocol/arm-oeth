@@ -32,12 +32,11 @@ contract Fork_Concrete_OethARM_Proxy_Test_ is Fork_Shared_Test_ {
     //////////////////////////////////////////////////////
     /// --- PASSING TESTS
     //////////////////////////////////////////////////////
-    function test_Upgrade() public {
+    function test_Upgrade() public asOwner {
         address owner = Mainnet.TIMELOCK;
 
         // Deploy new implementation
         OEthARM newImplementation = new OEthARM();
-        vm.prank(owner);
         proxy.upgradeTo(address(newImplementation));
         assertEq(proxy.implementation(), address(newImplementation));
 
@@ -50,14 +49,13 @@ contract Fork_Concrete_OethARM_Proxy_Test_ is Fork_Shared_Test_ {
         assertEq(address(oethARM.token1()), Mainnet.WETH);
     }
 
-    function test_UpgradeAndCall() public {
+    function test_UpgradeAndCall() public asOwner {
         address owner = Mainnet.TIMELOCK;
 
         // Deploy new implementation
         OEthARM newImplementation = new OEthARM();
         bytes memory data = abi.encodeWithSignature("setOperator(address)", address(0x123));
 
-        vm.prank(owner);
         proxy.upgradeToAndCall(address(newImplementation), data);
         assertEq(proxy.implementation(), address(newImplementation));
 

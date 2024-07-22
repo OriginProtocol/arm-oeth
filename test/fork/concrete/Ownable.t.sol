@@ -27,22 +27,20 @@ contract Fork_Concrete_OethARM_Ownable_Test_ is Fork_Shared_Test_ {
     //////////////////////////////////////////////////////
     /// --- PASSING TESTS
     //////////////////////////////////////////////////////
-    function test_SetOperator() public {
+    function test_SetOperator() public asOwner {
         // Assertions before
         assertEq(oethARM.operator(), address(0));
 
-        vm.prank(oethARM.owner());
         oethARM.setOperator(operator);
 
         // Assertions after
         assertEq(oethARM.operator(), operator);
     }
 
-    function test_SetOwner() public {
+    function test_SetOwner() public asOwner {
         // Assertions before
         assertEq(oethARM.owner(), Mainnet.TIMELOCK);
 
-        vm.prank(oethARM.owner());
         oethARM.setOwner(alice);
 
         // Assertions after

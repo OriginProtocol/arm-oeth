@@ -49,8 +49,7 @@ contract Fork_Concrete_OethARM_Withdraw_Test_ is Fork_Shared_Test_ {
     //////////////////////////////////////////////////////
     /// --- PASSING TESTS
     //////////////////////////////////////////////////////
-    function test_RequestWithdraw() public {
-        vm.prank(oethARM.owner());
+    function test_RequestWithdraw() public asOwner {
         vm.expectEmit({emitter: address(oeth)});
         emit IERC20.Transfer(address(oethARM), address(0), 1 ether);
         (uint256 requestId, uint256 queued) = oethARM.requestWithdrawal(1 ether);
@@ -61,28 +60,24 @@ contract Fork_Concrete_OethARM_Withdraw_Test_ is Fork_Shared_Test_ {
         assertEq(oeth.balanceOf(address(oethARM)), 9 ether, "OETH balance should be 99 ether");
     }
 
-    function test_ClaimWithdraw_() public {
+    function test_ClaimWithdraw_() public asOwner {
         // First request withdrawal
-        vm.prank(oethARM.owner());
         (uint256 requestId,) = oethARM.requestWithdrawal(1 ether);
 
         vault.addWithdrawalQueueLiquidity();
         skip(10 minutes); // Todo: fetch direct value from contract
 
         // Then claim withdrawal
-        vm.prank(oethARM.owner());
         oethARM.claimWithdrawal(requestId);
 
         // Assertions after
         assertEq(weth.balanceOf(address(oethARM)), 1 ether, "WETH balance should be 1 ether");
     }
 
-    function test_ClaimWithdraws() public {
+    function test_ClaimWithdraws() public asOwner {
         // First request withdrawal
-        vm.startPrank(oethARM.owner());
         oethARM.requestWithdrawal(1 ether);
         oethARM.requestWithdrawal(1 ether);
-        vm.stopPrank();
 
         vault.addWithdrawalQueueLiquidity();
         skip(10 minutes); // Todo: fetch direct value from contract
@@ -91,7 +86,6 @@ contract Fork_Concrete_OethARM_Withdraw_Test_ is Fork_Shared_Test_ {
         requestIds[0] = 0;
         requestIds[1] = 1;
         // Then claim withdrawal
-        vm.prank(oethARM.owner());
         oethARM.claimWithdrawals(requestIds);
 
         // Assertions after

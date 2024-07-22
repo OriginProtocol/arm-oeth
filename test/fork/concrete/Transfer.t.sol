@@ -36,10 +36,9 @@ contract Fork_Concrete_OethARM_Transfer_Test_ is Fork_Shared_Test_ {
         oethARM.transferEth(address(0), 0);
     }
 
-    function test_RevertWhen_TransferETH_Because_ETHTransferFailed() public {
+    function test_RevertWhen_TransferETH_Because_ETHTransferFailed() public asOwner {
         shoudRevertOnReceive = true;
 
-        vm.prank(oethARM.owner());
         vm.expectRevert("ARM: ETH transfer failed");
         oethARM.transferEth(address(this), 10 ether);
     }
@@ -47,14 +46,13 @@ contract Fork_Concrete_OethARM_Transfer_Test_ is Fork_Shared_Test_ {
     //////////////////////////////////////////////////////
     /// --- PASSING TESTS
     //////////////////////////////////////////////////////
-    function test_TransferToken() public {
+    function test_TransferToken() public asOwner {
         // Assertions before
         assertEq(weth.balanceOf(address(this)), 0);
         assertEq(weth.balanceOf(address(oethARM)), 100 ether);
 
         vm.expectEmit({emitter: address(weth)});
         emit IERC20.Transfer(address(oethARM), address(this), 10 ether);
-        vm.prank(oethARM.owner());
         oethARM.transferToken(address(weth), address(this), 10 ether);
 
         // Assertions after
@@ -62,12 +60,11 @@ contract Fork_Concrete_OethARM_Transfer_Test_ is Fork_Shared_Test_ {
         assertEq(weth.balanceOf(address(oethARM)), 90 ether);
     }
 
-    function test_TransferETH() public {
+    function test_TransferETH() public asOwner {
         // Assertions before
         uint256 balanceBefore = address(this).balance;
         assertEq(address(oethARM).balance, 100 ether);
 
-        vm.prank(oethARM.owner());
         oethARM.transferEth(address(this), 10 ether);
 
         // Assertions after
