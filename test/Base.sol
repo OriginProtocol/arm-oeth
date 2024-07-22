@@ -12,6 +12,13 @@ import {OEthARM} from "contracts/OethARM.sol";
 import {IERC20} from "contracts/Interfaces.sol";
 import {IOETHVault} from "contracts/Interfaces.sol";
 
+/// @notice This contract should be the common parent for all test contracts.
+///         It should be used to define common variables and that will be
+///         used across all test contracts. This pattern is used to allow different
+///         test contracts to share common variables, and ensure a consistent setup.
+/// @dev This contract should be inherited by "Shared" contracts.
+/// @dev This contract should only be used as storage for common variables.
+/// @dev Helpers and other functions should be defined in a separate contract.
 abstract contract Base_Test_ is Test {
     //////////////////////////////////////////////////////
     /// --- CONTRACTS

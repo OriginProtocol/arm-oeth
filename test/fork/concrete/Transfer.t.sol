@@ -7,6 +7,7 @@ import {Fork_Shared_Test_} from "test/fork/shared/Shared.sol";
 // Interfaces
 import {IERC20} from "contracts/Interfaces.sol";
 
+/// @notice The puprose of this contract is to test the `transferToken` and `transferEth` functions in the `OEthARM` contract.
 contract Fork_Concrete_OethARM_Transfer_Test_ is Fork_Shared_Test_ {
     bool public shoudRevertOnReceive;
 

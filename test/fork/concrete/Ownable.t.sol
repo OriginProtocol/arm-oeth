@@ -7,6 +7,7 @@ import {Fork_Shared_Test_} from "test/fork/shared/Shared.sol";
 // Utils
 import {Mainnet} from "test/utils/Addresses.sol";
 
+/// @notice The puprose of this contract is to test the `Ownable` contract.
 contract Fork_Concrete_OethARM_Ownable_Test_ is Fork_Shared_Test_ {
     //////////////////////////////////////////////////////
     /// --- REVERTING TESTS

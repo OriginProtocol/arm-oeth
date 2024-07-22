@@ -7,6 +7,7 @@ import {Fork_Shared_Test_} from "test/fork/shared/Shared.sol";
 // Interfaces
 import {IERC20} from "contracts/Interfaces.sol";
 
+/// @notice The puprose of this contract is to test the `swapTokensForExactTokens` function in the `OEthARM` contract.
 contract Fork_Concrete_OethARM_SwapTokensForExactTokens_Test_ is Fork_Shared_Test_ {
     //////////////////////////////////////////////////////
     /// --- SETUP

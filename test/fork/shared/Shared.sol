@@ -15,6 +15,20 @@ import {IOETHVault} from "contracts/Interfaces.sol";
 // Utils
 import {Mainnet} from "test/utils/Addresses.sol";
 
+/// @notice This contract should inherit from `Base_Test_`. It should be used to setup the FORK test ONLY!
+/// @dev This contract will be used to:
+///         - Create and select a fork.
+///         - Create users (generating addresses).
+///         - Deploy contracts in the fork for testing.
+///         - Label contracts for easy identification.
+///         - Apply post deployment setup if needed.
+/// @dev This contract can inherit from other `Helpers` contracts to add more functionality like:
+///         - Modifiers used often in tests.
+///         - Extra assertions (like to compare unsual types).
+///         - Maths helpers.
+///         - etc.
+/// @dev This contract should be inherited by `Concrete` and `Fuzz` test contracts.
+/// @dev `setUp()` function should be marked as `virtual` to allow overriding in child contracts.
 abstract contract Fork_Shared_Test_ is Base_Test_ {
     uint256 public forkId;
 
