@@ -47,13 +47,14 @@ contract Fork_Concrete_OethARM_Withdraw_Test_ is Fork_Shared_Test_ {
     /// --- PASSING TESTS
     //////////////////////////////////////////////////////
     function test_RequestWithdraw() public asOwner mockCallDripperCollect {
+        (uint128 queuedBefore,,, uint128 nextWithdrawalIndex) = vault.withdrawalQueueMetadata();
         vm.expectEmit({emitter: address(oeth)});
         emit IERC20.Transfer(address(oethARM), address(0), 1 ether);
         (uint256 requestId, uint256 queued) = oethARM.requestWithdrawal(1 ether);
 
         // Assertions after
-        assertEq(requestId, 0, "Request ID should be 0");
-        assertEq(queued, 1 ether, "Queued amount should be 1 ether");
+        assertEq(requestId, nextWithdrawalIndex, "Request ID should be 0");
+        assertEq(queued, queuedBefore + 1 ether, "Queued amount should be 1 ether");
         assertEq(oeth.balanceOf(address(oethARM)), 9 ether, "OETH balance should be 99 ether");
     }
 
@@ -61,7 +62,14 @@ contract Fork_Concrete_OethARM_Withdraw_Test_ is Fork_Shared_Test_ {
         // First request withdrawal
         (uint256 requestId,) = oethARM.requestWithdrawal(1 ether);
 
+        // Add more liquidity to facilitate withdrawal
+        (, uint128 claimable, uint128 claimed,) = vault.withdrawalQueueMetadata();
+        deal(address(weth), address(vault), claimable - claimed + 1 ether);
+
+        // Add liquidity to the withdrawal queue
         vault.addWithdrawalQueueLiquidity();
+
+        // Skip delay
         skip(10 minutes); // Todo: fetch direct value from contract
 
         // Then claim withdrawal
@@ -72,16 +80,25 @@ contract Fork_Concrete_OethARM_Withdraw_Test_ is Fork_Shared_Test_ {
     }
 
     function test_ClaimWithdraws() public asOwner mockCallDripperCollect {
+        (,,, uint128 nextWithdrawalIndex) = vault.withdrawalQueueMetadata();
+
         // First request withdrawal
         oethARM.requestWithdrawal(1 ether);
         oethARM.requestWithdrawal(1 ether);
 
+        // Add more liquidity to facilitate withdrawal
+        (, uint128 claimable, uint128 claimed,) = vault.withdrawalQueueMetadata();
+        deal(address(weth), address(vault), claimable - claimed + 1 ether);
+
+        // Add liquidity to the withdrawal queue
         vault.addWithdrawalQueueLiquidity();
+
+        // Skip delay
         skip(10 minutes); // Todo: fetch direct value from contract
 
         uint256[] memory requestIds = new uint256[](2);
-        requestIds[0] = 0;
-        requestIds[1] = 1;
+        requestIds[0] = nextWithdrawalIndex;
+        requestIds[1] = nextWithdrawalIndex + 1;
         // Then claim withdrawal
         oethARM.claimWithdrawals(requestIds);
 

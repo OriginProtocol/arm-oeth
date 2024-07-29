@@ -56,6 +56,12 @@ interface IOETHVault {
     function governor() external returns (address);
 
     function dripper() external returns (address);
+
+    function withdrawalQueueMetadata()
+        external
+        returns (uint128 queued, uint128 claimable, uint128 claimed, uint128 nextWithdrawalIndex);
+
+    function CLAIM_DELAY() external returns (uint256);
 }
 
 interface IGovernance {
