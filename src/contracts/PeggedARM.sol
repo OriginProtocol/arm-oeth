@@ -10,8 +10,8 @@ contract PeggedARM is OwnableOperable {
     IERC20 public immutable token1;
 
     constructor(address _token0, address _token1) {
-        require(IERC20(token0).decimals() == 18);
-        require(IERC20(token1).decimals() == 18);
+        require(IERC20(_token0).decimals() == 18);
+        require(IERC20(_token1).decimals() == 18);
 
         token0 = IERC20(_token0);
         token1 = IERC20(_token1);

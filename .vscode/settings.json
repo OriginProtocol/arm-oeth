@@ -1,0 +1,12 @@
+{
+  "editor.formatOnSave": true,
+  "plantuml.exportOutDir": "docs",
+  "plantuml.exportFormat": "png",
+  "plantuml.exportIncludeFolderHeirarchy": false,
+  "plantuml.exportSubFolder": false,
+  "solidity.monoRepoSupport": true,
+  "solidity.packageDefaultDependenciesContractsDirectory": "src",
+  "solidity.packageDefaultDependenciesDirectory": "lib",
+  "solidity.compileUsingRemoteVersion": "v0.8.23+commit.f704f362",
+  "solidity.formatter": "forge"
+}
