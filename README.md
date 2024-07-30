@@ -10,7 +10,10 @@ Swap OETH for WETH at 1:1 ratio.
 foundryup
 forge install
 forge compile
+cp .env.example .env
 ```
+
+In the `.env` file, set the environment variables as needed. eg `PROVIDER_URL` for the RPC endpoint.
 
 ### Running tests
 
