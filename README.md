@@ -42,7 +42,11 @@ To run only a specific test
 make test-f-TestFunctionName
 ```
 
-### Running gas report scripts
+Report gas usage for tests:
+
+```
+make gas
+```
 
 ## Open Zeppelin Defender
 

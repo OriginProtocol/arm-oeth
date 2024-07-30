@@ -22,6 +22,9 @@ yarn.lock
 cache_hardhat
 artifacts
 
+# Forge
+.gas-snapshot
+
 # Defender Actions
 dist
 

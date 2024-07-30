@@ -11,7 +11,10 @@ install:
 	foundryup
 	forge install
 
-# Gas
+gas:
+	@forge test --gas-report
+
+# Generate gas snapshots for all your test functions
 snapshot:
 	@forge snapshot
 
