@@ -25,7 +25,7 @@ import {Mainnet} from "test/utils/Addresses.sol";
 ///         - Apply post deployment setup if needed.
 /// @dev This contract can inherit from other `Helpers` contracts to add more functionality like:
 ///         - Modifiers used often in tests.
-///         - Extra assertions (like to compare unsual types).
+///         - Extra assertions (like to compare unusual types).
 ///         - Maths helpers.
 ///         - etc.
 /// @dev This contract should be inherited by `Concrete` and `Fuzz` test contracts.

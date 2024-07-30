@@ -7,7 +7,7 @@ import {Fork_Shared_Test_} from "test/fork/shared/Shared.sol";
 // Interfaces
 import {IERC20} from "contracts/Interfaces.sol";
 
-/// @notice The puprose of this contract is to test the `swapExactTokensForTokens` function in the `OEthARM` contract.
+/// @notice The purpose of this contract is to test the `swapExactTokensForTokens` function in the `OEthARM` contract.
 contract Fork_Concrete_OethARM_SwapExactTokensForTokens_Test_ is Fork_Shared_Test_ {
     //////////////////////////////////////////////////////
     /// --- SETUP
@@ -28,7 +28,7 @@ contract Fork_Concrete_OethARM_SwapExactTokensForTokens_Test_ is Fork_Shared_Tes
     /// --- REVERTING TESTS
     //////////////////////////////////////////////////////
 
-    function test_RevertWhen_SwapExactTokensForTokens_Simple_Because_InsuficientOutputAmount() public {
+    function test_RevertWhen_SwapExactTokensForTokens_Simple_Because_InsufficientOutputAmount() public {
         vm.expectRevert("ARM: Insufficient output amount");
         oethARM.swapExactTokensForTokens(weth, oeth, 10 ether, 11 ether, address(this));
     }
@@ -58,7 +58,7 @@ contract Fork_Concrete_OethARM_SwapExactTokensForTokens_Test_ is Fork_Shared_Tes
         oethARM.swapExactTokensForTokens(10 ether, 10 ether, new address[](2), address(this), 0);
     }
 
-    function test_RevertWhen_SwapExactTokensForTokens_Complex_Because_InvalideSwap_TokenIn() public {
+    function test_RevertWhen_SwapExactTokensForTokens_Complex_Because_InvalidSwap_TokenIn() public {
         address[] memory path = new address[](2);
         path[0] = address(weth);
         path[1] = address(weth);
@@ -66,7 +66,7 @@ contract Fork_Concrete_OethARM_SwapExactTokensForTokens_Test_ is Fork_Shared_Tes
         oethARM.swapExactTokensForTokens(10 ether, 10 ether, new address[](2), address(this), block.timestamp + 1000);
     }
 
-    function test_RevertWhen_SwapExactTokensForTokens_Complex_Because_InvalideSwap_TokenOut() public {
+    function test_RevertWhen_SwapExactTokensForTokens_Complex_Because_InvalidSwap_TokenOut() public {
         address[] memory path = new address[](2);
         path[0] = address(oeth);
         path[1] = address(oeth);

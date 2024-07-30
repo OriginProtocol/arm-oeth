@@ -7,9 +7,9 @@ import {Fork_Shared_Test_} from "test/fork/shared/Shared.sol";
 // Interfaces
 import {IERC20} from "contracts/Interfaces.sol";
 
-/// @notice The puprose of this contract is to test the `transferToken` and `transferEth` functions in the `OEthARM` contract.
+/// @notice The purpose of this contract is to test the `transferToken` and `transferEth` functions in the `OEthARM` contract.
 contract Fork_Concrete_OethARM_Transfer_Test_ is Fork_Shared_Test_ {
-    bool public shoudRevertOnReceive;
+    bool public shouldRevertOnReceive;
 
     //////////////////////////////////////////////////////
     /// --- SETUP
@@ -37,7 +37,7 @@ contract Fork_Concrete_OethARM_Transfer_Test_ is Fork_Shared_Test_ {
     }
 
     function test_RevertWhen_TransferETH_Because_ETHTransferFailed() public asOwner {
-        shoudRevertOnReceive = true;
+        shouldRevertOnReceive = true;
 
         vm.expectRevert("ARM: ETH transfer failed");
         oethARM.transferEth(address(this), 10 ether);
@@ -76,6 +76,6 @@ contract Fork_Concrete_OethARM_Transfer_Test_ is Fork_Shared_Test_ {
     /// --- RECEIVE
     //////////////////////////////////////////////////////
     receive() external payable {
-        if (shoudRevertOnReceive) revert();
+        if (shouldRevertOnReceive) revert();
     }
 }
