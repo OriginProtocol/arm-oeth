@@ -2,6 +2,96 @@
 
 Swap OETH for WETH at 1:1 ratio.
 
+## Swap Interface
+
+[Uniswap V2 Router](https://docs.uniswap.org/contracts/v2/reference/smart-contracts/router-02) compatible interface for swapping ERC20 tokens.
+
+```Solidity
+/**
+    * @notice Swaps an exact amount of input tokens for as many output tokens as possible.
+    * msg.sender should have already given the ARM contract an allowance of
+    * at least amountIn on the input token.
+    *
+    * @param inToken Input token.
+    * @param outToken Output token.
+    * @param amountIn The amount of input tokens to send.
+    * @param amountOutMin The minimum amount of output tokens that must be received for the transaction not to revert.
+    * @param to Recipient of the output tokens.
+    */
+function swapExactTokensForTokens(
+    IERC20 inToken,
+    IERC20 outToken,
+    uint256 amountIn,
+    uint256 amountOutMin,
+    address to
+) external;
+
+/**
+    * @notice Uniswap V2 Router compatible interface. Swaps an exact amount of
+    * input tokens for as many output tokens as possible.
+    * msg.sender should have already given the ARM contract an allowance of
+    * at least amountIn on the input token.
+    *
+    * @param amountIn The amount of input tokens to send.
+    * @param amountOutMin The minimum amount of output tokens that must be received for the transaction not to revert.
+    * @param path The input and output token addresses.
+    * @param to Recipient of the output tokens.
+    * @param deadline Unix timestamp after which the transaction will revert.
+    * @return amounts The input and output token amounts.
+    */
+function swapExactTokensForTokens(
+    uint256 amountIn,
+    uint256 amountOutMin,
+    address[] calldata path,
+    address to,
+    uint256 deadline
+) external returns (uint256[] memory amounts);
+
+/**
+    * @notice Receive an exact amount of output tokens for as few input tokens as possible.
+    * msg.sender should have already given the router an allowance of
+    * at least amountInMax on the input token.
+    *
+    * @param inToken Input token.
+    * @param outToken Output token.
+    * @param amountOut The amount of output tokens to receive.
+    * @param amountInMax The maximum amount of input tokens that can be required before the transaction reverts.
+    * @param to Recipient of the output tokens.
+    */
+function swapTokensForExactTokens(
+    IERC20 inToken,
+    IERC20 outToken,
+    uint256 amountOut,
+    uint256 amountInMax,
+    address to
+) external;
+
+/**
+    * @notice Uniswap V2 Router compatible interface. Receive an exact amount of
+    * output tokens for as few input tokens as possible.
+    * msg.sender should have already given the router an allowance of
+    * at least amountInMax on the input token.
+    *
+    * @param amountOut The amount of output tokens to receive.
+    * @param amountInMax The maximum amount of input tokens that can be required before the transaction reverts.
+    * @param path The input and output token addresses.
+    * @param to Recipient of the output tokens.
+    * @param deadline Unix timestamp after which the transaction will revert.
+    * @return amounts The input and output token amounts.
+    */
+function swapTokensForExactTokens(
+    uint256 amountOut,
+    uint256 amountInMax,
+    address[] calldata path,
+    address to,
+    uint256 deadline
+) external returns (uint256[] memory amounts);
+```
+
+## Deployed Contracts
+
+TODO
+
 ## Development
 
 ### Install
