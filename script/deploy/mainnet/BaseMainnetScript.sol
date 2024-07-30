@@ -46,9 +46,6 @@ abstract contract BaseMainnetScript is Script {
     function setUp() external {}
 
     function run() external {
-        if (block.chainid != 1) {
-            revert("Not Mainnet");
-        }
         // Will not execute script if after this block number
         if (block.number > deployBlockNum) {
             // console.log("Current block %s, script block %s", block.number, deployBlockNum);

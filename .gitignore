@@ -24,6 +24,7 @@ artifacts
 
 # Forge
 .gas-snapshot
+build/
 
 # Defender Actions
 dist

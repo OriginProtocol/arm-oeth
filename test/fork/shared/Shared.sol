@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
+// Deployer
+import {DeployManager} from "script/deploy/DeployManager.sol";
+
 // Test imports
 import {Modifiers} from "test/fork/utils/Modifiers.sol";
 
@@ -32,6 +35,7 @@ import {Mainnet} from "test/utils/Addresses.sol";
 /// @dev `setUp()` function should be marked as `virtual` to allow overriding in child contracts.
 abstract contract Fork_Shared_Test_ is Modifiers {
     uint256 public forkId;
+    DeployManager public deployManager;
 
     //////////////////////////////////////////////////////
     /// --- SETUP
@@ -39,22 +43,32 @@ abstract contract Fork_Shared_Test_ is Modifiers {
     function setUp() public virtual override {
         super.setUp();
 
-        // 1. Create fork.
+        // 1. Create deploy manager.
+        // _createDeployManager();
+
+        // 2. Create fork.
         _createAndSelectFork();
 
-        // 2. Create users.
+        // 3. Create users.
         _generateAddresses();
 
-        // 3. Deploy contracts.
+        // 4. Deploy contracts.
         _deployContracts();
 
-        // 4. Label contracts.
+        // 5. Label contracts.
         _label();
     }
 
     //////////////////////////////////////////////////////
     /// --- HELPERS
     //////////////////////////////////////////////////////
+    function _createDeployManager() internal {
+        deployManager = new DeployManager();
+
+        deployManager.setUp();
+        deployManager.run();
+    }
+
     function _createAndSelectFork() internal {
         // Check if the PROVIDER_URL is set.
         require(vm.envExists("PROVIDER_URL"), "PROVIDER_URL not set");
@@ -89,6 +103,14 @@ abstract contract Fork_Shared_Test_ is Modifiers {
         // Set the Proxy as the OEthARM.
         oethARM = OEthARM(address(proxy));
     }
+
+    // function _deployContracts() internal {
+    //     proxy = Proxy(deployManager.getDeployment("OETH_ARM"));
+    //     oethARM = OEthARM(deployManager.getDeployment("OETH_ARM"));
+
+    //     // Only fuzz from this address. Big speedup on fork.
+    //     targetSender(address(this));
+    // }
 
     function _label() internal {
         vm.label(address(oeth), "OETH");
