@@ -41,4 +41,4 @@ jobs:
         uses: foundry-rs/foundry-toolchain@v1
 
       - name: Run fork tests
-        run: forge test --fork-url $PROVIDER_URL -vvv
+        run: forge test -vvv --summary --detailed
