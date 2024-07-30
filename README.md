@@ -13,23 +13,28 @@ forge compile
 ```
 
 ### Running tests
+
 Fork and Unit tests run with the same command, as the fork is initiated on the test file itself if needed.
 
-By default: 
+By default:
+
 - verbosity is set to 3, i.e. are displayed logs, assertion errors (expected vs actual), and stack traces for failing tests.
-- a summary of the test is displayed at the end. 
+- a summary of the test is displayed at the end.
 
 To run all tests:
+
 ```
 make test
 ```
 
 To run only a test contract:
+
 ```
 make test-c-TestContractName
 ```
 
 To run only a specific test
+
 ```
 make test-f-TestFunctionName
 ```
@@ -39,7 +44,6 @@ make test-f-TestFunctionName
 ## Open Zeppelin Defender
 
 [Open Zeppelin Defender v2](https://docs.openzeppelin.com/defender/v2/) is used to manage the Operations account and automate AMM operational jobs like managing liquidity.
-
 
 ### Deploying Defender Autotasks
 
@@ -73,38 +77,48 @@ The following will upload the different Autotask bundles to Defender.
 
 `rollup` and `defender-autotask` can be installed globally to avoid the `npx` prefix.
 
-
 ## Script
 
 ### Testing script
+
 - The deployment will happen on RPC used on the .env file, under `PROVIDER_URL`.
 - If `DEPLOYER_PRIVATE_KEY` key exist, it will use it to simulate the deployment.
 - Otherwise it will create an address for the test.
+
 #### For smart contract
+
 ```
 make simulate-c-ScriptContractName
 # example: make simulate-c-001_OETH_ARM
 ```
+
 #### For task
+
 ```
 make simulate-t-taskName $(ARGS1) $(ARGS2)
 # example: make simulate-task-swap FROM=0x856c4Efb76C1D1AE02e20CEB03A2A6a08b0b8dC3 TO=0x0000000000000000000000000000000000000000 AMOUNT=1234
 ```
 
 ### Running script
+
 The `DEPLOYER_PRIVATE_KEY` on the `.env` is mandatory here!
 It will run with the following options:
+
 - broadcast (send transaction for real)
 - slow (i.e. send tx after prior confirmed and succeeded)
 - verify (verify contract on Etherscan)
 - max verbosity
+
 #### For smart contract
+
 `ETHERSCAN_API_KEY` is mandatory here!
+
 ```
 make deploy-c-ScriptContractName
 ```
 
 #### For task
+
 ```
 make run-t-taskName $(ARGS1) $(ARGS2)
 # example: make run-task-swap FROM=0x856c4Efb76C1D1AE02e20CEB03A2A6a08b0b8dC3 TO=0x0000000000000000000000000000000000000000 AMOUNT=1234
