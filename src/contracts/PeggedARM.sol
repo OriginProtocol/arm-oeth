@@ -10,10 +10,12 @@ contract PeggedARM is OwnableOperable {
     IERC20 public immutable token1;
 
     constructor(address _token0, address _token1) {
-        token0 = IERC20(_token0);
-        token1 = IERC20(_token1);
         require(IERC20(token0).decimals() == 18);
         require(IERC20(token1).decimals() == 18);
+
+        token0 = IERC20(_token0);
+        token1 = IERC20(_token1);
+
         _setOwner(address(0)); // Revoke owner for implementation contract at deployment
     }
 
@@ -68,6 +70,7 @@ contract PeggedARM is OwnableOperable {
 
         _swap(inToken, outToken, amountIn, to);
 
+        // Swaps are 1:1 so the input amount is the output amount
         amounts = new uint256[](2);
         amounts[0] = amountIn;
         amounts[1] = amountIn;
@@ -124,6 +127,7 @@ contract PeggedARM is OwnableOperable {
 
         _swap(inToken, outToken, amountOut, to);
 
+        // Swaps are 1:1 so the input amount is the output amount
         amounts = new uint256[](2);
         amounts[0] = amountOut;
         amounts[1] = amountOut;
@@ -144,17 +148,9 @@ contract PeggedARM is OwnableOperable {
     }
 
     /**
-     * @notice Rescue token.
+     * @notice Owner can transfer out any ERC20 token.
      */
     function transferToken(address token, address to, uint256 amount) external onlyOwner {
         IERC20(token).transfer(to, amount);
-    }
-
-    /**
-     * @notice Rescue ETH.
-     */
-    function transferEth(address to, uint256 amount) external onlyOwner {
-        (bool success,) = to.call{value: amount}(new bytes(0));
-        require(success, "ARM: ETH transfer failed");
     }
 }
