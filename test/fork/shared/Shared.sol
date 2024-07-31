@@ -16,7 +16,7 @@ import {IERC20} from "contracts/Interfaces.sol";
 import {IOETHVault} from "contracts/Interfaces.sol";
 
 // Utils
-import {Mainnet} from "contracts/utils/Addresses.sol";
+import {Common, Mainnet} from "contracts/utils/Addresses.sol";
 
 /// @notice This contract should inherit (directly or indirectly) from `Base_Test_`.
 ///         It should be used to setup the FORK test ONLY!
@@ -121,6 +121,6 @@ abstract contract Fork_Shared_Test_ is Modifiers {
         vm.label(Mainnet.STRATEGIST, "STRATEGIST");
         vm.label(Mainnet.WHALE_OETH, "WHALE OETH");
         vm.label(Mainnet.TIMELOCK, "TIMELOCK");
-        vm.label(Mainnet.NULL, "NULL");
+        vm.label(Common.NULL, "NULL");
     }
 }
