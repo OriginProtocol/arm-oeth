@@ -10,7 +10,7 @@ import {Proxy} from "contracts/Proxy.sol";
 import {OEthARM} from "contracts/OethARM.sol";
 
 // Utils
-import {Mainnet} from "test/utils/Addresses.sol";
+import {Mainnet} from "contracts/utils/Addresses.sol";
 
 /// @notice Deploy the OEthARM contract using a proxy.
 /// @dev 1. Deploy the proxy contract.

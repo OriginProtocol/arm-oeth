@@ -13,6 +13,13 @@ library Mainnet {
 
     address public constant OETH = 0x856c4Efb76C1D1AE02e20CEB03A2A6a08b0b8dC3;
     address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+
+    address public constant WHALE_OETH = 0x8E02247D3eE0E6153495c971FFd45Aa131f4D7cB;
+
+    address public constant OETH_VAULT = 0x39254033945AA2E4809Cc2977E7087BEE48bd7Ab;
+    address public constant OETH_ARM = 0x8Ad159a275AEE56fb2334DBb69036E9c7baCEe9b;
+
+    address public constant NULL = address(0);
 }
 
 library Holesky {

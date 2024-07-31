@@ -12,7 +12,7 @@ import {OEthARM} from "contracts/OethARM.sol";
 import {IERC20} from "contracts/Interfaces.sol";
 
 // Utils
-import {Mainnet} from "test/utils/Addresses.sol";
+import {Mainnet} from "contracts/utils/Addresses.sol";
 
 contract _999_TasksScript is Script {
     address public deployer;
@@ -64,7 +64,7 @@ contract _999_TasksScript is Script {
             console.log(message);
 
             // Execute the swap
-            OEthARM(Mainnet.OETHARM).swapExactTokensForTokens(IERC20(from), IERC20(to), amount, 0, deployer);
+            OEthARM(Mainnet.OETH_ARM).swapExactTokensForTokens(IERC20(from), IERC20(to), amount, 0, deployer);
         } else if (to != address(0)) {
             require(to == Mainnet.OETH || to == Mainnet.WETH, "Invalid to asset");
 
@@ -86,7 +86,7 @@ contract _999_TasksScript is Script {
             console.log(message);
 
             // Execute the swap
-            OEthARM(Mainnet.OETHARM).swapTokensForExactTokens(
+            OEthARM(Mainnet.OETH_ARM).swapTokensForExactTokens(
                 IERC20(from), IERC20(to), amount, type(uint256).max, deployer
             );
         } else {

@@ -5,7 +5,7 @@ pragma solidity 0.8.23;
 import {Base_Test_} from "test/Base.sol";
 
 // Utils
-import {Mainnet} from "test/utils/Addresses.sol";
+import {Mainnet} from "contracts/utils/Addresses.sol";
 
 abstract contract Helpers is Base_Test_ {
     /// @notice Override `deal()` function to handle OETH special case.

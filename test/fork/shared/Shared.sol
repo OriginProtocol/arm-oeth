@@ -16,7 +16,7 @@ import {IERC20} from "contracts/Interfaces.sol";
 import {IOETHVault} from "contracts/Interfaces.sol";
 
 // Utils
-import {Mainnet} from "test/utils/Addresses.sol";
+import {Mainnet} from "contracts/utils/Addresses.sol";
 
 /// @notice This contract should inherit (directly or indirectly) from `Base_Test_`.
 ///         It should be used to setup the FORK test ONLY!
@@ -86,7 +86,7 @@ abstract contract Fork_Shared_Test_ is Modifiers {
         // Contracts.
         oeth = IERC20(Mainnet.OETH);
         weth = IERC20(Mainnet.WETH);
-        vault = IOETHVault(Mainnet.OETHVAULT);
+        vault = IOETHVault(Mainnet.OETH_VAULT);
     }
 
     function _deployContracts() internal {
