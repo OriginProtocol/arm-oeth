@@ -31,18 +31,6 @@ contract Fork_Concrete_OethARM_Transfer_Test_ is Fork_Shared_Test_ {
         oethARM.transferToken(address(0), address(0), 0);
     }
 
-    function test_RevertWhen_TransferETH_Because_NotOwner() public {
-        vm.expectRevert("ARM: Only owner can call this function.");
-        oethARM.transferEth(address(0), 0);
-    }
-
-    function test_RevertWhen_TransferETH_Because_ETHTransferFailed() public asOwner {
-        shouldRevertOnReceive = true;
-
-        vm.expectRevert("ARM: ETH transfer failed");
-        oethARM.transferEth(address(this), 10 ether);
-    }
-
     //////////////////////////////////////////////////////
     /// --- PASSING TESTS
     //////////////////////////////////////////////////////
@@ -58,18 +46,6 @@ contract Fork_Concrete_OethARM_Transfer_Test_ is Fork_Shared_Test_ {
         // Assertions after
         assertEq(weth.balanceOf(address(this)), 10 ether);
         assertEq(weth.balanceOf(address(oethARM)), 90 ether);
-    }
-
-    function test_TransferETH() public asOwner {
-        // Assertions before
-        uint256 balanceBefore = address(this).balance;
-        assertEq(address(oethARM).balance, 100 ether);
-
-        oethARM.transferEth(address(this), 10 ether);
-
-        // Assertions after
-        assertEq(address(this).balance - balanceBefore, 10 ether);
-        assertEq(address(oethARM).balance, 90 ether);
     }
 
     //////////////////////////////////////////////////////
