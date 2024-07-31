@@ -45,7 +45,7 @@ contract _001_OETHARMScript is Script {
         Proxy proxy = new Proxy();
 
         // 2. Deploy implementation
-        OEthARM oethARMImpl = new OEthARM();
+        OEthARM oethARMImpl = new OEthARM(Mainnet.OETH, Mainnet.WETH);
 
         // 3. Initialize proxy
         proxy.initialize(address(oethARMImpl), Mainnet.TIMELOCK, "");

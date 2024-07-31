@@ -5,7 +5,7 @@ pragma solidity 0.8.23;
 import "./BaseMainnetScript.sol";
 import {Vm} from "forge-std/Vm.sol";
 
-import {Addresses} from "contracts/utils/Addresses.sol";
+import {Mainnet} from "contracts/utils/Addresses.sol";
 
 import {OEthARM} from "contracts/OethARM.sol";
 import {Proxy} from "contracts/Proxy.sol";
@@ -31,11 +31,11 @@ contract DeployCoreScript is BaseMainnetScript {
         _recordDeploy("OETH_ARM", address(proxy));
 
         // 2. Deploy implementation
-        OEthARM implementation = new OEthARM();
+        OEthARM implementation = new OEthARM(Mainnet.OETH, Mainnet.WETH);
         _recordDeploy("OETH_ARM_IMPL", address(implementation));
 
         // 3. Initialize proxy
-        proxy.initialize(address(implementation), Addresses.TIMELOCK, "");
+        proxy.initialize(address(implementation), Mainnet.TIMELOCK, "");
     }
 
     function _buildGovernanceProposal() internal override {
@@ -45,7 +45,7 @@ contract DeployCoreScript is BaseMainnetScript {
         // But doing this here to test governance flow.
 
         // Set operator
-        govProposal.action(deployedContracts["OETH_ARM"], "setOperator(address)", abi.encode(Addresses.STRATEGIST));
+        govProposal.action(deployedContracts["OETH_ARM"], "setOperator(address)", abi.encode(Mainnet.STRATEGIST));
     }
 
     function _fork() internal override {

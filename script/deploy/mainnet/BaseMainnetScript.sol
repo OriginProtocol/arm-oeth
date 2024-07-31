@@ -6,7 +6,7 @@ import "forge-std/console.sol";
 import {Script} from "forge-std/Script.sol";
 import {Vm, VmSafe} from "forge-std/Vm.sol";
 
-import {Addresses} from "contracts/utils/Addresses.sol";
+import {Mainnet} from "contracts/utils/Addresses.sol";
 import {GovProposal, GovSixHelper} from "contracts/utils/GovSixHelper.sol";
 
 abstract contract BaseMainnetScript is Script {
@@ -53,7 +53,7 @@ abstract contract BaseMainnetScript is Script {
         }
 
         if (this.isForked()) {
-            address impersonator = Addresses.INITIAL_DEPLOYER;
+            address impersonator = Mainnet.INITIAL_DEPLOYER;
             console.log("Running script on mainnet fork impersonating: %s", impersonator);
             vm.startPrank(impersonator);
         } else {

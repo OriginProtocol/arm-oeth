@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
-import {Addresses} from "contracts/utils/Addresses.sol";
+import {Mainnet} from "contracts/utils/Addresses.sol";
 import {IGovernance} from "contracts/Interfaces.sol";
 
 import {Vm} from "forge-std/Vm.sol";
@@ -92,7 +92,7 @@ library GovSixHelper {
         address VM_ADDRESS = address(uint160(uint256(keccak256("hevm cheat code"))));
         Vm vm = Vm(VM_ADDRESS);
         console.log("Impersonating timelock to simulate governance proposal...");
-        vm.startPrank(Addresses.TIMELOCK);
+        vm.startPrank(Mainnet.TIMELOCK);
         for (uint256 i = 0; i < prop.actions.length; i++) {
             GovAction memory propAction = prop.actions[i];
             bytes memory sig = abi.encodePacked(bytes4(keccak256(bytes(propAction.fullsig))));
@@ -112,9 +112,9 @@ library GovSixHelper {
 
         uint256 proposalId = id(prop);
 
-        IGovernance governance = IGovernance(Addresses.GOVERNOR_SIX);
+        IGovernance governance = IGovernance(Mainnet.GOVERNOR_SIX);
 
-        vm.startPrank(Addresses.GOV_MULTISIG);
+        vm.startPrank(Mainnet.GOV_MULTISIG);
 
         uint256 snapshot = governance.proposalSnapshot(proposalId);
 
