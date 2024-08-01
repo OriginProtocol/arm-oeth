@@ -96,7 +96,7 @@ abstract contract Fork_Shared_Test_ is Modifiers {
         proxy = new Proxy();
 
         // Deploy OEthARM implementation.
-        address implementation = address(new OEthARM(address(oeth), address(weth)));
+        address implementation = address(new OEthARM(address(oeth), address(weth), address(vault)));
         vm.label(implementation, "OETH ARM IMPLEMENTATION");
 
         // Initialize Proxy with OEthARM implementation.

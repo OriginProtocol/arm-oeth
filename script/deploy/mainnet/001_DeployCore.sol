@@ -31,7 +31,7 @@ contract DeployCoreScript is BaseMainnetScript {
         _recordDeploy("OETH_ARM", address(proxy));
 
         // 2. Deploy implementation
-        OEthARM implementation = new OEthARM(Mainnet.OETH, Mainnet.WETH);
+        OEthARM implementation = new OEthARM(Mainnet.OETH, Mainnet.WETH, Mainnet.OETH_VAULT);
         _recordDeploy("OETH_ARM_IMPL", address(implementation));
 
         // 3. Initialize proxy, set the owner and the operator

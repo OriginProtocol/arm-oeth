@@ -38,6 +38,7 @@ library Holesky {
 
     // Contracts
     address public constant OETH_VAULT = 0x19d2bAaBA949eFfa163bFB9efB53ed8701aA5dD9;
+    address public constant OETH_ARM = 0x94c13DBfFfa3a5DCf22970e67Aea383D2DB1026d;
 }
 
 contract AddressResolver {

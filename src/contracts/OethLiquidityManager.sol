@@ -5,7 +5,12 @@ import {OwnableOperable} from "./OwnableOperable.sol";
 import {IOETHVault} from "./Interfaces.sol";
 
 contract OethLiquidityManager is OwnableOperable {
-    IOETHVault public constant vault = IOETHVault(0x39254033945AA2E4809Cc2977E7087BEE48bd7Ab);
+    address public immutable oethVault;
+
+    /// @param _oethVault The address of the OETH Vault proxy.
+    constructor(address _oethVault) {
+        oethVault = _oethVault;
+    }
 
     /**
      * @notice Request withdrawal of WETH from OETH Vault.
@@ -15,7 +20,7 @@ contract OethLiquidityManager is OwnableOperable {
         onlyOperatorOrOwner
         returns (uint256 requestId, uint256 queued)
     {
-        return vault.requestWithdrawal(amount);
+        return IOETHVault(oethVault).requestWithdrawal(amount);
     }
 
     /**
@@ -23,10 +28,10 @@ contract OethLiquidityManager is OwnableOperable {
      * The Vault's claimable WETH needs to be greater than or equal to the queued amount of the request.
      */
     function claimWithdrawal(uint256 requestId) external onlyOperatorOrOwner {
-        vault.claimWithdrawal(requestId);
+        IOETHVault(oethVault).claimWithdrawal(requestId);
     }
 
     function claimWithdrawals(uint256[] memory requestIds) external onlyOperatorOrOwner {
-        vault.claimWithdrawals(requestIds);
+        IOETHVault(oethVault).claimWithdrawals(requestIds);
     }
 }

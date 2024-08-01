@@ -46,7 +46,8 @@ contract _001_OETHARMScript is Script {
         Proxy proxy = new Proxy();
 
         // 2. Deploy implementation
-        OEthARM oethARMImpl = new OEthARM(resolver.resolve("OETH"), resolver.resolve("WETH"));
+        OEthARM oethARMImpl =
+            new OEthARM(resolver.resolve("OETH"), resolver.resolve("WETH"), resolver.resolve("OETH_VAULT"));
 
         // 3. Initialize proxy, set the owner and operator
         address governor = resolver.resolve("GOVERNOR");

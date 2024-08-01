@@ -26,7 +26,7 @@ contract DeployCoreScript is BaseHoleskyScript {
         _recordDeploy("OETH_ARM", address(proxy));
 
         // 2. Deploy implementation
-        OEthARM implementation = new OEthARM(Holesky.OETH, Holesky.WETH);
+        OEthARM implementation = new OEthARM(Holesky.OETH, Holesky.WETH, Holesky.OETH_VAULT);
         _recordDeploy("OETH_ARM_IMPL", address(implementation));
 
         // 3. Initialize proxy, set the owner and the operator
