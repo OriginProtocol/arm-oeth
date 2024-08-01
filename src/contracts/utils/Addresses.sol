@@ -15,8 +15,8 @@ library Mainnet {
 
     // Multisig and EOAs
     address public constant INITIAL_DEPLOYER = address(0x1001);
-    address public constant STRATEGIST = 0xF14BBdf064E3F67f51cd9BD646aE3716aD938FDC;
     address public constant GOV_MULTISIG = 0xbe2AB3d3d8F6a32b96414ebbd865dBD276d3d899;
+    address public constant RELAYER = 0x4b91827516f79d6F6a1F292eD99671663b09169a;
 
     // Tokens
     address public constant OETH = 0x856c4Efb76C1D1AE02e20CEB03A2A6a08b0b8dC3;
@@ -30,6 +30,7 @@ library Mainnet {
 library Holesky {
     // Multisig and EOAs
     address public constant INITIAL_DEPLOYER = 0x1b94CA50D3Ad9f8368851F8526132272d1a5028C;
+    address public constant RELAYER = 0x3C6B0c7835a2E2E0A45889F64DcE4ee14c1D5CB4;
 
     // Tokens
     address public constant OETH = 0xB1876706d2402d300bf263F9e53335CEFc53d9Cb;
@@ -57,7 +58,7 @@ contract AddressResolver {
         resolver[MAINNET]["GOVERNOR"] = Mainnet.TIMELOCK;
         resolver[MAINNET]["GOVERNANCE"] = Mainnet.GOVERNOR_SIX;
         resolver[MAINNET]["GOV_MULTISIG"] = Mainnet.GOV_MULTISIG;
-        resolver[MAINNET]["STRATEGIST"] = Mainnet.STRATEGIST;
+        resolver[MAINNET]["OPERATOR"] = Mainnet.RELAYER;
 
         // Tokens
         resolver[MAINNET]["OETH"] = Mainnet.OETH;
@@ -73,8 +74,8 @@ contract AddressResolver {
 
         ///// Holesky //////
         // Governance
-        resolver[HOLESKY]["STRATEGIST"] = Holesky.INITIAL_DEPLOYER;
-        resolver[HOLESKY]["GOVERNOR"] = Holesky.INITIAL_DEPLOYER;
+        resolver[HOLESKY]["GOVERNOR"] = Holesky.RELAYER;
+        resolver[HOLESKY]["OPERATOR"] = Holesky.RELAYER;
 
         // Tokens
         resolver[HOLESKY]["OETH"] = Holesky.OETH;

@@ -33,16 +33,15 @@ abstract contract Base_Test_ is Test {
     IERC20 public oeth;
     IERC20 public weth;
     IOETHVault public vault;
-    address public governor;
 
     //////////////////////////////////////////////////////
-    /// --- EOA
+    /// --- Governance, multisigs and EOAs
     //////////////////////////////////////////////////////
     address public alice;
     address public deployer;
+    address public governor;
     address public operator;
-    address public multisig;
-    address public strategist;
+    address public oethWhale;
 
     //////////////////////////////////////////////////////
     /// --- DEFAULT VALUES

@@ -17,7 +17,7 @@ contract DeployCoreScript is BaseMainnetScript {
 
     GovProposal public govProposal;
 
-    string public constant override DEPLOY_NAME = "000_DeployCoreScript";
+    string public constant override DEPLOY_NAME = "001_DeployCoreScript";
     bool public constant override proposalExecuted = false;
 
     constructor() {}
@@ -34,18 +34,19 @@ contract DeployCoreScript is BaseMainnetScript {
         OEthARM implementation = new OEthARM(Mainnet.OETH, Mainnet.WETH);
         _recordDeploy("OETH_ARM_IMPL", address(implementation));
 
-        // 3. Initialize proxy
-        proxy.initialize(address(implementation), Mainnet.TIMELOCK, "");
+        // 3. Initialize proxy, set the owner and the operator
+        bytes memory data = abi.encodeWithSignature("setOperator(address)", Mainnet.RELAYER);
+        proxy.initialize(address(implementation), Mainnet.TIMELOCK, data);
     }
 
     function _buildGovernanceProposal() internal override {
         govProposal.setDescription("Setup OETH ARM Contract");
 
-        // NOTE: This could be done during deploy of proxy.
-        // But doing this here to test governance flow.
+        // NOTE: This has already been done during deployment
+        // but doing this here to test governance flow.
 
         // Set operator
-        govProposal.action(deployedContracts["OETH_ARM"], "setOperator(address)", abi.encode(Mainnet.STRATEGIST));
+        govProposal.action(deployedContracts["OETH_ARM"], "setOperator(address)", abi.encode(Mainnet.RELAYER));
     }
 
     function _fork() internal override {

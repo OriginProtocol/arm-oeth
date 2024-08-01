@@ -78,16 +78,17 @@ abstract contract Fork_Shared_Test_ is Modifiers {
     }
 
     function _generateAddresses() internal {
-        // Users.
+        // Users and multisigs
         alice = makeAddr("alice");
         deployer = makeAddr("deployer");
-        operator = resolver.resolve("STRATEGIST");
+        operator = resolver.resolve("OPERATOR");
+        governor = resolver.resolve("GOVERNOR");
+        oethWhale = resolver.resolve("WHALE_OETH");
 
         // Contracts.
         oeth = IERC20(resolver.resolve("OETH"));
         weth = IERC20(resolver.resolve("WETH"));
         vault = IOETHVault(resolver.resolve("OETH_VAULT"));
-        governor = resolver.resolve("GOVERNOR");
     }
 
     function _deployContracts() internal {
@@ -119,8 +120,8 @@ abstract contract Fork_Shared_Test_ is Modifiers {
         vm.label(address(vault), "OETH VAULT");
         vm.label(address(oethARM), "OETH ARM");
         vm.label(address(proxy), "OETH ARM PROXY");
-        vm.label(resolver.resolve("STRATEGIST"), "STRATEGIST");
-        vm.label(resolver.resolve("WHALE_OETH"), "WHALE OETH");
+        vm.label(operator, "OPERATOR");
+        vm.label(oethWhale, "WHALE OETH");
         vm.label(governor, "GOVERNOR");
         vm.label(address(0), "ZERO");
     }

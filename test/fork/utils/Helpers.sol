@@ -9,7 +9,6 @@ abstract contract Helpers is Base_Test_ {
     function deal(address token, address to, uint256 amount) internal override {
         // Handle OETH special case, as rebasing tokens are not supported by the VM.
         if (token == address(oeth)) {
-            address oethWhale = resolver.resolve("WHALE_OETH");
             // Check than whale as enough OETH.
             require(oeth.balanceOf(oethWhale) >= amount, "Fork_Shared_Test_: Not enough OETH in WHALE_OETH");
 

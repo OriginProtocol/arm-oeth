@@ -48,8 +48,11 @@ contract _001_OETHARMScript is Script {
         // 2. Deploy implementation
         OEthARM oethARMImpl = new OEthARM(resolver.resolve("OETH"), resolver.resolve("WETH"));
 
-        // 3. Initialize proxy
-        proxy.initialize(address(oethARMImpl), resolver.resolve("GOVERNOR"), "");
+        // 3. Initialize proxy, set the owner and operator
+        address governor = resolver.resolve("GOVERNOR");
+        address operator = resolver.resolve("OPERATOR");
+        bytes memory data = abi.encodeWithSignature("setOperator(address)", operator);
+        proxy.initialize(address(oethARMImpl), governor, data);
 
         // Stop broadcasting
         vm.stopBroadcast();
