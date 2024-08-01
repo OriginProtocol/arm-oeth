@@ -138,6 +138,35 @@ Report gas usage for tests:
 make gas
 ```
 
+## Deployment
+
+### Holesky
+
+In the `.env` file, set `DEPLOYER_PRIVATE_KEY` to an account that has funds on Holesky.
+Set `ETHERSCAN_API_KEY` which can be the same key as mainnet.
+Set `HOLESKY_URL` to a Holesky RPC endpoint.
+
+```bash
+make deploy-holesky
+```
+
+### Testnet
+
+In the `.env` file, set `DEPLOYER_PRIVATE_KEY` to an account that has funds on the Tenderly Testnet.
+Set `TESTNET_URL` to the Tenderly Testnet RPC endpoint.
+
+```bash
+make deploy-testnet
+```
+
+### Mainnet
+
+In the `.env` file, set `DEPLOYER_PRIVATE_KEY`, `ETHERSCAN_API_KEY` and `PROVIDER_URL` to the mainnet values.
+
+```bash
+make deploy
+```
+
 ## Open Zeppelin Defender
 
 [Open Zeppelin Defender v2](https://docs.openzeppelin.com/defender/v2/) is used to manage the Operations account and automate AMM operational jobs like managing liquidity.

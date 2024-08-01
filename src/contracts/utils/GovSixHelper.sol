@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
-import {Mainnet} from "contracts/utils/Addresses.sol";
+import {AddressResolver} from "contracts/utils/Addresses.sol";
 import {IGovernance} from "contracts/Interfaces.sol";
 
 import {Vm} from "forge-std/Vm.sol";
@@ -20,7 +20,7 @@ struct GovProposal {
 }
 
 library GovSixHelper {
-    function id(GovProposal memory prop) internal view returns (uint256 proposalId) {
+    function id(GovProposal memory prop) internal pure returns (uint256 proposalId) {
         bytes32 descriptionHash = keccak256(bytes(prop.description));
         (address[] memory targets, uint256[] memory values,,, bytes[] memory calldatas) = getParams(prop);
 
@@ -29,7 +29,7 @@ library GovSixHelper {
 
     function getParams(GovProposal memory prop)
         internal
-        view
+        pure
         returns (
             address[] memory targets,
             uint256[] memory values,
@@ -79,7 +79,7 @@ library GovSixHelper {
         prop.actions.push(GovAction({target: target, fullsig: fullsig, data: data, value: 0}));
     }
 
-    function getProposeCalldata(GovProposal memory prop) internal view returns (bytes memory proposeCalldata) {
+    function getProposeCalldata(GovProposal memory prop) internal pure returns (bytes memory proposeCalldata) {
         (address[] memory targets, uint256[] memory values, string[] memory sigs, bytes[] memory data,) =
             getParams(prop);
 
@@ -89,14 +89,17 @@ library GovSixHelper {
     }
 
     function impersonateAndSimulate(GovProposal memory prop) internal {
+        AddressResolver resolver = new AddressResolver();
+        address governor = resolver.resolve("GOVERNOR");
+
         address VM_ADDRESS = address(uint160(uint256(keccak256("hevm cheat code"))));
         Vm vm = Vm(VM_ADDRESS);
-        console.log("Impersonating timelock to simulate governance proposal...");
-        vm.startPrank(Mainnet.TIMELOCK);
+        console.log("Impersonating governor to simulate governance proposal...");
+        vm.startPrank(governor);
         for (uint256 i = 0; i < prop.actions.length; i++) {
             GovAction memory propAction = prop.actions[i];
             bytes memory sig = abi.encodePacked(bytes4(keccak256(bytes(propAction.fullsig))));
-            (bool success, bytes memory data) = propAction.target.call(abi.encodePacked(sig, propAction.data));
+            (bool success,) = propAction.target.call(abi.encodePacked(sig, propAction.data));
             if (!success) {
                 console.log(propAction.fullsig);
                 revert("Governance action failed");
@@ -107,14 +110,16 @@ library GovSixHelper {
     }
 
     function simulate(GovProposal memory prop) internal {
+        AddressResolver resolver = new AddressResolver();
+        address govMultisig = resolver.resolve("GOV_MULTISIG");
+        IGovernance governance = IGovernance(resolver.resolve("GOVERNANCE"));
+
         address VM_ADDRESS = address(uint160(uint256(keccak256("hevm cheat code"))));
         Vm vm = Vm(VM_ADDRESS);
 
         uint256 proposalId = id(prop);
 
-        IGovernance governance = IGovernance(Mainnet.GOVERNOR_SIX);
-
-        vm.startPrank(Mainnet.GOV_MULTISIG);
+        vm.startPrank(govMultisig);
 
         uint256 snapshot = governance.proposalSnapshot(proposalId);
 
@@ -130,7 +135,10 @@ library GovSixHelper {
 
             // Proposal doesn't exists, create it
             console.log("Creating proposal on fork...");
-            (bool success, bytes memory data) = address(governance).call(proposeData);
+            (bool success,) = address(governance).call(proposeData);
+            if (!success) {
+                revert("Fail to create proposal");
+            }
         }
 
         IGovernance.ProposalState state = governance.state(proposalId);
