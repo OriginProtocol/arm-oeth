@@ -46,7 +46,7 @@ async function getSigner(address = undefined) {
   }
 
   // If using Defender Relayer
-  if (process.env.DEFENDER_API_KEY && process.env.DEFENDER_API_SECRET) {
+  if (process.env.DEFENDER_RELAYER_KEY && process.env.DEFENDER_RELAYER_SECRET) {
     return await getDefenderSigner();
   }
 
@@ -72,15 +72,15 @@ const getDefenderSigner = async () => {
     process.exit(2);
   }
   const credentials = {
-    relayerApiKey: process.env.DEFENDER_API_KEY,
-    relayerApiSecret: process.env.DEFENDER_API_SECRET,
+    relayerApiKey: process.env.DEFENDER_RELAYER_KEY,
+    relayerApiSecret: process.env.DEFENDER_RELAYER_SECRET,
   };
   const client = new Defender(credentials);
   const provider = client.relaySigner.getProvider();
 
   const signer = await client.relaySigner.getSigner(provider, { speed });
   log(
-    `Using Defender Relayer account ${await signer.getAddress()} from env vars DEFENDER_API_KEY and DEFENDER_API_SECRET`
+    `Using Defender Relayer account ${await signer.getAddress()} from env vars DEFENDER_RELAYER_KEY and DEFENDER_RELAYER_SECRET`
   );
   return signer;
 };

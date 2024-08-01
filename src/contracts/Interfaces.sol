@@ -134,6 +134,10 @@ interface IOETHVault {
         external
         returns (uint128 queued, uint128 claimable, uint128 claimed, uint128 nextWithdrawalIndex);
 
+    function withdrawalRequests(uint256 requestId)
+        external
+        returns (address withdrawer, bool claimed, uint40 timestamp, uint128 amount, uint128 queued);
+
     function CLAIM_DELAY() external returns (uint256);
 }
 
@@ -164,4 +168,12 @@ interface IGovernance {
     function queue(uint256 proposalId) external;
 
     function execute(uint256 proposalId) external;
+}
+
+interface IWETH is IERC20 {
+    event Deposit(address indexed dst, uint256 wad);
+    event Withdrawal(address indexed src, uint256 wad);
+
+    function deposit() external payable;
+    function withdraw(uint256 wad) external;
 }

@@ -1,14 +1,15 @@
 const { subtask, task, types } = require("hardhat/config");
 
+const { parseAddress } = require("../utils/addressParser");
+
 const { setAutotaskVars } = require("./autotask");
 const {
-  autoClaim,
   autoWithdraw,
-  claimStEth,
-  withdrawStEth,
-  withdrawStEthStatus,
+  requestWithdraw,
+  claimWithdraw,
+  logLiquidity,
+  withdrawRequestStatus,
 } = require("./liquidity");
-const { poller, snap } = require("./swapLog");
 const { swap } = require("./swap");
 const {
   tokenAllowance,
@@ -17,36 +18,12 @@ const {
   tokenTransfer,
   tokenTransferFrom,
 } = require("./tokens");
-const addresses = require("../utils/addresses");
 const { getSigner } = require("../utils/signers");
+const { resolveAsset } = require("../utils/assets");
+const { depositWETH, withdrawWETH } = require("./weth");
 
-subtask("snap", "Take a snapshot of the OSwap contract")
-  .addOptionalParam("pair", "trading pair", "stETH/WETH", types.string)
-  .addOptionalParam("amount", "Swap quantity", 100, types.int)
-  .addOptionalParam("liq", "Include liquidity", true, types.boolean)
-  .addOptionalParam("oneInch", "Include 1Inch prices", true, types.boolean)
-  .addOptionalParam("paths", "Include 1Inch swap paths", false, types.boolean)
-  .addOptionalParam(
-    "start",
-    "Starting total OETH and WETH balance",
-    704.3184,
-    types.float
-  )
-  // .setAction(snap);
-  .setAction(async (taskArgs) => {
-    const signer = await getSigner();
-    await snap({ ...taskArgs, signer });
-  });
+subtask("snap", "Take a snapshot of the ARM").setAction(logLiquidity);
 task("snap").setAction(async (_, __, runSuper) => {
-  return runSuper();
-});
-
-subtask("poll", "Poll the 1Inch market prices")
-  .addOptionalParam("pair", "trading pair", "stETH/WETH", types.string)
-  .addOptionalParam("amount", "Swap quantity", 100, types.int)
-  .addOptionalParam("interval", "Minutes between polls", 1, types.int)
-  .setAction(poller);
-task("poll").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
 
@@ -82,23 +59,16 @@ subtask(
   )
   .setAction(async (taskArgs) => {
     const signer = await getSigner();
-    const stEth = await ethers.getContractAt("IERC20", addresses.mainnet.stETH);
-    const weth = await ethers.getContractAt("IWEth", addresses.mainnet.WETH);
-    const oSwap = await hre.ethers.getContractAt(
-      "LiquidityManagerStEth",
-      addresses.mainnet.OEthARM
-    );
-    const withdrawalQueue = await hre.ethers.getContractAt(
-      "IStETHWithdrawal",
-      addresses.mainnet.stETHWithdrawalQueue
-    );
+    const oeth = await resolveAsset("OETH");
+    const weth = await resolveAsset("WETH");
+    const oethArmAddress = await parseAddress("OETH_ARM");
+    const oethARM = await ethers.getContractAt("OEthARM", oethArmAddress);
     await autoWithdraw({
       ...taskArgs,
       signer,
-      stEth,
+      oeth,
       weth,
-      oSwap,
-      withdrawalQueue,
+      oethARM,
     });
   });
 task("autoRequestWithdraw").setAction(async (_, __, runSuper) => {
@@ -109,56 +79,43 @@ subtask(
   "requestWithdraw",
   "Request a specific amount of stETH to withdraw from Lido (stETH)"
 )
-  .addParam("amount", "stETH withdraw amount", 50, types.float)
+  .addParam("amount", "OETH withdraw amount", 50, types.float)
   .setAction(async (taskArgs) => {
     const signer = await getSigner();
-    const oSwap = await hre.ethers.getContractAt(
-      "LiquidityManagerStEth",
-      addresses.mainnet.OEthARM
-    );
-    await withdrawStEth({ ...taskArgs, signer, oSwap });
+
+    const oethArmAddress = await parseAddress("OETH_ARM");
+    const oethARM = await ethers.getContractAt("OEthARM", oethArmAddress);
+
+    await requestWithdraw({ ...taskArgs, signer, oethARM });
   });
 task("requestWithdraw").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
 
-subtask("autoClaimWithdraw", "Claim a requested withdrawal from Lido (stETH)")
-  .addOptionalParam("asset", "WETH or ETH", "WETH", types.string)
-  .setAction(async (taskArgs) => {
-    const signer = await getSigner();
-    const oSwap = await hre.ethers.getContractAt(
-      "LiquidityManagerStEth",
-      addresses.mainnet.OEthARM,
-      signer
-    );
-    const withdrawalQueue = await hre.ethers.getContractAt(
-      "IStETHWithdrawal",
-      addresses.mainnet.stETHWithdrawalQueue
-    );
-    await autoClaim({ ...taskArgs, signer, oSwap, withdrawalQueue });
-  });
-task("autoClaimWithdraw").setAction(async (_, __, runSuper) => {
-  return runSuper();
-});
-
 subtask("claimWithdraw", "Claim a requested withdrawal from Lido (stETH)")
   .addParam("id", "Request identifier", undefined, types.string)
-  .addOptionalParam("asset", "WETH or ETH", "WETH", types.string)
   .setAction(async (taskArgs) => {
     const signer = await getSigner();
-    const oSwap = await hre.ethers.getContractAt(
-      "LiquidityManagerStEth",
-      addresses.mainnet.OEthARM
-    );
-    await claimStEth({ ...taskArgs, signer, oSwap });
+
+    const oethArmAddress = await parseAddress("OETH_ARM");
+    const oethARM = await ethers.getContractAt("OEthARM", oethArmAddress);
+
+    await claimWithdraw({ ...taskArgs, signer, oethARM });
   });
 task("claimWithdraw").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
 
-subtask("withdrawStatus", "Get the status of a Lido withdrawal request")
-  .addParam("id", "Request identifier", undefined, types.string)
-  .setAction(withdrawStEthStatus);
+subtask("withdrawStatus", "Get the status of a OETH withdrawal request")
+  .addParam("id", "Request number", undefined, types.string)
+  .setAction(async (taskArgs) => {
+    const signer = await getSigner();
+
+    const oethArmAddress = await parseAddress("OETH_ARM");
+    const oethARM = await ethers.getContractAt("OEthARM", oethArmAddress);
+
+    await withdrawRequestStatus({ ...taskArgs, signer, oethARM });
+  });
 task("withdrawStatus").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
@@ -283,5 +240,34 @@ subtask("transferFrom", "Transfer tokens from an account or contract")
   )
   .setAction(tokenTransferFrom);
 task("transferFrom").setAction(async (_, __, runSuper) => {
+  return runSuper();
+});
+
+// WETH tasks
+subtask("depositWETH", "Deposit ETH into WETH")
+  .addParam("amount", "Amount of ETH to deposit", undefined, types.float)
+  .setAction(async (taskArgs) => {
+    const signer = await getSigner();
+
+    const wethAddress = await parseAddress("WETH");
+    const weth = await ethers.getContractAt("IWETH", wethAddress);
+
+    await depositWETH({ ...taskArgs, weth, signer });
+  });
+task("depositWETH").setAction(async (_, __, runSuper) => {
+  return runSuper();
+});
+
+subtask("withdrawWETH", "Withdraw ETH from WETH")
+  .addParam("amount", "Amount of ETH to withdraw", undefined, types.float)
+  .setAction(async (taskArgs) => {
+    const signer = await getSigner();
+
+    const wethAddress = await parseAddress("WETH");
+    const weth = await ethers.getContractAt("IWETH", wethAddress);
+
+    await withdrawWETH({ ...taskArgs, weth, signer });
+  });
+task("withdrawWETH").setAction(async (_, __, runSuper) => {
   return runSuper();
 });

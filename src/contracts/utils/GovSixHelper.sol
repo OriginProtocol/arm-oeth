@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
-import {AddressResolver} from "contracts/utils/Addresses.sol";
-import {IGovernance} from "contracts/Interfaces.sol";
+import {AddressResolver} from "./Addresses.sol";
+import {IGovernance} from "../Interfaces.sol";
 
 import {Vm} from "forge-std/Vm.sol";
 import "forge-std/console.sol";
