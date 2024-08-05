@@ -18,8 +18,4 @@ addresses.mainnet.OETHVaultProxy = "0x39254033945aa2e4809cc2977e7087bee48bd7ab";
 // Tokens
 addresses.mainnet.WETH = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
 
-// Origin Ether ARM
-addresses.mainnet.OEthARM = "";
-addresses.mainnet.OETHVault = "0x39254033945AA2E4809Cc2977E7087BEE48bd7Ab";
-
 module.exports = addresses;

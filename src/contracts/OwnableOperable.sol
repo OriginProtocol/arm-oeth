@@ -7,7 +7,7 @@ contract OwnableOperable is Ownable {
     // keccak256(“eip1967.proxy.operator”) - 1, inspired by EIP 1967
     bytes32 internal constant OPERATOR_SLOT = 0x14cc265c8475c78633f4e341e72b9f4f0d55277c8def4ad52d79e69580f31482;
 
-    event OperatorChanged(address previousAdmin, address newAdmin);
+    event OperatorChanged(address newAdmin);
 
     constructor() {
         assert(OPERATOR_SLOT == bytes32(uint256(keccak256("eip1967.proxy.operator")) - 1));
@@ -17,6 +17,7 @@ contract OwnableOperable is Ownable {
         return _operator();
     }
 
+    /// @notice Set the account that can request and claim withdrawals.
     function setOperator(address newOperator) external onlyOwner {
         _setOperator(newOperator);
     }
@@ -30,12 +31,13 @@ contract OwnableOperable is Ownable {
     }
 
     function _setOperator(address newOperator) internal {
-        emit OperatorChanged(_operator(), newOperator);
         bytes32 position = OPERATOR_SLOT;
         // solhint-disable-next-line no-inline-assembly
         assembly {
             sstore(position, newOperator)
         }
+
+        emit OperatorChanged(newOperator);
     }
 
     modifier onlyOperatorOrOwner() {

@@ -114,6 +114,10 @@ interface IOethARM {
 }
 
 interface IOETHVault {
+    function mint(address _asset, uint256 _amount, uint256 _minimumOusdAmount) external;
+
+    function redeem(uint256 _amount, uint256 _minimumUnitAmount) external;
+
     function requestWithdrawal(uint256 amount) external returns (uint256 requestId, uint256 queued);
 
     function claimWithdrawal(uint256 requestId) external returns (uint256 amount);

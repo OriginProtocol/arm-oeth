@@ -19,9 +19,6 @@ contract Fork_Concrete_OethARM_SwapExactTokensForTokens_Test_ is Fork_Shared_Tes
         deal(address(oeth), address(this), 100 ether);
         deal(address(weth), address(oethARM), 100 ether);
         deal(address(oeth), address(oethARM), 100 ether);
-
-        // Approve OETH token to ARM contract
-        oeth.approve(address(oethARM), type(uint256).max);
     }
 
     //////////////////////////////////////////////////////

@@ -22,7 +22,7 @@ async function getSigner(address = undefined) {
     }
     return await hre.ethers.provider.getSigner(address);
   }
-  const pk = process.env.DEPLOYER_PK;
+  const pk = process.env.DEPLOYER_PRIVATE_KEY;
   if (pk) {
     if (!pk.match(privateKey)) {
       throw Error(`Invalid format of private key`);
@@ -53,7 +53,7 @@ async function getSigner(address = undefined) {
   const signers = await hre.ethers.getSigners();
   if (signers[0]) {
     const signer = signers[0];
-    log(`Using hardhat signer ${await signer.getAddress()}`);
+    log(`Using the first hardhat signer ${await signer.getAddress()}`);
     return signer;
   }
 

@@ -52,7 +52,7 @@ contract _001_OETHARMScript is Script {
         // 3. Initialize proxy, set the owner and operator
         address governor = resolver.resolve("GOVERNOR");
         address operator = resolver.resolve("OPERATOR");
-        bytes memory data = abi.encodeWithSignature("setOperator(address)", operator);
+        bytes memory data = abi.encodeWithSignature("initialize(address)", operator);
         proxy.initialize(address(oethARMImpl), governor, data);
 
         // Stop broadcasting

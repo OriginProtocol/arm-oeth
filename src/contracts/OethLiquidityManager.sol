@@ -2,14 +2,27 @@
 pragma solidity ^0.8.23;
 
 import {OwnableOperable} from "./OwnableOperable.sol";
-import {IOETHVault} from "./Interfaces.sol";
+import {IERC20, IOETHVault} from "./Interfaces.sol";
 
 contract OethLiquidityManager is OwnableOperable {
+    address public immutable oeth;
     address public immutable oethVault;
 
     /// @param _oethVault The address of the OETH Vault proxy.
-    constructor(address _oethVault) {
+    constructor(address _oeth, address _oethVault) {
+        oeth = _oeth;
         oethVault = _oethVault;
+    }
+
+    /**
+     * @notice Approve the OETH Vault to transfer OETH from the ARM.
+     */
+    function approvals() external onlyOwner {
+        _approvals();
+    }
+
+    function _approvals() internal {
+        IERC20(oeth).approve(address(oethVault), type(uint256).max);
     }
 
     /**

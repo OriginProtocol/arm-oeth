@@ -100,7 +100,8 @@ abstract contract Fork_Shared_Test_ is Modifiers {
         vm.label(implementation, "OETH ARM IMPLEMENTATION");
 
         // Initialize Proxy with OEthARM implementation.
-        proxy.initialize(implementation, governor, "");
+        bytes memory data = abi.encodeWithSignature("initialize(address)", operator);
+        proxy.initialize(implementation, governor, data);
 
         // Set the Proxy as the OEthARM.
         oethARM = OEthARM(address(proxy));

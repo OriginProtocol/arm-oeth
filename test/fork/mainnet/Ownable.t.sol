@@ -29,12 +29,12 @@ contract Fork_Concrete_OethARM_Ownable_Test_ is Fork_Shared_Test_ {
     //////////////////////////////////////////////////////
     function test_SetOperator() public asOwner {
         // Assertions before
-        assertEq(oethARM.operator(), address(0));
+        assertEq(oethARM.operator(), operator);
 
-        oethARM.setOperator(operator);
+        oethARM.setOperator(alice);
 
         // Assertions after
-        assertEq(oethARM.operator(), operator);
+        assertEq(oethARM.operator(), alice);
     }
 
     function test_SetOwner() public asOwner {
