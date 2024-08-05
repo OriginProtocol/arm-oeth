@@ -24,7 +24,8 @@ library Mainnet {
 
     // Contracts
     address public constant OETH_VAULT = 0x39254033945AA2E4809Cc2977E7087BEE48bd7Ab;
-    address public constant OETH_ARM = 0x8Ad159a275AEE56fb2334DBb69036E9c7baCEe9b;
+    // TODO update after deployment
+    address public constant OETH_ARM = 0xc9cC3a0A5AC839F63cCBff920FcFEd7aF3E80242;
 }
 
 library Holesky {

@@ -27,6 +27,10 @@ module.exports = {
       url: `${process.env.HOLESKY_URL}`,
       chainId: 17000,
     },
+    testnet: {
+      url: `${process.env.TESTNET_URL}`,
+      chainId: 1,
+    },
   },
   solidity: "0.8.23",
   settings: {

@@ -90,7 +90,28 @@ function swapTokensForExactTokens(
 
 ## Deployed Contracts
 
+### Mainnet
+
 TODO
+
+| Contract | Address                                    |
+| -------- | ------------------------------------------ |
+| Proxy    |                                            |
+| OEthARM  | 0x1a620B74b7d7EA9a3bD57Ca78014d78FeA7c1F1f |
+
+### Testnet
+
+| Contract | Address                                    |
+| -------- | ------------------------------------------ |
+| Proxy    | 0xc9cC3a0A5AC839F63cCBff920FcFEd7aF3E80242 |
+| OEthARM  | 0x1a620B74b7d7EA9a3bD57Ca78014d78FeA7c1F1f |
+
+### Holesky
+
+| Contract | Address |
+| -------- | ------- |
+| Proxy    |         |
+| OEthARM  |         |
 
 ## Development
 

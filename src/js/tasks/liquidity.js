@@ -1,5 +1,6 @@
 const { formatUnits, parseUnits } = require("ethers");
 
+const { parseAddress } = require("../utils/addressParser");
 const { resolveAsset } = require("../utils/assets");
 const { logTxDetails } = require("../utils/txLogger");
 
@@ -67,8 +68,11 @@ const withdrawRequestStatus = async (options) => {
   }
 };
 
-const logLiquidity = async ({ oethARM }) => {
+const logLiquidity = async () => {
   console.log(`\nLiquidity`);
+
+  const oethArmAddress = await parseAddress("OETH_ARM");
+  const oethARM = await ethers.getContractAt("OEthARM", oethArmAddress);
 
   const weth = await resolveAsset("WETH");
   const liquidityWeth = await weth.balanceOf(oethARM.getAddress());
@@ -76,12 +80,13 @@ const logLiquidity = async ({ oethARM }) => {
   const oeth = await resolveAsset("OETH");
   const liquidityOeth = await oeth.balanceOf(oethARM.getAddress());
   // TODO need to get from indexer
-  const liquidityOethWithdraws = 0;
+  const liquidityOethWithdraws = 0n;
 
   const total = liquidityWeth + liquidityOeth + liquidityOethWithdraws;
-  const wethPercent = (liquidityWeth * 10000n) / total;
-  const oethWithdrawsPercent = (liquidityOethWithdraws * 10000n) / total;
-  const oethPercent = (liquidityOeth * 10000n) / total;
+  const wethPercent = total == 0 ? 0 : (liquidityWeth * 10000n) / total;
+  const oethWithdrawsPercent =
+    total == 0 ? 0 : (liquidityOethWithdraws * 10000n) / total;
+  const oethPercent = total == 0 ? 0 : (liquidityOeth * 10000n) / total;
 
   console.log(
     `${formatUnits(liquidityWeth, 18)} WETH ${formatUnits(wethPercent, 2)}%`
