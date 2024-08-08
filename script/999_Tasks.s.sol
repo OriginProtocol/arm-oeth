@@ -12,10 +12,14 @@ import {OEthARM} from "contracts/OethARM.sol";
 import {IERC20} from "contracts/Interfaces.sol";
 
 // Utils
-import {Mainnet} from "test/utils/Addresses.sol";
+import {AddressResolver} from "contracts/utils/Addresses.sol";
 
 contract _999_TasksScript is Script {
+    AddressResolver public resolver = new AddressResolver();
     address public deployer;
+    address public OETH;
+    address public WETH;
+    address public OETH_ARM;
 
     bytes32 emptyStringHash = keccak256(abi.encodePacked(""));
     //////////////////////////////////////////////////////
@@ -31,6 +35,10 @@ contract _999_TasksScript is Script {
             // If no PK is provided, use a default deployer address
             deployer = makeAddr("deployer");
         }
+
+        OETH = resolver.resolve("OETH");
+        WETH = resolver.resolve("WETH");
+        OETH_ARM = resolver.resolve("OETH_ARM");
     }
 
     //////////////////////////////////////////////////////
@@ -44,9 +52,9 @@ contract _999_TasksScript is Script {
         }
 
         if (from != address(0)) {
-            require(from == Mainnet.OETH || from == Mainnet.WETH, "Invalid from asset");
+            require(from == OETH || from == WETH, "Invalid from asset");
 
-            to = from == Mainnet.OETH ? Mainnet.WETH : Mainnet.OETH;
+            to = from == OETH ? WETH : OETH;
 
             string memory message = string(
                 abi.encodePacked(
@@ -64,11 +72,11 @@ contract _999_TasksScript is Script {
             console.log(message);
 
             // Execute the swap
-            OEthARM(Mainnet.OETHARM).swapExactTokensForTokens(IERC20(from), IERC20(to), amount, 0, deployer);
+            OEthARM(OETH_ARM).swapExactTokensForTokens(IERC20(from), IERC20(to), amount, 0, deployer);
         } else if (to != address(0)) {
-            require(to == Mainnet.OETH || to == Mainnet.WETH, "Invalid to asset");
+            require(to == OETH || to == WETH, "Invalid to asset");
 
-            from = to == Mainnet.OETH ? Mainnet.WETH : Mainnet.OETH;
+            from = to == OETH ? WETH : OETH;
 
             string memory message = string(
                 abi.encodePacked(
@@ -86,9 +94,7 @@ contract _999_TasksScript is Script {
             console.log(message);
 
             // Execute the swap
-            OEthARM(Mainnet.OETHARM).swapTokensForExactTokens(
-                IERC20(from), IERC20(to), amount, type(uint256).max, deployer
-            );
+            OEthARM(OETH_ARM).swapTokensForExactTokens(IERC20(from), IERC20(to), amount, type(uint256).max, deployer);
         } else {
             revert("Must specify either from or to asset");
         }

@@ -1,5 +1,7 @@
 /** @type import('hardhat/config').HardhatUserConfig */
 
+require("dotenv").config();
+
 require("@nomicfoundation/hardhat-ethers");
 require("@nomicfoundation/hardhat-foundry");
 
@@ -20,6 +22,14 @@ module.exports = {
     },
     local: {
       url: "http://localhost:8545",
+    },
+    holesky: {
+      url: `${process.env.HOLESKY_URL}`,
+      chainId: 17000,
+    },
+    testnet: {
+      url: `${process.env.TESTNET_URL}`,
+      chainId: 1,
     },
   },
   solidity: "0.8.23",

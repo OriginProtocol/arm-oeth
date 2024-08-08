@@ -20,7 +20,7 @@ const handler = async (event) => {
   );
 
   // References to contracts
-  const oSwap = new ethers.Contract(
+  const oethARM = new ethers.Contract(
     addresses.mainnet.OEthARM,
     oethARMAbi,
     signer
@@ -34,7 +34,7 @@ const handler = async (event) => {
   await autoClaimStEth({
     asset: "WETH",
     signer,
-    oSwap,
+    oethARM,
     withdrawalQueue,
     confirm: false,
   });

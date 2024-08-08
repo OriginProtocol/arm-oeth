@@ -1,188 +1,111 @@
 const { formatUnits, parseUnits } = require("ethers");
 
-const addresses = require("../utils/addresses");
+const { parseAddress } = require("../utils/addressParser");
+const { resolveAsset } = require("../utils/assets");
 const { logTxDetails } = require("../utils/txLogger");
 
 const log = require("../utils/logger")("task:liquidity");
 
-const withdrawStEth = async (options) => {
-  const { amount, signer, oSwap } = options;
+const requestWithdraw = async (options) => {
+  const { amount, signer, oethARM } = options;
 
   const amountBI = parseUnits(amount.toString(), 18);
 
-  log(`About to request ${amount} stETH withdrawal from Lido`);
+  log(`About to request ${amount} OETH withdrawal`);
 
-  const tx = await oSwap
-    .connect(signer)
-    .requestStETHWithdrawalForETH([amountBI]);
+  const tx = await oethARM.connect(signer).requestWithdrawal(amountBI);
 
-  await logTxDetails(tx, "requestStETHWithdrawalForETH", options.confirm);
+  await logTxDetails(tx, "requestWithdrawal");
+};
+
+const claimWithdraw = async ({ id, signer, oethARM }) => {
+  log(`About to claim withdrawal request ${id}`);
+
+  const tx = await oethARM.connect(signer).claimWithdrawal(id);
+
+  await logTxDetails(tx, "claimWithdrawal");
 };
 
 const autoWithdraw = async (options) => {
-  const { signer, stEth, weth, oSwap, minAmount, divisor } = options;
+  const { signer, oeth, oethARM, minAmount } = options;
 
-  const liquidityStEth = await stEth.balanceOf(addresses.mainnet.OEthARM);
-  log(`${formatUnits(liquidityStEth)} stETH AMM liquidity`);
-
-  const liquidityWeth = await weth.balanceOf(addresses.mainnet.OEthARM);
-  log(`${formatUnits(liquidityWeth)} WETH AMM liquidity`);
-
-  const liquidityStEthWithdraws = await getWithdrawRequestLiquidity(options);
-
-  // stETH is targeted to default to 1/3 of the liquidity
-  const targetStEthLiquidity =
-    (liquidityStEth + liquidityWeth + liquidityStEthWithdraws) /
-    (divisor || 3n);
-  log(`${formatUnits(targetStEthLiquidity)} target liquidity`);
-
-  const withdrawAmount = liquidityStEth - targetStEthLiquidity;
-  log(`${formatUnits(withdrawAmount)} stETH withdraw amount`);
+  const oethArmAddr = oethARM.getAddress();
+  const oethBalance = await oeth.balanceOf(oethArmAddr);
+  log(`${formatUnits(oethBalance)} OETH in ARM`);
 
   const minAmountBI = parseUnits(minAmount.toString(), 18);
 
-  if (withdrawAmount <= minAmountBI) {
+  if (oethBalance <= minAmountBI) {
     console.log(
-      `withdraw amount of ${formatUnits(
-        withdrawAmount
-      )} stETH is below ${minAmount} so not withdrawing`
+      `${formatUnits(
+        oethBalance
+      )} OETH is below ${minAmount} so not withdrawing`
     );
     return;
   }
 
-  log(
-    `About to request ${formatUnits(withdrawAmount)} stETH withdrawal from Lido`
-  );
+  log(`About to request ${formatUnits(oethBalance)} OETH withdrawal`);
 
-  const tx = await oSwap
-    .connect(signer)
-    .requestStETHWithdrawalForETH([withdrawAmount]);
+  const tx = await oethARM.connect(signer).requestWithdrawal(oethBalance);
 
-  await logTxDetails(tx, "requestStETHWithdrawalForETH", options.confirm);
+  await logTxDetails(tx, "requestWithdrawal", options.confirm);
 };
 
-const withdrawStEthStatus = async (options) => {
-  const { id } = options;
+const withdrawRequestStatus = async (options) => {
+  const { id, oethARM } = options;
 
-  const stEthWithdrawQueue = await hre.ethers.getContractAt(
-    "IStETHWithdrawal",
-    addresses.mainnet.stETHWithdrawalQueue
-  );
+  const queue = await oethARM.withdrawalQueueMetadata();
+  const request = await oethARM.withdrawalRequests(id);
 
-  const status = await stEthWithdrawQueue.getWithdrawalStatus([id]);
-
-  console.log(
-    `Withdrawal request ${id} is finalized ${status[0].isFinalized} and claimed ${status[0].isClaimed}`
-  );
-};
-
-const autoClaim = async (options) => {
-  const { signer, oethARM, oethVault } = options;
-
-  // Get the outstanding withdrawal requests for the AMM
-  const requestIds = await oethVault.getWithdrawalRequests(oethARM.address);
-  log(`Found ${requestIds.length} withdrawal requests`);
-
-  if (requestIds.length === 0) {
-    return;
-  }
-
-  const statuses = await oethVault.getWithdrawalStatus([...requestIds]);
-  log(`Got ${statuses.length} statuses`);
-
-  const finalizedIds = [];
-
-  // For each AMM withdraw request
-  for (const [index, status] of statuses.entries()) {
-    const id = requestIds[index];
-    log(
-      `Withdrawal request ${id} finalized ${status.isFinalized}, claimed ${status.isClaimed}`
-    );
-
-    // If finalized but not yet claimed
-    if (status.isFinalized && !status.isClaimed) {
-      finalizedIds.push(id);
-    }
-  }
-
-  if (finalizedIds.length > 0) {
-    // sort in ascending order
-    const sortedFinalizedIds = finalizedIds.sort(function (a, b) {
-      if (a > b) {
-        return 1;
-      } else if (a < b) {
-        return -1;
-      } else {
-        return 0;
-      }
-    });
-    log(`About to claim withdrawal request ids: ${sortedFinalizedIds}`);
-    const tx = await oSwap.connect(signer).claimWithdrawal(sortedFinalizedIds);
-    await logTxDetails(tx, "claim withdraw requests", options.confirm);
+  if (request.queued <= queue.claimable) {
+    console.log(`Withdrawal request ${id} is claimable.`);
   } else {
-    log("No finalized withdrawal requests to claim");
+    console.log(
+      `Withdrawal request ${id} is ${formatUnits(
+        request.queued.sub(queue.claimable)
+      )} WETH short`
+    );
   }
 };
 
-const getWithdrawRequestLiquidity = async ({ withdrawalQueue }) => {
-  const requests = await withdrawalQueue.getWithdrawalRequests(
-    addresses.mainnet.OEthARM
-  );
-  log(`Found ${requests.length} withdrawal requests`);
-
-  let total = 0n;
-  for (const request of requests) {
-    const status = await withdrawalQueue.getWithdrawalStatus([request]);
-    log(`Withdrawal request ${request} status ${status[0].isClaimed}`);
-    if (!status[0].isClaimed) {
-      total += status[0].amountOfStETH;
-    }
-  }
-  return total;
-};
-
-const logLiquidity = async (options) => {
+const logLiquidity = async () => {
   console.log(`\nLiquidity`);
 
-  const weth = await ethers.getContractAt("IERC20", addresses.mainnet.WETH);
-  const liquidityWeth = await weth.balanceOf(addresses.mainnet.OEthARM);
+  const oethArmAddress = await parseAddress("OETH_ARM");
+  const oethARM = await ethers.getContractAt("OEthARM", oethArmAddress);
 
-  const stEth = await ethers.getContractAt("IERC20", addresses.mainnet.stETH);
-  const liquidityStEth = await stEth.balanceOf(addresses.mainnet.OEthARM);
-  const withdrawalQueue = await hre.ethers.getContractAt(
-    "IStETHWithdrawal",
-    addresses.mainnet.stETHWithdrawalQueue
-  );
-  const liquidityStEthWithdraws = await getWithdrawRequestLiquidity({
-    withdrawalQueue,
-  });
+  const weth = await resolveAsset("WETH");
+  const liquidityWeth = await weth.balanceOf(oethARM.getAddress());
 
-  const total = liquidityWeth + liquidityStEth + liquidityStEthWithdraws;
-  const wethPercent = (liquidityWeth * 10000n) / total;
-  const stEthWithdrawsPercent = (liquidityStEthWithdraws * 10000n) / total;
-  const stEthPercent = (liquidityStEth * 10000n) / total;
-  const startTotal = parseUnits(options.start.toString(), 18);
-  const profit = total - startTotal;
+  const oeth = await resolveAsset("OETH");
+  const liquidityOeth = await oeth.balanceOf(oethARM.getAddress());
+  // TODO need to get from indexer
+  const liquidityOethWithdraws = 0n;
+
+  const total = liquidityWeth + liquidityOeth + liquidityOethWithdraws;
+  const wethPercent = total == 0 ? 0 : (liquidityWeth * 10000n) / total;
+  const oethWithdrawsPercent =
+    total == 0 ? 0 : (liquidityOethWithdraws * 10000n) / total;
+  const oethPercent = total == 0 ? 0 : (liquidityOeth * 10000n) / total;
 
   console.log(
     `${formatUnits(liquidityWeth, 18)} WETH ${formatUnits(wethPercent, 2)}%`
   );
   console.log(
-    `${formatUnits(liquidityStEth, 18)} stETH ${formatUnits(stEthPercent, 2)}%`
+    `${formatUnits(liquidityOeth, 18)} OETH ${formatUnits(oethPercent, 2)}%`
   );
   console.log(
     `${formatUnits(
-      liquidityStEthWithdraws,
+      liquidityOethWithdraws,
       18
-    )} stETH in withdrawal requests ${formatUnits(stEthWithdrawsPercent, 2)}%`
+    )} OETH in withdrawal requests ${formatUnits(oethWithdrawsPercent, 2)}%`
   );
-  console.log(`${formatUnits(total, 18)} ETH, profit ${formatUnits(profit)}`);
 };
 
 module.exports = {
-  autoClaim,
   autoWithdraw,
   logLiquidity,
-  withdrawStEth,
-  withdrawStEthStatus,
+  requestWithdraw,
+  claimWithdraw,
+  withdrawRequestStatus,
 };

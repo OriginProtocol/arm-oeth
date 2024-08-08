@@ -114,6 +114,10 @@ interface IOethARM {
 }
 
 interface IOETHVault {
+    function mint(address _asset, uint256 _amount, uint256 _minimumOusdAmount) external;
+
+    function redeem(uint256 _amount, uint256 _minimumUnitAmount) external;
+
     function requestWithdrawal(uint256 amount) external returns (uint256 requestId, uint256 queued);
 
     function claimWithdrawal(uint256 requestId) external returns (uint256 amount);
@@ -133,6 +137,10 @@ interface IOETHVault {
     function withdrawalQueueMetadata()
         external
         returns (uint128 queued, uint128 claimable, uint128 claimed, uint128 nextWithdrawalIndex);
+
+    function withdrawalRequests(uint256 requestId)
+        external
+        returns (address withdrawer, bool claimed, uint40 timestamp, uint128 amount, uint128 queued);
 
     function CLAIM_DELAY() external returns (uint256);
 }
@@ -164,4 +172,12 @@ interface IGovernance {
     function queue(uint256 proposalId) external;
 
     function execute(uint256 proposalId) external;
+}
+
+interface IWETH is IERC20 {
+    event Deposit(address indexed dst, uint256 wad);
+    event Withdrawal(address indexed src, uint256 wad);
+
+    function deposit() external payable;
+    function withdraw(uint256 wad) external;
 }

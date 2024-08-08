@@ -1,13 +1,13 @@
 const { parseUnits, MaxInt256 } = require("ethers");
 
-const addresses = require("../utils/addresses");
 const { resolveAddress } = require("../utils/assets");
 const { getSigner } = require("../utils/signers");
 const { logTxDetails } = require("../utils/txLogger");
+const { parseAddress } = require("../utils/addressParser");
 
 const log = require("../utils/logger")("task:swap");
 
-const swap = async (taskArguments, hre) => {
+const swap = async (taskArguments) => {
   const { from, to, amount } = taskArguments;
   if (from && to) {
     throw new Error(
@@ -17,10 +17,8 @@ const swap = async (taskArguments, hre) => {
   const signer = await getSigner();
   const signerAddress = await signer.getAddress();
 
-  const oethARM = await hre.ethers.getContractAt(
-    "OEthARM",
-    addresses.mainnet.OEthARM
-  );
+  const oethArmAddress = await parseAddress("OETH_ARM");
+  const oethARM = await ethers.getContractAt("OEthARM", oethArmAddress);
 
   if (from) {
     const fromAddress = resolveAddress(from);
@@ -34,7 +32,7 @@ const swap = async (taskArguments, hre) => {
 
     const tx = await oethARM
       .connect(signer)
-      .swapExactTokensForTokens(
+      ["swapExactTokensForTokens(address,address,uint256,uint256,address)"](
         fromAddress,
         toAddress,
         fromAmount,

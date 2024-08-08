@@ -6,12 +6,9 @@ import "forge-std/console.sol";
 import {Script} from "forge-std/Script.sol";
 import {Vm, VmSafe} from "forge-std/Vm.sol";
 
-import {Mainnet} from "contracts/utils/Addresses.sol";
-import {GovProposal, GovSixHelper} from "contracts/utils/GovSixHelper.sol";
+import {Holesky} from "contracts/utils/Addresses.sol";
 
-abstract contract BaseMainnetScript is Script {
-    using GovSixHelper for GovProposal;
-
+abstract contract BaseHoleskyScript is Script {
     uint256 public deployBlockNum = type(uint256).max;
 
     // DeployerRecord stuff to be extracted as well
@@ -53,21 +50,20 @@ abstract contract BaseMainnetScript is Script {
         }
 
         if (this.isForked()) {
-            address impersonator = Mainnet.INITIAL_DEPLOYER;
-            console.log("Running script on mainnet fork impersonating: %s", impersonator);
+            address impersonator = Holesky.INITIAL_DEPLOYER;
+            console.log("Running script on Holesky fork impersonating: %s", impersonator);
             vm.startPrank(impersonator);
         } else {
             uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
             address deployer = vm.rememberKey(deployerPrivateKey);
             vm.startBroadcast(deployer);
-            console.log("Deploying on mainnet with deployer: %s", deployer);
+            console.log("Deploying on Holesky with deployer: %s", deployer);
         }
 
         _execute();
 
         if (this.isForked()) {
             vm.stopPrank();
-            _buildGovernanceProposal();
             _fork();
         } else {
             vm.stopBroadcast();
@@ -76,8 +72,6 @@ abstract contract BaseMainnetScript is Script {
 
     function DEPLOY_NAME() external view virtual returns (string memory);
 
-    function proposalExecuted() external view virtual returns (bool);
-
     function skip() external view virtual returns (bool) {
         return false;
     }
@@ -85,15 +79,4 @@ abstract contract BaseMainnetScript is Script {
     function _execute() internal virtual;
 
     function _fork() internal virtual;
-
-    function _buildGovernanceProposal() internal virtual {}
-
-    function handleGovernanceProposal() external virtual {
-        if (this.proposalExecuted()) {
-            return;
-        }
-
-        _buildGovernanceProposal();
-        _fork();
-    }
 }

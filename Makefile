@@ -37,12 +37,25 @@ coverage-html:
 	@make coverage
 	@genhtml ./lcov.info.pruned -o report --branch-coverage --output-dir ./coverage
 
-# Deploy contract
-simulate-c-%:
+# Run a script
+simulate-s-%:
 	@forge script script/$*.s.sol --fork-url $(PROVIDER_URL) -vvvvv
 
-deploy-c-%:
-	@forge script script/$*.s.sol --rpc-url  $(PROVIDER_URL) --private-key ${DEPLOYER_PRIVATE_KEY} --broadcast --slow --verify -vvvvv
+run-s-%:
+	@forge script script/$*.s.sol --rpc-url $(PROVIDER_URL) --private-key ${DEPLOYER_PRIVATE_KEY} --broadcast --slow --verify -vvvvv
+
+# Deploy scripts
+deploy:
+	@forge script script/001_OETH_ARM.s.sol --rpc-url $(PROVIDER_URL) --private-key ${DEPLOYER_PRIVATE_KEY} --broadcast --slow --verify -vvvv
+#	@forge script script/deploy/DeployManager.sol --rpc-url $(PROVIDER_URL) --private-key ${DEPLOYER_PRIVATE_KEY} --broadcast --slow --verify -vvvv
+
+deploy-testnet:
+	@forge script script/001_OETH_ARM.s.sol --rpc-url $(TESTNET_URL) --private-key ${DEPLOYER_PRIVATE_KEY} --broadcast --slow -vvvv
+#	@forge script script/deploy/DeployManager.sol --rpc-url $(TESTNET_URL) --private-key ${DEPLOYER_PRIVATE_KEY} --broadcast --slow -vvvv
+
+deploy-holesky:
+	@forge script script/001_OETH_ARM.s.sol --rpc-url $(HOLESKY_URL) --private-key ${DEPLOYER_PRIVATE_KEY} --broadcast --slow --verify -vvvv
+#	@forge script script/deploy/DeployManager.sol --rpc-url $(HOLESKY_URL) --private-key ${HOLESKY_DEPLOYER_PRIVATE_KEY} --broadcast --slow --verify -vvvv
 
 # Tasks
 simulate-t-swap:

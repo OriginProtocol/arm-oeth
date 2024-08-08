@@ -5,16 +5,21 @@ import {OwnableOperable} from "./OwnableOperable.sol";
 import {IERC20} from "./Interfaces.sol";
 
 contract PeggedARM is OwnableOperable {
-    // Uniswap V2 Router compatible interface to identify the pool pair
+    /// @notice The swap input token that is transferred to this contract.
+    /// From a User perspective, this is the token being sold.
+    /// token0 is also compatible with the Uniswap V2 Router interface.
     IERC20 public immutable token0;
+    /// @notice The swap output token that is transferred from this contract.
+    /// From a User perspective, this is the token being bought.
+    /// token1 is also compatible with the Uniswap V2 Router interface.
     IERC20 public immutable token1;
 
-    constructor(address _token0, address _token1) {
-        require(IERC20(_token0).decimals() == 18);
-        require(IERC20(_token1).decimals() == 18);
+    constructor(address _inputToken, address _outputToken1) {
+        require(IERC20(_inputToken).decimals() == 18);
+        require(IERC20(_outputToken1).decimals() == 18);
 
-        token0 = IERC20(_token0);
-        token1 = IERC20(_token1);
+        token0 = IERC20(_inputToken);
+        token1 = IERC20(_outputToken1);
 
         _setOwner(address(0)); // Revoke owner for implementation contract at deployment
     }

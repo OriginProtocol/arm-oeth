@@ -53,7 +53,7 @@ contract Fork_Concrete_OethARM_Withdraw_Test_ is Fork_Shared_Test_ {
         (uint256 requestId, uint256 queued) = oethARM.requestWithdrawal(1 ether);
 
         // Assertions after
-        assertEq(requestId, nextWithdrawalIndex, "Request ID should be 0");
+        assertEq(requestId, nextWithdrawalIndex, "Request ID");
         assertEq(queued, queuedBefore + 1 ether, "Queued amount should be 1 ether");
         assertEq(oeth.balanceOf(address(oethARM)), 9 ether, "OETH balance should be 99 ether");
     }
@@ -70,7 +70,7 @@ contract Fork_Concrete_OethARM_Withdraw_Test_ is Fork_Shared_Test_ {
         vault.addWithdrawalQueueLiquidity();
 
         // Skip delay
-        skip(10 minutes); // Todo: fetch direct value from contract
+        skip(10 minutes);
 
         // Then claim withdrawal
         oethARM.claimWithdrawal(requestId);
@@ -94,7 +94,7 @@ contract Fork_Concrete_OethARM_Withdraw_Test_ is Fork_Shared_Test_ {
         vault.addWithdrawalQueueLiquidity();
 
         // Skip delay
-        skip(10 minutes); // Todo: fetch direct value from contract
+        skip(10 minutes);
 
         uint256[] memory requestIds = new uint256[](2);
         requestIds[0] = nextWithdrawalIndex;
