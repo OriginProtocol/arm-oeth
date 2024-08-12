@@ -90,7 +90,28 @@ function swapTokensForExactTokens(
 
 ## Deployed Contracts
 
+### Mainnet
+
 TODO
+
+| Contract | Address                                    |
+| -------- | ------------------------------------------ |
+| Proxy    |                                            |
+| OEthARM  | 0x1a620B74b7d7EA9a3bD57Ca78014d78FeA7c1F1f |
+
+### Testnet
+
+| Contract | Address                                    |
+| -------- | ------------------------------------------ |
+| Proxy    | 0xc9cC3a0A5AC839F63cCBff920FcFEd7aF3E80242 |
+| OEthARM  | 0x1a620B74b7d7EA9a3bD57Ca78014d78FeA7c1F1f |
+
+### Holesky
+
+| Contract | Address |
+| -------- | ------- |
+| Proxy    |         |
+| OEthARM  |         |
 
 ## Development
 
@@ -136,6 +157,35 @@ Report gas usage for tests:
 
 ```
 make gas
+```
+
+## Deployment
+
+### Holesky
+
+In the `.env` file, set `DEPLOYER_PRIVATE_KEY` to an account that has funds on Holesky.
+Set `ETHERSCAN_API_KEY` which can be the same key as mainnet.
+Set `HOLESKY_URL` to a Holesky RPC endpoint.
+
+```bash
+make deploy-holesky
+```
+
+### Testnet
+
+In the `.env` file, set `DEPLOYER_PRIVATE_KEY` to an account that has funds on the Tenderly Testnet.
+Set `TESTNET_URL` to the Tenderly Testnet RPC endpoint.
+
+```bash
+make deploy-testnet
+```
+
+### Mainnet
+
+In the `.env` file, set `DEPLOYER_PRIVATE_KEY`, `ETHERSCAN_API_KEY` and `PROVIDER_URL` to the mainnet values.
+
+```bash
+make deploy
 ```
 
 ## Open Zeppelin Defender

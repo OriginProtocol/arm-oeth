@@ -5,7 +5,7 @@ pragma solidity 0.8.23;
 import {Fork_Shared_Test_} from "test/fork/shared/Shared.sol";
 
 // Utils
-import {Mainnet} from "test/utils/Addresses.sol";
+import {Mainnet} from "contracts/utils/Addresses.sol";
 
 /// @notice The purpose of this contract is to test the `Ownable` contract.
 contract Fork_Concrete_OethARM_Ownable_Test_ is Fork_Shared_Test_ {
@@ -29,12 +29,12 @@ contract Fork_Concrete_OethARM_Ownable_Test_ is Fork_Shared_Test_ {
     //////////////////////////////////////////////////////
     function test_SetOperator() public asOwner {
         // Assertions before
-        assertEq(oethARM.operator(), address(0));
+        assertEq(oethARM.operator(), operator);
 
-        oethARM.setOperator(operator);
+        oethARM.setOperator(alice);
 
         // Assertions after
-        assertEq(oethARM.operator(), operator);
+        assertEq(oethARM.operator(), alice);
     }
 
     function test_SetOwner() public asOwner {

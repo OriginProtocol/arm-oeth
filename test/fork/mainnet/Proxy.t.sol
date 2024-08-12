@@ -8,7 +8,7 @@ import {OEthARM} from "contracts/OethARM.sol";
 import {Fork_Shared_Test_} from "test/fork/shared/Shared.sol";
 
 // Utils
-import {Mainnet} from "test/utils/Addresses.sol";
+import {Mainnet} from "contracts/utils/Addresses.sol";
 
 /// @notice The purpose of this contract is to test the `Proxy` contract.
 contract Fork_Concrete_OethARM_Proxy_Test_ is Fork_Shared_Test_ {
@@ -36,7 +36,7 @@ contract Fork_Concrete_OethARM_Proxy_Test_ is Fork_Shared_Test_ {
         address owner = Mainnet.TIMELOCK;
 
         // Deploy new implementation
-        OEthARM newImplementation = new OEthARM();
+        OEthARM newImplementation = new OEthARM(Mainnet.OETH, Mainnet.WETH, Mainnet.OETH_VAULT);
         proxy.upgradeTo(address(newImplementation));
         assertEq(proxy.implementation(), address(newImplementation));
 
@@ -53,7 +53,7 @@ contract Fork_Concrete_OethARM_Proxy_Test_ is Fork_Shared_Test_ {
         address owner = Mainnet.TIMELOCK;
 
         // Deploy new implementation
-        OEthARM newImplementation = new OEthARM();
+        OEthARM newImplementation = new OEthARM(Mainnet.OETH, Mainnet.WETH, Mainnet.OETH_VAULT);
         bytes memory data = abi.encodeWithSignature("setOperator(address)", address(0x123));
 
         proxy.upgradeToAndCall(address(newImplementation), data);

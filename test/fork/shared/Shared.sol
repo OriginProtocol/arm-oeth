@@ -16,7 +16,7 @@ import {IERC20} from "contracts/Interfaces.sol";
 import {IOETHVault} from "contracts/Interfaces.sol";
 
 // Utils
-import {Mainnet} from "test/utils/Addresses.sol";
+import {AddressResolver} from "contracts/utils/Addresses.sol";
 
 /// @notice This contract should inherit (directly or indirectly) from `Base_Test_`.
 ///         It should be used to setup the FORK test ONLY!
@@ -78,15 +78,17 @@ abstract contract Fork_Shared_Test_ is Modifiers {
     }
 
     function _generateAddresses() internal {
-        // Users.
+        // Users and multisigs
         alice = makeAddr("alice");
         deployer = makeAddr("deployer");
-        operator = Mainnet.STRATEGIST;
+        operator = resolver.resolve("OPERATOR");
+        governor = resolver.resolve("GOVERNOR");
+        oethWhale = resolver.resolve("WHALE_OETH");
 
         // Contracts.
-        oeth = IERC20(Mainnet.OETH);
-        weth = IERC20(Mainnet.WETH);
-        vault = IOETHVault(Mainnet.OETHVAULT);
+        oeth = IERC20(resolver.resolve("OETH"));
+        weth = IERC20(resolver.resolve("WETH"));
+        vault = IOETHVault(resolver.resolve("OETH_VAULT"));
     }
 
     function _deployContracts() internal {
@@ -94,11 +96,12 @@ abstract contract Fork_Shared_Test_ is Modifiers {
         proxy = new Proxy();
 
         // Deploy OEthARM implementation.
-        address implementation = address(new OEthARM());
+        address implementation = address(new OEthARM(address(oeth), address(weth), address(vault)));
         vm.label(implementation, "OETH ARM IMPLEMENTATION");
 
         // Initialize Proxy with OEthARM implementation.
-        proxy.initialize(implementation, Mainnet.TIMELOCK, "");
+        bytes memory data = abi.encodeWithSignature("initialize(address)", operator);
+        proxy.initialize(implementation, governor, data);
 
         // Set the Proxy as the OEthARM.
         oethARM = OEthARM(address(proxy));
@@ -118,9 +121,9 @@ abstract contract Fork_Shared_Test_ is Modifiers {
         vm.label(address(vault), "OETH VAULT");
         vm.label(address(oethARM), "OETH ARM");
         vm.label(address(proxy), "OETH ARM PROXY");
-        vm.label(Mainnet.STRATEGIST, "STRATEGIST");
-        vm.label(Mainnet.WHALE_OETH, "WHALE OETH");
-        vm.label(Mainnet.TIMELOCK, "TIMELOCK");
-        vm.label(Mainnet.NULL, "NULL");
+        vm.label(operator, "OPERATOR");
+        vm.label(oethWhale, "WHALE OETH");
+        vm.label(governor, "GOVERNOR");
+        vm.label(address(0), "ZERO");
     }
 }

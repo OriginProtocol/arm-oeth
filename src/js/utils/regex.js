@@ -6,7 +6,7 @@ const bytes32 = bytesFixed(32);
 const ethereumAddress = bytesFixed(20);
 const transactionHash = bytes32;
 
-const privateKey = /^[A-Fa-f0-9]{1,64}$/;
+const privateKey = /^0x([A-Fa-f0-9]{1,64})$/;
 
 module.exports = {
   bytes,

@@ -10,13 +10,14 @@ import {Proxy} from "contracts/Proxy.sol";
 import {OEthARM} from "contracts/OethARM.sol";
 
 // Utils
-import {Mainnet} from "test/utils/Addresses.sol";
+import {AddressResolver} from "contracts/utils/Addresses.sol";
 
 /// @notice Deploy the OEthARM contract using a proxy.
 /// @dev 1. Deploy the proxy contract.
 ///      2. Deploy the OEthARM implementation contract.
 ///      3. Initialize the proxy contract with the OEthARM implementation contract.
 contract _001_OETHARMScript is Script {
+    AddressResolver public resolver = new AddressResolver();
     address public deployer;
 
     //////////////////////////////////////////////////////
@@ -45,10 +46,14 @@ contract _001_OETHARMScript is Script {
         Proxy proxy = new Proxy();
 
         // 2. Deploy implementation
-        OEthARM oethARMImple = new OEthARM();
+        OEthARM oethARMImpl =
+            new OEthARM(resolver.resolve("OETH"), resolver.resolve("WETH"), resolver.resolve("OETH_VAULT"));
 
-        // 3. Initialize proxy
-        proxy.initialize(address(oethARMImple), Mainnet.TIMELOCK, "");
+        // 3. Initialize proxy, set the owner and operator
+        address governor = resolver.resolve("GOVERNOR");
+        address operator = resolver.resolve("OPERATOR");
+        bytes memory data = abi.encodeWithSignature("initialize(address)", operator);
+        proxy.initialize(address(oethARMImpl), governor, data);
 
         // Stop broadcasting
         vm.stopBroadcast();
