@@ -57,6 +57,16 @@ deploy-holesky:
 	@forge script script/001_OETH_ARM.s.sol --rpc-url $(HOLESKY_URL) --private-key ${DEPLOYER_PRIVATE_KEY} --broadcast --slow --verify -vvvv
 #	@forge script script/deploy/DeployManager.sol --rpc-url $(HOLESKY_URL) --private-key ${HOLESKY_DEPLOYER_PRIVATE_KEY} --broadcast --slow --verify -vvvv
 
+# Upgrade scripts
+upgrade:
+	@forge script script/002_Upgrade.s.sol --rpc-url $(PROVIDER_URL) --private-key ${DEPLOYER_PRIVATE_KEY} --broadcast --slow --verify -vvvv
+
+upgrade-testnet:
+	@forge script script/002_Upgrade.s.sol --rpc-url $(TESTNET_URL) --private-key ${DEPLOYER_PRIVATE_KEY} --broadcast --slow -vvvv
+
+upgrade-holesky:
+	@forge script script/002_Upgrade.s.sol --rpc-url $(HOLESKY_URL) --private-key ${DEPLOYER_PRIVATE_KEY} --broadcast --slow --verify -vvvv
+
 # Tasks
 simulate-t-swap:
 	forge clean

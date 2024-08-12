@@ -29,6 +29,7 @@ const {
   redeem,
   redeemAll,
 } = require("./vault");
+const { upgradeProxy } = require("./proxy");
 
 subtask("snap", "Take a snapshot of the ARM").setAction(logLiquidity);
 task("snap").setAction(async (_, __, runSuper) => {
@@ -390,5 +391,24 @@ subtask("redeemAll", "Redeem all OTokens for collateral assets from the Vault")
   )
   .setAction(redeemAll);
 task("redeemAll").setAction(async (_, __, runSuper) => {
+  return runSuper();
+});
+
+// Proxies
+
+subtask("upgradeProxy", "Upgrade a proxy contract to a new implementation")
+  .addParam("proxy", "Address of the proxy contract", undefined, types.string)
+  .addParam(
+    "impl",
+    "Address of the implementation contract",
+    undefined,
+    types.string
+  )
+  .setAction(async (taskArgs) => {
+    const signer = await getSigner();
+
+    await upgradeProxy({ ...taskArgs, signer });
+  });
+task("upgradeProxy").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
