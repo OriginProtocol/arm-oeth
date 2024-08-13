@@ -142,10 +142,10 @@ contract PeggedARM is OwnableOperable {
         require(inToken == token0 && outToken == token1, "ARM: Invalid swap");
 
         // Transfer the input tokens from the caller to this ARM contract
-        inToken.transferFrom(msg.sender, address(this), amount);
+        require(inToken.transferFrom(msg.sender, address(this), amount), "failed transfer in");
 
         // Transfer the same amount of output tokens to the recipient
-        outToken.transfer(to, amount);
+        require(outToken.transfer(to, amount), "failed transfer out");
     }
 
     function _inDeadline(uint256 deadline) internal view {
