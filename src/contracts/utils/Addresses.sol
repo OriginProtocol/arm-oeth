@@ -85,6 +85,7 @@ contract AddressResolver {
 
         // Contracts
         resolver[HOLESKY]["OETH_VAULT"] = Holesky.OETH_VAULT;
+        resolver[HOLESKY]["OETH_ARM"] = Holesky.OETH_ARM;
 
         // Test accounts
         resolver[HOLESKY]["INITIAL_DEPLOYER"] = Holesky.INITIAL_DEPLOYER;

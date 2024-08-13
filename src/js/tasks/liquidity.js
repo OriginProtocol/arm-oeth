@@ -16,6 +16,8 @@ const requestWithdraw = async (options) => {
   const tx = await oethARM.connect(signer).requestWithdrawal(amountBI);
 
   await logTxDetails(tx, "requestWithdrawal");
+
+  // TODO parse the request id from the WithdrawalRequested event on the OETH Vault
 };
 
 const claimWithdraw = async ({ id, signer, oethARM }) => {

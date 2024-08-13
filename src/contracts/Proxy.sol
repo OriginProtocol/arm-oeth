@@ -11,20 +11,20 @@ import {Ownable} from "./Ownable.sol";
  */
 contract Proxy is Ownable {
     /**
-     * @dev Storage slot with the address of the current implementation.
+     * @notice Storage slot with the address of the current implementation.
      * This is the keccak-256 hash of "eip1967.proxy.implementation" subtracted by 1, and is
      * validated in the constructor.
      */
     bytes32 internal constant IMPLEMENTATION_SLOT = 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
 
     /**
-     * @dev Emitted when the implementation is upgraded.
+     * @notice Emitted when the implementation is upgraded.
      * @param implementation Address of the new implementation.
      */
     event Upgraded(address indexed implementation);
 
     /**
-     * @dev Contract initializer with Owner enforcement
+     * @notice Contract initializer with Owner enforcement
      * @param _logic Address of the initial implementation.
      * @param _initOwner Address of the initial Owner.
      * @param _data Data to send as msg.data to the implementation to initialize
@@ -47,21 +47,21 @@ contract Proxy is Ownable {
     }
 
     /**
-     * @return The address of the proxy admin/it's also the owner.
+     * @notice The address of the proxy admin. This is also the contract owner.
      */
     function admin() external view returns (address) {
         return _owner();
     }
 
     /**
-     * @return The address of the implementation.
+     * @notice The address of the implementation contract.
      */
     function implementation() external view returns (address) {
         return _implementation();
     }
 
     /**
-     * @dev Upgrade the backing implementation of the proxy.
+     * @notice Upgrade the backing implementation of the proxy.
      * Only the admin can call this function.
      * @param newImplementation Address of the new implementation.
      */
@@ -70,7 +70,7 @@ contract Proxy is Ownable {
     }
 
     /**
-     * @dev Upgrade the backing implementation of the proxy and call a function
+     * @notice Upgrade the backing implementation of the proxy and call a function
      * on the new implementation.
      * This is useful to initialize the proxied contract.
      * @param newImplementation Address of the new implementation.
@@ -85,8 +85,8 @@ contract Proxy is Ownable {
     }
 
     /**
-     * @dev Fallback function.
-     * Implemented entirely in `_fallback`.
+     * @notice Fallback function.
+     * Implemented entirely in `_delegate`.
      */
     fallback() external {
         _delegate(_implementation());
