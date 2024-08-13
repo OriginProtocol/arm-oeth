@@ -8,6 +8,7 @@ contract OethLiquidityManager is OwnableOperable {
     address public immutable oeth;
     address public immutable oethVault;
 
+    /// @param _oeth The address of the OETH token.
     /// @param _oethVault The address of the OETH Vault proxy.
     constructor(address _oeth, address _oethVault) {
         oeth = _oeth;
@@ -15,7 +16,7 @@ contract OethLiquidityManager is OwnableOperable {
     }
 
     /**
-     * @notice Approve the OETH Vault to transfer OETH from the ARM.
+     * @notice Approve the OETH Vault to transfer OETH from this cont4act.
      */
     function approvals() external onlyOwner {
         _approvals();
@@ -26,7 +27,8 @@ contract OethLiquidityManager is OwnableOperable {
     }
 
     /**
-     * @notice Request withdrawal of WETH from OETH Vault.
+     * @notice Request withdrawal of WETH from the OETH Vault.
+     * @param amount The amount of OETH to burn and WETH to withdraw.
      */
     function requestWithdrawal(uint256 amount)
         external
@@ -37,13 +39,19 @@ contract OethLiquidityManager is OwnableOperable {
     }
 
     /**
-     * @notice Claim previously requested withdrawal of WETH from OETH Vault.
+     * @notice Claim previously requested withdrawal of WETH from the OETH Vault.
      * The Vault's claimable WETH needs to be greater than or equal to the queued amount of the request.
+     * @param requestId The ID of the OETH Vault's withdrawal request.
      */
     function claimWithdrawal(uint256 requestId) external onlyOperatorOrOwner {
         IOETHVault(oethVault).claimWithdrawal(requestId);
     }
 
+    /**
+     * @notice Claim multiple previously requested withdrawals of WETH from the OETH Vault.
+     * The Vault's claimable WETH needs to be greater than or equal to the queued amount of the request.
+     * @param requestIds List of request IDs from the OETH Vault's withdrawal requests.
+     */
     function claimWithdrawals(uint256[] memory requestIds) external onlyOperatorOrOwner {
         IOETHVault(oethVault).claimWithdrawals(requestIds);
     }

@@ -4,6 +4,7 @@ pragma solidity ^0.8.23;
 import {Ownable} from "./Ownable.sol";
 
 contract OwnableOperable is Ownable {
+    /// @notice The account that can request and claim withdrawals.
     address public operator;
 
     uint256[50] private _gap;
@@ -11,6 +12,7 @@ contract OwnableOperable is Ownable {
     event OperatorChanged(address newAdmin);
 
     /// @notice Set the account that can request and claim withdrawals.
+    /// @param newOperator The address of the new operator.
     function setOperator(address newOperator) external onlyOwner {
         _setOperator(newOperator);
     }
