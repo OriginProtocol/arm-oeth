@@ -6,7 +6,7 @@ import {Vm} from "forge-std/Vm.sol";
 
 import "../AbstractDeployScript.sol";
 
-import {OEthARM} from "contracts/OEthARM.sol";
+import {OethARM} from "contracts/OethARM.sol";
 import {Proxy} from "contracts/Proxy.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
 import {GovProposal, GovSixHelper} from "contracts/utils/GovSixHelper.sol";
@@ -30,7 +30,7 @@ contract DeployCoreMainnetScript is AbstractDeployScript {
         _recordDeploy("OETH_ARM", address(proxy));
 
         // 2. Deploy implementation
-        OEthARM implementation = new OEthARM(Mainnet.OETH, Mainnet.WETH, Mainnet.OETH_VAULT);
+        OethARM implementation = new OethARM(Mainnet.OETH, Mainnet.WETH, Mainnet.OETH_VAULT);
         _recordDeploy("OETH_ARM_IMPL", address(implementation));
 
         // 3. Initialize proxy, set the owner and the operator

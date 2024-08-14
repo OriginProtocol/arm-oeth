@@ -9,7 +9,7 @@ import {Modifiers} from "test/fork/utils/Modifiers.sol";
 
 // Contracts
 import {Proxy} from "contracts/Proxy.sol";
-import {OEthARM} from "contracts/OEthARM.sol";
+import {OethARM} from "contracts/OethARM.sol";
 
 // Interfaces
 import {IERC20} from "contracts/Interfaces.sol";
@@ -95,16 +95,16 @@ abstract contract Fork_Shared_Test_ is Modifiers {
         // Deploy Proxy.
         proxy = new Proxy();
 
-        // Deploy OEthARM implementation.
-        address implementation = address(new OEthARM(address(oeth), address(weth), address(vault)));
+        // Deploy OethARM implementation.
+        address implementation = address(new OethARM(address(oeth), address(weth), address(vault)));
         vm.label(implementation, "OETH ARM IMPLEMENTATION");
 
-        // Initialize Proxy with OEthARM implementation.
+        // Initialize Proxy with OethARM implementation.
         bytes memory data = abi.encodeWithSignature("initialize(address)", operator);
         proxy.initialize(implementation, governor, data);
 
-        // Set the Proxy as the OEthARM.
-        oethARM = OEthARM(address(proxy));
+        // Set the Proxy as the OethARM.
+        oethARM = OethARM(address(proxy));
     }
 
     function _label() internal {

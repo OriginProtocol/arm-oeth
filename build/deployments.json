@@ -1,6 +1,8 @@
 {
   "17000": {
-    "executions": { "001_CoreHolesky": 1723612584 },
+    "executions": {
+      "001_CoreHolesky": 1723612584
+    },
     "contracts": {
       "OETH_ARM": "0x4e2FbfB0095c78c509db1138dC8A01bd592cf08A",
       "OETH_ARM_IMPL": "0x2BFFBfdFB5EADc39B7e8402F3Ebd91693970E8A6"

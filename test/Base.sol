@@ -6,7 +6,7 @@ import {Test} from "forge-std/Test.sol";
 
 // Contracts
 import {Proxy} from "contracts/Proxy.sol";
-import {OEthARM} from "contracts/OEthARM.sol";
+import {OethARM} from "contracts/OethARM.sol";
 
 // Interfaces
 import {IERC20} from "contracts/Interfaces.sol";
@@ -29,7 +29,7 @@ abstract contract Base_Test_ is Test {
     /// --- CONTRACTS
     //////////////////////////////////////////////////////
     Proxy public proxy;
-    OEthARM public oethARM;
+    OethARM public oethARM;
     IERC20 public oeth;
     IERC20 public weth;
     IOETHVault public vault;

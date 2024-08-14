@@ -8,7 +8,7 @@ import {Fork_Shared_Test_} from "test/fork/shared/Shared.sol";
 import {IERC20} from "contracts/Interfaces.sol";
 
 /// @notice The purpose of this contract is to test the `requestWithdrawal`,
-///         `claimWithdrawal` and `claimWithdrawals` functions in the `OEthARM` contract.
+///         `claimWithdrawal` and `claimWithdrawals` functions in the `OethARM` contract.
 contract Fork_Concrete_OethARM_Withdraw_Test_ is Fork_Shared_Test_ {
     //////////////////////////////////////////////////////
     /// --- SETUP

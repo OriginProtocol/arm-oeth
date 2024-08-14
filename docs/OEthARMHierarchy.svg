@@ -29,7 +29,7 @@
 <g id="node3" class="node">
 <title>7</title>
 <polygon fill="#f2f2f2" stroke="black" points="434.03,-0.5 434.03,-42.1 614.51,-42.1 614.51,-0.5 434.03,-0.5"/>
-<text text-anchor="middle" x="524.27" y="-25.5" font-family="Times,serif" font-size="14.00">OEthARM</text>
+<text text-anchor="middle" x="524.27" y="-25.5" font-family="Times,serif" font-size="14.00">OethARM</text>
 <text text-anchor="middle" x="524.27" y="-8.7" font-family="Times,serif" font-size="14.00">../src/contracts/OethARM.sol</text>
 </g>
 <!-- 8 -->

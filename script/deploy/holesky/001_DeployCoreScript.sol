@@ -7,7 +7,7 @@ import {Vm} from "forge-std/Vm.sol";
 
 import {Holesky} from "contracts/utils/Addresses.sol";
 
-import {OEthARM} from "contracts/OEthARM.sol";
+import {OethARM} from "contracts/OethARM.sol";
 import {Proxy} from "contracts/Proxy.sol";
 
 contract DeployCoreHoleskyScript is AbstractDeployScript {
@@ -25,7 +25,7 @@ contract DeployCoreHoleskyScript is AbstractDeployScript {
         _recordDeploy("OETH_ARM", address(proxy));
 
         // 2. Deploy implementation
-        OEthARM implementation = new OEthARM(Holesky.OETH, Holesky.WETH, Holesky.OETH_VAULT);
+        OethARM implementation = new OethARM(Holesky.OETH, Holesky.WETH, Holesky.OETH_VAULT);
         _recordDeploy("OETH_ARM_IMPL", address(implementation));
 
         // 3. Initialize proxy, set the owner and the operator
