@@ -50,6 +50,6 @@ contract DeployCoreMainnetScript is AbstractDeployScript {
 
     function _fork() internal override {
         // Simulate on fork
-        govProposal.simulate();
+        // govProposal.simulate();
     }
 }

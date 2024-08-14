@@ -92,13 +92,14 @@ contract AddressResolver {
     }
 
     function resolve(string memory name) public view returns (address resolved) {
-        resolved = resolver[block.chainid][name];
+        uint256 chainId = block.chainid == 31337 ? 1 : block.chainid;
+        resolved = resolver[chainId][name];
 
         if (resolved == address(0)) {
-            console.log("Failed to resolve address for %s on chain %d", name, block.chainid);
-            revert UnresolvedAddress(block.chainid, name);
+            console.log("Failed to resolve address for %s on chain %d", name, chainId);
+            revert UnresolvedAddress(chainId, name);
         }
 
-        // console.log("Resolve %s on chain %d to %s", name, block.chainid, resolved);
+        // console.log("Resolve %s on chain %d to %s", name, chainId, resolved);
     }
 }

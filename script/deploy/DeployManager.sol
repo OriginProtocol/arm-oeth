@@ -18,7 +18,6 @@ contract DeployManager is Script {
 
     constructor() {
         isForked = vm.isContext(VmSafe.ForgeContext.ScriptDryRun) || vm.isContext(VmSafe.ForgeContext.TestGroup);
-        console.log("is forked", isForked);
         forkFileId = vm.toString(block.timestamp);
     }
 
@@ -63,7 +62,7 @@ contract DeployManager is Script {
     }
 
     function run() external {
-        if (block.chainid == 1) {
+        if (block.chainid == 1 || block.chainid == 31337) {
             // TODO: Use vm.readDir to recursively build this?
             _runDeployFile(new DeployCoreMainnetScript());
         } else if (block.chainid == 17000) {
@@ -82,7 +81,7 @@ contract DeployManager is Script {
             return;
         }
 
-        string memory chainIdStr = vm.toString(block.chainid);
+        string memory chainIdStr = isForked ? "1" : vm.toString(block.chainid);
         string memory chainIdKey = string(abi.encodePacked(".", chainIdStr));
 
         string memory contractsKey = string(abi.encodePacked(chainIdKey, ".contracts"));
