@@ -2,19 +2,17 @@
 
 pragma solidity 0.8.23;
 
-import "../AbstractDeployScript.sol";
+import "forge-std/console.sol";
 import {Vm} from "forge-std/Vm.sol";
-
-import {Holesky} from "contracts/utils/Addresses.sol";
 
 import {OethARM} from "contracts/OethARM.sol";
 import {Proxy} from "contracts/Proxy.sol";
+import {Holesky} from "contracts/utils/Addresses.sol";
+import {AbstractDeployScript} from "../AbstractDeployScript.sol";
 
 contract DeployCoreHoleskyScript is AbstractDeployScript {
     string public constant override DEPLOY_NAME = "001_CoreHolesky";
     bool public constant override proposalExecuted = false;
-
-    constructor() {}
 
     function _execute() internal override {
         console.log("Deploy:");

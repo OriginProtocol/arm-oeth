@@ -43,7 +43,7 @@ abstract contract AbstractDeployScript is Script {
         return vm.isContext(VmSafe.ForgeContext.ScriptDryRun) || vm.isContext(VmSafe.ForgeContext.TestGroup);
     }
 
-    function setUp() external {}
+    function setUp() external virtual {}
 
     function run() external {
         // Will not execute script if after this block number

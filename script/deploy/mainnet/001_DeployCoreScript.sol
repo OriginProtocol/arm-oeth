@@ -2,14 +2,14 @@
 
 pragma solidity 0.8.23;
 
+import "forge-std/console.sol";
 import {Vm} from "forge-std/Vm.sol";
-
-import "../AbstractDeployScript.sol";
 
 import {OethARM} from "contracts/OethARM.sol";
 import {Proxy} from "contracts/Proxy.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
 import {GovProposal, GovSixHelper} from "contracts/utils/GovSixHelper.sol";
+import {AbstractDeployScript} from "../AbstractDeployScript.sol";
 
 contract DeployCoreMainnetScript is AbstractDeployScript {
     using GovSixHelper for GovProposal;
@@ -18,8 +18,6 @@ contract DeployCoreMainnetScript is AbstractDeployScript {
 
     string public constant override DEPLOY_NAME = "001_CoreMainnet";
     bool public constant override proposalExecuted = false;
-
-    constructor() {}
 
     function _execute() internal override {
         console.log("Deploy:");
