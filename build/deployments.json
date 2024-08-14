@@ -4,7 +4,12 @@
     "contracts": {}
   },
   "17000": {
-    "executions": {},
-    "contracts": {}
+    "executions": {
+      "001_CoreHolesky": 1723611336
+    },
+    "contracts": {
+      "OETH_ARM": "0xDA3Fd81D85540a5F992a7C386C90964ff764cff6",
+      "OETH_ARM_IMPL": "0xf671190efe0d4953f154b50536a4E155DDD4C121"
+    }
   }
 }

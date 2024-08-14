@@ -2,12 +2,11 @@
 pragma solidity 0.8.23;
 
 import "forge-std/Script.sol";
-
-import {BaseMainnetScript} from "./mainnet/BaseMainnetScript.sol";
-
-import {DeployCoreScript} from "./mainnet/001_DeployCore.sol";
-
 import {VmSafe} from "forge-std/Vm.sol";
+
+import {AbstractDeployScript} from "./AbstractDeployScript.sol";
+import {DeployCoreMainnetScript} from "./mainnet/001_DeployCoreScript.sol";
+import {DeployCoreHoleskyScript} from "./holesky/001_DeployCoreScript.sol";
 
 contract DeployManager is Script {
     mapping(string => address) public deployedContracts;
@@ -23,10 +22,10 @@ contract DeployManager is Script {
     }
 
     function getDeploymentFilePath() public view returns (string memory) {
-        return isForked ? getForkDeploymentFilePath() : getMainnetDeploymentFilePath();
+        return isForked ? getForkDeploymentFilePath() : getChainDeploymentFilePath();
     }
 
-    function getMainnetDeploymentFilePath() public view returns (string memory) {
+    function getChainDeploymentFilePath() public view returns (string memory) {
         return string(abi.encodePacked(vm.projectRoot(), "/build/deployments.json"));
     }
 
@@ -42,32 +41,38 @@ contract DeployManager is Script {
         string memory chainIdStr = vm.toString(block.chainid);
         string memory chainIdKey = string(abi.encodePacked(".", chainIdStr));
 
-        string memory mainnetFilePath = getMainnetDeploymentFilePath();
-        if (!vm.isFile(mainnetFilePath)) {
-            // Create mainnet deployment file if it doesn't exist
+        string memory deployFilePath = getChainDeploymentFilePath();
+        if (!vm.isFile(deployFilePath)) {
+            // Create deployment file if it doesn't exist
             vm.writeFile(
-                mainnetFilePath,
+                deployFilePath,
                 string(abi.encodePacked('{ "', chainIdStr, '": { "executions": {}, "contracts": {} } }'))
             );
-        } else if (!vm.keyExistsJson(vm.readFile(mainnetFilePath), chainIdKey)) {
+        } else if (!vm.keyExistsJson(vm.readFile(deployFilePath), chainIdKey)) {
             // Create network entry if it doesn't exist
             vm.writeJson(
-                vm.serializeJson(chainIdStr, '{ "executions": {}, "contracts": {} }'), mainnetFilePath, chainIdKey
+                vm.serializeJson(chainIdStr, '{ "executions": {}, "contracts": {} }'), deployFilePath, chainIdKey
             );
         }
 
         if (isForked) {
-            // Duplicate Mainnet File
-            vm.writeFile(getForkDeploymentFilePath(), vm.readFile(mainnetFilePath));
+            // Duplicate deployment file
+            vm.writeFile(getForkDeploymentFilePath(), vm.readFile(deployFilePath));
         }
     }
 
     function run() external {
-        // TODO: Use vm.readDir to recursively build this?
-        _runDeployFile(new DeployCoreScript());
+        if (block.chainid == 1) {
+            // TODO: Use vm.readDir to recursively build this?
+            _runDeployFile(new DeployCoreMainnetScript());
+        } else if (block.chainid == 17000) {
+            _runDeployFile(new DeployCoreHoleskyScript());
+        } else {
+            console.log("Skipping deployment (not mainnet)");
+        }
     }
 
-    function _runDeployFile(BaseMainnetScript deployScript) internal {
+    function _runDeployFile(AbstractDeployScript deployScript) internal {
         if (deployScript.proposalExecuted()) {
             // No action to do
             return;
@@ -128,7 +133,7 @@ contract DeployManager is Script {
             /**
              * Post-deployment
              */
-            BaseMainnetScript.DeployRecord[] memory records = deployScript.getAllDeployRecords();
+            AbstractDeployScript.DeployRecord[] memory records = deployScript.getAllDeployRecords();
 
             for (uint256 i = 0; i < records.length; ++i) {
                 string memory name = records[i].name;

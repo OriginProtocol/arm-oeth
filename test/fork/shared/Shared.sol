@@ -9,7 +9,7 @@ import {Modifiers} from "test/fork/utils/Modifiers.sol";
 
 // Contracts
 import {Proxy} from "contracts/Proxy.sol";
-import {OEthARM} from "contracts/OethARM.sol";
+import {OEthARM} from "contracts/OEthARM.sol";
 
 // Interfaces
 import {IERC20} from "contracts/Interfaces.sol";
@@ -106,14 +106,6 @@ abstract contract Fork_Shared_Test_ is Modifiers {
         // Set the Proxy as the OEthARM.
         oethARM = OEthARM(address(proxy));
     }
-
-    // function _deployContracts() internal {
-    //     proxy = Proxy(deployManager.getDeployment("OETH_ARM"));
-    //     oethARM = OEthARM(deployManager.getDeployment("OETH_ARM"));
-
-    //     // Only fuzz from this address. Big speedup on fork.
-    //     targetSender(address(this));
-    // }
 
     function _label() internal {
         vm.label(address(oeth), "OETH");

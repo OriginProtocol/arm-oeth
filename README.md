@@ -94,10 +94,10 @@ function swapTokensForExactTokens(
 
 TODO
 
-| Contract | Address                                    |
-| -------- | ------------------------------------------ |
-| Proxy    |                                            |
-| OEthARM  | 0x1a620B74b7d7EA9a3bD57Ca78014d78FeA7c1F1f |
+| Contract | Address |
+| -------- | ------- |
+| Proxy    |         |
+| OEthARM  |         |
 
 ### Testnet
 
@@ -108,10 +108,10 @@ TODO
 
 ### Holesky
 
-| Contract | Address |
-| -------- | ------- |
-| Proxy    |         |
-| OEthARM  |         |
+| Contract | Address                                    |
+| -------- | ------------------------------------------ |
+| Proxy    | 0xDA3Fd81D85540a5F992a7C386C90964ff764cff6 |
+| OEthARM  | 0xf671190efe0d4953f154b50536a4E155DDD4C121 |
 
 ## Development
 

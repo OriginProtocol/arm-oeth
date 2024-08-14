@@ -2,18 +2,17 @@
 
 pragma solidity 0.8.23;
 
-import "./BaseHoleskyScript.sol";
+import "../AbstractDeployScript.sol";
 import {Vm} from "forge-std/Vm.sol";
 
 import {Holesky} from "contracts/utils/Addresses.sol";
 
-import {OEthARM} from "contracts/OethARM.sol";
+import {OEthARM} from "contracts/OEthARM.sol";
 import {Proxy} from "contracts/Proxy.sol";
 
-import {GovProposal, GovSixHelper} from "contracts/utils/GovSixHelper.sol";
-
-contract DeployCoreScript is BaseHoleskyScript {
-    string public constant override DEPLOY_NAME = "001_DeployCoreScript";
+contract DeployCoreHoleskyScript is AbstractDeployScript {
+    string public constant override DEPLOY_NAME = "001_CoreHolesky";
+    bool public constant override proposalExecuted = false;
 
     constructor() {}
 
@@ -33,6 +32,4 @@ contract DeployCoreScript is BaseHoleskyScript {
         bytes memory data = abi.encodeWithSignature("setOperator(address)", Holesky.RELAYER);
         proxy.initialize(address(implementation), Holesky.RELAYER, data);
     }
-
-    function _fork() internal override {}
 }

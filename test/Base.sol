@@ -6,7 +6,7 @@ import {Test} from "forge-std/Test.sol";
 
 // Contracts
 import {Proxy} from "contracts/Proxy.sol";
-import {OEthARM} from "contracts/OethARM.sol";
+import {OEthARM} from "contracts/OEthARM.sol";
 
 // Interfaces
 import {IERC20} from "contracts/Interfaces.sol";
