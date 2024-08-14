@@ -33,19 +33,19 @@ contract DeployCoreMainnetScript is AbstractDeployScript {
         OethARM implementation = new OethARM(Mainnet.OETH, Mainnet.WETH, Mainnet.OETH_VAULT);
         _recordDeploy("OETH_ARM_IMPL", address(implementation));
 
-        // 3. Initialize proxy, set the owner and the operator
-        bytes memory data = abi.encodeWithSignature("setOperator(address)", Mainnet.RELAYER);
+        // 3. Initialize proxy, set the owner to TIMELOCK, set the operator to RELAYER and approve the OETH Vault to transfer OETH
+        bytes memory data = abi.encodeWithSignature("initialize(address)", Mainnet.RELAYER);
         proxy.initialize(address(implementation), Mainnet.TIMELOCK, data);
     }
 
     function _buildGovernanceProposal() internal override {
-        govProposal.setDescription("Setup OETH ARM Contract");
+        // govProposal.setDescription("Setup OETH ARM Contract");
 
         // NOTE: This has already been done during deployment
         // but doing this here to test governance flow.
 
         // Set operator
-        govProposal.action(deployedContracts["OETH_ARM"], "setOperator(address)", abi.encode(Mainnet.RELAYER));
+        // govProposal.action(deployedContracts["OETH_ARM"], "initialize(address)", abi.encode(Mainnet.RELAYER));
     }
 
     function _fork() internal override {

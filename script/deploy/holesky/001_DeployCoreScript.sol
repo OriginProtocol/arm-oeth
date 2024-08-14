@@ -28,8 +28,8 @@ contract DeployCoreHoleskyScript is AbstractDeployScript {
         OethARM implementation = new OethARM(Holesky.OETH, Holesky.WETH, Holesky.OETH_VAULT);
         _recordDeploy("OETH_ARM_IMPL", address(implementation));
 
-        // 3. Initialize proxy, set the owner and the operator
-        bytes memory data = abi.encodeWithSignature("setOperator(address)", Holesky.RELAYER);
+        // 3. Initialize proxy, set the owner and operator to the RELAYER and approve the OETH Vault to transfer OETH
+        bytes memory data = abi.encodeWithSignature("initialize(address)", Holesky.RELAYER);
         proxy.initialize(address(implementation), Holesky.RELAYER, data);
     }
 }

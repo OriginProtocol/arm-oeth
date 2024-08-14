@@ -110,8 +110,8 @@ TODO
 
 | Contract | Address                                    |
 | -------- | ------------------------------------------ |
-| Proxy    | 0x4e2FbfB0095c78c509db1138dC8A01bd592cf08A |
-| OEthARM  | 0x2BFFBfdFB5EADc39B7e8402F3Ebd91693970E8A6 |
+| Proxy    | 0x8c7a302e208885ee4658E7422f9E259364cC993b |
+| OEthARM  | 0x699092668712E4e94B5b42Fb0aC5dA6209A67394 |
 
 ## Development
 
