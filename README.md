@@ -110,8 +110,8 @@ TODO
 
 | Contract | Address                                    |
 | -------- | ------------------------------------------ |
-| Proxy    | 0xDA3Fd81D85540a5F992a7C386C90964ff764cff6 |
-| OEthARM  | 0xf671190efe0d4953f154b50536a4E155DDD4C121 |
+| Proxy    | 0x4e2FbfB0095c78c509db1138dC8A01bd592cf08A |
+| OEthARM  | 0x2BFFBfdFB5EADc39B7e8402F3Ebd91693970E8A6 |
 
 ## Development
 
@@ -163,7 +163,7 @@ make gas
 
 ### Holesky
 
-In the `.env` file, set `DEPLOYER_PRIVATE_KEY` to an account that has funds on Holesky.
+In the `.env` file, set `HOLESKY_DEPLOYER_PRIVATE_KEY` to an account that has funds on Holesky.
 Set `ETHERSCAN_API_KEY` which can be the same key as mainnet.
 Set `HOLESKY_URL` to a Holesky RPC endpoint.
 

@@ -18,6 +18,7 @@ contract DeployManager is Script {
 
     constructor() {
         isForked = vm.isContext(VmSafe.ForgeContext.ScriptDryRun) || vm.isContext(VmSafe.ForgeContext.TestGroup);
+        console.log("is forked", isForked);
         forkFileId = vm.toString(block.timestamp);
     }
 
@@ -151,7 +152,7 @@ contract DeployManager is Script {
 
             // Write to file instead of using writeJson to avoid "EOF while parsing a value at line 1 column 0" error.
             vm.writeFile(
-                getForkDeploymentFilePath(),
+                getDeploymentFilePath(),
                 string(
                     abi.encodePacked(
                         '{ "',
