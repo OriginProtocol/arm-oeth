@@ -1,0 +1,7 @@
+{
+  "executions": { "001_CoreMainnet": 1723685111 },
+  "contracts": {
+    "OETH_ARM": "0x6bac785889A4127dB0e0CeFEE88E0a9F1Aaf3cC7",
+    "OETH_ARM_IMPL": "0xd8fF298eAed581f74ab845Af62C48aCF85B2f05e"
+  }
+}

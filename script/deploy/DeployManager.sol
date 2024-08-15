@@ -28,7 +28,8 @@ contract DeployManager is Script {
     }
 
     function getChainDeploymentFilePath() public view returns (string memory) {
-        return string(abi.encodePacked(vm.projectRoot(), "/build/deployments.json"));
+        string memory chainIdStr = vm.toString(block.chainid);
+        return string(abi.encodePacked(vm.projectRoot(), "/build/deployments-", chainIdStr, ".json"));
     }
 
     function getForkDeploymentFilePath() public view returns (string memory) {
@@ -40,21 +41,10 @@ contract DeployManager is Script {
     }
 
     function setUp() external {
-        string memory chainIdStr = vm.toString(block.chainid);
-        string memory chainIdKey = string(abi.encodePacked(".", chainIdStr));
-
         string memory deployFilePath = getChainDeploymentFilePath();
         if (!vm.isFile(deployFilePath)) {
             // Create deployment file if it doesn't exist
-            vm.writeFile(
-                deployFilePath,
-                string(abi.encodePacked('{ "', chainIdStr, '": { "executions": {}, "contracts": {} } }'))
-            );
-        } else if (!vm.keyExistsJson(vm.readFile(deployFilePath), chainIdKey)) {
-            // Create network entry if it doesn't exist
-            vm.writeJson(
-                vm.serializeJson(chainIdStr, '{ "executions": {}, "contracts": {} }'), deployFilePath, chainIdKey
-            );
+            vm.writeFile(deployFilePath, string(abi.encodePacked('{"executions": {}, "contracts": {} }')));
         }
 
         if (isForked) {
@@ -85,11 +75,8 @@ contract DeployManager is Script {
             return;
         }
 
-        string memory chainIdStr = isForked ? "1" : vm.toString(block.chainid);
-        string memory chainIdKey = string(abi.encodePacked(".", chainIdStr));
-
-        string memory contractsKey = string(abi.encodePacked(chainIdKey, ".contracts"));
-        string memory executionsKey = string(abi.encodePacked(chainIdKey, ".executions"));
+        string memory contractsKey = ".contracts";
+        string memory executionsKey = ".executions";
 
         string memory deploymentsFilePath = getDeploymentFilePath();
         string memory fileContents = vm.readFile(deploymentsFilePath);
@@ -157,15 +144,7 @@ contract DeployManager is Script {
             vm.writeFile(
                 getDeploymentFilePath(),
                 string(
-                    abi.encodePacked(
-                        '{ "',
-                        chainIdStr,
-                        '": { "executions": ',
-                        currentExecutions,
-                        ', "contracts": ',
-                        networkDeployments,
-                        "}}"
-                    )
+                    abi.encodePacked('{"executions": ', currentExecutions, ', "contracts": ', networkDeployments, "}")
                 )
             );
 

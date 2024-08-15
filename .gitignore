@@ -28,4 +28,4 @@ artifacts
 # Defender Actions
 dist
 
-build/deployments-*.json
+build/deployments-fork*.json
