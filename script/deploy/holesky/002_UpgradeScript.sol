@@ -23,7 +23,7 @@ contract UpgradeHoleskyScript is AbstractDeployScript {
     }
 
     function _execute() internal override {
-        console.log("Upgrade:");
+        console.log("Deploy:", DEPLOY_NAME);
         console.log("------------");
 
         // 1. Deploy new implementation
