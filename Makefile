@@ -52,7 +52,7 @@ deploy-testnet:
 	@forge script script/deploy/DeployManager.sol --rpc-url $(TESTNET_URL) --private-key ${DEPLOYER_PRIVATE_KEY} --broadcast --slow -vvvv
 
 deploy-holesky:
-	@forge script script/deploy/DeployManager.sol --rpc-url $(HOLESKY_URL) --private-key ${HOLESKY_DEPLOYER_PRIVATE_KEY} --broadcast --slow --verify -vvvv
+	@forge script script/deploy/DeployManager.sol --rpc-url $(HOLESKY_URL) --private-key ${DEPLOYER_PRIVATE_KEY} --broadcast --slow --verify -vvvv
 
 # Upgrade scripts
 upgrade:
