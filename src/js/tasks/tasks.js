@@ -70,7 +70,7 @@ subtask(
     const oeth = await resolveAsset("OETH");
     const weth = await resolveAsset("WETH");
     const oethArmAddress = await parseAddress("OETH_ARM");
-    const oethARM = await ethers.getContractAt("OEthARM", oethArmAddress);
+    const oethARM = await ethers.getContractAt("OethARM", oethArmAddress);
     await autoWithdraw({
       ...taskArgs,
       signer,
@@ -92,7 +92,7 @@ subtask(
     const signer = await getSigner();
 
     const oethArmAddress = await parseAddress("OETH_ARM");
-    const oethARM = await ethers.getContractAt("OEthARM", oethArmAddress);
+    const oethARM = await ethers.getContractAt("OethARM", oethArmAddress);
 
     await requestWithdraw({ ...taskArgs, signer, oethARM });
   });
@@ -106,7 +106,7 @@ subtask("claimWithdraw", "Claim a requested withdrawal from the OETH Vault")
     const signer = await getSigner();
 
     const oethArmAddress = await parseAddress("OETH_ARM");
-    const oethARM = await ethers.getContractAt("OEthARM", oethArmAddress);
+    const oethARM = await ethers.getContractAt("OethARM", oethArmAddress);
 
     await claimWithdraw({ ...taskArgs, signer, oethARM });
   });
@@ -120,7 +120,7 @@ subtask("withdrawStatus", "Get the status of a OETH withdrawal request")
     const signer = await getSigner();
 
     const oethArmAddress = await parseAddress("OETH_ARM");
-    const oethARM = await ethers.getContractAt("OEthARM", oethArmAddress);
+    const oethARM = await ethers.getContractAt("OethARM", oethArmAddress);
 
     await withdrawRequestStatus({ ...taskArgs, signer, oethARM });
   });

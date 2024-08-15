@@ -24,6 +24,7 @@ library Mainnet {
 
     // Contracts
     address public constant OETH_VAULT = 0x39254033945AA2E4809Cc2977E7087BEE48bd7Ab;
+    address public constant OETH_ARM = 0x6bac785889A4127dB0e0CeFEE88E0a9F1Aaf3cC7;
 }
 
 library Holesky {
@@ -37,6 +38,7 @@ library Holesky {
 
     // Contracts
     address public constant OETH_VAULT = 0x19d2bAaBA949eFfa163bFB9efB53ed8701aA5dD9;
+    address public constant OETH_ARM = 0x8c7a302e208885ee4658E7422f9E259364cC993b;
 }
 
 contract AddressResolver {
@@ -65,6 +67,7 @@ contract AddressResolver {
 
         // Contracts
         resolver[MAINNET]["OETH_VAULT"] = Mainnet.OETH_VAULT;
+        resolver[MAINNET]["OETH_ARM"] = Mainnet.OETH_ARM;
 
         // Test accounts
         resolver[MAINNET]["INITIAL_DEPLOYER"] = address(0x1001);
@@ -81,6 +84,7 @@ contract AddressResolver {
 
         // Contracts
         resolver[HOLESKY]["OETH_VAULT"] = Holesky.OETH_VAULT;
+        resolver[HOLESKY]["OETH_ARM"] = Mainnet.OETH_ARM;
 
         // Test accounts
         resolver[HOLESKY]["INITIAL_DEPLOYER"] = Holesky.INITIAL_DEPLOYER;

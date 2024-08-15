@@ -74,7 +74,7 @@ const logLiquidity = async () => {
   console.log(`\nLiquidity`);
 
   const oethArmAddress = await parseAddress("OETH_ARM");
-  const oethARM = await ethers.getContractAt("OEthARM", oethArmAddress);
+  const oethARM = await ethers.getContractAt("OethARM", oethArmAddress);
 
   const weth = await resolveAsset("WETH");
   const liquidityWeth = await weth.balanceOf(oethARM.getAddress());
