@@ -40,7 +40,7 @@ subtask(
   "swap",
   "Swap from one asset to another. Can only specify the from or to asset"
 )
-  .addOptionalParam("from", "Symbol of the from asset", undefined, types.string)
+  .addOptionalParam("from", "Symbol of the from asset", "OETH", types.string)
   .addOptionalParam("to", "Symbol of the to asset", undefined, types.string)
   .addParam(
     "amount",
