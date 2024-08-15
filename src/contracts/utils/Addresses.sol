@@ -24,8 +24,6 @@ library Mainnet {
 
     // Contracts
     address public constant OETH_VAULT = 0x39254033945AA2E4809Cc2977E7087BEE48bd7Ab;
-    // TODO update after deployment
-    address public constant OETH_ARM = 0x2103e4daA9dBD24136a7Bb0DfcB4D614280A8ED4;
 }
 
 library Holesky {
@@ -39,7 +37,6 @@ library Holesky {
 
     // Contracts
     address public constant OETH_VAULT = 0x19d2bAaBA949eFfa163bFB9efB53ed8701aA5dD9;
-    address public constant OETH_ARM = 0xE9cd9132046BbD85ebdb9159e076Ca96f8f2F84c;
 }
 
 contract AddressResolver {
@@ -68,7 +65,6 @@ contract AddressResolver {
 
         // Contracts
         resolver[MAINNET]["OETH_VAULT"] = Mainnet.OETH_VAULT;
-        resolver[MAINNET]["OETH_ARM"] = Mainnet.OETH_ARM;
 
         // Test accounts
         resolver[MAINNET]["INITIAL_DEPLOYER"] = address(0x1001);
@@ -85,20 +81,20 @@ contract AddressResolver {
 
         // Contracts
         resolver[HOLESKY]["OETH_VAULT"] = Holesky.OETH_VAULT;
-        resolver[HOLESKY]["OETH_ARM"] = Holesky.OETH_ARM;
 
         // Test accounts
         resolver[HOLESKY]["INITIAL_DEPLOYER"] = Holesky.INITIAL_DEPLOYER;
     }
 
     function resolve(string memory name) public view returns (address resolved) {
-        resolved = resolver[block.chainid][name];
+        uint256 chainId = block.chainid == 31337 ? 1 : block.chainid;
+        resolved = resolver[chainId][name];
 
         if (resolved == address(0)) {
-            console.log("Failed to resolve address for %s on chain %d", name, block.chainid);
-            revert UnresolvedAddress(block.chainid, name);
+            console.log("Failed to resolve address for %s on chain %d", name, chainId);
+            revert UnresolvedAddress(chainId, name);
         }
 
-        // console.log("Resolve %s on chain %d to %s", name, block.chainid, resolved);
+        // console.log("Resolve %s on chain %d to %s", name, chainId, resolved);
     }
 }

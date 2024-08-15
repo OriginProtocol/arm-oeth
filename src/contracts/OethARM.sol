@@ -5,7 +5,7 @@ import {PeggedARM} from "./PeggedARM.sol";
 import {OethLiquidityManager} from "./OethLiquidityManager.sol";
 import {Initializable} from "./utils/Initializable.sol";
 
-contract OEthARM is Initializable, PeggedARM, OethLiquidityManager {
+contract OethARM is Initializable, PeggedARM, OethLiquidityManager {
     /// @param _oeth The address of the OETH token that is being swapped into this contract.
     /// @param _weth The address of the WETH token that is being swapped out of this contract.
     /// @param _oethVault The address of the OETH Vault proxy.

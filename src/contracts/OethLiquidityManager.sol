@@ -23,7 +23,7 @@ contract OethLiquidityManager is OwnableOperable {
     }
 
     function _approvals() internal {
-        IERC20(oeth).approve(address(oethVault), type(uint256).max);
+        IERC20(oeth).approve(oethVault, type(uint256).max);
     }
 
     /**

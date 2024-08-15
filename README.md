@@ -94,10 +94,10 @@ function swapTokensForExactTokens(
 
 TODO
 
-| Contract | Address                                    |
-| -------- | ------------------------------------------ |
-| Proxy    |                                            |
-| OEthARM  | 0x1a620B74b7d7EA9a3bD57Ca78014d78FeA7c1F1f |
+| Contract | Address |
+| -------- | ------- |
+| Proxy    |         |
+| OEthARM  |         |
 
 ### Testnet
 
@@ -108,10 +108,10 @@ TODO
 
 ### Holesky
 
-| Contract | Address |
-| -------- | ------- |
-| Proxy    |         |
-| OEthARM  |         |
+| Contract | Address                                    |
+| -------- | ------------------------------------------ |
+| Proxy    | 0x8c7a302e208885ee4658E7422f9E259364cC993b |
+| OEthARM  | 0x699092668712E4e94B5b42Fb0aC5dA6209A67394 |
 
 ## Development
 
@@ -163,7 +163,7 @@ make gas
 
 ### Holesky
 
-In the `.env` file, set `DEPLOYER_PRIVATE_KEY` to an account that has funds on Holesky.
+In the `.env` file, set `HOLESKY_DEPLOYER_PRIVATE_KEY` to an account that has funds on Holesky.
 Set `ETHERSCAN_API_KEY` which can be the same key as mainnet.
 Set `HOLESKY_URL` to a Holesky RPC endpoint.
 
