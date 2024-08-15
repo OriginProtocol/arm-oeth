@@ -95,21 +95,21 @@ function swapTokensForExactTokens(
 | Contract | Address                                    |
 | -------- | ------------------------------------------ |
 | Proxy    | 0x6bac785889A4127dB0e0CeFEE88E0a9F1Aaf3cC7 |
-| OEthARM  | 0xd8fF298eAed581f74ab845Af62C48aCF85B2f05e |
+| OethARM  | 0xd8fF298eAed581f74ab845Af62C48aCF85B2f05e |
 
 ### Testnet
 
 | Contract | Address                                    |
 | -------- | ------------------------------------------ |
 | Proxy    | 0xc9cC3a0A5AC839F63cCBff920FcFEd7aF3E80242 |
-| OEthARM  | 0x1a620B74b7d7EA9a3bD57Ca78014d78FeA7c1F1f |
+| OethARM  | 0x1a620B74b7d7EA9a3bD57Ca78014d78FeA7c1F1f |
 
 ### Holesky
 
 | Contract | Address                                    |
 | -------- | ------------------------------------------ |
 | Proxy    | 0x8c7a302e208885ee4658E7422f9E259364cC993b |
-| OEthARM  | 0x699092668712E4e94B5b42Fb0aC5dA6209A67394 |
+| OethARM  | 0x699092668712E4e94B5b42Fb0aC5dA6209A67394 |
 
 ## Development
 
