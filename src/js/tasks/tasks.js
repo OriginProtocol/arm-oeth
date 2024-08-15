@@ -55,14 +55,11 @@ task("swap").setAction(async (_, __, runSuper) => {
 
 // Liquidity management
 
-subtask(
-  "autoRequestWithdraw",
-  "Calculate the withdraw amount to balance the AMM liquidity and request the withdraw if above a minimum amount from Lido (stETH)"
-)
+subtask("autoRequestWithdraw", "Request withdrawal of WETH from the OETH Vault")
   .addOptionalParam(
     "minAmount",
-    "Minimum amount of stETH that can be redeemed",
-    50,
+    "Minimum amount of OETH that will be withdrawn",
+    2,
     types.float
   )
   .setAction(async (taskArgs) => {

@@ -4,11 +4,10 @@ const {
 } = require("defender-relay-client/lib/ethers");
 const { ethers } = require("ethers");
 
-const { autoWithdrawStEth } = require("../tasks/liquidity");
-const addresses = require("../utils/addresses");
+const { autoWithdraw } = require("../tasks/liquidity");
+const { mainnet } = require("../utils/addresses");
 const erc20Abi = require("../../abis/ERC20.json");
-const oethARMAbi = require("../../abis/OEthARM.json");
-const LidoStEthWithdrawalQueue = require("../../abis/LidoWithdrawQueue.json");
+const oethARMAbi = require("../../abis/OethARM.json");
 
 // Entrypoint for the Autotask
 const handler = async (event) => {
@@ -21,31 +20,15 @@ const handler = async (event) => {
   );
 
   // References to contracts
-  const stEth = new ethers.Contract(addresses.mainnet.stETH, erc20Abi, signer);
-  const weth = new ethers.Contract(addresses.mainnet.WETH, erc20Abi, signer);
-  const oSwap = new ethers.Contract(
-    addresses.mainnet.OEthARM,
-    oethARMAbi,
-    signer
-  );
-  const withdrawalQueue = new ethers.Contract(
-    addresses.mainnet.stETHWithdrawalQueue,
-    LidoStEthWithdrawalQueue,
-    signer
-  );
+  const oeth = new ethers.Contract(mainnet.OETH, erc20Abi, signer);
+  const oethARM = new ethers.Contract(mainnet.OethARM, oethARMAbi, signer);
 
-  await autoWithdrawStEth({
+  await autoWithdraw({
     signer,
-    stEth,
-    weth,
-    oSwap,
-    withdrawalQueue,
-    pair: "OETH/WETH",
+    oethARM,
+    oeth,
     minAmount: 2,
-    confirm: false,
-    divisor: 20n, // Leave 1/20 of the liquidity as OETH
   });
 };
 
 module.exports = { handler };
-

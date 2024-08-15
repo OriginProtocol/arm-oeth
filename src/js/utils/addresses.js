@@ -18,4 +18,7 @@ addresses.mainnet.OETHVaultProxy = "0x39254033945aa2e4809cc2977e7087bee48bd7ab";
 // Tokens
 addresses.mainnet.WETH = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
 
+
+addresses.mainnet.OethARM = "0x6bac785889A4127dB0e0CeFEE88E0a9F1Aaf3cC7";
+
 module.exports = addresses;
