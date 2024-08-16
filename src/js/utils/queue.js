@@ -1,6 +1,8 @@
 const { ApolloClient, InMemoryCache, gql } = require("@apollo/client/core");
 const dayjs = require("dayjs");
 const utc = require("dayjs/plugin/utc");
+const { BigNumber } = require("ethers");
+const { formatUnits } = require("ethers").utils;
 
 // Extend Day.js with the UTC plugin
 dayjs.extend(utc);
@@ -44,8 +46,8 @@ const outstandingWithdrawalAmount = async ({ withdrawer }) => {
     );
 
     const amount = data.oethWithdrawalRequests.reduce(
-      (acc, request) => acc + BigInt(request.amount),
-      0n
+      (acc, request) => acc.add(request.amount),
+      BigNumber.from(0)
     );
 
     return amount;
@@ -62,8 +64,11 @@ const claimableRequests = async ({ withdrawer, queuedAmountClaimable }) => {
     cache: new InMemoryCache(),
   });
 
-  log(`About to get claimable withdrawal requests for ${withdrawer}`);
-  log(`queuedAmountClaimable: ${queuedAmountClaimable}`);
+  log(
+    `About to get claimable withdrawal requests for ${withdrawer} up to ${formatUnits(
+      queuedAmountClaimable
+    )} WETH`
+  );
 
   const query = gql`
     query ClaimableRequestsQuery(
