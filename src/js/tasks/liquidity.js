@@ -2,6 +2,7 @@ const { formatUnits, parseUnits } = require("ethers");
 
 const { parseAddress } = require("../utils/addressParser");
 const { resolveAsset } = require("../utils/assets");
+const { outstandingWithdrawalAmount } = require("../utils/queue");
 const { logTxDetails } = require("../utils/txLogger");
 
 const log = require("../utils/logger")("task:liquidity");
@@ -82,7 +83,9 @@ const logLiquidity = async () => {
   const oeth = await resolveAsset("OETH");
   const liquidityOeth = await oeth.balanceOf(oethARM.getAddress());
   // TODO need to get from indexer
-  const liquidityOethWithdraws = 0n;
+  const liquidityOethWithdraws = await outstandingWithdrawalAmount({
+    withdrawer: await oethARM.getAddress(),
+  });
 
   const total = liquidityWeth + liquidityOeth + liquidityOethWithdraws;
   const wethPercent = total == 0 ? 0 : (liquidityWeth * 10000n) / total;

@@ -12,6 +12,7 @@
   },
   "license": "MIT",
   "devDependencies": {
+    "@apollo/client": "^3.11.4",
     "@nomicfoundation/hardhat-ethers": "^3.0.5",
     "@nomicfoundation/hardhat-foundry": "^1.1.1",
     "@nomicfoundation/hardhat-network-helpers": "^1.0.10",
@@ -27,6 +28,7 @@
     "dotenv": "^16.4.5",
     "eslint": "^8.55.0",
     "ethers": "^6.11.1",
+    "graphql": "^16.9.0",
     "hardhat": "^2.19.2",
     "rollup": "^4.9.1"
   }
