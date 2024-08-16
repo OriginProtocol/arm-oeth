@@ -31,7 +31,7 @@ const claimWithdraw = async ({ id, signer, oethARM }) => {
 };
 
 const autoRequestWithdraw = async ({ signer, oeth, oethARM, minAmount }) => {
-  const oethArmAddr = oethARM.getAddress();
+  const oethArmAddr = await oethARM.getAddress();
   const oethBalance = await oeth.balanceOf(oethArmAddr);
   log(`${formatUnits(oethBalance)} OETH in ARM`);
 
@@ -53,7 +53,7 @@ const autoRequestWithdraw = async ({ signer, oeth, oethARM, minAmount }) => {
 };
 
 const autoClaimWithdraw = async ({ signer, weth, oethARM, vault }) => {
-  const oethArmAddr = oethARM.getAddress();
+  const oethArmAddr = await oethARM.getAddress();
 
   // Get amount of requests that have already been claimed
   const { claimed } = await vault.withdrawalQueueMetadata();
@@ -104,10 +104,10 @@ const logLiquidity = async () => {
   const oethARM = await ethers.getContractAt("OethARM", oethArmAddress);
 
   const weth = await resolveAsset("WETH");
-  const liquidityWeth = await weth.balanceOf(oethARM.getAddress());
+  const liquidityWeth = await weth.balanceOf(await oethARM.getAddress());
 
   const oeth = await resolveAsset("OETH");
-  const liquidityOeth = await oeth.balanceOf(oethARM.getAddress());
+  const liquidityOeth = await oeth.balanceOf(await oethARM.getAddress());
   const liquidityOethWithdraws = await outstandingWithdrawalAmount({
     withdrawer: await oethARM.getAddress(),
   });
