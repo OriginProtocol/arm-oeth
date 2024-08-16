@@ -3,7 +3,8 @@ const { subtask, task, types } = require("hardhat/config");
 const { parseAddress } = require("../utils/addressParser");
 const { setAutotaskVars } = require("./autotask");
 const {
-  autoWithdraw,
+  autoRequestWithdraw,
+  autoClaimWithdraw,
   requestWithdraw,
   claimWithdraw,
   logLiquidity,
@@ -68,7 +69,7 @@ subtask("autoRequestWithdraw", "Request withdrawal of WETH from the OETH Vault")
     const weth = await resolveAsset("WETH");
     const oethArmAddress = await parseAddress("OETH_ARM");
     const oethARM = await ethers.getContractAt("OethARM", oethArmAddress);
-    await autoWithdraw({
+    await autoRequestWithdraw({
       ...taskArgs,
       signer,
       oeth,
@@ -77,6 +78,29 @@ subtask("autoRequestWithdraw", "Request withdrawal of WETH from the OETH Vault")
     });
   });
 task("autoRequestWithdraw").setAction(async (_, __, runSuper) => {
+  return runSuper();
+});
+
+subtask(
+  "autoClaimWithdraw",
+  "Claim withdrawal requests from the OETH Vault"
+).setAction(async (taskArgs) => {
+  const signer = await getSigner();
+  const weth = await resolveAsset("WETH");
+  const oethArmAddress = await parseAddress("OETH_ARM");
+  const oethARM = await ethers.getContractAt("OethARM", oethArmAddress);
+  const vaultAddress = await parseAddress("OETH_VAULT");
+  const vault = await ethers.getContractAt("IOETHVault", vaultAddress);
+
+  await autoClaimWithdraw({
+    ...taskArgs,
+    signer,
+    weth,
+    oethARM,
+    vault,
+  });
+});
+task("autoClaimWithdraw").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
 
@@ -118,8 +142,10 @@ subtask("withdrawStatus", "Get the status of a OETH withdrawal request")
 
     const oethArmAddress = await parseAddress("OETH_ARM");
     const oethARM = await ethers.getContractAt("OethARM", oethArmAddress);
+    const vaultAddress = await parseAddress("OETH_VAULT");
+    const vault = await ethers.getContractAt("IOETHVault", vaultAddress);
 
-    await withdrawRequestStatus({ ...taskArgs, signer, oethARM });
+    await withdrawRequestStatus({ ...taskArgs, signer, oethARM, vault });
   });
 task("withdrawStatus").setAction(async (_, __, runSuper) => {
   return runSuper();

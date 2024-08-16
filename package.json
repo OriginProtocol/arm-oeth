@@ -25,6 +25,7 @@
     "axios": "^1.6.2",
     "builtin-modules": "^3.3.0",
     "chai": "^4.3.10",
+    "dayjs": "^1.11.12",
     "dotenv": "^16.4.5",
     "eslint": "^8.55.0",
     "ethers": "^6.11.1",
