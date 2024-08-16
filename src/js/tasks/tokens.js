@@ -1,4 +1,4 @@
-const { parseUnits, formatUnits } = require("ethers");
+const { parseUnits, formatUnits } = require("ethers").utils;
 
 const { resolveAsset } = require("../utils/assets");
 const { getSigner } = require("../utils/signers");

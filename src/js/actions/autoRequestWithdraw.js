@@ -4,7 +4,7 @@ const {
 } = require("defender-relay-client/lib/ethers");
 const { ethers } = require("ethers");
 
-const { autoWithdraw } = require("../tasks/liquidity");
+const { autoRequestWithdraw } = require("../tasks/liquidity");
 const { mainnet } = require("../utils/addresses");
 const erc20Abi = require("../../abis/ERC20.json");
 const oethARMAbi = require("../../abis/OethARM.json");
@@ -20,15 +20,20 @@ const handler = async (event) => {
   );
 
   // References to contracts
-  const oeth = new ethers.Contract(mainnet.OETH, erc20Abi, signer);
+  const oeth = new ethers.Contract(mainnet.OETHProxy, erc20Abi, signer);
   const oethARM = new ethers.Contract(mainnet.OethARM, oethARMAbi, signer);
 
-  await autoWithdraw({
-    signer,
-    oethARM,
-    oeth,
-    minAmount: 2,
-  });
+  try {
+    await autoRequestWithdraw({
+      signer,
+      oeth,
+      oethARM,
+      minAmount: 0.001,
+      confirm: false,
+    });
+  } catch (error) {
+    console.error(error);
+  }
 };
 
 module.exports = { handler };

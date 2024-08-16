@@ -12,11 +12,12 @@
   },
   "license": "MIT",
   "devDependencies": {
-    "@nomicfoundation/hardhat-ethers": "^3.0.5",
+    "@apollo/client": "^3.11.4",
+    "@nomiclabs/hardhat-ethers": "2.0.2",
     "@nomicfoundation/hardhat-foundry": "^1.1.1",
     "@nomicfoundation/hardhat-network-helpers": "^1.0.10",
     "@openzeppelin/defender-autotask-client": "^1.54.1",
-    "@openzeppelin/defender-sdk": "^1.11.0",
+    "@openzeppelin/defender-sdk": "1.13.1",
     "@rollup/plugin-commonjs": "^25.0.7",
     "@rollup/plugin-json": "^6.1.0",
     "@rollup/plugin-node-resolve": "^15.2.3",
@@ -24,9 +25,11 @@
     "axios": "^1.6.2",
     "builtin-modules": "^3.3.0",
     "chai": "^4.3.10",
+    "dayjs": "^1.11.12",
     "dotenv": "^16.4.5",
     "eslint": "^8.55.0",
-    "ethers": "^6.11.1",
+    "ethers": "5.7.2",
+    "graphql": "^16.9.0",
     "hardhat": "^2.19.2",
     "rollup": "^4.9.1"
   }
