@@ -31,9 +31,9 @@ module.exports = [
     ...commonConfig,
   },
   {
-    input: "autoClaimWithdraws.js",
+    input: "autoClaimWithdraw.js",
     output: {
-      file: "dist/autoClaimWithdraws/index.js",
+      file: "dist/autoClaimWithdraw/index.js",
       format: "cjs",
     },
     ...commonConfig,

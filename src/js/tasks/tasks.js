@@ -2,6 +2,7 @@ const { subtask, task, types } = require("hardhat/config");
 
 const { parseAddress } = require("../utils/addressParser");
 const { setAutotaskVars } = require("./autotask");
+const { setActionVars } = require("./defender");
 const {
   autoRequestWithdraw,
   autoClaimWithdraw,
@@ -433,5 +434,16 @@ subtask("upgradeProxy", "Upgrade a proxy contract to a new implementation")
     await upgradeProxy({ ...taskArgs, signer });
   });
 task("upgradeProxy").setAction(async (_, __, runSuper) => {
+  return runSuper();
+});
+
+// Defender
+subtask(
+  "setActionVars",
+  "Set environment variables on a Defender Actions. eg DEBUG=origin*"
+)
+  .addParam("id", "Identifier of the Defender Actions", undefined, types.string)
+  .setAction(setActionVars);
+task("setActionVars").setAction(async (_, __, runSuper) => {
   return runSuper();
 });

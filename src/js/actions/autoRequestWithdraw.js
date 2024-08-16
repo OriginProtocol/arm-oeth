@@ -20,13 +20,13 @@ const handler = async (event) => {
   );
 
   // References to contracts
-  const oeth = new ethers.Contract(mainnet.OETH, erc20Abi, signer);
+  const oeth = new ethers.Contract(mainnet.OETHProxy, erc20Abi, signer);
   const oethARM = new ethers.Contract(mainnet.OethARM, oethARMAbi, signer);
 
   await autoRequestWithdraw({
     signer,
-    oethARM,
     oeth,
+    oethARM,
     minAmount: 2,
   });
 };

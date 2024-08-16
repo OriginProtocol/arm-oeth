@@ -8,6 +8,7 @@ const { autoClaimWithdraw } = require("../tasks/liquidity");
 const { mainnet } = require("../utils/addresses");
 const erc20Abi = require("../../abis/ERC20.json");
 const oethARMAbi = require("../../abis/OethARM.json");
+const vaultAbi = require("../../abis/vault.json");
 
 // Entrypoint for the Autotask
 const handler = async (event) => {
@@ -20,14 +21,15 @@ const handler = async (event) => {
   );
 
   // References to contracts
-  // References to contracts
-  const oeth = new ethers.Contract(mainnet.OETH, erc20Abi, signer);
+  const weth = new ethers.Contract(mainnet.WETH, erc20Abi, signer);
+  const vault = new ethers.Contract(mainnet.OETHVaultProxy, vaultAbi, signer);
   const oethARM = new ethers.Contract(mainnet.OethARM, oethARMAbi, signer);
 
   await autoClaimWithdraw({
     signer,
-    oeth,
+    weth,
     oethARM,
+    vault,
   });
 };
 
