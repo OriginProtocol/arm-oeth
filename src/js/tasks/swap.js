@@ -18,7 +18,7 @@ const swap = async (taskArguments) => {
   const signerAddress = await signer.getAddress();
 
   const oethArmAddress = await parseAddress("OETH_ARM");
-  const oethARM = await ethers.getContractAt("OEthARM", oethArmAddress);
+  const oethARM = await ethers.getContractAt("OethARM", oethArmAddress);
 
   if (from) {
     const fromAddress = resolveAddress(from);

@@ -92,26 +92,24 @@ function swapTokensForExactTokens(
 
 ### Mainnet
 
-TODO
-
-| Contract | Address |
-| -------- | ------- |
-| Proxy    |         |
-| OEthARM  |         |
+| Contract | Address                                    |
+| -------- | ------------------------------------------ |
+| Proxy    | 0x6bac785889A4127dB0e0CeFEE88E0a9F1Aaf3cC7 |
+| OethARM  | 0xd8fF298eAed581f74ab845Af62C48aCF85B2f05e |
 
 ### Testnet
 
 | Contract | Address                                    |
 | -------- | ------------------------------------------ |
 | Proxy    | 0xc9cC3a0A5AC839F63cCBff920FcFEd7aF3E80242 |
-| OEthARM  | 0x1a620B74b7d7EA9a3bD57Ca78014d78FeA7c1F1f |
+| OethARM  | 0x1a620B74b7d7EA9a3bD57Ca78014d78FeA7c1F1f |
 
 ### Holesky
 
 | Contract | Address                                    |
 | -------- | ------------------------------------------ |
 | Proxy    | 0x8c7a302e208885ee4658E7422f9E259364cC993b |
-| OEthARM  | 0x699092668712E4e94B5b42Fb0aC5dA6209A67394 |
+| OethARM  | 0x699092668712E4e94B5b42Fb0aC5dA6209A67394 |
 
 ## Development
 
@@ -188,6 +186,20 @@ In the `.env` file, set `DEPLOYER_PRIVATE_KEY`, `ETHERSCAN_API_KEY` and `PROVIDE
 make deploy
 ```
 
+## Contract Verification
+
+If the verification doesn't work with the deployment, it can be done separately with forge `verify-contract`.
+For example
+
+```
+# Verify OethARM
+forge verify-contract 0xd8fF298eAed581f74ab845Af62C48aCF85B2f05e OethARM  \
+  --constructor-args $(cast abi-encode "constructor(address,address,address)" 0x856c4Efb76C1D1AE02e20CEB03A2A6a08b0b8dC3 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2 0x39254033945AA2E4809Cc2977E7087BEE48bd7Ab )
+
+# Verify Proxy
+forge verify-contract 0x6bac785889A4127dB0e0CeFEE88E0a9F1Aaf3cC7 Proxy
+```
+
 ## Open Zeppelin Defender
 
 [Open Zeppelin Defender v2](https://docs.openzeppelin.com/defender/v2/) is used to manage the Operations account and automate AMM operational jobs like managing liquidity.
@@ -223,50 +235,3 @@ The following will upload the different Autotask bundles to Defender.
 ```
 
 `rollup` and `defender-autotask` can be installed globally to avoid the `npx` prefix.
-
-## Script
-
-### Testing script
-
-- The deployment will happen on RPC used on the .env file, under `PROVIDER_URL`.
-- If `DEPLOYER_PRIVATE_KEY` key exist, it will use it to simulate the deployment.
-- Otherwise it will create an address for the test.
-
-#### For smart contract
-
-```
-make simulate-c-ScriptContractName
-# example: make simulate-c-001_OETH_ARM
-```
-
-#### For task
-
-```
-make simulate-t-taskName $(ARGS1) $(ARGS2)
-# example: make simulate-task-swap FROM=0x856c4Efb76C1D1AE02e20CEB03A2A6a08b0b8dC3 TO=0x0000000000000000000000000000000000000000 AMOUNT=1234
-```
-
-### Running script
-
-The `DEPLOYER_PRIVATE_KEY` on the `.env` is mandatory here!
-It will run with the following options:
-
-- broadcast (send transaction for real)
-- slow (i.e. send tx after prior confirmed and succeeded)
-- verify (verify contract on Etherscan)
-- max verbosity
-
-#### For smart contract
-
-`ETHERSCAN_API_KEY` is mandatory here!
-
-```
-make deploy-c-ScriptContractName
-```
-
-#### For task
-
-```
-make run-t-taskName $(ARGS1) $(ARGS2)
-# example: make run-task-swap FROM=0x856c4Efb76C1D1AE02e20CEB03A2A6a08b0b8dC3 TO=0x0000000000000000000000000000000000000000 AMOUNT=1234
-```

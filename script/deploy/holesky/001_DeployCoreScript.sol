@@ -15,7 +15,7 @@ contract DeployCoreHoleskyScript is AbstractDeployScript {
     bool public constant override proposalExecuted = false;
 
     function _execute() internal override {
-        console.log("Deploy:");
+        console.log("Deploy:", DEPLOY_NAME);
         console.log("------------");
 
         // 1. Deploy proxy contracts
