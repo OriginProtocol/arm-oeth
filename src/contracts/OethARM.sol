@@ -1,16 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
+import {AbstractARM} from "./AbstractARM.sol";
 import {PeggedARM} from "./PeggedARM.sol";
+import {OwnerLP} from "./OwnerLP.sol";
 import {OethLiquidityManager} from "./OethLiquidityManager.sol";
 import {Initializable} from "./utils/Initializable.sol";
 
-contract OethARM is Initializable, PeggedARM, OethLiquidityManager {
+contract OethARM is Initializable, PeggedARM, OwnerLP, OethLiquidityManager {
     /// @param _oeth The address of the OETH token that is being swapped into this contract.
     /// @param _weth The address of the WETH token that is being swapped out of this contract.
     /// @param _oethVault The address of the OETH Vault proxy.
     constructor(address _oeth, address _weth, address _oethVault)
-        PeggedARM(_oeth, _weth)
+        AbstractARM(_oeth, _weth)
         OethLiquidityManager(_oeth, _oethVault)
     {}
 
