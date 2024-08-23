@@ -11,6 +11,8 @@ gas_reports = ["OEthARM", "Proxy" ]
 
 remappings = [
   "contracts/=./src/contracts",
+  "@openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/",
+  "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
   "script/=./script",
   "test/=./test",
   "utils/=./src/contracts/utils"
