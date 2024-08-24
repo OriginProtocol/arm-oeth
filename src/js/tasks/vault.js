@@ -1,4 +1,4 @@
-const { parseUnits } = require("ethers").utils;
+const { parseUnits } = require("ethers");
 
 const { resolveAsset } = require("../utils/assets");
 const { getSigner } = require("../utils/signers");
@@ -73,14 +73,14 @@ async function mint({ amount, asset, min, approve }) {
   if (approve) {
     const approveTx = await cAsset
       .connect(signer)
-      .approve(vault.address, assetUnits);
+      .approve(await vault.getAddress(), assetUnits);
     await logTxDetails(approveTx, "approve");
   }
 
   log(`About to mint OETH from ${amount} ${asset}`);
   const tx = await vault
     .connect(signer)
-    .mint(cAsset.address, assetUnits, minUnits);
+    .mint(await cAsset.getAddress(), assetUnits, minUnits);
   await logTxDetails(tx, "mint");
 }
 

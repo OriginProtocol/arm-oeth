@@ -1,4 +1,4 @@
-const { formatUnits, parseUnits } = require("ethers").utils;
+const { formatUnits, parseUnits } = require("ethers");
 
 const { parseAddress } = require("../utils/addressParser");
 const { resolveAsset } = require("../utils/assets");
@@ -37,7 +37,7 @@ const autoRequestWithdraw = async ({
   minAmount,
   confirm,
 }) => {
-  const oethBalance = await oeth.balanceOf(oethARM.address);
+  const oethBalance = await oeth.balanceOf(await oethARM.getAddress());
   log(`${formatUnits(oethBalance)} OETH in ARM`);
 
   const minAmountBI = parseUnits(minAmount.toString(), 18);
@@ -62,9 +62,9 @@ const autoClaimWithdraw = async ({ signer, weth, oethARM, vault, confirm }) => {
   const { claimed } = await vault.withdrawalQueueMetadata();
 
   // Get WETH balance in OETH Vault
-  const wethVaultBalance = await weth.balanceOf(vault.address);
+  const wethVaultBalance = await weth.balanceOf(await vault.getAddress());
 
-  const queuedAmountClaimable = claimed.add(wethVaultBalance);
+  const queuedAmountClaimable = claimed + wethVaultBalance;
   log(
     `Claimable queued amount is ${formatUnits(claimed)} claimed + ${formatUnits(
       wethVaultBalance
@@ -73,7 +73,7 @@ const autoClaimWithdraw = async ({ signer, weth, oethARM, vault, confirm }) => {
 
   // get claimable withdrawal requests
   let requestIds = await claimableRequests({
-    withdrawer: oethARM.address,
+    withdrawer: await oethARM.getAddress(),
     queuedAmountClaimable,
   });
 
@@ -94,7 +94,7 @@ const withdrawRequestStatus = async ({ id, oethARM, vault }) => {
   } else {
     console.log(
       `Withdrawal request ${id} is ${formatUnits(
-        request.queued.sub(queue.claimable)
+        request.queued - queue.claimable
       )} WETH short`
     );
   }
@@ -107,19 +107,19 @@ const logLiquidity = async () => {
   const oethARM = await ethers.getContractAt("OethARM", oethArmAddress);
 
   const weth = await resolveAsset("WETH");
-  const liquidityWeth = await weth.balanceOf(oethARM.address);
+  const liquidityWeth = await weth.balanceOf(await oethARM.getAddress());
 
   const oeth = await resolveAsset("OETH");
-  const liquidityOeth = await oeth.balanceOf(oethARM.address);
+  const liquidityOeth = await oeth.balanceOf(await oethARM.getAddress());
   const liquidityOethWithdraws = await outstandingWithdrawalAmount({
-    withdrawer: oethARM.address,
+    withdrawer: await oethARM.getAddress(),
   });
 
-  const total = liquidityWeth.add(liquidityOeth).add(liquidityOethWithdraws);
-  const wethPercent = total == 0 ? 0 : liquidityWeth.mul(10000).div(total);
+  const total = liquidityWeth + liquidityOeth + liquidityOethWithdraws;
+  const wethPercent = total == 0 ? 0 : (liquidityWeth * 10000n) / total;
   const oethWithdrawsPercent =
-    total == 0 ? 0 : liquidityOethWithdraws.mul(10000).div(total);
-  const oethPercent = total == 0 ? 0 : liquidityOeth.mul(10000).div(total);
+    total == 0 ? 0 : (liquidityOethWithdraws * 10000n) / total;
+  const oethPercent = total == 0 ? 0 : (liquidityOeth * 10000n) / total;
 
   console.log(
     `${formatUnits(liquidityWeth, 18)} WETH ${formatUnits(wethPercent, 2)}%`

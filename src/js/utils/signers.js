@@ -76,9 +76,12 @@ const getDefenderSigner = async () => {
     relayerApiSecret: process.env.DEFENDER_RELAYER_SECRET,
   };
   const client = new Defender(credentials);
-  const provider = client.relaySigner.getProvider();
+  const provider = client.relaySigner.getProvider({ ethersVersion: "v6" });
 
-  const signer = await client.relaySigner.getSigner(provider, { speed });
+  const signer = await client.relaySigner.getSigner(provider, {
+    speed,
+    ethersVersion: "v6",
+  });
   log(
     `Using Defender Relayer account ${await signer.getAddress()} from env vars DEFENDER_RELAYER_KEY and DEFENDER_RELAYER_SECRET`
   );

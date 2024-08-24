@@ -2,7 +2,7 @@
 
 require("dotenv").config();
 
-require("@nomiclabs/hardhat-ethers");
+require("@nomicfoundation/hardhat-ethers");
 require("@nomicfoundation/hardhat-foundry");
 
 require("./src/js/tasks/tasks");
