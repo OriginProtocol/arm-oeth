@@ -62,12 +62,12 @@ const autoClaimWithdraw = async ({ signer, weth, oethARM, vault, confirm }) => {
   const { claimed } = await vault.withdrawalQueueMetadata();
 
   // Get WETH balance in OETH Vault
-  const wethBalance = await weth.balanceOf(oethARM.address);
+  const wethVaultBalance = await weth.balanceOf(vault.address);
 
-  const queuedAmountClaimable = claimed.add(wethBalance);
+  const queuedAmountClaimable = claimed.add(wethVaultBalance);
   log(
     `Claimable queued amount is ${formatUnits(claimed)} claimed + ${formatUnits(
-      wethBalance
+      wethVaultBalance
     )} WETH in vault = ${formatUnits(queuedAmountClaimable)}`
   );
 
