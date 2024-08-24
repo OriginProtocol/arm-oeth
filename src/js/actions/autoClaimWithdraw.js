@@ -31,7 +31,7 @@ const handler = async (event) => {
       weth,
       oethARM,
       vault,
-      confirm: false,
+      confirm: true,
     });
   } catch (error) {
     console.error(error);
