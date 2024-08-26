@@ -1,4 +1,4 @@
-const { parseUnits } = require("ethers").utils;
+const { parseUnits } = require("ethers");
 
 const { logTxDetails } = require("../utils/txLogger");
 

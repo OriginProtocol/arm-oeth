@@ -1,4 +1,4 @@
-const { parseUnits, MaxInt256 } = require("ethers").utils;
+const { parseUnits, MaxInt256 } = require("ethers");
 
 const { resolveAddress } = require("../utils/assets");
 const { getSigner } = require("../utils/signers");
