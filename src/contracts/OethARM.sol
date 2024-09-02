@@ -7,14 +7,14 @@ import {OwnerLP} from "./OwnerLP.sol";
 import {OethLiquidityManager} from "./OethLiquidityManager.sol";
 import {Initializable} from "./utils/Initializable.sol";
 
-contract OethARM is Initializable, PeggedARM, OwnerLP, OethLiquidityManager {
+contract OethARM is Initializable, OwnerLP, PeggedARM, OethLiquidityManager {
     /// @param _oeth The address of the OETH token that is being swapped into this contract.
     /// @param _weth The address of the WETH token that is being swapped out of this contract.
     /// @param _oethVault The address of the OETH Vault proxy.
     constructor(address _oeth, address _weth, address _oethVault)
         AbstractARM(_oeth, _weth)
-        OethLiquidityManager(_oeth, _oethVault)
         PeggedARM(false)
+        OethLiquidityManager(_oeth, _oethVault)
     {}
 
     /// @notice Initialize the contract.

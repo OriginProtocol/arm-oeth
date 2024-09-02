@@ -183,3 +183,51 @@ interface IWETH is IERC20 {
     function deposit() external payable;
     function withdraw(uint256 wad) external;
 }
+
+interface IStETHWithdrawal {
+    event WithdrawalRequested(
+        uint256 indexed requestId,
+        address indexed requestor,
+        address indexed owner,
+        uint256 amountOfStETH,
+        uint256 amountOfShares
+    );
+    event WithdrawalsFinalized(
+        uint256 indexed from, uint256 indexed to, uint256 amountOfETHLocked, uint256 sharesToBurn, uint256 timestamp
+    );
+    event WithdrawalClaimed(
+        uint256 indexed requestId, address indexed owner, address indexed receiver, uint256 amountOfETH
+    );
+
+    struct WithdrawalRequestStatus {
+        /// @notice stETH token amount that was locked on withdrawal queue for this request
+        uint256 amountOfStETH;
+        /// @notice amount of stETH shares locked on withdrawal queue for this request
+        uint256 amountOfShares;
+        /// @notice address that can claim or transfer this request
+        address owner;
+        /// @notice timestamp of when the request was created, in seconds
+        uint256 timestamp;
+        /// @notice true, if request is finalized
+        bool isFinalized;
+        /// @notice true, if request is claimed. Request is claimable if (isFinalized && !isClaimed)
+        bool isClaimed;
+    }
+
+    function transferFrom(address _from, address _to, uint256 _requestId) external;
+    function ownerOf(uint256 _requestId) external returns (address);
+    function requestWithdrawals(uint256[] calldata _amounts, address _owner)
+        external
+        returns (uint256[] memory requestIds);
+    function getLastCheckpointIndex() external view returns (uint256);
+    function findCheckpointHints(uint256[] calldata _requestIds, uint256 _firstIndex, uint256 _lastIndex)
+        external
+        view
+        returns (uint256[] memory hintIds);
+    function claimWithdrawals(uint256[] calldata _requestIds, uint256[] calldata _hints) external;
+    function getWithdrawalStatus(uint256[] calldata _requestIds)
+        external
+        view
+        returns (WithdrawalRequestStatus[] memory statuses);
+    function getWithdrawalRequests(address _owner) external view returns (uint256[] memory requestsIds);
+}
