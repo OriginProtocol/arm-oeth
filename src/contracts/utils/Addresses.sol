@@ -21,6 +21,7 @@ library Mainnet {
     // Tokens
     address public constant OETH = 0x856c4Efb76C1D1AE02e20CEB03A2A6a08b0b8dC3;
     address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    address public constant STETH = 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84;
 
     // Contracts
     address public constant OETH_VAULT = 0x39254033945AA2E4809Cc2977E7087BEE48bd7Ab;
@@ -64,6 +65,7 @@ contract AddressResolver {
         // Tokens
         resolver[MAINNET]["OETH"] = Mainnet.OETH;
         resolver[MAINNET]["WETH"] = Mainnet.WETH;
+        resolver[MAINNET]["STETH"] = Mainnet.STETH;
 
         // Contracts
         resolver[MAINNET]["OETH_VAULT"] = Mainnet.OETH_VAULT;

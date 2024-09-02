@@ -88,6 +88,7 @@ abstract contract Fork_Shared_Test_ is Modifiers {
         // Contracts.
         oeth = IERC20(resolver.resolve("OETH"));
         weth = IERC20(resolver.resolve("WETH"));
+        steth = IERC20(resolver.resolve("STETH"));
         vault = IOETHVault(resolver.resolve("OETH_VAULT"));
     }
 
@@ -110,6 +111,7 @@ abstract contract Fork_Shared_Test_ is Modifiers {
     function _label() internal {
         vm.label(address(oeth), "OETH");
         vm.label(address(weth), "WETH");
+        vm.label(address(steth), "stETH");
         vm.label(address(vault), "OETH VAULT");
         vm.label(address(oethARM), "OETH ARM");
         vm.label(address(proxy), "OETH ARM PROXY");
