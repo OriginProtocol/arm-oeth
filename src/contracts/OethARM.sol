@@ -14,6 +14,7 @@ contract OethARM is Initializable, PeggedARM, OwnerLP, OethLiquidityManager {
     constructor(address _oeth, address _weth, address _oethVault)
         AbstractARM(_oeth, _weth)
         OethLiquidityManager(_oeth, _oethVault)
+        PeggedARM(false)
     {}
 
     /// @notice Initialize the contract.

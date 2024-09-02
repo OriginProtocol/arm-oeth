@@ -41,9 +41,9 @@ abstract contract AbstractARM is OwnableOperable {
         uint256 amountIn,
         uint256 amountOutMin,
         address to
-    ) external {
-        require(amountIn >= amountOutMin, "ARM: Insufficient output amount");
-        _swap(inToken, outToken, amountIn, to);
+    ) external virtual {
+        uint256 amountOut = _swapExactTokensForTokens(inToken, outToken, amountIn, to);
+        require(amountOut >= amountOutMin, "ARM: Insufficient output amount");
     }
 
     /**
@@ -65,20 +65,20 @@ abstract contract AbstractARM is OwnableOperable {
         address[] calldata path,
         address to,
         uint256 deadline
-    ) external returns (uint256[] memory amounts) {
-        require(amountIn >= amountOutMin, "ARM: Insufficient output amount");
+    ) external virtual returns (uint256[] memory amounts) {
         require(path.length == 2, "ARM: Invalid path length");
         _inDeadline(deadline);
 
         IERC20 inToken = IERC20(path[0]);
         IERC20 outToken = IERC20(path[1]);
 
-        _swap(inToken, outToken, amountIn, to);
+        uint256 amountOut = _swapExactTokensForTokens(inToken, outToken, amountIn, to);
 
-        // Swaps are 1:1 so the input amount is the output amount
+        require(amountOut >= amountOutMin, "ARM: Insufficient output amount");
+
         amounts = new uint256[](2);
         amounts[0] = amountIn;
-        amounts[1] = amountIn;
+        amounts[1] = amountOut;
     }
 
     /**
@@ -98,9 +98,10 @@ abstract contract AbstractARM is OwnableOperable {
         uint256 amountOut,
         uint256 amountInMax,
         address to
-    ) external {
-        require(amountOut <= amountInMax, "ARM: Excess input amount");
-        _swap(inToken, outToken, amountOut, to);
+    ) external virtual {
+        uint256 amountIn = _swapTokensForExactTokens(inToken, outToken, amountOut, to);
+
+        require(amountIn <= amountInMax, "ARM: Excess input amount");
     }
 
     /**
@@ -122,23 +123,31 @@ abstract contract AbstractARM is OwnableOperable {
         address[] calldata path,
         address to,
         uint256 deadline
-    ) external returns (uint256[] memory amounts) {
-        require(amountOut <= amountInMax, "ARM: Excess input amount");
+    ) external virtual returns (uint256[] memory amounts) {
         require(path.length == 2, "ARM: Invalid path length");
         _inDeadline(deadline);
 
         IERC20 inToken = IERC20(path[0]);
         IERC20 outToken = IERC20(path[1]);
 
-        _swap(inToken, outToken, amountOut, to);
+        uint256 amountIn = _swapTokensForExactTokens(inToken, outToken, amountOut, to);
 
-        // Swaps are 1:1 so the input amount is the output amount
+        require(amountIn <= amountInMax, "ARM: Excess input amount");
+
         amounts = new uint256[](2);
-        amounts[0] = amountOut;
+        amounts[0] = amountIn;
         amounts[1] = amountOut;
     }
 
-    function _swap(IERC20 inToken, IERC20 outToken, uint256 amount, address to) internal virtual;
+    function _swapExactTokensForTokens(IERC20 inToken, IERC20 outToken, uint256 amountIn, address to)
+        internal
+        virtual
+        returns (uint256 amountOut);
+
+    function _swapTokensForExactTokens(IERC20 inToken, IERC20 outToken, uint256 amountOut, address to)
+        internal
+        virtual
+        returns (uint256 amountIn);
 
     function _inDeadline(uint256 deadline) internal view {
         require(deadline >= block.timestamp, "ARM: Deadline expired");
