@@ -1,3 +1,17 @@
+## Proxy
+
+### Hierarchy
+
+![Proxy Hierarchy](../../docs/ProxyHierarchy.svg)
+
+## Proxy Squashed
+
+![Proxy Squashed](../../docs/ProxySquashed.svg)
+
+## Proxy Storage
+
+![Proxy Storage](../../docs/ProxyStorage.svg)
+
 ## OETH ARM
 
 ### Hierarchy
@@ -12,16 +26,16 @@
 
 ![OETH ARM Storage](../../docs/OEthARMStorage.svg)
 
-## Proxy
+## Lido ARM
 
 ### Hierarchy
 
-![Proxy Hierarchy](../../docs/ProxyHierarchy.svg)
+![Lido ARM Hierarchy](../../docs/LidoMultiLpARMHierarchy.svg)
 
-## Proxy Squashed
+## OETH ARM Squashed
 
-![Proxy Squashed](../../docs/ProxySquashed.svg)
+![Lido ARM Squashed](../../docs/LidoMultiLpARMSquashed.svg)
 
-## Proxy Storage
+## OETH ARM Storage
 
-![Proxy Storage](../../docs/ProxyStorage.svg)
+![Lido ARM Storage](../../docs/LidoMultiLpARMStorage.svg)
