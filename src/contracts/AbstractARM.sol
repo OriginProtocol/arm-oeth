@@ -44,6 +44,8 @@ abstract contract AbstractARM is OwnableOperable {
     ) external virtual {
         uint256 amountOut = _swapExactTokensForTokens(inToken, outToken, amountIn, to);
         require(amountOut >= amountOutMin, "ARM: Insufficient output amount");
+
+        _accountFee(amountIn, amountOut);
     }
 
     /**
@@ -76,6 +78,8 @@ abstract contract AbstractARM is OwnableOperable {
 
         require(amountOut >= amountOutMin, "ARM: Insufficient output amount");
 
+        _accountFee(amountIn, amountOut);
+
         amounts = new uint256[](2);
         amounts[0] = amountIn;
         amounts[1] = amountOut;
@@ -102,6 +106,8 @@ abstract contract AbstractARM is OwnableOperable {
         uint256 amountIn = _swapTokensForExactTokens(inToken, outToken, amountOut, to);
 
         require(amountIn <= amountInMax, "ARM: Excess input amount");
+
+        _accountFee(amountIn, amountOut);
     }
 
     /**
@@ -134,6 +140,8 @@ abstract contract AbstractARM is OwnableOperable {
 
         require(amountIn <= amountInMax, "ARM: Excess input amount");
 
+        _accountFee(amountIn, amountOut);
+
         amounts = new uint256[](2);
         amounts[0] = amountIn;
         amounts[1] = amountOut;
@@ -148,6 +156,9 @@ abstract contract AbstractARM is OwnableOperable {
         internal
         virtual
         returns (uint256 amountIn);
+
+    /// @dev Default to no fee being collected
+    function _accountFee(uint256 amountIn, uint256 amountOut) internal virtual {}
 
     function _inDeadline(uint256 deadline) internal view {
         require(deadline >= block.timestamp, "ARM: Deadline expired");

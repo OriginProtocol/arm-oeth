@@ -57,4 +57,8 @@ contract LidoMultiLpARM is Initializable, MultiLP, FixedPriceARM, LidoLiquidityM
     function _assetsInWithdrawQueue() internal view override(LidoLiquidityManager, MultiLP) returns (uint256) {
         return LidoLiquidityManager._assetsInWithdrawQueue();
     }
+
+    function _accountFee(uint256 amountIn, uint256 amountOut) internal override(MultiLP, AbstractARM) {
+        MultiLP._accountFee(amountIn, amountOut);
+    }
 }

@@ -20,6 +20,7 @@ abstract contract MultiLP is AbstractARM, ERC20Upgradeable {
     /// 10,000 = 100% performance fee
     /// 500 = 5% performance fee
     uint256 public fee;
+    uint256 public feesCollected;
 
     struct WithdrawalQueueMetadata {
         // cumulative total of all withdrawal requests included the ones that have already been claimed
@@ -56,6 +57,7 @@ abstract contract MultiLP is AbstractARM, ERC20Upgradeable {
 
     event RedeemRequested(address indexed withdrawer, uint256 indexed requestId, uint256 assets, uint256 queued);
     event RedeemClaimed(address indexed withdrawer, uint256 indexed requestId, uint256 assets);
+    event FeeCollected(address feeCollector, uint256 fee);
 
     constructor(address _liquidityToken) {
         require(_liquidityToken == address(token0) || _liquidityToken == address(token1), "invalid liquidity token");
@@ -79,22 +81,17 @@ abstract contract MultiLP is AbstractARM, ERC20Upgradeable {
     }
 
     function previewDeposit(uint256 assets) public view returns (uint256 shares) {
-        shares = convertToShares(assets) * (MAX_FEE - fee) / MAX_FEE;
+        shares = convertToShares(assets);
     }
 
     function deposit(uint256 assets) external returns (uint256 shares) {
-        uint256 totalSharesMinted = convertToShares(assets);
-        uint256 depositorShares = totalSharesMinted * (MAX_FEE - fee) / MAX_FEE;
-        uint256 feeCollectorShares = totalSharesMinted - depositorShares;
+        shares = convertToShares(assets);
 
         // Transfer the liquidity token from the sender to this contract
         IERC20(liquidityToken).transferFrom(msg.sender, address(this), assets);
 
         // mint shares
-        _mint(msg.sender, depositorShares);
-        _mint(feeCollector, feeCollectorShares);
-
-        return depositorShares;
+        _mint(msg.sender, shares);
     }
 
     function previewRedeem(uint256 shares) public view returns (uint256 assets) {
@@ -106,15 +103,6 @@ abstract contract MultiLP is AbstractARM, ERC20Upgradeable {
     function requestRedeem(uint256 shares) external returns (uint256 requestId, uint256 assets) {
         // burn redeemer's shares
         _burn(msg.sender, shares);
-        // if not the fee collector, burn fee collector's shares
-        if (msg.sender != feeCollector) {
-            // Burn fee collector's shares
-            // Total shares to burn = redeemer's shares / (MAX_FEE - fee)
-            // Fee collector's shares = total shares to burn * fee
-            // So Fee Collector's shares = redeemer's shares * fee / (MAX_FEE - fee)
-            uint256 feeCollectorShares = shares * fee / (MAX_FEE - fee);
-            _burn(feeCollector, feeCollectorShares);
-        }
 
         // Calculate the amount of assets to transfer to the redeemer
         assets = previewRedeem(shares);
@@ -200,7 +188,8 @@ abstract contract MultiLP is AbstractARM, ERC20Upgradeable {
 
     function totalAssets() public view returns (uint256) {
         // valuing both assets 1:1
-        return token0.balanceOf(address(this)) + token1.balanceOf(address(this)) + _assetsInWithdrawQueue();
+        return
+            token0.balanceOf(address(this)) + token1.balanceOf(address(this)) + _assetsInWithdrawQueue() - feesCollected;
     }
 
     function convertToShares(uint256 assets) public view returns (uint256 shares) {
@@ -230,5 +219,26 @@ abstract contract MultiLP is AbstractARM, ERC20Upgradeable {
     function _setFeeCollector(address _feeCollector) internal {
         require(_feeCollector != address(0), "ARM: invalid fee collector");
         feeCollector = _feeCollector;
+    }
+
+    /// @dev this assumes there is no exchange rate between the two assets.
+    /// An asset like rETH with WETH will not work with this function.
+    function _accountFee(uint256 amountIn, uint256 amountOut) internal virtual override {
+        uint256 discountAmount = amountIn > amountOut ? amountIn - amountOut : amountOut - amountIn;
+        feesCollected += (discountAmount * fee) / MAX_FEE;
+    }
+
+    function collectFees() external returns (uint256 fees) {
+        require(msg.sender == feeCollector, "ARM: not fee collector");
+
+        fees = feesCollected;
+        require(fees <= IERC20(liquidityToken).balanceOf(address(this)), "ARM: insufficient liquidity");
+
+        // Reset fees collected in storage
+        feesCollected = 0;
+
+        IERC20(liquidityToken).transfer(feeCollector, fees);
+
+        emit FeeCollected(feeCollector, fees);
     }
 }
