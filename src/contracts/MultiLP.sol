@@ -8,6 +8,8 @@ import {AbstractARM} from "./AbstractARM.sol";
 
 abstract contract MultiLP is AbstractARM, ERC20Upgradeable {
     uint256 public constant CLAIM_DELAY = 10 minutes;
+    uint256 public constant MIN_TOTAL_SUPPLY = 1e12;
+    address public constant DEAD_ACCOUNT = 0x000000000000000000000000000000000000dEaD;
 
     address public immutable liquidityToken;
 
@@ -54,6 +56,13 @@ abstract contract MultiLP is AbstractARM, ERC20Upgradeable {
 
     function _initialize(string calldata _name, string calldata _symbol) internal {
         __ERC20_init(_name, _symbol);
+
+        // Transfer a small bit of liquidity from the intializer to this contract
+        IERC20(liquidityToken).transferFrom(msg.sender, address(this), MIN_TOTAL_SUPPLY);
+
+        // mint a small amount of shares to a dead account so the total supply can never be zero
+        // This avoids donation attacks when there are no assets in the ARM contract
+        _mint(DEAD_ACCOUNT, MIN_TOTAL_SUPPLY);
     }
 
     function previewDeposit(uint256 assets) public view returns (uint256 shares) {
@@ -163,6 +172,15 @@ abstract contract MultiLP is AbstractARM, ERC20Upgradeable {
     function totalAssets() public view returns (uint256) {
         // valuing both assets 1:1
         return token0.balanceOf(address(this)) + token1.balanceOf(address(this)) + _assetsInWithdrawQueue();
+    }
+
+    function convertToShares(uint256 assets) public view returns (uint256 shares) {
+        uint256 _totalAssets = totalAssets();
+        shares = (_totalAssets == 0) ? assets : (assets * totalSupply()) / _totalAssets;
+    }
+
+    function convertToAssets(uint256 shares) public view returns (uint256 assets) {
+        assets = (shares * totalAssets()) / totalSupply();
     }
 
     function _assetsInWithdrawQueue() internal view virtual returns (uint256);
