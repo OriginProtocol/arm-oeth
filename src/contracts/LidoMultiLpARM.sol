@@ -23,8 +23,18 @@ contract LidoMultiLpARM is Initializable, MultiLP, FixedPriceARM, LidoLiquidityM
     /// @param _name The name of the liquidity provider (LP) token.
     /// @param _symbol The symbol of the liquidity provider (LP) token.
     /// @param _operator The address of the account that can request and claim OETH withdrawals.
-    function initialize(string calldata _name, string calldata _symbol, address _operator) external initializer {
-        _initialize(_name, _symbol);
+    /// @param _fee The performance fee that is collected by the feeCollector measured in basis points (1/100th of a percent).
+    /// 10,000 = 100% performance fee
+    /// 500 = 5% performance fee
+    /// @param _feeCollector The account that receives the performance fee as shares
+    function initialize(
+        string calldata _name,
+        string calldata _symbol,
+        address _operator,
+        uint256 _fee,
+        address _feeCollector
+    ) external initializer {
+        _initialize(_name, _symbol, _fee, _feeCollector);
         _setOperator(_operator);
     }
 
