@@ -4,14 +4,14 @@ pragma solidity ^0.8.23;
 import {Test, console2} from "forge-std/Test.sol";
 
 import {IERC20} from "contracts/Interfaces.sol";
-import {LidoARM} from "contracts/LidoARM.sol";
+import {LidoOwnerLpARM} from "contracts/LidoOwnerLpARM.sol";
 import {Proxy} from "contracts/Proxy.sol";
 
 import {Fork_Shared_Test_} from "test/fork/shared/Shared.sol";
 
 contract Fork_Concrete_LidoARM_Test is Fork_Shared_Test_ {
     Proxy public lidoProxy;
-    LidoARM public lidoARM;
+    LidoOwnerLpARM public lidoARM;
     IERC20 BAD_TOKEN = IERC20(makeAddr("bad token"));
 
     // Account for stETH rounding errors.
@@ -22,13 +22,13 @@ contract Fork_Concrete_LidoARM_Test is Fork_Shared_Test_ {
         super.setUp();
 
         address lidoWithdrawal = 0x889edC2eDab5f40e902b864aD4d7AdE8E412F9B1;
-        LidoARM lidoImpl = new LidoARM(address(weth), address(steth), lidoWithdrawal);
+        LidoOwnerLpARM lidoImpl = new LidoOwnerLpARM(address(weth), address(steth), lidoWithdrawal);
         lidoProxy = new Proxy();
-        // Initialize Proxy with LidoARM implementation.
+        // Initialize Proxy with LidoOwnerLpARM implementation.
         bytes memory data = abi.encodeWithSignature("initialize(address)", operator);
         lidoProxy.initialize(address(lidoImpl), address(this), data);
 
-        lidoARM = LidoARM(payable(address(lidoProxy)));
+        lidoARM = LidoOwnerLpARM(payable(address(lidoProxy)));
 
         _dealWETH(address(lidoARM), 100 ether);
         _dealStETH(address(lidoARM), 100 ether);

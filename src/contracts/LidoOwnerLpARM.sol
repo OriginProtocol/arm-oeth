@@ -1,20 +1,21 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
+import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+
 import {AbstractARM} from "./AbstractARM.sol";
 import {FixedPriceARM} from "./FixedPriceARM.sol";
 import {LidoLiquidityManager} from "./LidoLiquidityManager.sol";
 import {OwnerLP} from "./OwnerLP.sol";
-import {Initializable} from "./utils/Initializable.sol";
 
-contract LidoARM is Initializable, OwnerLP, FixedPriceARM, LidoLiquidityManager {
+contract LidoOwnerLpARM is Initializable, OwnerLP, FixedPriceARM, LidoLiquidityManager {
     /// @param _stEth The address of the stETH token
     /// @param _weth The address of the WETH token
-    /// @param _stEthWithdrawal The address of the stETH Withdrawal contract
-    constructor(address _stEth, address _weth, address _stEthWithdrawal)
+    /// @param _lidoWithdrawalQueue The address of the Lido Withdrawal Queue contract
+    constructor(address _stEth, address _weth, address _lidoWithdrawalQueue)
         AbstractARM(_stEth, _weth)
         FixedPriceARM()
-        LidoLiquidityManager(_stEth, _weth, _stEthWithdrawal)
+        LidoLiquidityManager(_stEth, _weth, _lidoWithdrawalQueue)
     {}
 
     /// @notice Initialize the contract.

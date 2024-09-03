@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
+import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+
 import {AbstractARM} from "./AbstractARM.sol";
 import {PeggedARM} from "./PeggedARM.sol";
 import {OwnerLP} from "./OwnerLP.sol";
 import {OethLiquidityManager} from "./OethLiquidityManager.sol";
-import {Initializable} from "./utils/Initializable.sol";
 
 contract OethARM is Initializable, OwnerLP, PeggedARM, OethLiquidityManager {
     /// @param _oeth The address of the OETH token that is being swapped into this contract.

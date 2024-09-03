@@ -52,7 +52,7 @@ abstract contract MultiLP is AbstractARM, ERC20Upgradeable {
         liquidityToken = _liquidityToken;
     }
 
-    function _initialize(string calldata _name, string calldata _symbol) external {
+    function _initialize(string calldata _name, string calldata _symbol) internal {
         __ERC20_init(_name, _symbol);
     }
 

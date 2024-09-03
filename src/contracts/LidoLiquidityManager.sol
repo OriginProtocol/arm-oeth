@@ -7,45 +7,21 @@ import {IERC20, IWETH, IStETHWithdrawal} from "./Interfaces.sol";
 contract LidoLiquidityManager is OwnableOperable {
     IERC20 public immutable steth;
     IWETH public immutable weth;
-    IStETHWithdrawal public immutable withdrawal;
+    IStETHWithdrawal public immutable withdrawalQueue;
 
-    constructor(address _steth, address _weth, address _stEthWithdrawal) {
+    uint256 public outstandingEther;
+
+    constructor(address _steth, address _weth, address _lidoWithdrawalQueue) {
         steth = IERC20(_steth);
         weth = IWETH(_weth);
-        withdrawal = IStETHWithdrawal(_stEthWithdrawal);
+        withdrawalQueue = IStETHWithdrawal(_lidoWithdrawalQueue);
     }
 
     /**
      * @notice Approve the stETH withdrawal contract. Used for redemption requests.
      */
     function approveStETH() external onlyOperatorOrOwner {
-        steth.approve(address(withdrawal), type(uint256).max);
-    }
-
-    /**
-     * @notice Mint stETH with ETH
-     */
-    function depositETHForStETH(uint256 amount) external onlyOperatorOrOwner {
-        _depositETHForStETH(amount);
-    }
-
-    /**
-     * @notice Mint stETH with WETH
-     */
-    function depositWETHForStETH(uint256 amount) external onlyOperatorOrOwner {
-        // Unwrap the WETH then deposit the ETH.
-        weth.withdraw(amount);
-        _depositETHForStETH(amount);
-    }
-
-    /**
-     * @notice Mint stETH with ETH.
-     * Reference: https://docs.lido.fi/contracts/lido#fallback
-     */
-    function _depositETHForStETH(uint256 amount) internal {
-        require(address(this).balance >= amount, "OSwap: Insufficient ETH balance");
-        (bool success,) = address(steth).call{value: amount}(new bytes(0));
-        require(success, "OSwap: ETH transfer failed");
+        steth.approve(address(withdrawalQueue), type(uint256).max);
     }
 
     /**
@@ -58,15 +34,12 @@ contract LidoLiquidityManager is OwnableOperable {
         onlyOperatorOrOwner
         returns (uint256[] memory requestIds)
     {
-        requestIds = withdrawal.requestWithdrawals(amounts, address(this));
-    }
+        requestIds = withdrawalQueue.requestWithdrawals(amounts, address(this));
 
-    /**
-     * @notice Claim the ETH owed from the redemption requests.
-     * Before calling this method, caller should check on the request NFTs to ensure the withdrawal was processed.
-     */
-    function claimStETHWithdrawalForETH(uint256[] memory requestIds) external onlyOperatorOrOwner {
-        _claimStETHWithdrawalForETH(requestIds);
+        // Increase the Ether outstanding from the Lido Withdrawal Queue
+        for (uint256 i = 0; i < amounts.length; i++) {
+            outstandingEther += amounts[i];
+        }
     }
 
     /**
@@ -74,18 +47,25 @@ contract LidoLiquidityManager is OwnableOperable {
      * Before calling this method, caller should check on the request NFTs to ensure the withdrawal was processed.
      */
     function claimStETHWithdrawalForWETH(uint256[] memory requestIds) external onlyOperatorOrOwner {
+        uint256 etherBefore = address(this).balance;
+
         // Claim the NFTs for ETH.
-        _claimStETHWithdrawalForETH(requestIds);
+        uint256 lastIndex = withdrawalQueue.getLastCheckpointIndex();
+        uint256[] memory hintIds = withdrawalQueue.findCheckpointHints(requestIds, 1, lastIndex);
+        withdrawalQueue.claimWithdrawals(requestIds, hintIds);
+
+        uint256 etherAfter = address(this).balance;
+
+        // Reduce the Ether outstanding from the Lido Withdrawal Queue
+        outstandingEther -= etherAfter - etherBefore;
 
         // Wrap all the received ETH to WETH.
-        (bool success,) = address(weth).call{value: address(this).balance}(new bytes(0));
+        (bool success,) = address(weth).call{value: etherAfter}(new bytes(0));
         require(success, "OSwap: ETH transfer failed");
     }
 
-    function _claimStETHWithdrawalForETH(uint256[] memory requestIds) internal {
-        uint256 lastIndex = withdrawal.getLastCheckpointIndex();
-        uint256[] memory hintIds = withdrawal.findCheckpointHints(requestIds, 1, lastIndex);
-        withdrawal.claimWithdrawals(requestIds, hintIds);
+    function _assetsInWithdrawQueue() internal view virtual returns (uint256) {
+        return outstandingEther;
     }
 
     // This method is necessary for receiving the ETH claimed as part of the withdrawal.
