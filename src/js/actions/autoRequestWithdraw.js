@@ -29,7 +29,7 @@ const handler = async (event) => {
       oeth,
       oethARM,
       minAmount: 1,
-      confirm: true,
+      confirm: false,
     });
   } catch (error) {
     console.error(error);
