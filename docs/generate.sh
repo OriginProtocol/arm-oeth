@@ -20,9 +20,16 @@ sol2uml storage ../src/contracts,../lib -c LidoOwnerLpARM -o LidoOwnerLpARMStora
     -st address,address \
     --hideExpand gap,_gap
 
-sol2uml ../src/contracts -v -hv -hf -he -hs -hl -hi -b LidoMultiLpARM -o LidoMultiLpARMHierarchy.svg
-sol2uml ../src/contracts -s -d 0 -b LidoMultiLpARM -o LidoMultiLpARMSquashed.svg
-sol2uml storage ../src/contracts,../lib -c LidoMultiLpARM -o LidoMultiLpARMStorage.svg \
+sol2uml ../src/contracts -v -hv -hf -he -hs -hl -hi -b LidoFixedPriceMultiLpARM -o LidoFixedPriceMultiLpARMHierarchy.svg
+sol2uml ../src/contracts -s -d 0 -b LidoFixedPriceMultiLpARM -o LidoFixedPriceMultiLpARMSquashed.svg
+sol2uml storage ../src/contracts,../lib -c LidoFixedPriceMultiLpARM -o LidoFixedPriceMultiLpARMStorage.svg \
+    -sn eip1967.proxy.implementation,eip1967.proxy.admin \
+    -st address,address \
+    --hideExpand gap,_gap
+
+sol2uml ../src/contracts -v -hv -hf -he -hs -hl -hi -b LidoMultiPriceMultiLpARM -o LidoMultiPriceMultiLpARMHierarchy.svg
+sol2uml ../src/contracts -s -d 0 -b LidoMultiPriceMultiLpARM -o LidoMultiPriceMultiLpARMSquashed.svg
+sol2uml storage ../src/contracts,../lib -c LidoMultiPriceMultiLpARM -o LidoMultiPriceMultiLpARMStorage.svg \
     -sn eip1967.proxy.implementation,eip1967.proxy.admin \
     -st address,address \
     --hideExpand gap,_gap

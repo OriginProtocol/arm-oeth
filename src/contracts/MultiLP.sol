@@ -12,7 +12,7 @@ abstract contract MultiLP is AbstractARM, ERC20Upgradeable {
     uint256 public constant MAX_FEE = 10000; // 100%
     address public constant DEAD_ACCOUNT = 0x000000000000000000000000000000000000dEaD;
 
-    address public immutable liquidityToken;
+    address private immutable liquidityToken;
 
     /// @notice The account that receives the performance fee as shares
     address public feeCollector;
@@ -92,7 +92,11 @@ abstract contract MultiLP is AbstractARM, ERC20Upgradeable {
 
         // mint shares
         _mint(msg.sender, shares);
+
+        _postDepositHook(assets);
     }
+
+    function _postDepositHook(uint256 assets) internal virtual;
 
     function previewRedeem(uint256 shares) public view returns (uint256 assets) {
         assets = convertToAssets(shares);
@@ -121,8 +125,12 @@ abstract contract MultiLP is AbstractARM, ERC20Upgradeable {
             queued: SafeCast.toUint128(queued)
         });
 
+        _postRedeemHook(assets);
+
         emit RedeemRequested(msg.sender, requestId, assets, queued);
     }
+
+    function _postRedeemHook(uint256 assets) internal virtual;
 
     function claimRedeem(uint256 requestId) external returns (uint256 assets) {
         if (withdrawalRequests[requestId].queued > withdrawalQueueMetadata.claimable) {

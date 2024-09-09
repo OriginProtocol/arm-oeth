@@ -4,18 +4,18 @@ pragma solidity ^0.8.23;
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 import {AbstractARM} from "./AbstractARM.sol";
-import {FixedPriceARM} from "./FixedPriceARM.sol";
+import {MultiPriceARM} from "./MultiPriceARM.sol";
 import {LidoLiquidityManager} from "./LidoLiquidityManager.sol";
 import {MultiLP} from "./MultiLP.sol";
 
-contract LidoMultiLpARM is Initializable, MultiLP, FixedPriceARM, LidoLiquidityManager {
+contract LidoMultiPriceMultiLpARM is Initializable, MultiLP, MultiPriceARM, LidoLiquidityManager {
     /// @param _stEth The address of the stETH token
     /// @param _weth The address of the WETH token
     /// @param _lidoWithdrawalQueue The address of the stETH Withdrawal contract
     constructor(address _stEth, address _weth, address _lidoWithdrawalQueue)
         AbstractARM(_stEth, _weth)
         MultiLP(_weth)
-        FixedPriceARM()
+        MultiPriceARM(_stEth, _weth)
         LidoLiquidityManager(_stEth, _weth, _lidoWithdrawalQueue)
     {}
 
@@ -60,5 +60,13 @@ contract LidoMultiLpARM is Initializable, MultiLP, FixedPriceARM, LidoLiquidityM
 
     function _accountFee(uint256 amountIn, uint256 amountOut) internal override(MultiLP, AbstractARM) {
         MultiLP._accountFee(amountIn, amountOut);
+    }
+
+    function _postDepositHook(uint256 assets) internal override(MultiLP, MultiPriceARM) {
+        MultiPriceARM._postDepositHook(assets);
+    }
+
+    function _postRedeemHook(uint256 assets) internal override(MultiLP, MultiPriceARM) {
+        MultiPriceARM._postRedeemHook(assets);
     }
 }
