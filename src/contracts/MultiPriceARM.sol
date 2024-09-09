@@ -32,6 +32,9 @@ abstract contract MultiPriceARM is AbstractARM {
     /// @dev Five tranches are used as they fit in a single storage slot
     uint16[15] private tranches;
 
+    event TranchePricesUpdated(uint256[5] prices);
+    event TrancheAllocationsUpdated(uint256[5] allocations);
+
     constructor(address _discountToken, address _liquidityToken) {
         discountToken = _discountToken;
         liquidityToken = _liquidityToken;
@@ -244,5 +247,72 @@ abstract contract MultiPriceARM is AbstractARM {
      */
     function _calcTransferAmount(address, uint256 amount) internal view virtual returns (uint256 transferAmount) {
         transferAmount = amount;
+    }
+
+    function updateTranchePrices(uint256[5] calldata prices) external onlyOwner {
+        uint16[15] memory tranchesMem = tranches;
+
+        for (uint256 i = 0; i < prices.length; i++) {
+            // TODO add price safely checks
+            tranchesMem[i * 3 + DISCOUNT_INDEX] = SafeCast.toUint16(prices[i] / DISCOUNT_MULTIPLIER);
+        }
+
+        // Write back the tranche data to storage once
+        tranches = tranchesMem;
+
+        emit TranchePricesUpdated(prices);
+    }
+
+    function updateTrancheAllocations(uint256[5] calldata allocations) external onlyOwner {
+        uint16[15] memory tranchesMem = tranches;
+
+        for (uint256 i = 0; i < allocations.length; ++i) {
+            uint256 trancheIndex = i * 3;
+            // TODO add amount safely checks
+            tranchesMem[trancheIndex + LIQUIDITY_ALLOCATED_INDEX] =
+                SafeCast.toUint16(allocations[i] / TRANCHE_AMOUNT_MULTIPLIER);
+
+            // If the allocation is smaller than the remaining liquidity then set the remaining liquidity to the allocation
+            if (
+                tranchesMem[trancheIndex + LIQUIDITY_ALLOCATED_INDEX]
+                    < tranchesMem[trancheIndex + LIQUIDITY_REMAINING_INDEX]
+            ) {
+                tranchesMem[trancheIndex + LIQUIDITY_REMAINING_INDEX] =
+                    tranchesMem[trancheIndex + LIQUIDITY_ALLOCATED_INDEX];
+            }
+        }
+
+        // Write back the tranche data to storage once
+        tranches = tranchesMem;
+
+        emit TrancheAllocationsUpdated(allocations);
+    }
+
+    function resetRemainingLiquidity() external onlyOwner {
+        uint256 remainingLiquidity = IERC20(liquidityToken).balanceOf(address(this));
+        uint256 allocatedLiquidity;
+        uint256 trancheLiquidity;
+
+        // Read the tranches from storage into memory
+        uint16[15] memory tranchesMem = tranches;
+
+        // Fill the tranches with the new liquidity from first to last
+        for (uint256 i = 0; i < tranchesMem.length; i + 3) {
+            allocatedLiquidity = tranchesMem[i + LIQUIDITY_ALLOCATED_INDEX];
+
+            trancheLiquidity = remainingLiquidity <= allocatedLiquidity ? remainingLiquidity : allocatedLiquidity;
+
+            // Update the liquidity remaining in memory
+            tranchesMem[i + LIQUIDITY_REMAINING_INDEX] = SafeCast.toUint16(trancheLiquidity / TRANCHE_AMOUNT_MULTIPLIER);
+
+            remainingLiquidity -= trancheLiquidity;
+
+            if (remainingLiquidity == 0) {
+                return;
+            }
+        }
+
+        // Write back the tranche data to storage once
+        tranches = tranchesMem;
     }
 }
