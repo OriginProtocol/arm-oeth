@@ -33,15 +33,16 @@
 <!-- 12 -->
 <g id="node2" class="node">
 <title>12</title>
-<polygon fill="#f2f2f2" stroke="black" points="0,-182.9 0,-224.5 249.67,-224.5 249.67,-182.9 0,-182.9"/>
-<text text-anchor="middle" x="124.83" y="-207.9" font-family="Times,serif" font-size="14.00">LidoLiquidityManager</text>
-<text text-anchor="middle" x="124.83" y="-191.1" font-family="Times,serif" font-size="14.00">../src/contracts/LidoLiquidityManager.sol</text>
+<polygon fill="#f2f2f2" stroke="black" points="0,-174.5 0,-232.9 249.67,-232.9 249.67,-174.5 0,-174.5"/>
+<text text-anchor="middle" x="124.83" y="-216.3" font-family="Times,serif" font-size="14.00">&lt;&lt;Abstract&gt;&gt;</text>
+<text text-anchor="middle" x="124.83" y="-199.5" font-family="Times,serif" font-size="14.00">LidoLiquidityManager</text>
+<text text-anchor="middle" x="124.83" y="-182.7" font-family="Times,serif" font-size="14.00">../src/contracts/LidoLiquidityManager.sol</text>
 </g>
 <!-- 12&#45;&gt;22 -->
 <g id="edge2" class="edge">
 <title>12&#45;&gt;22</title>
-<path fill="none" stroke="black" d="M153.2,-224.63C165.11,-232.99 179.36,-243 193.07,-252.64"/>
-<polygon fill="none" stroke="black" points="187.06,-261.24 217.64,-269.9 199.13,-244.06 187.06,-261.24"/>
+<path fill="none" stroke="black" d="M165.12,-233C173.99,-239.23 183.5,-245.91 192.78,-252.43"/>
+<polygon fill="none" stroke="black" points="186.98,-261.19 217.56,-269.84 199.05,-244 186.98,-261.19"/>
 </g>
 <!-- 13 -->
 <g id="node3" class="node">
@@ -53,8 +54,8 @@
 <!-- 13&#45;&gt;12 -->
 <g id="edge5" class="edge">
 <title>13&#45;&gt;12</title>
-<path fill="none" stroke="black" d="M186.52,-42.32C170.48,-51.13 154.22,-63.07 143.83,-78.6 129.43,-100.15 124.31,-128.47 122.95,-152.61"/>
-<polygon fill="none" stroke="black" points="112.45,-152.82 122.97,-182.81 133.45,-152.81 112.45,-152.82"/>
+<path fill="none" stroke="black" d="M186.52,-42.32C170.48,-51.13 154.22,-63.07 143.83,-78.6 131.09,-97.66 125.61,-122.02 123.58,-144.09"/>
+<polygon fill="none" stroke="black" points="113.08,-144.08 122.63,-174.4 134.07,-144.74 113.08,-144.08"/>
 </g>
 <!-- 15 -->
 <g id="node4" class="node">

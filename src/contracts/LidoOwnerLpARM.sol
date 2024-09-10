@@ -39,4 +39,8 @@ contract LidoOwnerLpARM is Initializable, OwnerLP, FixedPriceARM, LidoLiquidityM
         // Add 2 wei if transferring stETH
         transferAmount = outToken == address(token0) ? amount + 2 : amount;
     }
+
+    function _claimHook(uint256 assets) internal override {
+        // do nothing
+    }
 }

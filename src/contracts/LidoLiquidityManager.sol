@@ -4,7 +4,7 @@ pragma solidity ^0.8.23;
 import {OwnableOperable} from "./OwnableOperable.sol";
 import {IERC20, IWETH, IStETHWithdrawal} from "./Interfaces.sol";
 
-contract LidoLiquidityManager is OwnableOperable {
+abstract contract LidoLiquidityManager is OwnableOperable {
     IERC20 public immutable steth;
     IWETH public immutable weth;
     IStETHWithdrawal public immutable withdrawalQueue;
@@ -62,7 +62,11 @@ contract LidoLiquidityManager is OwnableOperable {
         // Wrap all the received ETH to WETH.
         (bool success,) = address(weth).call{value: etherAfter}(new bytes(0));
         require(success, "OSwap: ETH transfer failed");
+
+        _claimHook(etherAfter);
     }
+
+    function _claimHook(uint256 assets) internal virtual;
 
     function _assetsInWithdrawQueue() internal view virtual returns (uint256) {
         return outstandingEther;

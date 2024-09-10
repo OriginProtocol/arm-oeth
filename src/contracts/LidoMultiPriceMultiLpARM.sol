@@ -62,11 +62,15 @@ contract LidoMultiPriceMultiLpARM is Initializable, MultiLP, MultiPriceARM, Lido
         MultiLP._accountFee(amountIn, amountOut);
     }
 
-    function _postDepositHook(uint256 assets) internal override(MultiLP, MultiPriceARM) {
-        MultiPriceARM._postDepositHook(assets);
+    function _depositHook(uint256 assets) internal override {
+        _addLiquidity(assets);
     }
 
-    function _postRedeemHook(uint256 assets) internal override(MultiLP, MultiPriceARM) {
-        MultiPriceARM._postRedeemHook(assets);
+    function _redeemHook(uint256 assets) internal override {
+        _removeLiquidity(assets);
+    }
+
+    function _claimHook(uint256 assets) internal override {
+        _addLiquidity(assets);
     }
 }

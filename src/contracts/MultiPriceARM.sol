@@ -24,7 +24,8 @@ abstract contract MultiPriceARM is AbstractARM {
     /// @notice The five liquidity tranches of the ARM
     /// Each tranche is represented by three uint16 values:
     /// 0 - the discount from the liquidity token scaled to 1e5
-    //      eg an 8 basis point discount (0.08%) would be 800 with a price of 0.9992
+    //      eg a 8 basis point discount (0.08%) would be 800 with a price of 0.9992
+    //      eg a 1.25 basis point discount (0.0125%) would be 125 with a price of 0.999875
     /// 1 - the amount of liquidity allocated to this tranche. 1 = 0.1 Ether
     /// 2 - the amount of liquidity remaining in this tranche. 1 = 0.1 Ether
     /// The three tranche values are repeated five times in the array as follows:
@@ -40,7 +41,7 @@ abstract contract MultiPriceARM is AbstractARM {
         liquidityToken = _liquidityToken;
     }
 
-    function _postDepositHook(uint256 liquidityAmount) internal virtual {
+    function _addLiquidity(uint256 liquidityAmount) internal virtual {
         uint256 remainingLiquidity = liquidityAmount;
         uint256 unallocatedLiquidity;
         uint256 liquidityToAdd;
@@ -69,7 +70,7 @@ abstract contract MultiPriceARM is AbstractARM {
         tranches = tranchesMem;
     }
 
-    function _postRedeemHook(uint256 liquidityAmount) internal virtual {
+    function _removeLiquidity(uint256 liquidityAmount) internal virtual {
         uint256 remainingLiquidity = liquidityAmount;
         uint256 liquidityToRemove;
 
