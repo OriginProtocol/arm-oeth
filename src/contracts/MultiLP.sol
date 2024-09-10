@@ -93,10 +93,10 @@ abstract contract MultiLP is AbstractARM, ERC20Upgradeable {
         // mint shares
         _mint(msg.sender, shares);
 
-        _depositHook(assets);
+        _postDepositHook(assets);
     }
 
-    function _depositHook(uint256 assets) internal virtual;
+    function _postDepositHook(uint256 assets) internal virtual;
 
     function previewRedeem(uint256 shares) public view returns (uint256 assets) {
         assets = convertToAssets(shares);
@@ -125,12 +125,12 @@ abstract contract MultiLP is AbstractARM, ERC20Upgradeable {
             queued: SafeCast.toUint128(queued)
         });
 
-        _redeemHook(assets);
+        _postWithdrawHook(assets);
 
         emit RedeemRequested(msg.sender, requestId, assets, queued);
     }
 
-    function _redeemHook(uint256 assets) internal virtual;
+    function _postWithdrawHook(uint256 assets) internal virtual;
 
     function claimRedeem(uint256 requestId) external returns (uint256 assets) {
         if (withdrawalRequests[requestId].queued > withdrawalQueueMetadata.claimable) {

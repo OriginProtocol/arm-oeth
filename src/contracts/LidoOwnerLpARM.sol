@@ -40,7 +40,7 @@ contract LidoOwnerLpARM is Initializable, OwnerLP, FixedPriceARM, LidoLiquidityM
         transferAmount = outToken == address(token0) ? amount + 2 : amount;
     }
 
-    function _claimHook(uint256 assets) internal override {
+    function _postClaimHook(uint256 assets) internal override {
         // do nothing
     }
 }

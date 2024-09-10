@@ -63,10 +63,10 @@ abstract contract LidoLiquidityManager is OwnableOperable {
         (bool success,) = address(weth).call{value: etherAfter}(new bytes(0));
         require(success, "OSwap: ETH transfer failed");
 
-        _claimHook(etherAfter);
+        _postClaimHook(etherAfter);
     }
 
-    function _claimHook(uint256 assets) internal virtual;
+    function _postClaimHook(uint256 assets) internal virtual;
 
     function _assetsInWithdrawQueue() internal view virtual returns (uint256) {
         return outstandingEther;
