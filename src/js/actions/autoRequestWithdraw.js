@@ -1,7 +1,4 @@
-const {
-  DefenderRelaySigner,
-  DefenderRelayProvider,
-} = require("defender-relay-client/lib/ethers");
+const { Defender } = require("@openzeppelin/defender-sdk");
 const { ethers } = require("ethers");
 
 const { autoRequestWithdraw } = require("../tasks/liquidity");
@@ -12,8 +9,12 @@ const oethARMAbi = require("../../abis/OethARM.json");
 // Entrypoint for the Autotask
 const handler = async (event) => {
   // Initialize defender relayer provider and signer
-  const provider = new DefenderRelayProvider(event);
-  const signer = new DefenderRelaySigner(event, provider, { speed: "fastest" });
+  const client = new Defender(event);
+  const provider = client.relaySigner.getProvider({ ethersVersion: "v6" });
+  const signer = await client.relaySigner.getSigner(provider, {
+    speed: "fastest",
+    ethersVersion: "v6",
+  });
 
   console.log(
     `DEBUG env var in handler before being set: "${process.env.DEBUG}"`
@@ -29,7 +30,7 @@ const handler = async (event) => {
       oeth,
       oethARM,
       minAmount: 1,
-      confirm: false,
+      confirm: true,
     });
   } catch (error) {
     console.error(error);
