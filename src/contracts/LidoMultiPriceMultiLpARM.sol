@@ -8,8 +8,16 @@ import {AbstractARM} from "./AbstractARM.sol";
 import {MultiPriceARM} from "./MultiPriceARM.sol";
 import {LidoLiquidityManager} from "./LidoLiquidityManager.sol";
 import {MultiLP} from "./MultiLP.sol";
+import {PerformanceFee} from "./PerformanceFee.sol";
 
-contract LidoMultiPriceMultiLpARM is Initializable, MultiLP, AccessControlLP, MultiPriceARM, LidoLiquidityManager {
+contract LidoMultiPriceMultiLpARM is
+    Initializable,
+    MultiLP,
+    PerformanceFee,
+    AccessControlLP,
+    MultiPriceARM,
+    LidoLiquidityManager
+{
     /// @param _stEth The address of the stETH token
     /// @param _weth The address of the WETH token
     /// @param _lidoWithdrawalQueue The address of the stETH Withdrawal contract
@@ -35,8 +43,9 @@ contract LidoMultiPriceMultiLpARM is Initializable, MultiLP, AccessControlLP, Mu
         uint256 _fee,
         address _feeCollector
     ) external initializer {
-        _initialize(_name, _symbol, _fee, _feeCollector);
-        _setOperator(_operator);
+        _initOwnableOperable(_operator);
+        _initMultiLP(_name, _symbol);
+        _initPerformanceFee(_fee, _feeCollector);
     }
 
     /**
@@ -55,27 +64,27 @@ contract LidoMultiPriceMultiLpARM is Initializable, MultiLP, AccessControlLP, Mu
         transferAmount = outToken == address(token0) ? amount + 2 : amount;
     }
 
-    function _assetsInWithdrawQueue() internal view override(LidoLiquidityManager, MultiLP) returns (uint256) {
+    function _assetsInWithdrawQueue() internal view override(MultiLP, LidoLiquidityManager) returns (uint256) {
         return LidoLiquidityManager._assetsInWithdrawQueue();
     }
 
-    function _accountFee(uint256 amountIn, uint256 amountOut) internal override(MultiLP, AbstractARM) {
-        MultiLP._accountFee(amountIn, amountOut);
-    }
-
-    function _postDepositHook(uint256 assets) internal override(AccessControlLP, MultiLP) {
-        _addLiquidity(assets);
+    function _postDepositHook(uint256 assets) internal override(MultiLP, AccessControlLP) {
+        MultiPriceARM._addLiquidity(assets);
 
         AccessControlLP._postDepositHook(assets);
     }
 
-    function _postWithdrawHook(uint256 assets) internal override(AccessControlLP, MultiLP) {
-        _removeLiquidity(assets);
+    function _postWithdrawHook(uint256 assets) internal override(MultiLP, AccessControlLP) {
+        MultiPriceARM._removeLiquidity(assets);
 
         AccessControlLP._postWithdrawHook(assets);
     }
 
     function _postClaimHook(uint256 assets) internal override {
-        _addLiquidity(assets);
+        MultiPriceARM._addLiquidity(assets);
+    }
+
+    function totalAssets() public view override(MultiLP, PerformanceFee) returns (uint256) {
+        return PerformanceFee.totalAssets();
     }
 }

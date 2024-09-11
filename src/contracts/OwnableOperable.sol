@@ -11,6 +11,10 @@ contract OwnableOperable is Ownable {
 
     event OperatorChanged(address newAdmin);
 
+    function _initOwnableOperable(address _operator) internal {
+        _setOperator(_operator);
+    }
+
     /// @notice Set the account that can request and claim withdrawals.
     /// @param newOperator The address of the new operator.
     function setOperator(address newOperator) external onlyOwner {

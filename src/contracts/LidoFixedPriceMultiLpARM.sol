@@ -7,8 +7,9 @@ import {AbstractARM} from "./AbstractARM.sol";
 import {FixedPriceARM} from "./FixedPriceARM.sol";
 import {LidoLiquidityManager} from "./LidoLiquidityManager.sol";
 import {MultiLP} from "./MultiLP.sol";
+import {PerformanceFee} from "./PerformanceFee.sol";
 
-contract LidoFixedPriceMultiLpARM is Initializable, MultiLP, FixedPriceARM, LidoLiquidityManager {
+contract LidoFixedPriceMultiLpARM is Initializable, MultiLP, PerformanceFee, FixedPriceARM, LidoLiquidityManager {
     /// @param _stEth The address of the stETH token
     /// @param _weth The address of the WETH token
     /// @param _lidoWithdrawalQueue The address of the stETH Withdrawal contract
@@ -34,8 +35,9 @@ contract LidoFixedPriceMultiLpARM is Initializable, MultiLP, FixedPriceARM, Lido
         uint256 _fee,
         address _feeCollector
     ) external initializer {
-        _initialize(_name, _symbol, _fee, _feeCollector);
-        _setOperator(_operator);
+        _initOwnableOperable(_operator);
+        _initMultiLP(_name, _symbol);
+        _initPerformanceFee(_fee, _feeCollector);
     }
 
     /**
@@ -54,12 +56,8 @@ contract LidoFixedPriceMultiLpARM is Initializable, MultiLP, FixedPriceARM, Lido
         transferAmount = outToken == address(token0) ? amount + 2 : amount;
     }
 
-    function _assetsInWithdrawQueue() internal view override(LidoLiquidityManager, MultiLP) returns (uint256) {
+    function _assetsInWithdrawQueue() internal view override(MultiLP, LidoLiquidityManager) returns (uint256) {
         return LidoLiquidityManager._assetsInWithdrawQueue();
-    }
-
-    function _accountFee(uint256 amountIn, uint256 amountOut) internal override(MultiLP, AbstractARM) {
-        MultiLP._accountFee(amountIn, amountOut);
     }
 
     function _postDepositHook(uint256 assets) internal override {
@@ -72,5 +70,9 @@ contract LidoFixedPriceMultiLpARM is Initializable, MultiLP, FixedPriceARM, Lido
 
     function _postClaimHook(uint256 assets) internal override {
         // do nothing
+    }
+
+    function totalAssets() public view override(MultiLP, PerformanceFee) returns (uint256) {
+        return PerformanceFee.totalAssets();
     }
 }

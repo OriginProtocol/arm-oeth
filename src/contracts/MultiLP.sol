@@ -9,18 +9,9 @@ import {AbstractARM} from "./AbstractARM.sol";
 abstract contract MultiLP is AbstractARM, ERC20Upgradeable {
     uint256 public constant CLAIM_DELAY = 10 minutes;
     uint256 public constant MIN_TOTAL_SUPPLY = 1e12;
-    uint256 public constant MAX_FEE = 10000; // 100%
     address public constant DEAD_ACCOUNT = 0x000000000000000000000000000000000000dEaD;
 
-    address private immutable liquidityToken;
-
-    /// @notice The account that receives the performance fee as shares
-    address public feeCollector;
-    /// @notice Performance fee that is collected by the feeCollector measured in basis points (1/100th of a percent)
-    /// 10,000 = 100% performance fee
-    /// 500 = 5% performance fee
-    uint256 public fee;
-    uint256 public feesCollected;
+    address internal immutable liquidityToken;
 
     struct WithdrawalQueueMetadata {
         // cumulative total of all withdrawal requests included the ones that have already been claimed
@@ -57,20 +48,14 @@ abstract contract MultiLP is AbstractARM, ERC20Upgradeable {
 
     event RedeemRequested(address indexed withdrawer, uint256 indexed requestId, uint256 assets, uint256 queued);
     event RedeemClaimed(address indexed withdrawer, uint256 indexed requestId, uint256 assets);
-    event FeeCollected(address feeCollector, uint256 fee);
 
     constructor(address _liquidityToken) {
         require(_liquidityToken == address(token0) || _liquidityToken == address(token1), "invalid liquidity token");
         liquidityToken = _liquidityToken;
     }
 
-    function _initialize(string calldata _name, string calldata _symbol, uint256 _fee, address _feeCollector)
-        internal
-    {
+    function _initMultiLP(string calldata _name, string calldata _symbol) internal {
         __ERC20_init(_name, _symbol);
-
-        _setFee(_fee);
-        _setFeeCollector(_feeCollector);
 
         // Transfer a small bit of liquidity from the intializer to this contract
         IERC20(liquidityToken).transferFrom(msg.sender, address(this), MIN_TOTAL_SUPPLY);
@@ -85,6 +70,8 @@ abstract contract MultiLP is AbstractARM, ERC20Upgradeable {
     }
 
     function deposit(uint256 assets) external returns (uint256 shares) {
+        _preDepositHook();
+
         shares = convertToShares(assets);
 
         // Transfer the liquidity token from the sender to this contract
@@ -96,6 +83,7 @@ abstract contract MultiLP is AbstractARM, ERC20Upgradeable {
         _postDepositHook(assets);
     }
 
+    function _preDepositHook() internal virtual;
     function _postDepositHook(uint256 assets) internal virtual;
 
     function previewRedeem(uint256 shares) public view returns (uint256 assets) {
@@ -105,6 +93,8 @@ abstract contract MultiLP is AbstractARM, ERC20Upgradeable {
     /// @notice Request to redeem liquidity provider shares for liquidity assets
     /// @param shares The amount of shares the redeemer wants to burn for assets
     function requestRedeem(uint256 shares) external returns (uint256 requestId, uint256 assets) {
+        _preWithdrawHook();
+
         // burn redeemer's shares
         _burn(msg.sender, shares);
 
@@ -130,6 +120,7 @@ abstract contract MultiLP is AbstractARM, ERC20Upgradeable {
         emit RedeemRequested(msg.sender, requestId, assets, queued);
     }
 
+    function _preWithdrawHook() internal virtual;
     function _postWithdrawHook(uint256 assets) internal virtual;
 
     function claimRedeem(uint256 requestId) external returns (uint256 assets) {
@@ -194,10 +185,9 @@ abstract contract MultiLP is AbstractARM, ERC20Upgradeable {
         withdrawalQueueMetadata.claimable = SafeCast.toUint128(newClaimable);
     }
 
-    function totalAssets() public view returns (uint256) {
+    function totalAssets() public view virtual returns (uint256) {
         // valuing both assets 1:1
-        return
-            token0.balanceOf(address(this)) + token1.balanceOf(address(this)) + _assetsInWithdrawQueue() - feesCollected;
+        return token0.balanceOf(address(this)) + token1.balanceOf(address(this)) + _assetsInWithdrawQueue();
     }
 
     function convertToShares(uint256 assets) public view returns (uint256 shares) {
@@ -210,43 +200,4 @@ abstract contract MultiLP is AbstractARM, ERC20Upgradeable {
     }
 
     function _assetsInWithdrawQueue() internal view virtual returns (uint256);
-
-    function setFee(uint256 _fee) external onlyOwner {
-        _setFee(_fee);
-    }
-
-    function setFeeCollector(address _feeCollector) external onlyOwner {
-        _setFeeCollector(_feeCollector);
-    }
-
-    function _setFee(uint256 _fee) internal {
-        require(_fee <= MAX_FEE, "ARM: fee too high");
-        fee = _fee;
-    }
-
-    function _setFeeCollector(address _feeCollector) internal {
-        require(_feeCollector != address(0), "ARM: invalid fee collector");
-        feeCollector = _feeCollector;
-    }
-
-    /// @dev this assumes there is no exchange rate between the two assets.
-    /// An asset like rETH with WETH will not work with this function.
-    function _accountFee(uint256 amountIn, uint256 amountOut) internal virtual override {
-        uint256 discountAmount = amountIn > amountOut ? amountIn - amountOut : amountOut - amountIn;
-        feesCollected += (discountAmount * fee) / MAX_FEE;
-    }
-
-    function collectFees() external returns (uint256 fees) {
-        require(msg.sender == feeCollector, "ARM: not fee collector");
-
-        fees = feesCollected;
-        require(fees <= IERC20(liquidityToken).balanceOf(address(this)), "ARM: insufficient liquidity");
-
-        // Reset fees collected in storage
-        feesCollected = 0;
-
-        IERC20(liquidityToken).transfer(feeCollector, fees);
-
-        emit FeeCollected(feeCollector, fees);
-    }
 }
