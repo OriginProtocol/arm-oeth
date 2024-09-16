@@ -8,6 +8,10 @@ import {PeggedARM} from "./PeggedARM.sol";
 import {OwnerLP} from "./OwnerLP.sol";
 import {OethLiquidityManager} from "./OethLiquidityManager.sol";
 
+/**
+ * @title Origin Ether (OETH) Application Redemption Manager (ARM)
+ * @author Origin Protocol Inc
+ */
 contract OethARM is Initializable, OwnerLP, PeggedARM, OethLiquidityManager {
     /// @param _oeth The address of the OETH token that is being swapped into this contract.
     /// @param _weth The address of the WETH token that is being swapped out of this contract.
@@ -19,7 +23,7 @@ contract OethARM is Initializable, OwnerLP, PeggedARM, OethLiquidityManager {
     {}
 
     /// @notice Initialize the contract.
-    /// @param _operator The address of the account that can request and claim OETH withdrawals.
+    /// @param _operator The address of the account that can request and claim OETH withdrawals from the OETH Vault.
     function initialize(address _operator) external initializer {
         _setOperator(_operator);
         _approvals();

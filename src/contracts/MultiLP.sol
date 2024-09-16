@@ -6,11 +6,19 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 import {AbstractARM} from "./AbstractARM.sol";
 
+/**
+ * @title Abstract support to an ARM for multiple Liquidity Providers (LP)
+ * @author Origin Protocol Inc
+ */
 abstract contract MultiLP is AbstractARM, ERC20Upgradeable {
+    /// @notice The delay before a withdrawal request can be claimed in seconds
     uint256 public constant CLAIM_DELAY = 10 minutes;
-    uint256 public constant MIN_TOTAL_SUPPLY = 1e12;
-    address public constant DEAD_ACCOUNT = 0x000000000000000000000000000000000000dEaD;
+    /// @dev The amount of shares that are minted to a dead address on initalization
+    uint256 internal constant MIN_TOTAL_SUPPLY = 1e12;
+    /// @dev The address with no know private key that the initial shares are minted to
+    address internal constant DEAD_ACCOUNT = 0x000000000000000000000000000000000000dEaD;
 
+    /// @notice The address of the liquidity token. eg WETH
     address internal immutable liquidityToken;
 
     struct WithdrawalQueueMetadata {
@@ -44,7 +52,7 @@ abstract contract MultiLP is AbstractARM, ERC20Upgradeable {
     }
 
     /// @notice Mapping of withdrawal request indices to the user withdrawal request data
-    mapping(uint256 => WithdrawalRequest) public withdrawalRequests;
+    mapping(uint256 requestId => WithdrawalRequest) public withdrawalRequests;
 
     event RedeemRequested(address indexed withdrawer, uint256 indexed requestId, uint256 assets, uint256 queued);
     event RedeemClaimed(address indexed withdrawer, uint256 indexed requestId, uint256 assets);
@@ -54,6 +62,7 @@ abstract contract MultiLP is AbstractARM, ERC20Upgradeable {
         liquidityToken = _liquidityToken;
     }
 
+    /// @dev called by the concrete contract's `initialize` function
     function _initMultiLP(string calldata _name, string calldata _symbol) internal {
         __ERC20_init(_name, _symbol);
 
@@ -65,10 +74,17 @@ abstract contract MultiLP is AbstractARM, ERC20Upgradeable {
         _mint(DEAD_ACCOUNT, MIN_TOTAL_SUPPLY);
     }
 
+    /// @notice Preview the amount of shares that would be minted for a given amount of assets
+    /// @param assets The amount of liquidity assets to deposit
+    /// @return shares The amount of shares that would be minted
     function previewDeposit(uint256 assets) public view returns (uint256 shares) {
         shares = convertToShares(assets);
     }
 
+    /// @notice deposit liquidity assets in exchange for liquidity provider (LP) shares.
+    /// The caller needs to have approved the contract to transfer the assets.
+    /// @param assets The amount of liquidity assets to deposit
+    /// @return shares The amount of shares that were minted
     function deposit(uint256 assets) external returns (uint256 shares) {
         _preDepositHook();
 
@@ -86,12 +102,17 @@ abstract contract MultiLP is AbstractARM, ERC20Upgradeable {
     function _preDepositHook() internal virtual;
     function _postDepositHook(uint256 assets) internal virtual;
 
+    /// @notice Preview the amount of assets that would be received for burning a given amount of shares
+    /// @param shares The amount of shares to burn
+    /// @return assets The amount of liquidity assets that would be received
     function previewRedeem(uint256 shares) public view returns (uint256 assets) {
         assets = convertToAssets(shares);
     }
 
     /// @notice Request to redeem liquidity provider shares for liquidity assets
-    /// @param shares The amount of shares the redeemer wants to burn for assets
+    /// @param shares The amount of shares the redeemer wants to burn for liquidity assets
+    /// @return requestId The index of the withdrawal request
+    /// @return assets The amount of liquidity assets that will be claimable by the redeemer
     function requestRedeem(uint256 shares) external returns (uint256 requestId, uint256 assets) {
         _preWithdrawHook();
 
@@ -123,6 +144,9 @@ abstract contract MultiLP is AbstractARM, ERC20Upgradeable {
     function _preWithdrawHook() internal virtual;
     function _postWithdrawHook(uint256 assets) internal virtual;
 
+    /// @notice Claim liquidity assets from a previous withdrawal request after the claim delay has passed
+    /// @param requestId The index of the withdrawal request
+    /// @return assets The amount of liquidity assets that were transferred to the redeemer
     function claimRedeem(uint256 requestId) external returns (uint256 assets) {
         if (withdrawalRequests[requestId].queued > withdrawalQueueMetadata.claimable) {
             // Add any WETH from the Dripper to the withdrawal queue
@@ -185,19 +209,23 @@ abstract contract MultiLP is AbstractARM, ERC20Upgradeable {
         withdrawalQueueMetadata.claimable = SafeCast.toUint128(newClaimable);
     }
 
+    /// @notice The total amount of assets in the contract including the withdrawal queue
     function totalAssets() public view virtual returns (uint256) {
         // valuing both assets 1:1
         return token0.balanceOf(address(this)) + token1.balanceOf(address(this)) + _assetsInWithdrawQueue();
     }
 
+    /// @notice Calculates the amount of shares for a given amount of liquidity assets
     function convertToShares(uint256 assets) public view returns (uint256 shares) {
         uint256 _totalAssets = totalAssets();
         shares = (_totalAssets == 0) ? assets : (assets * totalSupply()) / _totalAssets;
     }
 
+    /// @notice Calculates the amount of liquidity assets for a given amount of shares
     function convertToAssets(uint256 shares) public view returns (uint256 assets) {
         assets = (shares * totalAssets()) / totalSupply();
     }
 
+    /// @dev Hook for calculating the amount of assets in a withdrawal queue
     function _assetsInWithdrawQueue() internal view virtual returns (uint256);
 }

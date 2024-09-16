@@ -10,6 +10,12 @@ import {LidoLiquidityManager} from "./LidoLiquidityManager.sol";
 import {MultiLP} from "./MultiLP.sol";
 import {PerformanceFee} from "./PerformanceFee.sol";
 
+/**
+ * @title Lido (stETH) Application Redemption Manager (ARM)
+ * @dev This implementation supports multiple Liquidity Providers (LPs) and multiple liquidity tranches
+ * with different prices.
+ * @author Origin Protocol Inc
+ */
 contract LidoMultiPriceMultiLpARM is
     Initializable,
     MultiLP,
@@ -18,9 +24,9 @@ contract LidoMultiPriceMultiLpARM is
     MultiPriceARM,
     LidoLiquidityManager
 {
-    /// @param _stEth The address of the stETH token
+    /// @param _stEth The address of Lido's stETH token
     /// @param _weth The address of the WETH token
-    /// @param _lidoWithdrawalQueue The address of the stETH Withdrawal contract
+    /// @param _lidoWithdrawalQueue The address of the Lido's withdrawal queue contract
     constructor(address _stEth, address _weth, address _lidoWithdrawalQueue)
         AbstractARM(_stEth, _weth)
         MultiLP(_weth)
@@ -31,11 +37,11 @@ contract LidoMultiPriceMultiLpARM is
     /// @notice Initialize the contract.
     /// @param _name The name of the liquidity provider (LP) token.
     /// @param _symbol The symbol of the liquidity provider (LP) token.
-    /// @param _operator The address of the account that can request and claim OETH withdrawals.
+    /// @param _operator The address of the account that can request and claim Lido withdrawals.
     /// @param _fee The performance fee that is collected by the feeCollector measured in basis points (1/100th of a percent).
     /// 10,000 = 100% performance fee
     /// 500 = 5% performance fee
-    /// @param _feeCollector The account that receives the performance fee as shares
+    /// @param _feeCollector The account that can collect the performance fee
     function initialize(
         string calldata _name,
         string calldata _symbol,
@@ -69,22 +75,28 @@ contract LidoMultiPriceMultiLpARM is
     }
 
     function _postDepositHook(uint256 assets) internal override(MultiLP, AccessControlLP) {
+        // Add assets to the liquidity tranches
         MultiPriceARM._addLiquidity(assets);
 
+        // Check the LP can deposit the assets
         AccessControlLP._postDepositHook(assets);
     }
 
     function _postWithdrawHook(uint256 assets) internal override(MultiLP, AccessControlLP) {
+        // Remove assets from the liquidity tranches
         MultiPriceARM._removeLiquidity(assets);
 
+        // Update the LP's assets
         AccessControlLP._postWithdrawHook(assets);
     }
 
     function _postClaimHook(uint256 assets) internal override {
+        // Add assets to the liquidity tranches
         MultiPriceARM._addLiquidity(assets);
     }
 
     function totalAssets() public view override(MultiLP, PerformanceFee) returns (uint256) {
+        // Return the total assets less the collected performance fee
         return PerformanceFee.totalAssets();
     }
 }
