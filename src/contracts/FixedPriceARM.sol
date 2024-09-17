@@ -28,8 +28,6 @@ abstract contract FixedPriceARM is AbstractARM {
 
     /// @dev Maximum operator settable traderate. 1e36
     uint256 internal constant MAX_OPERATOR_RATE = 1005 * 1e33;
-    /// @dev Minimum funds to allow operator to price changes
-    uint256 public minimumFunds;
 
     uint256[50] private _gap;
 
@@ -103,19 +101,10 @@ abstract contract FixedPriceARM is AbstractARM {
         uint256 _traderate1 = buyT1; // token (t1) -> base (t0)
         // Limit funds and loss when called by operator
         if (msg.sender == operator) {
-            uint256 currentFunds = token0.balanceOf(address(this)) + token1.balanceOf(address(this));
-            require(currentFunds > minimumFunds, "ARM: Too much loss");
             require(_traderate0 <= MAX_OPERATOR_RATE, "ARM: Traderate too high");
             require(_traderate1 <= MAX_OPERATOR_RATE, "ARM: Traderate too high");
         }
         _setTraderates(_traderate0, _traderate1);
-    }
-
-    /**
-     * @notice Sets the minimum funds to allow operator price changes
-     */
-    function setMinimumFunds(uint256 _minimumFunds) external onlyOwner {
-        minimumFunds = _minimumFunds;
     }
 
     function _setTraderates(uint256 _traderate0, uint256 _traderate1) internal {

@@ -215,11 +215,6 @@ contract Fork_Concrete_LidoARM_Test is Fork_Shared_Test_ {
         lidoARM.setOperator(operator);
     }
 
-    function test_setMinimumFunds() external {
-        lidoARM.setMinimumFunds(100 ether);
-        assertEq(lidoARM.minimumFunds(), 100 ether);
-    }
-
     function test_setGoodCheckedTraderates() external {
         vm.prank(operator);
         lidoARM.setPrices(992 * 1e33, 2000 * 1e33);
@@ -234,25 +229,6 @@ contract Fork_Concrete_LidoARM_Test is Fork_Shared_Test_ {
         vm.prank(operator);
         vm.expectRevert("ARM: Traderate too high");
         lidoARM.setPrices(993 * 1e33, 994 * 1e33);
-    }
-
-    function test_checkTraderateFailsMinimumFunds() external {
-        uint256 currentFunds =
-            lidoARM.token0().balanceOf(address(lidoARM)) + lidoARM.token1().balanceOf(address(lidoARM));
-        lidoARM.setMinimumFunds(currentFunds + 100);
-
-        vm.prank(operator);
-        vm.expectRevert("ARM: Too much loss");
-        lidoARM.setPrices(992 * 1e33, 1001 * 1e33);
-    }
-
-    function test_checkTraderateWorksMinimumFunds() external {
-        uint256 currentFunds =
-            lidoARM.token0().balanceOf(address(lidoARM)) + lidoARM.token1().balanceOf(address(lidoARM));
-        lidoARM.setMinimumFunds(currentFunds - 100);
-
-        vm.prank(operator);
-        lidoARM.setPrices(992 * 1e33, 1001 * 1e33);
     }
 
     // // Slow on fork
