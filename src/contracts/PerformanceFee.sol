@@ -31,7 +31,7 @@ abstract contract PerformanceFee is MultiLP {
 
     uint256[50] private _gap;
 
-    event FeeCalculated(uint256 newFeesAccrued, uint256 totalAssets);
+    event FeeCalculated(uint256 newFeesAccrued, uint256 assetIncrease);
     event FeeCollected(address indexed feeCollector, uint256 fee);
     event FeeUpdated(uint256 fee);
     event FeeCollectorUpdated(address indexed newFeeCollector);
@@ -41,10 +41,14 @@ abstract contract PerformanceFee is MultiLP {
         _setFeeCollector(_feeCollector);
     }
 
+    /// @dev Calculate the performance fee based on the increase in total assets before
+    /// the liquidity asset from the deposit is transferred into the ARM
     function _preDepositHook() internal virtual override {
         _calcFee();
     }
 
+    /// @dev Calculate the performance fee based on the increase in total assets before
+    /// the liquidity asset from the redeem is reserved for the ARM withdrawal queue
     function _preWithdrawHook() internal virtual override {
         _calcFee();
     }
@@ -64,33 +68,36 @@ abstract contract PerformanceFee is MultiLP {
     function _calcFee() internal {
         uint256 newTotalAssets = _rawTotalAssets();
 
-        // Only collected a performance fee if the total assets have increased
-        if (newTotalAssets > lastTotalAssets) {
-            uint256 newAssets = newTotalAssets - lastTotalAssets;
-            uint256 newFeesAccrued = (newAssets * fee) / MAX_FEE;
+        // Do not accrued a performance fee if the total assets has decreased
+        if (newTotalAssets <= lastTotalAssets) return;
 
-            // Save the new values back to storage
-            feesAccrued = SafeCast.toUint112(feesAccrued + newFeesAccrued);
+        uint256 assetIncrease = newTotalAssets - lastTotalAssets;
+        uint256 newFeesAccrued = (assetIncrease * fee) / MAX_FEE;
 
-            emit FeeCalculated(newFeesAccrued, newTotalAssets);
-        }
+        // Save the new accrued fees back to storage
+        feesAccrued = SafeCast.toUint112(feesAccrued + newFeesAccrued);
+
+        emit FeeCalculated(newFeesAccrued, assetIncrease);
     }
 
     function totalAssets() public view virtual override returns (uint256) {
-        // valuing both assets 1:1
         uint256 totalAssetsBeforeFees = _rawTotalAssets();
 
-        // Calculate new fees from increased assets
-        uint256 newAssets = totalAssetsBeforeFees > lastTotalAssets ? totalAssetsBeforeFees - lastTotalAssets : 0;
-        uint256 accruedFees = (newAssets * fee) / MAX_FEE;
+        // If the total assets have decreased, then we don't charge a performance fee
+        if (totalAssetsBeforeFees <= lastTotalAssets) return totalAssetsBeforeFees;
 
-        return totalAssetsBeforeFees - accruedFees;
+        // Calculate the increase in assets since the last time fees were calculated
+        uint256 assetIncrease = totalAssetsBeforeFees - lastTotalAssets;
+
+        // Calculate the performance fee and remove from the total assets before new fees are removed
+        return totalAssetsBeforeFees - ((assetIncrease * fee) / MAX_FEE);
     }
 
-    /// @dev Calculate the total assets in the contract, withdrawal queue less accrued fees
+    /// @dev Calculate the total assets in the ARM, external withdrawal queue,
+    /// less liquidity assets reserved for the ARM's withdrawal queue and past accrued fees.
+    /// The accrued fees are from the last time fees were calculated.
     function _rawTotalAssets() internal view returns (uint256) {
-        return
-            token0.balanceOf(address(this)) + token1.balanceOf(address(this)) + _assetsInWithdrawQueue() - feesAccrued;
+        return super.totalAssets() - feesAccrued;
     }
 
     /// @notice Owner sets the performance fee on increased assets
@@ -126,19 +133,21 @@ abstract contract PerformanceFee is MultiLP {
     }
 
     /// @notice Transfer accrued performance fees to the fee collector
+    /// This requires enough liquidity assets in the ARM to cover the accrued fees.
     function collectFees() external returns (uint256 fees) {
         require(msg.sender == feeCollector, "ARM: not fee collector");
 
-        // Calculate any new fees up to this point
+        // Accrued all fees up to this point
         _calcFee();
 
+        // Read the updated accrued fees from storage
         fees = feesAccrued;
-        require(fees <= IERC20(liquidityToken).balanceOf(address(this)), "ARM: insufficient liquidity");
+        require(fees <= IERC20(liquidityAsset).balanceOf(address(this)), "ARM: insufficient liquidity");
 
-        // Reset fees collected in storage
+        // Reset the accrued fees in storage
         feesAccrued = 0;
 
-        IERC20(liquidityToken).transfer(feeCollector, fees);
+        IERC20(liquidityAsset).transfer(feeCollector, fees);
 
         emit FeeCollected(feeCollector, fees);
     }

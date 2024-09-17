@@ -56,8 +56,8 @@ contract LidoFixedPriceMultiLpARM is Initializable, MultiLP, PerformanceFee, Fix
         transferAmount = outToken == address(token0) ? amount + 2 : amount;
     }
 
-    function _assetsInWithdrawQueue() internal view override(MultiLP, LidoLiquidityManager) returns (uint256) {
-        return LidoLiquidityManager._assetsInWithdrawQueue();
+    function _externalWithdrawQueue() internal view override(MultiLP, LidoLiquidityManager) returns (uint256) {
+        return LidoLiquidityManager._externalWithdrawQueue();
     }
 
     function _postDepositHook(uint256 assets) internal override(MultiLP, PerformanceFee) {

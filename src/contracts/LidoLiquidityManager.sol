@@ -70,7 +70,7 @@ abstract contract LidoLiquidityManager is OwnableOperable {
 
     function _postClaimHook(uint256 assets) internal virtual;
 
-    function _assetsInWithdrawQueue() internal view virtual returns (uint256) {
+    function _externalWithdrawQueue() internal view virtual returns (uint256 assets) {
         return outstandingEther;
     }
 

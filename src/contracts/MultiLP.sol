@@ -18,8 +18,8 @@ abstract contract MultiLP is AbstractARM, ERC20Upgradeable {
     /// @dev The address with no know private key that the initial shares are minted to
     address internal constant DEAD_ACCOUNT = 0x000000000000000000000000000000000000dEaD;
 
-    /// @notice The address of the liquidity token. eg WETH
-    address internal immutable liquidityToken;
+    /// @notice The address of the asset that is used to add and remove liquidity. eg WETH
+    address internal immutable liquidityAsset;
 
     struct WithdrawalQueueMetadata {
         // cumulative total of all withdrawal requests included the ones that have already been claimed
@@ -62,9 +62,9 @@ abstract contract MultiLP is AbstractARM, ERC20Upgradeable {
     );
     event RedeemClaimed(address indexed withdrawer, uint256 indexed requestId, uint256 assets);
 
-    constructor(address _liquidityToken) {
-        require(_liquidityToken == address(token0) || _liquidityToken == address(token1), "invalid liquidity token");
-        liquidityToken = _liquidityToken;
+    constructor(address _liquidityAsset) {
+        require(_liquidityAsset == address(token0) || _liquidityAsset == address(token1), "invalid liquidity asset");
+        liquidityAsset = _liquidityAsset;
     }
 
     /// @dev called by the concrete contract's `initialize` function
@@ -72,7 +72,7 @@ abstract contract MultiLP is AbstractARM, ERC20Upgradeable {
         __ERC20_init(_name, _symbol);
 
         // Transfer a small bit of liquidity from the intializer to this contract
-        IERC20(liquidityToken).transferFrom(msg.sender, address(this), MIN_TOTAL_SUPPLY);
+        IERC20(liquidityAsset).transferFrom(msg.sender, address(this), MIN_TOTAL_SUPPLY);
 
         // mint a small amount of shares to a dead account so the total supply can never be zero
         // This avoids donation attacks when there are no assets in the ARM contract
@@ -95,8 +95,8 @@ abstract contract MultiLP is AbstractARM, ERC20Upgradeable {
 
         shares = convertToShares(assets);
 
-        // Transfer the liquidity token from the sender to this contract
-        IERC20(liquidityToken).transferFrom(msg.sender, address(this), assets);
+        // Transfer the liquidity asset from the sender to this contract
+        IERC20(liquidityAsset).transferFrom(msg.sender, address(this), assets);
 
         // mint shares
         _mint(msg.sender, shares);
@@ -178,8 +178,8 @@ abstract contract MultiLP is AbstractARM, ERC20Upgradeable {
 
         emit RedeemClaimed(msg.sender, requestId, assets);
 
-        // transfer the liquidity token to the withdrawer
-        IERC20(liquidityToken).transfer(msg.sender, assets);
+        // transfer the liquidity asset to the withdrawer
+        IERC20(liquidityAsset).transfer(msg.sender, assets);
     }
 
     /// @dev Adds liquidity to the withdrawal queue if there is a funding shortfall.
@@ -194,13 +194,13 @@ abstract contract MultiLP is AbstractARM, ERC20Upgradeable {
             return 0;
         }
 
-        uint256 liquidityBalance = IERC20(liquidityToken).balanceOf(address(this));
+        uint256 liquidityBalance = IERC20(liquidityAsset).balanceOf(address(this));
 
         // Of the claimable withdrawal requests, how much is unclaimed?
-        // That is, the amount of the liquidity token that is currently allocated for the withdrawal queue
+        // That is, the amount of the liquidity assets that is currently allocated for the withdrawal queue
         uint256 allocatedLiquidity = queue.claimable - queue.claimed;
 
-        // If there is no unallocated liquidity token then there is nothing to add to the queue
+        // If there is no unallocated liquidity assets then there is nothing to add to the queue
         if (liquidityBalance <= allocatedLiquidity) {
             return 0;
         }
@@ -215,16 +215,28 @@ abstract contract MultiLP is AbstractARM, ERC20Upgradeable {
         withdrawalQueueMetadata.claimable = SafeCast.toUint128(newClaimable);
     }
 
-    /// @notice The total amount of assets in the contract including the withdrawal queue
-    function totalAssets() public view virtual returns (uint256) {
-        // valuing both assets 1:1
-        return token0.balanceOf(address(this)) + token1.balanceOf(address(this)) + _assetsInWithdrawQueue();
+    /// @notice The total amount of assets in the ARM and external withdrawal queue,
+    /// less the liquidity assets reserved for the withdrawal queue
+    function totalAssets() public view virtual returns (uint256 assets) {
+        // Get the assets in the ARM and external withdrawal queue
+        assets = token0.balanceOf(address(this)) + token1.balanceOf(address(this)) + _externalWithdrawQueue();
+
+        WithdrawalQueueMetadata memory queue = withdrawalQueueMetadata;
+
+        // If the ARM becomes insolvent enough that the total value in the ARM and external withdrawal queue
+        // is less than the outstanding withdrawals.
+        if (assets + queue.claimed < queue.queued) {
+            return 0;
+        }
+
+        // Need to remove the liquidity assets that have been reserved for the withdrawal queue
+        return assets + queue.claimed - queue.queued;
     }
 
     /// @notice Calculates the amount of shares for a given amount of liquidity assets
     function convertToShares(uint256 assets) public view returns (uint256 shares) {
-        uint256 _totalAssets = totalAssets();
-        shares = (_totalAssets == 0) ? assets : (assets * totalSupply()) / _totalAssets;
+        uint256 totalAssetsMem = totalAssets();
+        shares = (totalAssetsMem == 0) ? assets : (assets * totalSupply()) / totalAssetsMem;
     }
 
     /// @notice Calculates the amount of liquidity assets for a given amount of shares
@@ -232,6 +244,7 @@ abstract contract MultiLP is AbstractARM, ERC20Upgradeable {
         assets = (shares * totalAssets()) / totalSupply();
     }
 
-    /// @dev Hook for calculating the amount of assets in a withdrawal queue
-    function _assetsInWithdrawQueue() internal view virtual returns (uint256);
+    /// @dev Hook for calculating the amount of assets in an external withdrawal queue like Lido or OETH
+    /// This is not the ARM's withdrawal queue
+    function _externalWithdrawQueue() internal view virtual returns (uint256 assets);
 }
