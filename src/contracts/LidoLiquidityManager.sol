@@ -11,6 +11,8 @@ abstract contract LidoLiquidityManager is OwnableOperable {
 
     uint256 public outstandingEther;
 
+    uint256[50] private _gap;
+
     constructor(address _steth, address _weth, address _lidoWithdrawalQueue) {
         steth = IERC20(_steth);
         weth = IWETH(_weth);

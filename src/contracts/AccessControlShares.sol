@@ -7,6 +7,8 @@ abstract contract AccessControlShares is MultiLP {
     uint256 public totalSupplyCap;
     mapping(address lp => uint256 shares) public liquidityProviderCaps;
 
+    uint256[50] private _gap;
+
     event LiquidityProviderCap(address indexed liquidityProvider, uint256 cap);
     event TotalSupplyCap(uint256 shares);
 

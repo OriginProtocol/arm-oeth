@@ -27,6 +27,8 @@ abstract contract FixedPriceARM is AbstractARM {
     /// @dev Minimum funds to allow operator to price changes
     uint256 public minimumFunds;
 
+    uint256[50] private _gap;
+
     event TraderateChanged(uint256 traderate0, uint256 traderate1);
 
     function _swapExactTokensForTokens(IERC20 inToken, IERC20 outToken, uint256 amountIn, address to)

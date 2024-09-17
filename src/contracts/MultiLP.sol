@@ -54,6 +54,8 @@ abstract contract MultiLP is AbstractARM, ERC20Upgradeable {
     /// @notice Mapping of withdrawal request indices to the user withdrawal request data
     mapping(uint256 requestId => WithdrawalRequest) public withdrawalRequests;
 
+    uint256[50] private _gap;
+
     event RedeemRequested(address indexed withdrawer, uint256 indexed requestId, uint256 assets, uint256 queued);
     event RedeemClaimed(address indexed withdrawer, uint256 indexed requestId, uint256 assets);
 

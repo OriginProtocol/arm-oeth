@@ -14,6 +14,8 @@ abstract contract AbstractARM is OwnableOperable {
     /// token1 is also compatible with the Uniswap V2 Router interface.
     IERC20 public immutable token1;
 
+    uint256[50] private _gap;
+
     constructor(address _inputToken, address _outputToken1) {
         require(IERC20(_inputToken).decimals() == 18);
         require(IERC20(_outputToken1).decimals() == 18);

@@ -33,6 +33,8 @@ abstract contract MultiPriceARM is AbstractARM {
     /// @dev Five tranches are used as they fit in a single storage slot
     uint16[15] private tranches;
 
+    uint256[50] private _gap;
+
     event TranchePricesUpdated(uint256[5] prices);
     event TrancheAllocationsUpdated(uint256[5] allocations);
 
