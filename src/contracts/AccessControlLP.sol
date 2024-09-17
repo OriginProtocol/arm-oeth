@@ -13,12 +13,17 @@ abstract contract AccessControlLP is MultiLP {
     event TotalAssetsCap(uint256 cap);
 
     function _postDepositHook(uint256 assets) internal virtual override {
-        require(liquidityProviderCaps[msg.sender] >= assets, "ARM: LP cap exceeded");
+        uint256 oldCap = liquidityProviderCaps[msg.sender];
+        require(oldCap >= assets, "ARM: LP cap exceeded");
         // total assets has already been updated with the new assets
         require(totalAssetsCap >= totalAssets(), "ARM: Total assets cap exceeded");
 
+        uint256 newCap = oldCap - assets;
+
         // Save the new LP cap to storage
-        liquidityProviderCaps[msg.sender] -= assets;
+        liquidityProviderCaps[msg.sender] = newCap;
+
+        emit LiquidityProviderCap(msg.sender, newCap);
     }
 
     function setLiquidityProviderCaps(address[] calldata _liquidityProviders, uint256 cap) external onlyOwner {
