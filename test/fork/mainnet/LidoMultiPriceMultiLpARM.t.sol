@@ -48,7 +48,9 @@ contract Fork_Concrete_LidoMultiPriceMultiLpARM_Test is Fork_Shared_Test_ {
         // Set the tranche discounts for each tranche
         // 8 basis point discount (0.08%) would be 800 with a price of 0.9992
         lidoARM.setTrancheDiscounts([uint16(200), 375, 800, 1400, 1800]);
-        lidoARM.setTrancheAllocations([uint256(8e18), 5e18, 3e18, 2e18, 1e18]);
+        lidoARM.setTrancheAllocations([uint256(80 ether), 50 ether, 30 ether, 20 ether, 10 ether]);
+
+        lidoARM.setTotalAssetsCap(100 ether);
 
         // Only fuzz from this address. Big speedup on fork.
         targetSender(address(this));
@@ -61,6 +63,23 @@ contract Fork_Concrete_LidoMultiPriceMultiLpARM_Test is Fork_Shared_Test_ {
 
     function _dealWETH(address to, uint256 amount) internal {
         deal(address(weth), to, amount);
+    }
+
+    /// @dev Check initial state
+    function test_initial_state() external {
+        assertEq(lidoARM.name(), "Lido ARM");
+        assertEq(lidoARM.symbol(), "ARM-ST");
+        assertEq(lidoARM.owner(), address(this));
+        assertEq(lidoARM.operator(), operator);
+        assertEq(lidoARM.feeCollector(), feeCollector);
+        assertEq(lidoARM.fee(), performanceFee);
+        assertEq(lidoARM.lastTotalAssets(), 0);
+        assertEq(lidoARM.feesAccrued(), 0);
+        // the 20% performance fee is removed
+        assertEq(lidoARM.totalAssets(), 1e12 * 0.8);
+        assertEq(lidoARM.totalSupply(), 1e12);
+        assertEq(weth.balanceOf(address(lidoARM)), 1e12);
+        assertEq(lidoARM.totalAssetsCap(), 100 ether);
     }
 
     /// @dev ARM owner sets valid trance discounts ranging from 1 to MAX_DISCOUNT
@@ -76,6 +95,40 @@ contract Fork_Concrete_LidoMultiPriceMultiLpARM_Test is Fork_Shared_Test_ {
     // Revert when a tranche discount is zero
     // Revert when a tranche discount is greater than the MAX_DISCOUNT
     // Revert when non owner tries to set tranche discounts
+
+    // whitelisted LP adds WETH liquidity to the ARM
+    function test_depositAssets() external {
+        lidoARM.setLiquidityProviderCap(address(this), 20 ether);
+
+        _dealWETH(address(this), 10 ether);
+        uint256 startWETH = weth.balanceOf(address(lidoARM));
+
+        lidoARM.deposit(10 ether);
+
+        assertEq(weth.balanceOf(address(lidoARM)), startWETH + 10 ether);
+    }
+    // non whitelisted LP tries to add WETH liquidity to the ARM
+
+    function test_redeemAssets() external {
+        lidoARM.setLiquidityProviderCap(address(this), 20 ether);
+        _dealWETH(address(this), 10 ether);
+        lidoARM.deposit(10 ether);
+
+        lidoARM.requestRedeem(8 ether);
+    }
+
+    // with enough liquidity in all tranches
+    //// swap stETH to WETH using just the first tranche
+    //// swap stETH to WETH using the first two tranches
+    //// swap stETH to WETH using all five tranches
+    //// fail to swap stETH to WETH with a swap larger than the available liquidity
+    // with all liquidity in the first tranche used
+    //// swap stETH to WETH using just the second tranche
+    //// swap stETH to WETH using the second and third tranches
+    //// swap stETH to WETH using the remaining four tranches
+    //// fail to swap stETH to WETH with a swap larger than the available liquidity
+    // with only liquidity in the fifth tranche
+    //// swap stETH to WETH using just the fifth tranche
 
     // function test_realistic_swaps() external {
     //     // vm.prank(operator);

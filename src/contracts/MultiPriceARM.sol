@@ -52,7 +52,7 @@ abstract contract MultiPriceARM is AbstractARM {
         uint16[15] memory tranchesMem = tranches;
 
         // Fill the tranches with the new liquidity from first to last
-        for (uint256 i = 0; i < tranchesMem.length; i + 3) {
+        for (uint256 i = 0; i < tranchesMem.length; i += 3) {
             unallocatedLiquidity =
                 tranchesMem[i + LIQUIDITY_ALLOCATED_INDEX] - tranchesMem[i + LIQUIDITY_REMAINING_INDEX];
 
@@ -64,7 +64,7 @@ abstract contract MultiPriceARM is AbstractARM {
             remainingLiquidity -= liquidityToAdd;
 
             if (remainingLiquidity == 0) {
-                return;
+                break;
             }
         }
 
@@ -80,7 +80,7 @@ abstract contract MultiPriceARM is AbstractARM {
 
         // Take liquidity from the tranches from last to first
         for (uint256 i = tranchesMem.length; i > 2;) {
-            i = i - 3;
+            i -= 3;
             liquidityToRemove = remainingLiquidity <= tranchesMem[i + LIQUIDITY_REMAINING_INDEX]
                 ? remainingLiquidity
                 : tranchesMem[i + LIQUIDITY_REMAINING_INDEX];
@@ -91,7 +91,7 @@ abstract contract MultiPriceARM is AbstractARM {
             remainingLiquidity -= liquidityToRemove;
 
             if (remainingLiquidity == 0) {
-                return;
+                break;
             }
         }
 
