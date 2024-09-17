@@ -35,7 +35,7 @@ abstract contract MultiPriceARM is AbstractARM {
 
     uint256[50] private _gap;
 
-    event TranchePricesUpdated(uint256[5] prices);
+    event TranchePricesUpdated(uint16[5] discounts);
     event TrancheAllocationsUpdated(uint256[5] allocations);
 
     constructor(address _discountToken, address _liquidityToken) {
@@ -252,21 +252,31 @@ abstract contract MultiPriceARM is AbstractARM {
         transferAmount = amount;
     }
 
-    function updateTranchePrices(uint256[5] calldata prices) external onlyOwner {
+    /// @notice sets the tranche discounts from the liquidity asset scaled to 1e5.
+    /// For example:
+    /// a 8 basis point discount (0.08%) would be 800 with a price of 0.9992
+    /// a 1.25 basis point discount (0.0125%) would be 125 with a price of 0.999875
+    function setTrancheDiscounts(uint16[5] calldata discounts) external onlyOwner {
         uint16[15] memory tranchesMem = tranches;
 
-        for (uint256 i = 0; i < prices.length; i++) {
-            // TODO add price safely checks
-            tranchesMem[i * 3 + DISCOUNT_INDEX] = SafeCast.toUint16(prices[i] / DISCOUNT_MULTIPLIER);
+        for (uint256 i = 0; i < discounts.length; i++) {
+            require(discounts[i] > 0, "ARM: zero discount");
+            tranchesMem[i * 3 + DISCOUNT_INDEX] = discounts[i];
         }
 
         // Write back the tranche data to storage once
         tranches = tranchesMem;
 
-        emit TranchePricesUpdated(prices);
+        emit TranchePricesUpdated(discounts);
     }
 
-    function updateTrancheAllocations(uint256[5] calldata allocations) external onlyOwner {
+    function getTrancheDiscounts() external view returns (uint16[5] memory discounts) {
+        for (uint256 i = 0; i < discounts.length; i++) {
+            discounts[i] = tranches[i * 3 + DISCOUNT_INDEX];
+        }
+    }
+
+    function setTrancheAllocations(uint256[5] calldata allocations) external onlyOwner {
         uint16[15] memory tranchesMem = tranches;
 
         for (uint256 i = 0; i < allocations.length; ++i) {
