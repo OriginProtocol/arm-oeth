@@ -90,7 +90,8 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_Test is Fork_Shared_Test_ {
 
         lidoARM = LidoFixedPriceMultiLpARM(payable(address(lidoProxy)));
 
-        // TODO set price
+        // set prices
+        lidoARM.setPrices(992 * 1e33, 1001 * 1e33);
 
         lidoARM.setTotalAssetsCap(100 ether);
 

@@ -8,6 +8,11 @@ import {FixedPriceARM} from "./FixedPriceARM.sol";
 import {LidoLiquidityManager} from "./LidoLiquidityManager.sol";
 import {OwnerLP} from "./OwnerLP.sol";
 
+/**
+ * @title Lido (stETH) Application Redemption Manager (ARM)
+ * @dev This implementation supports a single LP with single buy and sell prices.
+ * @author Origin Protocol Inc
+ */
 contract LidoOwnerLpARM is Initializable, OwnerLP, FixedPriceARM, LidoLiquidityManager {
     /// @param _stEth The address of the stETH token
     /// @param _weth The address of the WETH token

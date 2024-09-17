@@ -4,6 +4,10 @@ pragma solidity ^0.8.23;
 import {OwnableOperable} from "./OwnableOperable.sol";
 import {IERC20, IWETH, IStETHWithdrawal} from "./Interfaces.sol";
 
+/**
+ * @title Manages stETH liquidity against the Lido Withdrawal Queue.
+ * @author Origin Protocol Inc
+ */
 abstract contract LidoLiquidityManager is OwnableOperable {
     IERC20 public immutable steth;
     IWETH public immutable weth;

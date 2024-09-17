@@ -13,7 +13,7 @@ import {PerformanceFee} from "./PerformanceFee.sol";
 
 /**
  * @title Lido (stETH) Application Redemption Manager (ARM)
- * @dev This implementation supports multiple Liquidity Providers (LPs) with a single price.
+ * @dev This implementation supports multiple Liquidity Providers (LPs) with single buy and sell prices.
  * @author Origin Protocol Inc
  */
 contract LidoFixedPriceMultiLpARM is

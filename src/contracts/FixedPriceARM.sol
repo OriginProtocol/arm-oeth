@@ -4,6 +4,10 @@ pragma solidity ^0.8.23;
 import {AbstractARM} from "./AbstractARM.sol";
 import {IERC20} from "./Interfaces.sol";
 
+/**
+ * @title Abstract support to an ARM with a single buy and sell price.
+ * @author Origin Protocol Inc
+ */
 abstract contract FixedPriceARM is AbstractARM {
     /**
      * @notice For one `token0` from a Trader, how many `token1` does the pool send.

@@ -5,6 +5,10 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {AbstractARM} from "./AbstractARM.sol";
 import {IERC20} from "./Interfaces.sol";
 
+/**
+ * @title Abstract support to an ARM with multiple liquidity tranches with different prices.
+ * @author Origin Protocol Inc
+ */
 abstract contract MultiPriceARM is AbstractARM {
     /// @notice The token being bought by the ARM at a discount. eg stETH
     address private immutable discountToken;
