@@ -83,10 +83,7 @@ contract LidoFixedPriceMultiLpARM is
         PerformanceFee._postDepositHook(assets);
     }
 
-    function _postWithdrawHook(uint256 assets) internal override(MultiLP, AccessControlLP, PerformanceFee) {
-        // Update the LP's assets
-        AccessControlLP._postWithdrawHook(assets);
-
+    function _postWithdrawHook(uint256 assets) internal override(MultiLP, PerformanceFee) {
         // Store the new total assets after the withdrawal and performance fee accrued
         PerformanceFee._postWithdrawHook(assets);
     }

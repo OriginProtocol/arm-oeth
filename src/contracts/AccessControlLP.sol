@@ -21,16 +21,12 @@ abstract contract AccessControlLP is MultiLP {
         liquidityProviderCaps[msg.sender] -= assets;
     }
 
-    /// @dev Adds assets to the liquidity provider's cap when withdrawing assets or redeeming shares.
-    /// Will not revert if the total assets cap is less than the total assets.
-    function _postWithdrawHook(uint256 assets) internal virtual override {
-        liquidityProviderCaps[msg.sender] += assets;
-    }
+    function setLiquidityProviderCaps(address[] calldata _liquidityProviders, uint256 cap) external onlyOwner {
+        for (uint256 i = 0; i < _liquidityProviders.length; i++) {
+            liquidityProviderCaps[_liquidityProviders[i]] = cap;
 
-    function setLiquidityProviderCap(address liquidityProvider, uint256 cap) external onlyOwner {
-        liquidityProviderCaps[liquidityProvider] = cap;
-
-        emit LiquidityProviderCap(liquidityProvider, cap);
+            emit LiquidityProviderCap(_liquidityProviders[i], cap);
+        }
     }
 
     /// @notice Set the total assets cap for a liquidity provider.

@@ -120,6 +120,10 @@ contract Fork_Concrete_LidoMultiPriceMultiLpARM_Test is Fork_Shared_Test_ {
 
         lidoARM.setTotalAssetsCap(100 ether);
 
+        address[] memory liquidityProviders = new address[](1);
+        liquidityProviders[0] = address(this);
+        lidoARM.setLiquidityProviderCaps(liquidityProviders, 20 ether);
+
         // Only fuzz from this address. Big speedup on fork.
         targetSender(address(this));
     }
@@ -134,7 +138,7 @@ contract Fork_Concrete_LidoMultiPriceMultiLpARM_Test is Fork_Shared_Test_ {
     }
 
     /// @dev Check initial state
-    function test_initial_state() external {
+    function test_initial_state() external view {
         assertEq(lidoARM.name(), "Lido ARM");
         assertEq(lidoARM.symbol(), "ARM-ST");
         assertEq(lidoARM.owner(), address(this));
@@ -166,8 +170,6 @@ contract Fork_Concrete_LidoMultiPriceMultiLpARM_Test is Fork_Shared_Test_ {
 
     // whitelisted LP adds WETH liquidity to the ARM
     function test_depositAssets() external {
-        lidoARM.setLiquidityProviderCap(address(this), 20 ether);
-
         _dealWETH(address(this), 10 ether);
         beforeData = _snapData();
 
@@ -187,7 +189,6 @@ contract Fork_Concrete_LidoMultiPriceMultiLpARM_Test is Fork_Shared_Test_ {
     // non whitelisted LP tries to add WETH liquidity to the ARM
 
     function test_redeemAssets() external {
-        lidoARM.setLiquidityProviderCap(address(this), 20 ether);
         _dealWETH(address(this), 10 ether);
         lidoARM.deposit(10 ether);
 
