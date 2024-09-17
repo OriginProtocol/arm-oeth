@@ -2,17 +2,31 @@
 pragma solidity ^0.8.23;
 
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 import {AbstractARM} from "./AbstractARM.sol";
+import {AccessControlLP} from "./AccessControlLP.sol";
 import {FixedPriceARM} from "./FixedPriceARM.sol";
 import {LidoLiquidityManager} from "./LidoLiquidityManager.sol";
 import {MultiLP} from "./MultiLP.sol";
 import {PerformanceFee} from "./PerformanceFee.sol";
 
-contract LidoFixedPriceMultiLpARM is Initializable, MultiLP, PerformanceFee, FixedPriceARM, LidoLiquidityManager {
+/**
+ * @title Lido (stETH) Application Redemption Manager (ARM)
+ * @dev This implementation supports multiple Liquidity Providers (LPs) with a single price.
+ * @author Origin Protocol Inc
+ */
+contract LidoFixedPriceMultiLpARM is
+    Initializable,
+    MultiLP,
+    PerformanceFee,
+    AccessControlLP,
+    FixedPriceARM,
+    LidoLiquidityManager
+{
     /// @param _stEth The address of the stETH token
     /// @param _weth The address of the WETH token
-    /// @param _lidoWithdrawalQueue The address of the stETH Withdrawal contract
+    /// @param _lidoWithdrawalQueue The address of the Lido's withdrawal queue contract
     constructor(address _stEth, address _weth, address _lidoWithdrawalQueue)
         AbstractARM(_stEth, _weth)
         MultiLP(_weth)
@@ -23,11 +37,11 @@ contract LidoFixedPriceMultiLpARM is Initializable, MultiLP, PerformanceFee, Fix
     /// @notice Initialize the contract.
     /// @param _name The name of the liquidity provider (LP) token.
     /// @param _symbol The symbol of the liquidity provider (LP) token.
-    /// @param _operator The address of the account that can request and claim OETH withdrawals.
+    /// @param _operator The address of the account that can request and claim Lido withdrawals.
     /// @param _fee The performance fee that is collected by the feeCollector measured in basis points (1/100th of a percent).
     /// 10,000 = 100% performance fee
     /// 500 = 5% performance fee
-    /// @param _feeCollector The account that receives the performance fee as shares
+    /// @param _feeCollector The account that can collect the performance fee
     function initialize(
         string calldata _name,
         string calldata _symbol,
@@ -37,6 +51,7 @@ contract LidoFixedPriceMultiLpARM is Initializable, MultiLP, PerformanceFee, Fix
     ) external initializer {
         _initOwnableOperable(_operator);
         _initMultiLP(_name, _symbol);
+        lastTotalAssets = SafeCast.toUint128(MIN_TOTAL_SUPPLY);
         _initPerformanceFee(_fee, _feeCollector);
     }
 
@@ -60,13 +75,19 @@ contract LidoFixedPriceMultiLpARM is Initializable, MultiLP, PerformanceFee, Fix
         return LidoLiquidityManager._externalWithdrawQueue();
     }
 
-    function _postDepositHook(uint256 assets) internal override(MultiLP, PerformanceFee) {
-        // Save the new total assets after the deposit and performance fee accrued
+    function _postDepositHook(uint256 assets) internal override(MultiLP, AccessControlLP, PerformanceFee) {
+        // Check the LP can deposit the assets
+        AccessControlLP._postDepositHook(assets);
+
+        // Store the new total assets after the deposit and performance fee accrued
         PerformanceFee._postDepositHook(assets);
     }
 
-    function _postWithdrawHook(uint256 assets) internal override(MultiLP, PerformanceFee) {
-        // Save the new total assets after the withdrawal and performance fee accrued
+    function _postWithdrawHook(uint256 assets) internal override(MultiLP, AccessControlLP, PerformanceFee) {
+        // Update the LP's assets
+        AccessControlLP._postWithdrawHook(assets);
+
+        // Store the new total assets after the withdrawal and performance fee accrued
         PerformanceFee._postWithdrawHook(assets);
     }
 

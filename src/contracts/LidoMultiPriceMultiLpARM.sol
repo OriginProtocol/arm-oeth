@@ -4,8 +4,8 @@ pragma solidity ^0.8.23;
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
-import {AccessControlLP} from "./AccessControlLP.sol";
 import {AbstractARM} from "./AbstractARM.sol";
+import {AccessControlLP} from "./AccessControlLP.sol";
 import {MultiPriceARM} from "./MultiPriceARM.sol";
 import {LidoLiquidityManager} from "./LidoLiquidityManager.sol";
 import {MultiLP} from "./MultiLP.sol";
