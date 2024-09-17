@@ -17,95 +17,95 @@
 <text text-anchor="middle" x="369.22" y="-199.5" font-family="Times,serif" font-size="14.00">AbstractARM</text>
 <text text-anchor="middle" x="369.22" y="-182.7" font-family="Times,serif" font-size="14.00">../src/contracts/AbstractARM.sol</text>
 </g>
-<!-- 20 -->
+<!-- 24 -->
 <g id="node5" class="node">
-<title>20</title>
+<title>24</title>
 <polygon fill="#f2f2f2" stroke="black" points="167.62,-278.3 167.62,-319.9 390.82,-319.9 390.82,-278.3 167.62,-278.3"/>
 <text text-anchor="middle" x="279.22" y="-303.3" font-family="Times,serif" font-size="14.00">OwnableOperable</text>
 <text text-anchor="middle" x="279.22" y="-286.5" font-family="Times,serif" font-size="14.00">../src/contracts/OwnableOperable.sol</text>
 </g>
-<!-- 0&#45;&gt;20 -->
+<!-- 0&#45;&gt;24 -->
 <g id="edge1" class="edge">
-<title>0&#45;&gt;20</title>
+<title>0&#45;&gt;24</title>
 <path fill="none" stroke="black" d="M341.97,-232.98C334.83,-240.39 326.97,-248.55 319.3,-256.5"/>
 <polygon fill="none" stroke="black" points="311.64,-249.33 298.38,-278.21 326.76,-263.9 311.64,-249.33"/>
 </g>
-<!-- 17 -->
+<!-- 21 -->
 <g id="node2" class="node">
-<title>17</title>
+<title>21</title>
 <polygon fill="#f2f2f2" stroke="black" points="278.98,-0.5 278.98,-42.1 459.46,-42.1 459.46,-0.5 278.98,-0.5"/>
 <text text-anchor="middle" x="369.22" y="-25.5" font-family="Times,serif" font-size="14.00">OethARM</text>
 <text text-anchor="middle" x="369.22" y="-8.7" font-family="Times,serif" font-size="14.00">../src/contracts/OethARM.sol</text>
 </g>
-<!-- 18 -->
+<!-- 22 -->
 <g id="node3" class="node">
-<title>18</title>
+<title>22</title>
 <polygon fill="#f2f2f2" stroke="black" points="0,-182.9 0,-224.5 250.44,-224.5 250.44,-182.9 0,-182.9"/>
 <text text-anchor="middle" x="125.22" y="-207.9" font-family="Times,serif" font-size="14.00">OethLiquidityManager</text>
 <text text-anchor="middle" x="125.22" y="-191.1" font-family="Times,serif" font-size="14.00">../src/contracts/OethLiquidityManager.sol</text>
 </g>
-<!-- 17&#45;&gt;18 -->
+<!-- 21&#45;&gt;22 -->
 <g id="edge4" class="edge">
-<title>17&#45;&gt;18</title>
+<title>21&#45;&gt;22</title>
 <path fill="none" stroke="black" d="M326.04,-42.22C306.24,-52.11 282.86,-64.87 263.22,-78.6 228.22,-103.08 192.47,-135.47 166.13,-161.03"/>
 <polygon fill="none" stroke="black" points="158.36,-153.95 144.48,-182.55 173.16,-168.84 158.36,-153.95"/>
 </g>
-<!-- 21 -->
+<!-- 25 -->
 <g id="node6" class="node">
-<title>21</title>
+<title>25</title>
 <polygon fill="#f2f2f2" stroke="black" points="409.32,-269.9 409.32,-328.3 585.12,-328.3 585.12,-269.9 409.32,-269.9"/>
 <text text-anchor="middle" x="497.22" y="-311.7" font-family="Times,serif" font-size="14.00">&lt;&lt;Abstract&gt;&gt;</text>
 <text text-anchor="middle" x="497.22" y="-294.9" font-family="Times,serif" font-size="14.00">OwnerLP</text>
 <text text-anchor="middle" x="497.22" y="-278.1" font-family="Times,serif" font-size="14.00">../src/contracts/OwnerLP.sol</text>
 </g>
-<!-- 17&#45;&gt;21 -->
+<!-- 21&#45;&gt;25 -->
 <g id="edge2" class="edge">
-<title>17&#45;&gt;21</title>
+<title>21&#45;&gt;25</title>
 <path fill="none" stroke="black" d="M430.28,-42.14C447.48,-50.68 464.42,-62.51 475.22,-78.6 506.98,-125.91 509.25,-192.37 505.59,-239.74"/>
 <polygon fill="none" stroke="black" points="495.14,-238.69 502.3,-269.66 516.01,-240.99 495.14,-238.69"/>
 </g>
-<!-- 22 -->
+<!-- 26 -->
 <g id="node7" class="node">
-<title>22</title>
+<title>26</title>
 <polygon fill="#f2f2f2" stroke="black" points="271.98,-79.1 271.98,-137.5 466.46,-137.5 466.46,-79.1 271.98,-79.1"/>
 <text text-anchor="middle" x="369.22" y="-120.9" font-family="Times,serif" font-size="14.00">&lt;&lt;Abstract&gt;&gt;</text>
 <text text-anchor="middle" x="369.22" y="-104.1" font-family="Times,serif" font-size="14.00">PeggedARM</text>
 <text text-anchor="middle" x="369.22" y="-87.3" font-family="Times,serif" font-size="14.00">../src/contracts/PeggedARM.sol</text>
 </g>
-<!-- 17&#45;&gt;22 -->
+<!-- 21&#45;&gt;26 -->
 <g id="edge3" class="edge">
-<title>17&#45;&gt;22</title>
+<title>21&#45;&gt;26</title>
 <path fill="none" stroke="black" d="M369.22,-42.44C369.22,-44.49 369.22,-46.63 369.22,-48.83"/>
 <polygon fill="none" stroke="black" points="358.72,-48.94 369.22,-78.94 379.72,-48.94 358.72,-48.94"/>
 </g>
-<!-- 18&#45;&gt;20 -->
+<!-- 22&#45;&gt;24 -->
 <g id="edge5" class="edge">
-<title>18&#45;&gt;20</title>
+<title>22&#45;&gt;24</title>
 <path fill="none" stroke="black" d="M157.88,-224.51C176.09,-235.55 199.32,-249.64 220.57,-262.53"/>
 <polygon fill="none" stroke="black" points="215.25,-271.58 246.34,-278.16 226.14,-253.62 215.25,-271.58"/>
 </g>
-<!-- 19 -->
+<!-- 23 -->
 <g id="node4" class="node">
-<title>19</title>
+<title>23</title>
 <polygon fill="#f2f2f2" stroke="black" points="302.27,-365.3 302.27,-406.9 474.17,-406.9 474.17,-365.3 302.27,-365.3"/>
 <text text-anchor="middle" x="388.22" y="-390.3" font-family="Times,serif" font-size="14.00">Ownable</text>
 <text text-anchor="middle" x="388.22" y="-373.5" font-family="Times,serif" font-size="14.00">../src/contracts/Ownable.sol</text>
 </g>
-<!-- 20&#45;&gt;19 -->
+<!-- 24&#45;&gt;23 -->
 <g id="edge6" class="edge">
-<title>20&#45;&gt;19</title>
+<title>24&#45;&gt;23</title>
 <path fill="none" stroke="black" d="M304.77,-320.03C315.02,-328.02 327.2,-337.52 339.03,-346.75"/>
 <polygon fill="none" stroke="black" points="332.71,-355.13 362.82,-365.3 345.62,-338.57 332.71,-355.13"/>
 </g>
-<!-- 21&#45;&gt;19 -->
+<!-- 25&#45;&gt;23 -->
 <g id="edge7" class="edge">
-<title>21&#45;&gt;19</title>
+<title>25&#45;&gt;23</title>
 <path fill="none" stroke="black" d="M460.92,-328.4C453.42,-334.25 445.41,-340.51 437.53,-346.64"/>
 <polygon fill="none" stroke="black" points="430.89,-338.51 413.69,-365.24 443.8,-355.07 430.89,-338.51"/>
 </g>
-<!-- 22&#45;&gt;0 -->
+<!-- 26&#45;&gt;0 -->
 <g id="edge8" class="edge">
-<title>22&#45;&gt;0</title>
+<title>26&#45;&gt;0</title>
 <path fill="none" stroke="black" d="M369.22,-137.58C369.22,-139.66 369.22,-141.8 369.22,-143.98"/>
 <polygon fill="none" stroke="black" points="358.72,-144.2 369.22,-174.2 379.72,-144.2 358.72,-144.2"/>
 </g>
