@@ -270,12 +270,6 @@ abstract contract MultiPriceARM is AbstractARM {
         emit TranchePricesUpdated(discounts);
     }
 
-    function getTrancheDiscounts() external view returns (uint16[5] memory discounts) {
-        for (uint256 i = 0; i < discounts.length; i++) {
-            discounts[i] = tranches[i * 3 + DISCOUNT_INDEX];
-        }
-    }
-
     function setTrancheAllocations(uint256[5] calldata allocations) external onlyOwner {
         uint16[15] memory tranchesMem = tranches;
 
@@ -327,5 +321,23 @@ abstract contract MultiPriceARM is AbstractARM {
 
         // Write back the tranche data to storage once
         tranches = tranchesMem;
+    }
+
+    function getTrancheDiscounts() external view returns (uint16[5] memory discounts) {
+        for (uint256 i = 0; i < discounts.length; i++) {
+            discounts[i] = tranches[i * 3 + DISCOUNT_INDEX];
+        }
+    }
+
+    function getTrancheAllocations() external view returns (uint256[5] memory allocations) {
+        for (uint256 i = 0; i < allocations.length; i++) {
+            allocations[i] = tranches[i * 3 + LIQUIDITY_ALLOCATED_INDEX] * TRANCHE_AMOUNT_MULTIPLIER;
+        }
+    }
+
+    function getTrancheRemaining() external view returns (uint256[5] memory remaining) {
+        for (uint256 i = 0; i < remaining.length; i++) {
+            remaining[i] = tranches[i * 3 + LIQUIDITY_REMAINING_INDEX] * TRANCHE_AMOUNT_MULTIPLIER;
+        }
     }
 }

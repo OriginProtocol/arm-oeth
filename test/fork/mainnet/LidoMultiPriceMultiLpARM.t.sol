@@ -15,6 +15,74 @@ contract Fork_Concrete_LidoMultiPriceMultiLpARM_Test is Fork_Shared_Test_ {
     IERC20 BAD_TOKEN = IERC20(makeAddr("bad token"));
     uint256 performanceFee = 2000; // 20%
     address feeCollector = 0x000000000000000000000000000000Feec011ec1;
+    AssertData beforeData;
+    DeltaData noChangeDeltaData = DeltaData({
+        totalAssets: 10,
+        totalSupply: 0,
+        totalAssetsCap: 0,
+        armWeth: 0,
+        armSteth: 0,
+        feesAccrued: 0,
+        tranchesDiscounts: [int16(0), 0, 0, 0, 0],
+        tranchesAllocations: [int256(0), 0, 0, 0, 0],
+        tranchesRemaining: [int256(0), 0, 0, 0, 0]
+    });
+
+    struct AssertData {
+        uint256 totalAssets;
+        uint256 totalSupply;
+        uint256 totalAssetsCap;
+        uint256 armWeth;
+        uint256 armSteth;
+        uint256 feesAccrued;
+        uint16[5] tranchesDiscounts;
+        uint256[5] tranchesAllocations;
+        uint256[5] tranchesRemaining;
+    }
+
+    struct DeltaData {
+        int256 totalAssets;
+        int256 totalSupply;
+        int256 totalAssetsCap;
+        int256 armWeth;
+        int256 armSteth;
+        int256 feesAccrued;
+        int16[5] tranchesDiscounts;
+        int256[5] tranchesAllocations;
+        int256[5] tranchesRemaining;
+    }
+
+    function _snapData() internal view returns (AssertData memory data) {
+        return AssertData({
+            totalAssets: lidoARM.totalAssets(),
+            totalSupply: lidoARM.totalSupply(),
+            totalAssetsCap: lidoARM.totalAssetsCap(),
+            armWeth: weth.balanceOf(address(lidoARM)),
+            armSteth: steth.balanceOf(address(lidoARM)),
+            feesAccrued: lidoARM.feesAccrued(),
+            tranchesDiscounts: lidoARM.getTrancheDiscounts(),
+            tranchesAllocations: lidoARM.getTrancheAllocations(),
+            tranchesRemaining: lidoARM.getTrancheRemaining()
+        });
+    }
+
+    function assertData(AssertData memory before, DeltaData memory delta) internal view {
+        AssertData memory afterData = _snapData();
+
+        assertEq(int256(afterData.totalAssets), int256(before.totalAssets) + delta.totalAssets, "totalAssets");
+        assertEq(int256(afterData.totalSupply), int256(before.totalSupply) + delta.totalSupply, "totalSupply");
+        assertEq(
+            int256(afterData.totalAssetsCap), int256(before.totalAssetsCap) + delta.totalAssetsCap, "totalAssetsCap"
+        );
+        assertEq(int256(afterData.feesAccrued), int256(before.feesAccrued) + delta.feesAccrued, "feesAccrued");
+        assertEq(int256(afterData.armWeth), int256(before.armWeth) + delta.armWeth, "armWeth");
+        assertEq(int256(afterData.armSteth), int256(before.armSteth) + delta.armSteth, "armSteth");
+        // for (uint256 i = 0; i < 5; i++) {
+        //     assertEq(afterData.tranchesDiscounts[i], before.tranchesDiscounts[i] + delta.tranchesDiscounts[i]);
+        //     assertEq(afterData.tranchesAllocations[i], before.tranchesAllocations[i] + delta.tranchesAllocations[i]);
+        //     assertEq(afterData.tranchesRemaining[i], before.tranchesRemaining[i] + delta.tranchesRemaining[i]);
+        // }
+    }
 
     // Account for stETH rounding errors.
     // See https://docs.lido.fi/guides/lido-tokens-integration-guide/#1-2-wei-corner-case
@@ -75,7 +143,7 @@ contract Fork_Concrete_LidoMultiPriceMultiLpARM_Test is Fork_Shared_Test_ {
         assertEq(lidoARM.fee(), performanceFee);
         assertEq(lidoARM.lastTotalAssets(), 0);
         assertEq(lidoARM.feesAccrued(), 0);
-        // the 20% performance fee is removed
+        // the 20% performance fee is removed on initialization
         assertEq(lidoARM.totalAssets(), 1e12 * 0.8);
         assertEq(lidoARM.totalSupply(), 1e12);
         assertEq(weth.balanceOf(address(lidoARM)), 1e12);
@@ -101,11 +169,20 @@ contract Fork_Concrete_LidoMultiPriceMultiLpARM_Test is Fork_Shared_Test_ {
         lidoARM.setLiquidityProviderCap(address(this), 20 ether);
 
         _dealWETH(address(this), 10 ether);
-        uint256 startWETH = weth.balanceOf(address(lidoARM));
+        beforeData = _snapData();
 
         lidoARM.deposit(10 ether);
 
-        assertEq(weth.balanceOf(address(lidoARM)), startWETH + 10 ether);
+        DeltaData memory delta = noChangeDeltaData;
+        delta.totalAssets = 10 ether;
+        delta.totalSupply = 10 ether;
+        delta.armWeth = 10 ether;
+        assertData(beforeData, delta);
+
+        // assert whitelisted LP cap was decreased
+        // assert remaining liquidity in appropriate tranches increased
+        // assert last total assets was set with performance fee removed
+        // assert performance fee was accrued on asset increases but not the deposit
     }
     // non whitelisted LP tries to add WETH liquidity to the ARM
 
@@ -129,202 +206,4 @@ contract Fork_Concrete_LidoMultiPriceMultiLpARM_Test is Fork_Shared_Test_ {
     //// fail to swap stETH to WETH with a swap larger than the available liquidity
     // with only liquidity in the fifth tranche
     //// swap stETH to WETH using just the fifth tranche
-
-    // function test_realistic_swaps() external {
-    //     // vm.prank(operator);
-    //     // lidoARM.setPrices(997 * 1e33, 998 * 1e33);
-    //     _swapExactTokensForTokens(steth, weth, 10 ether, 9.97 ether);
-    //     // _swapExactTokensForTokens(weth, steth, 10 ether, 10020040080160320641);
-    // }
-
-    // function test_swapExactTokensForTokens_WETH_TO_STETH() external {
-    //     _swapExactTokensForTokens(weth, steth, 10 ether, 6.25 ether);
-    // }
-
-    // function test_swapExactTokensForTokens_STETH_TO_WETH() external {
-    //     _swapExactTokensForTokens(steth, weth, 10 ether, 5 ether);
-    // }
-
-    // function test_swapTokensForExactTokens_WETH_TO_STETH() external {
-    //     _swapTokensForExactTokens(weth, steth, 10 ether, 6.25 ether);
-    // }
-
-    // function test_swapTokensForExactTokens_STETH_TO_WETH() external {
-    //     _swapTokensForExactTokens(steth, weth, 10 ether, 5 ether);
-    // }
-
-    function _swapExactTokensForTokens(IERC20 inToken, IERC20 outToken, uint256 amountIn, uint256 expectedOut)
-        internal
-    {
-        if (inToken == weth) {
-            _dealWETH(address(this), amountIn + 1000);
-        } else {
-            _dealStETH(address(this), amountIn + 1000);
-        }
-        uint256 startIn = inToken.balanceOf(address(this));
-        uint256 startOut = outToken.balanceOf(address(this));
-        lidoARM.swapExactTokensForTokens(inToken, outToken, amountIn, 0, address(this));
-        assertGt(inToken.balanceOf(address(this)), (startIn - amountIn) - ROUNDING, "In actual");
-        assertLt(inToken.balanceOf(address(this)), (startIn - amountIn) + ROUNDING, "In actual");
-        assertGe(outToken.balanceOf(address(this)), startOut + expectedOut - ROUNDING, "Out actual");
-        assertLe(outToken.balanceOf(address(this)), startOut + expectedOut + ROUNDING, "Out actual");
-    }
-
-    // function _swapTokensForExactTokens(IERC20 inToken, IERC20 outToken, uint256 amountIn, uint256 expectedOut)
-    //     internal
-    // {
-    //     if (inToken == weth) {
-    //         _dealWETH(address(this), amountIn + 1000);
-    //     } else {
-    //         _dealStETH(address(this), amountIn + 1000);
-    //     }
-    //     uint256 startIn = inToken.balanceOf(address(this));
-    //     lidoARM.swapTokensForExactTokens(inToken, outToken, expectedOut, 3 * expectedOut, address(this));
-    //     assertGt(inToken.balanceOf(address(this)), (startIn - amountIn) - ROUNDING, "In actual");
-    //     assertLt(inToken.balanceOf(address(this)), (startIn - amountIn) + ROUNDING, "In actual");
-    //     assertGe(outToken.balanceOf(address(this)), expectedOut - ROUNDING, "Out actual");
-    //     assertLe(outToken.balanceOf(address(this)), expectedOut + ROUNDING, "Out actual");
-    // }
-
-    // function test_unauthorizedAccess() external {
-    //     address RANDOM_ADDRESS = 0xfEEDBeef00000000000000000000000000000000;
-    //     vm.startPrank(RANDOM_ADDRESS);
-
-    //     // Proxy's restricted methods.
-    //     vm.expectRevert("ARM: Only owner can call this function.");
-    //     proxy.setOwner(RANDOM_ADDRESS);
-
-    //     vm.expectRevert("ARM: Only owner can call this function.");
-    //     proxy.initialize(address(this), address(this), "");
-
-    //     vm.expectRevert("ARM: Only owner can call this function.");
-    //     proxy.upgradeTo(address(this));
-
-    //     vm.expectRevert("ARM: Only owner can call this function.");
-    //     proxy.upgradeToAndCall(address(this), "");
-
-    //     // Implementation's restricted methods.
-    //     vm.expectRevert("ARM: Only owner can call this function.");
-    //     lidoARM.setOwner(RANDOM_ADDRESS);
-
-    //     vm.expectRevert("ARM: Only operator or owner can call this function.");
-    //     lidoARM.setPrices(123, 321);
-    // }
-
-    // function test_wrongInTokenExactIn() external {
-    //     vm.expectRevert("ARM: Invalid token");
-    //     lidoARM.swapExactTokensForTokens(BAD_TOKEN, steth, 10 ether, 0, address(this));
-    //     vm.expectRevert("ARM: Invalid token");
-    //     lidoARM.swapExactTokensForTokens(BAD_TOKEN, weth, 10 ether, 0, address(this));
-    //     vm.expectRevert("ARM: Invalid token");
-    //     lidoARM.swapExactTokensForTokens(weth, weth, 10 ether, 0, address(this));
-    //     vm.expectRevert("ARM: Invalid token");
-    //     lidoARM.swapExactTokensForTokens(steth, steth, 10 ether, 0, address(this));
-    // }
-
-    // function test_wrongOutTokenExactIn() external {
-    //     vm.expectRevert("ARM: Invalid token");
-    //     lidoARM.swapTokensForExactTokens(weth, BAD_TOKEN, 10 ether, 0, address(this));
-    //     vm.expectRevert("ARM: Invalid token");
-    //     lidoARM.swapTokensForExactTokens(steth, BAD_TOKEN, 10 ether, 0, address(this));
-    //     vm.expectRevert("ARM: Invalid token");
-    //     lidoARM.swapTokensForExactTokens(weth, weth, 10 ether, 0, address(this));
-    //     vm.expectRevert("ARM: Invalid token");
-    //     lidoARM.swapTokensForExactTokens(steth, steth, 10 ether, 0, address(this));
-    // }
-
-    // function test_wrongInTokenExactOut() external {
-    //     vm.expectRevert("ARM: Invalid token");
-    //     lidoARM.swapTokensForExactTokens(BAD_TOKEN, steth, 10 ether, 0, address(this));
-    //     vm.expectRevert("ARM: Invalid token");
-    //     lidoARM.swapTokensForExactTokens(BAD_TOKEN, weth, 10 ether, 0, address(this));
-    //     vm.expectRevert("ARM: Invalid token");
-    //     lidoARM.swapTokensForExactTokens(weth, weth, 10 ether, 0, address(this));
-    //     vm.expectRevert("ARM: Invalid token");
-    //     lidoARM.swapTokensForExactTokens(steth, steth, 10 ether, 0, address(this));
-    // }
-
-    // function test_wrongOutTokenExactOut() external {
-    //     vm.expectRevert("ARM: Invalid token");
-    //     lidoARM.swapTokensForExactTokens(weth, BAD_TOKEN, 10 ether, 0, address(this));
-    //     vm.expectRevert("ARM: Invalid token");
-    //     lidoARM.swapTokensForExactTokens(steth, BAD_TOKEN, 10 ether, 0, address(this));
-    //     vm.expectRevert("ARM: Invalid token");
-    //     lidoARM.swapTokensForExactTokens(weth, weth, 10 ether, 0, address(this));
-    //     vm.expectRevert("ARM: Invalid token");
-    //     lidoARM.swapTokensForExactTokens(steth, steth, 10 ether, 0, address(this));
-    // }
-
-    // function test_collectTokens() external {
-    //     lidoARM.transferToken(address(weth), address(this), weth.balanceOf(address(lidoARM)));
-    //     assertGt(weth.balanceOf(address(this)), 50 ether);
-    //     assertEq(weth.balanceOf(address(lidoARM)), 0);
-
-    //     lidoARM.transferToken(address(steth), address(this), steth.balanceOf(address(lidoARM)));
-    //     assertGt(steth.balanceOf(address(this)), 50 ether);
-    //     assertLt(steth.balanceOf(address(lidoARM)), 3);
-    // }
-
-    // /* Operator Tests */
-
-    // function test_setOperator() external {
-    //     lidoARM.setOperator(address(this));
-    //     assertEq(lidoARM.operator(), address(this));
-    // }
-
-    // function test_nonOwnerCannotSetOperator() external {
-    //     vm.expectRevert("ARM: Only owner can call this function.");
-    //     vm.prank(operator);
-    //     lidoARM.setOperator(operator);
-    // }
-
-    // function test_setMinimumFunds() external {
-    //     lidoARM.setMinimumFunds(100 ether);
-    //     assertEq(lidoARM.minimumFunds(), 100 ether);
-    // }
-
-    // function test_setGoodCheckedTraderates() external {
-    //     vm.prank(operator);
-    //     lidoARM.setPrices(992 * 1e33, 2000 * 1e33);
-    //     assertEq(lidoARM.traderate0(), 500 * 1e33);
-    //     assertEq(lidoARM.traderate1(), 992 * 1e33);
-    // }
-
-    // function test_setBadCheckedTraderates() external {
-    //     vm.prank(operator);
-    //     vm.expectRevert("ARM: Traderate too high");
-    //     lidoARM.setPrices(1010 * 1e33, 1020 * 1e33);
-    //     vm.prank(operator);
-    //     vm.expectRevert("ARM: Traderate too high");
-    //     lidoARM.setPrices(993 * 1e33, 994 * 1e33);
-    // }
-
-    // function test_checkTraderateFailsMinimumFunds() external {
-    //     uint256 currentFunds =
-    //         lidoARM.token0().balanceOf(address(lidoARM)) + lidoARM.token1().balanceOf(address(lidoARM));
-    //     lidoARM.setMinimumFunds(currentFunds + 100);
-
-    //     vm.prank(operator);
-    //     vm.expectRevert("ARM: Too much loss");
-    //     lidoARM.setPrices(992 * 1e33, 1001 * 1e33);
-    // }
-
-    // function test_checkTraderateWorksMinimumFunds() external {
-    //     uint256 currentFunds =
-    //         lidoARM.token0().balanceOf(address(lidoARM)) + lidoARM.token1().balanceOf(address(lidoARM));
-    //     lidoARM.setMinimumFunds(currentFunds - 100);
-
-    //     vm.prank(operator);
-    //     lidoARM.setPrices(992 * 1e33, 1001 * 1e33);
-    // }
-
-    // // Slow on fork
-    // function invariant_nocrossed_trading_exact_eth() external {
-    //     uint256 sumBefore = weth.balanceOf(address(lidoARM)) + steth.balanceOf(address(lidoARM));
-    //     _dealWETH(address(this), 1 ether);
-    //     lidoARM.swapExactTokensForTokens(weth, steth, weth.balanceOf(address(lidoARM)), 0, address(this));
-    //     lidoARM.swapExactTokensForTokens(steth, weth, steth.balanceOf(address(lidoARM)), 0, address(this));
-    //     uint256 sumAfter = weth.balanceOf(address(lidoARM)) + steth.balanceOf(address(lidoARM));
-    //     assertGt(sumBefore, sumAfter, "Lost money swapping");
-    // }
 }

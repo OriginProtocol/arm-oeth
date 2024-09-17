@@ -2,6 +2,7 @@
 pragma solidity ^0.8.23;
 
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 import {AccessControlLP} from "./AccessControlLP.sol";
 import {AbstractARM} from "./AbstractARM.sol";
@@ -51,6 +52,7 @@ contract LidoMultiPriceMultiLpARM is
     ) external initializer {
         _initOwnableOperable(_operator);
         _initMultiLP(_name, _symbol);
+        lastTotalAssets = SafeCast.toUint128(MIN_TOTAL_SUPPLY);
         _initPerformanceFee(_fee, _feeCollector);
     }
 
