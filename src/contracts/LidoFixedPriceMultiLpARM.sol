@@ -60,12 +60,14 @@ contract LidoFixedPriceMultiLpARM is Initializable, MultiLP, PerformanceFee, Fix
         return LidoLiquidityManager._assetsInWithdrawQueue();
     }
 
-    function _postDepositHook(uint256 assets) internal override {
-        // do nothing
+    function _postDepositHook(uint256 assets) internal override(MultiLP, PerformanceFee) {
+        // Save the new total assets after the deposit and performance fee accrued
+        PerformanceFee._postDepositHook(assets);
     }
 
-    function _postWithdrawHook(uint256 assets) internal override {
-        // do nothing
+    function _postWithdrawHook(uint256 assets) internal override(MultiLP, PerformanceFee) {
+        // Save the new total assets after the withdrawal and performance fee accrued
+        PerformanceFee._postWithdrawHook(assets);
     }
 
     function _postClaimHook(uint256 assets) internal override {

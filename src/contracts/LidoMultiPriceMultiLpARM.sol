@@ -74,20 +74,26 @@ contract LidoMultiPriceMultiLpARM is
         return LidoLiquidityManager._assetsInWithdrawQueue();
     }
 
-    function _postDepositHook(uint256 assets) internal override(MultiLP, AccessControlLP) {
+    function _postDepositHook(uint256 assets) internal override(MultiLP, AccessControlLP, PerformanceFee) {
         // Add assets to the liquidity tranches
         MultiPriceARM._addLiquidity(assets);
 
         // Check the LP can deposit the assets
         AccessControlLP._postDepositHook(assets);
+
+        // Store the new total assets after the deposit and performance fee accrued
+        PerformanceFee._postDepositHook(assets);
     }
 
-    function _postWithdrawHook(uint256 assets) internal override(MultiLP, AccessControlLP) {
+    function _postWithdrawHook(uint256 assets) internal override(MultiLP, AccessControlLP, PerformanceFee) {
         // Remove assets from the liquidity tranches
         MultiPriceARM._removeLiquidity(assets);
 
         // Update the LP's assets
         AccessControlLP._postWithdrawHook(assets);
+
+        // Store the new total assets after the withdrawal and performance fee accrued
+        PerformanceFee._postWithdrawHook(assets);
     }
 
     function _postClaimHook(uint256 assets) internal override {

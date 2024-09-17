@@ -43,7 +43,8 @@ abstract contract MultiLP is AbstractARM, ERC20Upgradeable {
     struct WithdrawalRequest {
         address withdrawer;
         bool claimed;
-        uint40 timestamp; // timestamp of the withdrawal request
+        // When the withdrawal can be claimed
+        uint40 claimTimestamp;
         // Amount of assets to withdraw
         uint128 assets;
         // cumulative total of all withdrawal requests including this one.
@@ -56,7 +57,9 @@ abstract contract MultiLP is AbstractARM, ERC20Upgradeable {
 
     uint256[50] private _gap;
 
-    event RedeemRequested(address indexed withdrawer, uint256 indexed requestId, uint256 assets, uint256 queued);
+    event RedeemRequested(
+        address indexed withdrawer, uint256 indexed requestId, uint256 assets, uint256 queued, uint256 claimTimestamp
+    );
     event RedeemClaimed(address indexed withdrawer, uint256 indexed requestId, uint256 assets);
 
     constructor(address _liquidityToken) {
@@ -126,6 +129,7 @@ abstract contract MultiLP is AbstractARM, ERC20Upgradeable {
 
         requestId = withdrawalQueueMetadata.nextWithdrawalIndex;
         uint256 queued = withdrawalQueueMetadata.queued + assets;
+        uint256 claimTimestamp = block.timestamp + CLAIM_DELAY;
 
         // Store the next withdrawal request
         withdrawalQueueMetadata.nextWithdrawalIndex = SafeCast.toUint128(requestId + 1);
@@ -133,14 +137,14 @@ abstract contract MultiLP is AbstractARM, ERC20Upgradeable {
         withdrawalRequests[requestId] = WithdrawalRequest({
             withdrawer: msg.sender,
             claimed: false,
-            timestamp: uint40(block.timestamp),
+            claimTimestamp: uint40(claimTimestamp),
             assets: SafeCast.toUint128(assets),
             queued: SafeCast.toUint128(queued)
         });
 
         _postWithdrawHook(assets);
 
-        emit RedeemRequested(msg.sender, requestId, assets, queued);
+        emit RedeemRequested(msg.sender, requestId, assets, queued, claimTimestamp);
     }
 
     function _preWithdrawHook() internal virtual;
@@ -159,7 +163,7 @@ abstract contract MultiLP is AbstractARM, ERC20Upgradeable {
         WithdrawalRequest memory request = withdrawalRequests[requestId];
         WithdrawalQueueMetadata memory queue = withdrawalQueueMetadata;
 
-        require(request.timestamp + CLAIM_DELAY <= block.timestamp, "Claim delay not met");
+        require(request.claimTimestamp <= block.timestamp, "Claim delay not met");
         // If there isn't enough reserved liquidity in the queue to claim
         require(request.queued <= queue.claimable, "Queue pending liquidity");
         require(request.withdrawer == msg.sender, "Not requester");
