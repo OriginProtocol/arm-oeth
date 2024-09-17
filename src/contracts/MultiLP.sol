@@ -15,7 +15,7 @@ abstract contract MultiLP is AbstractARM, ERC20Upgradeable {
     uint256 public constant CLAIM_DELAY = 10 minutes;
     /// @dev The amount of shares that are minted to a dead address on initalization
     uint256 internal constant MIN_TOTAL_SUPPLY = 1e12;
-    /// @dev The address with no know private key that the initial shares are minted to
+    /// @dev The address with no known private key that the initial shares are minted to
     address internal constant DEAD_ACCOUNT = 0x000000000000000000000000000000000000dEaD;
 
     /// @notice The address of the asset that is used to add and remove liquidity. eg WETH
