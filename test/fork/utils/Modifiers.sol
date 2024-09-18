@@ -20,9 +20,21 @@ abstract contract Modifiers is Helpers {
         vm.stopPrank();
     }
 
+    modifier asRandomAddress() {
+        // Todo: Update forge and use randomAddress instead of makeAddr
+        vm.startPrank(makeAddr("Random address"));
+        _;
+        vm.stopPrank();
+    }
+
     /// @notice Mock the call to the dripper's `collect` function, bypass it and return `true`.
     modifier mockCallDripperCollect() {
         MockCall.mockCallDripperCollect(vault.dripper());
+        _;
+    }
+
+    modifier setLiquidityProviderCap(address user, uint256 cap) {
+        lidoARM.setLiquidityProviderCap(user, cap);
         _;
     }
 }

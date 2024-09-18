@@ -7,6 +7,8 @@ import {Test} from "forge-std/Test.sol";
 // Contracts
 import {Proxy} from "contracts/Proxy.sol";
 import {OethARM} from "contracts/OethARM.sol";
+import {LidoOwnerLpARM} from "contracts/LidoOwnerLpARM.sol";
+import {LidoFixedPriceMultiLpARM} from "contracts/LidoFixedPriceMultiLpARM.sol";
 
 // Interfaces
 import {IERC20} from "contracts/Interfaces.sol";
@@ -29,11 +31,16 @@ abstract contract Base_Test_ is Test {
     /// --- CONTRACTS
     //////////////////////////////////////////////////////
     Proxy public proxy;
+    Proxy public lidoProxy;
+    Proxy public lidoOwnerProxy;
     OethARM public oethARM;
+    LidoOwnerLpARM public lidoOwnerLpARM;
+    LidoFixedPriceMultiLpARM public lidoARM;
 
     IERC20 public oeth;
     IERC20 public weth;
     IERC20 public steth;
+    IERC20 public wsteth;
     IOETHVault public vault;
 
     //////////////////////////////////////////////////////
@@ -44,11 +51,13 @@ abstract contract Base_Test_ is Test {
     address public governor;
     address public operator;
     address public oethWhale;
+    address public feeCollector;
 
     //////////////////////////////////////////////////////
     /// --- DEFAULT VALUES
     //////////////////////////////////////////////////////
     uint256 public constant DEFAULT_AMOUNT = 1 ether;
+    uint256 public constant STETH_ERROR_ROUNDING = 2;
 
     //////////////////////////////////////////////////////
     /// --- SETUP
