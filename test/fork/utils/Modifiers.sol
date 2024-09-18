@@ -43,8 +43,7 @@ abstract contract Modifiers is Helpers {
 
     /// @notice Impersonate a random address
     modifier asRandomAddress() {
-        // Todo: Update forge and use randomAddress instead of makeAddr
-        vm.startPrank(makeAddr("Random address"));
+        vm.startPrank(vm.randomAddress());
         _;
         vm.stopPrank();
     }
