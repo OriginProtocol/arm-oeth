@@ -50,7 +50,7 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_Deposit_Test_ is Fork_Shared_Tes
         assertEq(int256(afterData.armWeth), int256(before.armWeth) + delta.armWeth, "armWeth");
         assertEq(int256(afterData.armSteth), int256(before.armSteth) + delta.armSteth, "armSteth");
     }
-    
+
     //////////////////////////////////////////////////////
     /// --- SETUP
     //////////////////////////////////////////////////////
