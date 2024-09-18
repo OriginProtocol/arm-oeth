@@ -61,7 +61,11 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_Deposit_Test_ is Fork_Shared_Tes
     //////////////////////////////////////////////////////
     /// --- PASSING TESTS
     //////////////////////////////////////////////////////
-    function test_Deposit_SimpleCase() public setLiquidityProviderCap(address(this), 20 ether) {
+    function test_Deposit_SimpleCase()
+        public
+        asLidoFixedPriceMultiLpARMOwner
+        setLiquidityProviderCap(address(this), 20 ether)
+    {
         deal(address(weth), address(this), 10 ether);
         beforeData = _snapData();
 

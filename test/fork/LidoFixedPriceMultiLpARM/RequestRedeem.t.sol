@@ -15,7 +15,11 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_RequestRedeem_Test_ is Fork_Shar
     //////////////////////////////////////////////////////
     /// --- PASSING TESTS
     //////////////////////////////////////////////////////
-    function test_RequestRedeem_SimpleCase() public setLiquidityProviderCap(address(this), 20 ether) {
+    function test_RequestRedeem_SimpleCase()
+        public
+        asLidoFixedPriceMultiLpARMOwner
+        setLiquidityProviderCap(address(this), 20 ether)
+    {
         deal(address(weth), address(this), 10 ether);
 
         lidoARM.deposit(10 ether);

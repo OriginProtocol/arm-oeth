@@ -20,7 +20,7 @@ contract Fork_Concrete_LidoOwnerLpARM_TransferToken_Test_ is Fork_Shared_Test_ {
     //////////////////////////////////////////////////////
     /// --- PASSING TESTS
     //////////////////////////////////////////////////////
-    function test_TransferToken_WETH() public {
+    function test_TransferToken_WETH() public asLidoOwnerLpARMOwner {
         uint256 balanceARMBeforeWETH = weth.balanceOf(address(lidoOwnerLpARM));
         uint256 balanceThisBeforeWETH = weth.balanceOf(address(this));
         lidoOwnerLpARM.transferToken(address(weth), address(this), balanceARMBeforeWETH);
@@ -29,7 +29,7 @@ contract Fork_Concrete_LidoOwnerLpARM_TransferToken_Test_ is Fork_Shared_Test_ {
         assertEq(weth.balanceOf(address(lidoOwnerLpARM)), 0);
     }
 
-    function test_TransferToken_STETH() public {
+    function test_TransferToken_STETH() public asLidoOwnerLpARMOwner {
         uint256 balanceARMBeforeSTETH = steth.balanceOf(address(lidoOwnerLpARM));
         uint256 balanceThisBeforeSTETH = steth.balanceOf(address(this));
         lidoOwnerLpARM.transferToken(address(steth), address(this), balanceARMBeforeSTETH);

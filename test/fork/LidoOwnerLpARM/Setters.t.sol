@@ -50,7 +50,7 @@ contract Fork_Concrete_LidoOwnerLpARM_Setters_Test_ is Fork_Shared_Test_ {
     /// --- PASSING TESTS
     //////////////////////////////////////////////////////
     // Todo: create a aslidoOwnerLpARMOwner modifier
-    function test_SetPrices() public {
+    function test_SetPrices() public asLidoOwnerLpARMOperator {
         lidoOwnerLpARM.setPrices(992 * 1e33, 1001 * 1e33);
         lidoOwnerLpARM.setPrices(1001 * 1e33, 1004 * 1e33);
         lidoOwnerLpARM.setPrices(992 * 1e33, 2000 * 1e33);
@@ -60,7 +60,7 @@ contract Fork_Concrete_LidoOwnerLpARM_Setters_Test_ is Fork_Shared_Test_ {
         assertEq(lidoOwnerLpARM.traderate1(), 992 * 1e33);
     }
 
-    function test_SetOperator() public {
+    function test_SetOperator() public asLidoOwnerLpARMOwner {
         lidoOwnerLpARM.setOperator(address(this));
         assertEq(lidoOwnerLpARM.operator(), address(this));
     }
