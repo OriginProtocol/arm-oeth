@@ -113,6 +113,23 @@ interface IOethARM {
     function claimWithdrawals(uint256[] calldata requestIds) external;
 }
 
+interface ILiquidityProviderARM {
+    function previewDeposit(uint256 assets) external returns (uint256 shares);
+    function deposit(uint256 assets) external returns (uint256 shares);
+
+    function previewRedeem(uint256 shares) external returns (uint256 assets);
+    function requestRedeem(uint256 shares) external returns (uint256 requestId, uint256 assets);
+    function claimRedeem(uint256 requestId) external returns (uint256 assets);
+
+    function totalAssets() external returns (uint256 assets);
+    function convertToShares(uint256 assets) external returns (uint256 shares);
+    function convertToAssets(uint256 shares) external returns (uint256 assets);
+}
+
+interface ILiquidityProviderController {
+    function postDepositHook(address liquidityProvider, uint256 assets) external;
+}
+
 interface IOETHVault {
     function mint(address _asset, uint256 _amount, uint256 _minimumOusdAmount) external;
 
