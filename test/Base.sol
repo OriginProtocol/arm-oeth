@@ -9,6 +9,7 @@ import {Proxy} from "contracts/Proxy.sol";
 import {OethARM} from "contracts/OethARM.sol";
 import {LidoOwnerLpARM} from "contracts/LidoOwnerLpARM.sol";
 import {LidoFixedPriceMultiLpARM} from "contracts/LidoFixedPriceMultiLpARM.sol";
+import {LiquidityProviderController} from "contracts/LiquidityProviderController.sol";
 
 // Interfaces
 import {IERC20} from "contracts/Interfaces.sol";
@@ -31,11 +32,13 @@ abstract contract Base_Test_ is Test {
     /// --- CONTRACTS
     //////////////////////////////////////////////////////
     Proxy public proxy;
+    Proxy public lpcProxy;
     Proxy public lidoProxy;
     Proxy public lidoOwnerProxy;
     OethARM public oethARM;
     LidoOwnerLpARM public lidoOwnerLpARM;
     LidoFixedPriceMultiLpARM public lidoARM;
+    LiquidityProviderController public liquidityProviderController;
 
     IERC20 public oeth;
     IERC20 public weth;

@@ -31,20 +31,6 @@ contract Fork_Concrete_LidoOwnerLpARM_Setters_Test_ is Fork_Shared_Test_ {
         //lidoOwnerLpARM.setPrices(993 * 1e33, 994 * 1e33);
     }
 
-    function test_RevertWhen_SetPrices_Because_TooMuchLoss() public {
-        // Failing
-        /*
-        uint256 currentFunds = lidoOwnerLpARM.token0().balanceOf(address(lidoOwnerLpARM))
-            + lidoOwnerLpARM.token1().balanceOf(address(lidoOwnerLpARM));
-
-        // Reduce minimum funds by 100
-        lidoOwnerLpARM.setMinimumFunds(currentFunds + 100 ether);
-
-        vm.expectRevert("ARM: Too much loss");
-        lidoOwnerLpARM.setPrices(992 * 1e33, 1001 * 1e33);
-        */
-    }
-
     function test_RevertWhen_SetPrices_Because_NotOwnerOrOperator() public asRandomAddress {
         vm.expectRevert("ARM: Only operator or owner can call this function.");
         lidoOwnerLpARM.setPrices(0, 0);
@@ -74,24 +60,8 @@ contract Fork_Concrete_LidoOwnerLpARM_Setters_Test_ is Fork_Shared_Test_ {
         assertEq(lidoOwnerLpARM.traderate1(), 992 * 1e33);
     }
 
-    function test_SetPrices_When_MinimumFundsHasBeenDecrease() public {
-        deal(address(weth), address(lidoOwnerLpARM), 100 ether);
-        uint256 currentFunds = lidoOwnerLpARM.token0().balanceOf(address(lidoOwnerLpARM))
-            + lidoOwnerLpARM.token1().balanceOf(address(lidoOwnerLpARM));
-
-        // Reduce minimum funds by 100
-        lidoOwnerLpARM.setMinimumFunds(currentFunds - 100);
-
-        lidoOwnerLpARM.setPrices(992 * 1e33, 1001 * 1e33);
-    }
-
     function test_SetOperator() public {
         lidoOwnerLpARM.setOperator(address(this));
         assertEq(lidoOwnerLpARM.operator(), address(this));
-    }
-
-    function test_SetMinimumFunds() external {
-        lidoOwnerLpARM.setMinimumFunds(100 ether);
-        assertEq(lidoOwnerLpARM.minimumFunds(), 100 ether);
     }
 }

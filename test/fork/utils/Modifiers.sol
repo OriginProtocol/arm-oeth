@@ -33,8 +33,11 @@ abstract contract Modifiers is Helpers {
         _;
     }
 
-    modifier setLiquidityProviderCap(address user, uint256 cap) {
-        lidoARM.setLiquidityProviderCap(user, cap);
+    modifier setLiquidityProviderCap(address provider, uint256 cap) {
+        address[] memory providers = new address[](1);
+        providers[0] = provider;
+
+        liquidityProviderController.setLiquidityProviderCaps(providers, cap);
         _;
     }
 }

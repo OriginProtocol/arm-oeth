@@ -31,7 +31,7 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_Deposit_Test_ is Fork_Shared_Tes
         return AssertData({
             totalAssets: lidoARM.totalAssets(),
             totalSupply: lidoARM.totalSupply(),
-            totalAssetsCap: lidoARM.totalAssetsCap(),
+            totalAssetsCap: liquidityProviderController.totalAssetsCap(),
             armWeth: weth.balanceOf(address(lidoARM)),
             armSteth: steth.balanceOf(address(lidoARM)),
             feesAccrued: lidoARM.feesAccrued()

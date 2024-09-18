@@ -12,6 +12,7 @@ import {Proxy} from "contracts/Proxy.sol";
 import {OethARM} from "contracts/OethARM.sol";
 import {LidoOwnerLpARM} from "contracts/LidoOwnerLpARM.sol";
 import {LidoFixedPriceMultiLpARM} from "contracts/LidoFixedPriceMultiLpARM.sol";
+import {LiquidityProviderController} from "contracts/LiquidityProviderController.sol";
 
 // Interfaces
 import {IERC20} from "contracts/Interfaces.sol";
@@ -99,10 +100,13 @@ abstract contract Fork_Shared_Test_ is Modifiers {
     }
 
     function _deployContracts() internal {
-        // --- Deploy OethARM implementation ---
-        // Deploy Proxy.
+        // --- Deploy all proxies ---
         proxy = new Proxy();
+        lpcProxy = new Proxy();
+        lidoProxy = new Proxy();
+        lidoOwnerProxy = new Proxy();
 
+        // --- Deploy OethARM implementation ---
         // Deploy OethARM implementation.
         address implementation = address(new OethARM(address(oeth), address(weth), address(vault)));
         vm.label(implementation, "OETH ARM IMPLEMENTATION");
@@ -114,10 +118,24 @@ abstract contract Fork_Shared_Test_ is Modifiers {
         // Set the Proxy as the OethARM.
         oethARM = OethARM(address(proxy));
 
-        // --- Deploy LidoFixedPriceMultiLpARM implementation ---
-        // Deploy Proxy.
-        lidoProxy = new Proxy();
+        // --- Deploy LiquidityProviderController implementation ---
+        // Deploy LiquidityProviderController implementation.
+        LiquidityProviderController lpcImpl = new LiquidityProviderController(address(lidoProxy));
 
+        // Initialize Proxy with LiquidityProviderController implementation.
+        lpcProxy.initialize(address(lpcImpl), address(this), "");
+
+        // Set the Proxy as the LiquidityProviderController.
+        liquidityProviderController = LiquidityProviderController(payable(address(lpcProxy)));
+
+        liquidityProviderController.setTotalAssetsCap(100 ether);
+
+        address[] memory liquidityProviders = new address[](1);
+        liquidityProviders[0] = address(this);
+        liquidityProviderController.setLiquidityProviderCaps(liquidityProviders, 20 ether);
+        liquidityProviderController.setTotalAssetsCap(100 ether);
+
+        // --- Deploy LidoFixedPriceMultiLpARM implementation ---
         // Deploy LidoARM implementation.
         LidoFixedPriceMultiLpARM lidoImpl =
             new LidoFixedPriceMultiLpARM(address(steth), address(weth), Mainnet.LIDO_WITHDRAWAL);
@@ -129,7 +147,13 @@ abstract contract Fork_Shared_Test_ is Modifiers {
 
         // Initialize Proxy with LidoFixedPriceMultiLpARM implementation.
         data = abi.encodeWithSignature(
-            "initialize(string,string,address,uint256,address)", "Lido ARM", "ARM-ST", operator, 2000, feeCollector
+            "initialize(string,string,address,uint256,address,address)",
+            "Lido ARM",
+            "ARM-ST",
+            operator,
+            2000,
+            feeCollector,
+            address(lpcProxy)
         );
         lidoProxy.initialize(address(lidoImpl), address(this), data);
 
@@ -139,12 +163,7 @@ abstract contract Fork_Shared_Test_ is Modifiers {
         // set prices
         lidoARM.setPrices(992 * 1e33, 1001 * 1e33);
 
-        lidoARM.setTotalAssetsCap(100 ether);
-
         // --- Deploy LidoOwnerLpARM implementation ---
-        // Deploy Proxy.
-        lidoOwnerProxy = new Proxy();
-
         // Deploy LidoOwnerLpARM implementation.
         LidoOwnerLpARM lidoOwnerImpl = new LidoOwnerLpARM(address(weth), address(steth), Mainnet.LIDO_WITHDRAWAL);
 
