@@ -5,7 +5,7 @@ import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Ini
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 import {AbstractARM} from "./AbstractARM.sol";
-import {AccessControlLP} from "./AccessControlLP.sol";
+import {LiquidityProviderControllerARM} from "./LiquidityProviderControllerARM.sol";
 import {FixedPriceARM} from "./FixedPriceARM.sol";
 import {LidoLiquidityManager} from "./LidoLiquidityManager.sol";
 import {MultiLP} from "./MultiLP.sol";
@@ -20,7 +20,7 @@ contract LidoFixedPriceMultiLpARM is
     Initializable,
     MultiLP,
     PerformanceFee,
-    AccessControlLP,
+    LiquidityProviderControllerARM,
     FixedPriceARM,
     LidoLiquidityManager
 {
@@ -42,17 +42,20 @@ contract LidoFixedPriceMultiLpARM is
     /// 10,000 = 100% performance fee
     /// 500 = 5% performance fee
     /// @param _feeCollector The account that can collect the performance fee
+    /// @param _liquidityProviderController The address of the Liquidity Provider Controller
     function initialize(
         string calldata _name,
         string calldata _symbol,
         address _operator,
         uint256 _fee,
-        address _feeCollector
+        address _feeCollector,
+        address _liquidityProviderController
     ) external initializer {
         _initOwnableOperable(_operator);
         _initMultiLP(_name, _symbol);
         lastTotalAssets = SafeCast.toUint128(MIN_TOTAL_SUPPLY);
         _initPerformanceFee(_fee, _feeCollector);
+        _initLPControllerARM(_liquidityProviderController);
     }
 
     /**
@@ -75,9 +78,12 @@ contract LidoFixedPriceMultiLpARM is
         return LidoLiquidityManager._externalWithdrawQueue();
     }
 
-    function _postDepositHook(uint256 assets) internal override(MultiLP, AccessControlLP, PerformanceFee) {
+    function _postDepositHook(uint256 assets)
+        internal
+        override(MultiLP, LiquidityProviderControllerARM, PerformanceFee)
+    {
         // Check the LP can deposit the assets
-        AccessControlLP._postDepositHook(assets);
+        LiquidityProviderControllerARM._postDepositHook(assets);
 
         // Store the new total assets after the deposit and performance fee accrued
         PerformanceFee._postDepositHook(assets);

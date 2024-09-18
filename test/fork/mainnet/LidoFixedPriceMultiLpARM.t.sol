@@ -4,14 +4,17 @@ pragma solidity ^0.8.23;
 import {Test, console2} from "forge-std/Test.sol";
 
 import {IERC20} from "contracts/Interfaces.sol";
+import {LiquidityProviderController} from "contracts/LiquidityProviderController.sol";
 import {LidoFixedPriceMultiLpARM} from "contracts/LidoFixedPriceMultiLpARM.sol";
 import {Proxy} from "contracts/Proxy.sol";
 
 import {Fork_Shared_Test_} from "test/fork/shared/Shared.sol";
 
 contract Fork_Concrete_LidoFixedPriceMultiLpARM_Test is Fork_Shared_Test_ {
-    Proxy public lidoProxy;
+    Proxy public armProxy;
+    Proxy public lpcProxy;
     LidoFixedPriceMultiLpARM public lidoARM;
+    LiquidityProviderController public liquidityProviderController;
     IERC20 BAD_TOKEN = IERC20(makeAddr("bad token"));
     uint256 performanceFee = 2000; // 20%
     address feeCollector = 0x000000000000000000000000000000Feec011ec1;
@@ -41,7 +44,7 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_Test is Fork_Shared_Test_ {
         return AssertData({
             totalAssets: lidoARM.totalAssets(),
             totalSupply: lidoARM.totalSupply(),
-            totalAssetsCap: lidoARM.totalAssetsCap(),
+            totalAssetsCap: liquidityProviderController.totalAssetsCap(),
             armWeth: weth.balanceOf(address(lidoARM)),
             armSteth: steth.balanceOf(address(lidoARM)),
             feesAccrued: lidoARM.feesAccrued()
@@ -68,36 +71,43 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_Test is Fork_Shared_Test_ {
     function setUp() public override {
         super.setUp();
 
+        lpcProxy = new Proxy();
+        armProxy = new Proxy();
+
+        LiquidityProviderController lpcImpl = new LiquidityProviderController(address(armProxy));
+        lpcProxy.initialize(address(lpcImpl), address(this), "");
+        liquidityProviderController = LiquidityProviderController(payable(address(lpcProxy)));
+
         address lidoWithdrawal = 0x889edC2eDab5f40e902b864aD4d7AdE8E412F9B1;
         LidoFixedPriceMultiLpARM lidoImpl = new LidoFixedPriceMultiLpARM(address(steth), address(weth), lidoWithdrawal);
-        lidoProxy = new Proxy();
 
         // The deployer needs a tiny amount of WETH to initialize the ARM
         _dealWETH(address(this), 1e12);
-        weth.approve(address(lidoProxy), type(uint256).max);
-        steth.approve(address(lidoProxy), type(uint256).max);
+        weth.approve(address(armProxy), type(uint256).max);
+        steth.approve(address(armProxy), type(uint256).max);
 
         // Initialize Proxy with LidoFixedPriceMultiLpARM implementation.
         bytes memory data = abi.encodeWithSignature(
-            "initialize(string,string,address,uint256,address)",
+            "initialize(string,string,address,uint256,address,address)",
             "Lido ARM",
             "ARM-ST",
             operator,
             performanceFee,
-            feeCollector
+            feeCollector,
+            address(liquidityProviderController)
         );
-        lidoProxy.initialize(address(lidoImpl), address(this), data);
+        armProxy.initialize(address(lidoImpl), address(this), data);
 
-        lidoARM = LidoFixedPriceMultiLpARM(payable(address(lidoProxy)));
+        lidoARM = LidoFixedPriceMultiLpARM(payable(address(armProxy)));
 
         // set prices
         lidoARM.setPrices(992 * 1e33, 1001 * 1e33);
 
-        lidoARM.setTotalAssetsCap(100 ether);
+        liquidityProviderController.setTotalAssetsCap(100 ether);
 
         address[] memory liquidityProviders = new address[](1);
         liquidityProviders[0] = address(this);
-        lidoARM.setLiquidityProviderCaps(liquidityProviders, 20 ether);
+        liquidityProviderController.setLiquidityProviderCaps(liquidityProviders, 20 ether);
 
         // Only fuzz from this address. Big speedup on fork.
         targetSender(address(this));
@@ -126,7 +136,7 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_Test is Fork_Shared_Test_ {
         assertEq(lidoARM.totalAssets(), 1e12);
         assertEq(lidoARM.totalSupply(), 1e12);
         assertEq(weth.balanceOf(address(lidoARM)), 1e12);
-        assertEq(lidoARM.totalAssetsCap(), 100 ether);
+        assertEq(liquidityProviderController.totalAssetsCap(), 100 ether);
     }
 
     // whitelisted LP adds WETH liquidity to the ARM
