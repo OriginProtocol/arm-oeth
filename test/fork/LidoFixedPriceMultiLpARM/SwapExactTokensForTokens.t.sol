@@ -78,6 +78,16 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_SwapExactTokensForTokens_Test is
             0, // amountOutMin
             address(this) // to
         );
+
+        initialBalance = steth.balanceOf(address(this));
+        vm.expectRevert("BALANCE_EXCEEDED"); // Lido error
+        lidoFixedPriceMulltiLpARM.swapExactTokensForTokens(
+            steth, // inToken
+            weth, // outToken
+            initialBalance + 3, // amountIn
+            0, // amountOutMin
+            address(this) // to
+        );
     }
 
     function test_RevertWhen_SwapExactTokensForTokens_Because_NotEnoughTokenOut() public {
@@ -88,6 +98,17 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_SwapExactTokensForTokens_Test is
         lidoFixedPriceMulltiLpARM.swapExactTokensForTokens(
             weth, // inToken
             steth, // outToken
+            initialBalance * 2, // amountIn
+            0, // amountOutMin
+            address(this) // to
+        );
+
+        initialBalance = weth.balanceOf(address(lidoFixedPriceMulltiLpARM));
+        deal(address(steth), address(this), initialBalance * 2);
+        vm.expectRevert(); // Lido error
+        lidoFixedPriceMulltiLpARM.swapExactTokensForTokens(
+            steth, // inToken
+            weth, // outToken
             initialBalance * 2, // amountIn
             0, // amountOutMin
             address(this) // to
@@ -182,7 +203,7 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_SwapExactTokensForTokens_Test is
 
         // Assertions
         assertEq(balanceWETHBeforeThis, balanceWETHAfterThis + amountIn);
-        assertLt(balanceSTETHBeforeThis + minAmount, balanceSTETHAfterThis);
+        assertApproxEqAbs(balanceSTETHBeforeThis + minAmount, balanceSTETHAfterThis, STETH_ERROR_ROUNDING);
         assertEq(balanceWETHBeforeARM + amountIn, balanceWETHAfterARM);
         assertApproxEqAbs(balanceSTETHBeforeARM, balanceSTETHAfterARM + minAmount, STETH_ERROR_ROUNDING);
         assertEq(outputs[0], amountIn);
@@ -288,7 +309,7 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_SwapExactTokensForTokens_Test is
 
         // Assertions
         assertEq(balanceWETHBeforeThis, balanceWETHAfterThis + amountIn);
-        assertLt(balanceSTETHBeforeThis + minAmount, balanceSTETHAfterThis);
+        assertApproxEqAbs(balanceSTETHBeforeThis + minAmount, balanceSTETHAfterThis, STETH_ERROR_ROUNDING);
         assertEq(balanceWETHBeforeARM + amountIn, balanceWETHAfterARM);
         assertApproxEqAbs(balanceSTETHBeforeARM, balanceSTETHAfterARM + minAmount, STETH_ERROR_ROUNDING);
     }
