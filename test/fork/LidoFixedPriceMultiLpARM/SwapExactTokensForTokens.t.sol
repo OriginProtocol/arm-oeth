@@ -144,6 +144,95 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_SwapExactTokensForTokens_Test is
     }
 
     //////////////////////////////////////////////////////
+    /// --- PASSING TESTS
+    //////////////////////////////////////////////////////
+    function test_SwapExactTokensForTokens_WithDeadLine_Weth_To_Steth() public {
+        uint256 amountIn = 1 ether;
+        address[] memory path = new address[](2);
+        path[0] = address(weth);
+        path[1] = address(steth);
+
+        // State before
+        uint256 balanceWETHBeforeThis = weth.balanceOf(address(this));
+        uint256 balanceSTETHBeforeThis = steth.balanceOf(address(this));
+        uint256 balanceWETHBeforeARM = weth.balanceOf(address(lidoFixedPriceMulltiLpARM));
+        uint256 balanceSTETHBeforeARM = steth.balanceOf(address(lidoFixedPriceMulltiLpARM));
+
+        // Get minimum amount of STETH to receive
+        uint256 traderates1 = lidoFixedPriceMulltiLpARM.traderate1();
+        uint256 minAmount = amountIn * traderates1 / 1e36;
+
+        // Expected events: Already checked in fuzz tests
+
+        uint256[] memory outputs = new uint256[](2);
+        // Main call
+        outputs = lidoFixedPriceMulltiLpARM.swapExactTokensForTokens(
+            amountIn, // amountIn
+            minAmount, // amountOutMin
+            path, // path
+            address(this), // to
+            block.timestamp // deadline
+        );
+
+        // State after
+        uint256 balanceWETHAfterThis = weth.balanceOf(address(this));
+        uint256 balanceSTETHAfterThis = steth.balanceOf(address(this));
+        uint256 balanceWETHAfterARM = weth.balanceOf(address(lidoFixedPriceMulltiLpARM));
+        uint256 balanceSTETHAfterARM = steth.balanceOf(address(lidoFixedPriceMulltiLpARM));
+
+        // Assertions
+        assertEq(balanceWETHBeforeThis, balanceWETHAfterThis + amountIn);
+        assertLt(balanceSTETHBeforeThis + minAmount, balanceSTETHAfterThis);
+        assertEq(balanceWETHBeforeARM + amountIn, balanceWETHAfterARM);
+        assertApproxEqAbs(balanceSTETHBeforeARM, balanceSTETHAfterARM + minAmount, STETH_ERROR_ROUNDING);
+        assertEq(outputs[0], amountIn);
+        assertEq(outputs[1], minAmount);
+    }
+
+    function test_SwapExactTokensForTokens_WithDeadLine_Steth_To_Weth() public {
+        uint256 amountIn = 1 ether;
+        address[] memory path = new address[](2);
+        path[0] = address(steth);
+        path[1] = address(weth);
+
+        // State before
+        uint256 balanceWETHBeforeThis = weth.balanceOf(address(this));
+        uint256 balanceSTETHBeforeThis = steth.balanceOf(address(this));
+        uint256 balanceWETHBeforeARM = weth.balanceOf(address(lidoFixedPriceMulltiLpARM));
+        uint256 balanceSTETHBeforeARM = steth.balanceOf(address(lidoFixedPriceMulltiLpARM));
+
+        // Get minimum amount of WETH to receive
+        uint256 traderates0 = lidoFixedPriceMulltiLpARM.traderate0();
+        uint256 minAmount = amountIn * traderates0 / 1e36;
+
+        // Expected events: Already checked in fuzz tests
+
+        uint256[] memory outputs = new uint256[](2);
+        // Main call
+        outputs = lidoFixedPriceMulltiLpARM.swapExactTokensForTokens(
+            amountIn, // amountIn
+            minAmount, // amountOutMin
+            path, // path
+            address(this), // to
+            block.timestamp // deadline
+        );
+
+        // State after
+        uint256 balanceWETHAfterThis = weth.balanceOf(address(this));
+        uint256 balanceSTETHAfterThis = steth.balanceOf(address(this));
+        uint256 balanceWETHAfterARM = weth.balanceOf(address(lidoFixedPriceMulltiLpARM));
+        uint256 balanceSTETHAfterARM = steth.balanceOf(address(lidoFixedPriceMulltiLpARM));
+
+        // Assertions
+        assertEq(balanceWETHBeforeThis + minAmount, balanceWETHAfterThis);
+        assertApproxEqAbs(balanceSTETHBeforeThis, balanceSTETHAfterThis + amountIn, STETH_ERROR_ROUNDING);
+        assertEq(balanceWETHBeforeARM, balanceWETHAfterARM + minAmount);
+        assertApproxEqAbs(balanceSTETHBeforeARM + amountIn, balanceSTETHAfterARM, STETH_ERROR_ROUNDING);
+        assertEq(outputs[0], amountIn);
+        assertEq(outputs[1], minAmount);
+    }
+
+    //////////////////////////////////////////////////////
     /// --- FUZZING TESTS
     //////////////////////////////////////////////////////
     /// @notice Fuzz test for swapExactTokensForTokens(IERC20,IERC20,uint256,uint256,address), with WETH to stETH.
