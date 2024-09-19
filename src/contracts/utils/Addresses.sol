@@ -22,10 +22,14 @@ library Mainnet {
     address public constant OETH = 0x856c4Efb76C1D1AE02e20CEB03A2A6a08b0b8dC3;
     address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address public constant STETH = 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84;
+    address public constant WSTETH = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
 
     // Contracts
     address public constant OETH_VAULT = 0x39254033945AA2E4809Cc2977E7087BEE48bd7Ab;
     address public constant OETH_ARM = 0x6bac785889A4127dB0e0CeFEE88E0a9F1Aaf3cC7;
+
+    // Lido
+    address public constant LIDO_WITHDRAWAL = 0x889edC2eDab5f40e902b864aD4d7AdE8E412F9B1;
 }
 
 library Holesky {
@@ -66,6 +70,7 @@ contract AddressResolver {
         resolver[MAINNET]["OETH"] = Mainnet.OETH;
         resolver[MAINNET]["WETH"] = Mainnet.WETH;
         resolver[MAINNET]["STETH"] = Mainnet.STETH;
+        resolver[MAINNET]["WSTETH"] = Mainnet.WSTETH;
 
         // Contracts
         resolver[MAINNET]["OETH_VAULT"] = Mainnet.OETH_VAULT;

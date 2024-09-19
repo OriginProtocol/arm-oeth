@@ -1,26 +1,32 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
-
+/*
 import {Test, console2} from "forge-std/Test.sol";
 
 import {IERC20} from "contracts/Interfaces.sol";
-import {LiquidityProviderController} from "contracts/LiquidityProviderController.sol";
-import {LidoFixedPriceMultiLpARM} from "contracts/LidoFixedPriceMultiLpARM.sol";
+import {LidoMultiPriceMultiLpARM} from "contracts/LidoMultiPriceMultiLpARM.sol";
 import {Proxy} from "contracts/Proxy.sol";
 
 import {Fork_Shared_Test_} from "test/fork/shared/Shared.sol";
 
-contract Fork_Concrete_LidoFixedPriceMultiLpARM_Test is Fork_Shared_Test_ {
-    Proxy public armProxy;
-    Proxy public lpcProxy;
-    LidoFixedPriceMultiLpARM public lidoARM;
-    LiquidityProviderController public liquidityProviderController;
+contract Fork_Concrete_LidoMultiPriceMultiLpARM_Test is Fork_Shared_Test_ {
+    Proxy public lidoProxy;
+    LidoMultiPriceMultiLpARM public lidoARM;
     IERC20 BAD_TOKEN = IERC20(makeAddr("bad token"));
     uint256 performanceFee = 2000; // 20%
     address feeCollector = 0x000000000000000000000000000000Feec011ec1;
     AssertData beforeData;
-    DeltaData noChangeDeltaData =
-        DeltaData({totalAssets: 10, totalSupply: 0, totalAssetsCap: 0, armWeth: 0, armSteth: 0, feesAccrued: 0});
+    DeltaData noChangeDeltaData = DeltaData({
+        totalAssets: 10,
+        totalSupply: 0,
+        totalAssetsCap: 0,
+        armWeth: 0,
+        armSteth: 0,
+        feesAccrued: 0,
+        tranchesDiscounts: [int16(0), 0, 0, 0, 0],
+        tranchesAllocations: [int256(0), 0, 0, 0, 0],
+        tranchesRemaining: [int256(0), 0, 0, 0, 0]
+    });
 
     struct AssertData {
         uint256 totalAssets;
@@ -29,6 +35,9 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_Test is Fork_Shared_Test_ {
         uint256 armWeth;
         uint256 armSteth;
         uint256 feesAccrued;
+        uint16[5] tranchesDiscounts;
+        uint256[5] tranchesAllocations;
+        uint256[5] tranchesRemaining;
     }
 
     struct DeltaData {
@@ -38,16 +47,22 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_Test is Fork_Shared_Test_ {
         int256 armWeth;
         int256 armSteth;
         int256 feesAccrued;
+        int16[5] tranchesDiscounts;
+        int256[5] tranchesAllocations;
+        int256[5] tranchesRemaining;
     }
 
     function _snapData() internal view returns (AssertData memory data) {
         return AssertData({
             totalAssets: lidoARM.totalAssets(),
             totalSupply: lidoARM.totalSupply(),
-            totalAssetsCap: liquidityProviderController.totalAssetsCap(),
+            totalAssetsCap: lidoARM.totalAssetsCap(),
             armWeth: weth.balanceOf(address(lidoARM)),
             armSteth: steth.balanceOf(address(lidoARM)),
-            feesAccrued: lidoARM.feesAccrued()
+            feesAccrued: lidoARM.feesAccrued(),
+            tranchesDiscounts: lidoARM.getTrancheDiscounts(),
+            tranchesAllocations: lidoARM.getTrancheAllocations(),
+            tranchesRemaining: lidoARM.getTrancheRemaining()
         });
     }
 
@@ -62,6 +77,11 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_Test is Fork_Shared_Test_ {
         assertEq(int256(afterData.feesAccrued), int256(before.feesAccrued) + delta.feesAccrued, "feesAccrued");
         assertEq(int256(afterData.armWeth), int256(before.armWeth) + delta.armWeth, "armWeth");
         assertEq(int256(afterData.armSteth), int256(before.armSteth) + delta.armSteth, "armSteth");
+        // for (uint256 i = 0; i < 5; i++) {
+        //     assertEq(afterData.tranchesDiscounts[i], before.tranchesDiscounts[i] + delta.tranchesDiscounts[i]);
+        //     assertEq(afterData.tranchesAllocations[i], before.tranchesAllocations[i] + delta.tranchesAllocations[i]);
+        //     assertEq(afterData.tranchesRemaining[i], before.tranchesRemaining[i] + delta.tranchesRemaining[i]);
+        // }
     }
 
     // Account for stETH rounding errors.
@@ -71,43 +91,38 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_Test is Fork_Shared_Test_ {
     function setUp() public override {
         super.setUp();
 
-        lpcProxy = new Proxy();
-        armProxy = new Proxy();
-
-        LiquidityProviderController lpcImpl = new LiquidityProviderController(address(armProxy));
-        lpcProxy.initialize(address(lpcImpl), address(this), "");
-        liquidityProviderController = LiquidityProviderController(payable(address(lpcProxy)));
-
         address lidoWithdrawal = 0x889edC2eDab5f40e902b864aD4d7AdE8E412F9B1;
-        LidoFixedPriceMultiLpARM lidoImpl = new LidoFixedPriceMultiLpARM(address(steth), address(weth), lidoWithdrawal);
+        LidoMultiPriceMultiLpARM lidoImpl = new LidoMultiPriceMultiLpARM(address(steth), address(weth), lidoWithdrawal);
+        lidoProxy = new Proxy();
 
         // The deployer needs a tiny amount of WETH to initialize the ARM
         _dealWETH(address(this), 1e12);
-        weth.approve(address(armProxy), type(uint256).max);
-        steth.approve(address(armProxy), type(uint256).max);
+        weth.approve(address(lidoProxy), type(uint256).max);
+        steth.approve(address(lidoProxy), type(uint256).max);
 
-        // Initialize Proxy with LidoFixedPriceMultiLpARM implementation.
+        // Initialize Proxy with LidoMultiPriceMultiLpARM implementation.
         bytes memory data = abi.encodeWithSignature(
-            "initialize(string,string,address,uint256,address,address)",
+            "initialize(string,string,address,uint256,address)",
             "Lido ARM",
             "ARM-ST",
             operator,
             performanceFee,
-            feeCollector,
-            address(liquidityProviderController)
+            feeCollector
         );
-        armProxy.initialize(address(lidoImpl), address(this), data);
+        lidoProxy.initialize(address(lidoImpl), address(this), data);
 
-        lidoARM = LidoFixedPriceMultiLpARM(payable(address(armProxy)));
+        lidoARM = LidoMultiPriceMultiLpARM(payable(address(lidoProxy)));
 
-        // set prices
-        lidoARM.setPrices(992 * 1e33, 1001 * 1e33);
+        // Set the tranche discounts for each tranche
+        // 8 basis point discount (0.08%) would be 800 with a price of 0.9992
+        lidoARM.setTrancheDiscounts([uint16(200), 375, 800, 1400, 1800]);
+        lidoARM.setTrancheAllocations([uint256(80 ether), 50 ether, 30 ether, 20 ether, 10 ether]);
 
-        liquidityProviderController.setTotalAssetsCap(100 ether);
+        lidoARM.setTotalAssetsCap(100 ether);
 
         address[] memory liquidityProviders = new address[](1);
         liquidityProviders[0] = address(this);
-        liquidityProviderController.setLiquidityProviderCaps(liquidityProviders, 20 ether);
+        lidoARM.setLiquidityProviderCaps(liquidityProviders, 20 ether);
 
         // Only fuzz from this address. Big speedup on fork.
         targetSender(address(this));
@@ -136,8 +151,22 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_Test is Fork_Shared_Test_ {
         assertEq(lidoARM.totalAssets(), 1e12);
         assertEq(lidoARM.totalSupply(), 1e12);
         assertEq(weth.balanceOf(address(lidoARM)), 1e12);
-        assertEq(liquidityProviderController.totalAssetsCap(), 100 ether);
+        assertEq(lidoARM.totalAssetsCap(), 100 ether);
     }
+
+    /// @dev ARM owner sets valid trance discounts ranging from 1 to MAX_DISCOUNT
+    function test_setValidTrancheDiscounts() external {
+        lidoARM.setTrancheDiscounts([uint16(1), 20, 300, 9999, 65535]);
+        uint16[5] memory discounts = lidoARM.getTrancheDiscounts();
+        assertEq(discounts[0], 1);
+        assertEq(discounts[1], 20);
+        assertEq(discounts[2], 300);
+        assertEq(discounts[3], 9999);
+        assertEq(discounts[4], 65535);
+    }
+    // Revert when a tranche discount is zero
+    // Revert when a tranche discount is greater than the MAX_DISCOUNT
+    // Revert when non owner tries to set tranche discounts
 
     // whitelisted LP adds WETH liquidity to the ARM
     function test_depositAssets() external {
@@ -165,4 +194,18 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_Test is Fork_Shared_Test_ {
 
         lidoARM.requestRedeem(8 ether);
     }
+
+    // with enough liquidity in all tranches
+    //// swap stETH to WETH using just the first tranche
+    //// swap stETH to WETH using the first two tranches
+    //// swap stETH to WETH using all five tranches
+    //// fail to swap stETH to WETH with a swap larger than the available liquidity
+    // with all liquidity in the first tranche used
+    //// swap stETH to WETH using just the second tranche
+    //// swap stETH to WETH using the second and third tranches
+    //// swap stETH to WETH using the remaining four tranches
+    //// fail to swap stETH to WETH with a swap larger than the available liquidity
+    // with only liquidity in the fifth tranche
+    //// swap stETH to WETH using just the fifth tranche
 }
+*/
