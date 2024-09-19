@@ -36,7 +36,7 @@ abstract contract Modifiers is Helpers {
 
     /// @notice Impersonate the owner of LidoFixedPriceMultiLpARM contract.
     modifier asLidoFixedPriceMultiLpARMOwner() {
-        vm.startPrank(lidoARM.owner());
+        vm.startPrank(lidoFixedPriceMulltiLpARM.owner());
         _;
         vm.stopPrank();
     }

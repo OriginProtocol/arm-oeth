@@ -37,7 +37,7 @@ abstract contract Base_Test_ is Test {
     Proxy public lidoOwnerProxy;
     OethARM public oethARM;
     LidoOwnerLpARM public lidoOwnerLpARM;
-    LidoFixedPriceMultiLpARM public lidoARM;
+    LidoFixedPriceMultiLpARM public lidoFixedPriceMulltiLpARM;
     LiquidityProviderController public liquidityProviderController;
 
     IERC20 public oeth;
