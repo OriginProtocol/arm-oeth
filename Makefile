@@ -9,7 +9,7 @@ default:
 # Always keep Forge up to date
 install:
 	foundryup
-	forge install
+	forge soldeer install
 
 gas:
 	@forge test --gas-report
