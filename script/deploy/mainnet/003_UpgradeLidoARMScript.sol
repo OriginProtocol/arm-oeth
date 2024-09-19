@@ -55,17 +55,22 @@ contract UpgradeLidoARMMainnetScript is AbstractDeployScript {
         lidoARMImpl = new LidoFixedPriceMultiLpARM(Mainnet.STETH, Mainnet.WETH, Mainnet.LIDO_WITHDRAWAL);
         _recordDeploy("LIDO_ARM_IMPL", address(lidoARMImpl));
 
-        // 7. Transfer ownership of LiquidityProviderController to the 2/5 ARM multisig
-        lpcProxy.setOwner(Mainnet.ARM_MULTISIG);
+        // 7. Transfer ownership of LiquidityProviderController to the mainnet 5/8 multisig
+        lpcProxy.setOwner(Mainnet.GOV_MULTISIG);
 
         // Post deploy
-        // 1. The Lido ARM multisig needs to upgrade and call initialize on the Lido ARM
+        // 1. The Lido ARM multisig needs to set the owner to the mainnet 5/8 multisig
+        // 1. The mainnet 5/8 multisig needs to upgrade and call initialize on the Lido ARM
         // 2. the Relayer needs to set the swap prices
     }
 
     function _buildGovernanceProposal() internal override {}
 
     function _fork() internal override {
+        // transfer ownership of the Lido ARM proxy to the mainnet 5/8 multisig
+        vm.prank(Mainnet.ARM_MULTISIG);
+        lidoARMProxy.setOwner(Mainnet.GOV_MULTISIG);
+
         // Initialize Lido ARM proxy and implementation contract
         bytes memory data = abi.encodeWithSignature(
             "initialize(string,string,address,uint256,address,address)",
@@ -77,10 +82,10 @@ contract UpgradeLidoARMMainnetScript is AbstractDeployScript {
             address(lpcProxy)
         );
 
-        vm.startPrank(Mainnet.ARM_MULTISIG);
+        vm.startPrank(Mainnet.GOV_MULTISIG);
         uint256 tinyMintAmount = 1e12;
         // Get some WETH
-        vm.deal(Mainnet.ARM_MULTISIG, tinyMintAmount);
+        vm.deal(Mainnet.GOV_MULTISIG, tinyMintAmount);
         IWETH(Mainnet.WETH).deposit{value: tinyMintAmount}();
         // Approve the Lido ARM proxy to spend WETH
         IERC20(Mainnet.WETH).approve(address(lidoARMProxy), tinyMintAmount);
