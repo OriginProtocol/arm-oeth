@@ -24,6 +24,8 @@ artifacts
 
 # Forge
 .gas-snapshot
+dependencies/
+soldeer.lock
 
 # Defender Actions
 dist

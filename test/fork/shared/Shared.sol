@@ -78,7 +78,7 @@ abstract contract Fork_Shared_Test_ is Modifiers {
         require(vm.envExists("PROVIDER_URL"), "PROVIDER_URL not set");
 
         // Create and select a fork.
-        forkId = vm.createSelectFork(vm.envString("PROVIDER_URL"));
+        forkId = vm.createSelectFork("mainnet");
     }
 
     function _generateAddresses() internal {
