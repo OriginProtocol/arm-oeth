@@ -9,7 +9,14 @@ default:
 # Always keep Forge up to date
 install:
 	foundryup
-	forge install
+	forge soldeer install
+	yarn install
+
+clean:
+	@rm -rf broadcast cache out
+
+clean-all:
+	@rm -rf broadcast cache out dependencies node_modules soldeer.lock
 
 gas:
 	@forge test --gas-report
