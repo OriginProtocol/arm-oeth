@@ -10,6 +10,13 @@ default:
 install:
 	foundryup
 	forge soldeer install
+	yarn install
+
+clean:
+	@rm -rf broadcast cache out
+
+clean-all:
+	@rm -rf broadcast cache out dependencies node_modules soldeer.lock
 
 gas:
 	@forge test --gas-report
