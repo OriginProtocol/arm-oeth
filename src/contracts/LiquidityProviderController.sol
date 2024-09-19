@@ -1,14 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import {Ownable} from "./Ownable.sol";
+import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+
+import {OwnableOperable} from "./OwnableOperable.sol";
 import {ILiquidityProviderARM} from "./Interfaces.sol";
 
 /**
  * @title Controller of ARM liquidity providers.
  * @author Origin Protocol Inc
  */
-contract LiquidityProviderController is Ownable {
+contract LiquidityProviderController is Initializable, OwnableOperable {
     /// @notice The address of the linked Application Redemption Manager (ARM).
     address public immutable arm;
 
@@ -25,6 +27,10 @@ contract LiquidityProviderController is Ownable {
 
     constructor(address _arm) {
         arm = _arm;
+    }
+
+    function initialize(address _operator) external initializer {
+        _initOwnableOperable(_operator);
     }
 
     function postDepositHook(address liquidityProvider, uint256 assets) external {
@@ -44,7 +50,10 @@ contract LiquidityProviderController is Ownable {
         emit LiquidityProviderCap(liquidityProvider, newCap);
     }
 
-    function setLiquidityProviderCaps(address[] calldata _liquidityProviders, uint256 cap) external onlyOwner {
+    function setLiquidityProviderCaps(address[] calldata _liquidityProviders, uint256 cap)
+        external
+        onlyOperatorOrOwner
+    {
         for (uint256 i = 0; i < _liquidityProviders.length; i++) {
             liquidityProviderCaps[_liquidityProviders[i]] = cap;
 
@@ -55,7 +64,7 @@ contract LiquidityProviderController is Ownable {
     /// @notice Set the ARM's maximum total assets.
     /// Setting to zero will prevent any further deposits.
     /// The liquidity provider can still withdraw assets.
-    function setTotalAssetsCap(uint256 _totalAssetsCap) external onlyOwner {
+    function setTotalAssetsCap(uint256 _totalAssetsCap) external onlyOperatorOrOwner {
         totalAssetsCap = _totalAssetsCap;
 
         emit TotalAssetsCap(_totalAssetsCap);

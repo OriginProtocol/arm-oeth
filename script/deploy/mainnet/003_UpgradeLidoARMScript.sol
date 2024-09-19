@@ -42,7 +42,8 @@ contract UpgradeLidoARMMainnetScript is AbstractDeployScript {
         _recordDeploy("LIDO_ARM_LPC_IMPL", address(lpcImpl));
 
         // 4. Initialize Proxy with LiquidityProviderController implementation and set the owner to the deployer for now
-        lpcProxy.initialize(address(lpcImpl), deployer, "");
+        bytes memory data = abi.encodeWithSignature("initialize(address)", Mainnet.ARM_RELAYER);
+        lpcProxy.initialize(address(lpcImpl), deployer, data);
         LiquidityProviderController liquidityProviderController = LiquidityProviderController(address(lpcProxy));
 
         // 5. Set the liquidity Provider caps
