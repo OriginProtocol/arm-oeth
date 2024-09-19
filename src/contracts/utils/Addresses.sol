@@ -12,11 +12,15 @@ library Mainnet {
     address public constant TIMELOCK = 0x35918cDE7233F2dD33fA41ae3Cb6aE0e42E0e69F;
     address public constant GOVERNOR_FIVE = 0x3cdD07c16614059e66344a7b579DAB4f9516C0b6;
     address public constant GOVERNOR_SIX = 0x1D3Fbd4d129Ddd2372EA85c5Fa00b2682081c9EC;
+    address public constant STRATEGIST = 0xF14BBdf064E3F67f51cd9BD646aE3716aD938FDC;
+    address public constant TREASURY = 0x0000000000000000000000000000000000000001;
 
     // Multisig and EOAs
     address public constant INITIAL_DEPLOYER = address(0x1001);
     address public constant GOV_MULTISIG = 0xbe2AB3d3d8F6a32b96414ebbd865dBD276d3d899;
-    address public constant RELAYER = 0x4b91827516f79d6F6a1F292eD99671663b09169a;
+    address public constant ARM_MULTISIG = 0xC8F2cF4742C86295653f893214725813B16f7410;
+    address public constant OETH_RELAYER = 0x4b91827516f79d6F6a1F292eD99671663b09169a;
+    address public constant ARM_RELAYER = 0x39878253374355DBcc15C86458F084fb6f2d6DE7;
 
     // Tokens
     address public constant OETH = 0x856c4Efb76C1D1AE02e20CEB03A2A6a08b0b8dC3;
@@ -27,6 +31,9 @@ library Mainnet {
     // Contracts
     address public constant OETH_VAULT = 0x39254033945AA2E4809Cc2977E7087BEE48bd7Ab;
     address public constant OETH_ARM = 0x6bac785889A4127dB0e0CeFEE88E0a9F1Aaf3cC7;
+    address public constant LIDO_ARM = 0x85B78AcA6Deae198fBF201c82DAF6Ca21942acc6;
+    // TODO add once deployed from the Origin Dollar repo
+    address public constant ARM_BUYBACK = 0x0000000000000000000000000000000000000002;
 
     // Lido
     address public constant LIDO_WITHDRAWAL = 0x889edC2eDab5f40e902b864aD4d7AdE8E412F9B1;
@@ -64,7 +71,7 @@ contract AddressResolver {
         resolver[MAINNET]["GOVERNOR"] = Mainnet.TIMELOCK;
         resolver[MAINNET]["GOVERNANCE"] = Mainnet.GOVERNOR_SIX;
         resolver[MAINNET]["GOV_MULTISIG"] = Mainnet.GOV_MULTISIG;
-        resolver[MAINNET]["OPERATOR"] = Mainnet.RELAYER;
+        resolver[MAINNET]["OPERATOR"] = Mainnet.OETH_RELAYER;
 
         // Tokens
         resolver[MAINNET]["OETH"] = Mainnet.OETH;

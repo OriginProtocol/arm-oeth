@@ -12,6 +12,7 @@ import {GovProposal, GovSixHelper} from "contracts/utils/GovSixHelper.sol";
 abstract contract AbstractDeployScript is Script {
     using GovSixHelper for GovProposal;
 
+    address deployer;
     uint256 public deployBlockNum = type(uint256).max;
 
     // DeployerRecord stuff to be extracted as well
@@ -53,12 +54,12 @@ abstract contract AbstractDeployScript is Script {
         }
 
         if (this.isForked()) {
-            address impersonator = Mainnet.INITIAL_DEPLOYER;
-            console.log("Running script on mainnet fork impersonating: %s", impersonator);
-            vm.startPrank(impersonator);
+            deployer = Mainnet.INITIAL_DEPLOYER;
+            console.log("Running script on mainnet fork impersonating: %s", deployer);
+            vm.startPrank(deployer);
         } else {
             uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
-            address deployer = vm.rememberKey(deployerPrivateKey);
+            deployer = vm.rememberKey(deployerPrivateKey);
             vm.startBroadcast(deployer);
             console.log("Deploying on mainnet with deployer: %s", deployer);
         }

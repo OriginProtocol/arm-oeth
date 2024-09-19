@@ -10,7 +10,7 @@ import {OethARM} from "contracts/OethARM.sol";
 import {Proxy} from "contracts/Proxy.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
 
-contract OethARMSmokeTest is AbstractSmokeTest {
+contract Fork_OethARM_Smoke_Test is AbstractSmokeTest {
     IERC20 BAD_TOKEN = IERC20(makeAddr("bad token"));
 
     IERC20 weth;

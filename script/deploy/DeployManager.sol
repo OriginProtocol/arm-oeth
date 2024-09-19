@@ -7,6 +7,7 @@ import {VmSafe} from "forge-std/Vm.sol";
 import {AbstractDeployScript} from "./AbstractDeployScript.sol";
 import {DeployCoreMainnetScript} from "./mainnet/001_DeployCoreScript.sol";
 import {UpgradeMainnetScript} from "./mainnet/002_UpgradeScript.sol";
+import {UpgradeLidoARMMainnetScript} from "./mainnet/003_UpgradeLidoARMScript.sol";
 import {DeployCoreHoleskyScript} from "./holesky/001_DeployCoreScript.sol";
 import {UpgradeHoleskyScript} from "./holesky/002_UpgradeScript.sol";
 
@@ -58,6 +59,7 @@ contract DeployManager is Script {
             // TODO: Use vm.readDir to recursively build this?
             _runDeployFile(new DeployCoreMainnetScript());
             _runDeployFile(new UpgradeMainnetScript(this));
+            _runDeployFile(new UpgradeLidoARMMainnetScript());
         } else if (block.chainid == 17000) {
             _runDeployFile(new DeployCoreHoleskyScript());
             _runDeployFile(new UpgradeHoleskyScript(this));
