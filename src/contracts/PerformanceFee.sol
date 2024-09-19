@@ -135,8 +135,6 @@ abstract contract PerformanceFee is MultiLP {
     /// @notice Transfer accrued performance fees to the fee collector
     /// This requires enough liquidity assets in the ARM to cover the accrued fees.
     function collectFees() external returns (uint256 fees) {
-        require(msg.sender == feeCollector, "ARM: not fee collector");
-
         // Accrued all fees up to this point
         _calcFee();
 
