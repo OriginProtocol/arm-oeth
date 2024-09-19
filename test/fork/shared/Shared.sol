@@ -78,7 +78,11 @@ abstract contract Fork_Shared_Test_ is Modifiers {
         require(vm.envExists("PROVIDER_URL"), "PROVIDER_URL not set");
 
         // Create and select a fork.
-        forkId = vm.createSelectFork("mainnet");
+        if (vm.envExists("FORK_BLOCK_NUMBER_MAINNET")) {
+            forkId = vm.createSelectFork("mainnet", vm.envUint("FORK_BLOCK_NUMBER_MAINNET"));
+        } else {
+            forkId = vm.createSelectFork("mainnet");
+        }
     }
 
     function _generateAddresses() internal {
@@ -97,6 +101,7 @@ abstract contract Fork_Shared_Test_ is Modifiers {
         steth = IERC20(resolver.resolve("STETH"));
         wsteth = IERC20(resolver.resolve("WSTETH"));
         vault = IOETHVault(resolver.resolve("OETH_VAULT"));
+        badToken = IERC20(vm.randomAddress());
     }
 
     function _deployContracts() internal {
@@ -185,6 +190,7 @@ abstract contract Fork_Shared_Test_ is Modifiers {
         vm.label(address(oeth), "OETH");
         vm.label(address(weth), "WETH");
         vm.label(address(steth), "stETH");
+        vm.label(address(badToken), "BAD TOKEN");
         vm.label(address(vault), "OETH VAULT");
         vm.label(address(oethARM), "OETH ARM");
         vm.label(address(proxy), "OETH ARM PROXY");

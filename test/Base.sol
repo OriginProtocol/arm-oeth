@@ -44,6 +44,7 @@ abstract contract Base_Test_ is Test {
     IERC20 public weth;
     IERC20 public steth;
     IERC20 public wsteth;
+    IERC20 public badToken;
     IOETHVault public vault;
 
     //////////////////////////////////////////////////////
