@@ -82,6 +82,7 @@ contract AddressResolver {
         // Contracts
         resolver[MAINNET]["OETH_VAULT"] = Mainnet.OETH_VAULT;
         resolver[MAINNET]["OETH_ARM"] = Mainnet.OETH_ARM;
+        resolver[MAINNET]["LIDO_ARM"] = Mainnet.LIDO_ARM;
 
         // Test accounts
         resolver[MAINNET]["INITIAL_DEPLOYER"] = address(0x1001);
