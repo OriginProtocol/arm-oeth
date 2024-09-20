@@ -13,12 +13,6 @@ interface IERC20 {
     event Transfer(address indexed from, address indexed to, uint256 value);
 }
 
-interface IERC20Metadata is IERC20 {
-    function name() external view returns (string memory);
-    function symbol() external view returns (string memory);
-    function decimals() external view returns (uint8);
-}
-
 interface IOethARM {
     function token0() external returns (address);
     function token1() external returns (address);
@@ -128,6 +122,10 @@ interface ILiquidityProviderARM {
 
 interface ILiquidityProviderController {
     function postDepositHook(address liquidityProvider, uint256 assets) external;
+}
+
+interface LegacyAMM {
+    function transferToken(address tokenOut, address to, uint256 amount) external;
 }
 
 interface IOETHVault {

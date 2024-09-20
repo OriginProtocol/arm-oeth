@@ -5,7 +5,7 @@ pragma solidity 0.8.23;
 import "forge-std/console.sol";
 import {Vm} from "forge-std/Vm.sol";
 
-import {IERC20, IWETH} from "contracts/Interfaces.sol";
+import {IERC20, IWETH, LegacyAMM} from "contracts/Interfaces.sol";
 import {LidoFixedPriceMultiLpARM} from "contracts/LidoFixedPriceMultiLpARM.sol";
 import {LiquidityProviderController} from "contracts/LiquidityProviderController.sol";
 import {Proxy} from "contracts/Proxy.sol";
@@ -70,6 +70,19 @@ contract UpgradeLidoARMMainnetScript is AbstractDeployScript {
     function _fork() internal override {
         vm.startPrank(Mainnet.ARM_MULTISIG);
 
+        // remove all liquidity from the old AMM v1 contract
+        uint256 wethLegacyBalance = IERC20(Mainnet.WETH).balanceOf(Mainnet.LIDO_ARM);
+        if (wethLegacyBalance > 0) {
+            console.log("Withdrawing WETH from legacy Lido ARM");
+            LegacyAMM(Mainnet.LIDO_ARM).transferToken(Mainnet.WETH, Mainnet.ARM_MULTISIG, wethLegacyBalance);
+        }
+        uint256 stethLegacyBalance = IERC20(Mainnet.STETH).balanceOf(Mainnet.LIDO_ARM);
+        if (stethLegacyBalance > 0) {
+            console.log("Withdrawing stETH from legacy Lido ARM");
+            LegacyAMM(Mainnet.LIDO_ARM).transferToken(Mainnet.STETH, Mainnet.ARM_MULTISIG, stethLegacyBalance);
+        }
+        // TODO need to also remove anything in the Lido withdrawal queue
+
         // Initialize Lido ARM proxy and implementation contract
         bytes memory data = abi.encodeWithSignature(
             "initialize(string,string,address,uint256,address,address)",
@@ -84,9 +97,11 @@ contract UpgradeLidoARMMainnetScript is AbstractDeployScript {
         console.logBytes(data);
 
         uint256 tinyMintAmount = 1e12;
-        // Get some WETH
-        vm.deal(Mainnet.ARM_MULTISIG, tinyMintAmount);
-        IWETH(Mainnet.WETH).deposit{value: tinyMintAmount}();
+
+        // Get some WETH which has already been done on mainnet
+        // vm.deal(Mainnet.ARM_MULTISIG, tinyMintAmount);
+        // IWETH(Mainnet.WETH).deposit{value: tinyMintAmount}();
+
         // Approve the Lido ARM proxy to spend WETH
         IERC20(Mainnet.WETH).approve(address(lidoARMProxy), tinyMintAmount);
 
