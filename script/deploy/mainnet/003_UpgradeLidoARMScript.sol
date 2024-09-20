@@ -94,9 +94,9 @@ contract UpgradeLidoARMMainnetScript is AbstractDeployScript {
         // upgrade and initialize the Lido ARM
         lidoARMProxy.upgradeToAndCall(address(lidoARMImpl), data);
 
-        vm.stopPrank();
+        // Set the buy price with a 8 basis point discount. The sell price is 1.0
+        LidoFixedPriceMultiLpARM(payable(Mainnet.LIDO_ARM)).setPrices(9994e32, 1e36);
 
-        // vm.prank(Mainnet.ARM_RELAYER);
-        // Set the swap prices
+        vm.stopPrank();
     }
 }

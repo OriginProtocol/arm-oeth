@@ -26,8 +26,11 @@ abstract contract FixedPriceARM is AbstractARM {
      */
     uint256 public traderate1;
 
-    /// @dev Maximum operator settable traderate. 1e36
-    uint256 internal constant MAX_OPERATOR_RATE = 1005 * 1e33;
+    /// @notice Maximum amount the Operator can set the price from 1 scaled to 36 decimals.
+    /// 1e33 is a 0.1% deviation, or 10 basis points.
+    uint256 public constant MAX_PRICE_DEVIATION = 1e33;
+    /// @notice Scale of the prices.
+    uint256 public constant PRICE_SCALE = 1e36;
 
     uint256[50] private _gap;
 
@@ -48,7 +51,7 @@ abstract contract FixedPriceARM is AbstractARM {
         } else {
             revert("ARM: Invalid token");
         }
-        amountOut = amountIn * price / 1e36;
+        amountOut = amountIn * price / PRICE_SCALE;
 
         // Transfer the input tokens from the caller to this ARM contract
         inToken.transferFrom(msg.sender, address(this), amountIn);
@@ -73,7 +76,7 @@ abstract contract FixedPriceARM is AbstractARM {
         } else {
             revert("ARM: Invalid token");
         }
-        amountIn = ((amountOut * 1e36) / price) + 1; // +1 to always round in our favor
+        amountIn = ((amountOut * PRICE_SCALE) / price) + 1; // +1 to always round in our favor
 
         // Transfer the input tokens from the caller to this ARM contract
         inToken.transferFrom(msg.sender, address(this), amountIn);
@@ -92,18 +95,21 @@ abstract contract FixedPriceARM is AbstractARM {
     }
 
     /**
-     * @notice Set exchange rates from an operator account
-     * @param buyT1 The buy price of Token 1 (t0 -> t1), denominated in Token 0. 1e36
-     * @param sellT1 The sell price of Token 1 (t1 -> t0), denominated in Token 0. 1e36
+     * @notice Set exchange rates from an operator account from the ARM's perspective.
+     * If token 0 is WETH and token 1 is stETH, then both prices will be set using the stETH/WETH price.
+     * @param buyT1 The price the ARM buys Token 1 from the Trader, denominated in Token 0, scaled to 36 decimals.
+     * From the Trader's perspective, this is the sell price.
+     * @param sellT1 The price the ARM sells Token 1 to the Trader, denominated in Token 0, scaled to 36 decimals.
+     * From the Trader's perspective, this is the buy price.
      */
     function setPrices(uint256 buyT1, uint256 sellT1) external onlyOperatorOrOwner {
+        // Limit funds and loss when called by the Operator
+        if (msg.sender == operator) {
+            require(sellT1 >= PRICE_SCALE - MAX_PRICE_DEVIATION, "ARM: sell price too low");
+            require(buyT1 <= PRICE_SCALE + MAX_PRICE_DEVIATION, "ARM: buy price too high");
+        }
         uint256 _traderate0 = 1e72 / sellT1; // base (t0) -> token (t1)
         uint256 _traderate1 = buyT1; // token (t1) -> base (t0)
-        // Limit funds and loss when called by operator
-        if (msg.sender == operator) {
-            require(_traderate0 <= MAX_OPERATOR_RATE, "ARM: Traderate too high");
-            require(_traderate1 <= MAX_OPERATOR_RATE, "ARM: Traderate too high");
-        }
         _setTraderates(_traderate0, _traderate1);
     }
 
