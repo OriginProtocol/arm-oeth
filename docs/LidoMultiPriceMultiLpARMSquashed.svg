@@ -17,19 +17,19 @@
 <text text-anchor="middle" x="475.6" y="-2007.1" font-family="Times,serif" font-size="14.00">../src/contracts/LidoMultiPriceMultiLpARM.sol</text>
 <polyline fill="none" stroke="black" points="0,-1998.9 951.2,-1998.9 "/>
 <text text-anchor="start" x="8" y="-1982.3" font-family="Times,serif" font-size="14.00">Private:</text>
-<text text-anchor="start" x="8" y="-1965.5" font-family="Times,serif" font-size="14.00"> &#160;&#160;_gap: uint256[50] &lt;&lt;OwnableOperable&gt;&gt;</text>
+<text text-anchor="start" x="8" y="-1965.5" font-family="Times,serif" font-size="14.00"> &#160;&#160;_gap: uint256[49] &lt;&lt;OwnableOperable&gt;&gt;</text>
 <text text-anchor="start" x="8" y="-1948.7" font-family="Times,serif" font-size="14.00"> &#160;&#160;_gap: uint256[50] &lt;&lt;AbstractARM&gt;&gt;</text>
-<text text-anchor="start" x="8" y="-1931.9" font-family="Times,serif" font-size="14.00"> &#160;&#160;_gap: uint256[50] &lt;&lt;MultiLP&gt;&gt;</text>
-<text text-anchor="start" x="8" y="-1915.1" font-family="Times,serif" font-size="14.00"> &#160;&#160;_gap: uint256[50] &lt;&lt;PerformanceFee&gt;&gt;</text>
-<text text-anchor="start" x="8" y="-1898.3" font-family="Times,serif" font-size="14.00"> &#160;&#160;_gap: uint256[50] &lt;&lt;AccessControlLP&gt;&gt;</text>
+<text text-anchor="start" x="8" y="-1931.9" font-family="Times,serif" font-size="14.00"> &#160;&#160;_gap: uint256[47] &lt;&lt;MultiLP&gt;&gt;</text>
+<text text-anchor="start" x="8" y="-1915.1" font-family="Times,serif" font-size="14.00"> &#160;&#160;_gap: uint256[48] &lt;&lt;PerformanceFee&gt;&gt;</text>
+<text text-anchor="start" x="8" y="-1898.3" font-family="Times,serif" font-size="14.00"> &#160;&#160;_gap: uint256[48] &lt;&lt;AccessControlLP&gt;&gt;</text>
 <text text-anchor="start" x="8" y="-1881.5" font-family="Times,serif" font-size="14.00"> &#160;&#160;discountToken: address &lt;&lt;MultiPriceARM&gt;&gt;</text>
 <text text-anchor="start" x="8" y="-1864.7" font-family="Times,serif" font-size="14.00"> &#160;&#160;liquidityToken: address &lt;&lt;MultiPriceARM&gt;&gt;</text>
 <text text-anchor="start" x="8" y="-1847.9" font-family="Times,serif" font-size="14.00"> &#160;&#160;DISCOUNT_INDEX: uint256 &lt;&lt;MultiPriceARM&gt;&gt;</text>
 <text text-anchor="start" x="8" y="-1831.1" font-family="Times,serif" font-size="14.00"> &#160;&#160;LIQUIDITY_ALLOCATED_INDEX: uint256 &lt;&lt;MultiPriceARM&gt;&gt;</text>
 <text text-anchor="start" x="8" y="-1814.3" font-family="Times,serif" font-size="14.00"> &#160;&#160;LIQUIDITY_REMAINING_INDEX: uint256 &lt;&lt;MultiPriceARM&gt;&gt;</text>
 <text text-anchor="start" x="8" y="-1797.5" font-family="Times,serif" font-size="14.00"> &#160;&#160;tranches: uint16[15] &lt;&lt;MultiPriceARM&gt;&gt;</text>
-<text text-anchor="start" x="8" y="-1780.7" font-family="Times,serif" font-size="14.00"> &#160;&#160;_gap: uint256[50] &lt;&lt;MultiPriceARM&gt;&gt;</text>
-<text text-anchor="start" x="8" y="-1763.9" font-family="Times,serif" font-size="14.00"> &#160;&#160;_gap: uint256[50] &lt;&lt;LidoLiquidityManager&gt;&gt;</text>
+<text text-anchor="start" x="8" y="-1780.7" font-family="Times,serif" font-size="14.00"> &#160;&#160;_gap: uint256[49] &lt;&lt;MultiPriceARM&gt;&gt;</text>
+<text text-anchor="start" x="8" y="-1763.9" font-family="Times,serif" font-size="14.00"> &#160;&#160;_gap: uint256[49] &lt;&lt;LidoLiquidityManager&gt;&gt;</text>
 <text text-anchor="start" x="8" y="-1747.1" font-family="Times,serif" font-size="14.00">Internal:</text>
 <text text-anchor="start" x="8" y="-1730.3" font-family="Times,serif" font-size="14.00"> &#160;&#160;OWNER_SLOT: bytes32 &lt;&lt;Ownable&gt;&gt;</text>
 <text text-anchor="start" x="8" y="-1713.5" font-family="Times,serif" font-size="14.00"> &#160;&#160;MIN_TOTAL_SUPPLY: uint256 &lt;&lt;MultiLP&gt;&gt;</text>

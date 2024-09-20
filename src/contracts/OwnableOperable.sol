@@ -7,7 +7,7 @@ contract OwnableOperable is Ownable {
     /// @notice The account that can request and claim withdrawals.
     address public operator;
 
-    uint256[50] private _gap;
+    uint256[49] private _gap;
 
     event OperatorChanged(address newAdmin);
 

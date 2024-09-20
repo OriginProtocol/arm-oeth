@@ -17,10 +17,10 @@
 <text text-anchor="middle" x="475.6" y="-965.5" font-family="Times,serif" font-size="14.00">../src/contracts/LidoOwnerLpARM.sol</text>
 <polyline fill="none" stroke="black" points="0,-957.3 951.2,-957.3 "/>
 <text text-anchor="start" x="8" y="-940.7" font-family="Times,serif" font-size="14.00">Private:</text>
-<text text-anchor="start" x="8" y="-923.9" font-family="Times,serif" font-size="14.00"> &#160;&#160;_gap: uint256[50] &lt;&lt;OwnableOperable&gt;&gt;</text>
+<text text-anchor="start" x="8" y="-923.9" font-family="Times,serif" font-size="14.00"> &#160;&#160;_gap: uint256[49] &lt;&lt;OwnableOperable&gt;&gt;</text>
 <text text-anchor="start" x="8" y="-907.1" font-family="Times,serif" font-size="14.00"> &#160;&#160;_gap: uint256[50] &lt;&lt;AbstractARM&gt;&gt;</text>
-<text text-anchor="start" x="8" y="-890.3" font-family="Times,serif" font-size="14.00"> &#160;&#160;_gap: uint256[50] &lt;&lt;FixedPriceARM&gt;&gt;</text>
-<text text-anchor="start" x="8" y="-873.5" font-family="Times,serif" font-size="14.00"> &#160;&#160;_gap: uint256[50] &lt;&lt;LidoLiquidityManager&gt;&gt;</text>
+<text text-anchor="start" x="8" y="-890.3" font-family="Times,serif" font-size="14.00"> &#160;&#160;_gap: uint256[48] &lt;&lt;FixedPriceARM&gt;&gt;</text>
+<text text-anchor="start" x="8" y="-873.5" font-family="Times,serif" font-size="14.00"> &#160;&#160;_gap: uint256[49] &lt;&lt;LidoLiquidityManager&gt;&gt;</text>
 <text text-anchor="start" x="8" y="-856.7" font-family="Times,serif" font-size="14.00">Internal:</text>
 <text text-anchor="start" x="8" y="-839.9" font-family="Times,serif" font-size="14.00"> &#160;&#160;OWNER_SLOT: bytes32 &lt;&lt;Ownable&gt;&gt;</text>
 <text text-anchor="start" x="8" y="-823.1" font-family="Times,serif" font-size="14.00">Public:</text>

@@ -32,7 +32,7 @@ abstract contract FixedPriceARM is AbstractARM {
     /// @notice Scale of the prices.
     uint256 public constant PRICE_SCALE = 1e36;
 
-    uint256[50] private _gap;
+    uint256[48] private _gap;
 
     event TraderateChanged(uint256 traderate0, uint256 traderate1);
 

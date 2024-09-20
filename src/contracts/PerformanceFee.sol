@@ -29,7 +29,7 @@ abstract contract PerformanceFee is MultiLP {
     /// This can only go up so is a high watermark.
     uint128 public lastTotalAssets;
 
-    uint256[50] private _gap;
+    uint256[48] private _gap;
 
     event FeeCalculated(uint256 newFeesAccrued, uint256 assetIncrease);
     event FeeCollected(address indexed feeCollector, uint256 fee);
