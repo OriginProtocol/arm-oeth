@@ -9,9 +9,9 @@
 <g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 2045)">
 <title>UmlClassDiagram</title>
 <polygon fill="white" stroke="transparent" points="-4,4 -4,-2045 955.2,-2045 955.2,4 -4,4"/>
-<!-- 15 -->
+<!-- 17 -->
 <g id="node1" class="node">
-<title>15</title>
+<title>17</title>
 <polygon fill="#f2f2f2" stroke="black" points="0,-0.5 0,-2040.5 951.2,-2040.5 951.2,-0.5 0,-0.5"/>
 <text text-anchor="middle" x="475.6" y="-2023.9" font-family="Times,serif" font-size="14.00">LidoMultiPriceMultiLpARM</text>
 <text text-anchor="middle" x="475.6" y="-2007.1" font-family="Times,serif" font-size="14.00">../src/contracts/LidoMultiPriceMultiLpARM.sol</text>
@@ -42,7 +42,7 @@
 <text text-anchor="start" x="8" y="-1595.9" font-family="Times,serif" font-size="14.00"> &#160;&#160;CLAIM_DELAY: uint256 &lt;&lt;MultiLP&gt;&gt;</text>
 <text text-anchor="start" x="8" y="-1579.1" font-family="Times,serif" font-size="14.00"> &#160;&#160;withdrawalQueueMetadata: WithdrawalQueueMetadata &lt;&lt;MultiLP&gt;&gt;</text>
 <text text-anchor="start" x="8" y="-1562.3" font-family="Times,serif" font-size="14.00"> &#160;&#160;withdrawalRequests: mapping(uint256=&gt;WithdrawalRequest) &lt;&lt;MultiLP&gt;&gt;</text>
-<text text-anchor="start" x="8" y="-1545.5" font-family="Times,serif" font-size="14.00"> &#160;&#160;MAX_FEE: uint256 &lt;&lt;PerformanceFee&gt;&gt;</text>
+<text text-anchor="start" x="8" y="-1545.5" font-family="Times,serif" font-size="14.00"> &#160;&#160;FEE_SCALE: uint256 &lt;&lt;PerformanceFee&gt;&gt;</text>
 <text text-anchor="start" x="8" y="-1528.7" font-family="Times,serif" font-size="14.00"> &#160;&#160;feeCollector: address &lt;&lt;PerformanceFee&gt;&gt;</text>
 <text text-anchor="start" x="8" y="-1511.9" font-family="Times,serif" font-size="14.00"> &#160;&#160;fee: uint16 &lt;&lt;PerformanceFee&gt;&gt;</text>
 <text text-anchor="start" x="8" y="-1495.1" font-family="Times,serif" font-size="14.00"> &#160;&#160;feesAccrued: uint112 &lt;&lt;PerformanceFee&gt;&gt;</text>
@@ -99,7 +99,7 @@
 <text text-anchor="start" x="8" y="-647.1" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;setFee(_fee: uint256) &lt;&lt;onlyOwner&gt;&gt; &lt;&lt;PerformanceFee&gt;&gt;</text>
 <text text-anchor="start" x="8" y="-630.3" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;setFeeCollector(_feeCollector: address) &lt;&lt;onlyOwner&gt;&gt; &lt;&lt;PerformanceFee&gt;&gt;</text>
 <text text-anchor="start" x="8" y="-613.5" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;collectFees(): (fees: uint256) &lt;&lt;PerformanceFee&gt;&gt;</text>
-<text text-anchor="start" x="8" y="-596.7" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;setLiquidityProviderCap(liquidityProvider: address, cap: uint256) &lt;&lt;onlyOwner&gt;&gt; &lt;&lt;AccessControlLP&gt;&gt;</text>
+<text text-anchor="start" x="8" y="-596.7" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;setLiquidityProviderCaps(_liquidityProviders: address[], cap: uint256) &lt;&lt;onlyOwner&gt;&gt; &lt;&lt;AccessControlLP&gt;&gt;</text>
 <text text-anchor="start" x="8" y="-579.9" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;setTotalAssetsCap(_totalAssetsCap: uint256) &lt;&lt;onlyOwner&gt;&gt; &lt;&lt;AccessControlLP&gt;&gt;</text>
 <text text-anchor="start" x="8" y="-563.1" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;setTrancheDiscounts(discounts: uint16[5]) &lt;&lt;onlyOwner&gt;&gt; &lt;&lt;MultiPriceARM&gt;&gt;</text>
 <text text-anchor="start" x="8" y="-546.3" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;setTrancheAllocations(allocations: uint256[5]) &lt;&lt;onlyOwner&gt;&gt; &lt;&lt;MultiPriceARM&gt;&gt;</text>

@@ -11,9 +11,9 @@ import {MultiLP} from "./MultiLP.sol";
  * @author Origin Protocol Inc
  */
 abstract contract PerformanceFee is MultiLP {
-    /// @notice The maximum performance fee that can be set
+    /// @notice The scale of the performance fee
     /// 10,000 = 100% performance fee
-    uint256 public constant MAX_FEE = 10000;
+    uint256 public constant FEE_SCALE = 10000;
 
     /// @notice The account that can collect the performance fee
     address public feeCollector;
@@ -72,7 +72,7 @@ abstract contract PerformanceFee is MultiLP {
         if (newTotalAssets <= lastTotalAssets) return;
 
         uint256 assetIncrease = newTotalAssets - lastTotalAssets;
-        uint256 newFeesAccrued = (assetIncrease * fee) / MAX_FEE;
+        uint256 newFeesAccrued = (assetIncrease * fee) / FEE_SCALE;
 
         // Save the new accrued fees back to storage
         feesAccrued = SafeCast.toUint112(feesAccrued + newFeesAccrued);
@@ -90,7 +90,7 @@ abstract contract PerformanceFee is MultiLP {
         uint256 assetIncrease = totalAssetsBeforeFees - lastTotalAssets;
 
         // Calculate the performance fee and remove from the total assets before new fees are removed
-        return totalAssetsBeforeFees - ((assetIncrease * fee) / MAX_FEE);
+        return totalAssetsBeforeFees - ((assetIncrease * fee) / FEE_SCALE);
     }
 
     /// @dev Calculate the total assets in the ARM, external withdrawal queue,
@@ -114,7 +114,7 @@ abstract contract PerformanceFee is MultiLP {
     }
 
     function _setFee(uint256 _fee) internal {
-        require(_fee <= MAX_FEE, "ARM: fee too high");
+        require(_fee <= FEE_SCALE, "ARM: fee too high");
 
         // Calculate fees up to this point using the old fee
         _calcFee();
