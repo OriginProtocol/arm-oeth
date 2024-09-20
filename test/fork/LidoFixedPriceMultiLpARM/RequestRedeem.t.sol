@@ -22,7 +22,7 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_RequestRedeem_Test_ is Fork_Shar
     {
         deal(address(weth), address(this), 10 ether);
 
-        lidoARM.deposit(10 ether);
-        lidoARM.requestRedeem(8 ether);
+        lidoFixedPriceMulltiLpARM.deposit(10 ether);
+        lidoFixedPriceMulltiLpARM.requestRedeem(8 ether);
     }
 }
