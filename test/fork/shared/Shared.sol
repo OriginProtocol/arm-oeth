@@ -197,7 +197,7 @@ abstract contract Fork_Shared_Test_ is Modifiers {
         vm.label(address(lidoFixedPriceMulltiLpARM), "LIDO ARM");
         vm.label(address(lidoProxy), "LIDO ARM PROXY");
         vm.label(address(lidoOwnerLpARM), "LIDO OWNER LP ARM");
-        vm.label(address(lidoOwnerProxy), "LIDO OWNER LP ARM PROXY");
+        vm.label(address(liquidityProviderController), "LIQUIDITY PROVIDER CONTROLLER");
         vm.label(operator, "OPERATOR");
         vm.label(oethWhale, "WHALE OETH");
         vm.label(governor, "GOVERNOR");

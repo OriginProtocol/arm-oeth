@@ -54,12 +54,18 @@ abstract contract Modifiers is Helpers {
         _;
     }
 
-    /// @notice Set the liquidity provider cap for a given provider on the LidoFixedPriceMultiLpARM contract.
+    /// @notice Set the liquidity provider cap for a given provider on the LiquidityProviderController contract.
     modifier setLiquidityProviderCap(address provider, uint256 cap) {
         address[] memory providers = new address[](1);
         providers[0] = provider;
 
         liquidityProviderController.setLiquidityProviderCaps(providers, cap);
+        _;
+    }
+
+    /// @notice Set the total assets cap on the LiquidityProviderController contract.
+    modifier setTotalAssetsCap(uint256 cap) {
+        liquidityProviderController.setTotalAssetsCap(cap);
         _;
     }
 }

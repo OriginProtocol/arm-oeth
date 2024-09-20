@@ -118,6 +118,7 @@ interface ILiquidityProviderARM {
     function totalAssets() external returns (uint256 assets);
     function convertToShares(uint256 assets) external returns (uint256 shares);
     function convertToAssets(uint256 shares) external returns (uint256 assets);
+    function lastTotalAssets() external returns (uint256 assets);
 }
 
 interface ILiquidityProviderController {
