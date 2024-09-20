@@ -13,7 +13,7 @@ import {DeployManager} from "../DeployManager.sol";
 
 contract UpgradeMainnetScript is AbstractDeployScript {
     string public constant override DEPLOY_NAME = "002_UpgradeMainnet";
-    bool public constant override proposalExecuted = false;
+    bool public constant override proposalExecuted = true;
 
     address newImpl;
     DeployManager internal deployManager;

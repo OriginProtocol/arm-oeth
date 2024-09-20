@@ -68,9 +68,7 @@ contract UpgradeLidoARMMainnetScript is AbstractDeployScript {
     function _buildGovernanceProposal() internal override {}
 
     function _fork() internal override {
-        // transfer ownership of the Lido ARM proxy to the mainnet 5/8 multisig
-        vm.prank(Mainnet.ARM_MULTISIG);
-        lidoARMProxy.setOwner(Mainnet.GOV_MULTISIG);
+        vm.startPrank(Mainnet.ARM_MULTISIG);
 
         // Initialize Lido ARM proxy and implementation contract
         bytes memory data = abi.encodeWithSignature(
@@ -82,11 +80,12 @@ contract UpgradeLidoARMMainnetScript is AbstractDeployScript {
             Mainnet.ARM_BUYBACK,
             address(lpcProxy)
         );
+        console.log("lidoARM initialize data:");
+        console.logBytes(data);
 
-        vm.startPrank(Mainnet.GOV_MULTISIG);
         uint256 tinyMintAmount = 1e12;
         // Get some WETH
-        vm.deal(Mainnet.GOV_MULTISIG, tinyMintAmount);
+        vm.deal(Mainnet.ARM_MULTISIG, tinyMintAmount);
         IWETH(Mainnet.WETH).deposit{value: tinyMintAmount}();
         // Approve the Lido ARM proxy to spend WETH
         IERC20(Mainnet.WETH).approve(address(lidoARMProxy), tinyMintAmount);
@@ -96,6 +95,9 @@ contract UpgradeLidoARMMainnetScript is AbstractDeployScript {
 
         // Set the buy price with a 8 basis point discount. The sell price is 1.0
         LidoFixedPriceMultiLpARM(payable(Mainnet.LIDO_ARM)).setPrices(9994e32, 1e36);
+
+        // transfer ownership of the Lido ARM proxy to the mainnet 5/8 multisig
+        lidoARMProxy.setOwner(Mainnet.GOV_MULTISIG);
 
         vm.stopPrank();
     }
