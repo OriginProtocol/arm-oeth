@@ -4,7 +4,10 @@ pragma solidity 0.8.23;
 // Test imports
 import {Fork_Shared_Test_} from "test/fork/shared/Shared.sol";
 
+// Contracts
 import {MultiLP} from "contracts/MultiLP.sol";
+import {IERC20} from "contracts/Interfaces.sol";
+import {LiquidityProviderController} from "contracts/LiquidityProviderController.sol";
 
 contract Fork_Concrete_LidoFixedPriceMultiLpARM_Deposit_Test_ is Fork_Shared_Test_ {
     uint256 public constant MIN_TOTAL_SUPPLY = 1e12;
@@ -78,6 +81,11 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_Deposit_Test_ is Fork_Shared_Tes
         super.setUp();
 
         deal(address(weth), address(this), 1_000 ether);
+
+        // Alice
+        deal(address(weth), alice, 1_000 ether);
+        vm.prank(alice);
+        weth.approve(address(lidoFixedPriceMulltiLpARM), type(uint256).max);
     }
 
     //////////////////////////////////////////////////////
@@ -88,55 +96,55 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_Deposit_Test_ is Fork_Shared_Tes
         setLiquidityProviderCap(address(this), 0)
     {
         vm.expectRevert("LPC: LP cap exceeded");
-        lidoFixedPriceMulltiLpARM.deposit(10 ether);
+        lidoFixedPriceMulltiLpARM.deposit(DEFAULT_AMOUNT);
     }
 
     function test_RevertWhen_Deposit_Because_LiquidityProviderCapExceeded_WithCapNotNull()
         public
-        setLiquidityProviderCap(address(this), 5 ether)
+        setLiquidityProviderCap(address(this), DEFAULT_AMOUNT)
     {
         vm.expectRevert("LPC: LP cap exceeded");
-        lidoFixedPriceMulltiLpARM.deposit(5 ether + 1);
+        lidoFixedPriceMulltiLpARM.deposit(DEFAULT_AMOUNT + 1);
     }
 
     function test_RevertWhen_Deposit_Because_LiquidityProviderCapExceeded_WithCapReached()
         public
-        setLiquidityProviderCap(address(this), 10 ether)
+        setLiquidityProviderCap(address(this), DEFAULT_AMOUNT)
     {
         // Initial deposit
-        lidoFixedPriceMulltiLpARM.deposit(6 ether);
+        lidoFixedPriceMulltiLpARM.deposit(DEFAULT_AMOUNT / 2);
 
-        // Cap is now 4 ether (10 - 6)
+        // Cap is now 0.5 ether
         vm.expectRevert("LPC: LP cap exceeded");
-        lidoFixedPriceMulltiLpARM.deposit(4 ether + 1);
+        lidoFixedPriceMulltiLpARM.deposit((DEFAULT_AMOUNT / 2) + 1);
     }
 
     function test_RevertWhen_Deposit_Because_TotalAssetsCapExceeded_WithCapNull()
         public
         setTotalAssetsCap(0)
-        setLiquidityProviderCap(address(this), 50 ether)
+        setLiquidityProviderCap(address(this), DEFAULT_AMOUNT + 1)
     {
         vm.expectRevert("LPC: Total assets cap exceeded");
-        lidoFixedPriceMulltiLpARM.deposit(20 ether);
+        lidoFixedPriceMulltiLpARM.deposit(DEFAULT_AMOUNT);
     }
 
     function test_RevertWhen_Deposit_Because_TotalAssetsCapExceeded_WithCapNotNull()
         public
-        setTotalAssetsCap(10 ether)
-        setLiquidityProviderCap(address(this), 50 ether)
+        setTotalAssetsCap(DEFAULT_AMOUNT)
+        setLiquidityProviderCap(address(this), DEFAULT_AMOUNT)
     {
         vm.expectRevert("LPC: Total assets cap exceeded");
-        lidoFixedPriceMulltiLpARM.deposit(10 ether + 1); // This should revert!
+        lidoFixedPriceMulltiLpARM.deposit(DEFAULT_AMOUNT - MIN_TOTAL_SUPPLY + 1);
     }
 
     function test_RevertWhen_Deposit_Because_TotalAssetsCapExceeded_WithCapReached()
         public
-        setTotalAssetsCap(10 ether)
-        setLiquidityProviderCap(address(this), 50 ether)
+        setTotalAssetsCap(DEFAULT_AMOUNT)
+        setLiquidityProviderCap(address(this), DEFAULT_AMOUNT)
     {
-        lidoFixedPriceMulltiLpARM.deposit(5 ether);
+        lidoFixedPriceMulltiLpARM.deposit(DEFAULT_AMOUNT / 2);
         vm.expectRevert("LPC: Total assets cap exceeded");
-        lidoFixedPriceMulltiLpARM.deposit(5 ether + 1); // This should revert!
+        lidoFixedPriceMulltiLpARM.deposit((DEFAULT_AMOUNT / 2) - MIN_TOTAL_SUPPLY + 1); // This should revert!
     }
 
     //////////////////////////////////////////////////////
@@ -159,32 +167,188 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_Deposit_Test_ is Fork_Shared_Tes
         assertData(beforeData, delta);
     }*/
 
-   /*
-    function test_Deposit_NoFeesAccrued_EmptyWithdrawQueue_FirstDeposit() public {
-        uint256 amount = 10 ether;
+    /// @notice Test the simplest case of depositing into the ARM, first deposit of first user.
+    /// @dev No fees accrued, no withdrawals queued, and no performance fees generated
+    function test_Deposit_NoFeesAccrued_EmptyWithdrawQueue_FirstDeposit_NoPerfs()
+        public
+        setTotalAssetsCap(DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY)
+        setLiquidityProviderCap(address(this), DEFAULT_AMOUNT)
+    {
+        uint256 amount = DEFAULT_AMOUNT;
         // Assertions Before
         assertEq(steth.balanceOf(address(lidoFixedPriceMulltiLpARM)), 0);
         assertEq(weth.balanceOf(address(lidoFixedPriceMulltiLpARM)), MIN_TOTAL_SUPPLY);
         assertEq(lidoFixedPriceMulltiLpARM.outstandingEther(), 0);
-        assertEqQueueMetadata(0, 0, 0, 0);
         assertEq(lidoFixedPriceMulltiLpARM.feesAccrued(), 0); // No perfs so no fees
         assertEq(lidoFixedPriceMulltiLpARM.lastTotalAssets(), MIN_TOTAL_SUPPLY);
         assertEq(lidoFixedPriceMulltiLpARM.balanceOf(address(this)), 0); // Ensure no shares before
         assertEq(lidoFixedPriceMulltiLpARM.totalSupply(), MIN_TOTAL_SUPPLY); // Minted to dead on deploy
+        assertEq(liquidityProviderController.liquidityProviderCaps(address(this)), amount);
+        assertEqQueueMetadata(0, 0, 0, 0);
 
+        // Expected events
+        vm.expectEmit({emitter: address(weth)});
+        emit IERC20.Transfer(address(this), address(lidoFixedPriceMulltiLpARM), amount);
+        vm.expectEmit({emitter: address(lidoFixedPriceMulltiLpARM)});
+        emit IERC20.Transfer(address(0), address(this), amount); // shares == amount here
+        vm.expectEmit({emitter: address(liquidityProviderController)});
+        emit LiquidityProviderController.LiquidityProviderCap(address(this), 0);
+
+        // Main call
         uint256 shares = lidoFixedPriceMulltiLpARM.deposit(amount);
 
         // Assertions After
-        assertEq(lidoFixedPriceMulltiLpARM.outstandingEther(), 0);
-        assertEqQueueMetadata(0, 0, 0, 0);
-        assertEq(weth.balanceOf(address(lidoFixedPriceMulltiLpARM)), MIN_TOTAL_SUPPLY + amount);
         assertEq(steth.balanceOf(address(lidoFixedPriceMulltiLpARM)), 0);
-        assertEq(lidoFixedPriceMulltiLpARM.lastTotalAssets(), MIN_TOTAL_SUPPLY + amount);
+        assertEq(weth.balanceOf(address(lidoFixedPriceMulltiLpARM)), MIN_TOTAL_SUPPLY + amount);
+        assertEq(lidoFixedPriceMulltiLpARM.outstandingEther(), 0);
         assertEq(lidoFixedPriceMulltiLpARM.feesAccrued(), 0); // No perfs so no fees
+        assertEq(lidoFixedPriceMulltiLpARM.lastTotalAssets(), MIN_TOTAL_SUPPLY + amount);
         assertEq(lidoFixedPriceMulltiLpARM.balanceOf(address(this)), shares);
-        assertEq(shares, amount); // No perfs, so 10 ether * totalSupply (1e12) / totalAssets (1e12) = 10 ether
         assertEq(lidoFixedPriceMulltiLpARM.totalSupply(), MIN_TOTAL_SUPPLY + amount);
-    }*/
+        assertEq(liquidityProviderController.liquidityProviderCaps(address(this)), 0); // All the caps are used
+        assertEqQueueMetadata(0, 0, 0, 0);
+        assertEq(shares, amount); // No perfs, so 1 ether * totalSupply (1e12) / totalAssets (1e12) = 1 ether
+    }
+
+    /// @notice Test a simple case of depositing into the ARM, second deposit of first user.
+    /// @dev No fees accrued, no withdrawals queued, and no performance fees generated
+    function test_Deposit_NoFeesAccrued_EmptyWithdrawQueue_SecondDepositSameUser_NoPerfs()
+        public
+        setTotalAssetsCap(DEFAULT_AMOUNT * 2 + MIN_TOTAL_SUPPLY)
+        setLiquidityProviderCap(address(this), DEFAULT_AMOUNT * 2)
+        depositInLidoFixedPriceMultiLpARM(address(this), DEFAULT_AMOUNT)
+    {
+        uint256 amount = DEFAULT_AMOUNT;
+        // Assertions Before
+        assertEq(steth.balanceOf(address(lidoFixedPriceMulltiLpARM)), 0);
+        assertEq(weth.balanceOf(address(lidoFixedPriceMulltiLpARM)), MIN_TOTAL_SUPPLY + amount);
+        assertEq(lidoFixedPriceMulltiLpARM.outstandingEther(), 0);
+        assertEq(lidoFixedPriceMulltiLpARM.feesAccrued(), 0); // No perfs so no fees
+        assertEq(lidoFixedPriceMulltiLpARM.lastTotalAssets(), MIN_TOTAL_SUPPLY + amount);
+        assertEq(lidoFixedPriceMulltiLpARM.balanceOf(address(this)), amount);
+        assertEq(lidoFixedPriceMulltiLpARM.totalSupply(), MIN_TOTAL_SUPPLY + amount); // Minted to dead on deploy
+        assertEq(liquidityProviderController.liquidityProviderCaps(address(this)), amount);
+        assertEqQueueMetadata(0, 0, 0, 0);
+
+        // Expected events
+        vm.expectEmit({emitter: address(weth)});
+        emit IERC20.Transfer(address(this), address(lidoFixedPriceMulltiLpARM), amount);
+        vm.expectEmit({emitter: address(lidoFixedPriceMulltiLpARM)});
+        emit IERC20.Transfer(address(0), address(this), amount); // shares == amount here
+        vm.expectEmit({emitter: address(liquidityProviderController)});
+        emit LiquidityProviderController.LiquidityProviderCap(address(this), 0);
+
+        // Main call
+        uint256 shares = lidoFixedPriceMulltiLpARM.deposit(amount);
+
+        // Assertions After
+        assertEq(steth.balanceOf(address(lidoFixedPriceMulltiLpARM)), 0);
+        assertEq(weth.balanceOf(address(lidoFixedPriceMulltiLpARM)), MIN_TOTAL_SUPPLY + amount * 2);
+        assertEq(lidoFixedPriceMulltiLpARM.outstandingEther(), 0);
+        assertEq(lidoFixedPriceMulltiLpARM.feesAccrued(), 0); // No perfs so no fees
+        assertEq(lidoFixedPriceMulltiLpARM.lastTotalAssets(), MIN_TOTAL_SUPPLY + amount * 2);
+        assertEq(lidoFixedPriceMulltiLpARM.balanceOf(address(this)), shares * 2);
+        assertEq(lidoFixedPriceMulltiLpARM.totalSupply(), MIN_TOTAL_SUPPLY + amount * 2);
+        assertEq(liquidityProviderController.liquidityProviderCaps(address(this)), 0); // All the caps are used
+        assertEqQueueMetadata(0, 0, 0, 0);
+        assertEq(shares, amount); // No perfs, so 1 ether * totalSupply (1e18 + 1e12) / totalAssets (1e18 + 1e12) = 1 ether
+    }
+
+    /// @notice Test a simple case of depositing into the ARM, first deposit of second user.
+    /// @dev No fees accrued, no withdrawals queued, and no performance fees generated
+    function test_Deposit_NoFeesAccrued_EmptyWithdrawQueue_SecondDepositDiffUser_NoPerfs()
+        public
+        setTotalAssetsCap(DEFAULT_AMOUNT * 2 + MIN_TOTAL_SUPPLY)
+        setLiquidityProviderCap(address(this), DEFAULT_AMOUNT)
+        setLiquidityProviderCap(alice, DEFAULT_AMOUNT)
+        depositInLidoFixedPriceMultiLpARM(address(this), DEFAULT_AMOUNT)
+    {
+        uint256 amount = DEFAULT_AMOUNT;
+        // Assertions Before
+        assertEq(steth.balanceOf(address(lidoFixedPriceMulltiLpARM)), 0);
+        assertEq(weth.balanceOf(address(lidoFixedPriceMulltiLpARM)), MIN_TOTAL_SUPPLY + amount);
+        assertEq(lidoFixedPriceMulltiLpARM.outstandingEther(), 0);
+        assertEq(lidoFixedPriceMulltiLpARM.feesAccrued(), 0); // No perfs so no fees
+        assertEq(lidoFixedPriceMulltiLpARM.lastTotalAssets(), MIN_TOTAL_SUPPLY + amount);
+        assertEq(lidoFixedPriceMulltiLpARM.balanceOf(alice), 0);
+        assertEq(lidoFixedPriceMulltiLpARM.totalSupply(), MIN_TOTAL_SUPPLY + amount); // Minted to dead on deploy
+        assertEq(liquidityProviderController.liquidityProviderCaps(alice), amount);
+        assertEqQueueMetadata(0, 0, 0, 0);
+
+        // Expected events
+        vm.expectEmit({emitter: address(weth)});
+        emit IERC20.Transfer(alice, address(lidoFixedPriceMulltiLpARM), amount);
+        vm.expectEmit({emitter: address(lidoFixedPriceMulltiLpARM)});
+        emit IERC20.Transfer(address(0), alice, amount); // shares == amount here
+        vm.expectEmit({emitter: address(liquidityProviderController)});
+        emit LiquidityProviderController.LiquidityProviderCap(alice, 0);
+
+        vm.prank(alice);
+        // Main call
+        uint256 shares = lidoFixedPriceMulltiLpARM.deposit(amount);
+
+        // Assertions After
+        assertEq(steth.balanceOf(address(lidoFixedPriceMulltiLpARM)), 0);
+        assertEq(weth.balanceOf(address(lidoFixedPriceMulltiLpARM)), MIN_TOTAL_SUPPLY + amount * 2);
+        assertEq(lidoFixedPriceMulltiLpARM.outstandingEther(), 0);
+        assertEq(lidoFixedPriceMulltiLpARM.feesAccrued(), 0); // No perfs so no fees
+        assertEq(lidoFixedPriceMulltiLpARM.lastTotalAssets(), MIN_TOTAL_SUPPLY + amount * 2);
+        assertEq(lidoFixedPriceMulltiLpARM.balanceOf(alice), shares);
+        assertEq(lidoFixedPriceMulltiLpARM.totalSupply(), MIN_TOTAL_SUPPLY + amount * 2);
+        assertEq(liquidityProviderController.liquidityProviderCaps(alice), 0); // All the caps are used
+        assertEqQueueMetadata(0, 0, 0, 0);
+        assertEq(shares, amount); // No perfs, so 1 ether * totalSupply (1e18 + 1e12) / totalAssets (1e18 + 1e12) = 1 ether
+    }
+
+    function test_Deposit_NoFeesAccrued_EmptyWithdrawQueue_FirstDeposit_WithPerfs()
+        public
+        setTotalAssetsCap(type(uint256).max) // No need to restrict it for this test.
+        setLiquidityProviderCap(address(this), DEFAULT_AMOUNT)
+    {
+        // simulate profit
+        uint256 balanceBefore = weth.balanceOf(address(lidoFixedPriceMulltiLpARM));
+        uint256 profit = DEFAULT_AMOUNT;
+        deal(address(weth), address(lidoFixedPriceMulltiLpARM), balanceBefore + profit);
+
+        // Assertions Before
+        assertEq(steth.balanceOf(address(lidoFixedPriceMulltiLpARM)), 0);
+        assertEq(weth.balanceOf(address(lidoFixedPriceMulltiLpARM)), MIN_TOTAL_SUPPLY + profit);
+        assertEq(lidoFixedPriceMulltiLpARM.outstandingEther(), 0);
+        assertEq(lidoFixedPriceMulltiLpARM.feesAccrued(), 0); // No perfs so no fees
+        assertEq(lidoFixedPriceMulltiLpARM.lastTotalAssets(), MIN_TOTAL_SUPPLY);
+        assertEq(lidoFixedPriceMulltiLpARM.balanceOf(address(this)), 0); // Ensure no shares before
+        assertEq(lidoFixedPriceMulltiLpARM.totalSupply(), MIN_TOTAL_SUPPLY); // Minted to dead on deploy
+        assertEq(liquidityProviderController.liquidityProviderCaps(address(this)), DEFAULT_AMOUNT);
+        assertEqQueueMetadata(0, 0, 0, 0);
+
+        uint256 feesAccrued = profit * lidoFixedPriceMulltiLpARM.fee() / lidoFixedPriceMulltiLpARM.FEE_SCALE();
+        uint256 rawTotalAsset = weth.balanceOf(address(lidoFixedPriceMulltiLpARM)) - feesAccrued; // No steth and no externalWithdrawQueue
+        uint256 amount = DEFAULT_AMOUNT;
+
+        uint256 expectedShares = amount * MIN_TOTAL_SUPPLY / (rawTotalAsset);
+        // Expected events
+        vm.expectEmit({emitter: address(weth)});
+        emit IERC20.Transfer(address(this), address(lidoFixedPriceMulltiLpARM), amount);
+        //vm.expectEmit({emitter: address(lidoFixedPriceMulltiLpARM)});
+        //emit IERC20.Transfer(address(0), address(this), expectedShares);
+        vm.expectEmit({emitter: address(liquidityProviderController)});
+        emit LiquidityProviderController.LiquidityProviderCap(address(this), 0);
+
+        // Main call
+        uint256 shares = lidoFixedPriceMulltiLpARM.deposit(amount);
+        assertEq(shares, expectedShares, "Wrong shares calculation"); // No perfs, so 1 ether * totalSupply (1e12) / totalAssets (1e12) = 1 ether
+
+        // Assertions After
+        assertEq(steth.balanceOf(address(lidoFixedPriceMulltiLpARM)), 0);
+        assertEq(weth.balanceOf(address(lidoFixedPriceMulltiLpARM)), MIN_TOTAL_SUPPLY + profit + amount);
+        assertEq(lidoFixedPriceMulltiLpARM.outstandingEther(), 0);
+        assertEq(lidoFixedPriceMulltiLpARM.feesAccrued(), feesAccrued); // No perfs so no fees
+        assertEq(lidoFixedPriceMulltiLpARM.lastTotalAssets(), MIN_TOTAL_SUPPLY + profit + amount);
+        assertEq(lidoFixedPriceMulltiLpARM.balanceOf(address(this)), shares);
+        assertEq(lidoFixedPriceMulltiLpARM.totalSupply(), MIN_TOTAL_SUPPLY + amount);
+        assertEq(liquidityProviderController.liquidityProviderCaps(address(this)), 0); // All the caps are used
+        assertEqQueueMetadata(0, 0, 0, 0);
+    }
 
     function assertEqQueueMetadata(
         uint256 expectedQueued,

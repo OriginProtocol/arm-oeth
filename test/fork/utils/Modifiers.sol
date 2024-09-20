@@ -1,11 +1,21 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
+// Foundry
+import {VmSafe} from "forge-std/Vm.sol";
+
 // Test imports
 import {Helpers} from "test/fork/utils/Helpers.sol";
 import {MockCall} from "test/fork/utils/MockCall.sol";
 
 abstract contract Modifiers is Helpers {
+    /// @notice Impersonate Alice.
+    modifier asAlice() {
+        vm.startPrank(alice);
+        _;
+        vm.stopPrank();
+    }
+
     /// @notice Impersonate the owner of the contract.
     modifier asOwner() {
         vm.startPrank(oethARM.owner());
@@ -66,6 +76,29 @@ abstract contract Modifiers is Helpers {
     /// @notice Set the total assets cap on the LiquidityProviderController contract.
     modifier setTotalAssetsCap(uint256 cap) {
         liquidityProviderController.setTotalAssetsCap(cap);
+        _;
+    }
+
+    modifier depositInLidoFixedPriceMultiLpARM(address user, uint256 amount) {
+        // Todo: extend this logic to other modifier if needed
+        (VmSafe.CallerMode mode, address _address, address _origin) = vm.readCallers();
+        vm.stopPrank();
+
+        // Check current balance
+        uint256 balance = weth.balanceOf(user);
+
+        // Deal amount as "extra" to user
+        deal(address(weth), user, amount + balance);
+        vm.startPrank(user);
+        weth.approve(address(lidoFixedPriceMulltiLpARM), type(uint256).max);
+        lidoFixedPriceMulltiLpARM.deposit(amount);
+        vm.stopPrank();
+
+        if (mode == VmSafe.CallerMode.Prank) {
+            vm.prank(_address, _origin);
+        } else if (mode == VmSafe.CallerMode.RecurrentPrank) {
+            vm.startPrank(_address, _origin);
+        }
         _;
     }
 }
