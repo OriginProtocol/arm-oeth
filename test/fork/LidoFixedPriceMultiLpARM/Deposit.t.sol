@@ -29,12 +29,12 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_Deposit_Test_ is Fork_Shared_Tes
 
     function _snapData() internal view returns (AssertData memory data) {
         return AssertData({
-            totalAssets: lidoARM.totalAssets(),
-            totalSupply: lidoARM.totalSupply(),
+            totalAssets: lidoFixedPriceMulltiLpARM.totalAssets(),
+            totalSupply: lidoFixedPriceMulltiLpARM.totalSupply(),
             totalAssetsCap: liquidityProviderController.totalAssetsCap(),
-            armWeth: weth.balanceOf(address(lidoARM)),
-            armSteth: steth.balanceOf(address(lidoARM)),
-            feesAccrued: lidoARM.feesAccrued()
+            armWeth: weth.balanceOf(address(lidoFixedPriceMulltiLpARM)),
+            armSteth: steth.balanceOf(address(lidoFixedPriceMulltiLpARM)),
+            feesAccrued: lidoFixedPriceMulltiLpARM.feesAccrued()
         });
     }
 
@@ -69,7 +69,7 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_Deposit_Test_ is Fork_Shared_Tes
         deal(address(weth), address(this), 10 ether);
         beforeData = _snapData();
 
-        lidoARM.deposit(10 ether);
+        lidoFixedPriceMulltiLpARM.deposit(10 ether);
 
         DeltaData memory delta = noChangeDeltaData;
         delta.totalAssets = 10 ether;

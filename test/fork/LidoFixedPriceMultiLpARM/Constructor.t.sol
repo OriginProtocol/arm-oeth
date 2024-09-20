@@ -16,18 +16,18 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_Constructor_Test is Fork_Shared_
     /// --- PASSING TESTS
     //////////////////////////////////////////////////////
     function test_Initial_State() public {
-        assertEq(lidoARM.name(), "Lido ARM");
-        assertEq(lidoARM.symbol(), "ARM-ST");
-        assertEq(lidoARM.owner(), address(this));
-        assertEq(lidoARM.operator(), operator);
-        assertEq(lidoARM.feeCollector(), feeCollector);
-        assertEq(lidoARM.fee(), 2000);
-        assertEq(lidoARM.lastTotalAssets(), 1e12);
-        assertEq(lidoARM.feesAccrued(), 0);
+        assertEq(lidoFixedPriceMulltiLpARM.name(), "Lido ARM");
+        assertEq(lidoFixedPriceMulltiLpARM.symbol(), "ARM-ST");
+        assertEq(lidoFixedPriceMulltiLpARM.owner(), address(this));
+        assertEq(lidoFixedPriceMulltiLpARM.operator(), operator);
+        assertEq(lidoFixedPriceMulltiLpARM.feeCollector(), feeCollector);
+        assertEq(lidoFixedPriceMulltiLpARM.fee(), 2000);
+        assertEq(lidoFixedPriceMulltiLpARM.lastTotalAssets(), 1e12);
+        assertEq(lidoFixedPriceMulltiLpARM.feesAccrued(), 0);
         // the 20% performance fee is removed on initialization
-        assertEq(lidoARM.totalAssets(), 1e12);
-        assertEq(lidoARM.totalSupply(), 1e12);
-        assertEq(weth.balanceOf(address(lidoARM)), 1e12);
+        assertEq(lidoFixedPriceMulltiLpARM.totalAssets(), 1e12);
+        assertEq(lidoFixedPriceMulltiLpARM.totalSupply(), 1e12);
+        assertEq(weth.balanceOf(address(lidoFixedPriceMulltiLpARM)), 1e12);
         assertEq(liquidityProviderController.totalAssetsCap(), 100 ether);
     }
 }

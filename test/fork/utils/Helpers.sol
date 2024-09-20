@@ -19,9 +19,14 @@ abstract contract Helpers is Base_Test_ {
             // Check than whale as enough stETH. Whale is wsteth contract.
             require(steth.balanceOf(address(wsteth)) >= amount, "Fork_Shared_Test_: Not enough stETH in WHALE_stETH");
 
-            // Transfer stETH from WHALE_stETH to the user.
-            vm.prank(address(wsteth));
-            steth.transfer(to, amount);
+            if (amount == 0) {
+                vm.prank(to);
+                steth.transfer(address(0x1), steth.balanceOf(to));
+            } else {
+                // Transfer stETH from WHALE_stETH to the user.
+                vm.prank(address(wsteth));
+                steth.transfer(to, amount);
+            }
         } else {
             super.deal(token, to, amount);
         }

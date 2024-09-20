@@ -19,6 +19,9 @@ remappings = [
   "@openzeppelin/contracts-upgradeable/=dependencies/@openzeppelin-contracts-upgradeable-5.0.2/",
 ]
 
+[fuzz]
+runs = 1_000
+
 [dependencies]
 forge-std = "1.9.2"
 "@openzeppelin-contracts" = "5.0.2"
