@@ -61,6 +61,7 @@ abstract contract Base_Test_ is Test {
     /// --- DEFAULT VALUES
     //////////////////////////////////////////////////////
     uint256 public constant DEFAULT_AMOUNT = 1 ether;
+    uint256 public constant MIN_TOTAL_SUPPLY = 1e12;
     uint256 public constant STETH_ERROR_ROUNDING = 2;
 
     //////////////////////////////////////////////////////

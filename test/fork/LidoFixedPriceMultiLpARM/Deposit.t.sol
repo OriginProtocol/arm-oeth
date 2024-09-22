@@ -5,58 +5,11 @@ pragma solidity 0.8.23;
 import {Fork_Shared_Test_} from "test/fork/shared/Shared.sol";
 
 // Contracts
-import {MultiLP} from "contracts/MultiLP.sol";
 import {IERC20} from "contracts/Interfaces.sol";
+import {MultiLP} from "contracts/MultiLP.sol";
 import {LiquidityProviderController} from "contracts/LiquidityProviderController.sol";
 
 contract Fork_Concrete_LidoFixedPriceMultiLpARM_Deposit_Test_ is Fork_Shared_Test_ {
-    uint256 public constant MIN_TOTAL_SUPPLY = 1e12;
-    AssertData beforeData;
-    DeltaData noChangeDeltaData =
-        DeltaData({totalAssets: 10, totalSupply: 0, totalAssetsCap: 0, armWeth: 0, armSteth: 0, feesAccrued: 0});
-
-    struct AssertData {
-        uint256 totalAssets;
-        uint256 totalSupply;
-        uint256 totalAssetsCap;
-        uint256 armWeth;
-        uint256 armSteth;
-        uint256 feesAccrued;
-    }
-
-    struct DeltaData {
-        int256 totalAssets;
-        int256 totalSupply;
-        int256 totalAssetsCap;
-        int256 armWeth;
-        int256 armSteth;
-        int256 feesAccrued;
-    }
-
-    function _snapData() internal view returns (AssertData memory data) {
-        return AssertData({
-            totalAssets: lidoFixedPriceMulltiLpARM.totalAssets(),
-            totalSupply: lidoFixedPriceMulltiLpARM.totalSupply(),
-            totalAssetsCap: liquidityProviderController.totalAssetsCap(),
-            armWeth: weth.balanceOf(address(lidoFixedPriceMulltiLpARM)),
-            armSteth: steth.balanceOf(address(lidoFixedPriceMulltiLpARM)),
-            feesAccrued: lidoFixedPriceMulltiLpARM.feesAccrued()
-        });
-    }
-
-    function assertData(AssertData memory before, DeltaData memory delta) internal view {
-        AssertData memory afterData = _snapData();
-
-        assertEq(int256(afterData.totalAssets), int256(before.totalAssets) + delta.totalAssets, "totalAssets");
-        assertEq(int256(afterData.totalSupply), int256(before.totalSupply) + delta.totalSupply, "totalSupply");
-        assertEq(
-            int256(afterData.totalAssetsCap), int256(before.totalAssetsCap) + delta.totalAssetsCap, "totalAssetsCap"
-        );
-        assertEq(int256(afterData.feesAccrued), int256(before.feesAccrued) + delta.feesAccrued, "feesAccrued");
-        assertEq(int256(afterData.armWeth), int256(before.armWeth) + delta.armWeth, "armWeth");
-        assertEq(int256(afterData.armSteth), int256(before.armSteth) + delta.armSteth, "armSteth");
-    }
-
     /**
      * As Deposit is complex function due to the entaglement of virtual and override functions in inheritance.
      * This is a small recap of the functions that are called in the deposit function.
@@ -150,23 +103,6 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_Deposit_Test_ is Fork_Shared_Tes
     //////////////////////////////////////////////////////
     /// --- PASSING TESTS
     //////////////////////////////////////////////////////
-    /*function test_Deposit_SimpleCase()
-        public
-        asLidoFixedPriceMultiLpARMOwner
-        setLiquidityProviderCap(address(this), 20 ether)
-    {
-        deal(address(weth), address(this), 10 ether);
-        beforeData = _snapData();
-
-        lidoFixedPriceMulltiLpARM.deposit(10 ether);
-
-        DeltaData memory delta = noChangeDeltaData;
-        delta.totalAssets = 10 ether;
-        delta.totalSupply = 10 ether;
-        delta.armWeth = 10 ether;
-        assertData(beforeData, delta);
-    }*/
-
     /// @notice Test the simplest case of depositing into the ARM, first deposit of first user.
     /// @dev No fees accrued, no withdrawals queued, and no performance fees generated
     function test_Deposit_NoFeesAccrued_EmptyWithdrawQueue_FirstDeposit_NoPerfs()
@@ -348,19 +284,5 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_Deposit_Test_ is Fork_Shared_Tes
         assertEq(lidoFixedPriceMulltiLpARM.totalSupply(), MIN_TOTAL_SUPPLY + amount);
         assertEq(liquidityProviderController.liquidityProviderCaps(address(this)), 0); // All the caps are used
         assertEqQueueMetadata(0, 0, 0, 0);
-    }
-
-    function assertEqQueueMetadata(
-        uint256 expectedQueued,
-        uint256 expectedClaimable,
-        uint256 expectedClaimed,
-        uint256 expectedNextIndex
-    ) public {
-        (uint256 queued, uint256 claimable, uint256 claimed, uint256 nextWithdrawalIndex) =
-            lidoFixedPriceMulltiLpARM.withdrawalQueueMetadata();
-        assertEq(queued, expectedQueued);
-        assertEq(claimable, expectedClaimable);
-        assertEq(claimed, expectedClaimed);
-        assertEq(nextWithdrawalIndex, expectedNextIndex);
     }
 }
