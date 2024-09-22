@@ -50,6 +50,7 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_RequestRedeem_Test_ is Fork_Shar
         (uint256 requestId, uint256 assets) = lidoFixedPriceMulltiLpARM.requestRedeem(DEFAULT_AMOUNT);
 
         assertEq(requestId, 0); // First request
+        assertEqQueueMetadata(DEFAULT_AMOUNT, 0, 0, 1); // One request in the queue
         assertEq(assets, DEFAULT_AMOUNT, "Wrong amount of assets"); // As no profits, assets returned are the same as deposited
     }
 }
