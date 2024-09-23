@@ -121,9 +121,6 @@ abstract contract MultiLP is AbstractARM, ERC20Upgradeable {
     function requestRedeem(uint256 shares) external returns (uint256 requestId, uint256 assets) {
         _preWithdrawHook();
 
-        // burn redeemer's shares
-        _burn(msg.sender, shares);
-
         // Calculate the amount of assets to transfer to the redeemer
         assets = previewRedeem(shares);
 
@@ -141,6 +138,9 @@ abstract contract MultiLP is AbstractARM, ERC20Upgradeable {
             assets: SafeCast.toUint128(assets),
             queued: SafeCast.toUint128(queued)
         });
+
+        // burn redeemer's shares
+        _burn(msg.sender, shares);
 
         _postWithdrawHook(assets);
 
