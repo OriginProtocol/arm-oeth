@@ -130,6 +130,8 @@ abstract contract MultiLP is AbstractARM, ERC20Upgradeable {
 
         // Store the next withdrawal request
         withdrawalQueueMetadata.nextWithdrawalIndex = SafeCast.toUint128(requestId + 1);
+        // Store the updated queued amount which reserves WETH in the withdrawal queue
+        withdrawalQueueMetadata.queued = SafeCast.toUint128(queued);
         // Store requests
         withdrawalRequests[requestId] = WithdrawalRequest({
             withdrawer: msg.sender,
