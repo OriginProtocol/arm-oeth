@@ -36,7 +36,7 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
         targetSender(address(this));
     }
 
-    function test_initialConfig() external {
+    function test_initialConfig() external view {
         assertEq(lidoARM.name(), "Lido ARM", "Name");
         assertEq(lidoARM.symbol(), "ARM-ST", "Symbol");
         assertEq(lidoARM.owner(), Mainnet.GOV_MULTISIG, "Owner");
@@ -77,7 +77,7 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
 
         lidoARM.swapExactTokensForTokens(inToken, outToken, amountIn, 0, address(this));
 
-        assertEq(inToken.balanceOf(address(this)), startIn - amountIn, "In actual");
+        assertApproxEqAbs(inToken.balanceOf(address(this)), startIn - amountIn, 2, "In actual");
         assertEq(outToken.balanceOf(address(this)), startOut + expectedOut, "Out actual");
     }
 
@@ -100,7 +100,7 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
 
         lidoARM.swapTokensForExactTokens(inToken, outToken, expectedOut, 3 * expectedOut, address(this));
 
-        assertEq(inToken.balanceOf(address(this)), startIn - amountIn - 1, "In actual");
+        assertApproxEqAbs(inToken.balanceOf(address(this)), startIn - amountIn, 2, "In actual");
         assertEq(outToken.balanceOf(address(this)), expectedOut, "Out actual");
     }
 

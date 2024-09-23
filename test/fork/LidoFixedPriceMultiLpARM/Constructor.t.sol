@@ -15,7 +15,7 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_Constructor_Test is Fork_Shared_
     //////////////////////////////////////////////////////
     /// --- PASSING TESTS
     //////////////////////////////////////////////////////
-    function test_Initial_State() public {
+    function test_Initial_State() public view {
         assertEq(lidoFixedPriceMulltiLpARM.name(), "Lido ARM");
         assertEq(lidoFixedPriceMulltiLpARM.symbol(), "ARM-ST");
         assertEq(lidoFixedPriceMulltiLpARM.owner(), address(this));

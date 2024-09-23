@@ -30,16 +30,9 @@ abstract contract Modifiers is Helpers {
         vm.stopPrank();
     }
 
-    /// @notice Impersonate the owner of LidoOwnerLpARM contract.
-    modifier asLidoOwnerLpARMOwner() {
-        vm.startPrank(lidoOwnerLpARM.owner());
-        _;
-        vm.stopPrank();
-    }
-
     /// @notice Impersonate the operator of LidoOwnerLpARM contract.
-    modifier asLidoOwnerLpARMOperator() {
-        vm.startPrank(lidoOwnerLpARM.operator());
+    modifier asLidoFixedPriceMulltiLpARMOperator() {
+        vm.startPrank(lidoFixedPriceMulltiLpARM.operator());
         _;
         vm.stopPrank();
     }

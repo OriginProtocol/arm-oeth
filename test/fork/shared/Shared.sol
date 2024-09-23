@@ -10,7 +10,6 @@ import {Modifiers} from "test/fork/utils/Modifiers.sol";
 // Contracts
 import {Proxy} from "contracts/Proxy.sol";
 import {OethARM} from "contracts/OethARM.sol";
-import {LidoOwnerLpARM} from "contracts/LidoOwnerLpARM.sol";
 import {LidoFixedPriceMultiLpARM} from "contracts/LidoFixedPriceMultiLpARM.sol";
 import {LiquidityProviderController} from "contracts/LiquidityProviderController.sol";
 
@@ -167,23 +166,6 @@ abstract contract Fork_Shared_Test_ is Modifiers {
 
         // set prices
         lidoFixedPriceMulltiLpARM.setPrices(992 * 1e33, 1001 * 1e33);
-
-        // --- Deploy LidoOwnerLpARM implementation ---
-        // Deploy LidoOwnerLpARM implementation.
-        LidoOwnerLpARM lidoOwnerImpl = new LidoOwnerLpARM(address(weth), address(steth), Mainnet.LIDO_WITHDRAWAL);
-
-        // Initialize Proxy with LidoOwnerLpARM implementation.
-        data = abi.encodeWithSignature("initialize(address)", operator);
-        lidoOwnerProxy.initialize(address(lidoOwnerImpl), address(this), data);
-
-        // Set the Proxy as the LidoOwnerARM.
-        lidoOwnerLpARM = LidoOwnerLpARM(payable(address(lidoOwnerProxy)));
-
-        // Set Prices
-        lidoOwnerLpARM.setPrices(500 * 1e33, 1600000000000000000000000000000000000);
-
-        weth.approve(address(lidoOwnerLpARM), type(uint256).max);
-        steth.approve(address(lidoOwnerLpARM), type(uint256).max);
     }
 
     function _label() internal {
@@ -196,7 +178,6 @@ abstract contract Fork_Shared_Test_ is Modifiers {
         vm.label(address(proxy), "OETH ARM PROXY");
         vm.label(address(lidoFixedPriceMulltiLpARM), "LIDO ARM");
         vm.label(address(lidoProxy), "LIDO ARM PROXY");
-        vm.label(address(lidoOwnerLpARM), "LIDO OWNER LP ARM");
         vm.label(address(liquidityProviderController), "LIQUIDITY PROVIDER CONTROLLER");
         vm.label(operator, "OPERATOR");
         vm.label(oethWhale, "WHALE OETH");
