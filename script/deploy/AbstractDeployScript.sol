@@ -95,6 +95,6 @@ abstract contract AbstractDeployScript is Script {
         }
 
         _buildGovernanceProposal();
-        _fork();
+        // _fork();
     }
 }

@@ -70,6 +70,10 @@ contract UpgradeLidoARMMainnetScript is AbstractDeployScript {
     function _fork() internal override {
         vm.startPrank(Mainnet.ARM_MULTISIG);
 
+        if (lidoARMProxy == Proxy(0x0000000000000000000000000000000000000000)) {
+            revert("Lido ARM proxy not found");
+        }
+
         // remove all liquidity from the old AMM v1 contract
         uint256 wethLegacyBalance = IERC20(Mainnet.WETH).balanceOf(Mainnet.LIDO_ARM);
         if (wethLegacyBalance > 0) {
