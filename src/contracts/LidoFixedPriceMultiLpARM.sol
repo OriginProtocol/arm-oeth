@@ -82,11 +82,11 @@ contract LidoFixedPriceMultiLpARM is
         internal
         override(MultiLP, LiquidityProviderControllerARM, PerformanceFee)
     {
-        // Check the LP can deposit the assets
-        LiquidityProviderControllerARM._postDepositHook(assets);
-
         // Store the new total assets after the deposit and performance fee accrued
         PerformanceFee._postDepositHook(assets);
+
+        // Check the LP can deposit the assets
+        LiquidityProviderControllerARM._postDepositHook(assets);
     }
 
     function _postWithdrawHook(uint256 assets) internal override(MultiLP, PerformanceFee) {

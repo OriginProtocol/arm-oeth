@@ -5,7 +5,7 @@ pragma solidity 0.8.23;
 import {Base_Test_} from "test/Base.sol";
 
 abstract contract Helpers is Base_Test_ {
-    /// @notice Override `deal()` function to handle OETH special case.
+    /// @notice Override `deal()` function to handle OETH and STETH special case.
     function deal(address token, address to, uint256 amount) internal override {
         // Handle OETH special case, as rebasing tokens are not supported by the VM.
         if (token == address(oeth)) {
@@ -30,5 +30,20 @@ abstract contract Helpers is Base_Test_ {
         } else {
             super.deal(token, to, amount);
         }
+    }
+
+    /// @notice Asserts the equality bewteen value of `withdrawalQueueMetadata()` and the expected values.
+    function assertEqQueueMetadata(
+        uint256 expectedQueued,
+        uint256 expectedClaimable,
+        uint256 expectedClaimed,
+        uint256 expectedNextIndex
+    ) public view {
+        (uint256 queued, uint256 claimable, uint256 claimed, uint256 nextWithdrawalIndex) =
+            lidoFixedPriceMulltiLpARM.withdrawalQueueMetadata();
+        assertEq(queued, expectedQueued);
+        assertEq(claimable, expectedClaimable);
+        assertEq(claimed, expectedClaimed);
+        assertEq(nextWithdrawalIndex, expectedNextIndex);
     }
 }
