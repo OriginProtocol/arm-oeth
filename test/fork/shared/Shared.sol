@@ -156,7 +156,7 @@ abstract contract Fork_Shared_Test_ is Modifiers {
             "Lido ARM",
             "ARM-ST",
             operator,
-            2000,
+            2000, // 20% performance fee
             feeCollector,
             address(lpcProxy)
         );
