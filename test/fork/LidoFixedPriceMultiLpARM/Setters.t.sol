@@ -44,10 +44,10 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_Setters_Test_ is Fork_Shared_Tes
     //////////////////////////////////////////////////////
     /// --- PERFORMANCE FEE - PASSING TEST
     //////////////////////////////////////////////////////
-    function test_PerformanceFee_SetFee() public asLidoFixedPriceMultiLpARMOwner {
+    function test_PerformanceFee_SetFee_() public asLidoFixedPriceMultiLpARMOwner {
         uint256 feeBefore = lidoFixedPriceMulltiLpARM.fee();
 
-        uint256 newFee = vm.randomUint();
+        uint256 newFee = _bound(vm.randomUint(), 0, lidoFixedPriceMulltiLpARM.FEE_SCALE());
 
         vm.expectEmit({emitter: address(lidoFixedPriceMulltiLpARM)});
         emit PerformanceFee.FeeUpdated(newFee);
