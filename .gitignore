@@ -27,6 +27,9 @@ artifacts
 dependencies/
 soldeer.lock
 
+# Coverage
+lock.info*
+
 # Defender Actions
 dist
 
