@@ -101,4 +101,22 @@ abstract contract Modifiers is Helpers {
         }
         _;
     }
+
+    /// @notice Request redeem from LidoFixedPriceMultiLpARM contract.
+    modifier requestRedeemFromLidoFixedPriceMultiLpARM(address user, uint256 amount) {
+        // Todo: extend this logic to other modifier if needed
+        (VmSafe.CallerMode mode, address _address, address _origin) = vm.readCallers();
+        vm.stopPrank();
+
+        vm.startPrank(user);
+        lidoFixedPriceMulltiLpARM.requestRedeem(amount);
+        vm.stopPrank();
+
+        if (mode == VmSafe.CallerMode.Prank) {
+            vm.prank(_address, _origin);
+        } else if (mode == VmSafe.CallerMode.RecurrentPrank) {
+            vm.startPrank(_address, _origin);
+        }
+        _;
+    }
 }
