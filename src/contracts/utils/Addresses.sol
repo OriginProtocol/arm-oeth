@@ -32,8 +32,7 @@ library Mainnet {
     address public constant OETH_VAULT = 0x39254033945AA2E4809Cc2977E7087BEE48bd7Ab;
     address public constant OETH_ARM = 0x6bac785889A4127dB0e0CeFEE88E0a9F1Aaf3cC7;
     address public constant LIDO_ARM = 0x85B78AcA6Deae198fBF201c82DAF6Ca21942acc6;
-    // TODO add once deployed from the Origin Dollar repo
-    address public constant ARM_BUYBACK = 0x0000000000000000000000000000000000000002;
+    address public constant ARM_BUYBACK = 0xBa0E6d6ea72cDc0D6f9fCdcc04147c671BA83dB5;
 
     // Lido
     address public constant LIDO_WITHDRAWAL = 0x889edC2eDab5f40e902b864aD4d7AdE8E412F9B1;
