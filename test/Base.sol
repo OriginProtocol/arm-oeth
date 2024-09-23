@@ -7,7 +7,6 @@ import {Test} from "forge-std/Test.sol";
 // Contracts
 import {Proxy} from "contracts/Proxy.sol";
 import {OethARM} from "contracts/OethARM.sol";
-import {LidoOwnerLpARM} from "contracts/LidoOwnerLpARM.sol";
 import {LidoFixedPriceMultiLpARM} from "contracts/LidoFixedPriceMultiLpARM.sol";
 import {LiquidityProviderController} from "contracts/LiquidityProviderController.sol";
 
@@ -36,7 +35,6 @@ abstract contract Base_Test_ is Test {
     Proxy public lidoProxy;
     Proxy public lidoOwnerProxy;
     OethARM public oethARM;
-    LidoOwnerLpARM public lidoOwnerLpARM;
     LidoFixedPriceMultiLpARM public lidoFixedPriceMulltiLpARM;
     LiquidityProviderController public liquidityProviderController;
 
