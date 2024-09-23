@@ -53,7 +53,6 @@ contract LidoFixedPriceMultiLpARM is
     ) external initializer {
         _initOwnableOperable(_operator);
         _initMultiLP(_name, _symbol);
-        lastTotalAssets = SafeCast.toUint128(MIN_TOTAL_SUPPLY);
         _initPerformanceFee(_fee, _feeCollector);
         _initLPControllerARM(_liquidityProviderController);
     }

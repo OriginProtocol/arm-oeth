@@ -37,6 +37,9 @@ abstract contract PerformanceFee is MultiLP {
     event FeeCollectorUpdated(address indexed newFeeCollector);
 
     function _initPerformanceFee(uint256 _fee, address _feeCollector) internal {
+        // Initialize the last total assets to the current total assets
+        // This ensures no performance fee is accrued when the performance fee is calculated when the fee is set
+        lastTotalAssets = SafeCast.toUint128(_rawTotalAssets());
         _setFee(_fee);
         _setFeeCollector(_feeCollector);
     }
