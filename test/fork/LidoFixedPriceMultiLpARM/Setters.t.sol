@@ -36,7 +36,10 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_Setters_Test_ is Fork_Shared_Tes
         lidoFixedPriceMulltiLpARM.setFeeCollector(address(0));
     }
 
-    function test_RevertWhen_PerformanceFee_SetFeeCollector_Because_FeeCollectorIsZero() public asLidoFixedPriceMultiLpARMOwner {
+    function test_RevertWhen_PerformanceFee_SetFeeCollector_Because_FeeCollectorIsZero()
+        public
+        asLidoFixedPriceMultiLpARMOwner
+    {
         vm.expectRevert("ARM: invalid fee collector");
         lidoFixedPriceMulltiLpARM.setFeeCollector(address(0));
     }
