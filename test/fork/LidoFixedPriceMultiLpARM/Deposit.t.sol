@@ -294,11 +294,13 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_Deposit_Test_ is Fork_Shared_Tes
         );
         assertEq(lidoFixedPriceMulltiLpARM.outstandingEther(), 0, "Outstanding ether after");
         assertEq(lidoFixedPriceMulltiLpARM.feesAccrued(), feesAccrued, "fees accrued after"); // No perfs so no fees
-        // assertEq(
-        //     lidoFixedPriceMulltiLpARM.lastTotalAssets(), MIN_TOTAL_SUPPLY + assetGain + depositedAssets, "last total assets after"
-        // );
-        assertEq(lidoFixedPriceMulltiLpARM.balanceOf(address(this)), shares, "user shares after");
-        // assertEq(lidoFixedPriceMulltiLpARM.totalSupply(), MIN_TOTAL_SUPPLY + amount, "total supply after");
+        assertEq(
+            lidoFixedPriceMulltiLpARM.lastTotalAssets(),
+            MIN_TOTAL_SUPPLY + (assetGain * 80 / 100) + depositedAssets,
+            "last total assets after"
+        );
+        assertEq(lidoFixedPriceMulltiLpARM.balanceOf(address(this)), expectedShares, "user shares after");
+        assertEq(lidoFixedPriceMulltiLpARM.totalSupply(), MIN_TOTAL_SUPPLY + expectedShares, "total supply after");
         assertEq(liquidityProviderController.liquidityProviderCaps(address(this)), 0, "lp cap after"); // All the caps are used
         assertEqQueueMetadata(0, 0, 0, 0);
     }
