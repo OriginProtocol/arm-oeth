@@ -136,18 +136,18 @@ abstract contract Modifiers is Helpers {
     }
 
     /// @notice Simulate asset gain or loss in LidoFixedPriceMultiLpARM contract.
-    modifier simulateAssetGainInLidoFixedPriceMultiLpARM(int256 assetGain, address token) {
+    modifier simulateAssetGainInLidoFixedPriceMultiLpARM(uint256 assetGain, address token, bool gain) {
         // Todo: extend this logic to other modifier if needed
         (VmSafe.CallerMode mode, address _address, address _origin) = vm.readCallers();
         vm.stopPrank();
 
-        if (assetGain > 0) {
+        if (gain) {
             deal(
                 token,
                 address(lidoFixedPriceMulltiLpARM),
                 IERC20(token).balanceOf(address(lidoFixedPriceMulltiLpARM)) + uint256(assetGain)
             );
-        } else if (assetGain < 0) {
+        } else {
             deal(
                 token,
                 address(lidoFixedPriceMulltiLpARM),
