@@ -8,6 +8,7 @@ import {Fork_Shared_Test_} from "test/fork/shared/Shared.sol";
 import {IERC20} from "contracts/Interfaces.sol";
 import {MultiLP} from "contracts/MultiLP.sol";
 import {PerformanceFee} from "contracts/PerformanceFee.sol";
+import {LiquidityProviderControllerARM} from "contracts/LiquidityProviderControllerARM.sol";
 
 contract Fork_Concrete_lidoFixedPriceMulltiLpARM_Setters_Test_ is Fork_Shared_Test_ {
     //////////////////////////////////////////////////////
@@ -149,5 +150,29 @@ contract Fork_Concrete_lidoFixedPriceMulltiLpARM_Setters_Test_ is Fork_Shared_Te
     function test_RevertWhen_Ownable_SetOperator_Because_NotOwner() public asRandomAddress {
         vm.expectRevert("ARM: Only owner can call this function.");
         lidoFixedPriceMulltiLpARM.setOperator(address(0));
+    }
+
+    //////////////////////////////////////////////////////
+    /// --- LIQUIIDITY PROVIDER CONTROLLER - REVERTING TESTS
+    //////////////////////////////////////////////////////
+    function test_RevertWhen_LiquidityProviderController_SetLiquidityProvider_Because_NotOwner()
+        public
+        asRandomAddress
+    {
+        vm.expectRevert("ARM: Only owner can call this function.");
+        lidoFixedPriceMulltiLpARM.setLiquidityProviderController(address(0));
+    }
+
+    //////////////////////////////////////////////////////
+    /// --- LIQUIIDITY PROVIDER CONTROLLER - PASSING TESTS
+    //////////////////////////////////////////////////////
+    function test_LiquidityProviderController_SetLiquidityProvider() public asLidoFixedPriceMultiLpARMOwner {
+        address newLiquidityProviderController = vm.randomAddress();
+
+        vm.expectEmit({emitter: address(lidoFixedPriceMulltiLpARM)});
+        emit LiquidityProviderControllerARM.LiquidityProviderControllerUpdated(newLiquidityProviderController);
+        lidoFixedPriceMulltiLpARM.setLiquidityProviderController(newLiquidityProviderController);
+
+        assertEq(lidoFixedPriceMulltiLpARM.liquidityProviderController(), newLiquidityProviderController);
     }
 }
