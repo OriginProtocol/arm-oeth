@@ -163,6 +163,12 @@ abstract contract Modifiers is Helpers {
         _;
     }
 
+    /// @notice Collect fees on LidoFixedPriceMultiLpARM contract.
+    modifier collectFeesOnLidoFixedPriceMultiLpARM() {
+        lidoFixedPriceMulltiLpARM.collectFees();
+        _;
+    }
+
     /// @notice Skip time by a given delay.
     modifier skipTime(uint256 delay) {
         skip(delay);
