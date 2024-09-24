@@ -125,7 +125,7 @@ abstract contract MultiLP is AbstractARM, ERC20Upgradeable {
         _preWithdrawHook();
 
         // Calculate the amount of assets to transfer to the redeemer
-        assets = previewRedeem(shares);
+        assets = convertToAssets(shares);
 
         requestId = withdrawalQueueMetadata.nextWithdrawalIndex;
         uint256 queued = withdrawalQueueMetadata.queued + assets;
