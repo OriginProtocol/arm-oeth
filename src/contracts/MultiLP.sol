@@ -101,6 +101,9 @@ abstract contract MultiLP is AbstractARM, ERC20Upgradeable {
         // mint shares
         _mint(msg.sender, shares);
 
+        // Add WETH to the withdrawal queue if the queue has a shortfall
+        _addWithdrawalQueueLiquidity();
+
         _postDepositHook(assets);
     }
 
@@ -156,10 +159,8 @@ abstract contract MultiLP is AbstractARM, ERC20Upgradeable {
     /// @param requestId The index of the withdrawal request
     /// @return assets The amount of liquidity assets that were transferred to the redeemer
     function claimRedeem(uint256 requestId) external returns (uint256 assets) {
-        if (withdrawalRequests[requestId].queued > withdrawalQueueMetadata.claimable) {
-            // Add any WETH from the Dripper to the withdrawal queue
-            _addWithdrawalQueueLiquidity();
-        }
+        // Update the ARM's withdrawal queue details
+        _addWithdrawalQueueLiquidity();
 
         // Load the structs from storage into memory
         WithdrawalRequest memory request = withdrawalRequests[requestId];

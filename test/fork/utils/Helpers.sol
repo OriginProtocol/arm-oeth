@@ -42,10 +42,10 @@ abstract contract Helpers is Base_Test_ {
     ) public view {
         (uint256 queued, uint256 claimable, uint256 claimed, uint256 nextWithdrawalIndex) =
             lidoFixedPriceMulltiLpARM.withdrawalQueueMetadata();
-        assertEq(queued, expectedQueued);
-        assertEq(claimable, expectedClaimable);
-        assertEq(claimed, expectedClaimed);
-        assertEq(nextWithdrawalIndex, expectedNextIndex);
+        assertEq(queued, expectedQueued, "metadata queued");
+        assertEq(claimable, expectedClaimable, "metadata claimable");
+        assertEq(claimed, expectedClaimed, "metadata claimed");
+        assertEq(nextWithdrawalIndex, expectedNextIndex, "metadata nextWithdrawalIndex");
     }
 
     /// @notice Asserts the equality bewteen value of `withdrawalRequests()` and the expected values.
