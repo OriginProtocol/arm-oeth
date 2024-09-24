@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
+// Foundry
+import {stdError} from "forge-std/StdError.sol";
+
 // Test imports
 import {Fork_Shared_Test_} from "test/fork/shared/Shared.sol";
 
@@ -35,11 +38,11 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_TotalAssets_Test_ is Fork_Shared
     function test_RevertWhen_TotalAssets_Because_MathError()
         public
         depositInLidoFixedPriceMultiLpARM(address(this), DEFAULT_AMOUNT)
-        simulateAssetGainInLidoFixedPriceMultiLpARM(int256(DEFAULT_AMOUNT), address(weth))
+        simulateAssetGainInLidoFixedPriceMultiLpARM(DEFAULT_AMOUNT, address(weth), true)
         requestRedeemFromLidoFixedPriceMultiLpARM(address(this), DEFAULT_AMOUNT)
-        simulateAssetGainInLidoFixedPriceMultiLpARM(-int256(DEFAULT_AMOUNT * 2), address(weth))
+        simulateAssetGainInLidoFixedPriceMultiLpARM(DEFAULT_AMOUNT * 2, address(weth), false)
     {
-        vm.expectRevert();
+        vm.expectRevert(stdError.arithmeticError);
         lidoFixedPriceMulltiLpARM.totalAssets();
     }
 
