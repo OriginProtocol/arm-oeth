@@ -28,7 +28,7 @@ dependencies/
 soldeer.lock
 
 # Coverage
-lock.info*
+lcov.info*
 
 # Defender Actions
 dist
