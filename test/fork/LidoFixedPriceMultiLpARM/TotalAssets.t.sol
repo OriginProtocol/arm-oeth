@@ -24,6 +24,23 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_TotalAssets_Test_ is Fork_Shared
 
         // Approve STETH for Lido
         lidoFixedPriceMulltiLpARM.approveStETH();
+
+        deal(address(weth), address(this), 1_000 ether);
+        weth.approve(address(lidoFixedPriceMulltiLpARM), type(uint256).max);
+    }
+
+    //////////////////////////////////////////////////////
+    /// --- REVERTING TEST
+    //////////////////////////////////////////////////////
+    function test_RevertWhen_TotalAssets_Because_MathError()
+        public
+        depositInLidoFixedPriceMultiLpARM(address(this), DEFAULT_AMOUNT)
+        simulateAssetGainInLidoFixedPriceMultiLpARM(int256(DEFAULT_AMOUNT), address(weth))
+        requestRedeemFromLidoFixedPriceMultiLpARM(address(this), DEFAULT_AMOUNT)
+        simulateAssetGainInLidoFixedPriceMultiLpARM(-int256(DEFAULT_AMOUNT * 2), address(weth))
+    {
+        vm.expectRevert();
+        lidoFixedPriceMulltiLpARM.totalAssets();
     }
 
     //////////////////////////////////////////////////////
@@ -132,5 +149,37 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_TotalAssets_Test_ is Fork_Shared
 
         // Check total assets after withdrawal is the same as before
         assertApproxEqAbs(lidoFixedPriceMulltiLpARM.totalAssets(), totalAssetsBefore, STETH_ERROR_ROUNDING);
+    }
+
+    function test_TotalAssets_With_FeeAccrued_NotNull() public {
+        uint256 assetGain = DEFAULT_AMOUNT;
+        // Simulate asset gain
+        deal(
+            address(weth),
+            address(lidoFixedPriceMulltiLpARM),
+            weth.balanceOf(address(lidoFixedPriceMulltiLpARM)) + assetGain
+        );
+
+        // User deposit, this will trigger a fee calculation
+        lidoFixedPriceMulltiLpARM.deposit(DEFAULT_AMOUNT);
+
+        // Assert fee accrued is not null
+        assertEq(lidoFixedPriceMulltiLpARM.feesAccrued(), assetGain * 20 / 100);
+
+        assertEq(
+            lidoFixedPriceMulltiLpARM.totalAssets(),
+            MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT + assetGain - assetGain * 20 / 100
+        );
+    }
+
+    function test_TotalAssets_When_ARMIsInsolvent()
+        public
+        depositInLidoFixedPriceMultiLpARM(address(this), DEFAULT_AMOUNT)
+        requestRedeemFromLidoFixedPriceMultiLpARM(address(this), DEFAULT_AMOUNT)
+    {
+        // Simulate a loss of assets
+        deal(address(weth), address(lidoFixedPriceMulltiLpARM), DEFAULT_AMOUNT - 1);
+
+        assertEq(lidoFixedPriceMulltiLpARM.totalAssets(), 0);
     }
 }
