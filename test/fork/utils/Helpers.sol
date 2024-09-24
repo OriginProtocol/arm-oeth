@@ -20,8 +20,9 @@ abstract contract Helpers is Base_Test_ {
             require(steth.balanceOf(address(wsteth)) >= amount, "Fork_Shared_Test_: Not enough stETH in WHALE_stETH");
 
             if (amount == 0) {
-                vm.prank(to);
+                vm.startPrank(to);
                 steth.transfer(address(0x1), steth.balanceOf(to));
+                vm.stopPrank();
             } else {
                 // Transfer stETH from WHALE_stETH to the user.
                 vm.prank(address(wsteth));
