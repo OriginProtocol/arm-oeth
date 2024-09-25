@@ -246,4 +246,5 @@ interface IStETHWithdrawal {
         view
         returns (WithdrawalRequestStatus[] memory statuses);
     function getWithdrawalRequests(address _owner) external view returns (uint256[] memory requestsIds);
+    function getLastRequestId() external view returns (uint256);
 }
