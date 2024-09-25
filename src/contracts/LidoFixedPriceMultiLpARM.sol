@@ -58,19 +58,17 @@ contract LidoFixedPriceMultiLpARM is
     }
 
     /**
-     * @notice Calculate transfer amount for outToken.
-     * Due to internal stETH mechanics required for rebasing support,
+     * @dev Due to internal stETH mechanics required for rebasing support,
      * in most cases stETH transfers are performed for the value of 1 wei less than passed to transfer method.
      * Larger transfer amounts can be 2 wei less.
+     *
+     * The MultiLP implementation ensures any WETH reserved for the withdrawal queue is no used in swaps from stETH to WETH.
      */
-    function _calcTransferAmount(address outToken, uint256 amount)
-        internal
-        view
-        override
-        returns (uint256 transferAmount)
-    {
+    function _transferAsset(address asset, address to, uint256 amount) internal override(AbstractARM, MultiLP) {
         // Add 2 wei if transferring stETH
-        transferAmount = outToken == address(token0) ? amount + 2 : amount;
+        uint256 transferAmount = asset == address(token0) ? amount + 2 : amount;
+
+        MultiLP._transferAsset(asset, to, transferAmount);
     }
 
     function _externalWithdrawQueue() internal view override(MultiLP, LidoLiquidityManager) returns (uint256) {

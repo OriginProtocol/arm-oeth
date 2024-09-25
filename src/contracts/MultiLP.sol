@@ -192,7 +192,7 @@ abstract contract MultiLP is AbstractARM, ERC20Upgradeable {
         // Check if the claimable amount is less than the queued amount
         uint256 queueShortfall = queue.queued - queue.claimable;
 
-        // No need to do anything is the withdrawal queue is full funded
+        // No need to do anything is the withdrawal queue is fully funded
         if (queueShortfall == 0) {
             return 0;
         }
@@ -216,6 +216,33 @@ abstract contract MultiLP is AbstractARM, ERC20Upgradeable {
 
         // Store the new claimable amount back to storage
         withdrawalQueueMetadata.claimable = SafeCast.toUint128(newClaimable);
+    }
+
+    /// @dev Calculate how much of the liquidity asset in the ARM is not reserved for the withdrawal queue.
+    // That is, it is available to be swapped.
+    function _liquidityAvailable() internal view returns (uint256) {
+        WithdrawalQueueMetadata memory queue = withdrawalQueueMetadata;
+
+        // The amount of WETH that is still to be claimed in the withdrawal queue
+        uint256 outstandingWithdrawals = queue.queued - queue.claimed;
+
+        // The amount of the liquidity asset is in the ARM
+        uint256 liquidityBalance = IERC20(liquidityAsset).balanceOf(address(this));
+
+        // If there is not enough liquidity assets in the ARM to cover the outstanding withdrawals
+        if (liquidityBalance <= outstandingWithdrawals) {
+            return 0;
+        }
+
+        return liquidityBalance - outstandingWithdrawals;
+    }
+
+    /// @dev Ensure any liquidity assets reserved for the withdrawal queue are not used
+    /// in swaps that send liquidity assets out of the ARM
+    function _transferAsset(address asset, address to, uint256 amount) internal virtual override {
+        require(asset == liquidityAsset && amount <= _liquidityAvailable(), "ARM: Insufficient liquidity");
+
+        IERC20(asset).transfer(to, amount);
     }
 
     /// @notice The total amount of assets in the ARM and external withdrawal queue,
