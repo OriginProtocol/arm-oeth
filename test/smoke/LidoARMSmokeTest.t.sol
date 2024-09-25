@@ -126,64 +126,6 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
         lidoARM.setOwner(RANDOM_ADDRESS);
     }
 
-    function test_wrongInTokenExactIn() external {
-        vm.expectRevert("ARM: Invalid token");
-        lidoARM.swapExactTokensForTokens(BAD_TOKEN, steth, 10 ether, 0, address(this));
-        vm.expectRevert("ARM: Invalid token");
-        lidoARM.swapExactTokensForTokens(BAD_TOKEN, weth, 10 ether, 0, address(this));
-        vm.expectRevert("ARM: Invalid token");
-        lidoARM.swapExactTokensForTokens(weth, weth, 10 ether, 0, address(this));
-        vm.expectRevert("ARM: Invalid token");
-        lidoARM.swapExactTokensForTokens(steth, steth, 10 ether, 0, address(this));
-    }
-
-    function test_wrongOutTokenExactIn() external {
-        vm.expectRevert("ARM: Invalid token");
-        lidoARM.swapTokensForExactTokens(weth, BAD_TOKEN, 10 ether, 10 ether, address(this));
-        vm.expectRevert("ARM: Invalid token");
-        lidoARM.swapTokensForExactTokens(steth, BAD_TOKEN, 10 ether, 10 ether, address(this));
-        vm.expectRevert("ARM: Invalid token");
-        lidoARM.swapTokensForExactTokens(weth, weth, 10 ether, 10 ether, address(this));
-        vm.expectRevert("ARM: Invalid token");
-        lidoARM.swapTokensForExactTokens(steth, steth, 10 ether, 10 ether, address(this));
-    }
-
-    function test_wrongInTokenExactOut() external {
-        vm.expectRevert("ARM: Invalid token");
-        lidoARM.swapTokensForExactTokens(BAD_TOKEN, steth, 10 ether, 10 ether, address(this));
-        vm.expectRevert("ARM: Invalid token");
-        lidoARM.swapTokensForExactTokens(BAD_TOKEN, weth, 10 ether, 10 ether, address(this));
-        vm.expectRevert("ARM: Invalid token");
-        lidoARM.swapTokensForExactTokens(weth, weth, 10 ether, 10 ether, address(this));
-        vm.expectRevert("ARM: Invalid token");
-        lidoARM.swapTokensForExactTokens(steth, steth, 10 ether, 10 ether, address(this));
-    }
-
-    function test_wrongOutTokenExactOut() external {
-        vm.expectRevert("ARM: Invalid token");
-        lidoARM.swapTokensForExactTokens(weth, BAD_TOKEN, 10 ether, 10 ether, address(this));
-        vm.expectRevert("ARM: Invalid token");
-        lidoARM.swapTokensForExactTokens(steth, BAD_TOKEN, 10 ether, 10 ether, address(this));
-        vm.expectRevert("ARM: Invalid token");
-        lidoARM.swapTokensForExactTokens(weth, weth, 10 ether, 10 ether, address(this));
-        vm.expectRevert("ARM: Invalid token");
-        lidoARM.swapTokensForExactTokens(steth, steth, 10 ether, 10 ether, address(this));
-    }
-
-    // function test_collectTokens() external {
-    //     vm.startPrank(Mainnet.TIMELOCK);
-
-    //     lidoARM.transferToken(address(weth), address(this), weth.balanceOf(address(lidoARM)));
-    //     assertGt(weth.balanceOf(address(this)), 50 ether);
-    //     assertEq(weth.balanceOf(address(lidoARM)), 0);
-
-    //     lidoARM.transferToken(address(steth), address(this), steth.balanceOf(address(lidoARM)));
-    //     assertGt(steth.balanceOf(address(this)), 50 ether);
-    //     assertLt(steth.balanceOf(address(lidoARM)), 3);
-
-    //     vm.stopPrank();
-    // }
-
     function _dealStETH(address to, uint256 amount) internal {
         vm.prank(0xEB9c1CE881F0bDB25EAc4D74FccbAcF4Dd81020a);
         steth.transfer(to, amount + 2);

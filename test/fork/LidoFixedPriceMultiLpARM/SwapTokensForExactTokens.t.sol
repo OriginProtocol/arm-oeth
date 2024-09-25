@@ -35,7 +35,7 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_SwapTokensForExactTokens_Test is
     //////////////////////////////////////////////////////
     function test_RevertWhen_SwapTokensForExactTokens_Because_InvalidTokenOut1() public {
         lidoFixedPriceMulltiLpARM.token0();
-        vm.expectRevert("ARM: Invalid token");
+        vm.expectRevert("ARM: Invalid out token");
         lidoFixedPriceMulltiLpARM.swapTokensForExactTokens(
             steth, // inToken
             badToken, // outToken
@@ -46,7 +46,7 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_SwapTokensForExactTokens_Test is
     }
 
     function test_RevertWhen_SwapTokensForExactTokens_Because_InvalidTokenOut0() public {
-        vm.expectRevert("ARM: Invalid token");
+        vm.expectRevert("ARM: Invalid out token");
         lidoFixedPriceMulltiLpARM.swapTokensForExactTokens(
             weth, // inToken
             badToken, // outToken
@@ -57,10 +57,21 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_SwapTokensForExactTokens_Test is
     }
 
     function test_RevertWhen_SwapTokensForExactTokens_Because_InvalidTokenIn() public {
-        vm.expectRevert("ARM: Invalid token");
+        vm.expectRevert("ARM: Invalid in token");
         lidoFixedPriceMulltiLpARM.swapTokensForExactTokens(
             badToken, // inToken
             steth, // outToken
+            1, // amountOut
+            1, // amountOutMax
+            address(this) // to
+        );
+    }
+
+    function test_RevertWhen_SwapTokensForExactTokens_Because_BothInvalidTokens() public {
+        vm.expectRevert("ARM: Invalid in token");
+        lidoFixedPriceMulltiLpARM.swapTokensForExactTokens(
+            badToken, // inToken
+            badToken, // outToken
             1, // amountOut
             1, // amountOutMax
             address(this) // to

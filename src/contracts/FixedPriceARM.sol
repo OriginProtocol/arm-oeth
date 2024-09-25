@@ -43,13 +43,13 @@ abstract contract FixedPriceARM is AbstractARM {
     {
         uint256 price;
         if (inToken == token0) {
-            require(outToken == token1, "ARM: Invalid token");
+            require(outToken == token1, "ARM: Invalid out token");
             price = traderate0;
         } else if (inToken == token1) {
-            require(outToken == token0, "ARM: Invalid token");
+            require(outToken == token0, "ARM: Invalid out token");
             price = traderate1;
         } else {
-            revert("ARM: Invalid token");
+            revert("ARM: Invalid in token");
         }
         amountOut = amountIn * price / PRICE_SCALE;
 
@@ -68,13 +68,13 @@ abstract contract FixedPriceARM is AbstractARM {
     {
         uint256 price;
         if (inToken == token0) {
-            require(outToken == token1, "ARM: Invalid token");
+            require(outToken == token1, "ARM: Invalid out token");
             price = traderate0;
         } else if (inToken == token1) {
-            require(outToken == token0, "ARM: Invalid token");
+            require(outToken == token0, "ARM: Invalid out token");
             price = traderate1;
         } else {
-            revert("ARM: Invalid token");
+            revert("ARM: Invalid in token");
         }
         amountIn = ((amountOut * PRICE_SCALE) / price) + 1; // +1 to always round in our favor
 
