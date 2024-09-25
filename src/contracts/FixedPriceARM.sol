@@ -54,11 +54,10 @@ abstract contract FixedPriceARM is AbstractARM {
         amountOut = amountIn * price / PRICE_SCALE;
 
         // Transfer the input tokens from the caller to this ARM contract
-        inToken.transferFrom(msg.sender, address(this), amountIn);
+        _transferAssetFrom(address(inToken), msg.sender, address(this), amountIn);
 
         // Transfer the output tokens to the recipient
-        uint256 transferAmountOut = _calcTransferAmount(address(outToken), amountOut);
-        outToken.transfer(to, transferAmountOut);
+        _transferAsset(address(outToken), to, amountOut);
     }
 
     function _swapTokensForExactTokens(IERC20 inToken, IERC20 outToken, uint256 amountOut, address to)
@@ -79,19 +78,10 @@ abstract contract FixedPriceARM is AbstractARM {
         amountIn = ((amountOut * PRICE_SCALE) / price) + 1; // +1 to always round in our favor
 
         // Transfer the input tokens from the caller to this ARM contract
-        inToken.transferFrom(msg.sender, address(this), amountIn);
+        _transferAssetFrom(address(inToken), msg.sender, address(this), amountIn);
 
         // Transfer the output tokens to the recipient
-        uint256 transferAmountOut = _calcTransferAmount(address(outToken), amountOut);
-        outToken.transfer(to, transferAmountOut);
-    }
-
-    /**
-     * @notice Calculate transfer amount for outToken.
-     * Some tokens like stETH transfer less than the requested amount due to internal mechanics.
-     */
-    function _calcTransferAmount(address, uint256 amount) internal view virtual returns (uint256 transferAmount) {
-        transferAmount = amount;
+        _transferAsset(address(outToken), to, amountOut);
     }
 
     /**

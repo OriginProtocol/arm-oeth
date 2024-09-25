@@ -116,7 +116,7 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_SwapExactTokensForTokens_Test is
 
         initialBalance = weth.balanceOf(address(lidoFixedPriceMulltiLpARM));
         deal(address(steth), address(this), initialBalance * 2);
-        vm.expectRevert(); // Lido error
+        vm.expectRevert("ARM: Insufficient liquidity");
         lidoFixedPriceMulltiLpARM.swapExactTokensForTokens(
             steth, // inToken
             weth, // outToken

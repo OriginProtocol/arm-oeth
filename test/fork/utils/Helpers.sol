@@ -33,19 +33,17 @@ abstract contract Helpers is Base_Test_ {
         }
     }
 
-    /// @notice Asserts the equality bewteen value of `withdrawalQueueMetadata()` and the expected values.
+    /// @notice Asserts the equality between value of `withdrawalQueueMetadata()` and the expected values.
     function assertEqQueueMetadata(
         uint256 expectedQueued,
         uint256 expectedClaimable,
         uint256 expectedClaimed,
         uint256 expectedNextIndex
     ) public view {
-        (uint256 queued, uint256 claimable, uint256 claimed, uint256 nextWithdrawalIndex) =
-            lidoFixedPriceMulltiLpARM.withdrawalQueueMetadata();
-        assertEq(queued, expectedQueued, "metadata queued");
-        assertEq(claimable, expectedClaimable, "metadata claimable");
-        assertEq(claimed, expectedClaimed, "metadata claimed");
-        assertEq(nextWithdrawalIndex, expectedNextIndex, "metadata nextWithdrawalIndex");
+        assertEq(lidoFixedPriceMulltiLpARM.withdrawsQueued(), expectedQueued, "metadata queued");
+        assertEq(lidoFixedPriceMulltiLpARM.withdrawsClaimable(), expectedClaimable, "metadata claimable");
+        assertEq(lidoFixedPriceMulltiLpARM.withdrawsClaimed(), expectedClaimed, "metadata claimed");
+        assertEq(lidoFixedPriceMulltiLpARM.nextWithdrawalIndex(), expectedNextIndex, "metadata nextWithdrawalIndex");
     }
 
     /// @notice Asserts the equality bewteen value of `withdrawalRequests()` and the expected values.
