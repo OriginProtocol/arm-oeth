@@ -87,6 +87,8 @@ abstract contract PerformanceFee is MultiLP {
         emit FeeCalculated(newFeesAccrued, assetIncrease);
     }
 
+    /// @notice The total amount of assets in the ARM and external withdrawal queue,
+    /// less the liquidity assets reserved for the ARM's withdrawal queue and accrued fees.
     function totalAssets() public view virtual override returns (uint256) {
         uint256 totalAssetsBeforeFees = _rawTotalAssets();
 

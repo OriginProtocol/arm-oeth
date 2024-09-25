@@ -14,6 +14,9 @@ import {PerformanceFee} from "./PerformanceFee.sol";
 /**
  * @title Lido (stETH) Application Redemption Manager (ARM)
  * @dev This implementation supports multiple Liquidity Providers (LPs) with single buy and sell prices.
+ * It also integrates to a LiquidityProviderController contract that caps the amount of assets a liquidity provider
+ * can deposit and caps the ARM's total assets.
+ * A performance fee is also collected on increases in the ARM's total assets.
  * @author Origin Protocol Inc
  */
 contract LidoFixedPriceMultiLpARM is
@@ -58,11 +61,10 @@ contract LidoFixedPriceMultiLpARM is
     }
 
     /**
-     * @dev Due to internal stETH mechanics required for rebasing support,
-     * in most cases stETH transfers are performed for the value of 1 wei less than passed to transfer method.
-     * Larger transfer amounts can be 2 wei less.
+     * @dev Due to internal stETH mechanics required for rebasing support, in most cases stETH transfers are performed
+     * for the value of 1 wei less than passed to transfer method. Larger transfer amounts can be 2 wei less.
      *
-     * The MultiLP implementation ensures any WETH reserved for the withdrawal queue is no used in swaps from stETH to WETH.
+     * The MultiLP implementation ensures any WETH reserved for the withdrawal queue is not used in swaps from stETH to WETH.
      */
     function _transferAsset(address asset, address to, uint256 amount) internal override(AbstractARM, MultiLP) {
         // Add 2 wei if transferring stETH
@@ -71,10 +73,16 @@ contract LidoFixedPriceMultiLpARM is
         MultiLP._transferAsset(asset, to, transferAmount);
     }
 
+    /**
+     * @dev Calculates the amount of stETH in the Lido Withdrawal Queue.
+     */
     function _externalWithdrawQueue() internal view override(MultiLP, LidoLiquidityManager) returns (uint256) {
         return LidoLiquidityManager._externalWithdrawQueue();
     }
 
+    /**
+     * @dev Is called after assets are transferred to the ARM.
+     */
     function _postDepositHook(uint256 assets)
         internal
         override(MultiLP, LiquidityProviderControllerARM, PerformanceFee)
@@ -91,6 +99,10 @@ contract LidoFixedPriceMultiLpARM is
         PerformanceFee._postWithdrawHook(assets);
     }
 
+    /**
+     * @notice The total amount of assets in the ARM and Lido withdrawal queue,
+     * less the WETH reserved for the ARM's withdrawal queue and accrued fees.
+     */
     function totalAssets() public view override(MultiLP, PerformanceFee) returns (uint256) {
         return PerformanceFee.totalAssets();
     }
