@@ -17,16 +17,16 @@
 <text text-anchor="middle" x="315.96" y="-294.9" font-family="Times,serif" font-size="14.00">AbstractARM</text>
 <text text-anchor="middle" x="315.96" y="-278.1" font-family="Times,serif" font-size="14.00">../src/contracts/AbstractARM.sol</text>
 </g>
-<!-- 23 -->
+<!-- 22 -->
 <g id="node8" class="node">
-<title>23</title>
+<title>22</title>
 <polygon fill="#f2f2f2" stroke="black" points="325.35,-365.3 325.35,-406.9 548.56,-406.9 548.56,-365.3 325.35,-365.3"/>
 <text text-anchor="middle" x="436.96" y="-390.3" font-family="Times,serif" font-size="14.00">OwnableOperable</text>
 <text text-anchor="middle" x="436.96" y="-373.5" font-family="Times,serif" font-size="14.00">../src/contracts/OwnableOperable.sol</text>
 </g>
-<!-- 0&#45;&gt;23 -->
+<!-- 0&#45;&gt;22 -->
 <g id="edge1" class="edge">
-<title>0&#45;&gt;23</title>
+<title>0&#45;&gt;22</title>
 <path fill="none" stroke="black" d="M356.25,-328.4C365.11,-334.63 374.63,-341.31 383.9,-347.83"/>
 <polygon fill="none" stroke="black" points="378.1,-356.59 408.69,-365.24 390.17,-339.4 378.1,-356.59"/>
 </g>
@@ -99,23 +99,23 @@
 <path fill="none" stroke="black" d="M207.95,-42.22C190.62,-50.58 174.17,-62.28 163.96,-78.6 149.95,-100.97 149.4,-115.98 163.96,-138 169.79,-146.82 184.88,-155.93 203.4,-164.43"/>
 <polygon fill="none" stroke="black" points="199.53,-174.19 231.27,-175.94 207.55,-154.78 199.53,-174.19"/>
 </g>
-<!-- 26 -->
+<!-- 25 -->
 <g id="node9" class="node">
-<title>26</title>
+<title>25</title>
 <polygon fill="#f2f2f2" stroke="black" points="173.41,-79.1 173.41,-137.5 386.5,-137.5 386.5,-79.1 173.41,-79.1"/>
 <text text-anchor="middle" x="279.96" y="-120.9" font-family="Times,serif" font-size="14.00">&lt;&lt;Abstract&gt;&gt;</text>
 <text text-anchor="middle" x="279.96" y="-104.1" font-family="Times,serif" font-size="14.00">PerformanceFee</text>
 <text text-anchor="middle" x="279.96" y="-87.3" font-family="Times,serif" font-size="14.00">../src/contracts/PerformanceFee.sol</text>
 </g>
-<!-- 13&#45;&gt;26 -->
+<!-- 13&#45;&gt;25 -->
 <g id="edge4" class="edge">
-<title>13&#45;&gt;26</title>
+<title>13&#45;&gt;25</title>
 <path fill="none" stroke="black" d="M279.96,-42.44C279.96,-44.49 279.96,-46.63 279.96,-48.83"/>
 <polygon fill="none" stroke="black" points="269.46,-48.94 279.96,-78.94 290.46,-48.94 269.46,-48.94"/>
 </g>
-<!-- 14&#45;&gt;23 -->
+<!-- 14&#45;&gt;22 -->
 <g id="edge8" class="edge">
-<title>14&#45;&gt;23</title>
+<title>14&#45;&gt;22</title>
 <path fill="none" stroke="black" d="M579.7,-328.4C558.92,-336.66 536.11,-345.72 514.94,-354.13"/>
 <polygon fill="none" stroke="black" points="510.96,-344.41 486.96,-365.24 518.71,-363.92 510.96,-344.41"/>
 </g>
@@ -131,22 +131,22 @@
 <path fill="none" stroke="black" d="M315.96,-232.98C315.96,-235.06 315.96,-237.2 315.96,-239.38"/>
 <polygon fill="none" stroke="black" points="305.46,-239.6 315.96,-269.6 326.46,-239.6 305.46,-239.6"/>
 </g>
-<!-- 22 -->
+<!-- 21 -->
 <g id="node7" class="node">
-<title>22</title>
+<title>21</title>
 <polygon fill="#f2f2f2" stroke="black" points="351.01,-443.9 351.01,-485.5 522.91,-485.5 522.91,-443.9 351.01,-443.9"/>
 <text text-anchor="middle" x="436.96" y="-468.9" font-family="Times,serif" font-size="14.00">Ownable</text>
 <text text-anchor="middle" x="436.96" y="-452.1" font-family="Times,serif" font-size="14.00">../src/contracts/Ownable.sol</text>
 </g>
-<!-- 23&#45;&gt;22 -->
+<!-- 22&#45;&gt;21 -->
 <g id="edge11" class="edge">
-<title>23&#45;&gt;22</title>
+<title>22&#45;&gt;21</title>
 <path fill="none" stroke="black" d="M436.96,-407.23C436.96,-409.25 436.96,-411.36 436.96,-413.53"/>
 <polygon fill="none" stroke="black" points="426.46,-413.71 436.96,-443.71 447.46,-413.71 426.46,-413.71"/>
 </g>
-<!-- 26&#45;&gt;17 -->
+<!-- 25&#45;&gt;17 -->
 <g id="edge12" class="edge">
-<title>26&#45;&gt;17</title>
+<title>25&#45;&gt;17</title>
 <path fill="none" stroke="black" d="M290.86,-137.58C291.9,-140.29 292.99,-143.11 294.1,-145.98"/>
 <polygon fill="none" stroke="black" points="284.38,-149.98 304.97,-174.2 303.98,-142.43 284.38,-149.98"/>
 </g>
