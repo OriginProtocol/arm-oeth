@@ -38,6 +38,7 @@ contract LidoFixedPriceMultiLpARM is
     {}
 
     /// @notice Initialize the contract.
+    /// The deployer that calls initialize has to approve the this ARM's proxy contract to transfer 1e12 WETH.
     /// @param _name The name of the liquidity provider (LP) token.
     /// @param _symbol The symbol of the liquidity provider (LP) token.
     /// @param _operator The address of the account that can request and claim Lido withdrawals.
@@ -94,6 +95,9 @@ contract LidoFixedPriceMultiLpARM is
         LiquidityProviderControllerARM._postDepositHook(assets);
     }
 
+    /**
+     * @dev Is called after the performance fee is calculated and accrued in the `requestRedeem` method.
+     */
     function _postWithdrawHook(uint256 assets) internal override(MultiLP, PerformanceFee) {
         // Store the new total assets after the withdrawal and performance fee accrued
         PerformanceFee._postWithdrawHook(assets);
