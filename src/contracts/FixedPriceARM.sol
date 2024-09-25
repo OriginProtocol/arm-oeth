@@ -54,7 +54,7 @@ abstract contract FixedPriceARM is AbstractARM {
         amountOut = amountIn * price / PRICE_SCALE;
 
         // Transfer the input tokens from the caller to this ARM contract
-        inToken.transferFrom(msg.sender, address(this), amountIn);
+        _transferAssetFrom(address(inToken), msg.sender, address(this), amountIn);
 
         // Transfer the output tokens to the recipient
         _transferAsset(address(outToken), to, amountOut);
@@ -78,7 +78,7 @@ abstract contract FixedPriceARM is AbstractARM {
         amountIn = ((amountOut * PRICE_SCALE) / price) + 1; // +1 to always round in our favor
 
         // Transfer the input tokens from the caller to this ARM contract
-        inToken.transferFrom(msg.sender, address(this), amountIn);
+        _transferAssetFrom(address(inToken), msg.sender, address(this), amountIn);
 
         // Transfer the output tokens to the recipient
         _transferAsset(address(outToken), to, amountOut);

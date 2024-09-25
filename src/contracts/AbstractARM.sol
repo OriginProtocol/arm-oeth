@@ -159,4 +159,9 @@ abstract contract AbstractARM is OwnableOperable {
     function _transferAsset(address asset, address to, uint256 amount) internal virtual {
         IERC20(asset).transfer(to, amount);
     }
+
+    /// @dev Hook to transfer assets into the ARM contract
+    function _transferAssetFrom(address asset, address from, address to, uint256 amount) internal virtual {
+        IERC20(asset).transferFrom(from, to, amount);
+    }
 }

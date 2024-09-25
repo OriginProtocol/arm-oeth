@@ -240,9 +240,18 @@ abstract contract MultiLP is AbstractARM, ERC20Upgradeable {
     /// @dev Ensure any liquidity assets reserved for the withdrawal queue are not used
     /// in swaps that send liquidity assets out of the ARM
     function _transferAsset(address asset, address to, uint256 amount) internal virtual override {
-        require(asset == liquidityAsset && amount <= _liquidityAvailable(), "ARM: Insufficient liquidity");
+        if (asset == liquidityAsset) {
+            require(amount <= _liquidityAvailable(), "ARM: Insufficient liquidity");
+        }
 
         IERC20(asset).transfer(to, amount);
+    }
+
+    /// @dev Funds the ARM's withdrawal queue when swaps send liquidity assets to the ARM
+    function _transferAssetFrom(address asset, address from, address to, uint256 amount) internal virtual override {
+        IERC20(asset).transferFrom(from, to, amount);
+
+        _addWithdrawalQueueLiquidity();
     }
 
     /// @notice The total amount of assets in the ARM and external withdrawal queue,
