@@ -42,10 +42,14 @@ abstract contract LidoLiquidityManager is OwnableOperable {
     {
         requestIds = withdrawalQueue.requestWithdrawals(amounts, address(this));
 
-        // Increase the Ether outstanding from the Lido Withdrawal Queue
+        // Sum the total amount of stETH being withdraw
+        uint256 totalAmountRequested = 0;
         for (uint256 i = 0; i < amounts.length; i++) {
-            outstandingEther += amounts[i];
+            totalAmountRequested += amounts[i];
         }
+
+        // Increase the Ether outstanding from the Lido Withdrawal Queue
+        outstandingEther += totalAmountRequested;
     }
 
     /**
@@ -67,7 +71,7 @@ abstract contract LidoLiquidityManager is OwnableOperable {
 
         // Wrap all the received ETH to WETH.
         (bool success,) = address(weth).call{value: etherAfter}(new bytes(0));
-        require(success, "OSwap: ETH transfer failed");
+        require(success, "ARM: ETH transfer failed");
 
         _postClaimHook(etherAfter);
     }
