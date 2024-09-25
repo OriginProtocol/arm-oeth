@@ -79,10 +79,10 @@ abstract contract PerformanceFee is MultiLP {
 
         // Save the new accrued fees back to storage
         feesAccrued = SafeCast.toUint112(feesAccrued + newFeesAccrued);
-        // Save the new total assets back to storage
+        // Save the new total assets back to storage less the new accrued fees.
         // This is be updated again in the post deposit and post withdraw hooks to include
         // the assets deposited or withdrawn
-        lastTotalAssets = SafeCast.toUint128(newTotalAssets);
+        lastTotalAssets = SafeCast.toUint128(newTotalAssets - newFeesAccrued);
 
         emit FeeCalculated(newFeesAccrued, assetIncrease);
     }
