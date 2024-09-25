@@ -82,7 +82,7 @@ contract LidoFixedPriceMultiLpARM is
     }
 
     /**
-     * @dev Is called after assets are transferred to the ARM.
+     * @dev Is called after assets are transferred to the ARM in the `deposit` method.
      */
     function _postDepositHook(uint256 assets)
         internal
@@ -96,11 +96,11 @@ contract LidoFixedPriceMultiLpARM is
     }
 
     /**
-     * @dev Is called after the performance fee is calculated and accrued in the `requestRedeem` method.
+     * @dev Is called after the performance fee is accrued in the `requestRedeem` method.
      */
-    function _postWithdrawHook(uint256 assets) internal override(MultiLP, PerformanceFee) {
+    function _postRequestRedeemHook() internal override(MultiLP, PerformanceFee) {
         // Store the new total assets after the withdrawal and performance fee accrued
-        PerformanceFee._postWithdrawHook(assets);
+        PerformanceFee._postRequestRedeemHook();
     }
 
     /**

@@ -134,13 +134,13 @@ abstract contract MultiLP is AbstractARM, ERC20Upgradeable {
         // burn redeemer's shares
         _burn(msg.sender, shares);
 
-        _postWithdrawHook(assets);
+        _postRequestRedeemHook();
 
         emit RedeemRequested(msg.sender, requestId, assets, queued, claimTimestamp);
     }
 
     function _preWithdrawHook() internal virtual;
-    function _postWithdrawHook(uint256 assets) internal virtual;
+    function _postRequestRedeemHook() internal virtual;
 
     /// @notice Claim liquidity assets from a previous withdrawal request after the claim delay has passed
     /// @param requestId The index of the withdrawal request
