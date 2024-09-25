@@ -26,10 +26,10 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_TotalAssets_Test_ is Fork_Shared
         liquidityProviderController.setTotalAssetsCap(type(uint256).max);
 
         // Approve STETH for Lido
-        lidoFixedPriceMulltiLpARM.approveStETH();
+        lidoFixedPriceMultiLpARM.approveStETH();
 
         deal(address(weth), address(this), 1_000 ether);
-        weth.approve(address(lidoFixedPriceMulltiLpARM), type(uint256).max);
+        weth.approve(address(lidoFixedPriceMultiLpARM), type(uint256).max);
     }
 
     //////////////////////////////////////////////////////
@@ -43,21 +43,21 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_TotalAssets_Test_ is Fork_Shared
         simulateAssetGainInLidoFixedPriceMultiLpARM(DEFAULT_AMOUNT * 2, address(weth), false)
     {
         vm.expectRevert(stdError.arithmeticError);
-        lidoFixedPriceMulltiLpARM.totalAssets();
+        lidoFixedPriceMultiLpARM.totalAssets();
     }
 
     //////////////////////////////////////////////////////
     /// --- PASSING TEST
     //////////////////////////////////////////////////////
     function test_TotalAssets_AfterInitialization() public view {
-        assertEq(lidoFixedPriceMulltiLpARM.totalAssets(), MIN_TOTAL_SUPPLY);
+        assertEq(lidoFixedPriceMultiLpARM.totalAssets(), MIN_TOTAL_SUPPLY);
     }
 
     function test_TotalAssets_AfterDeposit_NoAssetGainOrLoss()
         public
         depositInLidoFixedPriceMultiLpARM(address(this), DEFAULT_AMOUNT)
     {
-        assertEq(lidoFixedPriceMulltiLpARM.totalAssets(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT);
+        assertEq(lidoFixedPriceMultiLpARM.totalAssets(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT);
     }
 
     function test_TotalAssets_AfterDeposit_WithAssetGain_InWETH()
@@ -68,31 +68,31 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_TotalAssets_Test_ is Fork_Shared
         uint256 assetGain = DEFAULT_AMOUNT / 2;
         deal(
             address(weth),
-            address(lidoFixedPriceMulltiLpARM),
-            weth.balanceOf(address(lidoFixedPriceMulltiLpARM)) + assetGain
+            address(lidoFixedPriceMultiLpARM),
+            weth.balanceOf(address(lidoFixedPriceMultiLpARM)) + assetGain
         );
 
         // Calculate Fees
         uint256 fee = assetGain * 20 / 100; // 20% fee
 
-        assertEq(lidoFixedPriceMulltiLpARM.totalAssets(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT + assetGain - fee);
+        assertEq(lidoFixedPriceMultiLpARM.totalAssets(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT + assetGain - fee);
     }
 
     function test_TotalAssets_AfterDeposit_WithAssetGain_InSTETH()
         public
         depositInLidoFixedPriceMultiLpARM(address(this), DEFAULT_AMOUNT)
     {
-        assertEq(steth.balanceOf(address(lidoFixedPriceMulltiLpARM)), 0);
+        assertEq(steth.balanceOf(address(lidoFixedPriceMultiLpARM)), 0);
         // Simulate asset gain
         uint256 assetGain = DEFAULT_AMOUNT / 2 + 1;
         // We are sure that steth balance is empty, so we can deal directly final amount.
-        deal(address(steth), address(lidoFixedPriceMulltiLpARM), assetGain);
+        deal(address(steth), address(lidoFixedPriceMultiLpARM), assetGain);
 
         // Calculate Fees
         uint256 fee = assetGain * 20 / 100; // 20% fee
 
         assertApproxEqAbs(
-            lidoFixedPriceMulltiLpARM.totalAssets(),
+            lidoFixedPriceMultiLpARM.totalAssets(),
             MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT + assetGain - fee,
             STETH_ERROR_ROUNDING
         );
@@ -106,11 +106,11 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_TotalAssets_Test_ is Fork_Shared
         uint256 assetLoss = DEFAULT_AMOUNT / 2;
         deal(
             address(weth),
-            address(lidoFixedPriceMulltiLpARM),
-            weth.balanceOf(address(lidoFixedPriceMulltiLpARM)) - assetLoss
+            address(lidoFixedPriceMultiLpARM),
+            weth.balanceOf(address(lidoFixedPriceMultiLpARM)) - assetLoss
         );
 
-        assertEq(lidoFixedPriceMulltiLpARM.totalAssets(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT - assetLoss);
+        assertEq(lidoFixedPriceMultiLpARM.totalAssets(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT - assetLoss);
     }
 
     function test_TotalAssets_AfterDeposit_WithAssetLoss_InSTETH()
@@ -121,15 +121,15 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_TotalAssets_Test_ is Fork_Shared
         uint256 swapAmount = DEFAULT_AMOUNT / 2;
         deal(
             address(weth),
-            address(lidoFixedPriceMulltiLpARM),
-            weth.balanceOf(address(lidoFixedPriceMulltiLpARM)) - swapAmount
+            address(lidoFixedPriceMultiLpARM),
+            weth.balanceOf(address(lidoFixedPriceMultiLpARM)) - swapAmount
         );
         // Then simulate a loss on stETH, do all in the same deal
         uint256 assetLoss = swapAmount / 2;
-        deal(address(steth), address(lidoFixedPriceMulltiLpARM), swapAmount / 2);
+        deal(address(steth), address(lidoFixedPriceMultiLpARM), swapAmount / 2);
 
         assertApproxEqAbs(
-            lidoFixedPriceMulltiLpARM.totalAssets(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT - assetLoss, STETH_ERROR_ROUNDING
+            lidoFixedPriceMultiLpARM.totalAssets(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT - assetLoss, STETH_ERROR_ROUNDING
         );
     }
 
@@ -138,20 +138,20 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_TotalAssets_Test_ is Fork_Shared
         uint256 swapAmount = MIN_TOTAL_SUPPLY / 2;
         deal(
             address(weth),
-            address(lidoFixedPriceMulltiLpARM),
-            weth.balanceOf(address(lidoFixedPriceMulltiLpARM)) - swapAmount
+            address(lidoFixedPriceMultiLpARM),
+            weth.balanceOf(address(lidoFixedPriceMultiLpARM)) - swapAmount
         );
-        deal(address(steth), address(lidoFixedPriceMulltiLpARM), swapAmount); // Empty stETH balance, so we can deal directly
+        deal(address(steth), address(lidoFixedPriceMultiLpARM), swapAmount); // Empty stETH balance, so we can deal directly
 
-        uint256 totalAssetsBefore = lidoFixedPriceMulltiLpARM.totalAssets();
+        uint256 totalAssetsBefore = lidoFixedPriceMultiLpARM.totalAssets();
 
         // Request a redeem on Lido
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = swapAmount;
-        lidoFixedPriceMulltiLpARM.requestStETHWithdrawalForETH(amounts);
+        lidoFixedPriceMultiLpARM.requestStETHWithdrawalForETH(amounts);
 
         // Check total assets after withdrawal is the same as before
-        assertApproxEqAbs(lidoFixedPriceMulltiLpARM.totalAssets(), totalAssetsBefore, STETH_ERROR_ROUNDING);
+        assertApproxEqAbs(lidoFixedPriceMultiLpARM.totalAssets(), totalAssetsBefore, STETH_ERROR_ROUNDING);
     }
 
     function test_TotalAssets_With_FeeAccrued_NotNull() public {
@@ -159,19 +159,18 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_TotalAssets_Test_ is Fork_Shared
         // Simulate asset gain
         deal(
             address(weth),
-            address(lidoFixedPriceMulltiLpARM),
-            weth.balanceOf(address(lidoFixedPriceMulltiLpARM)) + assetGain
+            address(lidoFixedPriceMultiLpARM),
+            weth.balanceOf(address(lidoFixedPriceMultiLpARM)) + assetGain
         );
 
         // User deposit, this will trigger a fee calculation
-        lidoFixedPriceMulltiLpARM.deposit(DEFAULT_AMOUNT);
+        lidoFixedPriceMultiLpARM.deposit(DEFAULT_AMOUNT);
 
         // Assert fee accrued is not null
-        assertEq(lidoFixedPriceMulltiLpARM.feesAccrued(), assetGain * 20 / 100);
+        assertEq(lidoFixedPriceMultiLpARM.feesAccrued(), assetGain * 20 / 100);
 
         assertEq(
-            lidoFixedPriceMulltiLpARM.totalAssets(),
-            MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT + assetGain - assetGain * 20 / 100
+            lidoFixedPriceMultiLpARM.totalAssets(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT + assetGain - assetGain * 20 / 100
         );
     }
 
@@ -181,8 +180,8 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_TotalAssets_Test_ is Fork_Shared
         requestRedeemFromLidoFixedPriceMultiLpARM(address(this), DEFAULT_AMOUNT)
     {
         // Simulate a loss of assets
-        deal(address(weth), address(lidoFixedPriceMulltiLpARM), DEFAULT_AMOUNT - 1);
+        deal(address(weth), address(lidoFixedPriceMultiLpARM), DEFAULT_AMOUNT - 1);
 
-        assertEq(lidoFixedPriceMulltiLpARM.totalAssets(), 0);
+        assertEq(lidoFixedPriceMultiLpARM.totalAssets(), 0);
     }
 }

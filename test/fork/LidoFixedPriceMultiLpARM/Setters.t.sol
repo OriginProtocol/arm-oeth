@@ -23,18 +23,18 @@ contract Fork_Concrete_lidoFixedPriceMulltiLpARM_Setters_Test_ is Fork_Shared_Te
     //////////////////////////////////////////////////////
     function test_RevertWhen_PerformanceFee_SetFee_Because_NotOwner() public asRandomAddress {
         vm.expectRevert("ARM: Only owner can call this function.");
-        lidoFixedPriceMulltiLpARM.setFee(0);
+        lidoFixedPriceMultiLpARM.setFee(0);
     }
 
     function test_RevertWhen_PerformanceFee_SetFee_Because_FeeIsTooHigh() public asLidoFixedPriceMultiLpARMOwner {
-        uint256 max = lidoFixedPriceMulltiLpARM.FEE_SCALE();
+        uint256 max = lidoFixedPriceMultiLpARM.FEE_SCALE();
         vm.expectRevert("ARM: fee too high");
-        lidoFixedPriceMulltiLpARM.setFee(max + 1);
+        lidoFixedPriceMultiLpARM.setFee(max + 1);
     }
 
     function test_RevertWhen_PerformanceFee_SetFeeCollector_Because_NotOwner() public asRandomAddress {
         vm.expectRevert("ARM: Only owner can call this function.");
-        lidoFixedPriceMulltiLpARM.setFeeCollector(address(0));
+        lidoFixedPriceMultiLpARM.setFeeCollector(address(0));
     }
 
     function test_RevertWhen_PerformanceFee_SetFeeCollector_Because_FeeCollectorIsZero()
@@ -42,36 +42,36 @@ contract Fork_Concrete_lidoFixedPriceMulltiLpARM_Setters_Test_ is Fork_Shared_Te
         asLidoFixedPriceMultiLpARMOwner
     {
         vm.expectRevert("ARM: invalid fee collector");
-        lidoFixedPriceMulltiLpARM.setFeeCollector(address(0));
+        lidoFixedPriceMultiLpARM.setFeeCollector(address(0));
     }
 
     //////////////////////////////////////////////////////
     /// --- PERFORMANCE FEE - PASSING TEST
     //////////////////////////////////////////////////////
     function test_PerformanceFee_SetFee_() public asLidoFixedPriceMultiLpARMOwner {
-        uint256 feeBefore = lidoFixedPriceMulltiLpARM.fee();
+        uint256 feeBefore = lidoFixedPriceMultiLpARM.fee();
 
-        uint256 newFee = _bound(vm.randomUint(), 0, lidoFixedPriceMulltiLpARM.FEE_SCALE());
+        uint256 newFee = _bound(vm.randomUint(), 0, lidoFixedPriceMultiLpARM.FEE_SCALE());
 
-        vm.expectEmit({emitter: address(lidoFixedPriceMulltiLpARM)});
+        vm.expectEmit({emitter: address(lidoFixedPriceMultiLpARM)});
         emit PerformanceFee.FeeUpdated(newFee);
-        lidoFixedPriceMulltiLpARM.setFee(newFee);
+        lidoFixedPriceMultiLpARM.setFee(newFee);
 
-        assertEq(lidoFixedPriceMulltiLpARM.fee(), newFee);
-        assertNotEq(feeBefore, lidoFixedPriceMulltiLpARM.fee());
+        assertEq(lidoFixedPriceMultiLpARM.fee(), newFee);
+        assertNotEq(feeBefore, lidoFixedPriceMultiLpARM.fee());
     }
 
     function test_PerformanceFee_SetFeeCollector() public asLidoFixedPriceMultiLpARMOwner {
-        address feeCollectorBefore = lidoFixedPriceMulltiLpARM.feeCollector();
+        address feeCollectorBefore = lidoFixedPriceMultiLpARM.feeCollector();
 
         address newFeeCollector = vm.randomAddress();
 
-        vm.expectEmit({emitter: address(lidoFixedPriceMulltiLpARM)});
+        vm.expectEmit({emitter: address(lidoFixedPriceMultiLpARM)});
         emit PerformanceFee.FeeCollectorUpdated(newFeeCollector);
-        lidoFixedPriceMulltiLpARM.setFeeCollector(newFeeCollector);
+        lidoFixedPriceMultiLpARM.setFeeCollector(newFeeCollector);
 
-        assertEq(lidoFixedPriceMulltiLpARM.feeCollector(), newFeeCollector);
-        assertNotEq(feeCollectorBefore, lidoFixedPriceMulltiLpARM.feeCollector());
+        assertEq(lidoFixedPriceMultiLpARM.feeCollector(), newFeeCollector);
+        assertNotEq(feeCollectorBefore, lidoFixedPriceMultiLpARM.feeCollector());
     }
 
     //////////////////////////////////////////////////////
@@ -79,36 +79,36 @@ contract Fork_Concrete_lidoFixedPriceMulltiLpARM_Setters_Test_ is Fork_Shared_Te
     //////////////////////////////////////////////////////
     function test_RevertWhen_SetPrices_Because_PriceCross() public {
         vm.expectRevert("ARM: Price cross");
-        lidoFixedPriceMulltiLpARM.setPrices(90 * 1e33, 89 * 1e33);
+        lidoFixedPriceMultiLpARM.setPrices(90 * 1e33, 89 * 1e33);
 
         vm.expectRevert("ARM: Price cross");
-        lidoFixedPriceMulltiLpARM.setPrices(72, 70);
+        lidoFixedPriceMultiLpARM.setPrices(72, 70);
 
         vm.expectRevert("ARM: Price cross");
-        lidoFixedPriceMulltiLpARM.setPrices(1005 * 1e33, 1000 * 1e33);
+        lidoFixedPriceMultiLpARM.setPrices(1005 * 1e33, 1000 * 1e33);
 
         // Both set to 1.0
         vm.expectRevert("ARM: Price cross");
-        lidoFixedPriceMulltiLpARM.setPrices(1e36, 1e36);
+        lidoFixedPriceMultiLpARM.setPrices(1e36, 1e36);
     }
 
     function test_RevertWhen_FixedPriceARM_SetPrices_Because_PriceRange() public asLidoFixedPriceMulltiLpARMOperator {
         // buy price 11 basis points higher than 1.0
         vm.expectRevert("ARM: buy price too high");
-        lidoFixedPriceMulltiLpARM.setPrices(10011e32, 10020e32);
+        lidoFixedPriceMultiLpARM.setPrices(10011e32, 10020e32);
 
         // sell price 11 basis points lower than 1.0
         vm.expectRevert("ARM: sell price too low");
-        lidoFixedPriceMulltiLpARM.setPrices(9980e32, 9989e32);
+        lidoFixedPriceMultiLpARM.setPrices(9980e32, 9989e32);
 
         // Forgot to scale up to 36 decimals
         vm.expectRevert("ARM: sell price too low");
-        lidoFixedPriceMulltiLpARM.setPrices(1e18, 1e18);
+        lidoFixedPriceMultiLpARM.setPrices(1e18, 1e18);
     }
 
     function test_RevertWhen_FixedPriceARM_SetPrices_Because_NotOwnerOrOperator() public asRandomAddress {
         vm.expectRevert("ARM: Only operator or owner can call this function.");
-        lidoFixedPriceMulltiLpARM.setPrices(0, 0);
+        lidoFixedPriceMultiLpARM.setPrices(0, 0);
     }
 
     //////////////////////////////////////////////////////
@@ -116,27 +116,27 @@ contract Fork_Concrete_lidoFixedPriceMulltiLpARM_Setters_Test_ is Fork_Shared_Te
     //////////////////////////////////////////////////////
     function test_FixedPriceARM_SetPrices_Operator() public asLidoFixedPriceMulltiLpARMOperator {
         // buy price 10 basis points higher than 1.0
-        lidoFixedPriceMulltiLpARM.setPrices(1001e33, 1002e33);
+        lidoFixedPriceMultiLpARM.setPrices(1001e33, 1002e33);
         // sell price 10 basis points lower than 1.0
-        lidoFixedPriceMulltiLpARM.setPrices(9980e32, 9991e32);
+        lidoFixedPriceMultiLpARM.setPrices(9980e32, 9991e32);
         // 2% of one basis point spread
-        lidoFixedPriceMulltiLpARM.setPrices(999999e30, 1000001e30);
+        lidoFixedPriceMultiLpARM.setPrices(999999e30, 1000001e30);
 
-        lidoFixedPriceMulltiLpARM.setPrices(992 * 1e33, 1001 * 1e33);
-        lidoFixedPriceMulltiLpARM.setPrices(1001 * 1e33, 1004 * 1e33);
-        lidoFixedPriceMulltiLpARM.setPrices(992 * 1e33, 2000 * 1e33);
+        lidoFixedPriceMultiLpARM.setPrices(992 * 1e33, 1001 * 1e33);
+        lidoFixedPriceMultiLpARM.setPrices(1001 * 1e33, 1004 * 1e33);
+        lidoFixedPriceMultiLpARM.setPrices(992 * 1e33, 2000 * 1e33);
 
         // Check the traderates
-        assertEq(lidoFixedPriceMulltiLpARM.traderate0(), 500 * 1e33);
-        assertEq(lidoFixedPriceMulltiLpARM.traderate1(), 992 * 1e33);
+        assertEq(lidoFixedPriceMultiLpARM.traderate0(), 500 * 1e33);
+        assertEq(lidoFixedPriceMultiLpARM.traderate1(), 992 * 1e33);
     }
 
     function test_FixedPriceARM_SetPrices_Owner() public {
         // buy price 11 basis points higher than 1.0
-        lidoFixedPriceMulltiLpARM.setPrices(10011e32, 10020e32);
+        lidoFixedPriceMultiLpARM.setPrices(10011e32, 10020e32);
 
         // sell price 11 basis points lower than 1.0
-        lidoFixedPriceMulltiLpARM.setPrices(9980e32, 9989e32);
+        lidoFixedPriceMultiLpARM.setPrices(9980e32, 9989e32);
     }
 
     //////////////////////////////////////////////////////
@@ -144,12 +144,12 @@ contract Fork_Concrete_lidoFixedPriceMulltiLpARM_Setters_Test_ is Fork_Shared_Te
     //////////////////////////////////////////////////////
     function test_RevertWhen_Ownable_SetOwner_Because_NotOwner() public asRandomAddress {
         vm.expectRevert("ARM: Only owner can call this function.");
-        lidoFixedPriceMulltiLpARM.setOwner(address(0));
+        lidoFixedPriceMultiLpARM.setOwner(address(0));
     }
 
     function test_RevertWhen_Ownable_SetOperator_Because_NotOwner() public asRandomAddress {
         vm.expectRevert("ARM: Only owner can call this function.");
-        lidoFixedPriceMulltiLpARM.setOperator(address(0));
+        lidoFixedPriceMultiLpARM.setOperator(address(0));
     }
 
     //////////////////////////////////////////////////////
@@ -160,7 +160,7 @@ contract Fork_Concrete_lidoFixedPriceMulltiLpARM_Setters_Test_ is Fork_Shared_Te
         asRandomAddress
     {
         vm.expectRevert("ARM: Only owner can call this function.");
-        lidoFixedPriceMulltiLpARM.setLiquidityProviderController(address(0));
+        lidoFixedPriceMultiLpARM.setLiquidityProviderController(address(0));
     }
 
     //////////////////////////////////////////////////////
@@ -169,10 +169,10 @@ contract Fork_Concrete_lidoFixedPriceMulltiLpARM_Setters_Test_ is Fork_Shared_Te
     function test_LiquidityProviderController_SetLiquidityProvider() public asLidoFixedPriceMultiLpARMOwner {
         address newLiquidityProviderController = vm.randomAddress();
 
-        vm.expectEmit({emitter: address(lidoFixedPriceMulltiLpARM)});
+        vm.expectEmit({emitter: address(lidoFixedPriceMultiLpARM)});
         emit LiquidityProviderControllerARM.LiquidityProviderControllerUpdated(newLiquidityProviderController);
-        lidoFixedPriceMulltiLpARM.setLiquidityProviderController(newLiquidityProviderController);
+        lidoFixedPriceMultiLpARM.setLiquidityProviderController(newLiquidityProviderController);
 
-        assertEq(lidoFixedPriceMulltiLpARM.liquidityProviderController(), newLiquidityProviderController);
+        assertEq(lidoFixedPriceMultiLpARM.liquidityProviderController(), newLiquidityProviderController);
     }
 }

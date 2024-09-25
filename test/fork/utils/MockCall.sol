@@ -33,18 +33,18 @@ library MockCall {
 
 contract MockLidoWithdraw {
     ETHSender public immutable ethSender;
-    address public immutable lidoFixedPriceMulltiLpARM;
+    address public immutable lidoFixedPriceMultiLpARM;
 
     constructor(address _lidoFixedPriceMulltiLpARM) {
         ethSender = new ETHSender();
-        lidoFixedPriceMulltiLpARM = _lidoFixedPriceMulltiLpARM;
+        lidoFixedPriceMultiLpARM = _lidoFixedPriceMulltiLpARM;
     }
 
     /// @notice Mock the call to the Lido contract's `claimWithdrawals` function.
     /// @dev as it is not possible to transfer ETH from the mocked contract (seems to be an issue with forge)
     /// we use the ETHSender contract intermediary to send the ETH to the target contract.
     function claimWithdrawals(uint256[] memory, uint256[] memory) external {
-        ethSender.sendETH(lidoFixedPriceMulltiLpARM);
+        ethSender.sendETH(lidoFixedPriceMultiLpARM);
     }
 }
 

@@ -14,7 +14,7 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_RequestStETHWithdrawalForETH_Tes
     function setUp() public override {
         super.setUp();
 
-        deal(address(steth), address(lidoFixedPriceMulltiLpARM), 10_000 ether);
+        deal(address(steth), address(lidoFixedPriceMultiLpARM), 10_000 ether);
     }
 
     //////////////////////////////////////////////////////
@@ -22,7 +22,7 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_RequestStETHWithdrawalForETH_Tes
     //////////////////////////////////////////////////////
     function test_RevertWhen_RequestStETHWithdrawalForETH_NotOperator() public asRandomAddress {
         vm.expectRevert("ARM: Only operator or owner can call this function.");
-        lidoFixedPriceMulltiLpARM.requestStETHWithdrawalForETH(new uint256[](0));
+        lidoFixedPriceMultiLpARM.requestStETHWithdrawalForETH(new uint256[](0));
     }
 
     function test_RevertWhen_RequestStETHWithdrawalForETH_Because_AllowanceExceeded()
@@ -33,7 +33,7 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_RequestStETHWithdrawalForETH_Tes
         amounts[0] = DEFAULT_AMOUNT;
 
         vm.expectRevert("ALLOWANCE_EXCEEDED");
-        lidoFixedPriceMulltiLpARM.requestStETHWithdrawalForETH(amounts);
+        lidoFixedPriceMultiLpARM.requestStETHWithdrawalForETH(amounts);
     }
 
     function test_RevertWhen_RequestStETHWithdrawalForETH_Because_BalanceExceeded()
@@ -42,20 +42,20 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_RequestStETHWithdrawalForETH_Tes
         approveStETHOnLidoFixedPriceMultiLpARM
     {
         // Remove all stETH from the contract
-        deal(address(steth), address(lidoFixedPriceMulltiLpARM), 0);
+        deal(address(steth), address(lidoFixedPriceMultiLpARM), 0);
 
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = DEFAULT_AMOUNT;
 
         vm.expectRevert("BALANCE_EXCEEDED");
-        lidoFixedPriceMulltiLpARM.requestStETHWithdrawalForETH(amounts);
+        lidoFixedPriceMultiLpARM.requestStETHWithdrawalForETH(amounts);
     }
 
     //////////////////////////////////////////////////////
     /// --- PASSING TESTS
     //////////////////////////////////////////////////////
     function test_RequestStETHWithdrawalForETH_EmptyList() public asLidoFixedPriceMulltiLpARMOperator {
-        uint256[] memory requestIds = lidoFixedPriceMulltiLpARM.requestStETHWithdrawalForETH(new uint256[](0));
+        uint256[] memory requestIds = lidoFixedPriceMultiLpARM.requestStETHWithdrawalForETH(new uint256[](0));
         assertEq(requestIds.length, 0);
     }
 
@@ -70,11 +70,11 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_RequestStETHWithdrawalForETH_Tes
         // Expected events
         vm.expectEmit({emitter: address(steth)});
         emit IERC20.Transfer(
-            address(lidoFixedPriceMulltiLpARM), address(lidoFixedPriceMulltiLpARM.withdrawalQueue()), amounts[0]
+            address(lidoFixedPriceMultiLpARM), address(lidoFixedPriceMultiLpARM.withdrawalQueue()), amounts[0]
         );
 
         // Main call
-        uint256[] memory requestIds = lidoFixedPriceMulltiLpARM.requestStETHWithdrawalForETH(amounts);
+        uint256[] memory requestIds = lidoFixedPriceMultiLpARM.requestStETHWithdrawalForETH(amounts);
 
         assertEq(requestIds.length, 1);
         assertGt(requestIds[0], 0);
@@ -91,11 +91,11 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_RequestStETHWithdrawalForETH_Tes
         // Expected events
         vm.expectEmit({emitter: address(steth)});
         emit IERC20.Transfer(
-            address(lidoFixedPriceMulltiLpARM), address(lidoFixedPriceMulltiLpARM.withdrawalQueue()), amounts[0]
+            address(lidoFixedPriceMultiLpARM), address(lidoFixedPriceMultiLpARM.withdrawalQueue()), amounts[0]
         );
 
         // Main call
-        uint256[] memory requestIds = lidoFixedPriceMulltiLpARM.requestStETHWithdrawalForETH(amounts);
+        uint256[] memory requestIds = lidoFixedPriceMultiLpARM.requestStETHWithdrawalForETH(amounts);
 
         assertEq(requestIds.length, 1);
         assertGt(requestIds[0], 0);
@@ -113,7 +113,7 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_RequestStETHWithdrawalForETH_Tes
         }
 
         // Main call
-        uint256[] memory requestIds = lidoFixedPriceMulltiLpARM.requestStETHWithdrawalForETH(amounts);
+        uint256[] memory requestIds = lidoFixedPriceMultiLpARM.requestStETHWithdrawalForETH(amounts);
 
         uint256 initialRequestId = requestIds[0];
         assertGt(initialRequestId, 0);
