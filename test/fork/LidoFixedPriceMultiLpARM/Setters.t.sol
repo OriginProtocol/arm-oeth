@@ -111,6 +111,16 @@ contract Fork_Concrete_lidoFixedPriceMulltiLpARM_Setters_Test_ is Fork_Shared_Te
         lidoFixedPriceMulltiLpARM.setPrices(0, 0);
     }
 
+    function test_SellPriceCannotCrossOne() public asLidoFixedPriceMulltiLpARMOperator {
+        vm.expectRevert("ARM: sell price too low");
+        lidoFixedPriceMulltiLpARM.setPrices(0.9997 * 1e36, 0.99999 * 1e36);
+    }
+
+    function test_BuyPriceCannotCrossOne() public asLidoFixedPriceMulltiLpARMOperator {
+        vm.expectRevert("ARM: buy price too high");
+        lidoFixedPriceMulltiLpARM.setPrices(1.0 * 1e36, 1.0001 * 1e36);
+    }
+
     //////////////////////////////////////////////////////
     /// --- FIXED PRICE ARM - PASSING TESTS
     //////////////////////////////////////////////////////
