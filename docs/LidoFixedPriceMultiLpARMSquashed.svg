@@ -122,7 +122,7 @@
 <text text-anchor="start" x="8" y="-59.1" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;totalAssets(): uint256 &lt;&lt;LidoFixedPriceMultiLpARM&gt;&gt;</text>
 <text text-anchor="start" x="8" y="-42.3" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;convertToShares(assets: uint256): (shares: uint256) &lt;&lt;MultiLP&gt;&gt;</text>
 <text text-anchor="start" x="8" y="-25.5" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;convertToAssets(shares: uint256): (assets: uint256) &lt;&lt;MultiLP&gt;&gt;</text>
-<text text-anchor="start" x="8" y="-8.7" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;constructor(_stEth: address, _weth: address, _lidoWithdrawalQueue: address) &lt;&lt;LidoFixedPriceMultiLpARM&gt;&gt;</text>
+<text text-anchor="start" x="8" y="-8.7" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;constructor(_steth: address, _weth: address, _lidoWithdrawalQueue: address) &lt;&lt;LidoFixedPriceMultiLpARM&gt;&gt;</text>
 </g>
 </g>
 </svg>

@@ -27,14 +27,14 @@ contract LidoFixedPriceMultiLpARM is
     FixedPriceARM,
     LidoLiquidityManager
 {
-    /// @param _stEth The address of the stETH token
+    /// @param _steth The address of the stETH token
     /// @param _weth The address of the WETH token
     /// @param _lidoWithdrawalQueue The address of the Lido's withdrawal queue contract
-    constructor(address _stEth, address _weth, address _lidoWithdrawalQueue)
-        AbstractARM(_stEth, _weth)
+    constructor(address _steth, address _weth, address _lidoWithdrawalQueue)
+        AbstractARM(_steth, _weth)
         MultiLP(_weth)
         FixedPriceARM()
-        LidoLiquidityManager(_stEth, _weth, _lidoWithdrawalQueue)
+        LidoLiquidityManager(_steth, _weth, _lidoWithdrawalQueue)
     {}
 
     /// @notice Initialize the contract.
