@@ -23,9 +23,9 @@ remappings = [
 runs = 1_000
 
 [dependencies]
-forge-std = "1.9.2"
 "@openzeppelin-contracts" = "5.0.2"
 "@openzeppelin-contracts-upgradeable" = "5.0.2"
+forge-std = { version = "1.9.2", git = "https://github.com/foundry-rs/forge-std.git", rev = "5a802d7c10abb4bbfb3e7214c75052ef9e6a06f8" }
 
 [soldeer]
 recursive_deps = false
