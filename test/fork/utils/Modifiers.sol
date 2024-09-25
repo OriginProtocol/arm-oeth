@@ -169,6 +169,40 @@ abstract contract Modifiers is Helpers {
         _;
     }
 
+    /// @notice Approve stETH on LidoFixedPriceMultiLpARM contract.
+    modifier approveStETHOnLidoFixedPriceMultiLpARM() {
+        // Todo: extend this logic to other modifier if needed
+        (VmSafe.CallerMode mode, address _address, address _origin) = vm.readCallers();
+        vm.stopPrank();
+
+        vm.prank(lidoFixedPriceMulltiLpARM.owner());
+        lidoFixedPriceMulltiLpARM.approveStETH();
+
+        if (mode == VmSafe.CallerMode.Prank) {
+            vm.prank(_address, _origin);
+        } else if (mode == VmSafe.CallerMode.RecurrentPrank) {
+            vm.startPrank(_address, _origin);
+        }
+        _;
+    }
+
+    /// @notice Request stETH withdrawal for ETH on LidoFixedPriceMultiLpARM contract.
+    modifier requestStETHWithdrawalForETHOnLidoFixedPriceMultiLpARM(uint256[] memory amounts) {
+        // Todo: extend this logic to other modifier if needed
+        (VmSafe.CallerMode mode, address _address, address _origin) = vm.readCallers();
+        vm.stopPrank();
+
+        vm.prank(lidoFixedPriceMulltiLpARM.owner());
+        lidoFixedPriceMulltiLpARM.requestStETHWithdrawalForETH(amounts);
+
+        if (mode == VmSafe.CallerMode.Prank) {
+            vm.prank(_address, _origin);
+        } else if (mode == VmSafe.CallerMode.RecurrentPrank) {
+            vm.startPrank(_address, _origin);
+        }
+        _;
+    }
+
     /// @notice Skip time by a given delay.
     modifier skipTime(uint256 delay) {
         skip(delay);
