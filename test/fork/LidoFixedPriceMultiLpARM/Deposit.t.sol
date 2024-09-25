@@ -371,7 +371,7 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_Deposit_Test_ is Fork_Shared_Tes
         assertEq(lidoFixedPriceMulltiLpARM.totalAssets(), MIN_TOTAL_SUPPLY + amount, "total assets after");
         assertEq(liquidityProviderController.liquidityProviderCaps(alice), DEFAULT_AMOUNT * 3, "alice cap after"); // All the caps are used
         // withdrawal request is now claimable
-        assertEqQueueMetadata(DEFAULT_AMOUNT, DEFAULT_AMOUNT, 0, 1);
+        assertEqQueueMetadata(DEFAULT_AMOUNT, 0, 0, 1);
         assertEq(shares, amount); // No perfs, so 1 ether * totalSupply (1e18 + 1e12) / totalAssets (1e18 + 1e12) = 1 ether
     }
 }

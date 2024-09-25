@@ -71,14 +71,6 @@ contract LidoFixedPriceMultiLpARM is
         MultiLP._transferAsset(asset, to, transferAmount);
     }
 
-    /// @dev Funds the ARM's withdrawal queue when swaps send WETH to the ARM
-    function _transferAssetFrom(address asset, address from, address to, uint256 amount)
-        internal
-        override(AbstractARM, MultiLP)
-    {
-        MultiLP._transferAssetFrom(asset, from, to, amount);
-    }
-
     function _externalWithdrawQueue() internal view override(MultiLP, LidoLiquidityManager) returns (uint256) {
         return LidoLiquidityManager._externalWithdrawQueue();
     }
