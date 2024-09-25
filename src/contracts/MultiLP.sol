@@ -82,7 +82,7 @@ abstract contract MultiLP is AbstractARM, ERC20Upgradeable {
     /// @notice Preview the amount of shares that would be minted for a given amount of assets
     /// @param assets The amount of liquidity assets to deposit
     /// @return shares The amount of shares that would be minted
-    function previewDeposit(uint256 assets) public view returns (uint256 shares) {
+    function previewDeposit(uint256 assets) external view returns (uint256 shares) {
         shares = convertToShares(assets);
     }
 
@@ -113,7 +113,7 @@ abstract contract MultiLP is AbstractARM, ERC20Upgradeable {
     /// @notice Preview the amount of assets that would be received for burning a given amount of shares
     /// @param shares The amount of shares to burn
     /// @return assets The amount of liquidity assets that would be received
-    function previewRedeem(uint256 shares) public view returns (uint256 assets) {
+    function previewRedeem(uint256 shares) external view returns (uint256 assets) {
         assets = convertToAssets(shares);
     }
 
