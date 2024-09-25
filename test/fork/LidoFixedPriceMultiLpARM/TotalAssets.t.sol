@@ -49,7 +49,7 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_TotalAssets_Test_ is Fork_Shared
     //////////////////////////////////////////////////////
     /// --- PASSING TEST
     //////////////////////////////////////////////////////
-    function test_TotalAssets_AfterInitialization() public {
+    function test_TotalAssets_AfterInitialization() public view {
         assertEq(lidoFixedPriceMulltiLpARM.totalAssets(), MIN_TOTAL_SUPPLY);
     }
 
