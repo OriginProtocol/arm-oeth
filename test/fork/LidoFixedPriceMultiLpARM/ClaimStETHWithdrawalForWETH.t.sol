@@ -35,10 +35,6 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_RequestStETHWithdrawalForETH_Tes
     }
 
     //////////////////////////////////////////////////////
-    /// --- REVERTING TESTS
-    //////////////////////////////////////////////////////
-
-    //////////////////////////////////////////////////////
     /// --- PASSING TESTS
     //////////////////////////////////////////////////////
     function test_ClaimStETHWithdrawalForWETH_EmptyList()
@@ -63,9 +59,42 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_RequestStETHWithdrawalForETH_Tes
         requestStETHWithdrawalForETHOnLidoFixedPriceMultiLpARM(amounts1)
         mockFunctionClaimWithdrawOnLidoFixedPriceMultiLpARM(DEFAULT_AMOUNT)
     {
+        // Assertions before
+        uint256 balanceBefore = weth.balanceOf(address(lidoFixedPriceMulltiLpARM));
+        assertEq(lidoFixedPriceMulltiLpARM.outstandingEther(), DEFAULT_AMOUNT);
+
         stETHWithdrawal.getLastRequestId();
         uint256[] memory requests = new uint256[](1);
         requests[0] = stETHWithdrawal.getLastRequestId();
+        // Main call
         lidoFixedPriceMulltiLpARM.claimStETHWithdrawalForWETH(requests);
+
+        // Assertions after
+        assertEq(lidoFixedPriceMulltiLpARM.outstandingEther(), 0);
+        assertEq(weth.balanceOf(address(lidoFixedPriceMulltiLpARM)), balanceBefore + DEFAULT_AMOUNT);
+    }
+
+    function test_ClaimStETHWithdrawalForWETH_MultiRequest()
+        public
+        asLidoFixedPriceMulltiLpARMOperator
+        approveStETHOnLidoFixedPriceMultiLpARM
+        requestStETHWithdrawalForETHOnLidoFixedPriceMultiLpARM(amounts2)
+        mockCallLidoFindCheckpointHints
+        mockFunctionClaimWithdrawOnLidoFixedPriceMultiLpARM(amounts2[0] + amounts2[1])
+    {
+        // Assertions before
+        uint256 balanceBefore = weth.balanceOf(address(lidoFixedPriceMulltiLpARM));
+        assertEq(lidoFixedPriceMulltiLpARM.outstandingEther(), amounts2[0] + amounts2[1]);
+
+        stETHWithdrawal.getLastRequestId();
+        uint256[] memory requests = new uint256[](2);
+        requests[0] = stETHWithdrawal.getLastRequestId() - 1;
+        requests[1] = stETHWithdrawal.getLastRequestId();
+        // Main call
+        lidoFixedPriceMulltiLpARM.claimStETHWithdrawalForWETH(requests);
+
+        // Assertions after
+        assertEq(lidoFixedPriceMulltiLpARM.outstandingEther(), 0);
+        assertEq(weth.balanceOf(address(lidoFixedPriceMulltiLpARM)), balanceBefore + amounts2[0] + amounts2[1]);
     }
 }

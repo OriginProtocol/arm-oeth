@@ -8,6 +8,7 @@ import {VmSafe} from "forge-std/Vm.sol";
 import {Helpers} from "test/fork/utils/Helpers.sol";
 import {MockCall} from "test/fork/utils/MockCall.sol";
 import {MockLidoWithdraw} from "test/fork/utils/MockCall.sol";
+import {ETHSender} from "test/fork/utils/MockCall.sol";
 
 // Contracts
 import {IERC20} from "contracts/Interfaces.sol";
@@ -204,17 +205,35 @@ abstract contract Modifiers is Helpers {
         _;
     }
 
+    /// @notice mock call for `findCheckpointHints`on lido withdraw contracts.
+    modifier mockCallLidoFindCheckpointHints() {
+        // Todo: extend this logic to other modifier if needed
+        (VmSafe.CallerMode mode, address _address, address _origin) = vm.readCallers();
+        vm.stopPrank();
+
+        MockCall.mockCallLidoFindCheckpointHints();
+
+        if (mode == VmSafe.CallerMode.Prank) {
+            vm.prank(_address, _origin);
+        } else if (mode == VmSafe.CallerMode.RecurrentPrank) {
+            vm.startPrank(_address, _origin);
+        }
+        _;
+    }
+
+    /// @notice mock call for `claimWithdrawals` on lido withdraw contracts.
+    /// @dev this will send eth directly to the lidoFixedPriceMulltiLpARM contract.
     modifier mockFunctionClaimWithdrawOnLidoFixedPriceMultiLpARM(uint256 amount) {
         // Todo: extend this logic to other modifier if needed
         (VmSafe.CallerMode mode, address _address, address _origin) = vm.readCallers();
         vm.stopPrank();
 
         // Deploy fake lido withdraw contract
-        MockLidoWithdraw mock = new MockLidoWithdraw(address(lidoFixedPriceMulltiLpARM));
-        // Give ETH to the fake contract
-        vm.deal(address(mock), amount);
+        MockLidoWithdraw mocklidoWithdraw = new MockLidoWithdraw(address(lidoFixedPriceMulltiLpARM));
+        // Give ETH to the ETH Sender contract
+        vm.deal(address(mocklidoWithdraw.ethSender()), amount);
         // Mock all the call to the fake lido withdraw contract
-        MockCall.mockCallLidoClaimWithdrawals(address(mock));
+        MockCall.mockCallLidoClaimWithdrawals(address(mocklidoWithdraw));
 
         if (mode == VmSafe.CallerMode.Prank) {
             vm.prank(_address, _origin);
