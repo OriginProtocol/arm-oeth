@@ -8,6 +8,9 @@ import {VmSafe} from "forge-std/Vm.sol";
 import {Helpers} from "test/fork/utils/Helpers.sol";
 import {MockCall} from "test/fork/utils/MockCall.sol";
 
+// Contracts
+import {IERC20} from "contracts/Interfaces.sol";
+
 abstract contract Modifiers is Helpers {
     /// @notice Impersonate Alice.
     modifier asAlice() {
@@ -72,6 +75,7 @@ abstract contract Modifiers is Helpers {
         _;
     }
 
+    /// @notice Deposit WETH into the LidoFixedPriceMultiLpARM contract.
     modifier depositInLidoFixedPriceMultiLpARM(address user, uint256 amount) {
         // Todo: extend this logic to other modifier if needed
         (VmSafe.CallerMode mode, address _address, address _origin) = vm.readCallers();
@@ -113,6 +117,7 @@ abstract contract Modifiers is Helpers {
         _;
     }
 
+    /// @notice Claim redeem from LidoFixedPriceMultiLpARM contract.
     modifier claimRequestOnLidoFixedPriceMultiLpARM(address user, uint256 requestId) {
         // Todo: extend this logic to other modifier if needed
         (VmSafe.CallerMode mode, address _address, address _origin) = vm.readCallers();
@@ -130,6 +135,41 @@ abstract contract Modifiers is Helpers {
         _;
     }
 
+    /// @notice Simulate asset gain or loss in LidoFixedPriceMultiLpARM contract.
+    modifier simulateAssetGainInLidoFixedPriceMultiLpARM(uint256 assetGain, address token, bool gain) {
+        // Todo: extend this logic to other modifier if needed
+        (VmSafe.CallerMode mode, address _address, address _origin) = vm.readCallers();
+        vm.stopPrank();
+
+        if (gain) {
+            deal(
+                token,
+                address(lidoFixedPriceMulltiLpARM),
+                IERC20(token).balanceOf(address(lidoFixedPriceMulltiLpARM)) + uint256(assetGain)
+            );
+        } else {
+            deal(
+                token,
+                address(lidoFixedPriceMulltiLpARM),
+                IERC20(token).balanceOf(address(lidoFixedPriceMulltiLpARM)) - uint256(assetGain)
+            );
+        }
+
+        if (mode == VmSafe.CallerMode.Prank) {
+            vm.prank(_address, _origin);
+        } else if (mode == VmSafe.CallerMode.RecurrentPrank) {
+            vm.startPrank(_address, _origin);
+        }
+        _;
+    }
+
+    /// @notice Collect fees on LidoFixedPriceMultiLpARM contract.
+    modifier collectFeesOnLidoFixedPriceMultiLpARM() {
+        lidoFixedPriceMulltiLpARM.collectFees();
+        _;
+    }
+
+    /// @notice Skip time by a given delay.
     modifier skipTime(uint256 delay) {
         skip(delay);
         _;
