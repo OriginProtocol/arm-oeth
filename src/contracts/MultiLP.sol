@@ -21,24 +21,14 @@ abstract contract MultiLP is AbstractARM, ERC20Upgradeable {
     /// @notice The address of the asset that is used to add and remove liquidity. eg WETH
     address internal immutable liquidityAsset;
 
-    struct WithdrawalQueueMetadata {
-        // cumulative total of all withdrawal requests included the ones that have already been claimed
-        uint128 queued;
-        // cumulative total of all the requests that can be claimed including the ones that have already been claimed
-        uint128 claimable;
-        // total of all the requests that have been claimed
-        uint128 claimed;
-        // index of the next withdrawal request starting at 0
-        uint128 nextWithdrawalIndex;
-    }
-
-    /// @notice Global metadata for the withdrawal queue including:
-    /// queued - cumulative total of all withdrawal requests included the ones that have already been claimed
-    /// claimable - cumulative total of all the requests that can be claimed including the ones already claimed
-    /// claimed - total of all the requests that have been claimed
-    /// nextWithdrawalIndex - index of the next withdrawal request starting at 0
-    // slither-disable-next-line uninitialized-state
-    WithdrawalQueueMetadata public withdrawalQueueMetadata;
+    /// @notice cumulative total of all withdrawal requests included the ones that have already been claimed
+    uint128 public withdrawsQueued;
+    /// @notice total of all the withdrawal requests that have been claimed
+    uint128 public withdrawsClaimed;
+    /// @notice cumulative total of all the withdrawal requests that can be claimed including the ones already claimed
+    uint128 public withdrawsClaimable;
+    /// @notice index of the next withdrawal request starting at 0
+    uint128 public nextWithdrawalIndex;
 
     struct WithdrawalRequest {
         address withdrawer;
@@ -124,21 +114,21 @@ abstract contract MultiLP is AbstractARM, ERC20Upgradeable {
         // Calculate the amount of assets to transfer to the redeemer
         assets = convertToAssets(shares);
 
-        requestId = withdrawalQueueMetadata.nextWithdrawalIndex;
-        uint256 queued = withdrawalQueueMetadata.queued + assets;
-        uint256 claimTimestamp = block.timestamp + CLAIM_DELAY;
+        requestId = nextWithdrawalIndex;
+        uint128 queued = SafeCast.toUint128(withdrawsQueued + assets);
+        uint40 claimTimestamp = uint40(block.timestamp + CLAIM_DELAY);
 
         // Store the next withdrawal request
-        withdrawalQueueMetadata.nextWithdrawalIndex = SafeCast.toUint128(requestId + 1);
+        nextWithdrawalIndex = SafeCast.toUint128(requestId + 1);
         // Store the updated queued amount which reserves WETH in the withdrawal queue
-        withdrawalQueueMetadata.queued = SafeCast.toUint128(queued);
+        withdrawsQueued = queued;
         // Store requests
         withdrawalRequests[requestId] = WithdrawalRequest({
             withdrawer: msg.sender,
             claimed: false,
-            claimTimestamp: uint40(claimTimestamp),
+            claimTimestamp: claimTimestamp,
             assets: SafeCast.toUint128(assets),
-            queued: SafeCast.toUint128(queued)
+            queued: queued
         });
 
         // burn redeemer's shares
@@ -161,19 +151,17 @@ abstract contract MultiLP is AbstractARM, ERC20Upgradeable {
 
         // Load the structs from storage into memory
         WithdrawalRequest memory request = withdrawalRequests[requestId];
-        // This reads back the queue metadata that was updated in _updateWithdrawalQueueLiquidity
-        WithdrawalQueueMetadata memory queue = withdrawalQueueMetadata;
 
         require(request.claimTimestamp <= block.timestamp, "Claim delay not met");
         // If there isn't enough reserved liquidity in the queue to claim
-        require(request.queued <= queue.claimable, "Queue pending liquidity");
+        require(request.queued <= withdrawsClaimable, "Queue pending liquidity");
         require(request.withdrawer == msg.sender, "Not requester");
         require(request.claimed == false, "Already claimed");
 
         // Store the request as claimed
         withdrawalRequests[requestId].claimed = true;
         // Store the updated claimed amount
-        withdrawalQueueMetadata.claimed = queue.claimed + request.assets;
+        withdrawsClaimed += request.assets;
 
         assets = request.assets;
 
@@ -186,10 +174,11 @@ abstract contract MultiLP is AbstractARM, ERC20Upgradeable {
     /// @dev Updates the claimable amount in the ARM's withdrawal queue.
     /// That's the amount that is used to check if a request can be claimed or not.
     function _updateWithdrawalQueueLiquidity() internal {
-        WithdrawalQueueMetadata memory queue = withdrawalQueueMetadata;
+        // Load the claimable amount from storage into memory
+        uint256 withdrawsClaimableMem = withdrawsClaimable;
 
         // Check if the claimable amount is less than the queued amount
-        uint256 queueShortfall = queue.queued - queue.claimable;
+        uint256 queueShortfall = withdrawsQueued - withdrawsClaimableMem;
 
         // No need to do anything is the withdrawal queue is fully funded
         if (queueShortfall == 0) {
@@ -200,7 +189,7 @@ abstract contract MultiLP is AbstractARM, ERC20Upgradeable {
 
         // Of the claimable withdrawal requests, how much is unclaimed?
         // That is, the amount of the liquidity assets that is currently allocated for the withdrawal queue
-        uint256 allocatedLiquidity = queue.claimable - queue.claimed;
+        uint256 allocatedLiquidity = withdrawsClaimableMem - withdrawsClaimed;
 
         // If there is no unallocated liquidity assets then there is nothing to add to the queue
         if (liquidityBalance <= allocatedLiquidity) {
@@ -213,16 +202,14 @@ abstract contract MultiLP is AbstractARM, ERC20Upgradeable {
         uint256 addedClaimable = queueShortfall < unallocatedLiquidity ? queueShortfall : unallocatedLiquidity;
 
         // Store the new claimable amount back to storage
-        withdrawalQueueMetadata.claimable = SafeCast.toUint128(queue.claimable + addedClaimable);
+        withdrawsClaimable = SafeCast.toUint128(withdrawsClaimableMem + addedClaimable);
     }
 
     /// @dev Calculate how much of the liquidity asset in the ARM is not reserved for the withdrawal queue.
     // That is, it is available to be swapped.
     function _liquidityAvailable() internal view returns (uint256) {
-        WithdrawalQueueMetadata memory queue = withdrawalQueueMetadata;
-
         // The amount of WETH that is still to be claimed in the withdrawal queue
-        uint256 outstandingWithdrawals = queue.queued - queue.claimed;
+        uint256 outstandingWithdrawals = withdrawsQueued - withdrawsClaimed;
 
         // The amount of the liquidity asset is in the ARM
         uint256 liquidityBalance = IERC20(liquidityAsset).balanceOf(address(this));
@@ -251,16 +238,18 @@ abstract contract MultiLP is AbstractARM, ERC20Upgradeable {
         // Get the assets in the ARM and external withdrawal queue
         assets = token0.balanceOf(address(this)) + token1.balanceOf(address(this)) + _externalWithdrawQueue();
 
-        WithdrawalQueueMetadata memory queue = withdrawalQueueMetadata;
+        // Load the queue metadata from storage into memory
+        uint256 queuedMem = withdrawsQueued;
+        uint256 claimedMem = withdrawsClaimed;
 
         // If the ARM becomes insolvent enough that the total value in the ARM and external withdrawal queue
         // is less than the outstanding withdrawals.
-        if (assets + queue.claimed < queue.queued) {
+        if (assets + claimedMem < queuedMem) {
             return 0;
         }
 
         // Need to remove the liquidity assets that have been reserved for the withdrawal queue
-        return assets + queue.claimed - queue.queued;
+        return assets + claimedMem - queuedMem;
     }
 
     /// @notice Calculates the amount of shares for a given amount of liquidity assets
