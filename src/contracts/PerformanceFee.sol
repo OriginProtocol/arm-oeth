@@ -61,8 +61,8 @@ abstract contract PerformanceFee is MultiLP {
         lastTotalAssets = SafeCast.toUint128(_rawTotalAssets());
     }
 
-    /// @dev Save the new total assets after the withdrawal and performance fee accrued
-    function _postWithdrawHook(uint256) internal virtual override {
+    /// @dev Save the new total assets after the requestRedeem and performance fee accrued
+    function _postRequestRedeemHook() internal virtual override {
         lastTotalAssets = SafeCast.toUint128(_rawTotalAssets());
     }
 
@@ -87,6 +87,8 @@ abstract contract PerformanceFee is MultiLP {
         emit FeeCalculated(newFeesAccrued, assetIncrease);
     }
 
+    /// @notice The total amount of assets in the ARM and external withdrawal queue,
+    /// less the liquidity assets reserved for the ARM's withdrawal queue and accrued fees.
     function totalAssets() public view virtual override returns (uint256) {
         uint256 totalAssetsBeforeFees = _rawTotalAssets();
 

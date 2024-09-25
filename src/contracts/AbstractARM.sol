@@ -154,4 +154,14 @@ abstract contract AbstractARM is OwnableOperable {
     function _inDeadline(uint256 deadline) internal view {
         require(deadline >= block.timestamp, "ARM: Deadline expired");
     }
+
+    /// @dev Hook to transfer assets out of the ARM contract
+    function _transferAsset(address asset, address to, uint256 amount) internal virtual {
+        IERC20(asset).transfer(to, amount);
+    }
+
+    /// @dev Hook to transfer assets into the ARM contract
+    function _transferAssetFrom(address asset, address from, address to, uint256 amount) internal virtual {
+        IERC20(asset).transferFrom(from, to, amount);
+    }
 }
