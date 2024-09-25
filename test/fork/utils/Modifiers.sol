@@ -7,6 +7,7 @@ import {VmSafe} from "forge-std/Vm.sol";
 // Test imports
 import {Helpers} from "test/fork/utils/Helpers.sol";
 import {MockCall} from "test/fork/utils/MockCall.sol";
+import {MockLidoWithdraw} from "test/fork/utils/MockCall.sol";
 
 // Contracts
 import {IERC20} from "contracts/Interfaces.sol";
@@ -194,6 +195,26 @@ abstract contract Modifiers is Helpers {
 
         vm.prank(lidoFixedPriceMulltiLpARM.owner());
         lidoFixedPriceMulltiLpARM.requestStETHWithdrawalForETH(amounts);
+
+        if (mode == VmSafe.CallerMode.Prank) {
+            vm.prank(_address, _origin);
+        } else if (mode == VmSafe.CallerMode.RecurrentPrank) {
+            vm.startPrank(_address, _origin);
+        }
+        _;
+    }
+
+    modifier mockFunctionClaimWithdrawOnLidoFixedPriceMultiLpARM(uint256 amount) {
+        // Todo: extend this logic to other modifier if needed
+        (VmSafe.CallerMode mode, address _address, address _origin) = vm.readCallers();
+        vm.stopPrank();
+
+        // Deploy fake lido withdraw contract
+        MockLidoWithdraw mock = new MockLidoWithdraw(address(lidoFixedPriceMulltiLpARM));
+        // Give ETH to the fake contract
+        vm.deal(address(mock), amount);
+        // Mock all the call to the fake lido withdraw contract
+        MockCall.mockCallLidoClaimWithdrawals(address(mock));
 
         if (mode == VmSafe.CallerMode.Prank) {
             vm.prank(_address, _origin);
