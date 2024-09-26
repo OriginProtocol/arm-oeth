@@ -24,14 +24,14 @@ contract LidoARM is Initializable, AbstractARM, LidoLiquidityManager {
         LidoLiquidityManager(_steth, _weth, _lidoWithdrawalQueue)
     {}
 
-    /// @notice Initialize the contract.
+    /// @notice Initialize the storage variables stored in the proxy contract.
     /// The deployer that calls initialize has to approve the this ARM's proxy contract to transfer 1e12 WETH.
     /// @param _name The name of the liquidity provider (LP) token.
     /// @param _symbol The symbol of the liquidity provider (LP) token.
     /// @param _operator The address of the account that can request and claim Lido withdrawals.
     /// @param _fee The performance fee that is collected by the feeCollector measured in basis points (1/100th of a percent).
     /// 10,000 = 100% performance fee
-    /// 500 = 5% performance fee
+    /// 1,500 = 15% performance fee
     /// @param _feeCollector The account that can collect the performance fee
     /// @param _liquidityProviderController The address of the Liquidity Provider Controller
     function initialize(
