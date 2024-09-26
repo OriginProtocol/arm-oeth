@@ -30,12 +30,12 @@
 
 ### Hierarchy
 
-![Lido ARM Hierarchy](../../docs/LidoFixedPriceMultiLpARMHierarchy.svg)
+![Lido ARM Hierarchy](../../docs/LidoARMHierarchy.svg)
 
 ## OETH ARM Squashed
 
-![Lido ARM Squashed](../../docs/LidoFixedPriceMultiLpARMSquashed.svg)
+![Lido ARM Squashed](../../docs/LidoARMSquashed.svg)
 
 <!-- ## OETH ARM Storage
 
-![Lido ARM Storage](../../docs/LidoFixedPriceMultiLpARMStorage.svg) -->
+![Lido ARM Storage](../../docs/LidoARMStorage.svg) -->
