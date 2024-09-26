@@ -10,7 +10,7 @@ import {Modifiers} from "test/fork/utils/Modifiers.sol";
 // Contracts
 import {Proxy} from "contracts/Proxy.sol";
 import {OethARM} from "contracts/OethARM.sol";
-import {LidoFixedPriceMultiLpARM} from "contracts/LidoFixedPriceMultiLpARM.sol";
+import {LidoARM} from "contracts/LidoARM.sol";
 import {LiquidityProviderController} from "contracts/LiquidityProviderController.sol";
 
 // Interfaces
@@ -139,17 +139,16 @@ abstract contract Fork_Shared_Test_ is Modifiers {
         liquidityProviderController.setLiquidityProviderCaps(liquidityProviders, 20 ether);
         liquidityProviderController.setTotalAssetsCap(100 ether);
 
-        // --- Deploy LidoFixedPriceMultiLpARM implementation ---
+        // --- Deploy LidoARM implementation ---
         // Deploy LidoARM implementation.
-        LidoFixedPriceMultiLpARM lidoImpl =
-            new LidoFixedPriceMultiLpARM(address(steth), address(weth), Mainnet.LIDO_WITHDRAWAL);
+        LidoARM lidoImpl = new LidoARM(address(steth), address(weth), Mainnet.LIDO_WITHDRAWAL);
 
         // Deployer will need WETH to initialize the ARM.
         deal(address(weth), address(this), 1e12);
         weth.approve(address(lidoProxy), type(uint256).max);
         steth.approve(address(lidoProxy), type(uint256).max);
 
-        // Initialize Proxy with LidoFixedPriceMultiLpARM implementation.
+        // Initialize Proxy with LidoARM implementation.
         data = abi.encodeWithSignature(
             "initialize(string,string,address,uint256,address,address)",
             "Lido ARM",
@@ -162,7 +161,7 @@ abstract contract Fork_Shared_Test_ is Modifiers {
         lidoProxy.initialize(address(lidoImpl), address(this), data);
 
         // Set the Proxy as the LidoARM.
-        lidoFixedPriceMultiLpARM = LidoFixedPriceMultiLpARM(payable(address(lidoProxy)));
+        lidoFixedPriceMultiLpARM = LidoARM(payable(address(lidoProxy)));
 
         // set prices
         lidoFixedPriceMultiLpARM.setPrices(992 * 1e33, 1001 * 1e33);

@@ -6,7 +6,7 @@ import "forge-std/console.sol";
 import {Vm} from "forge-std/Vm.sol";
 
 import {IERC20, IWETH, LegacyAMM} from "contracts/Interfaces.sol";
-import {LidoFixedPriceMultiLpARM} from "contracts/LidoFixedPriceMultiLpARM.sol";
+import {LidoARM} from "contracts/LidoARM.sol";
 import {LiquidityProviderController} from "contracts/LiquidityProviderController.sol";
 import {Proxy} from "contracts/Proxy.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
@@ -23,7 +23,7 @@ contract UpgradeLidoARMMainnetScript is AbstractDeployScript {
 
     Proxy lidoARMProxy;
     Proxy lpcProxy;
-    LidoFixedPriceMultiLpARM lidoARMImpl;
+    LidoARM lidoARMImpl;
 
     function _execute() internal override {
         console.log("Deploy:", DEPLOY_NAME);
@@ -53,7 +53,7 @@ contract UpgradeLidoARMMainnetScript is AbstractDeployScript {
         liquidityProviderController.setLiquidityProviderCaps(liquidityProviders, 10 ether);
 
         // 6. Deploy Lido implementation
-        lidoARMImpl = new LidoFixedPriceMultiLpARM(Mainnet.STETH, Mainnet.WETH, Mainnet.LIDO_WITHDRAWAL);
+        lidoARMImpl = new LidoARM(Mainnet.STETH, Mainnet.WETH, Mainnet.LIDO_WITHDRAWAL);
         _recordDeploy("LIDO_ARM_IMPL", address(lidoARMImpl));
 
         // 7. Transfer ownership of LiquidityProviderController to the mainnet 5/8 multisig
@@ -113,7 +113,7 @@ contract UpgradeLidoARMMainnetScript is AbstractDeployScript {
         lidoARMProxy.upgradeToAndCall(address(lidoARMImpl), data);
 
         // Set the buy price with a 8 basis point discount. The sell price is 1.0
-        LidoFixedPriceMultiLpARM(payable(Mainnet.LIDO_ARM)).setPrices(9994e32, 1e36);
+        LidoARM(payable(Mainnet.LIDO_ARM)).setPrices(9994e32, 1e36);
 
         // transfer ownership of the Lido ARM proxy to the mainnet 5/8 multisig
         lidoARMProxy.setOwner(Mainnet.GOV_MULTISIG);

@@ -42,7 +42,7 @@ abstract contract Modifiers is Helpers {
         vm.stopPrank();
     }
 
-    /// @notice Impersonate the owner of LidoFixedPriceMultiLpARM contract.
+    /// @notice Impersonate the owner of LidoARM contract.
     modifier asLidoFixedPriceMultiLpARMOwner() {
         vm.startPrank(lidoFixedPriceMultiLpARM.owner());
         _;
@@ -77,7 +77,7 @@ abstract contract Modifiers is Helpers {
         _;
     }
 
-    /// @notice Deposit WETH into the LidoFixedPriceMultiLpARM contract.
+    /// @notice Deposit WETH into the LidoARM contract.
     modifier depositInLidoFixedPriceMultiLpARM(address user, uint256 amount) {
         // Todo: extend this logic to other modifier if needed
         (VmSafe.CallerMode mode, address _address, address _origin) = vm.readCallers();
@@ -101,7 +101,7 @@ abstract contract Modifiers is Helpers {
         _;
     }
 
-    /// @notice Request redeem from LidoFixedPriceMultiLpARM contract.
+    /// @notice Request redeem from LidoARM contract.
     modifier requestRedeemFromLidoFixedPriceMultiLpARM(address user, uint256 amount) {
         // Todo: extend this logic to other modifier if needed
         (VmSafe.CallerMode mode, address _address, address _origin) = vm.readCallers();
@@ -119,7 +119,7 @@ abstract contract Modifiers is Helpers {
         _;
     }
 
-    /// @notice Claim redeem from LidoFixedPriceMultiLpARM contract.
+    /// @notice Claim redeem from LidoARM contract.
     modifier claimRequestOnLidoFixedPriceMultiLpARM(address user, uint256 requestId) {
         // Todo: extend this logic to other modifier if needed
         (VmSafe.CallerMode mode, address _address, address _origin) = vm.readCallers();
@@ -137,7 +137,7 @@ abstract contract Modifiers is Helpers {
         _;
     }
 
-    /// @notice Simulate asset gain or loss in LidoFixedPriceMultiLpARM contract.
+    /// @notice Simulate asset gain or loss in LidoARM contract.
     modifier simulateAssetGainInLidoFixedPriceMultiLpARM(uint256 assetGain, address token, bool gain) {
         // Todo: extend this logic to other modifier if needed
         (VmSafe.CallerMode mode, address _address, address _origin) = vm.readCallers();
@@ -165,13 +165,13 @@ abstract contract Modifiers is Helpers {
         _;
     }
 
-    /// @notice Collect fees on LidoFixedPriceMultiLpARM contract.
+    /// @notice Collect fees on LidoARM contract.
     modifier collectFeesOnLidoFixedPriceMultiLpARM() {
         lidoFixedPriceMultiLpARM.collectFees();
         _;
     }
 
-    /// @notice Approve stETH on LidoFixedPriceMultiLpARM contract.
+    /// @notice Approve stETH on LidoARM contract.
     modifier approveStETHOnLidoFixedPriceMultiLpARM() {
         // Todo: extend this logic to other modifier if needed
         (VmSafe.CallerMode mode, address _address, address _origin) = vm.readCallers();
@@ -188,7 +188,7 @@ abstract contract Modifiers is Helpers {
         _;
     }
 
-    /// @notice Request stETH withdrawal for ETH on LidoFixedPriceMultiLpARM contract.
+    /// @notice Request stETH withdrawal for ETH on LidoARM contract.
     modifier requestStETHWithdrawalForETHOnLidoFixedPriceMultiLpARM(uint256[] memory amounts) {
         // Todo: extend this logic to other modifier if needed
         (VmSafe.CallerMode mode, address _address, address _origin) = vm.readCallers();

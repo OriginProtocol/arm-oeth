@@ -22,7 +22,7 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_Deposit_Test_ is Fork_Shared_Tes
      *
      * ML = MultiLP
      * PF = PerformanceFee
-     * ARM = LidoFixedPriceMultiLpARM
+     * ARM = LidoARM
      * LPC = LiquidityProviderController
      * LCPARM = LiquidityProviderControllerARM
      */

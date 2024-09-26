@@ -9,7 +9,7 @@ import {IERC20} from "contracts/Interfaces.sol";
 import {IStETHWithdrawal} from "contracts/Interfaces.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
 
-contract Fork_Concrete_LidoFixedPriceMultiLpARM_RequestStETHWithdrawalForETH_Test_ is Fork_Shared_Test_ {
+contract Fork_Concrete_LidoARM_RequestStETHWithdrawalForETH_Test_ is Fork_Shared_Test_ {
     uint256[] amounts0;
     uint256[] amounts1;
     uint256[] amounts2;

@@ -6,7 +6,7 @@ import {Fork_Shared_Test_} from "test/fork/shared/Shared.sol";
 
 import {IERC20} from "contracts/Interfaces.sol";
 
-contract Fork_Concrete_LidoFixedPriceMultiLpARM_SwapTokensForExactTokens_Test is Fork_Shared_Test_ {
+contract Fork_Concrete_LidoARM_SwapTokensForExactTokens_Test is Fork_Shared_Test_ {
     //////////////////////////////////////////////////////
     /// --- CONSTANTS
     //////////////////////////////////////////////////////

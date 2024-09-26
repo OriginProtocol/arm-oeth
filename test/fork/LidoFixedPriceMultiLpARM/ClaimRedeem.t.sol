@@ -8,7 +8,7 @@ import {Fork_Shared_Test_} from "test/fork/shared/Shared.sol";
 import {IERC20} from "contracts/Interfaces.sol";
 import {AbstractARM} from "contracts/AbstractARM.sol";
 
-contract Fork_Concrete_LidoFixedPriceMultiLpARM_ClaimRedeem_Test_ is Fork_Shared_Test_ {
+contract Fork_Concrete_LidoARM_ClaimRedeem_Test_ is Fork_Shared_Test_ {
     uint256 private delay;
     //////////////////////////////////////////////////////
     /// --- SETUP

@@ -15,7 +15,7 @@ import {LidoLiquidityManager} from "./LidoLiquidityManager.sol";
  * A performance fee is also collected on increases in the ARM's total assets.
  * @author Origin Protocol Inc
  */
-contract LidoFixedPriceMultiLpARM is Initializable, AbstractARM, LidoLiquidityManager {
+contract LidoARM is Initializable, AbstractARM, LidoLiquidityManager {
     /// @param _steth The address of the stETH token
     /// @param _weth The address of the WETH token
     /// @param _lidoWithdrawalQueue The address of the Lido's withdrawal queue contract

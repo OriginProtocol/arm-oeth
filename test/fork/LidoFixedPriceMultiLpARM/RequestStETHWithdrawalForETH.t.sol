@@ -7,7 +7,7 @@ import {Fork_Shared_Test_} from "test/fork/shared/Shared.sol";
 // Contracts
 import {IERC20} from "contracts/Interfaces.sol";
 
-contract Fork_Concrete_LidoFixedPriceMultiLpARM_RequestStETHWithdrawalForETH_Test_ is Fork_Shared_Test_ {
+contract Fork_Concrete_LidoARM_RequestStETHWithdrawalForETH_Test_ is Fork_Shared_Test_ {
     //////////////////////////////////////////////////////
     /// --- SETUP
     //////////////////////////////////////////////////////
