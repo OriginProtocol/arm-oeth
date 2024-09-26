@@ -6,9 +6,7 @@ import {Fork_Shared_Test_} from "test/fork/shared/Shared.sol";
 
 // Contracts
 import {IERC20} from "contracts/Interfaces.sol";
-import {MultiLP} from "contracts/MultiLP.sol";
-import {PerformanceFee} from "contracts/PerformanceFee.sol";
-import {LiquidityProviderControllerARM} from "contracts/LiquidityProviderControllerARM.sol";
+import {AbstractARM} from "contracts/AbstractARM.sol";
 
 contract Fork_Concrete_lidoFixedPriceMulltiLpARM_Setters_Test_ is Fork_Shared_Test_ {
     //////////////////////////////////////////////////////
@@ -54,7 +52,7 @@ contract Fork_Concrete_lidoFixedPriceMulltiLpARM_Setters_Test_ is Fork_Shared_Te
         uint256 newFee = _bound(vm.randomUint(), 0, lidoFixedPriceMultiLpARM.FEE_SCALE());
 
         vm.expectEmit({emitter: address(lidoFixedPriceMultiLpARM)});
-        emit PerformanceFee.FeeUpdated(newFee);
+        emit AbstractARM.FeeUpdated(newFee);
         lidoFixedPriceMultiLpARM.setFee(newFee);
 
         assertEq(lidoFixedPriceMultiLpARM.fee(), newFee);
@@ -67,7 +65,7 @@ contract Fork_Concrete_lidoFixedPriceMulltiLpARM_Setters_Test_ is Fork_Shared_Te
         address newFeeCollector = vm.randomAddress();
 
         vm.expectEmit({emitter: address(lidoFixedPriceMultiLpARM)});
-        emit PerformanceFee.FeeCollectorUpdated(newFeeCollector);
+        emit AbstractARM.FeeCollectorUpdated(newFeeCollector);
         lidoFixedPriceMultiLpARM.setFeeCollector(newFeeCollector);
 
         assertEq(lidoFixedPriceMultiLpARM.feeCollector(), newFeeCollector);
@@ -113,12 +111,12 @@ contract Fork_Concrete_lidoFixedPriceMulltiLpARM_Setters_Test_ is Fork_Shared_Te
 
     function test_SellPriceCannotCrossOne() public asLidoFixedPriceMulltiLpARMOperator {
         vm.expectRevert("ARM: sell price too low");
-        lidoFixedPriceMulltiLpARM.setPrices(0.9997 * 1e36, 0.99999 * 1e36);
+        lidoFixedPriceMultiLpARM.setPrices(0.9997 * 1e36, 0.99999 * 1e36);
     }
 
     function test_BuyPriceCannotCrossOne() public asLidoFixedPriceMulltiLpARMOperator {
         vm.expectRevert("ARM: buy price too high");
-        lidoFixedPriceMulltiLpARM.setPrices(1.0 * 1e36, 1.0001 * 1e36);
+        lidoFixedPriceMultiLpARM.setPrices(1.0 * 1e36, 1.0001 * 1e36);
     }
 
     //////////////////////////////////////////////////////
@@ -180,7 +178,7 @@ contract Fork_Concrete_lidoFixedPriceMulltiLpARM_Setters_Test_ is Fork_Shared_Te
         address newLiquidityProviderController = vm.randomAddress();
 
         vm.expectEmit({emitter: address(lidoFixedPriceMultiLpARM)});
-        emit LiquidityProviderControllerARM.LiquidityProviderControllerUpdated(newLiquidityProviderController);
+        emit AbstractARM.LiquidityProviderControllerUpdated(newLiquidityProviderController);
         lidoFixedPriceMultiLpARM.setLiquidityProviderController(newLiquidityProviderController);
 
         assertEq(lidoFixedPriceMultiLpARM.liquidityProviderController(), newLiquidityProviderController);

@@ -6,7 +6,6 @@ import {Fork_Shared_Test_} from "test/fork/shared/Shared.sol";
 
 // Contracts
 import {IERC20} from "contracts/Interfaces.sol";
-import {MultiLP} from "contracts/MultiLP.sol";
 import {LiquidityProviderController} from "contracts/LiquidityProviderController.sol";
 
 contract Fork_Concrete_LidoFixedPriceMultiLpARM_Deposit_Test_ is Fork_Shared_Test_ {

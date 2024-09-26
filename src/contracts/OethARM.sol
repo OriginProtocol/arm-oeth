@@ -17,7 +17,7 @@ contract OethARM is Initializable, OwnerLP, PeggedARM, OethLiquidityManager {
     /// @param _weth The address of the WETH token that is being swapped out of this contract.
     /// @param _oethVault The address of the OETH Vault proxy.
     constructor(address _oeth, address _weth, address _oethVault)
-        AbstractARM(_oeth, _weth)
+        AbstractARM(_oeth, _weth, _weth)
         PeggedARM(false)
         OethLiquidityManager(_oeth, _oethVault)
     {}
@@ -27,5 +27,9 @@ contract OethARM is Initializable, OwnerLP, PeggedARM, OethLiquidityManager {
     function initialize(address _operator) external initializer {
         _setOperator(_operator);
         _approvals();
+    }
+
+    function _externalWithdrawQueue() internal view override returns (uint256 assets) {
+        // TODO track OETH sent to the OETH Vault's withdrawal queue
     }
 }

@@ -6,7 +6,7 @@ import {Fork_Shared_Test_} from "test/fork/shared/Shared.sol";
 
 // Contracts
 import {IERC20} from "contracts/Interfaces.sol";
-import {PerformanceFee} from "contracts/PerformanceFee.sol";
+import {AbstractARM} from "contracts/AbstractARM.sol";
 
 contract Fork_Concrete_LidoFixedPriceMultiLpARM_CollectFees_Test_ is Fork_Shared_Test_ {
     //////////////////////////////////////////////////////
@@ -42,7 +42,7 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_CollectFees_Test_ is Fork_Shared
         vm.expectEmit({emitter: address(weth)});
         emit IERC20.Transfer(address(lidoFixedPriceMultiLpARM), feeCollector, fee);
         vm.expectEmit({emitter: address(lidoFixedPriceMultiLpARM)});
-        emit PerformanceFee.FeeCollected(feeCollector, fee);
+        emit AbstractARM.FeeCollected(feeCollector, fee);
 
         // Main call
         uint256 claimedFee = lidoFixedPriceMultiLpARM.collectFees();

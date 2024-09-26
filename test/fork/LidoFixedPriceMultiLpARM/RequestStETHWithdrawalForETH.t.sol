@@ -25,17 +25,6 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_RequestStETHWithdrawalForETH_Tes
         lidoFixedPriceMultiLpARM.requestStETHWithdrawalForETH(new uint256[](0));
     }
 
-    function test_RevertWhen_RequestStETHWithdrawalForETH_Because_AllowanceExceeded()
-        public
-        asLidoFixedPriceMulltiLpARMOperator
-    {
-        uint256[] memory amounts = new uint256[](1);
-        amounts[0] = DEFAULT_AMOUNT;
-
-        vm.expectRevert("ALLOWANCE_EXCEEDED");
-        lidoFixedPriceMultiLpARM.requestStETHWithdrawalForETH(amounts);
-    }
-
     function test_RevertWhen_RequestStETHWithdrawalForETH_Because_BalanceExceeded()
         public
         asLidoFixedPriceMulltiLpARMOperator

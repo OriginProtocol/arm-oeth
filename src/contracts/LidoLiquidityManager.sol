@@ -24,6 +24,13 @@ abstract contract LidoLiquidityManager is OwnableOperable {
     }
 
     /**
+     * @dev Approve the stETH withdrawal contract. Used for redemption requests.
+     */
+    function _initLidoLiquidityManager() internal {
+        steth.approve(address(withdrawalQueue), type(uint256).max);
+    }
+
+    /**
      * @notice Approve the stETH withdrawal contract. Used for redemption requests.
      */
     function approveStETH() external onlyOperatorOrOwner {

@@ -6,8 +6,7 @@ import {Fork_Shared_Test_} from "test/fork/shared/Shared.sol";
 
 // Contracts
 import {IERC20} from "contracts/Interfaces.sol";
-import {MultiLP} from "contracts/MultiLP.sol";
-import {PerformanceFee} from "contracts/PerformanceFee.sol";
+import {AbstractARM} from "contracts/AbstractARM.sol";
 
 contract Fork_Concrete_LidoFixedPriceMultiLpARM_RequestRedeem_Test_ is Fork_Shared_Test_ {
     //////////////////////////////////////////////////////
@@ -45,7 +44,7 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_RequestRedeem_Test_ is Fork_Shar
         vm.expectEmit({emitter: address(lidoFixedPriceMultiLpARM)});
         emit IERC20.Transfer(address(this), address(0), DEFAULT_AMOUNT);
         vm.expectEmit({emitter: address(lidoFixedPriceMultiLpARM)});
-        emit MultiLP.RedeemRequested(address(this), 0, DEFAULT_AMOUNT, DEFAULT_AMOUNT, block.timestamp + delay);
+        emit AbstractARM.RedeemRequested(address(this), 0, DEFAULT_AMOUNT, DEFAULT_AMOUNT, block.timestamp + delay);
         // Main Call
         (uint256 requestId, uint256 assets) = lidoFixedPriceMultiLpARM.requestRedeem(DEFAULT_AMOUNT);
 
@@ -88,7 +87,7 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_RequestRedeem_Test_ is Fork_Shar
         vm.expectEmit({emitter: address(lidoFixedPriceMultiLpARM)});
         emit IERC20.Transfer(address(this), address(0), DEFAULT_AMOUNT / 2);
         vm.expectEmit({emitter: address(lidoFixedPriceMultiLpARM)});
-        emit MultiLP.RedeemRequested(
+        emit AbstractARM.RedeemRequested(
             address(this), 1, DEFAULT_AMOUNT / 2, DEFAULT_AMOUNT * 3 / 4, block.timestamp + delay
         );
         // Main Call
@@ -136,7 +135,7 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_RequestRedeem_Test_ is Fork_Shar
         uint256 expectedAssetsDead = MIN_TOTAL_SUPPLY * totalAsset / (MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT);
 
         vm.expectEmit({emitter: address(lidoFixedPriceMultiLpARM)});
-        emit PerformanceFee.FeeCalculated(feeAccrued, assetsGain);
+        emit AbstractARM.FeeCalculated(feeAccrued, assetsGain);
         vm.expectEmit({emitter: address(lidoFixedPriceMultiLpARM)});
         emit IERC20.Transfer(address(this), address(0), DEFAULT_AMOUNT);
         // Main call

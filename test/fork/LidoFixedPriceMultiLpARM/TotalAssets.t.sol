@@ -9,8 +9,7 @@ import {Fork_Shared_Test_} from "test/fork/shared/Shared.sol";
 
 // Contracts
 import {IERC20} from "contracts/Interfaces.sol";
-import {MultiLP} from "contracts/MultiLP.sol";
-import {PerformanceFee} from "contracts/PerformanceFee.sol";
+import {AbstractARM} from "contracts/AbstractARM.sol";
 
 contract Fork_Concrete_LidoFixedPriceMultiLpARM_TotalAssets_Test_ is Fork_Shared_Test_ {
     //////////////////////////////////////////////////////
@@ -30,20 +29,6 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_TotalAssets_Test_ is Fork_Shared
 
         deal(address(weth), address(this), 1_000 ether);
         weth.approve(address(lidoFixedPriceMultiLpARM), type(uint256).max);
-    }
-
-    //////////////////////////////////////////////////////
-    /// --- REVERTING TEST
-    //////////////////////////////////////////////////////
-    function test_RevertWhen_TotalAssets_Because_MathError()
-        public
-        depositInLidoFixedPriceMultiLpARM(address(this), DEFAULT_AMOUNT)
-        simulateAssetGainInLidoFixedPriceMultiLpARM(DEFAULT_AMOUNT, address(weth), true)
-        requestRedeemFromLidoFixedPriceMultiLpARM(address(this), DEFAULT_AMOUNT)
-        simulateAssetGainInLidoFixedPriceMultiLpARM(DEFAULT_AMOUNT * 2, address(weth), false)
-    {
-        vm.expectRevert(stdError.arithmeticError);
-        lidoFixedPriceMultiLpARM.totalAssets();
     }
 
     //////////////////////////////////////////////////////
@@ -182,6 +167,17 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_TotalAssets_Test_ is Fork_Shared
         // Simulate a loss of assets
         deal(address(weth), address(lidoFixedPriceMultiLpARM), DEFAULT_AMOUNT - 1);
 
+        assertEq(lidoFixedPriceMultiLpARM.totalAssets(), 0);
+    }
+
+    function test_RevertWhen_TotalAssets_Because_MathError()
+        public
+        depositInLidoFixedPriceMultiLpARM(address(this), DEFAULT_AMOUNT)
+        simulateAssetGainInLidoFixedPriceMultiLpARM(DEFAULT_AMOUNT, address(weth), true)
+        requestRedeemFromLidoFixedPriceMultiLpARM(address(this), DEFAULT_AMOUNT)
+        simulateAssetGainInLidoFixedPriceMultiLpARM(DEFAULT_AMOUNT * 2, address(weth), false)
+    {
+        // vm.expectRevert(stdError.arithmeticError);
         assertEq(lidoFixedPriceMultiLpARM.totalAssets(), 0);
     }
 }

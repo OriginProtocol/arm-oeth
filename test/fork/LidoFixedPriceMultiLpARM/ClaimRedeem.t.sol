@@ -6,8 +6,7 @@ import {Fork_Shared_Test_} from "test/fork/shared/Shared.sol";
 
 // Contracts
 import {IERC20} from "contracts/Interfaces.sol";
-import {MultiLP} from "contracts/MultiLP.sol";
-import {PerformanceFee} from "contracts/PerformanceFee.sol";
+import {AbstractARM} from "contracts/AbstractARM.sol";
 
 contract Fork_Concrete_LidoFixedPriceMultiLpARM_ClaimRedeem_Test_ is Fork_Shared_Test_ {
     uint256 private delay;
@@ -131,7 +130,7 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_ClaimRedeem_Test_ is Fork_Shared
 
         // Expected events
         vm.expectEmit({emitter: address(lidoFixedPriceMultiLpARM)});
-        emit MultiLP.RedeemClaimed(address(this), 0, DEFAULT_AMOUNT);
+        emit AbstractARM.RedeemClaimed(address(this), 0, DEFAULT_AMOUNT);
         vm.expectEmit({emitter: address(weth)});
         emit IERC20.Transfer(address(lidoFixedPriceMultiLpARM), address(this), DEFAULT_AMOUNT);
 
@@ -175,7 +174,7 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_ClaimRedeem_Test_ is Fork_Shared
 
         // Expected events
         vm.expectEmit({emitter: address(lidoFixedPriceMultiLpARM)});
-        emit MultiLP.RedeemClaimed(address(this), 0, DEFAULT_AMOUNT);
+        emit AbstractARM.RedeemClaimed(address(this), 0, DEFAULT_AMOUNT);
         vm.expectEmit({emitter: address(weth)});
         emit IERC20.Transfer(address(lidoFixedPriceMultiLpARM), address(this), DEFAULT_AMOUNT);
 
@@ -221,7 +220,7 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_ClaimRedeem_Test_ is Fork_Shared
 
         // Expected events
         vm.expectEmit({emitter: address(lidoFixedPriceMultiLpARM)});
-        emit MultiLP.RedeemClaimed(address(this), 1, DEFAULT_AMOUNT / 2);
+        emit AbstractARM.RedeemClaimed(address(this), 1, DEFAULT_AMOUNT / 2);
         vm.expectEmit({emitter: address(weth)});
         emit IERC20.Transfer(address(lidoFixedPriceMultiLpARM), address(this), DEFAULT_AMOUNT / 2);
 
