@@ -25,7 +25,7 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_CollectFees_Test_ is Fork_Shared
         simulateAssetGainInLidoFixedPriceMultiLpARM(DEFAULT_AMOUNT, address(steth), true)
     {
         vm.expectRevert("ARM: insufficient liquidity");
-        lidoFixedPriceMulltiLpARM.collectFees();
+        lidoFixedPriceMultiLpARM.collectFees();
     }
 
     //////////////////////////////////////////////////////
@@ -35,21 +35,21 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_CollectFees_Test_ is Fork_Shared
         public
         simulateAssetGainInLidoFixedPriceMultiLpARM(DEFAULT_AMOUNT, address(weth), true)
     {
-        address feeCollector = lidoFixedPriceMulltiLpARM.feeCollector();
+        address feeCollector = lidoFixedPriceMultiLpARM.feeCollector();
         uint256 fee = DEFAULT_AMOUNT * 20 / 100;
 
         // Expected Events
         vm.expectEmit({emitter: address(weth)});
-        emit IERC20.Transfer(address(lidoFixedPriceMulltiLpARM), feeCollector, fee);
-        vm.expectEmit({emitter: address(lidoFixedPriceMulltiLpARM)});
+        emit IERC20.Transfer(address(lidoFixedPriceMultiLpARM), feeCollector, fee);
+        vm.expectEmit({emitter: address(lidoFixedPriceMultiLpARM)});
         emit PerformanceFee.FeeCollected(feeCollector, fee);
 
         // Main call
-        uint256 claimedFee = lidoFixedPriceMulltiLpARM.collectFees();
+        uint256 claimedFee = lidoFixedPriceMultiLpARM.collectFees();
 
         // Assertions after
         assertEq(claimedFee, fee);
-        assertEq(lidoFixedPriceMulltiLpARM.feesAccrued(), 0);
+        assertEq(lidoFixedPriceMultiLpARM.feesAccrued(), 0);
     }
 
     function test_CollectFees_Twice()
@@ -59,7 +59,7 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_CollectFees_Test_ is Fork_Shared
         simulateAssetGainInLidoFixedPriceMultiLpARM(DEFAULT_AMOUNT, address(weth), true)
     {
         // Main call
-        uint256 claimedFee = lidoFixedPriceMulltiLpARM.collectFees();
+        uint256 claimedFee = lidoFixedPriceMultiLpARM.collectFees();
 
         // Assertions after
         assertEq(claimedFee, DEFAULT_AMOUNT * 20 / 100); // This test should pass!
