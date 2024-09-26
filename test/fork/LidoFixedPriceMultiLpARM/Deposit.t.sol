@@ -7,11 +7,17 @@ import {Fork_Shared_Test_} from "test/fork/shared/Shared.sol";
 // Contracts
 import {IERC20} from "contracts/Interfaces.sol";
 import {LiquidityProviderController} from "contracts/LiquidityProviderController.sol";
+import {IStETHWithdrawal} from "contracts/Interfaces.sol";
+import {Mainnet} from "contracts/utils/Addresses.sol";
 
 contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
+    uint256[] amounts1 = new uint256[](1);
+    IStETHWithdrawal public stETHWithdrawal = IStETHWithdrawal(Mainnet.LIDO_WITHDRAWAL);
+
     //////////////////////////////////////////////////////
     /// --- SETUP
     //////////////////////////////////////////////////////
+
     function setUp() public override {
         super.setUp();
 
@@ -21,6 +27,9 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         deal(address(weth), alice, 1_000 ether);
         vm.prank(alice);
         weth.approve(address(lidoARM), type(uint256).max);
+
+        // Amounts arrays
+        amounts1[0] = DEFAULT_AMOUNT;
     }
 
     //////////////////////////////////////////////////////
@@ -347,5 +356,162 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         // withdrawal request is now claimable
         assertEqQueueMetadata(DEFAULT_AMOUNT, 0, 0, 1);
         assertEq(shares, amount); // No perfs, so 1 ether * totalSupply (1e18 + 1e12) / totalAssets (1e18 + 1e12) = 1 ether
+    }
+
+    /// @notice Test the following scenario:
+    /// 1. ARM gain assets
+    /// 2. Operator request a withdraw from Lido on steth
+    /// 3. User deposit liquidity
+    /// 4. Operator claim the withdrawal on Lido
+    /// 5. User burn shares
+    /// Checking that amount deposited can be retrieved
+    function test_Deposit_WithOutStandingWithdrawRequest_BeforeDeposit_ClaimedLidoWithdraw_WithAssetGain()
+        public
+        deal_(address(steth), address(lidoARM), DEFAULT_AMOUNT)
+        approveStETHOnLidoARM
+        requestStETHWithdrawalForETHOnLidoARM(amounts1)
+        setLiquidityProviderCap(address(this), DEFAULT_AMOUNT)
+    {
+        // Assertions Before
+        assertEq(steth.balanceOf(address(lidoARM)), 0);
+        assertEq(weth.balanceOf(address(lidoARM)), MIN_TOTAL_SUPPLY);
+        assertEq(lidoARM.outstandingEther(), DEFAULT_AMOUNT);
+        assertEq(lidoARM.feesAccrued(), 0); // No perfs so no fees
+        assertEq(lidoARM.lastTotalAssets(), MIN_TOTAL_SUPPLY);
+        assertEq(lidoARM.balanceOf(address(this)), 0); // Ensure no shares before
+        assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY); // Minted to dead on deploy
+        assertEq(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT * 80 / 100);
+        assertEq(liquidityProviderController.liquidityProviderCaps(address(this)), DEFAULT_AMOUNT);
+        assertEqQueueMetadata(0, 0, 0, 0);
+
+        // Expected values
+        uint256 expectShares = DEFAULT_AMOUNT * MIN_TOTAL_SUPPLY / (MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT * 80 / 100);
+
+        // Expected events
+        vm.expectEmit({emitter: address(weth)});
+        emit IERC20.Transfer(address(this), address(lidoARM), DEFAULT_AMOUNT);
+        vm.expectEmit({emitter: address(lidoARM)});
+        emit IERC20.Transfer(address(0), address(this), expectShares);
+
+        uint256 requestId = stETHWithdrawal.getLastRequestId();
+        uint256[] memory requests = new uint256[](1);
+        requests[0] = requestId;
+
+        // Main calls
+        // 1. User mint shares
+        uint256 shares = lidoARM.deposit(DEFAULT_AMOUNT);
+        // 2. Lido finalization process is simulated
+        lidoARM.totalAssets();
+        _mockFunctionClaimWithdrawOnLidoARM(DEFAULT_AMOUNT);
+        // 3. Operator claim withdrawal on lido
+        lidoARM.totalAssets();
+        lidoARM.claimStETHWithdrawalForWETH(requests);
+        // 4. User burn shares
+        (, uint256 receivedAssets) = lidoARM.requestRedeem(shares);
+
+        uint256 excessLeftover = DEFAULT_AMOUNT - receivedAssets;
+        // Assertions After
+        assertEq(steth.balanceOf(address(lidoARM)), 0);
+        assertEq(weth.balanceOf(address(lidoARM)), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT * 2);
+        assertEq(lidoARM.outstandingEther(), 0);
+        assertEq(lidoARM.feesAccrued(), DEFAULT_AMOUNT * 20 / 100); // No perfs so no fees
+        assertEq(lidoARM.lastTotalAssets(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT * 80 / 100 + excessLeftover);
+        assertEq(lidoARM.balanceOf(address(this)), 0); // Ensure no shares after
+        assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY); // Minted to dead on deploy
+        assertEq(liquidityProviderController.liquidityProviderCaps(address(this)), 0); // All the caps are used
+        assertEqQueueMetadata(receivedAssets, 0, 0, 1);
+        assertApproxEqRel(receivedAssets, DEFAULT_AMOUNT, 1e6, "received assets"); // 1e6  -> 0.0000000001%,
+            // This difference comes from the small value of shares, which reduces the precision of the calculation
+    }
+
+    /// @notice Test the following scenario:
+    /// 1. User deposit liquidity
+    /// 2. ARM swap between WETH and stETH (no assets gains)
+    /// 2. Operator request a withdraw from Lido on steth
+    /// 4. Operator claim the withdrawal on Lido
+    /// 5. User burn shares
+    /// Checking that amount deposited can be retrieved
+    function test_Deposit_WithOutStandingWithdrawRequest_AfterDeposit_ClaimedLidoWithdraw_WithoutAssetGain()
+        public
+        setLiquidityProviderCap(address(this), DEFAULT_AMOUNT)
+    {
+        // Assertions Before
+        // Not needed, as one of the previous test already covers this scenario
+
+        // Main calls:
+        // 1. User mint shares
+        uint256 shares = lidoARM.deposit(DEFAULT_AMOUNT);
+        // Simulate a swap from WETH to stETH
+        deal(address(weth), address(lidoARM), MIN_TOTAL_SUPPLY);
+        deal(address(steth), address(lidoARM), DEFAULT_AMOUNT);
+        // 2. Operator request a claim on withdraw
+        lidoARM.requestStETHWithdrawalForETH(amounts1);
+        // 3. We simulate the finalization of the process
+        _mockFunctionClaimWithdrawOnLidoARM(DEFAULT_AMOUNT);
+        uint256 requestId = stETHWithdrawal.getLastRequestId();
+        uint256[] memory requests = new uint256[](1);
+        requests[0] = requestId;
+        // 4. Operator claim the withdrawal on lido
+        lidoARM.claimStETHWithdrawalForWETH(requests);
+        // 5. User burn shares
+        (, uint256 receivedAssets) = lidoARM.requestRedeem(shares);
+
+        // Assertions After
+        assertEq(steth.balanceOf(address(lidoARM)), 0);
+        assertEq(weth.balanceOf(address(lidoARM)), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT);
+        assertEq(lidoARM.outstandingEther(), 0);
+        assertEq(lidoARM.feesAccrued(), 0); // No perfs so no fees
+        assertEq(lidoARM.lastTotalAssets(), MIN_TOTAL_SUPPLY);
+        assertEq(lidoARM.balanceOf(address(this)), 0); // Ensure no shares after
+        assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY); // Minted to dead on deploy
+        assertEq(liquidityProviderController.liquidityProviderCaps(address(this)), 0); // All the caps are used
+        assertEqQueueMetadata(receivedAssets, 0, 0, 1);
+        assertEq(receivedAssets, DEFAULT_AMOUNT, "received assets");
+    }
+
+    /// @notice Test the following scenario:
+    /// 1. User deposit liquidity
+    /// 2. ARM asset gain (on steth)
+    /// 2. Operator request a withdraw from Lido on steth
+    /// 4. Operator claim the withdrawal on Lido
+    /// 5. User burn shares
+    /// Checking that amount deposited + benefice can be retrieved
+    function test_Deposit_WithOutStandingWithdrawRequest_AfterDeposit_ClaimedLidoWithdraw_WithAssetGain()
+        public
+        setLiquidityProviderCap(address(this), DEFAULT_AMOUNT)
+    {
+        // Assertions Before
+        // Not needed, as one of the previous test already covers this scenario
+
+        // Main calls:
+        // 1. User mint shares
+        uint256 shares = lidoARM.deposit(DEFAULT_AMOUNT);
+        // Simulate a swap from WETH to stETH
+        deal(address(steth), address(lidoARM), DEFAULT_AMOUNT);
+        // 2. Operator request a claim on withdraw
+        lidoARM.requestStETHWithdrawalForETH(amounts1);
+        // 3. We simulate the finalization of the process
+        _mockFunctionClaimWithdrawOnLidoARM(DEFAULT_AMOUNT);
+        uint256 requestId = stETHWithdrawal.getLastRequestId();
+        uint256[] memory requests = new uint256[](1);
+        requests[0] = requestId;
+        // 4. Operator claim the withdrawal on lido
+        lidoARM.claimStETHWithdrawalForWETH(requests);
+        // 5. User burn shares
+        (, uint256 receivedAssets) = lidoARM.requestRedeem(shares);
+
+        uint256 userBenef = (DEFAULT_AMOUNT * 80 / 100) * DEFAULT_AMOUNT / (MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT);
+        uint256 deadAddressBenef = (DEFAULT_AMOUNT * 80 / 100) * MIN_TOTAL_SUPPLY / (MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT);
+        // Assertions After
+        assertEq(steth.balanceOf(address(lidoARM)), 0);
+        assertEq(weth.balanceOf(address(lidoARM)), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT * 2);
+        assertEq(lidoARM.outstandingEther(), 0);
+        assertEq(lidoARM.feesAccrued(), DEFAULT_AMOUNT * 20 / 100); // No perfs so no fees
+        assertApproxEqAbs(lidoARM.lastTotalAssets(), MIN_TOTAL_SUPPLY + deadAddressBenef, STETH_ERROR_ROUNDING);
+        assertEq(lidoARM.balanceOf(address(this)), 0); // Ensure no shares after
+        assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY); // Minted to dead on deploy
+        assertEq(liquidityProviderController.liquidityProviderCaps(address(this)), 0); // All the caps are used
+        assertEqQueueMetadata(receivedAssets, 0, 0, 1);
+        assertEq(receivedAssets, DEFAULT_AMOUNT + userBenef, "received assets");
     }
 }

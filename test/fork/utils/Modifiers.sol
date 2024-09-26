@@ -77,6 +77,12 @@ abstract contract Modifiers is Helpers {
         _;
     }
 
+    /// @notice Modifier for deal function.
+    modifier deal_(address token, address to, uint256 amount) {
+        deal(token, to, amount);
+        _;
+    }
+
     /// @notice Deposit WETH into the LidoARM contract.
     modifier depositInLidoARM(address user, uint256 amount) {
         // Todo: extend this logic to other modifier if needed
@@ -220,12 +226,7 @@ abstract contract Modifiers is Helpers {
         (VmSafe.CallerMode mode, address _address, address _origin) = vm.readCallers();
         vm.stopPrank();
 
-        // Deploy fake lido withdraw contract
-        MockLidoWithdraw mocklidoWithdraw = new MockLidoWithdraw(address(lidoARM));
-        // Give ETH to the ETH Sender contract
-        vm.deal(address(mocklidoWithdraw.ethSender()), amount);
-        // Mock all the call to the fake lido withdraw contract
-        MockCall.mockCallLidoClaimWithdrawals(address(mocklidoWithdraw));
+        _mockFunctionClaimWithdrawOnLidoARM(amount);
 
         if (mode == VmSafe.CallerMode.Prank) {
             vm.prank(_address, _origin);
@@ -233,6 +234,15 @@ abstract contract Modifiers is Helpers {
             vm.startPrank(_address, _origin);
         }
         _;
+    }
+
+    function _mockFunctionClaimWithdrawOnLidoARM(uint256 amount) internal {
+        // Deploy fake lido withdraw contract
+        MockLidoWithdraw mocklidoWithdraw = new MockLidoWithdraw(address(lidoARM));
+        // Give ETH to the ETH Sender contract
+        vm.deal(address(mocklidoWithdraw.ethSender()), amount);
+        // Mock all the call to the fake lido withdraw contract
+        MockCall.mockCallLidoClaimWithdrawals(address(mocklidoWithdraw));
     }
 
     /// @notice Skip time by a given delay.
