@@ -175,6 +175,31 @@ contract Fork_Concrete_LidoARM_SwapExactTokensForTokens_Test is Fork_Shared_Test
         );
     }
 
+    /// @notice Test the following scenario:
+    /// 1. Set steth balance of the ARM to 0.
+    /// 2. Set weth balance of the ARM to MIN_TOTAL_SUPPLY.
+    /// 3. Deposit DEFAULT_AMOUNT in the ARM.
+    /// 4. Request redeem of DEFAULT_AMOUNT * 90%.
+    /// 5. Try to swap DEFAULT_AMOUNT of stETH to WETH.
+    function test_RevertWhen_SwapExactTokensForTokens_Because_InsufficientLiquidity_DueToRedeemRequest()
+        public
+        setTotalAssetsCap(DEFAULT_AMOUNT * 10 + MIN_TOTAL_SUPPLY)
+        setLiquidityProviderCap(address(this), DEFAULT_AMOUNT)
+        deal_(address(steth), address(lidoARM), 0)
+        deal_(address(weth), address(lidoARM), MIN_TOTAL_SUPPLY)
+        depositInLidoARM(address(this), DEFAULT_AMOUNT)
+        requestRedeemFromLidoARM(address(this), DEFAULT_AMOUNT * 90 / 100)
+    {
+        vm.expectRevert("ARM: Insufficient liquidity");
+        lidoARM.swapExactTokensForTokens(
+            steth, // inToken
+            weth, // outToken
+            DEFAULT_AMOUNT, // amountIn
+            0, // amountOutMin
+            address(this) // to
+        );
+    }
+
     //////////////////////////////////////////////////////
     /// --- PASSING TESTS
     //////////////////////////////////////////////////////
