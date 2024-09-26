@@ -26,17 +26,17 @@ contract Fork_Concrete_LidoARM_SwapExactTokensForTokens_Test is Fork_Shared_Test
         deal(address(weth), address(this), 1_000 ether);
         deal(address(steth), address(this), 1_000 ether);
 
-        deal(address(weth), address(lidoFixedPriceMultiLpARM), 1_000 ether);
-        deal(address(steth), address(lidoFixedPriceMultiLpARM), 1_000 ether);
+        deal(address(weth), address(lidoARM), 1_000 ether);
+        deal(address(steth), address(lidoARM), 1_000 ether);
     }
 
     //////////////////////////////////////////////////////
     /// --- REVERTING TESTS
     //////////////////////////////////////////////////////
     function test_RevertWhen_SwapExactTokensForTokens_Because_InvalidTokenOut1() public {
-        lidoFixedPriceMultiLpARM.token0();
+        lidoARM.token0();
         vm.expectRevert("ARM: Invalid out token");
-        lidoFixedPriceMultiLpARM.swapExactTokensForTokens(
+        lidoARM.swapExactTokensForTokens(
             steth, // inToken
             badToken, // outToken
             1, // amountIn
@@ -47,7 +47,7 @@ contract Fork_Concrete_LidoARM_SwapExactTokensForTokens_Test is Fork_Shared_Test
 
     function test_RevertWhen_SwapExactTokensForTokens_Because_InvalidTokenOut0() public {
         vm.expectRevert("ARM: Invalid out token");
-        lidoFixedPriceMultiLpARM.swapExactTokensForTokens(
+        lidoARM.swapExactTokensForTokens(
             weth, // inToken
             badToken, // outToken
             1, // amountIn
@@ -58,7 +58,7 @@ contract Fork_Concrete_LidoARM_SwapExactTokensForTokens_Test is Fork_Shared_Test
 
     function test_RevertWhen_SwapExactTokensForTokens_Because_InvalidTokenIn() public {
         vm.expectRevert("ARM: Invalid in token");
-        lidoFixedPriceMultiLpARM.swapExactTokensForTokens(
+        lidoARM.swapExactTokensForTokens(
             badToken, // inToken
             steth, // outToken
             1, // amountIn
@@ -69,7 +69,7 @@ contract Fork_Concrete_LidoARM_SwapExactTokensForTokens_Test is Fork_Shared_Test
 
     function test_RevertWhen_SwapExactTokensForTokens_Because_BothInvalidTokens() public {
         vm.expectRevert("ARM: Invalid in token");
-        lidoFixedPriceMultiLpARM.swapExactTokensForTokens(
+        lidoARM.swapExactTokensForTokens(
             badToken, // inToken
             badToken, // outToken
             1, // amountIn
@@ -82,7 +82,7 @@ contract Fork_Concrete_LidoARM_SwapExactTokensForTokens_Test is Fork_Shared_Test
         uint256 initialBalance = weth.balanceOf(address(this));
 
         vm.expectRevert();
-        lidoFixedPriceMultiLpARM.swapExactTokensForTokens(
+        lidoARM.swapExactTokensForTokens(
             weth, // inToken
             steth, // outToken
             initialBalance + 1, // amountIn
@@ -92,7 +92,7 @@ contract Fork_Concrete_LidoARM_SwapExactTokensForTokens_Test is Fork_Shared_Test
 
         initialBalance = steth.balanceOf(address(this));
         vm.expectRevert("BALANCE_EXCEEDED"); // Lido error
-        lidoFixedPriceMultiLpARM.swapExactTokensForTokens(
+        lidoARM.swapExactTokensForTokens(
             steth, // inToken
             weth, // outToken
             initialBalance + 3, // amountIn
@@ -102,11 +102,11 @@ contract Fork_Concrete_LidoARM_SwapExactTokensForTokens_Test is Fork_Shared_Test
     }
 
     function test_RevertWhen_SwapExactTokensForTokens_Because_NotEnoughTokenOut() public {
-        uint256 initialBalance = steth.balanceOf(address(lidoFixedPriceMultiLpARM));
+        uint256 initialBalance = steth.balanceOf(address(lidoARM));
         deal(address(weth), address(this), initialBalance * 2);
 
         vm.expectRevert("BALANCE_EXCEEDED"); // Lido error
-        lidoFixedPriceMultiLpARM.swapExactTokensForTokens(
+        lidoARM.swapExactTokensForTokens(
             weth, // inToken
             steth, // outToken
             initialBalance * 2, // amountIn
@@ -114,10 +114,10 @@ contract Fork_Concrete_LidoARM_SwapExactTokensForTokens_Test is Fork_Shared_Test
             address(this) // to
         );
 
-        initialBalance = weth.balanceOf(address(lidoFixedPriceMultiLpARM));
+        initialBalance = weth.balanceOf(address(lidoARM));
         deal(address(steth), address(this), initialBalance * 2);
         vm.expectRevert("ARM: Insufficient liquidity");
-        lidoFixedPriceMultiLpARM.swapExactTokensForTokens(
+        lidoARM.swapExactTokensForTokens(
             steth, // inToken
             weth, // outToken
             initialBalance * 2, // amountIn
@@ -127,11 +127,11 @@ contract Fork_Concrete_LidoARM_SwapExactTokensForTokens_Test is Fork_Shared_Test
     }
 
     function test_RevertWhen_SwapExactTokensForTokens_Because_InsufficientOutputAmount() public {
-        deal(address(steth), address(lidoFixedPriceMultiLpARM), 100 wei);
+        deal(address(steth), address(lidoARM), 100 wei);
 
         // Test for this function signature: swapExactTokensForTokens(IERC20,IERC20,uint56,uint256,address)
         vm.expectRevert("ARM: Insufficient output amount");
-        lidoFixedPriceMultiLpARM.swapExactTokensForTokens(
+        lidoARM.swapExactTokensForTokens(
             weth, // inToken
             steth, // outToken
             1, // amountIn
@@ -144,7 +144,7 @@ contract Fork_Concrete_LidoARM_SwapExactTokensForTokens_Test is Fork_Shared_Test
         path[0] = address(weth);
         path[1] = address(steth);
         vm.expectRevert("ARM: Insufficient output amount");
-        lidoFixedPriceMultiLpARM.swapExactTokensForTokens(
+        lidoARM.swapExactTokensForTokens(
             1, // amountIn
             1_000 ether, // amountOutMin
             path, // path
@@ -155,7 +155,7 @@ contract Fork_Concrete_LidoARM_SwapExactTokensForTokens_Test is Fork_Shared_Test
 
     function test_RevertWhen_SwapExactTokensForTokens_Because_InvalidePathLength() public {
         vm.expectRevert("ARM: Invalid path length");
-        lidoFixedPriceMultiLpARM.swapExactTokensForTokens(
+        lidoARM.swapExactTokensForTokens(
             1, // amountIn
             1, // amountOutMin
             new address[](3), // path
@@ -166,7 +166,7 @@ contract Fork_Concrete_LidoARM_SwapExactTokensForTokens_Test is Fork_Shared_Test
 
     function test_RevertWhen_SwapExactTokensForTokens_Because_DeadlineExpired() public {
         vm.expectRevert("ARM: Deadline expired");
-        lidoFixedPriceMultiLpARM.swapExactTokensForTokens(
+        lidoARM.swapExactTokensForTokens(
             1, // amountIn
             1, // amountOutMin
             new address[](2), // path
@@ -187,18 +187,18 @@ contract Fork_Concrete_LidoARM_SwapExactTokensForTokens_Test is Fork_Shared_Test
         // State before
         uint256 balanceWETHBeforeThis = weth.balanceOf(address(this));
         uint256 balanceSTETHBeforeThis = steth.balanceOf(address(this));
-        uint256 balanceWETHBeforeARM = weth.balanceOf(address(lidoFixedPriceMultiLpARM));
-        uint256 balanceSTETHBeforeARM = steth.balanceOf(address(lidoFixedPriceMultiLpARM));
+        uint256 balanceWETHBeforeARM = weth.balanceOf(address(lidoARM));
+        uint256 balanceSTETHBeforeARM = steth.balanceOf(address(lidoARM));
 
         // Get minimum amount of STETH to receive
-        uint256 traderates1 = lidoFixedPriceMultiLpARM.traderate1();
+        uint256 traderates1 = lidoARM.traderate1();
         uint256 minAmount = amountIn * traderates1 / 1e36;
 
         // Expected events: Already checked in fuzz tests
 
         uint256[] memory outputs = new uint256[](2);
         // Main call
-        outputs = lidoFixedPriceMultiLpARM.swapExactTokensForTokens(
+        outputs = lidoARM.swapExactTokensForTokens(
             amountIn, // amountIn
             minAmount, // amountOutMin
             path, // path
@@ -209,8 +209,8 @@ contract Fork_Concrete_LidoARM_SwapExactTokensForTokens_Test is Fork_Shared_Test
         // State after
         uint256 balanceWETHAfterThis = weth.balanceOf(address(this));
         uint256 balanceSTETHAfterThis = steth.balanceOf(address(this));
-        uint256 balanceWETHAfterARM = weth.balanceOf(address(lidoFixedPriceMultiLpARM));
-        uint256 balanceSTETHAfterARM = steth.balanceOf(address(lidoFixedPriceMultiLpARM));
+        uint256 balanceWETHAfterARM = weth.balanceOf(address(lidoARM));
+        uint256 balanceSTETHAfterARM = steth.balanceOf(address(lidoARM));
 
         // Assertions
         assertEq(balanceWETHBeforeThis, balanceWETHAfterThis + amountIn);
@@ -230,18 +230,18 @@ contract Fork_Concrete_LidoARM_SwapExactTokensForTokens_Test is Fork_Shared_Test
         // State before
         uint256 balanceWETHBeforeThis = weth.balanceOf(address(this));
         uint256 balanceSTETHBeforeThis = steth.balanceOf(address(this));
-        uint256 balanceWETHBeforeARM = weth.balanceOf(address(lidoFixedPriceMultiLpARM));
-        uint256 balanceSTETHBeforeARM = steth.balanceOf(address(lidoFixedPriceMultiLpARM));
+        uint256 balanceWETHBeforeARM = weth.balanceOf(address(lidoARM));
+        uint256 balanceSTETHBeforeARM = steth.balanceOf(address(lidoARM));
 
         // Get minimum amount of WETH to receive
-        uint256 traderates0 = lidoFixedPriceMultiLpARM.traderate0();
+        uint256 traderates0 = lidoARM.traderate0();
         uint256 minAmount = amountIn * traderates0 / 1e36;
 
         // Expected events: Already checked in fuzz tests
 
         uint256[] memory outputs = new uint256[](2);
         // Main call
-        outputs = lidoFixedPriceMultiLpARM.swapExactTokensForTokens(
+        outputs = lidoARM.swapExactTokensForTokens(
             amountIn, // amountIn
             minAmount, // amountOutMin
             path, // path
@@ -252,8 +252,8 @@ contract Fork_Concrete_LidoARM_SwapExactTokensForTokens_Test is Fork_Shared_Test
         // State after
         uint256 balanceWETHAfterThis = weth.balanceOf(address(this));
         uint256 balanceSTETHAfterThis = steth.balanceOf(address(this));
-        uint256 balanceWETHAfterARM = weth.balanceOf(address(lidoFixedPriceMultiLpARM));
-        uint256 balanceSTETHAfterARM = steth.balanceOf(address(lidoFixedPriceMultiLpARM));
+        uint256 balanceWETHAfterARM = weth.balanceOf(address(lidoARM));
+        uint256 balanceSTETHAfterARM = steth.balanceOf(address(lidoARM));
 
         // Assertions
         assertEq(balanceWETHBeforeThis + minAmount, balanceWETHAfterThis);
@@ -277,11 +277,11 @@ contract Fork_Concrete_LidoARM_SwapExactTokensForTokens_Test is Fork_Shared_Test
         // Use random price between 0.98 and 1 for traderate1,
         // Traderate0 value doesn't matter as it is not used in this test.
         price = _bound(price, MIN_PRICE0, MAX_PRICE0);
-        lidoFixedPriceMultiLpARM.setPrices(price, MAX_PRICE1);
+        lidoARM.setPrices(price, MAX_PRICE1);
 
         // Set random amount of stETH in the ARM
         stethReserve = _bound(stethReserve, 0, MAX_STETH_RESERVE);
-        deal(address(steth), address(lidoFixedPriceMultiLpARM), stethReserve);
+        deal(address(steth), address(lidoARM), stethReserve);
 
         // Calculate maximum amount of WETH to swap
         // It is ok to take 100% of the balance of stETH of the ARM as the price is below 1.
@@ -291,20 +291,20 @@ contract Fork_Concrete_LidoARM_SwapExactTokensForTokens_Test is Fork_Shared_Test
         // State before
         uint256 balanceWETHBeforeThis = weth.balanceOf(address(this));
         uint256 balanceSTETHBeforeThis = steth.balanceOf(address(this));
-        uint256 balanceWETHBeforeARM = weth.balanceOf(address(lidoFixedPriceMultiLpARM));
-        uint256 balanceSTETHBeforeARM = steth.balanceOf(address(lidoFixedPriceMultiLpARM));
+        uint256 balanceWETHBeforeARM = weth.balanceOf(address(lidoARM));
+        uint256 balanceSTETHBeforeARM = steth.balanceOf(address(lidoARM));
 
         // Get minimum amount of STETH to receive
-        uint256 traderates1 = lidoFixedPriceMultiLpARM.traderate1();
+        uint256 traderates1 = lidoARM.traderate1();
         uint256 minAmount = amountIn * traderates1 / 1e36;
 
         // Expected events
         vm.expectEmit({emitter: address(weth)});
-        emit IERC20.Transfer(address(this), address(lidoFixedPriceMultiLpARM), amountIn);
+        emit IERC20.Transfer(address(this), address(lidoARM), amountIn);
         vm.expectEmit({emitter: address(steth)});
-        emit IERC20.Transfer(address(lidoFixedPriceMultiLpARM), address(this), minAmount + STETH_ERROR_ROUNDING);
+        emit IERC20.Transfer(address(lidoARM), address(this), minAmount + STETH_ERROR_ROUNDING);
         // Main call
-        lidoFixedPriceMultiLpARM.swapExactTokensForTokens(
+        lidoARM.swapExactTokensForTokens(
             weth, // inToken
             steth, // outToken
             amountIn, // amountIn
@@ -315,8 +315,8 @@ contract Fork_Concrete_LidoARM_SwapExactTokensForTokens_Test is Fork_Shared_Test
         // State after
         uint256 balanceWETHAfterThis = weth.balanceOf(address(this));
         uint256 balanceSTETHAfterThis = steth.balanceOf(address(this));
-        uint256 balanceWETHAfterARM = weth.balanceOf(address(lidoFixedPriceMultiLpARM));
-        uint256 balanceSTETHAfterARM = steth.balanceOf(address(lidoFixedPriceMultiLpARM));
+        uint256 balanceWETHAfterARM = weth.balanceOf(address(lidoARM));
+        uint256 balanceSTETHAfterARM = steth.balanceOf(address(lidoARM));
 
         // Assertions
         assertEq(balanceWETHBeforeThis, balanceWETHAfterThis + amountIn);
@@ -333,11 +333,11 @@ contract Fork_Concrete_LidoARM_SwapExactTokensForTokens_Test is Fork_Shared_Test
         // Use random price between MIN_PRICE1 and MAX_PRICE1 for traderate1,
         // Traderate0 value doesn't matter as it is not used in this test.
         price = _bound(price, MIN_PRICE1, MAX_PRICE1);
-        lidoFixedPriceMultiLpARM.setPrices(MIN_PRICE0, price);
+        lidoARM.setPrices(MIN_PRICE0, price);
 
         // Set random amount of WETH in the ARM
         wethReserve = _bound(wethReserve, 0, MAX_WETH_RESERVE);
-        deal(address(weth), address(lidoFixedPriceMultiLpARM), wethReserve);
+        deal(address(weth), address(lidoARM), wethReserve);
 
         // Calculate maximum amount of stETH to swap
         // As the price is below 1, we can take 100% of the balance of WETH of the ARM.
@@ -347,21 +347,21 @@ contract Fork_Concrete_LidoARM_SwapExactTokensForTokens_Test is Fork_Shared_Test
         // State before
         uint256 balanceWETHBeforeThis = weth.balanceOf(address(this));
         uint256 balanceSTETHBeforeThis = steth.balanceOf(address(this));
-        uint256 balanceWETHBeforeARM = weth.balanceOf(address(lidoFixedPriceMultiLpARM));
-        uint256 balanceSTETHBeforeARM = steth.balanceOf(address(lidoFixedPriceMultiLpARM));
+        uint256 balanceWETHBeforeARM = weth.balanceOf(address(lidoARM));
+        uint256 balanceSTETHBeforeARM = steth.balanceOf(address(lidoARM));
 
         // Get minimum amount of WETH to receive
-        uint256 traderates0 = lidoFixedPriceMultiLpARM.traderate0();
+        uint256 traderates0 = lidoARM.traderate0();
         uint256 minAmount = amountIn * traderates0 / 1e36;
 
         // Expected events
         vm.expectEmit({emitter: address(steth)});
-        emit IERC20.Transfer(address(this), address(lidoFixedPriceMultiLpARM), amountIn);
+        emit IERC20.Transfer(address(this), address(lidoARM), amountIn);
         vm.expectEmit({emitter: address(weth)});
-        emit IERC20.Transfer(address(lidoFixedPriceMultiLpARM), address(this), minAmount);
+        emit IERC20.Transfer(address(lidoARM), address(this), minAmount);
 
         // Main call
-        lidoFixedPriceMultiLpARM.swapExactTokensForTokens(
+        lidoARM.swapExactTokensForTokens(
             steth, // inToken
             weth, // outToken
             amountIn, // amountIn
@@ -372,8 +372,8 @@ contract Fork_Concrete_LidoARM_SwapExactTokensForTokens_Test is Fork_Shared_Test
         // State after
         uint256 balanceWETHAfterThis = weth.balanceOf(address(this));
         uint256 balanceSTETHAfterThis = steth.balanceOf(address(this));
-        uint256 balanceWETHAfterARM = weth.balanceOf(address(lidoFixedPriceMultiLpARM));
-        uint256 balanceSTETHAfterARM = steth.balanceOf(address(lidoFixedPriceMultiLpARM));
+        uint256 balanceWETHAfterARM = weth.balanceOf(address(lidoARM));
+        uint256 balanceSTETHAfterARM = steth.balanceOf(address(lidoARM));
 
         // Assertions
         assertEq(balanceWETHBeforeThis + minAmount, balanceWETHAfterThis);

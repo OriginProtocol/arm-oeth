@@ -22,7 +22,7 @@ contract Fork_Concrete_LidoARM_RequestStETHWithdrawalForETH_Test_ is Fork_Shared
     function setUp() public override {
         super.setUp();
 
-        deal(address(steth), address(lidoFixedPriceMultiLpARM), 10_000 ether);
+        deal(address(steth), address(lidoARM), 10_000 ether);
 
         amounts0 = new uint256[](0);
 
@@ -42,14 +42,14 @@ contract Fork_Concrete_LidoARM_RequestStETHWithdrawalForETH_Test_ is Fork_Shared
         asLidoFixedPriceMulltiLpARMOperator
         requestStETHWithdrawalForETHOnLidoARM(new uint256[](0))
     {
-        assertEq(address(lidoFixedPriceMultiLpARM).balance, 0);
-        assertEq(lidoFixedPriceMultiLpARM.outstandingEther(), 0);
+        assertEq(address(lidoARM).balance, 0);
+        assertEq(lidoARM.outstandingEther(), 0);
 
         // Main call
-        lidoFixedPriceMultiLpARM.claimStETHWithdrawalForWETH(new uint256[](0));
+        lidoARM.claimStETHWithdrawalForWETH(new uint256[](0));
 
-        assertEq(address(lidoFixedPriceMultiLpARM).balance, 0);
-        assertEq(lidoFixedPriceMultiLpARM.outstandingEther(), 0);
+        assertEq(address(lidoARM).balance, 0);
+        assertEq(lidoARM.outstandingEther(), 0);
     }
 
     function test_ClaimStETHWithdrawalForWETH_SingleRequest()
@@ -60,18 +60,18 @@ contract Fork_Concrete_LidoARM_RequestStETHWithdrawalForETH_Test_ is Fork_Shared
         mockFunctionClaimWithdrawOnLidoARM(DEFAULT_AMOUNT)
     {
         // Assertions before
-        uint256 balanceBefore = weth.balanceOf(address(lidoFixedPriceMultiLpARM));
-        assertEq(lidoFixedPriceMultiLpARM.outstandingEther(), DEFAULT_AMOUNT);
+        uint256 balanceBefore = weth.balanceOf(address(lidoARM));
+        assertEq(lidoARM.outstandingEther(), DEFAULT_AMOUNT);
 
         stETHWithdrawal.getLastRequestId();
         uint256[] memory requests = new uint256[](1);
         requests[0] = stETHWithdrawal.getLastRequestId();
         // Main call
-        lidoFixedPriceMultiLpARM.claimStETHWithdrawalForWETH(requests);
+        lidoARM.claimStETHWithdrawalForWETH(requests);
 
         // Assertions after
-        assertEq(lidoFixedPriceMultiLpARM.outstandingEther(), 0);
-        assertEq(weth.balanceOf(address(lidoFixedPriceMultiLpARM)), balanceBefore + DEFAULT_AMOUNT);
+        assertEq(lidoARM.outstandingEther(), 0);
+        assertEq(weth.balanceOf(address(lidoARM)), balanceBefore + DEFAULT_AMOUNT);
     }
 
     function test_ClaimStETHWithdrawalForWETH_MultiRequest()
@@ -83,18 +83,18 @@ contract Fork_Concrete_LidoARM_RequestStETHWithdrawalForETH_Test_ is Fork_Shared
         mockFunctionClaimWithdrawOnLidoARM(amounts2[0] + amounts2[1])
     {
         // Assertions before
-        uint256 balanceBefore = weth.balanceOf(address(lidoFixedPriceMultiLpARM));
-        assertEq(lidoFixedPriceMultiLpARM.outstandingEther(), amounts2[0] + amounts2[1]);
+        uint256 balanceBefore = weth.balanceOf(address(lidoARM));
+        assertEq(lidoARM.outstandingEther(), amounts2[0] + amounts2[1]);
 
         stETHWithdrawal.getLastRequestId();
         uint256[] memory requests = new uint256[](2);
         requests[0] = stETHWithdrawal.getLastRequestId() - 1;
         requests[1] = stETHWithdrawal.getLastRequestId();
         // Main call
-        lidoFixedPriceMultiLpARM.claimStETHWithdrawalForWETH(requests);
+        lidoARM.claimStETHWithdrawalForWETH(requests);
 
         // Assertions after
-        assertEq(lidoFixedPriceMultiLpARM.outstandingEther(), 0);
-        assertEq(weth.balanceOf(address(lidoFixedPriceMultiLpARM)), balanceBefore + amounts2[0] + amounts2[1]);
+        assertEq(lidoARM.outstandingEther(), 0);
+        assertEq(weth.balanceOf(address(lidoARM)), balanceBefore + amounts2[0] + amounts2[1]);
     }
 }

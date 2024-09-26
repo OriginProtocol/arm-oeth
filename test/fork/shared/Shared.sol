@@ -161,10 +161,10 @@ abstract contract Fork_Shared_Test_ is Modifiers {
         lidoProxy.initialize(address(lidoImpl), address(this), data);
 
         // Set the Proxy as the LidoARM.
-        lidoFixedPriceMultiLpARM = LidoARM(payable(address(lidoProxy)));
+        lidoARM = LidoARM(payable(address(lidoProxy)));
 
         // set prices
-        lidoFixedPriceMultiLpARM.setPrices(992 * 1e33, 1001 * 1e33);
+        lidoARM.setPrices(992 * 1e33, 1001 * 1e33);
     }
 
     function _label() internal {
@@ -175,7 +175,7 @@ abstract contract Fork_Shared_Test_ is Modifiers {
         vm.label(address(vault), "OETH VAULT");
         vm.label(address(oethARM), "OETH ARM");
         vm.label(address(proxy), "OETH ARM PROXY");
-        vm.label(address(lidoFixedPriceMultiLpARM), "LIDO ARM");
+        vm.label(address(lidoARM), "LIDO ARM");
         vm.label(address(lidoProxy), "LIDO ARM PROXY");
         vm.label(address(liquidityProviderController), "LIQUIDITY PROVIDER CONTROLLER");
         vm.label(operator, "OPERATOR");
