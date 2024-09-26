@@ -9,23 +9,6 @@ import {IERC20} from "contracts/Interfaces.sol";
 import {LiquidityProviderController} from "contracts/LiquidityProviderController.sol";
 
 contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
-    /**
-     * As Deposit is complex function due to the entanglement of virtual and override functions in inheritance.
-     * This is a small recap of the functions that are called in the deposit function.
-     * 1. ML: _preDepositHook() -> PF: _calcFee() -> PF: _rawTotalAssets() -> ML: _totalAssets()
-     * 2. ML: convertToShares() -> ML: _totalAssets() -> ARM: totalAssets() -> PF : totalAssets() ->
-     *      -> PF: _rawTotalAssets() -> ML: _totalAssets()
-     * 3. ML: _postDepositHook() -> ARM: _postDepositHook() =>
-     *    | -> LCPARM: postDepositHook() -> LPC: postDepositHook() -> ARM: totalAssets() ->
-     *      -> PF : totalAssets() -> PF: _rawTotalAssets() -> ML: _totalAssets()
-     *    | -> PF: _postDepositHook() -> PF: _rawTotalAssets() -> ML: _totalAssets()
-     *
-     * ML = MultiLP
-     * PF = PerformanceFee
-     * ARM = LidoARM
-     * LPC = LiquidityProviderController
-     * LCPARM = LiquidityProviderControllerARM
-     */
     //////////////////////////////////////////////////////
     /// --- SETUP
     //////////////////////////////////////////////////////
