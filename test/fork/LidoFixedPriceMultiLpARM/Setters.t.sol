@@ -24,7 +24,7 @@ contract Fork_Concrete_lidoFixedPriceMulltiLpARM_Setters_Test_ is Fork_Shared_Te
         lidoFixedPriceMultiLpARM.setFee(0);
     }
 
-    function test_RevertWhen_PerformanceFee_SetFee_Because_FeeIsTooHigh() public asLidoFixedPriceMultiLpARMOwner {
+    function test_RevertWhen_PerformanceFee_SetFee_Because_FeeIsTooHigh() public asLidoARMOwner {
         uint256 max = lidoFixedPriceMultiLpARM.FEE_SCALE();
         vm.expectRevert("ARM: fee too high");
         lidoFixedPriceMultiLpARM.setFee(max + 1);
@@ -35,10 +35,7 @@ contract Fork_Concrete_lidoFixedPriceMulltiLpARM_Setters_Test_ is Fork_Shared_Te
         lidoFixedPriceMultiLpARM.setFeeCollector(address(0));
     }
 
-    function test_RevertWhen_PerformanceFee_SetFeeCollector_Because_FeeCollectorIsZero()
-        public
-        asLidoFixedPriceMultiLpARMOwner
-    {
+    function test_RevertWhen_PerformanceFee_SetFeeCollector_Because_FeeCollectorIsZero() public asLidoARMOwner {
         vm.expectRevert("ARM: invalid fee collector");
         lidoFixedPriceMultiLpARM.setFeeCollector(address(0));
     }
@@ -46,7 +43,7 @@ contract Fork_Concrete_lidoFixedPriceMulltiLpARM_Setters_Test_ is Fork_Shared_Te
     //////////////////////////////////////////////////////
     /// --- PERFORMANCE FEE - PASSING TEST
     //////////////////////////////////////////////////////
-    function test_PerformanceFee_SetFee_() public asLidoFixedPriceMultiLpARMOwner {
+    function test_PerformanceFee_SetFee_() public asLidoARMOwner {
         uint256 feeBefore = lidoFixedPriceMultiLpARM.fee();
 
         uint256 newFee = _bound(vm.randomUint(), 0, lidoFixedPriceMultiLpARM.FEE_SCALE());
@@ -59,7 +56,7 @@ contract Fork_Concrete_lidoFixedPriceMulltiLpARM_Setters_Test_ is Fork_Shared_Te
         assertNotEq(feeBefore, lidoFixedPriceMultiLpARM.fee());
     }
 
-    function test_PerformanceFee_SetFeeCollector() public asLidoFixedPriceMultiLpARMOwner {
+    function test_PerformanceFee_SetFeeCollector() public asLidoARMOwner {
         address feeCollectorBefore = lidoFixedPriceMultiLpARM.feeCollector();
 
         address newFeeCollector = vm.randomAddress();
@@ -174,7 +171,7 @@ contract Fork_Concrete_lidoFixedPriceMulltiLpARM_Setters_Test_ is Fork_Shared_Te
     //////////////////////////////////////////////////////
     /// --- LIQUIIDITY PROVIDER CONTROLLER - PASSING TESTS
     //////////////////////////////////////////////////////
-    function test_LiquidityProviderController_SetLiquidityProvider() public asLidoFixedPriceMultiLpARMOwner {
+    function test_LiquidityProviderController_SetLiquidityProvider() public asLidoARMOwner {
         address newLiquidityProviderController = vm.randomAddress();
 
         vm.expectEmit({emitter: address(lidoFixedPriceMultiLpARM)});

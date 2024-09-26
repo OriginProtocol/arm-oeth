@@ -28,7 +28,7 @@ contract Fork_Concrete_LidoARM_RequestStETHWithdrawalForETH_Test_ is Fork_Shared
     function test_RevertWhen_RequestStETHWithdrawalForETH_Because_BalanceExceeded()
         public
         asLidoFixedPriceMulltiLpARMOperator
-        approveStETHOnLidoFixedPriceMultiLpARM
+        approveStETHOnLidoARM
     {
         // Remove all stETH from the contract
         deal(address(steth), address(lidoFixedPriceMultiLpARM), 0);
@@ -51,7 +51,7 @@ contract Fork_Concrete_LidoARM_RequestStETHWithdrawalForETH_Test_ is Fork_Shared
     function test_RequestStETHWithdrawalForETH_SingleAmount_1ether()
         public
         asLidoFixedPriceMulltiLpARMOperator
-        approveStETHOnLidoFixedPriceMultiLpARM
+        approveStETHOnLidoARM
     {
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = DEFAULT_AMOUNT;
@@ -72,7 +72,7 @@ contract Fork_Concrete_LidoARM_RequestStETHWithdrawalForETH_Test_ is Fork_Shared
     function test_RequestStETHWithdrawalForETH_SingleAmount_1000ethers()
         public
         asLidoFixedPriceMulltiLpARMOperator
-        approveStETHOnLidoFixedPriceMultiLpARM
+        approveStETHOnLidoARM
     {
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = 1_000 ether;
@@ -93,7 +93,7 @@ contract Fork_Concrete_LidoARM_RequestStETHWithdrawalForETH_Test_ is Fork_Shared
     function test_RequestStETHWithdrawalForETH_MultipleAmount()
         public
         asLidoFixedPriceMulltiLpARMOperator
-        approveStETHOnLidoFixedPriceMultiLpARM
+        approveStETHOnLidoARM
     {
         uint256 length = _bound(vm.randomUint(), 2, 10);
         uint256[] memory amounts = new uint256[](length);

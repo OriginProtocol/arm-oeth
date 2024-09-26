@@ -8,7 +8,7 @@ import {Fork_Shared_Test_} from "test/fork/shared/Shared.sol";
 import {IERC20} from "contracts/Interfaces.sol";
 import {LiquidityProviderController} from "contracts/LiquidityProviderController.sol";
 
-contract Fork_Concrete_LidoFixedPriceMultiLpARM_Deposit_Test_ is Fork_Shared_Test_ {
+contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
     /**
      * As Deposit is complex function due to the entanglement of virtual and override functions in inheritance.
      * This is a small recap of the functions that are called in the deposit function.
@@ -154,7 +154,7 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_Deposit_Test_ is Fork_Shared_Tes
         public
         setTotalAssetsCap(DEFAULT_AMOUNT * 2 + MIN_TOTAL_SUPPLY)
         setLiquidityProviderCap(address(this), DEFAULT_AMOUNT * 2)
-        depositInLidoFixedPriceMultiLpARM(address(this), DEFAULT_AMOUNT)
+        depositInLidoARM(address(this), DEFAULT_AMOUNT)
     {
         uint256 amount = DEFAULT_AMOUNT;
         // Assertions Before
@@ -201,7 +201,7 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_Deposit_Test_ is Fork_Shared_Tes
         setTotalAssetsCap(DEFAULT_AMOUNT * 2 + MIN_TOTAL_SUPPLY)
         setLiquidityProviderCap(address(this), DEFAULT_AMOUNT)
         setLiquidityProviderCap(alice, DEFAULT_AMOUNT)
-        depositInLidoFixedPriceMultiLpARM(address(this), DEFAULT_AMOUNT)
+        depositInLidoARM(address(this), DEFAULT_AMOUNT)
     {
         uint256 amount = DEFAULT_AMOUNT;
         // Assertions Before
@@ -314,7 +314,7 @@ contract Fork_Concrete_LidoFixedPriceMultiLpARM_Deposit_Test_ is Fork_Shared_Tes
         setTotalAssetsCap(DEFAULT_AMOUNT * 3 + MIN_TOTAL_SUPPLY)
         setLiquidityProviderCap(address(this), DEFAULT_AMOUNT)
         setLiquidityProviderCap(alice, DEFAULT_AMOUNT * 5)
-        depositInLidoFixedPriceMultiLpARM(address(this), DEFAULT_AMOUNT)
+        depositInLidoARM(address(this), DEFAULT_AMOUNT)
     {
         // set stETH/WETH buy price to 1
         lidoFixedPriceMultiLpARM.setPrices(1e36, 1e36 + 1);

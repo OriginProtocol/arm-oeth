@@ -40,7 +40,7 @@ contract Fork_Concrete_LidoARM_RequestStETHWithdrawalForETH_Test_ is Fork_Shared
     function test_ClaimStETHWithdrawalForWETH_EmptyList()
         public
         asLidoFixedPriceMulltiLpARMOperator
-        requestStETHWithdrawalForETHOnLidoFixedPriceMultiLpARM(new uint256[](0))
+        requestStETHWithdrawalForETHOnLidoARM(new uint256[](0))
     {
         assertEq(address(lidoFixedPriceMultiLpARM).balance, 0);
         assertEq(lidoFixedPriceMultiLpARM.outstandingEther(), 0);
@@ -55,9 +55,9 @@ contract Fork_Concrete_LidoARM_RequestStETHWithdrawalForETH_Test_ is Fork_Shared
     function test_ClaimStETHWithdrawalForWETH_SingleRequest()
         public
         asLidoFixedPriceMulltiLpARMOperator
-        approveStETHOnLidoFixedPriceMultiLpARM
-        requestStETHWithdrawalForETHOnLidoFixedPriceMultiLpARM(amounts1)
-        mockFunctionClaimWithdrawOnLidoFixedPriceMultiLpARM(DEFAULT_AMOUNT)
+        approveStETHOnLidoARM
+        requestStETHWithdrawalForETHOnLidoARM(amounts1)
+        mockFunctionClaimWithdrawOnLidoARM(DEFAULT_AMOUNT)
     {
         // Assertions before
         uint256 balanceBefore = weth.balanceOf(address(lidoFixedPriceMultiLpARM));
@@ -77,10 +77,10 @@ contract Fork_Concrete_LidoARM_RequestStETHWithdrawalForETH_Test_ is Fork_Shared
     function test_ClaimStETHWithdrawalForWETH_MultiRequest()
         public
         asLidoFixedPriceMulltiLpARMOperator
-        approveStETHOnLidoFixedPriceMultiLpARM
-        requestStETHWithdrawalForETHOnLidoFixedPriceMultiLpARM(amounts2)
+        approveStETHOnLidoARM
+        requestStETHWithdrawalForETHOnLidoARM(amounts2)
         mockCallLidoFindCheckpointHints
-        mockFunctionClaimWithdrawOnLidoFixedPriceMultiLpARM(amounts2[0] + amounts2[1])
+        mockFunctionClaimWithdrawOnLidoARM(amounts2[0] + amounts2[1])
     {
         // Assertions before
         uint256 balanceBefore = weth.balanceOf(address(lidoFixedPriceMultiLpARM));

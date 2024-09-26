@@ -38,16 +38,13 @@ contract Fork_Concrete_LidoARM_TotalAssets_Test_ is Fork_Shared_Test_ {
         assertEq(lidoFixedPriceMultiLpARM.totalAssets(), MIN_TOTAL_SUPPLY);
     }
 
-    function test_TotalAssets_AfterDeposit_NoAssetGainOrLoss()
-        public
-        depositInLidoFixedPriceMultiLpARM(address(this), DEFAULT_AMOUNT)
-    {
+    function test_TotalAssets_AfterDeposit_NoAssetGainOrLoss() public depositInLidoARM(address(this), DEFAULT_AMOUNT) {
         assertEq(lidoFixedPriceMultiLpARM.totalAssets(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT);
     }
 
     function test_TotalAssets_AfterDeposit_WithAssetGain_InWETH()
         public
-        depositInLidoFixedPriceMultiLpARM(address(this), DEFAULT_AMOUNT)
+        depositInLidoARM(address(this), DEFAULT_AMOUNT)
     {
         // Simulate asset gain
         uint256 assetGain = DEFAULT_AMOUNT / 2;
@@ -65,7 +62,7 @@ contract Fork_Concrete_LidoARM_TotalAssets_Test_ is Fork_Shared_Test_ {
 
     function test_TotalAssets_AfterDeposit_WithAssetGain_InSTETH()
         public
-        depositInLidoFixedPriceMultiLpARM(address(this), DEFAULT_AMOUNT)
+        depositInLidoARM(address(this), DEFAULT_AMOUNT)
     {
         assertEq(steth.balanceOf(address(lidoFixedPriceMultiLpARM)), 0);
         // Simulate asset gain
@@ -85,7 +82,7 @@ contract Fork_Concrete_LidoARM_TotalAssets_Test_ is Fork_Shared_Test_ {
 
     function test_TotalAssets_AfterDeposit_WithAssetLoss_InWETH()
         public
-        depositInLidoFixedPriceMultiLpARM(address(this), DEFAULT_AMOUNT)
+        depositInLidoARM(address(this), DEFAULT_AMOUNT)
     {
         // Simulate asset loss
         uint256 assetLoss = DEFAULT_AMOUNT / 2;
@@ -100,7 +97,7 @@ contract Fork_Concrete_LidoARM_TotalAssets_Test_ is Fork_Shared_Test_ {
 
     function test_TotalAssets_AfterDeposit_WithAssetLoss_InSTETH()
         public
-        depositInLidoFixedPriceMultiLpARM(address(this), DEFAULT_AMOUNT)
+        depositInLidoARM(address(this), DEFAULT_AMOUNT)
     {
         // Simulate Swap at 1:1 between WETH and stETH
         uint256 swapAmount = DEFAULT_AMOUNT / 2;
@@ -161,8 +158,8 @@ contract Fork_Concrete_LidoARM_TotalAssets_Test_ is Fork_Shared_Test_ {
 
     function test_TotalAssets_When_ARMIsInsolvent()
         public
-        depositInLidoFixedPriceMultiLpARM(address(this), DEFAULT_AMOUNT)
-        requestRedeemFromLidoFixedPriceMultiLpARM(address(this), DEFAULT_AMOUNT)
+        depositInLidoARM(address(this), DEFAULT_AMOUNT)
+        requestRedeemFromLidoARM(address(this), DEFAULT_AMOUNT)
     {
         // Simulate a loss of assets
         deal(address(weth), address(lidoFixedPriceMultiLpARM), DEFAULT_AMOUNT - 1);
@@ -172,10 +169,10 @@ contract Fork_Concrete_LidoARM_TotalAssets_Test_ is Fork_Shared_Test_ {
 
     function test_RevertWhen_TotalAssets_Because_MathError()
         public
-        depositInLidoFixedPriceMultiLpARM(address(this), DEFAULT_AMOUNT)
-        simulateAssetGainInLidoFixedPriceMultiLpARM(DEFAULT_AMOUNT, address(weth), true)
-        requestRedeemFromLidoFixedPriceMultiLpARM(address(this), DEFAULT_AMOUNT)
-        simulateAssetGainInLidoFixedPriceMultiLpARM(DEFAULT_AMOUNT * 2, address(weth), false)
+        depositInLidoARM(address(this), DEFAULT_AMOUNT)
+        simulateAssetGainInLidoARM(DEFAULT_AMOUNT, address(weth), true)
+        requestRedeemFromLidoARM(address(this), DEFAULT_AMOUNT)
+        simulateAssetGainInLidoARM(DEFAULT_AMOUNT * 2, address(weth), false)
     {
         // vm.expectRevert(stdError.arithmeticError);
         assertEq(lidoFixedPriceMultiLpARM.totalAssets(), 0);

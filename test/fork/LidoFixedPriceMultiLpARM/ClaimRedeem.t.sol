@@ -29,8 +29,8 @@ contract Fork_Concrete_LidoARM_ClaimRedeem_Test_ is Fork_Shared_Test_ {
         public
         setTotalAssetsCap(DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY)
         setLiquidityProviderCap(address(this), DEFAULT_AMOUNT)
-        depositInLidoFixedPriceMultiLpARM(address(this), DEFAULT_AMOUNT)
-        requestRedeemFromLidoFixedPriceMultiLpARM(address(this), DEFAULT_AMOUNT)
+        depositInLidoARM(address(this), DEFAULT_AMOUNT)
+        requestRedeemFromLidoARM(address(this), DEFAULT_AMOUNT)
     {
         skip(delay - 1);
         vm.expectRevert("Claim delay not met");
@@ -41,8 +41,8 @@ contract Fork_Concrete_LidoARM_ClaimRedeem_Test_ is Fork_Shared_Test_ {
         public
         setTotalAssetsCap(DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY)
         setLiquidityProviderCap(address(this), DEFAULT_AMOUNT)
-        depositInLidoFixedPriceMultiLpARM(address(this), DEFAULT_AMOUNT)
-        requestRedeemFromLidoFixedPriceMultiLpARM(address(this), DEFAULT_AMOUNT)
+        depositInLidoARM(address(this), DEFAULT_AMOUNT)
+        requestRedeemFromLidoARM(address(this), DEFAULT_AMOUNT)
     {
         // Remove all weth liquidity from ARM
         deal(address(weth), address(lidoFixedPriceMultiLpARM), 0);
@@ -59,8 +59,8 @@ contract Fork_Concrete_LidoARM_ClaimRedeem_Test_ is Fork_Shared_Test_ {
         public
         setTotalAssetsCap(DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY)
         setLiquidityProviderCap(address(this), DEFAULT_AMOUNT)
-        depositInLidoFixedPriceMultiLpARM(address(this), DEFAULT_AMOUNT)
-        requestRedeemFromLidoFixedPriceMultiLpARM(address(this), DEFAULT_AMOUNT)
+        depositInLidoARM(address(this), DEFAULT_AMOUNT)
+        requestRedeemFromLidoARM(address(this), DEFAULT_AMOUNT)
     {
         // Remove half of weth liquidity from ARM
         uint256 halfAmount = weth.balanceOf(address(lidoFixedPriceMultiLpARM)) / 2;
@@ -78,8 +78,8 @@ contract Fork_Concrete_LidoARM_ClaimRedeem_Test_ is Fork_Shared_Test_ {
         public
         setTotalAssetsCap(DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY)
         setLiquidityProviderCap(address(this), DEFAULT_AMOUNT)
-        depositInLidoFixedPriceMultiLpARM(address(this), DEFAULT_AMOUNT)
-        requestRedeemFromLidoFixedPriceMultiLpARM(address(this), DEFAULT_AMOUNT)
+        depositInLidoARM(address(this), DEFAULT_AMOUNT)
+        requestRedeemFromLidoARM(address(this), DEFAULT_AMOUNT)
     {
         // Time jump claim delay
         skip(delay);
@@ -94,10 +94,10 @@ contract Fork_Concrete_LidoARM_ClaimRedeem_Test_ is Fork_Shared_Test_ {
         public
         setTotalAssetsCap(DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY)
         setLiquidityProviderCap(address(this), DEFAULT_AMOUNT)
-        depositInLidoFixedPriceMultiLpARM(address(this), DEFAULT_AMOUNT)
-        requestRedeemFromLidoFixedPriceMultiLpARM(address(this), DEFAULT_AMOUNT)
+        depositInLidoARM(address(this), DEFAULT_AMOUNT)
+        requestRedeemFromLidoARM(address(this), DEFAULT_AMOUNT)
         skipTime(delay)
-        claimRequestOnLidoFixedPriceMultiLpARM(address(this), 0)
+        claimRequestOnLidoARM(address(this), 0)
     {
         // Expect revert
         vm.expectRevert("Already claimed");
@@ -112,8 +112,8 @@ contract Fork_Concrete_LidoARM_ClaimRedeem_Test_ is Fork_Shared_Test_ {
         public
         setTotalAssetsCap(DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY)
         setLiquidityProviderCap(address(this), DEFAULT_AMOUNT)
-        depositInLidoFixedPriceMultiLpARM(address(this), DEFAULT_AMOUNT)
-        requestRedeemFromLidoFixedPriceMultiLpARM(address(this), DEFAULT_AMOUNT)
+        depositInLidoARM(address(this), DEFAULT_AMOUNT)
+        requestRedeemFromLidoARM(address(this), DEFAULT_AMOUNT)
         skipTime(delay)
     {
         // Assertions before
@@ -155,8 +155,8 @@ contract Fork_Concrete_LidoARM_ClaimRedeem_Test_ is Fork_Shared_Test_ {
         public
         setTotalAssetsCap(DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY)
         setLiquidityProviderCap(address(this), DEFAULT_AMOUNT)
-        depositInLidoFixedPriceMultiLpARM(address(this), DEFAULT_AMOUNT)
-        requestRedeemFromLidoFixedPriceMultiLpARM(address(this), DEFAULT_AMOUNT)
+        depositInLidoARM(address(this), DEFAULT_AMOUNT)
+        requestRedeemFromLidoARM(address(this), DEFAULT_AMOUNT)
         skipTime(delay)
     {
         // Assertions before
@@ -199,11 +199,11 @@ contract Fork_Concrete_LidoARM_ClaimRedeem_Test_ is Fork_Shared_Test_ {
         public
         setTotalAssetsCap(DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY)
         setLiquidityProviderCap(address(this), DEFAULT_AMOUNT)
-        depositInLidoFixedPriceMultiLpARM(address(this), DEFAULT_AMOUNT)
-        requestRedeemFromLidoFixedPriceMultiLpARM(address(this), DEFAULT_AMOUNT / 2)
+        depositInLidoARM(address(this), DEFAULT_AMOUNT)
+        requestRedeemFromLidoARM(address(this), DEFAULT_AMOUNT / 2)
         skipTime(delay)
-        claimRequestOnLidoFixedPriceMultiLpARM(address(this), 0)
-        requestRedeemFromLidoFixedPriceMultiLpARM(address(this), DEFAULT_AMOUNT / 2)
+        claimRequestOnLidoARM(address(this), 0)
+        requestRedeemFromLidoARM(address(this), DEFAULT_AMOUNT / 2)
     {
         // Assertions before
         assertEq(steth.balanceOf(address(lidoFixedPriceMultiLpARM)), 0);

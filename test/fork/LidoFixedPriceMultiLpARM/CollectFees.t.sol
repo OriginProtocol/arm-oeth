@@ -22,7 +22,7 @@ contract Fork_Concrete_LidoARM_CollectFees_Test_ is Fork_Shared_Test_ {
     /// @notice This test is expected to revert as almost all the liquidity is in stETH
     function test_RevertWhen_CollectFees_Because_InsufficientLiquidity()
         public
-        simulateAssetGainInLidoFixedPriceMultiLpARM(DEFAULT_AMOUNT, address(steth), true)
+        simulateAssetGainInLidoARM(DEFAULT_AMOUNT, address(steth), true)
     {
         vm.expectRevert("ARM: insufficient liquidity");
         lidoFixedPriceMultiLpARM.collectFees();
@@ -31,10 +31,7 @@ contract Fork_Concrete_LidoARM_CollectFees_Test_ is Fork_Shared_Test_ {
     //////////////////////////////////////////////////////
     /// --- PASSING TESTS
     //////////////////////////////////////////////////////
-    function test_CollectFees_Once()
-        public
-        simulateAssetGainInLidoFixedPriceMultiLpARM(DEFAULT_AMOUNT, address(weth), true)
-    {
+    function test_CollectFees_Once() public simulateAssetGainInLidoARM(DEFAULT_AMOUNT, address(weth), true) {
         address feeCollector = lidoFixedPriceMultiLpARM.feeCollector();
         uint256 fee = DEFAULT_AMOUNT * 20 / 100;
 
@@ -54,9 +51,9 @@ contract Fork_Concrete_LidoARM_CollectFees_Test_ is Fork_Shared_Test_ {
 
     function test_CollectFees_Twice()
         public
-        simulateAssetGainInLidoFixedPriceMultiLpARM(DEFAULT_AMOUNT, address(weth), true)
-        collectFeesOnLidoFixedPriceMultiLpARM
-        simulateAssetGainInLidoFixedPriceMultiLpARM(DEFAULT_AMOUNT, address(weth), true)
+        simulateAssetGainInLidoARM(DEFAULT_AMOUNT, address(weth), true)
+        collectFeesOnLidoARM
+        simulateAssetGainInLidoARM(DEFAULT_AMOUNT, address(weth), true)
     {
         // Main call
         uint256 claimedFee = lidoFixedPriceMultiLpARM.collectFees();

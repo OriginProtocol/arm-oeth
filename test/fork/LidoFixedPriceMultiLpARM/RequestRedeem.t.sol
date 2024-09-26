@@ -26,7 +26,7 @@ contract Fork_Concrete_LidoARM_RequestRedeem_Test_ is Fork_Shared_Test_ {
         public
         setTotalAssetsCap(DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY)
         setLiquidityProviderCap(address(this), DEFAULT_AMOUNT)
-        depositInLidoFixedPriceMultiLpARM(address(this), DEFAULT_AMOUNT)
+        depositInLidoARM(address(this), DEFAULT_AMOUNT)
     {
         // Assertions Before
         assertEq(steth.balanceOf(address(lidoFixedPriceMultiLpARM)), 0);
@@ -68,8 +68,8 @@ contract Fork_Concrete_LidoARM_RequestRedeem_Test_ is Fork_Shared_Test_ {
         public
         setTotalAssetsCap(DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY)
         setLiquidityProviderCap(address(this), DEFAULT_AMOUNT)
-        depositInLidoFixedPriceMultiLpARM(address(this), DEFAULT_AMOUNT)
-        requestRedeemFromLidoFixedPriceMultiLpARM(address(this), DEFAULT_AMOUNT / 4)
+        depositInLidoARM(address(this), DEFAULT_AMOUNT)
+        requestRedeemFromLidoARM(address(this), DEFAULT_AMOUNT / 4)
     {
         // Assertions Before
         assertEq(steth.balanceOf(address(lidoFixedPriceMultiLpARM)), 0);
@@ -115,7 +115,7 @@ contract Fork_Concrete_LidoARM_RequestRedeem_Test_ is Fork_Shared_Test_ {
         public
         setTotalAssetsCap(DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY)
         setLiquidityProviderCap(address(this), DEFAULT_AMOUNT)
-        depositInLidoFixedPriceMultiLpARM(address(this), DEFAULT_AMOUNT)
+        depositInLidoARM(address(this), DEFAULT_AMOUNT)
     {
         // Assertions Before
         // Not needed as the same as in `test_RequestRedeem_AfterFirstDeposit_NoPerfs_EmptyWithdrawQueue`
@@ -160,7 +160,7 @@ contract Fork_Concrete_LidoARM_RequestRedeem_Test_ is Fork_Shared_Test_ {
         public
         setTotalAssetsCap(DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY)
         setLiquidityProviderCap(address(this), DEFAULT_AMOUNT)
-        depositInLidoFixedPriceMultiLpARM(address(this), DEFAULT_AMOUNT)
+        depositInLidoARM(address(this), DEFAULT_AMOUNT)
     {
         // Assertions Before
         // Not needed as the same as in `test_RequestRedeem_AfterFirstDeposit_NoPerfs_EmptyWithdrawQueue`
