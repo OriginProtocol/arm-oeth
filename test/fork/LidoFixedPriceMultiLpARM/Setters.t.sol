@@ -108,7 +108,7 @@ contract Fork_Concrete_lidoARM_Setters_Test_ is Fork_Shared_Test_ {
 
     function test_SellPriceCannotCrossOneByMoreThanTenBps() public asLidoFixedPriceMulltiLpARMOperator {
         vm.expectRevert("ARM: sell price too low");
-        lidoARM.setPrices(0.9989 * 1e36, 0.9989 * 1e36);
+        lidoARM.setPrices(0.998 * 1e36, 0.9989 * 1e36);
     }
 
     function test_BuyPriceCannotCrossOneByMoreThanTenBps() public asLidoFixedPriceMulltiLpARMOperator {
