@@ -5,11 +5,7 @@ import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Ini
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 import {AbstractARM} from "./AbstractARM.sol";
-import {LiquidityProviderControllerARM} from "./LiquidityProviderControllerARM.sol";
-import {FixedPriceARM} from "./FixedPriceARM.sol";
 import {LidoLiquidityManager} from "./LidoLiquidityManager.sol";
-import {MultiLP} from "./MultiLP.sol";
-import {PerformanceFee} from "./PerformanceFee.sol";
 
 /**
  * @title Lido (stETH) Application Redemption Manager (ARM)
@@ -19,32 +15,23 @@ import {PerformanceFee} from "./PerformanceFee.sol";
  * A performance fee is also collected on increases in the ARM's total assets.
  * @author Origin Protocol Inc
  */
-contract LidoFixedPriceMultiLpARM is
-    Initializable,
-    MultiLP,
-    PerformanceFee,
-    LiquidityProviderControllerARM,
-    FixedPriceARM,
-    LidoLiquidityManager
-{
+contract LidoARM is Initializable, AbstractARM, LidoLiquidityManager {
     /// @param _steth The address of the stETH token
     /// @param _weth The address of the WETH token
     /// @param _lidoWithdrawalQueue The address of the Lido's withdrawal queue contract
     constructor(address _steth, address _weth, address _lidoWithdrawalQueue)
-        AbstractARM(_steth, _weth)
-        MultiLP(_weth)
-        FixedPriceARM()
+        AbstractARM(_steth, _weth, _weth)
         LidoLiquidityManager(_steth, _weth, _lidoWithdrawalQueue)
     {}
 
-    /// @notice Initialize the contract.
+    /// @notice Initialize the storage variables stored in the proxy contract.
     /// The deployer that calls initialize has to approve the this ARM's proxy contract to transfer 1e12 WETH.
     /// @param _name The name of the liquidity provider (LP) token.
     /// @param _symbol The symbol of the liquidity provider (LP) token.
     /// @param _operator The address of the account that can request and claim Lido withdrawals.
     /// @param _fee The performance fee that is collected by the feeCollector measured in basis points (1/100th of a percent).
     /// 10,000 = 100% performance fee
-    /// 500 = 5% performance fee
+    /// 1,500 = 15% performance fee
     /// @param _feeCollector The account that can collect the performance fee
     /// @param _liquidityProviderController The address of the Liquidity Provider Controller
     function initialize(
@@ -55,10 +42,8 @@ contract LidoFixedPriceMultiLpARM is
         address _feeCollector,
         address _liquidityProviderController
     ) external initializer {
-        _initOwnableOperable(_operator);
-        _initMultiLP(_name, _symbol);
-        _initPerformanceFee(_fee, _feeCollector);
-        _initLPControllerARM(_liquidityProviderController);
+        _initARM(_operator, _name, _symbol, _fee, _feeCollector, _liquidityProviderController);
+        _initLidoLiquidityManager();
     }
 
     /**
@@ -67,47 +52,17 @@ contract LidoFixedPriceMultiLpARM is
      *
      * The MultiLP implementation ensures any WETH reserved for the withdrawal queue is not used in swaps from stETH to WETH.
      */
-    function _transferAsset(address asset, address to, uint256 amount) internal override(AbstractARM, MultiLP) {
+    function _transferAsset(address asset, address to, uint256 amount) internal override {
         // Add 2 wei if transferring stETH
         uint256 transferAmount = asset == address(token0) ? amount + 2 : amount;
 
-        MultiLP._transferAsset(asset, to, transferAmount);
+        super._transferAsset(asset, to, transferAmount);
     }
 
     /**
      * @dev Calculates the amount of stETH in the Lido Withdrawal Queue.
      */
-    function _externalWithdrawQueue() internal view override(MultiLP, LidoLiquidityManager) returns (uint256) {
+    function _externalWithdrawQueue() internal view override(AbstractARM, LidoLiquidityManager) returns (uint256) {
         return LidoLiquidityManager._externalWithdrawQueue();
-    }
-
-    /**
-     * @dev Is called after assets are transferred to the ARM in the `deposit` method.
-     */
-    function _postDepositHook(uint256 assets)
-        internal
-        override(MultiLP, LiquidityProviderControllerARM, PerformanceFee)
-    {
-        // Store the new total assets after the deposit and performance fee accrued
-        PerformanceFee._postDepositHook(assets);
-
-        // Check the LP can deposit the assets
-        LiquidityProviderControllerARM._postDepositHook(assets);
-    }
-
-    /**
-     * @dev Is called after the performance fee is accrued in the `requestRedeem` method.
-     */
-    function _postRequestRedeemHook() internal override(MultiLP, PerformanceFee) {
-        // Store the new total assets after the withdrawal and performance fee accrued
-        PerformanceFee._postRequestRedeemHook();
-    }
-
-    /**
-     * @notice The total amount of assets in the ARM and Lido withdrawal queue,
-     * less the WETH reserved for the ARM's withdrawal queue and accrued fees.
-     */
-    function totalAssets() public view override(MultiLP, PerformanceFee) returns (uint256) {
-        return PerformanceFee.totalAssets();
     }
 }

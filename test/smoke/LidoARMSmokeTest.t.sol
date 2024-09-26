@@ -6,7 +6,7 @@ import {Test, console2} from "forge-std/Test.sol";
 import {AbstractSmokeTest} from "./AbstractSmokeTest.sol";
 
 import {IERC20} from "contracts/Interfaces.sol";
-import {LidoFixedPriceMultiLpARM} from "contracts/LidoFixedPriceMultiLpARM.sol";
+import {LidoARM} from "contracts/LidoARM.sol";
 import {Proxy} from "contracts/Proxy.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
 import {console} from "forge-std/console.sol";
@@ -17,7 +17,7 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
     IERC20 weth;
     IERC20 steth;
     Proxy proxy;
-    LidoFixedPriceMultiLpARM lidoARM;
+    LidoARM lidoARM;
     address operator;
 
     function setUp() public {
@@ -30,7 +30,7 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
         vm.label(address(operator), "OPERATOR");
 
         proxy = Proxy(deployManager.getDeployment("LIDO_ARM"));
-        lidoARM = LidoFixedPriceMultiLpARM(payable(deployManager.getDeployment("LIDO_ARM")));
+        lidoARM = LidoARM(payable(deployManager.getDeployment("LIDO_ARM")));
 
         // Only fuzz from this address. Big speedup on fork.
         targetSender(address(this));

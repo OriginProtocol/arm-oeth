@@ -40,10 +40,10 @@ abstract contract Helpers is Base_Test_ {
         uint256 expectedClaimed,
         uint256 expectedNextIndex
     ) public view {
-        assertEq(lidoFixedPriceMultiLpARM.withdrawsQueued(), expectedQueued, "metadata queued");
-        assertEq(lidoFixedPriceMultiLpARM.withdrawsClaimable(), expectedClaimable, "metadata claimable");
-        assertEq(lidoFixedPriceMultiLpARM.withdrawsClaimed(), expectedClaimed, "metadata claimed");
-        assertEq(lidoFixedPriceMultiLpARM.nextWithdrawalIndex(), expectedNextIndex, "metadata nextWithdrawalIndex");
+        assertEq(lidoARM.withdrawsQueued(), expectedQueued, "metadata queued");
+        assertEq(lidoARM.withdrawsClaimable(), expectedClaimable, "metadata claimable");
+        assertEq(lidoARM.withdrawsClaimed(), expectedClaimed, "metadata claimed");
+        assertEq(lidoARM.nextWithdrawalIndex(), expectedNextIndex, "metadata nextWithdrawalIndex");
     }
 
     /// @notice Asserts the equality bewteen value of `withdrawalRequests()` and the expected values.
@@ -56,7 +56,7 @@ abstract contract Helpers is Base_Test_ {
         uint256 queued
     ) public view {
         (address _withdrawer, bool _claimed, uint40 _claimTimestamp, uint128 _assets, uint128 _queued) =
-            lidoFixedPriceMultiLpARM.withdrawalRequests(requestId);
+            lidoARM.withdrawalRequests(requestId);
         assertEq(_withdrawer, withdrawer, "Wrong withdrawer");
         assertEq(_claimed, claimed, "Wrong claimed");
         assertEq(_claimTimestamp, claimTimestamp, "Wrong claimTimestamp");

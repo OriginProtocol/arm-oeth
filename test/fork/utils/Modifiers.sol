@@ -37,14 +37,14 @@ abstract contract Modifiers is Helpers {
 
     /// @notice Impersonate the operator of LidoOwnerLpARM contract.
     modifier asLidoFixedPriceMulltiLpARMOperator() {
-        vm.startPrank(lidoFixedPriceMultiLpARM.operator());
+        vm.startPrank(lidoARM.operator());
         _;
         vm.stopPrank();
     }
 
-    /// @notice Impersonate the owner of LidoFixedPriceMultiLpARM contract.
-    modifier asLidoFixedPriceMultiLpARMOwner() {
-        vm.startPrank(lidoFixedPriceMultiLpARM.owner());
+    /// @notice Impersonate the owner of LidoARM contract.
+    modifier asLidoARMOwner() {
+        vm.startPrank(lidoARM.owner());
         _;
         vm.stopPrank();
     }
@@ -77,8 +77,8 @@ abstract contract Modifiers is Helpers {
         _;
     }
 
-    /// @notice Deposit WETH into the LidoFixedPriceMultiLpARM contract.
-    modifier depositInLidoFixedPriceMultiLpARM(address user, uint256 amount) {
+    /// @notice Deposit WETH into the LidoARM contract.
+    modifier depositInLidoARM(address user, uint256 amount) {
         // Todo: extend this logic to other modifier if needed
         (VmSafe.CallerMode mode, address _address, address _origin) = vm.readCallers();
         vm.stopPrank();
@@ -89,8 +89,8 @@ abstract contract Modifiers is Helpers {
         // Deal amount as "extra" to user
         deal(address(weth), user, amount + balance);
         vm.startPrank(user);
-        weth.approve(address(lidoFixedPriceMultiLpARM), type(uint256).max);
-        lidoFixedPriceMultiLpARM.deposit(amount);
+        weth.approve(address(lidoARM), type(uint256).max);
+        lidoARM.deposit(amount);
         vm.stopPrank();
 
         if (mode == VmSafe.CallerMode.Prank) {
@@ -101,14 +101,14 @@ abstract contract Modifiers is Helpers {
         _;
     }
 
-    /// @notice Request redeem from LidoFixedPriceMultiLpARM contract.
-    modifier requestRedeemFromLidoFixedPriceMultiLpARM(address user, uint256 amount) {
+    /// @notice Request redeem from LidoARM contract.
+    modifier requestRedeemFromLidoARM(address user, uint256 amount) {
         // Todo: extend this logic to other modifier if needed
         (VmSafe.CallerMode mode, address _address, address _origin) = vm.readCallers();
         vm.stopPrank();
 
         vm.startPrank(user);
-        lidoFixedPriceMultiLpARM.requestRedeem(amount);
+        lidoARM.requestRedeem(amount);
         vm.stopPrank();
 
         if (mode == VmSafe.CallerMode.Prank) {
@@ -119,14 +119,14 @@ abstract contract Modifiers is Helpers {
         _;
     }
 
-    /// @notice Claim redeem from LidoFixedPriceMultiLpARM contract.
-    modifier claimRequestOnLidoFixedPriceMultiLpARM(address user, uint256 requestId) {
+    /// @notice Claim redeem from LidoARM contract.
+    modifier claimRequestOnLidoARM(address user, uint256 requestId) {
         // Todo: extend this logic to other modifier if needed
         (VmSafe.CallerMode mode, address _address, address _origin) = vm.readCallers();
         vm.stopPrank();
 
         vm.startPrank(user);
-        lidoFixedPriceMultiLpARM.claimRedeem(requestId);
+        lidoARM.claimRedeem(requestId);
         vm.stopPrank();
 
         if (mode == VmSafe.CallerMode.Prank) {
@@ -137,24 +137,16 @@ abstract contract Modifiers is Helpers {
         _;
     }
 
-    /// @notice Simulate asset gain or loss in LidoFixedPriceMultiLpARM contract.
-    modifier simulateAssetGainInLidoFixedPriceMultiLpARM(uint256 assetGain, address token, bool gain) {
+    /// @notice Simulate asset gain or loss in LidoARM contract.
+    modifier simulateAssetGainInLidoARM(uint256 assetGain, address token, bool gain) {
         // Todo: extend this logic to other modifier if needed
         (VmSafe.CallerMode mode, address _address, address _origin) = vm.readCallers();
         vm.stopPrank();
 
         if (gain) {
-            deal(
-                token,
-                address(lidoFixedPriceMultiLpARM),
-                IERC20(token).balanceOf(address(lidoFixedPriceMultiLpARM)) + uint256(assetGain)
-            );
+            deal(token, address(lidoARM), IERC20(token).balanceOf(address(lidoARM)) + uint256(assetGain));
         } else {
-            deal(
-                token,
-                address(lidoFixedPriceMultiLpARM),
-                IERC20(token).balanceOf(address(lidoFixedPriceMultiLpARM)) - uint256(assetGain)
-            );
+            deal(token, address(lidoARM), IERC20(token).balanceOf(address(lidoARM)) - uint256(assetGain));
         }
 
         if (mode == VmSafe.CallerMode.Prank) {
@@ -165,20 +157,20 @@ abstract contract Modifiers is Helpers {
         _;
     }
 
-    /// @notice Collect fees on LidoFixedPriceMultiLpARM contract.
-    modifier collectFeesOnLidoFixedPriceMultiLpARM() {
-        lidoFixedPriceMultiLpARM.collectFees();
+    /// @notice Collect fees on LidoARM contract.
+    modifier collectFeesOnLidoARM() {
+        lidoARM.collectFees();
         _;
     }
 
-    /// @notice Approve stETH on LidoFixedPriceMultiLpARM contract.
-    modifier approveStETHOnLidoFixedPriceMultiLpARM() {
+    /// @notice Approve stETH on LidoARM contract.
+    modifier approveStETHOnLidoARM() {
         // Todo: extend this logic to other modifier if needed
         (VmSafe.CallerMode mode, address _address, address _origin) = vm.readCallers();
         vm.stopPrank();
 
-        vm.prank(lidoFixedPriceMultiLpARM.owner());
-        lidoFixedPriceMultiLpARM.approveStETH();
+        vm.prank(lidoARM.owner());
+        lidoARM.approveStETH();
 
         if (mode == VmSafe.CallerMode.Prank) {
             vm.prank(_address, _origin);
@@ -188,14 +180,14 @@ abstract contract Modifiers is Helpers {
         _;
     }
 
-    /// @notice Request stETH withdrawal for ETH on LidoFixedPriceMultiLpARM contract.
-    modifier requestStETHWithdrawalForETHOnLidoFixedPriceMultiLpARM(uint256[] memory amounts) {
+    /// @notice Request stETH withdrawal for ETH on LidoARM contract.
+    modifier requestStETHWithdrawalForETHOnLidoARM(uint256[] memory amounts) {
         // Todo: extend this logic to other modifier if needed
         (VmSafe.CallerMode mode, address _address, address _origin) = vm.readCallers();
         vm.stopPrank();
 
-        vm.prank(lidoFixedPriceMultiLpARM.owner());
-        lidoFixedPriceMultiLpARM.requestStETHWithdrawalForETH(amounts);
+        vm.prank(lidoARM.owner());
+        lidoARM.requestStETHWithdrawalForETH(amounts);
 
         if (mode == VmSafe.CallerMode.Prank) {
             vm.prank(_address, _origin);
@@ -222,14 +214,14 @@ abstract contract Modifiers is Helpers {
     }
 
     /// @notice mock call for `claimWithdrawals` on lido withdraw contracts.
-    /// @dev this will send eth directly to the lidoFixedPriceMultiLpARM contract.
-    modifier mockFunctionClaimWithdrawOnLidoFixedPriceMultiLpARM(uint256 amount) {
+    /// @dev this will send eth directly to the lidoARM contract.
+    modifier mockFunctionClaimWithdrawOnLidoARM(uint256 amount) {
         // Todo: extend this logic to other modifier if needed
         (VmSafe.CallerMode mode, address _address, address _origin) = vm.readCallers();
         vm.stopPrank();
 
         // Deploy fake lido withdraw contract
-        MockLidoWithdraw mocklidoWithdraw = new MockLidoWithdraw(address(lidoFixedPriceMultiLpARM));
+        MockLidoWithdraw mocklidoWithdraw = new MockLidoWithdraw(address(lidoARM));
         // Give ETH to the ETH Sender contract
         vm.deal(address(mocklidoWithdraw.ethSender()), amount);
         // Mock all the call to the fake lido withdraw contract
