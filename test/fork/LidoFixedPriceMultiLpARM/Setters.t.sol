@@ -8,7 +8,7 @@ import {Fork_Shared_Test_} from "test/fork/shared/Shared.sol";
 import {IERC20} from "contracts/Interfaces.sol";
 import {AbstractARM} from "contracts/AbstractARM.sol";
 
-contract Fork_Concrete_lidoFixedPriceMulltiLpARM_Setters_Test_ is Fork_Shared_Test_ {
+contract Fork_Concrete_lidoARM_Setters_Test_ is Fork_Shared_Test_ {
     //////////////////////////////////////////////////////
     /// --- SETUP
     //////////////////////////////////////////////////////
@@ -90,11 +90,11 @@ contract Fork_Concrete_lidoFixedPriceMulltiLpARM_Setters_Test_ is Fork_Shared_Te
     function test_RevertWhen_FixedPriceARM_SetPrices_Because_PriceRange() public asLidoFixedPriceMulltiLpARMOperator {
         // buy price 11 basis points higher than 1.0
         vm.expectRevert("ARM: buy price too high");
-        lidoARM.setPrices(10011e32, 10020e32);
+        lidoARM.setPrices(1.0011 * 1e36, 1.002 * 1e36);
 
         // sell price 11 basis points lower than 1.0
         vm.expectRevert("ARM: sell price too low");
-        lidoARM.setPrices(9980e32, 9989e32);
+        lidoARM.setPrices(0.998 * 1e36, 0.9989 * 1e36);
 
         // Forgot to scale up to 36 decimals
         vm.expectRevert("ARM: sell price too low");
@@ -106,14 +106,14 @@ contract Fork_Concrete_lidoFixedPriceMulltiLpARM_Setters_Test_ is Fork_Shared_Te
         lidoARM.setPrices(0, 0);
     }
 
-    function test_SellPriceCannotCrossOne() public asLidoFixedPriceMulltiLpARMOperator {
+    function test_SellPriceCannotCrossOneByMoreThanTenBps() public asLidoFixedPriceMulltiLpARMOperator {
         vm.expectRevert("ARM: sell price too low");
-        lidoARM.setPrices(0.9997 * 1e36, 0.99999 * 1e36);
+        lidoARM.setPrices(0.9989 * 1e36, 0.9989 * 1e36);
     }
 
-    function test_BuyPriceCannotCrossOne() public asLidoFixedPriceMulltiLpARMOperator {
+    function test_BuyPriceCannotCrossOneByMoreThanTenBps() public asLidoFixedPriceMulltiLpARMOperator {
         vm.expectRevert("ARM: buy price too high");
-        lidoARM.setPrices(1.0 * 1e36, 1.0001 * 1e36);
+        lidoARM.setPrices(1.0011 * 1e36, 1.002 * 1e36);
     }
 
     //////////////////////////////////////////////////////
