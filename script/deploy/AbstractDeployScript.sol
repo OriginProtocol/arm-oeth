@@ -40,8 +40,19 @@ abstract contract AbstractDeployScript is Script {
         deployedContracts[name] = addr;
     }
 
-    function isForked() public view returns (bool) {
-        return vm.isContext(VmSafe.ForgeContext.ScriptDryRun) || vm.isContext(VmSafe.ForgeContext.TestGroup);
+    function isForked() public returns (bool) {
+        return isRcpUrlTestnet() || vm.isContext(VmSafe.ForgeContext.ScriptDryRun)
+            || vm.isContext(VmSafe.ForgeContext.TestGroup);
+    }
+
+    /// @notice Detect if the RPC URL is a tendrly testnet, by trying to call a specific tenderly method on rpc.
+    /// @dev if the call success, it means we are on a tenderly testnet, otherwise we arn't.
+    function isRcpUrlTestnet() public returns (bool) {
+        try vm.rpc("tenderly_setBalance", "[[\"0x000000000000000000000000000000000000000b\"], \"0x0\"]") {
+            return true;
+        } catch {
+            return false;
+        }
     }
 
     function setUp() external virtual {}
