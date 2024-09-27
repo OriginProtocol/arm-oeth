@@ -41,6 +41,11 @@ contract Fork_Concrete_lidoARM_Setters_Test_ is Fork_Shared_Test_ {
         lidoARM.setFeeCollector(address(0));
     }
 
+    function test_RevertWhen_PerformanceFee_SetFeeCollector_Because_Operator() public asOperator {
+        vm.expectRevert("ARM: Only owner can call this function.");
+        lidoARM.setFeeCollector(address(0));
+    }
+
     function test_RevertWhen_PerformanceFee_SetFeeCollector_Because_FeeCollectorIsZero() public asLidoARMOwner {
         vm.expectRevert("ARM: invalid fee collector");
         lidoARM.setFeeCollector(address(0));
@@ -158,14 +163,14 @@ contract Fork_Concrete_lidoARM_Setters_Test_ is Fork_Shared_Test_ {
         lidoARM.setOwner(address(0));
     }
 
-    function test_RevertWhen_Ownable_SetOperator_Because_NotOwner() public asRandomAddress {
-        vm.expectRevert("ARM: Only owner can call this function.");
-        lidoARM.setOperator(address(0));
-    }
-
     function test_RevertWhen_Ownable_SetOwner_Because_Operator() public asOperator {
         vm.expectRevert("ARM: Only owner can call this function.");
         lidoARM.setOwner(address(0));
+    }
+
+    function test_RevertWhen_Ownable_SetOperator_Because_NotOwner() public asRandomAddress {
+        vm.expectRevert("ARM: Only owner can call this function.");
+        lidoARM.setOperator(address(0));
     }
 
     function test_RevertWhen_Ownable_SetOperator_Because_Operator() public asOperator {
