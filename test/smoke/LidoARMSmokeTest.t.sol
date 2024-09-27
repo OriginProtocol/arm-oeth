@@ -48,13 +48,20 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
         assertEq((100 * uint256(lidoARM.fee())) / lidoARM.FEE_SCALE(), 15, "Performance fee as a percentage");
         assertEq(lidoARM.feesAccrued(), 0, "Fees accrued");
         // Some dust stETH is left in AMM v1 when stETH is transferred to the Treasury.
+        assertEq(steth.balanceOf(address(lidoARM)), 1, "stETH balance");
         assertEq(lidoARM.totalAssets(), 1e12 + 1, "Total assets");
         assertEq(lidoARM.lastTotalAssets(), 1e12 + 1, "Last total assets");
         assertEq(lidoARM.totalSupply(), 1e12, "Total supply");
         assertEq(weth.balanceOf(address(lidoARM)), 1e12, "WETH balance");
+        // LidoLiquidityManager
+        assertEq(address(lidoARM.withdrawalQueue()), Mainnet.LIDO_WITHDRAWAL, "Lido withdrawal queue");
+        assertEq(address(lidoARM.steth()), Mainnet.STETH, "stETH");
+        assertEq(address(lidoARM.weth()), Mainnet.WETH, "WETH");
+        assertEq(lidoARM.liquidityAsset(), Mainnet.WETH, "liquidityAsset");
 
         assertEq(liquidityProviderController.accountCapEnabled(), true, "account cap enabled");
         assertEq(liquidityProviderController.operator(), Mainnet.ARM_RELAYER, "Operator");
+        assertEq(liquidityProviderController.arm(), address(lidoARM), "arm");
     }
 
     function test_swapExactTokensForTokens() external {

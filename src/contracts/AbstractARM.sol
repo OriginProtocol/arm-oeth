@@ -32,7 +32,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     ////////////////////////////////////////////////////
 
     /// @notice The address of the asset that is used to add and remove liquidity. eg WETH
-    address internal immutable liquidityAsset;
+    address public immutable liquidityAsset;
     /// @notice The swap input token that is transferred to this contract.
     /// From a User perspective, this is the token being sold.
     /// token0 is also compatible with the Uniswap V2 Router interface.
