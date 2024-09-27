@@ -313,7 +313,7 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
 
         // First user requests a full withdrawal
         uint256 firstUserShares = lidoARM.balanceOf(address(this));
-        lidoARM.requestRedeem(firstUserShares);
+        (, uint256 assetsRedeem) = lidoARM.requestRedeem(firstUserShares);
 
         // Assertions Before
         uint256 stethBalanceBefore = 3 * DEFAULT_AMOUNT / 4;
@@ -329,7 +329,8 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY, "total supply before");
         assertEq(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY, "total assets before");
         assertEq(liquidityProviderController.liquidityProviderCaps(alice), DEFAULT_AMOUNT * 5, "lp cap before");
-        assertEqQueueMetadata(DEFAULT_AMOUNT, 0, 0, 1);
+        assertEqQueueMetadata(assetsRedeem, 0, 0, 1);
+        assertApproxEqAbs(assetsRedeem, DEFAULT_AMOUNT, STETH_ERROR_ROUNDING, "assets redeem before");
 
         uint256 amount = DEFAULT_AMOUNT * 2;
 
@@ -346,7 +347,9 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         uint256 shares = lidoARM.deposit(amount);
 
         // Assertions After
-        assertEq(steth.balanceOf(address(lidoARM)), stethBalanceBefore, "stETH ARM balance after");
+        assertApproxEqAbs(
+            steth.balanceOf(address(lidoARM)), stethBalanceBefore, STETH_ERROR_ROUNDING, "stETH ARM balance after"
+        );
         assertEq(weth.balanceOf(address(lidoARM)), wethBalanceBefore + amount, "WETH ARM balance after");
         assertEq(lidoARM.outstandingEther(), 0, "Outstanding ether after");
         assertEq(lidoARM.feesAccrued(), 0, "Fees accrued after"); // No perfs so no fees
@@ -356,8 +359,8 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         assertEq(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY + amount, "total assets after");
         assertEq(liquidityProviderController.liquidityProviderCaps(alice), DEFAULT_AMOUNT * 3, "alice cap after"); // All the caps are used
         // withdrawal request is now claimable
-        assertEqQueueMetadata(DEFAULT_AMOUNT, 0, 0, 1);
-        assertEq(shares, amount); // No perfs, so 1 ether * totalSupply (1e18 + 1e12) / totalAssets (1e18 + 1e12) = 1 ether
+        assertEqQueueMetadata(assetsRedeem, 0, 0, 1);
+        assertApproxEqAbs(shares, amount, STETH_ERROR_ROUNDING, "shares after"); // No perfs, so 1 ether * totalSupply (1e18 + 1e12) / totalAssets (1e18 + 1e12) = 1 ether
     }
 
     /// @notice Test the following scenario:
