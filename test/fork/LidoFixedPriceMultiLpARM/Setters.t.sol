@@ -7,6 +7,7 @@ import {Fork_Shared_Test_} from "test/fork/shared/Shared.sol";
 // Contracts
 import {IERC20} from "contracts/Interfaces.sol";
 import {AbstractARM} from "contracts/AbstractARM.sol";
+import {LiquidityProviderController} from "contracts/LiquidityProviderController.sol";
 
 contract Fork_Concrete_lidoARM_Setters_Test_ is Fork_Shared_Test_ {
     //////////////////////////////////////////////////////
@@ -20,6 +21,11 @@ contract Fork_Concrete_lidoARM_Setters_Test_ is Fork_Shared_Test_ {
     /// --- PERFORMANCE FEE - REVERTING TEST
     //////////////////////////////////////////////////////
     function test_RevertWhen_PerformanceFee_SetFee_Because_NotOwner() public asRandomAddress {
+        vm.expectRevert("ARM: Only owner can call this function.");
+        lidoARM.setFee(0);
+    }
+
+    function test_RevertWhen_PerformanceFee_SetFee_Because_Operator() public asOperator {
         vm.expectRevert("ARM: Only owner can call this function.");
         lidoARM.setFee(0);
     }
@@ -87,7 +93,7 @@ contract Fork_Concrete_lidoARM_Setters_Test_ is Fork_Shared_Test_ {
         lidoARM.setPrices(1e36, 1e36);
     }
 
-    function test_RevertWhen_FixedPriceARM_SetPrices_Because_PriceRange() public asLidoFixedPriceMulltiLpARMOperator {
+    function test_RevertWhen_FixedPriceARM_SetPrices_Because_PriceRange() public asOperator {
         // buy price 11 basis points higher than 1.0
         vm.expectRevert("ARM: buy price too high");
         lidoARM.setPrices(1.0011 * 1e36, 1.002 * 1e36);
@@ -106,12 +112,12 @@ contract Fork_Concrete_lidoARM_Setters_Test_ is Fork_Shared_Test_ {
         lidoARM.setPrices(0, 0);
     }
 
-    function test_SellPriceCannotCrossOneByMoreThanTenBps() public asLidoFixedPriceMulltiLpARMOperator {
+    function test_SellPriceCannotCrossOneByMoreThanTenBps() public asOperator {
         vm.expectRevert("ARM: sell price too low");
         lidoARM.setPrices(0.998 * 1e36, 0.9989 * 1e36);
     }
 
-    function test_BuyPriceCannotCrossOneByMoreThanTenBps() public asLidoFixedPriceMulltiLpARMOperator {
+    function test_BuyPriceCannotCrossOneByMoreThanTenBps() public asOperator {
         vm.expectRevert("ARM: buy price too high");
         lidoARM.setPrices(1.0011 * 1e36, 1.002 * 1e36);
     }
@@ -119,7 +125,7 @@ contract Fork_Concrete_lidoARM_Setters_Test_ is Fork_Shared_Test_ {
     //////////////////////////////////////////////////////
     /// --- FIXED PRICE ARM - PASSING TESTS
     //////////////////////////////////////////////////////
-    function test_FixedPriceARM_SetPrices_Operator() public asLidoFixedPriceMulltiLpARMOperator {
+    function test_FixedPriceARM_SetPrices_Operator() public asOperator {
         // buy price 10 basis points higher than 1.0
         lidoARM.setPrices(1001e33, 1002e33);
         // sell price 10 basis points lower than 1.0
@@ -157,6 +163,16 @@ contract Fork_Concrete_lidoARM_Setters_Test_ is Fork_Shared_Test_ {
         lidoARM.setOperator(address(0));
     }
 
+    function test_RevertWhen_Ownable_SetOwner_Because_Operator() public asOperator {
+        vm.expectRevert("ARM: Only owner can call this function.");
+        lidoARM.setOwner(address(0));
+    }
+
+    function test_RevertWhen_Ownable_SetOperator_Because_Operator() public asOperator {
+        vm.expectRevert("ARM: Only owner can call this function.");
+        lidoARM.setOperator(address(0));
+    }
+
     //////////////////////////////////////////////////////
     /// --- LIQUIIDITY PROVIDER CONTROLLER - REVERTING TESTS
     //////////////////////////////////////////////////////
@@ -164,6 +180,11 @@ contract Fork_Concrete_lidoARM_Setters_Test_ is Fork_Shared_Test_ {
         public
         asRandomAddress
     {
+        vm.expectRevert("ARM: Only owner can call this function.");
+        lidoARM.setLiquidityProviderController(address(0));
+    }
+
+    function test_RevertWhen_LiquidityProviderController_SetLiquidityProvider_Because_Operator() public asOperator {
         vm.expectRevert("ARM: Only owner can call this function.");
         lidoARM.setLiquidityProviderController(address(0));
     }
@@ -179,5 +200,40 @@ contract Fork_Concrete_lidoARM_Setters_Test_ is Fork_Shared_Test_ {
         lidoARM.setLiquidityProviderController(newLiquidityProviderController);
 
         assertEq(lidoARM.liquidityProviderController(), newLiquidityProviderController);
+    }
+
+    //////////////////////////////////////////////////////
+    /// --- AccountCapEnabled - REVERTING TEST
+    //////////////////////////////////////////////////////
+    function test_RevertWhen_LiquidityProviderController_SetAccountCapEnabled_Because_NotOwner()
+        public
+        asRandomAddress
+    {
+        vm.expectRevert("ARM: Only owner can call this function.");
+        liquidityProviderController.setAccountCapEnabled(false);
+    }
+
+    function test_RevertWhen_LiquidityProviderController_SetAccountCapEnabled_Because_Operator() public asOperator {
+        vm.expectRevert("ARM: Only owner can call this function.");
+        liquidityProviderController.setAccountCapEnabled(false);
+    }
+
+    function test_RevertWhen_LiquidityProviderController_SetAccountCapEnabled_Because_AlreadySet()
+        public
+        asLidoARMOwner
+    {
+        vm.expectRevert("LPC: Account cap already set");
+        liquidityProviderController.setAccountCapEnabled(true);
+    }
+
+    //////////////////////////////////////////////////////
+    /// --- AccountCapEnabled - PASSING TESTS
+    //////////////////////////////////////////////////////
+    function test_LiquidityProviderController_SetAccountCapEnabled() public asLidoARMOwner {
+        vm.expectEmit({emitter: address(liquidityProviderController)});
+        emit LiquidityProviderController.AccountCapEnabled(false);
+        liquidityProviderController.setAccountCapEnabled(false);
+
+        assertEq(liquidityProviderController.accountCapEnabled(), false);
     }
 }

@@ -27,7 +27,7 @@ contract Fork_Concrete_LidoARM_RequestStETHWithdrawalForETH_Test_ is Fork_Shared
 
     function test_RevertWhen_RequestStETHWithdrawalForETH_Because_BalanceExceeded()
         public
-        asLidoFixedPriceMulltiLpARMOperator
+        asOperator
         approveStETHOnLidoARM
     {
         // Remove all stETH from the contract
@@ -43,16 +43,12 @@ contract Fork_Concrete_LidoARM_RequestStETHWithdrawalForETH_Test_ is Fork_Shared
     //////////////////////////////////////////////////////
     /// --- PASSING TESTS
     //////////////////////////////////////////////////////
-    function test_RequestStETHWithdrawalForETH_EmptyList() public asLidoFixedPriceMulltiLpARMOperator {
+    function test_RequestStETHWithdrawalForETH_EmptyList() public asOperator {
         uint256[] memory requestIds = lidoARM.requestStETHWithdrawalForETH(new uint256[](0));
         assertEq(requestIds.length, 0);
     }
 
-    function test_RequestStETHWithdrawalForETH_SingleAmount_1ether()
-        public
-        asLidoFixedPriceMulltiLpARMOperator
-        approveStETHOnLidoARM
-    {
+    function test_RequestStETHWithdrawalForETH_SingleAmount_1ether() public asOperator approveStETHOnLidoARM {
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = DEFAULT_AMOUNT;
 
@@ -67,11 +63,7 @@ contract Fork_Concrete_LidoARM_RequestStETHWithdrawalForETH_Test_ is Fork_Shared
         assertGt(requestIds[0], 0);
     }
 
-    function test_RequestStETHWithdrawalForETH_SingleAmount_1000ethers()
-        public
-        asLidoFixedPriceMulltiLpARMOperator
-        approveStETHOnLidoARM
-    {
+    function test_RequestStETHWithdrawalForETH_SingleAmount_1000ethers() public asOperator approveStETHOnLidoARM {
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = 1_000 ether;
 
@@ -86,11 +78,7 @@ contract Fork_Concrete_LidoARM_RequestStETHWithdrawalForETH_Test_ is Fork_Shared
         assertGt(requestIds[0], 0);
     }
 
-    function test_RequestStETHWithdrawalForETH_MultipleAmount()
-        public
-        asLidoFixedPriceMulltiLpARMOperator
-        approveStETHOnLidoARM
-    {
+    function test_RequestStETHWithdrawalForETH_MultipleAmount() public asOperator approveStETHOnLidoARM {
         uint256 length = _bound(vm.randomUint(), 2, 10);
         uint256[] memory amounts = new uint256[](length);
         for (uint256 i = 0; i < amounts.length; i++) {
