@@ -317,7 +317,9 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
 
         // Assertions Before
         uint256 stethBalanceBefore = 3 * DEFAULT_AMOUNT / 4;
-        assertEq(steth.balanceOf(address(lidoARM)), stethBalanceBefore, "stETH ARM balance before");
+        assertApproxEqAbs(
+            steth.balanceOf(address(lidoARM)), stethBalanceBefore, STETH_ERROR_ROUNDING, "stETH ARM balance before"
+        );
         uint256 wethBalanceBefore = MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT - 3 * DEFAULT_AMOUNT / 4;
         assertEq(weth.balanceOf(address(lidoARM)), wethBalanceBefore, "WETH ARM balance before");
         assertEq(lidoARM.outstandingEther(), 0, "Outstanding ether before");
