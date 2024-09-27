@@ -77,7 +77,7 @@ contract LiquidityProviderController is Initializable, OwnableOperable {
     }
 
     /// @notice Enable or disable the account cap.
-    function setAccountCapEnabled(bool _accountCapEnabled) external onlyOperatorOrOwner {
+    function setAccountCapEnabled(bool _accountCapEnabled) external onlyOwner {
         require(accountCapEnabled != _accountCapEnabled, "LPC: Account cap already set");
 
         accountCapEnabled = _accountCapEnabled;

@@ -33,8 +33,7 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
 
         proxy = Proxy(deployManager.getDeployment("LIDO_ARM"));
         lidoARM = LidoARM(payable(deployManager.getDeployment("LIDO_ARM")));
-        liquidityProviderController =
-            LiquidityProviderController(deployManager.getDeployment("LIDO_ARM_LPC"));
+        liquidityProviderController = LiquidityProviderController(deployManager.getDeployment("LIDO_ARM_LPC"));
 
         // Only fuzz from this address. Big speedup on fork.
         targetSender(address(this));
