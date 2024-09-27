@@ -7,6 +7,7 @@ import {AbstractSmokeTest} from "./AbstractSmokeTest.sol";
 
 import {IERC20} from "contracts/Interfaces.sol";
 import {LidoARM} from "contracts/LidoARM.sol";
+import {LiquidityProviderController} from "contracts/LiquidityProviderController.sol";
 import {Proxy} from "contracts/Proxy.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
 import {console} from "forge-std/console.sol";
@@ -18,6 +19,7 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
     IERC20 steth;
     Proxy proxy;
     LidoARM lidoARM;
+    LiquidityProviderController liquidityProviderController;
     address operator;
 
     function setUp() public {
@@ -31,6 +33,8 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
 
         proxy = Proxy(deployManager.getDeployment("LIDO_ARM"));
         lidoARM = LidoARM(payable(deployManager.getDeployment("LIDO_ARM")));
+        liquidityProviderController =
+            LiquidityProviderController(deployManager.getDeployment("LIDO_ARM_LPC"));
 
         // Only fuzz from this address. Big speedup on fork.
         targetSender(address(this));
@@ -49,6 +53,9 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
         assertEq(lidoARM.lastTotalAssets(), 1e12 + 1, "Last total assets");
         assertEq(lidoARM.totalSupply(), 1e12, "Total supply");
         assertEq(weth.balanceOf(address(lidoARM)), 1e12, "WETH balance");
+
+        assertEq(liquidityProviderController.accountCapEnabled(), true, "account cap enabled");
+        assertEq(liquidityProviderController.operator(), Mainnet.ARM_RELAYER, "Operator");
     }
 
     function test_swapExactTokensForTokens() external {

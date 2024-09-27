@@ -22,7 +22,7 @@ contract Fork_Concrete_LidoARM_TotalAssets_Test_ is Fork_Shared_Test_ {
         address[] memory providers = new address[](1);
         providers[0] = address(this);
         liquidityProviderController.setLiquidityProviderCaps(providers, type(uint256).max);
-        liquidityProviderController.setTotalAssetsCap(type(uint256).max);
+        liquidityProviderController.setTotalAssetsCap(type(uint248).max);
 
         // Approve STETH for Lido
         lidoARM.approveStETH();

@@ -127,7 +127,7 @@ abstract contract Fork_Shared_Test_ is Modifiers {
         LiquidityProviderController lpcImpl = new LiquidityProviderController(address(lidoProxy));
 
         // Initialize Proxy with LiquidityProviderController implementation.
-        lpcProxy.initialize(address(lpcImpl), address(this), "");
+        lpcProxy.initialize(address(lpcImpl), address(this), data);
 
         // Set the Proxy as the LiquidityProviderController.
         liquidityProviderController = LiquidityProviderController(payable(address(lpcProxy)));

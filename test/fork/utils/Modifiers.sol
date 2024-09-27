@@ -73,7 +73,7 @@ abstract contract Modifiers is Helpers {
 
     /// @notice Set the total assets cap on the LiquidityProviderController contract.
     modifier setTotalAssetsCap(uint256 cap) {
-        liquidityProviderController.setTotalAssetsCap(cap);
+        liquidityProviderController.setTotalAssetsCap(uint248(cap));
         _;
     }
 
