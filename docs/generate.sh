@@ -20,3 +20,6 @@ sol2uml storage ../src/contracts,../lib -c LidoARM -o LidoARMStorage.svg \
     -sn eip1967.proxy.implementation,eip1967.proxy.admin \
     -st address,address \
     --hideExpand gap,_gap
+
+sol2uml ../src/contracts -v -hv -hf -he -hs -hl -hi -b LiquidityProviderController -o LiquidityProviderControllerHierarchy.svg
+sol2uml ../src/contracts -s -d 0 -b LiquidityProviderController -o LiquidityProviderControllerSquashed.svg

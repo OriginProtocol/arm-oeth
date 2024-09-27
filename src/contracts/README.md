@@ -4,11 +4,11 @@
 
 ![Proxy Hierarchy](../../docs/ProxyHierarchy.svg)
 
-## Proxy Squashed
+## Squashed
 
 ![Proxy Squashed](../../docs/ProxySquashed.svg)
 
-## Proxy Storage
+## Storage
 
 ![Proxy Storage](../../docs/ProxyStorage.svg)
 
@@ -18,11 +18,11 @@
 
 ![OETH ARM Hierarchy](../../docs/OEthARMHierarchy.svg)
 
-## OETH ARM Squashed
+## Squashed
 
 ![OETH ARM Squashed](../../docs/OEthARMSquashed.svg)
 
-## OETH ARM Storage
+## Storage
 
 ![OETH ARM Storage](../../docs/OEthARMStorage.svg)
 
@@ -32,10 +32,20 @@
 
 ![Lido ARM Hierarchy](../../docs/LidoARMHierarchy.svg)
 
-## OETH ARM Squashed
+## Squashed
 
 ![Lido ARM Squashed](../../docs/LidoARMSquashed.svg)
 
 <!-- ## OETH ARM Storage
 
 ![Lido ARM Storage](../../docs/LidoARMStorage.svg) -->
+
+## Liquidity Provider Controller
+
+### Hierarchy
+
+![Liquidity Provider Controller Hierarchy](../../docs/LiquidityProviderControllerHierarchy.svg)
+
+## Squashed
+
+![Liquidity Provider Controller Squashed](../../docs/LiquidityProviderControllerSquashed.svg)
