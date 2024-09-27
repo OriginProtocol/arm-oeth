@@ -241,4 +241,31 @@ contract Fork_Concrete_lidoARM_Setters_Test_ is Fork_Shared_Test_ {
 
         assertEq(liquidityProviderController.accountCapEnabled(), false);
     }
+
+    //////////////////////////////////////////////////////
+    /// --- TotalAssetsCap - REVERTING TEST
+    //////////////////////////////////////////////////////
+    function test_RevertWhen_LiquidityProviderController_SetTotalAssetsCap_Because_NotOwner() public asRandomAddress {
+        vm.expectRevert("ARM: Only operator or owner can call this function.");
+        liquidityProviderController.setTotalAssetsCap(100 ether);
+    }
+
+    //////////////////////////////////////////////////////
+    /// --- TotalAssetsCap - PASSING TESTS
+    //////////////////////////////////////////////////////
+    function test_LiquidityProviderController_SetTotalAssetsCap_Owner() public asLidoARMOwner {
+        vm.expectEmit({emitter: address(liquidityProviderController)});
+        emit LiquidityProviderController.TotalAssetsCap(100 ether);
+        liquidityProviderController.setTotalAssetsCap(100 ether);
+
+        assertEq(liquidityProviderController.totalAssetsCap(), 100 ether);
+    }
+
+    function test_LiquidityProviderController_SetTotalAssetsCap_Operator() public asOperator {
+        vm.expectEmit({emitter: address(liquidityProviderController)});
+        emit LiquidityProviderController.TotalAssetsCap(0);
+        liquidityProviderController.setTotalAssetsCap(0);
+
+        assertEq(liquidityProviderController.totalAssetsCap(), 0);
+    }
 }
