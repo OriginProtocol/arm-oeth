@@ -33,7 +33,6 @@ abstract contract Base_Test_ is Test {
     Proxy public proxy;
     Proxy public lpcProxy;
     Proxy public lidoProxy;
-    Proxy public lidoOwnerProxy;
     OethARM public oethARM;
     LidoARM public lidoARM;
     LiquidityProviderController public liquidityProviderController;
@@ -54,6 +53,7 @@ abstract contract Base_Test_ is Test {
     address public operator;
     address public oethWhale;
     address public feeCollector;
+    address public lidoWithdraw;
 
     //////////////////////////////////////////////////////
     /// --- DEFAULT VALUES
@@ -67,5 +67,36 @@ abstract contract Base_Test_ is Test {
     //////////////////////////////////////////////////////
     function setUp() public virtual {
         resolver = new AddressResolver();
+    }
+
+    /// @notice Better if called once all contract have been depoyed.
+    function labelAll() public virtual {
+        // Contracts
+        _labelNotNull(address(proxy), "DEFAULT PROXY");
+        _labelNotNull(address(lpcProxy), "LPC PROXY");
+        _labelNotNull(address(lidoProxy), "LIDO ARM PROXY");
+        _labelNotNull(address(oethARM), "OETH ARM");
+        _labelNotNull(address(lidoARM), "LIDO ARM");
+        _labelNotNull(address(liquidityProviderController), "LPC");
+
+        _labelNotNull(address(oeth), "OETH");
+        _labelNotNull(address(weth), "WETH");
+        _labelNotNull(address(steth), "STETH");
+        _labelNotNull(address(wsteth), " WRAPPED STETH");
+        _labelNotNull(address(badToken), "BAD TOKEN");
+        _labelNotNull(address(vault), "OETH VAULT");
+
+        // Governance, multisig and EOAs
+        _labelNotNull(alice, "Alice");
+        _labelNotNull(deployer, "Deployer");
+        _labelNotNull(governor, "Governor");
+        _labelNotNull(operator, "Operator");
+        _labelNotNull(oethWhale, "OETH Whale");
+        _labelNotNull(feeCollector, "Fee Collector");
+        _labelNotNull(lidoWithdraw, "Lido Withdraw");
+    }
+
+    function _labelNotNull(address _address, string memory _name) internal {
+        if (_address != address(0)) vm.label(_address, _name);
     }
 }

@@ -108,7 +108,6 @@ abstract contract Fork_Shared_Test_ is Modifiers {
         proxy = new Proxy();
         lpcProxy = new Proxy();
         lidoProxy = new Proxy();
-        lidoOwnerProxy = new Proxy();
 
         // --- Deploy OethARM implementation ---
         // Deploy OethARM implementation.
