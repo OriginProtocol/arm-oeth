@@ -28,4 +28,11 @@ abstract contract Invariant_Base_Test_ is Invariant_Shared_Test_ {
     //////////////////////////////////////////////////////
     /// --- ASSERTIONS
     //////////////////////////////////////////////////////
+    function assert_invariant_A() public pure {
+        assertTrue(true);
+    }
+
+    function assert_invariant_B() public pure {
+        assertFalse(false);
+    }
 }
