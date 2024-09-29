@@ -18,9 +18,11 @@ import {MockLidoWithdraw} from "../mocks/MockLidoWithdraw.sol";
 import {IERC20} from "contracts/Interfaces.sol";
 
 abstract contract Invariant_Shared_Test_ is Base_Test_ {
+    address[] public users;
     //////////////////////////////////////////////////////
     /// --- SETUP
     //////////////////////////////////////////////////////
+
     function setUp() public virtual override {
         super.setUp();
 
@@ -54,7 +56,14 @@ abstract contract Invariant_Shared_Test_ is Base_Test_ {
         feeCollector = makeAddr("Fee Collector");
 
         // Random users
-        alice = makeAddr("Alice");
+        users.push(alice);
+        users.push(bob);
+        users.push(charlie);
+        users.push(dave);
+        users.push(eve);
+        users.push(frank);
+        users.push(george);
+        users.push(harry);
     }
 
     //////////////////////////////////////////////////////
@@ -85,6 +94,8 @@ abstract contract Invariant_Shared_Test_ is Base_Test_ {
 
         // 3. Deploy Lido ARM.
         _deployLidoARM();
+
+        vm.stopPrank();
     }
 
     function _deployProxies() private {

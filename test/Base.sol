@@ -48,6 +48,14 @@ abstract contract Base_Test_ is Test {
     /// --- Governance, multisigs and EOAs
     //////////////////////////////////////////////////////
     address public alice;
+    address public bob;
+    address public charlie;
+    address public dave;
+    address public eve;
+    address public frank;
+    address public george;
+    address public harry;
+
     address public deployer;
     address public governor;
     address public operator;
@@ -88,6 +96,14 @@ abstract contract Base_Test_ is Test {
 
         // Governance, multisig and EOAs
         _labelNotNull(alice, "Alice");
+        _labelNotNull(bob, "Bob");
+        _labelNotNull(charlie, "Charlie");
+        _labelNotNull(dave, "Dave");
+        _labelNotNull(eve, "Eve");
+        _labelNotNull(frank, "Frank");
+        _labelNotNull(george, "George");
+        _labelNotNull(harry, "Harry");
+
         _labelNotNull(deployer, "Deployer");
         _labelNotNull(governor, "Governor");
         _labelNotNull(operator, "Operator");
