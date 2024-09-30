@@ -7,6 +7,7 @@ const {
 } = require("../utils/addressParser");
 const { setAutotaskVars } = require("./autotask");
 const { setActionVars } = require("./defender");
+const { snapLido } = require("./lido");
 const {
   autoRequestWithdraw,
   autoClaimWithdraw,
@@ -468,6 +469,13 @@ subtask("setTotalAssetsCap", "Set total assets cap")
   )
   .setAction(setTotalAssetsCap);
 task("setTotalAssetsCap").setAction(async (_, __, runSuper) => {
+  return runSuper();
+});
+
+// Lido
+
+subtask("snapLido", "Take a snapshot of the Lido ARM").setAction(snapLido);
+task("snapLido").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
 
