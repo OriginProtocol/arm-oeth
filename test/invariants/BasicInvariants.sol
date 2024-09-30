@@ -56,6 +56,11 @@ contract Invariant_Basic_Test_ is Invariant_Base_Test_ {
         vm.prank(liquidityProviderController.owner());
         liquidityProviderController.setAccountCapEnabled(false);
 
+        // Set prices
+        // Todo: use handler to set prices "randomly", but fixed at almost 1:1 atm.
+        vm.prank(lidoARM.owner());
+        lidoARM.setPrices(1e36 - 1, 1e36 + 1);
+
         // --- Handlers ---
         lpHandler = new LpHandler(address(lidoARM), address(weth), lps);
         swapHandler = new SwapHandler(address(lidoARM), address(weth), address(steth), swaps);
@@ -63,6 +68,7 @@ contract Invariant_Basic_Test_ is Invariant_Base_Test_ {
         lpHandler.setSelectorWeight(lpHandler.deposit.selector, 4_000); // 40%
         lpHandler.setSelectorWeight(lpHandler.requestRedeem.selector, 3_000); // 30%
         lpHandler.setSelectorWeight(lpHandler.claimRedeem.selector, 3_000); // 30%
+        swapHandler.setSelectorWeight(swapHandler.swapExactTokensForTokens.selector, 10_000); // 100%
         //Todo: swapHandler.setSelectorWeight();
 
         address[] memory targetContracts = new address[](2);
@@ -70,8 +76,8 @@ contract Invariant_Basic_Test_ is Invariant_Base_Test_ {
         targetContracts[1] = address(swapHandler);
 
         uint256[] memory weightsDistributorHandler = new uint256[](2);
-        weightsDistributorHandler[0] = 10_000; // 100%
-        weightsDistributorHandler[1] = 0; // 0%
+        weightsDistributorHandler[0] = 0; //10_000; // 100%
+        weightsDistributorHandler[1] = 10_000; // 0%
 
         address distributionHandler = address(new DistributionHandler(targetContracts, weightsDistributorHandler));
 
