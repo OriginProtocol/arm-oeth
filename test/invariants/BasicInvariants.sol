@@ -60,7 +60,9 @@ contract Invariant_Basic_Test_ is Invariant_Base_Test_ {
         lpHandler = new LpHandler(address(lidoARM), address(weth), lps);
         swapHandler = new SwapHandler(address(lidoARM), address(weth), address(steth), swaps);
 
-        lpHandler.setSelectorWeight(lpHandler.deposit.selector, 10_000); // 100%
+        lpHandler.setSelectorWeight(lpHandler.deposit.selector, 4_000); // 40%
+        lpHandler.setSelectorWeight(lpHandler.requestRedeem.selector, 3_000); // 30%
+        lpHandler.setSelectorWeight(lpHandler.claimRedeem.selector, 3_000); // 30%
         //Todo: swapHandler.setSelectorWeight();
 
         address[] memory targetContracts = new address[](2);
@@ -75,10 +77,6 @@ contract Invariant_Basic_Test_ is Invariant_Base_Test_ {
 
         // All call will be done through the distributor, so we set it as the target contract
         targetContract(distributionHandler);
-        //bytes4[] memory selectors = new bytes4[](1);
-        //selectors[0] = DistributionHandler.distributorEntryPoint.selector;
-        //StdInvariant.FuzzSelector memory fs = StdInvariant.FuzzSelector(distributionHandler, selectors);
-        //targetSelector(fs);
     }
 
     //////////////////////////////////////////////////////

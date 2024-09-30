@@ -4,8 +4,9 @@ pragma solidity 0.8.23;
 // Foundry
 import {Vm} from "forge-std/Vm.sol";
 import {StdUtils} from "forge-std/StdUtils.sol";
+import {StdCheats} from "forge-std/StdCheats.sol";
 
-abstract contract BaseHandler is StdUtils {
+abstract contract BaseHandler is StdUtils, StdCheats {
     //////////////////////////////////////////////////////
     /// --- CONSTANTS && IMMUTABLES
     //////////////////////////////////////////////////////
@@ -21,8 +22,21 @@ abstract contract BaseHandler is StdUtils {
 
     bytes4[] public selectors;
 
+    mapping(address => string) public names;
     mapping(bytes4 => uint256) public weights;
     mapping(bytes32 => uint256) public numberOfCalls;
+
+    constructor() {
+        // Default names
+        names[makeAddr("Alice")] = "Alice";
+        names[makeAddr("Bob")] = "Bob";
+        names[makeAddr("Charlie")] = "Charlie";
+        names[makeAddr("Dave")] = "Dave";
+        names[makeAddr("Eve")] = "Eve";
+        names[makeAddr("Frank")] = "Frank";
+        names[makeAddr("George")] = "George";
+        names[makeAddr("Harry")] = "Harry";
+    }
 
     //////////////////////////////////////////////////////
     /// --- FUNCTIONS

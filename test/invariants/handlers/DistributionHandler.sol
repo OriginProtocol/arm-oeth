@@ -43,7 +43,6 @@ contract DistributionHandler {
     /// --- FUNCTIONS
     //////////////////////////////////////////////////////
     function distributorEntryPoint(uint256 seed_) external {
-        revert("DH:NOT_IMPLEMENTED");
         numOfCallsTotal++;
 
         uint256 range_;
