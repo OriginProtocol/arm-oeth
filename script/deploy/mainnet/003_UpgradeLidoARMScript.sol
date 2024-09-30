@@ -68,7 +68,11 @@ contract UpgradeLidoARMMainnetScript is AbstractDeployScript {
     function _buildGovernanceProposal() internal override {}
 
     function _fork() internal override {
-        vm.startPrank(Mainnet.ARM_MULTISIG);
+        if (tenderlyTestnet) {
+            vm.startBroadcast(Mainnet.ARM_MULTISIG);
+        } else {
+            vm.startPrank(Mainnet.ARM_MULTISIG);
+        }
 
         if (lidoARMProxy == Proxy(0x0000000000000000000000000000000000000000)) {
             revert("Lido ARM proxy not found");

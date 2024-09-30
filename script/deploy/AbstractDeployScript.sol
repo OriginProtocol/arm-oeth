@@ -50,8 +50,8 @@ abstract contract AbstractDeployScript is Script {
     /// @notice Detect if the RPC URL is a tendrly testnet, by trying to call a specific tenderly method on rpc.
     /// @dev if the call success, it means we are on a tenderly testnet, otherwise we arn't.
     function isTenderlyRpc() public returns (bool) {
-        // Try to give ethers to "0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf" which is the address for pk = 0x0....01
-        try vm.rpc("tenderly_setBalance", "[[\"0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf\"], \"0xDE0B6B3A7640000\"]") {
+        // Try to give ethers to "ARM_MULTISIG"
+        try vm.rpc("tenderly_setBalance", "[[\"0xC8F2cF4742C86295653f893214725813B16f7410\"], \"0xDE0B6B3A7640000\"]") {
             tenderlyTestnet = true;
             return true;
         } catch {
@@ -71,12 +71,11 @@ abstract contract AbstractDeployScript is Script {
         }
 
         if (this.isForked()) {
+            deployer = Mainnet.INITIAL_DEPLOYER;
             if (tenderlyTestnet) {
-                deployer = vm.rememberKey(uint256(1));
                 console.log("Deploying on Tenderly testnet with deployer: %s", deployer);
                 vm.startBroadcast(deployer);
             } else {
-                deployer = Mainnet.INITIAL_DEPLOYER;
                 console.log("Running script on mainnet fork impersonating: %s", deployer);
                 vm.startPrank(deployer);
             }
@@ -91,7 +90,9 @@ abstract contract AbstractDeployScript is Script {
 
         if (this.isForked()) {
             if (tenderlyTestnet) {
+                _buildGovernanceProposal();
                 vm.stopBroadcast();
+                _fork();
             } else {
                 vm.stopPrank();
                 _buildGovernanceProposal();
