@@ -549,8 +549,8 @@ subtask(
       "ARM-ST",
       relayerAddress,
       1500, // 15% performance fee
-      liquidityProviderController,
       feeCollector,
+      liquidityProviderController,
     ]
   );
 
