@@ -70,13 +70,8 @@ contract UpgradeLidoARMMainnetScript is AbstractDeployScript {
     function _buildGovernanceProposal() internal override {}
 
     function _fork() internal override {
-        if (tenderlyTestnet) {
-            console.log("Broadcasting fork script to Tenderly as: %s", Mainnet.ARM_MULTISIG);
-            vm.startBroadcast(Mainnet.ARM_MULTISIG);
-        } else {
-            console.log("Executing fork script against a fork as: %s", Mainnet.ARM_MULTISIG);
-            vm.startPrank(Mainnet.ARM_MULTISIG);
-        }
+        console.log("Executing fork script against a fork as: %s", Mainnet.ARM_MULTISIG);
+        vm.startPrank(Mainnet.ARM_MULTISIG);
 
         if (lidoARMProxy == Proxy(0x0000000000000000000000000000000000000000)) {
             revert("Lido ARM proxy not found");
@@ -127,11 +122,7 @@ contract UpgradeLidoARMMainnetScript is AbstractDeployScript {
         lidoARMProxy.setOwner(Mainnet.GOV_MULTISIG);
 
         console.log("Finished running initializing Lido ARM as ARM_MULTISIG");
-
-        if (tenderlyTestnet) {
-            vm.stopBroadcast();
-        } else {
-            vm.stopPrank();
-        }
+        
+        vm.stopPrank();
     }
 }
