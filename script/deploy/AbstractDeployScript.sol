@@ -73,6 +73,10 @@ abstract contract AbstractDeployScript is Script {
         if (this.isForked()) {
             deployer = Mainnet.INITIAL_DEPLOYER;
             if (tenderlyTestnet) {
+                // Give enough ethers to deployer
+                vm.rpc(
+                    "tenderly_setBalance", "[[\"0x0000000000000000000000000000000000001001\"], \"0xDE0B6B3A7640000\"]"
+                );
                 console.log("Deploying on Tenderly testnet with deployer: %s", deployer);
                 vm.startBroadcast(deployer);
             } else {
