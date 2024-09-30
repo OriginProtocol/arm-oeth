@@ -15,6 +15,8 @@ abstract contract AbstractDeployScript is Script {
     address deployer;
     uint256 public deployBlockNum = type(uint256).max;
 
+    bool public tenderlyTestnet;
+
     // DeployerRecord stuff to be extracted as well
     struct DeployRecord {
         string name;
@@ -41,21 +43,25 @@ abstract contract AbstractDeployScript is Script {
     }
 
     function isForked() public returns (bool) {
-        return isRcpUrlTestnet() || vm.isContext(VmSafe.ForgeContext.ScriptDryRun)
+        return isTenderlyRpc() || vm.isContext(VmSafe.ForgeContext.ScriptDryRun)
             || vm.isContext(VmSafe.ForgeContext.TestGroup);
     }
 
     /// @notice Detect if the RPC URL is a tendrly testnet, by trying to call a specific tenderly method on rpc.
     /// @dev if the call success, it means we are on a tenderly testnet, otherwise we arn't.
-    function isRcpUrlTestnet() public returns (bool) {
-        try vm.rpc("tenderly_setBalance", "[[\"0x000000000000000000000000000000000000000b\"], \"0x0\"]") {
+    function isTenderlyRpc() public returns (bool) {
+        // Try to give ethers to "0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf" which is the address for pk = 0x0....01
+        try vm.rpc("tenderly_setBalance", "[[\"0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf\"], \"0xDE0B6B3A7640000\"]") {
+            tenderlyTestnet = true;
             return true;
         } catch {
             return false;
         }
     }
 
-    function setUp() external virtual {}
+    function setUp() external virtual {
+        isTenderlyRpc();
+    }
 
     function run() external {
         // Will not execute script if after this block number
@@ -65,9 +71,14 @@ abstract contract AbstractDeployScript is Script {
         }
 
         if (this.isForked()) {
-            deployer = Mainnet.INITIAL_DEPLOYER;
-            console.log("Running script on mainnet fork impersonating: %s", deployer);
-            vm.startPrank(deployer);
+            deployer = vm.rememberKey(uint256(1));
+            if (tenderlyTestnet) {
+                console.log("Deploying on Tenderly testnet with deployer: %s", deployer);
+                vm.startBroadcast(deployer);
+            } else {
+                console.log("Running script on mainnet fork impersonating: %s", deployer);
+                vm.startPrank(deployer);
+            }
         } else {
             uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
             deployer = vm.rememberKey(deployerPrivateKey);
@@ -78,7 +89,11 @@ abstract contract AbstractDeployScript is Script {
         _execute();
 
         if (this.isForked()) {
-            vm.stopPrank();
+            if (tenderlyTestnet) {
+                vm.stopBroadcast();
+            } else {
+                vm.stopPrank();
+            }
             _buildGovernanceProposal();
             _fork();
         } else {
