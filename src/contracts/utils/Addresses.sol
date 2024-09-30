@@ -16,6 +16,7 @@ library Mainnet {
     address public constant TREASURY = 0x6E3fddab68Bf1EBaf9daCF9F7907c7Bc0951D1dc;
 
     // Multisig and EOAs
+    address public constant INITIAL_DEPLOYER = address(0x1001);
     address public constant GOV_MULTISIG = 0xbe2AB3d3d8F6a32b96414ebbd865dBD276d3d899;
     address public constant ARM_MULTISIG = 0xC8F2cF4742C86295653f893214725813B16f7410;
     address public constant OETH_RELAYER = 0x4b91827516f79d6F6a1F292eD99671663b09169a;
@@ -39,6 +40,7 @@ library Mainnet {
 
 library Holesky {
     // Multisig and EOAs
+    address public constant INITIAL_DEPLOYER = 0x1b94CA50D3Ad9f8368851F8526132272d1a5028C;
     address public constant RELAYER = 0x3C6B0c7835a2E2E0A45889F64DcE4ee14c1D5CB4;
 
     // Tokens
@@ -82,6 +84,7 @@ contract AddressResolver {
         resolver[MAINNET]["LIDO_ARM"] = Mainnet.LIDO_ARM;
 
         // Test accounts
+        resolver[MAINNET]["INITIAL_DEPLOYER"] = address(0x1001);
         resolver[MAINNET]["WHALE_OETH"] = 0x8E02247D3eE0E6153495c971FFd45Aa131f4D7cB;
 
         ///// Holesky //////
@@ -96,6 +99,9 @@ contract AddressResolver {
         // Contracts
         resolver[HOLESKY]["OETH_VAULT"] = Holesky.OETH_VAULT;
         resolver[HOLESKY]["OETH_ARM"] = Mainnet.OETH_ARM;
+
+        // Test accounts
+        resolver[HOLESKY]["INITIAL_DEPLOYER"] = Holesky.INITIAL_DEPLOYER;
     }
 
     function resolve(string memory name) public view returns (address resolved) {
