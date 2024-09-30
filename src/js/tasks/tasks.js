@@ -15,6 +15,11 @@ const {
   logLiquidity,
   withdrawRequestStatus,
 } = require("./liquidity");
+const {
+  lpDeposit,
+  setLiquidityProviderCaps,
+  setTotalAssetsCap,
+} = require("./liquidityProvider");
 const { swap } = require("./swap");
 const {
   tokenAllowance,
@@ -419,6 +424,50 @@ subtask("redeemAll", "Redeem all OTokens for collateral assets from the Vault")
   )
   .setAction(redeemAll);
 task("redeemAll").setAction(async (_, __, runSuper) => {
+  return runSuper();
+});
+
+// ARM Liquidity Provider Functions
+
+subtask("lpDeposit", "Set total assets cap")
+  .addParam(
+    "amount",
+    "Amount of WETH not scaled to 18 decimals",
+    undefined,
+    types.float
+  )
+  .setAction(lpDeposit);
+task("lpDeposit").setAction(async (_, __, runSuper) => {
+  return runSuper();
+});
+
+subtask("setLiquidityProviderCaps", "Set deposit cap for liquidity providers")
+  .addParam(
+    "cap",
+    "Amount of WETH not scaled to 18 decimals",
+    undefined,
+    types.float
+  )
+  .addParam(
+    "accounts",
+    "Comma separated list of addresses",
+    undefined,
+    types.string
+  )
+  .setAction(setLiquidityProviderCaps);
+task("setLiquidityProviderCaps").setAction(async (_, __, runSuper) => {
+  return runSuper();
+});
+
+subtask("setTotalAssetsCap", "Set total assets cap")
+  .addParam(
+    "cap",
+    "Amount of WETH not scaled to 18 decimals",
+    undefined,
+    types.float
+  )
+  .setAction(setTotalAssetsCap);
+task("setTotalAssetsCap").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
 
