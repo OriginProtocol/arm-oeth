@@ -56,6 +56,16 @@ abstract contract Invariant_Shared_Test_ is Base_Test_ {
         feeCollector = makeAddr("Fee Collector");
 
         // Random users
+        alice = makeAddr("Alice");
+        bob = makeAddr("Bob");
+        charlie = makeAddr("Charlie");
+        dave = makeAddr("Dave");
+        eve = makeAddr("Eve");
+        frank = makeAddr("Frank");
+        george = makeAddr("George");
+        harry = makeAddr("Harry");
+
+        // Add users to the list
         users.push(alice);
         users.push(bob);
         users.push(charlie);

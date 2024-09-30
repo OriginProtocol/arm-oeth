@@ -30,17 +30,21 @@ contract Invariant_Basic_Test_ is Invariant_Base_Test_ {
         // In this configuration, an user is either a LP or a Swap, but not both.
         require(NUM_LPS + NUM_SWAPS <= users.length, "IBT: NOT_ENOUGH_USERS");
         for (uint256 i; i < NUM_LPS; i++) {
-            lps.push(users[i]);
+            address user = users[i];
+            require(user != address(0), "IBT: INVALID_USER");
+            lps.push(user);
 
             // Give them a lot of wETH
-            deal(address(weth), users[i], MAX_WETH_PER_USERS);
+            deal(address(weth), user, MAX_WETH_PER_USERS);
         }
         for (uint256 i = NUM_LPS; i < NUM_LPS + NUM_SWAPS; i++) {
-            swaps.push(users[i]);
+            address user = users[i];
+            require(user != address(0), "IBT: INVALID_USER");
+            swaps.push(user);
 
             // Give them a lot of wETH and stETH
-            deal(address(weth), users[i], MAX_WETH_PER_USERS);
-            deal(address(steth), users[i], MAX_STETH_PER_USERS);
+            deal(address(weth), user, MAX_WETH_PER_USERS);
+            deal(address(steth), user, MAX_STETH_PER_USERS);
         }
 
         // --- Setup ARM ---
@@ -81,11 +85,6 @@ contract Invariant_Basic_Test_ is Invariant_Base_Test_ {
     /// --- INVARIANTS
     //////////////////////////////////////////////////////
     function invariant_A() external {
-        //address[] memory tc = targetContracts();
-        //require(tc.length == 1, "IBT: INVALID_TARGET_CONTRACTS");
-        //emit log_named_address("invariant_A", tc[0]);
-        emit log("statefulFuzz_example");
-        weth.balanceOf(address(lidoARM));
         assert_invariant_A();
         assert_invariant_B();
     }
