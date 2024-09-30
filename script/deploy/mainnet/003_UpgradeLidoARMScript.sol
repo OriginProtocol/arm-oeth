@@ -59,6 +59,8 @@ contract UpgradeLidoARMMainnetScript is AbstractDeployScript {
         // 7. Transfer ownership of LiquidityProviderController to the mainnet 5/8 multisig
         lpcProxy.setOwner(Mainnet.GOV_MULTISIG);
 
+        console.log("Finished deploying", DEPLOY_NAME);
+
         // Post deploy
         // 1. The Lido ARM multisig needs to set the owner to the mainnet 5/8 multisig
         // 1. The mainnet 5/8 multisig needs to upgrade and call initialize on the Lido ARM
@@ -71,7 +73,8 @@ contract UpgradeLidoARMMainnetScript is AbstractDeployScript {
         if (tenderlyTestnet) {
             vm.startBroadcast(Mainnet.ARM_MULTISIG);
         } else {
-            vm.startPrank(Mainnet.ARM_MULTISIG);
+            console.log("Broadcasting fork script to Tenderly as: %s", Mainnet.ARM_MULTISIG);
+            vm.startBroadcast(Mainnet.ARM_MULTISIG);
         }
 
         if (lidoARMProxy == Proxy(0x0000000000000000000000000000000000000000)) {
@@ -122,6 +125,12 @@ contract UpgradeLidoARMMainnetScript is AbstractDeployScript {
         // transfer ownership of the Lido ARM proxy to the mainnet 5/8 multisig
         lidoARMProxy.setOwner(Mainnet.GOV_MULTISIG);
 
-        vm.stopPrank();
+        console.log("Finished running initializing Lido ARM as ARM_MULTISIG");
+
+        if (tenderlyTestnet) {
+            vm.stopBroadcast();
+        } else {
+            vm.stopPrank();
+        }
     }
 }
