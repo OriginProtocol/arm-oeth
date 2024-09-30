@@ -1,7 +1,10 @@
 const { subtask, task, types } = require("hardhat/config");
 const { formatUnits, parseUnits } = require("ethers");
 
-const { parseAddress } = require("../utils/addressParser");
+const {
+  parseAddress,
+  parseDeployedAddress,
+} = require("../utils/addressParser");
 const { setAutotaskVars } = require("./autotask");
 const { setActionVars } = require("./defender");
 const {
@@ -457,16 +460,18 @@ subtask(
 
   const wethAddress = await parseAddress("WETH");
   const stethAddress = await parseAddress("STETH");
-  const lidoArmAddress = await parseAddress("LIDO_ARM");
+  const lidoArmAddress = await parseDeployedAddress("LIDO_ARM");
+  const lidoArmImpl = parseDeployedAddress("LIDO_ARM_IMPL");
   const relayerAddress = await parseAddress("ARM_RELAYER");
+  const liquidityProviderController = await parseDeployedAddress(
+    "LIDO_ARM_LPC"
+  );
+  const feeCollector = await parseAddress("ARM_BUYBACK");
 
   const weth = await ethers.getContractAt("IWETH", wethAddress);
   const steth = await ethers.getContractAt("IWETH", stethAddress);
   const legacyAMM = await ethers.getContractAt("LegacyAMM", lidoArmAddress);
-  const lidoARM = await ethers.getContractAt(
-    "LidoFixedPriceMultiLpARM",
-    lidoArmAddress
-  );
+  const lidoARM = await ethers.getContractAt("LidoARM", lidoArmAddress);
   const lidoProxy = await ethers.getContractAt("Proxy", lidoArmAddress);
 
   const wethBalance = await weth.balanceOf(lidoArmAddress);
@@ -495,20 +500,18 @@ subtask(
       "ARM-ST",
       relayerAddress,
       1500, // 15% performance fee
-      // TODO set to Buyback contract
-      relayerAddress,
-      "0x187FfF686a5f42ACaaF56469FcCF8e6Feca18248",
+      liquidityProviderController,
+      feeCollector,
     ]
   );
 
-  const lidoArmImpl = "0x3d724176c8f1F965eF4020CB5DA5ad1a891BEEf1";
   console.log(`Amount to upgradeToAndCall the Lido ARM`);
   await lidoProxy.connect(signer).upgradeToAndCall(lidoArmImpl, initData);
 
   console.log(`Amount to setPrices on the Lido ARM`);
   await lidoARM
     .connect(signer)
-    .setPrices(parseUnits("9994", 32), parseUnits("1", 36));
+    .setPrices(parseUnits("9994", 32), parseUnits("9999", 32));
 
   console.log(`Amount to setOwner on the Lido ARM`);
   await lidoProxy.connect(signer).setOwner(await parseAddress("GOV_MULTISIG"));
