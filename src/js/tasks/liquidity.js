@@ -1,5 +1,6 @@
 const { formatUnits, parseUnits } = require("ethers");
 
+const { getBlock } = require("../utils/block");
 const { parseAddress } = require("../utils/addressParser");
 const { resolveAsset } = require("../utils/assets");
 const {
@@ -100,19 +101,19 @@ const withdrawRequestStatus = async ({ id, oethARM, vault }) => {
   }
 };
 
-const logLiquidity = async () => {
+const logLiquidity = async ({ block }) => {
+  const blockTag = await getBlock(block);
   console.log(`\nLiquidity`);
 
   const oethArmAddress = await parseAddress("OETH_ARM");
-  const oethARM = await ethers.getContractAt("OethARM", oethArmAddress);
 
   const weth = await resolveAsset("WETH");
-  const liquidityWeth = await weth.balanceOf(await oethARM.getAddress());
+  const liquidityWeth = await weth.balanceOf(oethArmAddress, { blockTag });
 
   const oeth = await resolveAsset("OETH");
-  const liquidityOeth = await oeth.balanceOf(await oethARM.getAddress());
+  const liquidityOeth = await oeth.balanceOf(oethArmAddress, { blockTag });
   const liquidityOethWithdraws = await outstandingWithdrawalAmount({
-    withdrawer: await oethARM.getAddress(),
+    withdrawer: oethArmAddress,
   });
 
   const total = liquidityWeth + liquidityOeth + liquidityOethWithdraws;

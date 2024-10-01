@@ -7,6 +7,7 @@ const {
 } = require("../utils/addressParser");
 const { setAutotaskVars } = require("./autotask");
 const { setActionVars } = require("./defender");
+const { submitLido, snapLido, swapLido } = require("./lido");
 const {
   autoRequestWithdraw,
   autoClaimWithdraw,
@@ -16,7 +17,7 @@ const {
   withdrawRequestStatus,
 } = require("./liquidity");
 const {
-  lpDeposit,
+  depositLido,
   setLiquidityProviderCaps,
   setTotalAssetsCap,
 } = require("./liquidityProvider");
@@ -42,17 +43,34 @@ const {
 } = require("./vault");
 const { upgradeProxy } = require("./proxy");
 
-subtask("snap", "Take a snapshot of the ARM").setAction(logLiquidity);
+subtask("snap", "Take a snapshot of the OETH ARM")
+  .addOptionalParam(
+    "block",
+    "Block number. (default: latest)",
+    undefined,
+    types.int
+  )
+  .setAction(logLiquidity);
 task("snap").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
 
 subtask(
   "swap",
-  "Swap from one asset to another. Can only specify the from or to asset"
+  "Swap from one asset to another. Can only specify the from or to asset as that will be the exact amount."
 )
-  .addOptionalParam("from", "Symbol of the from asset", "OETH", types.string)
-  .addOptionalParam("to", "Symbol of the to asset", undefined, types.string)
+  .addOptionalParam(
+    "from",
+    "Symbol of the from asset when swapping from an exact amount",
+    "OETH",
+    types.string
+  )
+  .addOptionalParam(
+    "to",
+    "Symbol of the to asset when swapping to an exact amount",
+    undefined,
+    types.string
+  )
   .addParam(
     "amount",
     "Swap quantity in either the from or to asset",
@@ -61,6 +79,33 @@ subtask(
   )
   .setAction(swap);
 task("swap").setAction(async (_, __, runSuper) => {
+  return runSuper();
+});
+
+subtask(
+  "swapLido",
+  "Swap from one asset to another. Can only specify the from or to asset as that will be the exact amount."
+)
+  .addOptionalParam(
+    "from",
+    "Symbol of the from asset when swapping from an exact amount",
+    undefined,
+    types.string
+  )
+  .addOptionalParam(
+    "to",
+    "Symbol of the to asset when swapping to an exact amount",
+    undefined,
+    types.string
+  )
+  .addParam(
+    "amount",
+    "Swap quantity in either the from or to asset",
+    undefined,
+    types.float
+  )
+  .setAction(swapLido);
+task("swapLido").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
 
@@ -313,6 +358,15 @@ task("withdrawWETH").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
 
+// Lido tasks
+
+subtask("submitLido", "Convert ETH to Lido's stETH")
+  .addParam("amount", "Amount of ETH to convert", undefined, types.float)
+  .setAction(submitLido);
+task("submitLido").setAction(async (_, __, runSuper) => {
+  return runSuper();
+});
+
 // Vault tasks.
 
 task(
@@ -429,15 +483,18 @@ task("redeemAll").setAction(async (_, __, runSuper) => {
 
 // ARM Liquidity Provider Functions
 
-subtask("lpDeposit", "Set total assets cap")
+subtask(
+  "depositLido",
+  "Deposit WETH into the Lido ARM as receive ARM LP tokens"
+)
   .addParam(
     "amount",
     "Amount of WETH not scaled to 18 decimals",
     undefined,
     types.float
   )
-  .setAction(lpDeposit);
-task("lpDeposit").setAction(async (_, __, runSuper) => {
+  .setAction(depositLido);
+task("depositLido").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
 
@@ -468,6 +525,20 @@ subtask("setTotalAssetsCap", "Set total assets cap")
   )
   .setAction(setTotalAssetsCap);
 task("setTotalAssetsCap").setAction(async (_, __, runSuper) => {
+  return runSuper();
+});
+
+// Lido
+
+subtask("snapLido", "Take a snapshot of the Lido ARM")
+  .addOptionalParam(
+    "block",
+    "Block number. (default: latest)",
+    undefined,
+    types.int
+  )
+  .setAction(snapLido);
+task("snapLido").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
 
@@ -549,8 +620,8 @@ subtask(
       "ARM-ST",
       relayerAddress,
       1500, // 15% performance fee
-      liquidityProviderController,
       feeCollector,
+      liquidityProviderController,
     ]
   );
 
