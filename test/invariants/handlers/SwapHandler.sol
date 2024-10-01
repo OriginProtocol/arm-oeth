@@ -77,12 +77,12 @@ contract SwapHandler is BaseHandler {
         // Prevent swap when no liquidity on steth, but it will try to transfer the +2 stETH.
         if (inputToken == weth && amountIn <= 2 && steth.balanceOf(address(arm)) < 2) {
             numberOfCalls["swapHandler.swapExactTokens.skip"]++;
-            console.log("LpHandler.swapExactTokens - Not enough stETH in the ARM");
+            console.log("SwapHandler.swapExactTokens - Not enough stETH in the ARM");
             return;
         }
 
         console.log(
-            "swapHandler.swapExactTokensForTokens(%18e), %s, %s", amountIn, names[user], names[address(inputToken)]
+            "SwapHandler.swapExactTokensForTokens(%18e), %s, %s", amountIn, names[user], names[address(inputToken)]
         );
 
         // Prank user
@@ -140,11 +140,11 @@ contract SwapHandler is BaseHandler {
         // Prevent swap when no liquidity on steth, but it will try to transfer the +2 stETH.
         if (inputToken == weth && amountOut <= 2 && steth.balanceOf(address(arm)) < 2) {
             numberOfCalls["swapHandler.swapTokensExact.skip"]++;
-            console.log("LpHandler.swapTokensForExactTokens - Not enough stETH in the ARM");
+            console.log("SwapHandler.swapTokensForExactTokens - Not enough stETH in the ARM");
             return;
         }
         console.log(
-            "swapHandler.swapTokensForExactTokens(%18e), %s, %s", amountOut, names[user], names[address(inputToken)]
+            "SwapHandler.swapTokensForExactTokens(%18e), %s, %s", amountOut, names[user], names[address(inputToken)]
         );
 
         // Prank user
