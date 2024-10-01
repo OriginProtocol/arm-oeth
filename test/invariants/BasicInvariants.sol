@@ -65,9 +65,9 @@ contract Invariant_Basic_Test_ is Invariant_Base_Test_ {
         lpHandler = new LpHandler(address(lidoARM), address(weth), lps);
         swapHandler = new SwapHandler(address(lidoARM), address(weth), address(steth), swaps);
 
-        lpHandler.setSelectorWeight(lpHandler.deposit.selector, 4_000); // 40%
-        lpHandler.setSelectorWeight(lpHandler.requestRedeem.selector, 3_000); // 30%
-        lpHandler.setSelectorWeight(lpHandler.claimRedeem.selector, 3_000); // 30%
+        lpHandler.setSelectorWeight(lpHandler.deposit.selector, 5_000); // 50%
+        lpHandler.setSelectorWeight(lpHandler.requestRedeem.selector, 2_500); // 25%
+        lpHandler.setSelectorWeight(lpHandler.claimRedeem.selector, 2_500); // 25%
         swapHandler.setSelectorWeight(swapHandler.swapExactTokensForTokens.selector, 5_000); // 50%
         swapHandler.setSelectorWeight(swapHandler.swapTokensForExactTokens.selector, 5_000); // 50%
         //Todo: swapHandler.setSelectorWeight();
@@ -77,8 +77,8 @@ contract Invariant_Basic_Test_ is Invariant_Base_Test_ {
         targetContracts[1] = address(swapHandler);
 
         uint256[] memory weightsDistributorHandler = new uint256[](2);
-        weightsDistributorHandler[0] = 0; //10_000; // 100%
-        weightsDistributorHandler[1] = 10_000; // 0%
+        weightsDistributorHandler[0] = 5_000; // 50%
+        weightsDistributorHandler[1] = 5_000; // 50%
 
         address distributionHandler = address(new DistributionHandler(targetContracts, weightsDistributorHandler));
 
