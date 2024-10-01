@@ -134,8 +134,7 @@ contract SwapHandler is BaseHandler {
         path[1] = address(outputToken);
 
         // Select a random amount, maximum is the minimum between the balance of the user and the liquidity available
-        uint256 amountOut =
-            _bound(_seed, 0, min(outputToken.balanceOf(address(arm)), getMaxAmountIn(outputToken, user)));
+        uint256 amountOut = _bound(_seed, 0, min(_liquidityAvailable(outputToken), getMaxAmountIn(outputToken, user)));
 
         // Prevent swap when no liquidity on steth, but it will try to transfer the +2 stETH.
         if (inputToken == weth && amountOut <= 2 && steth.balanceOf(address(arm)) < 2) {
@@ -185,8 +184,7 @@ contract SwapHandler is BaseHandler {
     function getMaxAmountOut(IERC20 tokenIn) public view returns (uint256) {
         IERC20 tokenOut = tokenIn == weth ? steth : weth;
 
-        // Todo: need to take into account withdraw queue for wETH
-        uint256 reserveOut = tokenOut.balanceOf(address(arm));
+        uint256 reserveOut = _liquidityAvailable(tokenOut);
 
         uint256 price = tokenIn == steth ? arm.traderate0() : arm.traderate1();
 
@@ -205,8 +203,18 @@ contract SwapHandler is BaseHandler {
         return (reserveUser * arm.PRICE_SCALE()) / price + 1;
     }
 
-    /// @notice Return the minimum between two uint256
-    function min(uint256 a, uint256 b) internal pure returns (uint256) {
-        return a < b ? a : b;
+    /// @notice Helpers to calcul the liquidity available for a token, especially for WETH
+    function _liquidityAvailable(IERC20 token) public view returns (uint256 liquidity) {
+        if (token == weth) {
+            uint256 outstandingWithdrawals = arm.withdrawsQueued() - arm.withdrawsClaimed();
+            uint256 liquidityBalance = weth.balanceOf(address(arm));
+            if (liquidityBalance <= outstandingWithdrawals) {
+                return 0;
+            }
+
+            return liquidityBalance - outstandingWithdrawals;
+        } else if (token == steth) {
+            return steth.balanceOf(address(arm));
+        }
     }
 }
