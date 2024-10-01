@@ -122,7 +122,7 @@ contract UpgradeLidoARMMainnetScript is AbstractDeployScript {
         lidoARMProxy.setOwner(Mainnet.GOV_MULTISIG);
 
         console.log("Finished running initializing Lido ARM as ARM_MULTISIG");
-        
+
         vm.stopPrank();
     }
 }

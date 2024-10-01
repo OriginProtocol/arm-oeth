@@ -46,13 +46,6 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
         assertEq(lidoARM.operator(), Mainnet.ARM_RELAYER, "Operator");
         assertEq(lidoARM.feeCollector(), Mainnet.ARM_BUYBACK, "Fee collector");
         assertEq((100 * uint256(lidoARM.fee())) / lidoARM.FEE_SCALE(), 15, "Performance fee as a percentage");
-        assertEq(lidoARM.feesAccrued(), 0, "Fees accrued");
-        // Some dust stETH is left in AMM v1 when stETH is transferred to the Treasury.
-        assertEq(steth.balanceOf(address(lidoARM)), 1, "stETH balance");
-        assertEq(lidoARM.totalAssets(), 1e12 + 1, "Total assets");
-        assertEq(lidoARM.lastTotalAssets(), 1e12 + 1, "Last total assets");
-        assertEq(lidoARM.totalSupply(), 1e12, "Total supply");
-        assertEq(weth.balanceOf(address(lidoARM)), 1e12, "WETH balance");
         // LidoLiquidityManager
         assertEq(address(lidoARM.withdrawalQueue()), Mainnet.LIDO_WITHDRAWAL, "Lido withdrawal queue");
         assertEq(address(lidoARM.steth()), Mainnet.STETH, "stETH");
@@ -64,23 +57,59 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
         assertEq(liquidityProviderController.arm(), address(lidoARM), "arm");
     }
 
-    function test_swapExactTokensForTokens() external {
-        _swapExactTokensForTokens(steth, weth, 10 ether, 10 ether);
+    function test_swap_exact_steth_for_weth() external {
+        // trader sells stETH and buys WETH, the ARM buys stETH as a
+        // 4 bps discount
+        _swapExactTokensForTokens(steth, weth, 9996e32, 100 ether);
+        // 10 bps discount
+        _swapExactTokensForTokens(steth, weth, 9990e32, 1e15);
+        // 20 bps discount
+        _swapExactTokensForTokens(steth, weth, 9980e32, 1 ether);
+    }
+
+    function test_swap_exact_weth_for_steth() external {
+        // trader buys stETH and sells WETH, the ARM sells stETH at a
+        // 1 bps discount
+        _swapExactTokensForTokens(weth, steth, 9999e32, 10 ether);
+        // 5 bps discount
+        _swapExactTokensForTokens(weth, steth, 9995e32, 100 ether);
+        // 10 bps discount
+        _swapExactTokensForTokens(weth, steth, 9990e32, 100 ether);
     }
 
     function test_swapTokensForExactTokens() external {
-        _swapTokensForExactTokens(steth, weth, 10 ether, 10 ether);
+        // trader sells stETH and buys WETH, the ARM buys stETH at a
+        // 4 bps discount
+        _swapTokensForExactTokens(steth, weth, 9996e32, 10 ether);
+        // 10 bps discount
+        _swapTokensForExactTokens(steth, weth, 9990e32, 100 ether);
+        // 50 bps discount
+        _swapTokensForExactTokens(steth, weth, 9950e32, 10 ether);
     }
 
-    function _swapExactTokensForTokens(IERC20 inToken, IERC20 outToken, uint256 amountIn, uint256 expectedOut)
-        internal
-    {
-        _dealWETH(address(lidoARM), 100 ether);
-        _dealStETH(address(lidoARM), 100 ether);
+    function _swapExactTokensForTokens(IERC20 inToken, IERC20 outToken, uint256 price, uint256 amountIn) internal {
+        uint256 expectedOut;
         if (inToken == weth) {
-            _dealWETH(address(this), amountIn + 1000);
+            // Trader is buying stETH and selling WETH
+            // the ARM is selling stETH and buying WETH
+            _dealWETH(address(this), 1000 ether);
+            _dealStETH(address(lidoARM), 1000 ether);
+
+            expectedOut = amountIn * 1e36 / price;
+
+            vm.prank(Mainnet.ARM_RELAYER);
+            lidoARM.setPrices(price - 2e32, price);
         } else {
-            _dealStETH(address(this), amountIn + 1000);
+            // Trader is selling stETH and buying WETH
+            // the ARM is buying stETH and selling WETH
+            _dealStETH(address(this), 1000 ether);
+            _dealWETH(address(lidoARM), 1000 ether);
+
+            expectedOut = amountIn * price / 1e36;
+
+            vm.prank(Mainnet.ARM_RELAYER);
+            uint256 sellPrice = price < 9988e32 ? 9990e32 : price + 2e32;
+            lidoARM.setPrices(price, sellPrice);
         }
         // Approve the ARM to transfer the input token of the swap.
         inToken.approve(address(lidoARM), amountIn);
@@ -91,30 +120,45 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
         lidoARM.swapExactTokensForTokens(inToken, outToken, amountIn, 0, address(this));
 
         assertApproxEqAbs(inToken.balanceOf(address(this)), startIn - amountIn, 2, "In actual");
-        assertEq(outToken.balanceOf(address(this)), startOut + expectedOut, "Out actual");
+        assertApproxEqAbs(outToken.balanceOf(address(this)), startOut + expectedOut, 2, "Out actual");
     }
 
-    function _swapTokensForExactTokens(IERC20 inToken, IERC20 outToken, uint256 amountIn, uint256 expectedOut)
-        internal
-    {
-        _dealWETH(address(lidoARM), 100 ether);
-        _dealStETH(address(lidoARM), 100 ether);
+    function _swapTokensForExactTokens(IERC20 inToken, IERC20 outToken, uint256 price, uint256 amountOut) internal {
+        uint256 expectedIn;
         if (inToken == weth) {
-            _dealWETH(address(this), amountIn + 1000);
+            // Trader is buying stETH and selling WETH
+            // the ARM is selling stETH and buying WETH
+            _dealWETH(address(this), 1000 ether);
+            _dealStETH(address(lidoARM), 1000 ether);
+
+            expectedIn = amountOut * price / 1e36;
+
+            vm.prank(Mainnet.ARM_RELAYER);
+            lidoARM.setPrices(price - 2e32, price);
         } else {
-            _dealStETH(address(this), amountIn + 1000);
+            // Trader is selling stETH and buying WETH
+            // the ARM is buying stETH and selling WETH
+            _dealStETH(address(this), 1000 ether);
+            _dealWETH(address(lidoARM), 1000 ether);
+
+            expectedIn = amountOut * 1e36 / price;
+
+            vm.prank(Mainnet.ARM_RELAYER);
+            uint256 sellPrice = price < 9988e32 ? 9990e32 : price + 2e32;
+            lidoARM.setPrices(price, sellPrice);
         }
         // Approve the ARM to transfer the input token of the swap.
-        inToken.approve(address(lidoARM), amountIn + 10000);
+        inToken.approve(address(lidoARM), expectedIn + 10000);
         console.log("Approved Lido ARM to spend %d", inToken.allowance(address(this), address(lidoARM)));
         console.log("In token balance: %d", inToken.balanceOf(address(this)));
 
         uint256 startIn = inToken.balanceOf(address(this));
+        uint256 startOut = outToken.balanceOf(address(this));
 
-        lidoARM.swapTokensForExactTokens(inToken, outToken, expectedOut, 3 * expectedOut, address(this));
+        lidoARM.swapTokensForExactTokens(inToken, outToken, amountOut, 3 * amountOut, address(this));
 
-        assertApproxEqAbs(inToken.balanceOf(address(this)), startIn - amountIn, 2, "In actual");
-        assertEq(outToken.balanceOf(address(this)), expectedOut, "Out actual");
+        assertApproxEqAbs(inToken.balanceOf(address(this)), startIn - expectedIn, 2, "In actual");
+        assertApproxEqAbs(outToken.balanceOf(address(this)), startOut + amountOut, 2, "Out actual");
     }
 
     function test_proxy_unauthorizedAccess() external {

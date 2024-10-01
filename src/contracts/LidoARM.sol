@@ -20,7 +20,7 @@ contract LidoARM is Initializable, AbstractARM, LidoLiquidityManager {
     /// @param _weth The address of the WETH token
     /// @param _lidoWithdrawalQueue The address of the Lido's withdrawal queue contract
     constructor(address _steth, address _weth, address _lidoWithdrawalQueue)
-        AbstractARM(_steth, _weth, _weth)
+        AbstractARM(_weth, _steth, _weth)
         LidoLiquidityManager(_steth, _weth, _lidoWithdrawalQueue)
     {}
 
@@ -54,7 +54,7 @@ contract LidoARM is Initializable, AbstractARM, LidoLiquidityManager {
      */
     function _transferAsset(address asset, address to, uint256 amount) internal override {
         // Add 2 wei if transferring stETH
-        uint256 transferAmount = asset == address(token0) ? amount + 2 : amount;
+        uint256 transferAmount = asset == address(token1) ? amount + 2 : amount;
 
         super._transferAsset(asset, to, transferAmount);
     }

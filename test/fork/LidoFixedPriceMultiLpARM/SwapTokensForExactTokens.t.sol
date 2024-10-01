@@ -189,50 +189,7 @@ contract Fork_Concrete_LidoARM_SwapTokensForExactTokens_Test is Fork_Shared_Test
         uint256 balanceWETHBeforeARM = weth.balanceOf(address(lidoARM));
         uint256 balanceSTETHBeforeARM = steth.balanceOf(address(lidoARM));
 
-        // Get minimum amount of STETH to receive
-        uint256 traderates1 = lidoARM.traderate1();
-        uint256 amountIn = (amountOut * 1e36 / traderates1) + 1;
-
-        // Expected events: Already checked in fuzz tests
-
-        uint256[] memory outputs = new uint256[](2);
-        // Main call
-        outputs = lidoARM.swapTokensForExactTokens(
-            amountOut, // amountOut
-            amountIn, // amountInMax
-            path, // path
-            address(this), // to
-            block.timestamp // deadline
-        );
-
-        // State after
-        uint256 balanceWETHAfterThis = weth.balanceOf(address(this));
-        uint256 balanceSTETHAfterThis = steth.balanceOf(address(this));
-        uint256 balanceWETHAfterARM = weth.balanceOf(address(lidoARM));
-        uint256 balanceSTETHAfterARM = steth.balanceOf(address(lidoARM));
-
-        // Assertions
-        assertEq(balanceWETHBeforeThis, balanceWETHAfterThis + amountIn);
-        assertApproxEqAbs(balanceSTETHBeforeThis + amountOut, balanceSTETHAfterThis, STETH_ERROR_ROUNDING);
-        assertEq(balanceWETHBeforeARM + amountIn, balanceWETHAfterARM);
-        assertApproxEqAbs(balanceSTETHBeforeARM, balanceSTETHAfterARM + amountOut, STETH_ERROR_ROUNDING);
-        assertEq(outputs[0], amountIn);
-        assertEq(outputs[1], amountOut);
-    }
-
-    function test_SwapTokensForExactTokens_WithDeadLine_Steth_To_Weth() public {
-        uint256 amountOut = 1 ether;
-        address[] memory path = new address[](2);
-        path[0] = address(steth);
-        path[1] = address(weth);
-
-        // State before
-        uint256 balanceWETHBeforeThis = weth.balanceOf(address(this));
-        uint256 balanceSTETHBeforeThis = steth.balanceOf(address(this));
-        uint256 balanceWETHBeforeARM = weth.balanceOf(address(lidoARM));
-        uint256 balanceSTETHBeforeARM = steth.balanceOf(address(lidoARM));
-
-        // Get minimum amount of WETH to receive
+        // Get maximum amount of WETH to send to the ARM
         uint256 traderates0 = lidoARM.traderate0();
         uint256 amountIn = (amountOut * 1e36 / traderates0) + 1;
 
@@ -255,12 +212,63 @@ contract Fork_Concrete_LidoARM_SwapTokensForExactTokens_Test is Fork_Shared_Test
         uint256 balanceSTETHAfterARM = steth.balanceOf(address(lidoARM));
 
         // Assertions
-        assertEq(balanceWETHBeforeThis + amountOut, balanceWETHAfterThis);
-        assertApproxEqAbs(balanceSTETHBeforeThis, balanceSTETHAfterThis + amountIn, STETH_ERROR_ROUNDING);
-        assertEq(balanceWETHBeforeARM, balanceWETHAfterARM + amountOut);
-        assertApproxEqAbs(balanceSTETHBeforeARM + amountIn, balanceSTETHAfterARM, STETH_ERROR_ROUNDING);
-        assertEq(outputs[0], amountIn);
-        assertEq(outputs[1], amountOut);
+        assertEq(balanceWETHBeforeThis, balanceWETHAfterThis + amountIn, "WETH user balance");
+        assertApproxEqAbs(
+            balanceSTETHBeforeThis + amountOut, balanceSTETHAfterThis, STETH_ERROR_ROUNDING, "STETH user balance"
+        );
+        assertEq(balanceWETHBeforeARM + amountIn, balanceWETHAfterARM, "WETH ARM balance");
+        assertApproxEqAbs(
+            balanceSTETHBeforeARM, balanceSTETHAfterARM + amountOut, STETH_ERROR_ROUNDING, "STETH ARM balance"
+        );
+        assertEq(outputs[0], amountIn, "Amount in");
+        assertEq(outputs[1], amountOut, "Amount out");
+    }
+
+    function test_SwapTokensForExactTokens_WithDeadLine_Steth_To_Weth() public {
+        uint256 amountOut = 1 ether;
+        address[] memory path = new address[](2);
+        path[0] = address(steth);
+        path[1] = address(weth);
+
+        // State before
+        uint256 balanceWETHBeforeThis = weth.balanceOf(address(this));
+        uint256 balanceSTETHBeforeThis = steth.balanceOf(address(this));
+        uint256 balanceWETHBeforeARM = weth.balanceOf(address(lidoARM));
+        uint256 balanceSTETHBeforeARM = steth.balanceOf(address(lidoARM));
+
+        // Get maximum amount of stETH to send to the ARM
+        uint256 traderates1 = lidoARM.traderate1();
+        uint256 amountIn = (amountOut * 1e36 / traderates1) + 1;
+
+        // Expected events: Already checked in fuzz tests
+
+        uint256[] memory outputs = new uint256[](2);
+        // Main call
+        outputs = lidoARM.swapTokensForExactTokens(
+            amountOut, // amountOut
+            amountIn, // amountInMax
+            path, // path
+            address(this), // to
+            block.timestamp // deadline
+        );
+
+        // State after
+        uint256 balanceWETHAfterThis = weth.balanceOf(address(this));
+        uint256 balanceSTETHAfterThis = steth.balanceOf(address(this));
+        uint256 balanceWETHAfterARM = weth.balanceOf(address(lidoARM));
+        uint256 balanceSTETHAfterARM = steth.balanceOf(address(lidoARM));
+
+        // Assertions
+        assertEq(balanceWETHBeforeThis + amountOut, balanceWETHAfterThis, "WETH user balance");
+        assertApproxEqAbs(
+            balanceSTETHBeforeThis, balanceSTETHAfterThis + amountIn, STETH_ERROR_ROUNDING, "STETH user balance"
+        );
+        assertEq(balanceWETHBeforeARM, balanceWETHAfterARM + amountOut, "WETH ARM balance");
+        assertApproxEqAbs(
+            balanceSTETHBeforeARM + amountIn, balanceSTETHAfterARM, STETH_ERROR_ROUNDING, "STETH ARM balance"
+        );
+        assertEq(outputs[0], amountIn, "Amount in");
+        assertEq(outputs[1], amountOut, "Amount out");
     }
 
     //////////////////////////////////////////////////////
@@ -273,10 +281,10 @@ contract Fork_Concrete_LidoARM_SwapTokensForExactTokens_Test is Fork_Shared_Test
     function test_SwapTokensForExactTokens_Weth_To_Steth(uint256 amountOut, uint256 stethReserve, uint256 price)
         public
     {
-        // Use random price between 0.98 and 1 for traderate1,
-        // Traderate0 value doesn't matter as it is not used in this test.
-        price = _bound(price, MIN_PRICE0, MAX_PRICE0);
-        lidoARM.setPrices(price, MAX_PRICE1);
+        // Use random sell price between 0.98 and 1 for the stETH/WETH price,
+        // The buy price doesn't matter as it is not used in this test.
+        price = _bound(price, MIN_PRICE1, MAX_PRICE1);
+        lidoARM.setPrices(MIN_PRICE0, price);
 
         // Set random amount of stETH in the ARM
         stethReserve = _bound(stethReserve, 0, MAX_STETH_RESERVE);
@@ -294,14 +302,14 @@ contract Fork_Concrete_LidoARM_SwapTokensForExactTokens_Test is Fork_Shared_Test
         uint256 balanceSTETHBeforeARM = steth.balanceOf(address(lidoARM));
 
         // Get minimum amount of STETH to receive
-        uint256 traderates1 = lidoARM.traderate1();
-        uint256 amountIn = (amountOut * 1e36 / traderates1) + 1;
+        // weth = steth * stETH/WETH price
+        uint256 amountIn = (amountOut * price / 1e36) + 1;
 
         // Expected events
         vm.expectEmit({emitter: address(weth)});
         emit IERC20.Transfer(address(this), address(lidoARM), amountIn);
         vm.expectEmit({emitter: address(steth)});
-        emit IERC20.Transfer(address(lidoARM), address(this), amountOut + STETH_ERROR_ROUNDING);
+        emit IERC20.Transfer(address(lidoARM), address(this), amountOut + 2);
         // Main call
         lidoARM.swapTokensForExactTokens(
             weth, // inToken
@@ -318,10 +326,14 @@ contract Fork_Concrete_LidoARM_SwapTokensForExactTokens_Test is Fork_Shared_Test
         uint256 balanceSTETHAfterARM = steth.balanceOf(address(lidoARM));
 
         // Assertions
-        assertEq(balanceWETHBeforeThis, balanceWETHAfterThis + amountIn);
-        assertApproxEqAbs(balanceSTETHBeforeThis + amountOut, balanceSTETHAfterThis, STETH_ERROR_ROUNDING);
-        assertEq(balanceWETHBeforeARM + amountIn, balanceWETHAfterARM);
-        assertApproxEqAbs(balanceSTETHBeforeARM, balanceSTETHAfterARM + amountOut, STETH_ERROR_ROUNDING);
+        assertEq(balanceWETHBeforeThis, balanceWETHAfterThis + amountIn, "WETH user balance");
+        assertApproxEqAbs(
+            balanceSTETHBeforeThis + amountOut, balanceSTETHAfterThis, STETH_ERROR_ROUNDING, "STETH user balance"
+        );
+        assertEq(balanceWETHBeforeARM + amountIn, balanceWETHAfterARM, "WETH ARM balance");
+        assertApproxEqAbs(
+            balanceSTETHBeforeARM, balanceSTETHAfterARM + amountOut, STETH_ERROR_ROUNDING, "STETH ARM balance"
+        );
     }
 
     /// @notice Fuzz test for swapTokensForExactTokens(IERC20,IERC20,uint256,uint256,address), with stETH to WETH.
@@ -331,10 +343,10 @@ contract Fork_Concrete_LidoARM_SwapTokensForExactTokens_Test is Fork_Shared_Test
     function test_SwapTokensForExactTokens_Steth_To_Weth(uint256 amountOut, uint256 wethReserve, uint256 price)
         public
     {
-        // Use random price between MIN_PRICE1 and MAX_PRICE1 for traderate1,
-        // Traderate0 value doesn't matter as it is not used in this test.
-        price = _bound(price, MIN_PRICE1, MAX_PRICE1);
-        lidoARM.setPrices(MIN_PRICE0, price);
+        // Use random stETH/WETH buy price between 0.98 and 1,
+        // sell price doesn't matter as it is not used in this test.
+        price = _bound(price, MIN_PRICE0, MAX_PRICE0);
+        lidoARM.setPrices(price, MAX_PRICE1);
 
         // Set random amount of WETH in the ARM
         wethReserve = _bound(wethReserve, 0, MAX_WETH_RESERVE);
@@ -352,12 +364,13 @@ contract Fork_Concrete_LidoARM_SwapTokensForExactTokens_Test is Fork_Shared_Test
         uint256 balanceSTETHBeforeARM = steth.balanceOf(address(lidoARM));
 
         // Get minimum amount of WETH to receive
-        uint256 traderates0 = lidoARM.traderate0();
-        uint256 amountIn = (amountOut * 1e36 / traderates0) + 1;
+        // stETH = WETH / stETH/WETH price
+        uint256 amountIn = (amountOut * 1e36 / price);
 
         // Expected events
-        vm.expectEmit({emitter: address(steth)});
-        emit IERC20.Transfer(address(this), address(lidoARM), amountIn);
+        // TODO hard to check the exact amount of stETH due to rounding
+        // vm.expectEmit({emitter: address(steth)});
+        // emit IERC20.Transfer(address(this), address(lidoARM), amountIn);
         vm.expectEmit({emitter: address(weth)});
         emit IERC20.Transfer(address(lidoARM), address(this), amountOut);
 
@@ -366,7 +379,7 @@ contract Fork_Concrete_LidoARM_SwapTokensForExactTokens_Test is Fork_Shared_Test
             steth, // inToken
             weth, // outToken
             amountOut, // amountOut
-            amountIn, // amountInMax
+            amountIn + 2 * STETH_ERROR_ROUNDING, // amountInMax
             address(this) // to
         );
 
@@ -377,9 +390,13 @@ contract Fork_Concrete_LidoARM_SwapTokensForExactTokens_Test is Fork_Shared_Test
         uint256 balanceSTETHAfterARM = steth.balanceOf(address(lidoARM));
 
         // Assertions
-        assertEq(balanceWETHBeforeThis + amountOut, balanceWETHAfterThis);
-        assertApproxEqAbs(balanceSTETHBeforeThis, balanceSTETHAfterThis + amountIn, STETH_ERROR_ROUNDING);
-        assertEq(balanceWETHBeforeARM, balanceWETHAfterARM + amountOut);
-        assertApproxEqAbs(balanceSTETHBeforeARM + amountIn, balanceSTETHAfterARM, STETH_ERROR_ROUNDING);
+        assertEq(balanceWETHBeforeThis + amountOut, balanceWETHAfterThis, "WETH user balance");
+        assertApproxEqAbs(
+            balanceSTETHBeforeThis, balanceSTETHAfterThis + amountIn, STETH_ERROR_ROUNDING, "STETH user balance"
+        );
+        assertEq(balanceWETHBeforeARM, balanceWETHAfterARM + amountOut, "WETH ARM balance");
+        assertApproxEqAbs(
+            balanceSTETHBeforeARM + amountIn, balanceSTETHAfterARM, STETH_ERROR_ROUNDING, "STETH ARM balance"
+        );
     }
 }

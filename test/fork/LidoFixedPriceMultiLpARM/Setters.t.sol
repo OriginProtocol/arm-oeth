@@ -87,7 +87,7 @@ contract Fork_Concrete_lidoARM_Setters_Test_ is Fork_Shared_Test_ {
     }
 
     //////////////////////////////////////////////////////
-    /// --- FIXED PRICE ARM - REVERTING TESTS
+    /// --- Set Prices - REVERTING TESTS
     //////////////////////////////////////////////////////
     function test_RevertWhen_SetPrices_Because_PriceCross() public {
         vm.expectRevert("ARM: Price cross");
@@ -104,7 +104,7 @@ contract Fork_Concrete_lidoARM_Setters_Test_ is Fork_Shared_Test_ {
         lidoARM.setPrices(1e36, 1e36);
     }
 
-    function test_RevertWhen_FixedPriceARM_SetPrices_Because_PriceRange() public asOperator {
+    function test_RevertWhen_SetPrices_Because_PriceRange() public asOperator {
         // buy price 11 basis points higher than 1.0
         vm.expectRevert("ARM: buy price too high");
         lidoARM.setPrices(1.0011 * 1e36, 1.002 * 1e36);
@@ -118,7 +118,7 @@ contract Fork_Concrete_lidoARM_Setters_Test_ is Fork_Shared_Test_ {
         lidoARM.setPrices(1e18, 1e18);
     }
 
-    function test_RevertWhen_FixedPriceARM_SetPrices_Because_NotOwnerOrOperator() public asRandomAddress {
+    function test_RevertWhen_SetPrices_Because_NotOwnerOrOperator() public asRandomAddress {
         vm.expectRevert("ARM: Only operator or owner can call this function.");
         lidoARM.setPrices(0, 0);
     }
@@ -134,9 +134,9 @@ contract Fork_Concrete_lidoARM_Setters_Test_ is Fork_Shared_Test_ {
     }
 
     //////////////////////////////////////////////////////
-    /// --- FIXED PRICE ARM - PASSING TESTS
+    /// --- Set Prices - PASSING TESTS
     //////////////////////////////////////////////////////
-    function test_FixedPriceARM_SetPrices_Operator() public asOperator {
+    function test_SetPrices_Operator() public asOperator {
         // buy price 10 basis points higher than 1.0
         lidoARM.setPrices(1001e33, 1002e33);
         // sell price 10 basis points lower than 1.0
@@ -153,7 +153,7 @@ contract Fork_Concrete_lidoARM_Setters_Test_ is Fork_Shared_Test_ {
         assertEq(lidoARM.traderate1(), 992 * 1e33);
     }
 
-    function test_FixedPriceARM_SetPrices_Owner() public {
+    function test_SetPrices_Owner() public {
         // buy price 11 basis points higher than 1.0
         lidoARM.setPrices(10011e32, 10020e32);
 
