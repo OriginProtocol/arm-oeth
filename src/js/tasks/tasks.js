@@ -1,10 +1,6 @@
 const { subtask, task, types } = require("hardhat/config");
-const { formatUnits, parseUnits } = require("ethers");
 
-const {
-  parseAddress,
-  parseDeployedAddress,
-} = require("../utils/addressParser");
+const { parseAddress } = require("../utils/addressParser");
 const { setAutotaskVars } = require("./autotask");
 const { setActionVars } = require("./defender");
 const { submitLido, snapLido, swapLido } = require("./lido");
@@ -569,73 +565,5 @@ subtask(
   .addParam("id", "Identifier of the Defender Actions", undefined, types.string)
   .setAction(setActionVars);
 task("setActionVars").setAction(async (_, __, runSuper) => {
-  return runSuper();
-});
-
-subtask(
-  "postDeploy",
-  "Used for Testnets after running the Lido deploy script"
-).setAction(async () => {
-  const signer = await getSigner();
-
-  const wethAddress = await parseAddress("WETH");
-  const stethAddress = await parseAddress("STETH");
-  const lidoArmAddress = await parseDeployedAddress("LIDO_ARM");
-  const lidoArmImpl = parseDeployedAddress("LIDO_ARM_IMPL");
-  const relayerAddress = await parseAddress("ARM_RELAYER");
-  const liquidityProviderController = await parseDeployedAddress(
-    "LIDO_ARM_LPC"
-  );
-  const feeCollector = await parseAddress("ARM_BUYBACK");
-
-  const weth = await ethers.getContractAt("IWETH", wethAddress);
-  const steth = await ethers.getContractAt("IWETH", stethAddress);
-  const legacyAMM = await ethers.getContractAt("LegacyAMM", lidoArmAddress);
-  const lidoARM = await ethers.getContractAt("LidoARM", lidoArmAddress);
-  const lidoProxy = await ethers.getContractAt("Proxy", lidoArmAddress);
-
-  const wethBalance = await weth.balanceOf(lidoArmAddress);
-  console.log(
-    `Amount to transfer ${formatUnits(wethBalance)} WETH out of the LidoARM`
-  );
-  await legacyAMM
-    .connect(signer)
-    .transferToken(wethAddress, await signer.getAddress(), wethBalance);
-
-  const stethBalance = await steth.balanceOf(lidoArmAddress);
-  console.log(
-    `Amount to transfer ${formatUnits(stethBalance)} stETH out of the LidoARM`
-  );
-  await legacyAMM
-    .connect(signer)
-    .transferToken(stethAddress, await signer.getAddress(), stethBalance);
-
-  console.log(`Amount to approve the Lido ARM`);
-  await weth.connect(signer).approve(lidoArmAddress, "1000000000000");
-
-  const initData = lidoARM.interface.encodeFunctionData(
-    "initialize(string,string,address,uint256,address,address)",
-    [
-      "Lido ARM",
-      "ARM-ST",
-      relayerAddress,
-      1500, // 15% performance fee
-      feeCollector,
-      liquidityProviderController,
-    ]
-  );
-
-  console.log(`Amount to upgradeToAndCall the Lido ARM`);
-  await lidoProxy.connect(signer).upgradeToAndCall(lidoArmImpl, initData);
-
-  console.log(`Amount to setPrices on the Lido ARM`);
-  await lidoARM
-    .connect(signer)
-    .setPrices(parseUnits("9994", 32), parseUnits("9999", 32));
-
-  console.log(`Amount to setOwner on the Lido ARM`);
-  await lidoProxy.connect(signer).setOwner(await parseAddress("GOV_MULTISIG"));
-});
-task("postDeploy").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
