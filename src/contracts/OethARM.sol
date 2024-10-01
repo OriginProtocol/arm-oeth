@@ -9,7 +9,7 @@ import {OwnerLP} from "./OwnerLP.sol";
 import {OethLiquidityManager} from "./OethLiquidityManager.sol";
 
 /**
- * @title Origin Ether (OETH) Application Redemption Manager (ARM)
+ * @title Origin Ether (OETH) Automated Redemption Manager (ARM)
  * @author Origin Protocol Inc
  */
 contract OethARM is Initializable, OwnerLP, PeggedARM, OethLiquidityManager {

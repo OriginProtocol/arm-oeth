@@ -8,7 +8,7 @@ import {AbstractARM} from "./AbstractARM.sol";
 import {LidoLiquidityManager} from "./LidoLiquidityManager.sol";
 
 /**
- * @title Lido (stETH) Application Redemption Manager (ARM)
+ * @title Lido (stETH) Automated Redemption Manager (ARM)
  * @dev This implementation supports multiple Liquidity Providers (LPs) with single buy and sell prices.
  * It also integrates to a LiquidityProviderController contract that caps the amount of assets a liquidity provider
  * can deposit and caps the ARM's total assets.
