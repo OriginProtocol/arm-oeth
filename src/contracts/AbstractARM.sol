@@ -110,6 +110,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     ////////////////////////////////////////////////////
 
     event TraderateChanged(uint256 traderate0, uint256 traderate1);
+    event Deposit(address indexed owner, uint256 assets, uint256 shares);
     event RedeemRequested(
         address indexed withdrawer, uint256 indexed requestId, uint256 assets, uint256 queued, uint256 claimTimestamp
     );
@@ -120,12 +121,12 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     event FeeCollectorUpdated(address indexed newFeeCollector);
     event LiquidityProviderControllerUpdated(address indexed liquidityProviderController);
 
-    constructor(address _inputToken, address _outputToken1, address _liquidityAsset) {
-        require(IERC20(_inputToken).decimals() == 18);
-        require(IERC20(_outputToken1).decimals() == 18);
+    constructor(address _token0, address _token1, address _liquidityAsset) {
+        require(IERC20(_token0).decimals() == 18);
+        require(IERC20(_token1).decimals() == 18);
 
-        token0 = IERC20(_inputToken);
-        token1 = IERC20(_outputToken1);
+        token0 = IERC20(_token0);
+        token1 = IERC20(_token1);
 
         _setOwner(address(0)); // Revoke owner for implementation contract at deployment
 
@@ -361,9 +362,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /**
      * @notice Set exchange rates from an operator account from the ARM's perspective.
      * If token 0 is WETH and token 1 is stETH, then both prices will be set using the stETH/WETH price.
-     * @param buyT1 The price the ARM buys Token 1 from the Trader, denominated in Token 0, scaled to 36 decimals.
+     * @param buyT1 The price the ARM buys Token 1 (stETH) from the Trader, denominated in Token 0 (WETH), scaled to 36 decimals.
      * From the Trader's perspective, this is the sell price.
-     * @param sellT1 The price the ARM sells Token 1 to the Trader, denominated in Token 0, scaled to 36 decimals.
+     * @param sellT1 The price the ARM sells Token 1 (stETH) to the Trader, denominated in Token 0 (WETH), scaled to 36 decimals.
      * From the Trader's perspective, this is the buy price.
      */
     function setPrices(uint256 buyT1, uint256 sellT1) external onlyOperatorOrOwner {
@@ -372,13 +373,13 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
             require(sellT1 >= PRICE_SCALE - MAX_PRICE_DEVIATION, "ARM: sell price too low");
             require(buyT1 <= PRICE_SCALE + MAX_PRICE_DEVIATION, "ARM: buy price too high");
         }
-        uint256 _traderate0 = 1e72 / sellT1; // base (t0) -> token (t1)
+        uint256 _traderate0 = PRICE_SCALE * PRICE_SCALE / sellT1; // base (t0) -> token (t1)
         uint256 _traderate1 = buyT1; // token (t1) -> base (t0)
         _setTraderates(_traderate0, _traderate1);
     }
 
     function _setTraderates(uint256 _traderate0, uint256 _traderate1) internal {
-        require((1e72 / (_traderate0)) > _traderate1, "ARM: Price cross");
+        require((PRICE_SCALE * PRICE_SCALE / (_traderate0)) > _traderate1, "ARM: Price cross");
         traderate0 = _traderate0;
         traderate1 = _traderate1;
 
@@ -422,6 +423,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         if (liquidityProviderController != address(0)) {
             ILiquidityProviderController(liquidityProviderController).postDepositHook(msg.sender, assets);
         }
+
+        emit Deposit(msg.sender, assets, shares);
     }
 
     /// @notice Preview the amount of assets that would be received for burning a given amount of shares

@@ -6,7 +6,7 @@ const { logTxDetails } = require("../utils/txLogger");
 
 const log = require("../utils/logger")("task:lpCap");
 
-async function lpDeposit({ amount }) {
+async function depositLido({ amount }) {
   const signer = await getSigner();
 
   const amountBn = parseUnits(amount.toString());
@@ -60,7 +60,7 @@ async function setTotalAssetsCap({ cap }) {
 }
 
 module.exports = {
-  lpDeposit,
+  depositLido,
   setLiquidityProviderCaps,
   setTotalAssetsCap,
 };
