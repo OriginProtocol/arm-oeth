@@ -21,11 +21,12 @@ contract OwnerHandler is BaseHandler {
     IERC20 public immutable steth;
     LidoARM public immutable arm;
     address public immutable owner;
+    uint256 public immutable maxFees;
     address public immutable operator;
+    uint256 public immutable minBuyT1;
+    uint256 public immutable maxSellT1;
     uint256 public immutable priceScale;
     uint256 public immutable maxDeviation;
-    uint256 public immutable minBuyT1; // = 0.99 * 1e36; // We could have use 0, but this is non-sense
-    uint256 public immutable maxSellT1; // = 1.01 * 1e36; // We could have use type(uint256).max, but this is non-sense
 
     ////////////////////////////////////////////////////
     /// --- VARIABLES
@@ -39,10 +40,11 @@ contract OwnerHandler is BaseHandler {
     ////////////////////////////////////////////////////
     /// --- CONSTRUCTOR
     ////////////////////////////////////////////////////
-    constructor(address _arm, address _weth, address _steth, uint256 _minBuyT1, uint256 _maxSellT1) {
+    constructor(address _arm, address _weth, address _steth, uint256 _minBuyT1, uint256 _maxSellT1, uint256 _maxFees) {
         arm = LidoARM(payable(_arm));
         weth = IERC20(_weth);
         steth = IERC20(_steth);
+        maxFees = _maxFees;
         minBuyT1 = _minBuyT1;
         maxSellT1 = _maxSellT1;
         owner = arm.owner();
@@ -74,9 +76,26 @@ contract OwnerHandler is BaseHandler {
         vm.stopPrank();
     }
 
+    /// @notice Set fees for the ARM
+    function setFees(uint256 _seed) external {
+        numberOfCalls["ownerHandler.setFees"]++;
+
+        uint256 fee = _bound(_seed, 0, maxFees);
+        console.log("OwnerHandler.setFees(%2e)", fee);
+
+        // Prank owner
+        vm.startPrank(owner);
+
+        // Set fees
+        arm.setFee(fee);
+
+        // Stop prank
+        vm.stopPrank();
+    }
+
     /// @notice Collect fees from the ARM
     /// @dev skipped if there is not enough liquidity to collect fees
-    function collectFees() external {
+    function collectFees(uint256) external {
         numberOfCalls["ownerHandler.collectFees"]++;
 
         if (_estimatedFeesAccrued() > weth.balanceOf(address(arm))) {

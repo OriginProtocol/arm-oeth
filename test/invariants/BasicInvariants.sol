@@ -18,10 +18,11 @@ contract Invariant_Basic_Test_ is Invariant_Base_Test_ {
     //////////////////////////////////////////////////////
     uint256 private constant NUM_LPS = 4;
     uint256 private constant NUM_SWAPS = 3;
+    uint256 private constant MAX_FEES = 5_000; // 50%
     uint256 private constant MIN_BUY_T1 = 0.98 * 1e36; // We could have use 0, but this is non-sense
     uint256 private constant MAX_SELL_T1 = 1.02 * 1e36; // We could have use type(uint256).max, but this is non-sense
-    uint256 public constant MAX_WETH_PER_USERS = 10_000_000 ether; // 10M
-    uint256 public constant MAX_STETH_PER_USERS = 10_000_000 ether; // 10M, actual total supply
+    uint256 private constant MAX_WETH_PER_USERS = 10_000_000 ether; // 10M
+    uint256 private constant MAX_STETH_PER_USERS = 10_000_000 ether; // 10M, actual total supply
 
     //////////////////////////////////////////////////////
     /// --- SETUP
@@ -67,15 +68,17 @@ contract Invariant_Basic_Test_ is Invariant_Base_Test_ {
         // --- Handlers ---
         lpHandler = new LpHandler(address(lidoARM), address(weth), lps);
         swapHandler = new SwapHandler(address(lidoARM), address(weth), address(steth), swaps);
-        ownerHandler = new OwnerHandler(address(lidoARM), address(weth), address(steth), MIN_BUY_T1, MAX_SELL_T1);
+        ownerHandler =
+            new OwnerHandler(address(lidoARM), address(weth), address(steth), MIN_BUY_T1, MAX_SELL_T1, MAX_FEES);
 
         lpHandler.setSelectorWeight(lpHandler.deposit.selector, 5_000); // 50%
         lpHandler.setSelectorWeight(lpHandler.requestRedeem.selector, 2_500); // 25%
         lpHandler.setSelectorWeight(lpHandler.claimRedeem.selector, 2_500); // 25%
         swapHandler.setSelectorWeight(swapHandler.swapExactTokensForTokens.selector, 5_000); // 50%
         swapHandler.setSelectorWeight(swapHandler.swapTokensForExactTokens.selector, 5_000); // 50%
-        ownerHandler.setSelectorWeight(ownerHandler.setPrices.selector, 5_000); // 50%
-        ownerHandler.setSelectorWeight(ownerHandler.collectFees.selector, 5_000); // 50%
+        ownerHandler.setSelectorWeight(ownerHandler.setPrices.selector, 7_000); // 70%
+        ownerHandler.setSelectorWeight(ownerHandler.collectFees.selector, 2_000); // 20%
+        ownerHandler.setSelectorWeight(ownerHandler.setFees.selector, 1_000); // 10%
 
         address[] memory targetContracts = new address[](3);
         targetContracts[0] = address(lpHandler);
@@ -83,8 +86,8 @@ contract Invariant_Basic_Test_ is Invariant_Base_Test_ {
         targetContracts[2] = address(ownerHandler);
 
         uint256[] memory weightsDistributorHandler = new uint256[](3);
-        weightsDistributorHandler[0] = 4_500; // 45%
-        weightsDistributorHandler[1] = 4_500; // 45%
+        weightsDistributorHandler[0] = 5_000; // 45%
+        weightsDistributorHandler[1] = 4_000; // 45%
         weightsDistributorHandler[2] = 1_000; // 10%
 
         address distributionHandler = address(new DistributionHandler(targetContracts, weightsDistributorHandler));

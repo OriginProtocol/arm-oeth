@@ -144,6 +144,15 @@ contract LpHandler is BaseHandler {
         Request[] storage userRequests = requests[user];
         uint256 requestIndex = _seed % userRequests.length;
         Request storage request = userRequests[requestIndex];
+
+        // Check if there is enough liquidity to claim the request, otherwise skip
+        (,,,, uint128 queued) = arm.withdrawalRequests(request.id);
+        if (queued > _estimatedWithdrawsClaimable()) {
+            console.log("LpHandler.claimRedeem - Not enough liquidity to claim request");
+            numberOfCalls["lpHandler.claimRedeem.skip"]++;
+            return;
+        }
+
         console.log("LpHandler.claimRedeem(%d), %s", request.id, names[user]);
 
         // Timejump to request deadline
@@ -167,5 +176,45 @@ contract LpHandler is BaseHandler {
         // Remove request
         userRequests[requestIndex] = userRequests[userRequests.length - 1];
         userRequests.pop();
+    }
+
+    ////////////////////////////////////////////////////
+    /// --- HELPERS
+    ////////////////////////////////////////////////////
+    event EstimatedWithdrawsClaimable(uint256 amount);
+
+    function _estimatedWithdrawsClaimable() internal returns (uint256) {
+        // Load the claimable amount from storage into memory
+        uint256 withdrawsClaimableMem = arm.withdrawsClaimable();
+
+        // Check if the claimable amount is less than the queued amount
+        uint256 queueShortfall = arm.withdrawsQueued() - withdrawsClaimableMem;
+
+        // No need to do anything is the withdrawal queue is fully funded
+        if (queueShortfall == 0) {
+            emit EstimatedWithdrawsClaimable(withdrawsClaimableMem);
+            return withdrawsClaimableMem;
+        }
+
+        uint256 liquidityBalance = weth.balanceOf(address(this));
+
+        // Of the claimable withdrawal requests, how much is unclaimed?
+        // That is, the amount of the liquidity assets that is currently allocated for the withdrawal queue
+        uint256 allocatedLiquidity = withdrawsClaimableMem - arm.withdrawsClaimed();
+
+        // If there is no unallocated liquidity assets then there is nothing to add to the queue
+        if (liquidityBalance <= allocatedLiquidity) {
+            emit EstimatedWithdrawsClaimable(withdrawsClaimableMem);
+            return withdrawsClaimableMem;
+        }
+
+        uint256 unallocatedLiquidity = liquidityBalance - allocatedLiquidity;
+
+        // the new claimable amount is the smaller of the queue shortfall or unallocated weth
+        uint256 addedClaimable = queueShortfall < unallocatedLiquidity ? queueShortfall : unallocatedLiquidity;
+
+        // Store the new claimable amount back to storage
+        emit EstimatedWithdrawsClaimable(withdrawsClaimableMem);
+        return withdrawsClaimableMem + addedClaimable;
     }
 }
