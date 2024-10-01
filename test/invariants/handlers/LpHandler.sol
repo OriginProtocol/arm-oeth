@@ -72,7 +72,9 @@ contract LpHandler is BaseHandler {
         weth.approve(address(arm), amount);
 
         // Deposit WETH
-        arm.deposit(amount);
+        uint256 expectedShares = arm.previewDeposit(amount);
+        uint256 shares = arm.deposit(amount);
+        require(shares == expectedShares, "LH: DEPOSIT - INVALID_SHARES");
 
         // End prank
         vm.stopPrank();
@@ -105,7 +107,9 @@ contract LpHandler is BaseHandler {
         vm.startPrank(user);
 
         // Redeem shares
+        uint256 expectedAmount = arm.previewRedeem(shares);
         (uint256 id, uint256 amount) = arm.requestRedeem(shares);
+        require(amount == expectedAmount, "LH: REDEEM_REQUEST - INVALID_AMOUNT");
 
         // End prank
         vm.stopPrank();
