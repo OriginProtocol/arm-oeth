@@ -8,6 +8,7 @@ import {StdInvariant} from "forge-std/StdInvariant.sol";
 
 // Handlers
 import {LpHandler} from "./handlers/LpHandler.sol";
+import {LLMHandler} from "./handlers/LLMHandler.sol";
 import {SwapHandler} from "./handlers/SwapHandler.sol";
 import {OwnerHandler} from "./handlers/OwnerHandler.sol";
 import {DistributionHandler} from "./handlers/DistributionHandler.sol";
@@ -70,6 +71,7 @@ contract Invariant_Basic_Test_ is Invariant_Base_Test_ {
         swapHandler = new SwapHandler(address(lidoARM), address(weth), address(steth), swaps);
         ownerHandler =
             new OwnerHandler(address(lidoARM), address(weth), address(steth), MIN_BUY_T1, MAX_SELL_T1, MAX_FEES);
+        llmHandler = new LLMHandler(address(lidoARM), address(steth));
 
         lpHandler.setSelectorWeight(lpHandler.deposit.selector, 5_000); // 50%
         lpHandler.setSelectorWeight(lpHandler.requestRedeem.selector, 2_500); // 25%
@@ -79,16 +81,20 @@ contract Invariant_Basic_Test_ is Invariant_Base_Test_ {
         ownerHandler.setSelectorWeight(ownerHandler.setPrices.selector, 7_000); // 70%
         ownerHandler.setSelectorWeight(ownerHandler.collectFees.selector, 2_000); // 20%
         ownerHandler.setSelectorWeight(ownerHandler.setFees.selector, 1_000); // 10%
+        llmHandler.setSelectorWeight(llmHandler.requestStETHWithdrawalForETH.selector, 5_000); // 50%
+        llmHandler.setSelectorWeight(llmHandler.claimStETHWithdrawalForWETH.selector, 5_000); // 50%
 
-        address[] memory targetContracts = new address[](3);
+        address[] memory targetContracts = new address[](4);
         targetContracts[0] = address(lpHandler);
         targetContracts[1] = address(swapHandler);
         targetContracts[2] = address(ownerHandler);
+        targetContracts[3] = address(llmHandler);
 
-        uint256[] memory weightsDistributorHandler = new uint256[](3);
-        weightsDistributorHandler[0] = 5_000; // 45%
-        weightsDistributorHandler[1] = 4_000; // 45%
+        uint256[] memory weightsDistributorHandler = new uint256[](4);
+        weightsDistributorHandler[0] = 4_000; // 40%
+        weightsDistributorHandler[1] = 4_000; // 40%
         weightsDistributorHandler[2] = 1_000; // 10%
+        weightsDistributorHandler[3] = 1_000; // 10%
 
         address distributionHandler = address(new DistributionHandler(targetContracts, weightsDistributorHandler));
 

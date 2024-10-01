@@ -6,6 +6,7 @@ import {Invariant_Shared_Test_} from "./shared/Shared.sol";
 
 // Handlers
 import {LpHandler} from "./handlers/LpHandler.sol";
+import {LLMHandler} from "./handlers/LLMHandler.sol";
 import {SwapHandler} from "./handlers/SwapHandler.sol";
 import {OwnerHandler} from "./handlers/OwnerHandler.sol";
 
@@ -17,6 +18,7 @@ abstract contract Invariant_Base_Test_ is Invariant_Shared_Test_ {
     address[] public swaps; // Users that perform swap
 
     LpHandler public lpHandler;
+    LLMHandler public llmHandler;
     SwapHandler public swapHandler;
     OwnerHandler public ownerHandler;
 
