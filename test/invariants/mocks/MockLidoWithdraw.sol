@@ -1,9 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
+// Foundry
+import {Vm} from "forge-std/Vm.sol";
+
+// Solmate
 import {ERC20} from "@solmate/tokens/ERC20.sol";
 
 contract MockLidoWithdraw {
+    //////////////////////////////////////////////////////
+    /// --- CONSTANTS && IMMUTABLES
+    //////////////////////////////////////////////////////
+    Vm private constant vm = Vm(address(uint160(uint256(keccak256("hevm cheat code")))));
+
     //////////////////////////////////////////////////////
     /// --- STRUCTS & ENUMS
     //////////////////////////////////////////////////////
@@ -55,10 +64,6 @@ contract MockLidoWithdraw {
         return userRequests;
     }
 
-    function getLastCheckpointIndex() external returns (uint256) {}
-
-    function findCheckpointHints(uint256[] memory, uint256, uint256) external returns (uint256[] memory) {}
-
     function claimWithdrawals(uint256[] memory requestId, uint256[] memory) external {
         uint256 sum;
         uint256 len = requestId.length;
@@ -73,7 +78,10 @@ contract MockLidoWithdraw {
         }
 
         // Send sum of eth
-        (bool success,) = address(msg.sender).call{value: sum}("");
-        require(success, "Mock LW: Send ETH failed");
+        vm.deal(address(msg.sender), address(msg.sender).balance + sum);
     }
+
+    function getLastCheckpointIndex() external returns (uint256) {}
+
+    function findCheckpointHints(uint256[] memory, uint256, uint256) external returns (uint256[] memory) {}
 }
