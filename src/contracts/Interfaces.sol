@@ -200,6 +200,13 @@ interface IWETH is IERC20 {
     function withdraw(uint256 wad) external;
 }
 
+interface ISTETH is IERC20 {
+    event Submitted(address indexed sender, uint256 amount, address referral);
+
+    // function() external payable;
+    function submit(address _referral) external payable returns (uint256);
+}
+
 interface IStETHWithdrawal {
     event WithdrawalRequested(
         uint256 indexed requestId,
