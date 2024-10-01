@@ -68,7 +68,8 @@ contract Invariant_Basic_Test_ is Invariant_Base_Test_ {
         lpHandler.setSelectorWeight(lpHandler.deposit.selector, 4_000); // 40%
         lpHandler.setSelectorWeight(lpHandler.requestRedeem.selector, 3_000); // 30%
         lpHandler.setSelectorWeight(lpHandler.claimRedeem.selector, 3_000); // 30%
-        swapHandler.setSelectorWeight(swapHandler.swapExactTokensForTokens.selector, 10_000); // 100%
+        swapHandler.setSelectorWeight(swapHandler.swapExactTokensForTokens.selector, 5_000); // 50%
+        swapHandler.setSelectorWeight(swapHandler.swapTokensForExactTokens.selector, 5_000); // 50%
         //Todo: swapHandler.setSelectorWeight();
 
         address[] memory targetContracts = new address[](2);
