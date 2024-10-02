@@ -14,6 +14,8 @@ const {
 } = require("./liquidity");
 const {
   depositLido,
+  requestRedeemLido,
+  claimRedeemLido,
   setLiquidityProviderCaps,
   setTotalAssetsCap,
 } = require("./liquidityProvider");
@@ -491,6 +493,25 @@ subtask(
   )
   .setAction(depositLido);
 task("depositLido").setAction(async (_, __, runSuper) => {
+  return runSuper();
+});
+
+subtask("requestRedeemLido", "Request redeem from the Lido ARM")
+  .addParam(
+    "amount",
+    "Amount of ARM LP tokens not scaled to 18 decimals",
+    undefined,
+    types.float
+  )
+  .setAction(requestRedeemLido);
+task("requestRedeemLido").setAction(async (_, __, runSuper) => {
+  return runSuper();
+});
+
+subtask("claimRedeemLido", "Claim WETH from a previously requested redeem")
+  .addParam("id", "Request identifier", undefined, types.float)
+  .setAction(claimRedeemLido);
+task("claimRedeemLido").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
 
