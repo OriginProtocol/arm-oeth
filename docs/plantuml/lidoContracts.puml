@@ -1,0 +1,39 @@
+@startuml
+
+!$originColor = DeepSkyBlue
+' !$originColor = WhiteSmoke
+!$newColor = LightGreen
+!$changedColor = Orange
+!$thirdPartyColor = WhiteSmoke
+
+' legend
+' blue - Origin
+' ' green - new
+' ' orange - changed
+' white - 3rd Party
+' end legend
+
+title "Lido Automated Redemption Manager (ARM) Contract Dependencies"
+
+
+object "Zapper" as zap <<Origin>><<Proxy>> #$originColor {
+}
+
+object "LidoARM" as arm <<Origin>><<Proxy>> #$originColor {
+    shares: ARM-stETH-WETH
+    assets: stETH, WETH
+}
+
+object "LiquidityProviderController" as lpc <<Origin>><<Proxy>> #$originColor {
+}
+
+object "WithdrawalQueueERC721" as lidoQ <<Lido>><<Proxy>> #$thirdPartyColor {
+    assets: stETH, WETH
+}
+
+zap ..> arm
+arm .> lpc
+arm ..> lidoQ
+
+
+@enduml
