@@ -50,15 +50,18 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
      * @notice For one `token0` from a Trader, how many `token1` does the pool send.
      * For example, if `token0` is WETH and `token1` is stETH then
      * `traderate0` is the WETH/stETH price.
-     * From a Trader's perspective, this is the stETH/WETH buy price.
+     * From a Trader's perspective, this is the buy price.
+     * From the ARM's perspective, this is the sell price.
      * Rate is to 36 decimals (1e36).
+     * To convert to a stETH/WETH price, use `PRICE_SCALE * PRICE_SCALE / traderate0`.
      */
     uint256 public traderate0;
     /**
      * @notice For one `token1` from a Trader, how many `token0` does the pool send.
      * For example, if `token0` is WETH and `token1` is stETH then
      * `traderate1` is the stETH/WETH price.
-     * From a Trader's perspective, this is the stETH/WETH sell price.
+     * From a Trader's perspective, this is the sell price.
+     * From a ARM's perspective, this is the buy price.
      * Rate is to 36 decimals (1e36).
      */
     uint256 public traderate1;
@@ -373,17 +376,18 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
             require(sellT1 >= PRICE_SCALE - MAX_PRICE_DEVIATION, "ARM: sell price too low");
             require(buyT1 <= PRICE_SCALE + MAX_PRICE_DEVIATION, "ARM: buy price too high");
         }
-        uint256 _traderate0 = PRICE_SCALE * PRICE_SCALE / sellT1; // base (t0) -> token (t1)
-        uint256 _traderate1 = buyT1; // token (t1) -> base (t0)
-        _setTraderates(_traderate0, _traderate1);
+        _setTraderates(
+            PRICE_SCALE * PRICE_SCALE / sellT1, // base (t0) -> token (t1)
+            buyT1 // token (t1) -> base (t0)
+        );
     }
 
-    function _setTraderates(uint256 _traderate0, uint256 _traderate1) internal {
-        require((PRICE_SCALE * PRICE_SCALE / (_traderate0)) > _traderate1, "ARM: Price cross");
-        traderate0 = _traderate0;
-        traderate1 = _traderate1;
+    function _setTraderates(uint256 _baseToTokenRate, uint256 _tokenToBaseRate) internal {
+        require((PRICE_SCALE * PRICE_SCALE / (_baseToTokenRate)) > _tokenToBaseRate, "ARM: Price cross");
+        traderate0 = _baseToTokenRate;
+        traderate1 = _tokenToBaseRate;
 
-        emit TraderateChanged(_traderate0, _traderate1);
+        emit TraderateChanged(_baseToTokenRate, _tokenToBaseRate);
     }
 
     ////////////////////////////////////////////////////
