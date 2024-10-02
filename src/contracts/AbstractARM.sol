@@ -571,8 +571,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         return availableAssetsBeforeFees - ((assetIncrease * fee) / FEE_SCALE);
     }
 
-    /// @dev Calculate the available assets in the ARM, external withdrawal queue,
-    /// less liquidity assets reserved for the ARM's withdrawal queue and past accrued fees.
+    /// @dev Calculate the available assets which is the assets in the ARM, external withdrawal queue,
+    /// less liquidity assets reserved for the ARM's withdrawal queue and accrued fees.
     /// The accrued fees are from the last time fees were calculated.
     function _availableAssets() internal view returns (uint256) {
         // Get the assets in the ARM and external withdrawal queue
