@@ -24,9 +24,6 @@ contract Fork_Concrete_LidoARM_TotalAssets_Test_ is Fork_Shared_Test_ {
         liquidityProviderController.setLiquidityProviderCaps(providers, type(uint256).max);
         liquidityProviderController.setTotalAssetsCap(type(uint248).max);
 
-        // Approve STETH for Lido
-        lidoARM.approveStETH();
-
         deal(address(weth), address(this), 1_000 ether);
         weth.approve(address(lidoARM), type(uint256).max);
     }

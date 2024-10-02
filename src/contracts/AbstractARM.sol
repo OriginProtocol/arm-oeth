@@ -50,15 +50,18 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
      * @notice For one `token0` from a Trader, how many `token1` does the pool send.
      * For example, if `token0` is WETH and `token1` is stETH then
      * `traderate0` is the WETH/stETH price.
-     * From a Trader's perspective, this is the stETH/WETH buy price.
+     * From a Trader's perspective, this is the buy price.
+     * From the ARM's perspective, this is the sell price.
      * Rate is to 36 decimals (1e36).
+     * To convert to a stETH/WETH price, use `PRICE_SCALE * PRICE_SCALE / traderate0`.
      */
     uint256 public traderate0;
     /**
      * @notice For one `token1` from a Trader, how many `token0` does the pool send.
      * For example, if `token0` is WETH and `token1` is stETH then
      * `traderate1` is the stETH/WETH price.
-     * From a Trader's perspective, this is the stETH/WETH sell price.
+     * From a Trader's perspective, this is the sell price.
+     * From a ARM's perspective, this is the buy price.
      * Rate is to 36 decimals (1e36).
      */
     uint256 public traderate1;
@@ -95,11 +98,11 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// 500 = 5% performance fee
     uint16 public fee;
     /// @notice The performance fees accrued but not collected.
-    /// This is removed from the total assets.
+    /// This is removed from the available assets.
     uint112 public feesAccrued;
-    /// @notice The total assets at the last time performance fees were calculated.
+    /// @notice The available assets at the last time performance fees were calculated.
     /// This can only go up so is a high watermark.
-    uint128 public lastTotalAssets;
+    uint128 public lastAvailableAssets;
 
     address public liquidityProviderController;
 
@@ -110,6 +113,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     ////////////////////////////////////////////////////
 
     event TraderateChanged(uint256 traderate0, uint256 traderate1);
+    event Deposit(address indexed owner, uint256 assets, uint256 shares);
     event RedeemRequested(
         address indexed withdrawer, uint256 indexed requestId, uint256 assets, uint256 queued, uint256 claimTimestamp
     );
@@ -120,12 +124,12 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     event FeeCollectorUpdated(address indexed newFeeCollector);
     event LiquidityProviderControllerUpdated(address indexed liquidityProviderController);
 
-    constructor(address _inputToken, address _outputToken1, address _liquidityAsset) {
-        require(IERC20(_inputToken).decimals() == 18);
-        require(IERC20(_outputToken1).decimals() == 18);
+    constructor(address _token0, address _token1, address _liquidityAsset) {
+        require(IERC20(_token0).decimals() == 18);
+        require(IERC20(_token1).decimals() == 18);
 
-        token0 = IERC20(_inputToken);
-        token1 = IERC20(_outputToken1);
+        token0 = IERC20(_token0);
+        token1 = IERC20(_token1);
 
         _setOwner(address(0)); // Revoke owner for implementation contract at deployment
 
@@ -162,9 +166,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         // This avoids donation attacks when there are no assets in the ARM contract
         _mint(DEAD_ACCOUNT, MIN_TOTAL_SUPPLY);
 
-        // Initialize the last total assets to the current total assets
+        // Initialize the last available assets to the current available assets
         // This ensures no performance fee is accrued when the performance fee is calculated when the fee is set
-        lastTotalAssets = SafeCast.toUint128(_rawTotalAssets());
+        lastAvailableAssets = SafeCast.toUint128(_availableAssets());
         _setFee(_fee);
         _setFeeCollector(_feeCollector);
 
@@ -361,9 +365,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /**
      * @notice Set exchange rates from an operator account from the ARM's perspective.
      * If token 0 is WETH and token 1 is stETH, then both prices will be set using the stETH/WETH price.
-     * @param buyT1 The price the ARM buys Token 1 from the Trader, denominated in Token 0, scaled to 36 decimals.
+     * @param buyT1 The price the ARM buys Token 1 (stETH) from the Trader, denominated in Token 0 (WETH), scaled to 36 decimals.
      * From the Trader's perspective, this is the sell price.
-     * @param sellT1 The price the ARM sells Token 1 to the Trader, denominated in Token 0, scaled to 36 decimals.
+     * @param sellT1 The price the ARM sells Token 1 (stETH) to the Trader, denominated in Token 0 (WETH), scaled to 36 decimals.
      * From the Trader's perspective, this is the buy price.
      */
     function setPrices(uint256 buyT1, uint256 sellT1) external onlyOperatorOrOwner {
@@ -372,17 +376,18 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
             require(sellT1 >= PRICE_SCALE - MAX_PRICE_DEVIATION, "ARM: sell price too low");
             require(buyT1 <= PRICE_SCALE + MAX_PRICE_DEVIATION, "ARM: buy price too high");
         }
-        uint256 _traderate0 = 1e72 / sellT1; // base (t0) -> token (t1)
-        uint256 _traderate1 = buyT1; // token (t1) -> base (t0)
-        _setTraderates(_traderate0, _traderate1);
+        _setTraderates(
+            PRICE_SCALE * PRICE_SCALE / sellT1, // base (t0) -> token (t1)
+            buyT1 // token (t1) -> base (t0)
+        );
     }
 
-    function _setTraderates(uint256 _traderate0, uint256 _traderate1) internal {
-        require((1e72 / (_traderate0)) > _traderate1, "ARM: Price cross");
-        traderate0 = _traderate0;
-        traderate1 = _traderate1;
+    function _setTraderates(uint256 _baseToTokenRate, uint256 _tokenToBaseRate) internal {
+        require((PRICE_SCALE * PRICE_SCALE / (_baseToTokenRate)) > _tokenToBaseRate, "ARM: Price cross");
+        traderate0 = _baseToTokenRate;
+        traderate1 = _tokenToBaseRate;
 
-        emit TraderateChanged(_traderate0, _traderate1);
+        emit TraderateChanged(_baseToTokenRate, _tokenToBaseRate);
     }
 
     ////////////////////////////////////////////////////
@@ -401,12 +406,12 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @param assets The amount of liquidity assets to deposit
     /// @return shares The amount of shares that were minted
     function deposit(uint256 assets) external returns (uint256 shares) {
-        // Accrue any performance fees based on the increase in total assets before
+        // Accrue any performance fees based on the increase in available assets before
         // the liquidity asset from the deposit is transferred into the ARM
         _accruePerformanceFee();
 
         // Calculate the amount of shares to mint after the performance fees have been accrued
-        // which reduces the total assets and before new assets are deposited.
+        // which reduces the available assets, and before new assets are deposited.
         shares = convertToShares(assets);
 
         // Transfer the liquidity asset from the sender to this contract
@@ -415,13 +420,15 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         // mint shares
         _mint(msg.sender, shares);
 
-        // Save the new total assets after the performance fee accrued and new assets deposited
-        lastTotalAssets = SafeCast.toUint128(_rawTotalAssets());
+        // Save the new available assets after the performance fee accrued and new assets deposited
+        lastAvailableAssets = SafeCast.toUint128(_availableAssets());
 
         // Check the liquidity provider caps after the new assets have been deposited
         if (liquidityProviderController != address(0)) {
             ILiquidityProviderController(liquidityProviderController).postDepositHook(msg.sender, assets);
         }
+
+        emit Deposit(msg.sender, assets, shares);
     }
 
     /// @notice Preview the amount of assets that would be received for burning a given amount of shares
@@ -436,7 +443,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @return requestId The index of the withdrawal request
     /// @return assets The amount of liquidity assets that will be claimable by the redeemer
     function requestRedeem(uint256 shares) external returns (uint256 requestId, uint256 assets) {
-        // Accrue any performance fees based on the increase in total assets before
+        // Accrue any performance fees based on the increase in available assets before
         // the liquidity asset from the redeem is reserved for the ARM withdrawal queue
         _accruePerformanceFee();
 
@@ -463,8 +470,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         // burn redeemer's shares
         _burn(msg.sender, shares);
 
-        // Save the new total assets after performance fee accrued and withdrawal queue updated
-        lastTotalAssets = SafeCast.toUint128(_rawTotalAssets());
+        // Save the new available assets after performance fee accrued and withdrawal queue updated
+        lastAvailableAssets = SafeCast.toUint128(_availableAssets());
 
         emit RedeemRequested(msg.sender, requestId, assets, queued, claimTimestamp);
     }
@@ -552,22 +559,22 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @notice The total amount of assets in the ARM and external withdrawal queue,
     /// less the liquidity assets reserved for the ARM's withdrawal queue and accrued fees.
     function totalAssets() public view virtual returns (uint256) {
-        uint256 totalAssetsBeforeFees = _rawTotalAssets();
+        uint256 availableAssetsBeforeFees = _availableAssets();
 
-        // If the total assets have decreased, then we don't charge a performance fee
-        if (totalAssetsBeforeFees <= lastTotalAssets) return totalAssetsBeforeFees;
+        // If the available assets have decreased, then we don't charge a performance fee
+        if (availableAssetsBeforeFees <= lastAvailableAssets) return availableAssetsBeforeFees;
 
         // Calculate the increase in assets since the last time fees were calculated
-        uint256 assetIncrease = totalAssetsBeforeFees - lastTotalAssets;
+        uint256 assetIncrease = availableAssetsBeforeFees - lastAvailableAssets;
 
-        // Calculate the performance fee and remove from the total assets before new fees are removed
-        return totalAssetsBeforeFees - ((assetIncrease * fee) / FEE_SCALE);
+        // Calculate the performance fee and remove from the available assets before new fees are removed
+        return availableAssetsBeforeFees - ((assetIncrease * fee) / FEE_SCALE);
     }
 
-    /// @dev Calculate the total assets in the ARM, external withdrawal queue,
-    /// less liquidity assets reserved for the ARM's withdrawal queue and past accrued fees.
+    /// @dev Calculate the available assets which is the assets in the ARM, external withdrawal queue,
+    /// less liquidity assets reserved for the ARM's withdrawal queue and accrued fees.
     /// The accrued fees are from the last time fees were calculated.
-    function _rawTotalAssets() internal view returns (uint256) {
+    function _availableAssets() internal view returns (uint256) {
         // Get the assets in the ARM and external withdrawal queue
         uint256 assets = token0.balanceOf(address(this)) + token1.balanceOf(address(this)) + _externalWithdrawQueue();
 
@@ -575,9 +582,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         uint256 queuedMem = withdrawsQueued;
         uint256 claimedMem = withdrawsClaimed;
 
-        // If the ARM becomes insolvent enough that the total value in the ARM and external withdrawal queue
-        // is less than the outstanding withdrawals.
-        if (assets + claimedMem < queuedMem) {
+        // If the ARM becomes insolvent enough that the available assets in the ARM and external withdrawal queue
+        // is less than the outstanding withdrawals and accrued fees.
+        if (assets + claimedMem < queuedMem + feesAccrued) {
             return 0;
         }
 
@@ -613,23 +620,23 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     ///         Performance Fee Functions
     ////////////////////////////////////////////////////
 
-    /// @dev Accrues the performance fee based on the increase in total assets
+    /// @dev Accrues the performance fee based on the increase in available assets
     /// Needs to be called before any action that changes the liquidity provider shares. eg deposit and redeem
     function _accruePerformanceFee() internal {
-        uint256 newTotalAssets = _rawTotalAssets();
+        uint256 newAvailableAssets = _availableAssets();
 
-        // Do not accrued a performance fee if the total assets has decreased
-        if (newTotalAssets <= lastTotalAssets) return;
+        // Do not accrued a performance fee if the available assets has decreased
+        if (newAvailableAssets <= lastAvailableAssets) return;
 
-        uint256 assetIncrease = newTotalAssets - lastTotalAssets;
+        uint256 assetIncrease = newAvailableAssets - lastAvailableAssets;
         uint256 newFeesAccrued = (assetIncrease * fee) / FEE_SCALE;
 
         // Save the new accrued fees back to storage
         feesAccrued = SafeCast.toUint112(feesAccrued + newFeesAccrued);
-        // Save the new total assets back to storage less the new accrued fees.
+        // Save the new available assets back to storage less the new accrued fees.
         // This is be updated again in the post deposit and post withdraw hooks to include
         // the assets deposited or withdrawn
-        lastTotalAssets = SafeCast.toUint128(newTotalAssets - newFeesAccrued);
+        lastAvailableAssets = SafeCast.toUint128(newAvailableAssets - newFeesAccrued);
 
         emit FeeCalculated(newFeesAccrued, assetIncrease);
     }

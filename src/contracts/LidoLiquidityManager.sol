@@ -31,13 +31,6 @@ abstract contract LidoLiquidityManager is OwnableOperable {
     }
 
     /**
-     * @notice Approve the stETH withdrawal contract. Used for redemption requests.
-     */
-    function approveStETH() external onlyOperatorOrOwner {
-        steth.approve(address(withdrawalQueue), type(uint256).max);
-    }
-
-    /**
      * @notice Request a stETH for ETH withdrawal.
      * Reference: https://docs.lido.fi/contracts/withdrawal-queue-erc721/
      * Note: There is a 1k amount limit. Caller should split large withdrawals in chunks of less or equal to 1k each.)
@@ -77,8 +70,7 @@ abstract contract LidoLiquidityManager is OwnableOperable {
         outstandingEther -= etherAfter - etherBefore;
 
         // Wrap all the received ETH to WETH.
-        (bool success,) = address(weth).call{value: etherAfter}(new bytes(0));
-        require(success, "ARM: ETH transfer failed");
+        weth.deposit{value: etherAfter}();
     }
 
     function _externalWithdrawQueue() internal view virtual returns (uint256 assets) {

@@ -33,7 +33,7 @@ contract Fork_Concrete_LidoARM_RequestRedeem_Test_ is Fork_Shared_Test_ {
         assertEq(weth.balanceOf(address(lidoARM)), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT);
         assertEq(lidoARM.outstandingEther(), 0);
         assertEq(lidoARM.feesAccrued(), 0); // No perfs so no fees
-        assertEq(lidoARM.lastTotalAssets(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT);
+        assertEq(lidoARM.lastAvailableAssets(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT);
         assertEq(lidoARM.balanceOf(address(this)), DEFAULT_AMOUNT);
         assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT);
         assertEq(liquidityProviderController.liquidityProviderCaps(address(this)), 0);
@@ -57,7 +57,7 @@ contract Fork_Concrete_LidoARM_RequestRedeem_Test_ is Fork_Shared_Test_ {
         assertEq(weth.balanceOf(address(lidoARM)), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT);
         assertEq(lidoARM.outstandingEther(), 0);
         assertEq(lidoARM.feesAccrued(), 0); // No perfs so no fees
-        assertEq(lidoARM.lastTotalAssets(), MIN_TOTAL_SUPPLY);
+        assertEq(lidoARM.lastAvailableAssets(), MIN_TOTAL_SUPPLY);
         assertEq(lidoARM.balanceOf(address(this)), 0);
         assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY);
         assertEq(liquidityProviderController.liquidityProviderCaps(address(this)), 0);
@@ -76,7 +76,7 @@ contract Fork_Concrete_LidoARM_RequestRedeem_Test_ is Fork_Shared_Test_ {
         assertEq(weth.balanceOf(address(lidoARM)), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT);
         assertEq(lidoARM.outstandingEther(), 0);
         assertEq(lidoARM.feesAccrued(), 0); // No perfs so no fees
-        assertEq(lidoARM.lastTotalAssets(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT * 3 / 4);
+        assertEq(lidoARM.lastAvailableAssets(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT * 3 / 4);
         assertEq(lidoARM.balanceOf(address(this)), DEFAULT_AMOUNT * 3 / 4);
         assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT * 3 / 4);
         assertEq(liquidityProviderController.liquidityProviderCaps(address(this)), 0); // Down only
@@ -104,7 +104,7 @@ contract Fork_Concrete_LidoARM_RequestRedeem_Test_ is Fork_Shared_Test_ {
         assertEq(weth.balanceOf(address(lidoARM)), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT);
         assertEq(lidoARM.outstandingEther(), 0);
         assertEq(lidoARM.feesAccrued(), 0); // No perfs so no fees
-        assertEq(lidoARM.lastTotalAssets(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT * 1 / 4);
+        assertEq(lidoARM.lastAvailableAssets(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT * 1 / 4);
         assertEq(lidoARM.balanceOf(address(this)), DEFAULT_AMOUNT * 1 / 4);
         assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT * 1 / 4);
         assertEq(liquidityProviderController.liquidityProviderCaps(address(this)), 0); // Down only
@@ -143,7 +143,7 @@ contract Fork_Concrete_LidoARM_RequestRedeem_Test_ is Fork_Shared_Test_ {
         assertEq(weth.balanceOf(address(lidoARM)), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT * 2); // +perfs
         assertEq(lidoARM.outstandingEther(), 0);
         assertEq(lidoARM.feesAccrued(), feeAccrued);
-        assertApproxEqAbs(lidoARM.lastTotalAssets(), expectedAssetsDead, 1); // 1 wei of error
+        assertApproxEqAbs(lidoARM.lastAvailableAssets(), expectedAssetsDead, 1); // 1 wei of error
         assertEq(lidoARM.balanceOf(address(this)), 0);
         assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY);
         assertEq(liquidityProviderController.liquidityProviderCaps(address(this)), 0);
@@ -182,7 +182,7 @@ contract Fork_Concrete_LidoARM_RequestRedeem_Test_ is Fork_Shared_Test_ {
         assertEq(weth.balanceOf(address(lidoARM)), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT - assetsLoss);
         assertEq(lidoARM.outstandingEther(), 0);
         assertEq(lidoARM.feesAccrued(), feeAccrued);
-        assertApproxEqAbs(lidoARM.lastTotalAssets(), expectedAssetsDead, 1); // 1 wei of error
+        assertApproxEqAbs(lidoARM.lastAvailableAssets(), expectedAssetsDead, 1); // 1 wei of error
         assertEq(lidoARM.balanceOf(address(this)), 0);
         assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY);
         assertEq(liquidityProviderController.liquidityProviderCaps(address(this)), 0);

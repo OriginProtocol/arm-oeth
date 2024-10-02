@@ -11,7 +11,7 @@ import {ILiquidityProviderARM} from "./Interfaces.sol";
  * @author Origin Protocol Inc
  */
 contract LiquidityProviderController is Initializable, OwnableOperable {
-    /// @notice The address of the linked Application Redemption Manager (ARM).
+    /// @notice The address of the linked Automated Redemption Manager (ARM).
     address public immutable arm;
 
     /// @notice true if a cap is placed on each liquidity provider's account.
