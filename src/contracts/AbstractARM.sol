@@ -583,8 +583,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         uint256 claimedMem = withdrawsClaimed;
 
         // If the ARM becomes insolvent enough that the total value in the ARM and external withdrawal queue
-        // is less than the outstanding withdrawals.
-        if (assets + claimedMem < queuedMem) {
+        // is less than the outstanding withdrawals and accrued fees.
+        if (assets + claimedMem < queuedMem + feesAccrued) {
             return 0;
         }
 
