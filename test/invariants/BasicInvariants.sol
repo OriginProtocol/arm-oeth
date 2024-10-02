@@ -124,4 +124,9 @@ contract Invariant_Basic_Test_ is Invariant_Base_Test_ {
         assert_swap_invariant_A();
         assert_swap_invariant_B();
     }
+
+    function invariant_llm() external view {
+        assert_llm_invariant_A();
+        assert_llm_invariant_B();
+    }
 }

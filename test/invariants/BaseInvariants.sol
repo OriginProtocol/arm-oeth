@@ -55,10 +55,6 @@ abstract contract Invariant_Base_Test_ is Invariant_Shared_Test_ {
             * Invariant I: withdrawsClaimable > withdrawsClaimed
             * Invariant J: withdrawsClaimed == ∑claimRedeem.amount
 
-        * Total Assets:
-            * Invariant K: totalAssets >= ∑deposit - ∑withdraw
-            * Invariant L :totalAssets >= lastAvailableAssets
-
         * Fees:
             * Invariant M: ∑feesCollected == feeCollector.balance
 
@@ -140,6 +136,21 @@ abstract contract Invariant_Base_Test_ is Invariant_Shared_Test_ {
     function assert_lp_invariant_M() public view {
         address feeCollector = lidoARM.feeCollector();
         assertEq(weth.balanceOf(feeCollector), ownerHandler.sum_of_fees(), "lpHandler.invariant_M");
+    }
+
+    //////////////////////////////////////////////////////
+    /// --- LIDO LIQUIDITY MANAGER ASSERTIONS
+    //////////////////////////////////////////////////////
+    function assert_llm_invariant_A() public view {
+        assertEq(
+            lidoARM.outstandingEther(),
+            llmHandler.sum_of_requested_ether() - llmHandler.sum_of_redeemed_ether(),
+            "llmHandler.invariant_A"
+        );
+    }
+
+    function assert_llm_invariant_B() public view {
+        assertEq(address(lidoARM).balance, 0, "llmHandler.invariant_B");
     }
 
     //////////////////////////////////////////////////////
