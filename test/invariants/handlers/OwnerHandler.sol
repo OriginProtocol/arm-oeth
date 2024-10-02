@@ -116,13 +116,13 @@ contract OwnerHandler is BaseHandler {
     //////////////////////////////////////////////////////
     /// --- HELPERS
     //////////////////////////////////////////////////////
-    function _estimateRawTotalAssets() internal view returns (uint256) {
+    function _estimateAvailableTotalAssets() internal view returns (uint256) {
         uint256 assets = steth.balanceOf(address(arm)) + weth.balanceOf(address(arm)) + arm.outstandingEther();
 
         uint256 queuedMem = arm.withdrawsQueued();
         uint256 claimedMem = arm.withdrawsClaimed();
 
-        if (assets + claimedMem < queuedMem) {
+        if (assets + claimedMem < queuedMem + arm.feesAccrued()) {
             return 0;
         }
 
@@ -130,14 +130,14 @@ contract OwnerHandler is BaseHandler {
     }
 
     function _estimatedFeesAccrued() internal view returns (uint256) {
-        uint256 newTotalAssets = _estimateRawTotalAssets();
+        uint256 newTotalAssets = _estimateAvailableTotalAssets();
 
-        uint256 lastTotalAssets = arm.lastTotalAssets();
-        if (newTotalAssets <= lastTotalAssets) {
+        uint256 lastAvailableAssets = arm.lastAvailableAssets();
+        if (newTotalAssets <= lastAvailableAssets) {
             return arm.feesAccrued();
         }
 
-        uint256 assetIncrease = newTotalAssets - lastTotalAssets;
+        uint256 assetIncrease = newTotalAssets - lastAvailableAssets;
         uint256 newFeesAccrued = (assetIncrease * arm.fee()) / arm.FEE_SCALE();
 
         return arm.feesAccrued() + newFeesAccrued;
