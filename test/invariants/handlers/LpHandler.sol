@@ -38,6 +38,8 @@ contract LpHandler is BaseHandler {
     /// --- VARIABLES FOR INVARIANT ASSERTIONS
     ////////////////////////////////////////////////////
     uint256 public sum_of_deposits;
+    uint256 public sum_of_requests;
+    uint256 public sum_of_withdraws;
 
     ////////////////////////////////////////////////////
     /// --- CONSTRUCTOR
@@ -118,6 +120,9 @@ contract LpHandler is BaseHandler {
 
         // Add request to user
         requests[user].push(Request(id, amount));
+
+        // Update sum of requests
+        sum_of_requests += amount;
     }
 
     /// @notice Claim redeem request for a user on the ARM
@@ -180,6 +185,9 @@ contract LpHandler is BaseHandler {
         // Remove request
         userRequests[requestIndex] = userRequests[userRequests.length - 1];
         userRequests.pop();
+
+        // Update sum of withdraws
+        sum_of_withdraws += amount;
     }
 
     ////////////////////////////////////////////////////

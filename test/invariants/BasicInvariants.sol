@@ -111,5 +111,10 @@ contract Invariant_Basic_Test_ is Invariant_Base_Test_ {
         assert_lp_invariant_C();
         assert_lp_invariant_D();
         assert_lp_invariant_E();
+        assert_lp_invariant_F();
+        assert_lp_invariant_G();
+        assert_lp_invariant_H();
+        assert_lp_invariant_I();
+        assert_lp_invariant_J();
     }
 }

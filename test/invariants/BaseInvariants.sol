@@ -58,11 +58,12 @@ abstract contract Invariant_Base_Test_ is Invariant_Shared_Test_ {
 
      * Lido Liquidity Manager functionnalities
         * Invariant A: outstandingEther == ∑lidoRequestRedeem.assets
+        * Invariant B: address(arm).balance == 0
     
     */
 
     //////////////////////////////////////////////////////
-    /// --- ASSERTIONS
+    /// --- LIQUIDITY PROVIDER ASSERTIONS
     //////////////////////////////////////////////////////
     function assert_lp_invariant_A() public view {
         assertGt(lidoARM.totalSupply(), 0, "lpHandler.invariant_A");
@@ -78,7 +79,7 @@ abstract contract Invariant_Base_Test_ is Invariant_Shared_Test_ {
     }
 
     function assert_lp_invariant_C() public view {
-        assertLt(lidoARM.previewRedeem(_sumOfUserShares()), lidoARM.totalAssets(), "lpHandler.invariant_C");
+        assertEq(lidoARM.previewRedeem(_sumOfUserShares()), lidoARM.totalAssets(), "lpHandler.invariant_C");
     }
 
     function assert_lp_invariant_D() public view {
@@ -88,6 +89,29 @@ abstract contract Invariant_Base_Test_ is Invariant_Shared_Test_ {
     function assert_lp_invariant_E() public view {
         // Not really an invariant, but tested on handler
     }
+
+    function assert_lp_invariant_F() public view {
+        assertEq(
+            lidoARM.nextWithdrawalIndex(), lpHandler.numberOfCalls("lpHandler.requestRedeem"), "lpHandler.invariant_F"
+        );
+    }
+
+    function assert_lp_invariant_G() public view {
+        assertEq(lidoARM.withdrawsQueued(), lpHandler.sum_of_requests(), "lpHandler.invariant_G");
+    }
+
+    function assert_lp_invariant_H() public view {
+        assertGe(lidoARM.withdrawsQueued(), lidoARM.withdrawsClaimable(), "lpHandler.invariant_H");
+    }
+
+    function assert_lp_invariant_I() public view {
+        assertGe(lidoARM.withdrawsClaimable(), lidoARM.withdrawsClaimed(), "lpHandler.invariant_I");
+    }
+
+    function assert_lp_invariant_J() public view {
+        assertEq(lidoARM.withdrawsClaimed(), lpHandler.sum_of_withdraws(), "lpHandler.invariant_J");
+    }
+
 
     /// @notice Sum of users shares, including dead shares
     function _sumOfUserShares() internal view returns (uint256) {
