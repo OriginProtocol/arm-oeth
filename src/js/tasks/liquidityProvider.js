@@ -19,6 +19,30 @@ async function depositLido({ amount }) {
   await logTxDetails(tx, "deposit");
 }
 
+async function requestRedeemLido({ amount }) {
+  const signer = await getSigner();
+
+  const amountBn = parseUnits(amount.toString());
+
+  const lidArmAddress = await parseDeployedAddress("LIDO_ARM");
+  const lidoARM = await ethers.getContractAt("LidoARM", lidArmAddress);
+
+  log(`About to request a redeem of ${amount} Lido ARM LP tokens`);
+  const tx = await lidoARM.connect(signer).requestRedeem(amountBn);
+  await logTxDetails(tx, "requestRedeem");
+}
+
+async function claimRedeemLido({ id }) {
+  const signer = await getSigner();
+
+  const lidArmAddress = await parseDeployedAddress("LIDO_ARM");
+  const lidoARM = await ethers.getContractAt("LidoARM", lidArmAddress);
+
+  log(`About to claim request with id ${id} from the Lido ARM`);
+  const tx = await lidoARM.connect(signer).claimRedeem(id);
+  await logTxDetails(tx, "claimRedeem");
+}
+
 async function setLiquidityProviderCaps({ accounts, cap }) {
   const signer = await getSigner();
 
@@ -61,6 +85,8 @@ async function setTotalAssetsCap({ cap }) {
 
 module.exports = {
   depositLido,
+  requestRedeemLido,
+  claimRedeemLido,
   setLiquidityProviderCaps,
   setTotalAssetsCap,
 };
