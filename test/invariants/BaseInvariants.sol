@@ -10,6 +10,9 @@ import {LLMHandler} from "./handlers/LLMHandler.sol";
 import {SwapHandler} from "./handlers/SwapHandler.sol";
 import {OwnerHandler} from "./handlers/OwnerHandler.sol";
 
+// Mocks
+import {MockSTETH} from "./mocks/MockSTETH.sol";
+
 abstract contract Invariant_Base_Test_ is Invariant_Shared_Test_ {
     //////////////////////////////////////////////////////
     /// --- VARIABLES
@@ -34,7 +37,7 @@ abstract contract Invariant_Base_Test_ is Invariant_Shared_Test_ {
     //////////////////////////////////////////////////////
     /*
      * Swap functionnalities (swap)
-        * Invariant A: weth balance >= ∑deposit + ∑wethIn - ∑withdraw - ∑wethOut - ∑feesCollected
+        * Invariant A: weth balance >= ∑deposit + ∑wethIn + ∑wethRedeem - ∑withdraw - ∑wethOut - ∑feesCollected
         * Invariant A: steth balance >= ∑stethIn - ∑stethOut - ∑stethRedeem
     
      * Liquidity provider functionnalities (lp)
@@ -44,15 +47,18 @@ abstract contract Invariant_Base_Test_ is Invariant_Shared_Test_ {
             * Invariant C: previewRedeem(∑shares) == totalAssets
             * Invariant D: previewRedeem(shares) == (, uint256 assets) = previewRedeem(shares) Not really invariant, but tested on handler
             * Invariant E: previewDeposit(amount) == uint256 shares = previewDeposit(amount) Not really invariant, but tested on handler
+
         * Withdraw Queue:
             * Invariant F: nextWithdrawalIndex == requestRedeem call count
             * Invariant G: withdrawsQueued == ∑requestRedeem.amount
             * Invariant H: withdrawsQueued > withdrawsClaimable
             * Invariant I: withdrawsClaimable > withdrawsClaimed
             * Invariant J: withdrawsClaimed == ∑claimRedeem.amount
+
         * Total Assets:
             * Invariant K: totalAssets >= ∑deposit - ∑withdraw
             * Invariant L :totalAssets >= lastAvailableAssets
+
         * Fees:
             * Invariant M: ∑feesCollected == feeCollector.balance
 
@@ -61,6 +67,25 @@ abstract contract Invariant_Base_Test_ is Invariant_Shared_Test_ {
         * Invariant B: address(arm).balance == 0
     
     */
+
+    //////////////////////////////////////////////////////
+    /// --- SWAP ASSERTIONS
+    //////////////////////////////////////////////////////
+    function assert_swap_invariant_A() public view {
+        uint256 inflows = lpHandler.sum_of_deposits() + swapHandler.sum_of_weth_in()
+            + llmHandler.sum_of_redeemed_ether() + MIN_TOTAL_SUPPLY;
+        uint256 outflows = lpHandler.sum_of_withdraws() + swapHandler.sum_of_weth_out() + ownerHandler.sum_of_fees();
+        assertEq(weth.balanceOf(address(lidoARM)), inflows - outflows, "swapHandler.invariant_A");
+    }
+
+    function assert_swap_invariant_B() public view {
+        uint256 inflows = swapHandler.sum_of_steth_in();
+        uint256 outflows = swapHandler.sum_of_steth_out() + llmHandler.sum_of_requested_ether();
+        uint256 sum_of_errors = MockSTETH(address(steth)).sum_of_errors();
+        assertApproxEqAbs(
+            steth.balanceOf(address(lidoARM)), absDiff(inflows, outflows), sum_of_errors, "swapHandler.invariant_B"
+        );
+    }
 
     //////////////////////////////////////////////////////
     /// --- LIQUIDITY PROVIDER ASSERTIONS
@@ -112,7 +137,14 @@ abstract contract Invariant_Base_Test_ is Invariant_Shared_Test_ {
         assertEq(lidoARM.withdrawsClaimed(), lpHandler.sum_of_withdraws(), "lpHandler.invariant_J");
     }
 
+    function assert_lp_invariant_M() public view {
+        address feeCollector = lidoARM.feeCollector();
+        assertEq(weth.balanceOf(feeCollector), ownerHandler.sum_of_fees(), "lpHandler.invariant_M");
+    }
 
+    //////////////////////////////////////////////////////
+    /// --- HELPERS
+    //////////////////////////////////////////////////////
     /// @notice Sum of users shares, including dead shares
     function _sumOfUserShares() internal view returns (uint256) {
         uint256 sumOfUserShares;
@@ -121,5 +153,10 @@ abstract contract Invariant_Base_Test_ is Invariant_Shared_Test_ {
             sumOfUserShares += lidoARM.balanceOf(user);
         }
         return sumOfUserShares + lidoARM.balanceOf(address(0xdEaD));
+    }
+
+    /// @notice Absolute difference between two numbers
+    function absDiff(uint256 a, uint256 b) internal pure returns (uint256) {
+        return a > b ? a - b : b - a;
     }
 }

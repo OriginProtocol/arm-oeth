@@ -30,7 +30,9 @@ contract LLMHandler is BaseHandler {
     ////////////////////////////////////////////////////
     /// --- VARIABLES FOR INVARIANT ASSERTIONS
     ////////////////////////////////////////////////////
-    uint256 public sum_of_outstandingEther;
+    uint256 public sum_of_outstanding_ether;
+    uint256 public sum_of_requested_ether;
+    uint256 public sum_of_redeemed_ether;
 
     ////////////////////////////////////////////////////
     /// --- CONSTRUCTOR
@@ -81,8 +83,10 @@ contract LLMHandler is BaseHandler {
             requestIds.push(requestId[i]);
         }
 
-        // Update sum_of_outstandingEther
-        sum_of_outstandingEther += totalAmount;
+        // Update sum_of_outstanding_ether
+        sum_of_outstanding_ether += totalAmount;
+
+        sum_of_requested_ether += totalAmount;
     }
 
     function claimStETHWithdrawalForWETH(uint256 _seed) external {
@@ -120,7 +124,9 @@ contract LLMHandler is BaseHandler {
 
         console.log("LLMHandler.claimStETHWithdrawalForWETH(%18e)", diff);
 
-        // Update sum_of_outstandingEther
-        sum_of_outstandingEther -= diff;
+        // Update sum_of_outstanding_ether
+        sum_of_outstanding_ether -= diff;
+
+        sum_of_redeemed_ether += diff;
     }
 }

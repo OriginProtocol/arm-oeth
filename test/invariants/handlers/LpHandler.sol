@@ -179,9 +179,6 @@ contract LpHandler is BaseHandler {
         // Jump back to current time, to avoid issues with other tests
         rewind(arm.CLAIM_DELAY());
 
-        // Update sum of deposits
-        sum_of_deposits -= amount;
-
         // Remove request
         userRequests[requestIndex] = userRequests[userRequests.length - 1];
         userRequests.pop();

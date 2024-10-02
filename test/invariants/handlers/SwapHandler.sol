@@ -107,12 +107,15 @@ contract SwapHandler is BaseHandler {
 
         // Update sum of swaps
         if (inputToken == weth) {
-            sum_of_weth_in += amountIn;
-            sum_of_steth_out += amounts[1];
+            sum_of_weth_in += amounts[0];
+            sum_of_steth_out += amounts[1] + 2; // Take into account the +2 stETH
         } else {
-            sum_of_steth_in += amountIn;
+            sum_of_steth_in += amounts[0];
             sum_of_weth_out += amounts[1];
         }
+
+        require(amountIn == amounts[0], "SH: SWAP - INVALID_AMOUNT_IN");
+        require(estimateAmountOut(inputToken, amountIn) == amounts[1], "SH: SWAP - INVALID_AMOUNT_OUT");
     }
 
     function swapTokensForExactTokens(uint256 _seed) external {
@@ -152,8 +155,12 @@ contract SwapHandler is BaseHandler {
             return;
         }
 
+        uint256 estimatedAmountIn = estimateAmountIn(outputToken, amountOut);
         console.log(
-            "SwapHandler.swapTokensForExactTokens(%18e), %s, %s", amountOut, names[user], names[address(inputToken)]
+            "SwapHandler.swapTokensForExactTokens(%18e), %s, %s",
+            estimatedAmountIn,
+            names[user],
+            names[address(inputToken)]
         );
 
         // Prank user
@@ -178,12 +185,15 @@ contract SwapHandler is BaseHandler {
 
         // Update sum of swaps
         if (inputToken == weth) {
-            sum_of_weth_out += amountOut;
-            sum_of_steth_in += amounts[0];
-        } else {
-            sum_of_steth_out += amountOut;
             sum_of_weth_in += amounts[0];
+            sum_of_steth_out += amounts[1] + 2; // Take into account the +2 stETH
+        } else {
+            sum_of_steth_in += amounts[0];
+            sum_of_weth_out += amounts[1];
         }
+
+        require(estimatedAmountIn == amounts[0], "SH: SWAP - INVALID_AMOUNT_IN");
+        require(amountOut == amounts[1], "SH: SWAP - INVALID_AMOUNT_OUT");
     }
 
     ////////////////////////////////////////////////////
@@ -191,6 +201,7 @@ contract SwapHandler is BaseHandler {
     ////////////////////////////////////////////////////
     event GetMaxAmountIn(uint256 amount);
     event GetMaxAmountOut(uint256 amount);
+    event EstimateAmountIn(uint256 amount);
     event EstimateAmountOut(uint256 amount);
 
     /// @notice Helpers to calcul the maximum amount of token that we can use as input
@@ -218,6 +229,14 @@ contract SwapHandler is BaseHandler {
         uint256 amount = ((reserveUser - 1) * _price(tokenIn)) / arm.PRICE_SCALE();
         emit GetMaxAmountIn(amount);
         return amount;
+    }
+
+    function estimateAmountIn(IERC20 tokenOut, uint256 amountOut) public returns (uint256) {
+        IERC20 tokenIn = tokenOut == weth ? steth : weth;
+
+        uint256 amountIn = (amountOut * arm.PRICE_SCALE()) / _price(tokenIn) + 1;
+        emit EstimateAmountIn(amountIn);
+        return amountIn;
     }
 
     // To be used with swapExactTokensForTokens

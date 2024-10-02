@@ -12,6 +12,11 @@ contract MockSTETH is ERC20 {
     Vm private constant vm = Vm(address(uint160(uint256(keccak256("hevm cheat code")))));
 
     //////////////////////////////////////////////////////
+    /// --- VARIABLES
+    //////////////////////////////////////////////////////
+    uint256 public sum_of_errors;
+
+    //////////////////////////////////////////////////////
     /// --- CONSTRUCTOR
     //////////////////////////////////////////////////////
     constructor() ERC20("Liquid staked Ether 2.0", "stETH", 18) {}
@@ -33,7 +38,10 @@ contract MockSTETH is ERC20 {
             // Get a random number between 0 and 1
             uint256 randomUint = vm.randomUint(0, 1);
             // If the amount is greater than the random number, subtract the random number from the amount
-            if (amount > randomUint) amount -= randomUint;
+            if (amount > randomUint) {
+                amount -= randomUint;
+                sum_of_errors += randomUint;
+            }
         }
         return amount;
     }
