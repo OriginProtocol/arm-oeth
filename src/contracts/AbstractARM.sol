@@ -420,8 +420,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         // mint shares
         _mint(msg.sender, shares);
 
-        // Save the new available assets after the performance fee accrued and new assets deposited
-        lastAvailableAssets = SafeCast.toUint128(_availableAssets());
+        // Add the deposited assets to the last available assets
+        lastAvailableAssets = SafeCast.toUint128(lastAvailableAssets + assets);
 
         // Check the liquidity provider caps after the new assets have been deposited
         if (liquidityProviderController != address(0)) {
@@ -470,8 +470,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         // burn redeemer's shares
         _burn(msg.sender, shares);
 
-        // Save the new available assets after performance fee accrued and withdrawal queue updated
-        lastAvailableAssets = SafeCast.toUint128(_availableAssets());
+        // Remove the redeemed assets from the last available assets
+        lastAvailableAssets = SafeCast.toUint128(lastAvailableAssets - assets);
 
         emit RedeemRequested(msg.sender, requestId, assets, queued, claimTimestamp);
     }
