@@ -25,11 +25,7 @@ contract Fork_Concrete_LidoARM_RequestStETHWithdrawalForETH_Test_ is Fork_Shared
         lidoARM.requestStETHWithdrawalForETH(new uint256[](0));
     }
 
-    function test_RevertWhen_RequestStETHWithdrawalForETH_Because_BalanceExceeded()
-        public
-        asOperator
-        approveStETHOnLidoARM
-    {
+    function test_RevertWhen_RequestStETHWithdrawalForETH_Because_BalanceExceeded() public asOperator {
         // Remove all stETH from the contract
         deal(address(steth), address(lidoARM), 0);
 
@@ -48,7 +44,7 @@ contract Fork_Concrete_LidoARM_RequestStETHWithdrawalForETH_Test_ is Fork_Shared
         assertEq(requestIds.length, 0);
     }
 
-    function test_RequestStETHWithdrawalForETH_SingleAmount_1ether() public asOperator approveStETHOnLidoARM {
+    function test_RequestStETHWithdrawalForETH_SingleAmount_1ether() public asOperator {
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = DEFAULT_AMOUNT;
 
@@ -63,7 +59,7 @@ contract Fork_Concrete_LidoARM_RequestStETHWithdrawalForETH_Test_ is Fork_Shared
         assertGt(requestIds[0], 0);
     }
 
-    function test_RequestStETHWithdrawalForETH_SingleAmount_1000ethers() public asOperator approveStETHOnLidoARM {
+    function test_RequestStETHWithdrawalForETH_SingleAmount_1000ethers() public asOperator {
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = 1_000 ether;
 
@@ -78,7 +74,7 @@ contract Fork_Concrete_LidoARM_RequestStETHWithdrawalForETH_Test_ is Fork_Shared
         assertGt(requestIds[0], 0);
     }
 
-    function test_RequestStETHWithdrawalForETH_MultipleAmount() public asOperator approveStETHOnLidoARM {
+    function test_RequestStETHWithdrawalForETH_MultipleAmount() public asOperator {
         uint256 length = _bound(vm.randomUint(), 2, 10);
         uint256[] memory amounts = new uint256[](length);
         for (uint256 i = 0; i < amounts.length; i++) {

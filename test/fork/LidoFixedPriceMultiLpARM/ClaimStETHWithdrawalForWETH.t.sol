@@ -55,7 +55,6 @@ contract Fork_Concrete_LidoARM_RequestStETHWithdrawalForETH_Test_ is Fork_Shared
     function test_ClaimStETHWithdrawalForWETH_SingleRequest()
         public
         asOperator
-        approveStETHOnLidoARM
         requestStETHWithdrawalForETHOnLidoARM(amounts1)
         mockFunctionClaimWithdrawOnLidoARM(DEFAULT_AMOUNT)
     {
@@ -77,7 +76,6 @@ contract Fork_Concrete_LidoARM_RequestStETHWithdrawalForETH_Test_ is Fork_Shared
     function test_ClaimStETHWithdrawalForWETH_MultiRequest()
         public
         asOperator
-        approveStETHOnLidoARM
         requestStETHWithdrawalForETHOnLidoARM(amounts2)
         mockCallLidoFindCheckpointHints
         mockFunctionClaimWithdrawOnLidoARM(amounts2[0] + amounts2[1])

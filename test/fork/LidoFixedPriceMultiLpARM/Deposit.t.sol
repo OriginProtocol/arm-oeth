@@ -373,7 +373,6 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
     function test_Deposit_WithOutStandingWithdrawRequest_BeforeDeposit_ClaimedLidoWithdraw_WithAssetGain()
         public
         deal_(address(steth), address(lidoARM), DEFAULT_AMOUNT)
-        approveStETHOnLidoARM
         requestStETHWithdrawalForETHOnLidoARM(amounts1)
         setLiquidityProviderCap(address(this), DEFAULT_AMOUNT)
     {
