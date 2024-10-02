@@ -108,7 +108,7 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         assertEq(weth.balanceOf(address(lidoARM)), MIN_TOTAL_SUPPLY);
         assertEq(lidoARM.outstandingEther(), 0);
         assertEq(lidoARM.feesAccrued(), 0); // No perfs so no fees
-        assertEq(lidoARM.lastTotalAssets(), MIN_TOTAL_SUPPLY);
+        assertEq(lidoARM.lastAvailableAssets(), MIN_TOTAL_SUPPLY);
         assertEq(lidoARM.balanceOf(address(this)), 0); // Ensure no shares before
         assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY, "total supply before"); // Minted to dead on deploy
         assertEq(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY, "total assets before");
@@ -131,7 +131,7 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         assertEq(weth.balanceOf(address(lidoARM)), MIN_TOTAL_SUPPLY + amount);
         assertEq(lidoARM.outstandingEther(), 0);
         assertEq(lidoARM.feesAccrued(), 0); // No perfs so no fees
-        assertEq(lidoARM.lastTotalAssets(), MIN_TOTAL_SUPPLY + amount);
+        assertEq(lidoARM.lastAvailableAssets(), MIN_TOTAL_SUPPLY + amount);
         assertEq(lidoARM.balanceOf(address(this)), shares);
         assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY + amount, "total supply after");
         assertEq(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY + amount, "total assets after");
@@ -154,7 +154,7 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         assertEq(weth.balanceOf(address(lidoARM)), MIN_TOTAL_SUPPLY + amount);
         assertEq(lidoARM.outstandingEther(), 0);
         assertEq(lidoARM.feesAccrued(), 0); // No perfs so no fees
-        assertEq(lidoARM.lastTotalAssets(), MIN_TOTAL_SUPPLY + amount);
+        assertEq(lidoARM.lastAvailableAssets(), MIN_TOTAL_SUPPLY + amount);
         assertEq(lidoARM.balanceOf(address(this)), amount);
         assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY + amount); // Minted to dead on deploy
         assertEq(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY + amount);
@@ -177,7 +177,7 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         assertEq(weth.balanceOf(address(lidoARM)), MIN_TOTAL_SUPPLY + amount * 2);
         assertEq(lidoARM.outstandingEther(), 0);
         assertEq(lidoARM.feesAccrued(), 0); // No perfs so no fees
-        assertEq(lidoARM.lastTotalAssets(), MIN_TOTAL_SUPPLY + amount * 2);
+        assertEq(lidoARM.lastAvailableAssets(), MIN_TOTAL_SUPPLY + amount * 2);
         assertEq(lidoARM.balanceOf(address(this)), shares * 2);
         assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY + amount * 2);
         assertEq(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY + amount * 2);
@@ -201,7 +201,7 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         assertEq(weth.balanceOf(address(lidoARM)), MIN_TOTAL_SUPPLY + amount);
         assertEq(lidoARM.outstandingEther(), 0);
         assertEq(lidoARM.feesAccrued(), 0); // No perfs so no fees
-        assertEq(lidoARM.lastTotalAssets(), MIN_TOTAL_SUPPLY + amount);
+        assertEq(lidoARM.lastAvailableAssets(), MIN_TOTAL_SUPPLY + amount);
         assertEq(lidoARM.balanceOf(alice), 0);
         assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY + amount); // Minted to dead on deploy
         assertEq(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY + amount);
@@ -225,7 +225,7 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         assertEq(weth.balanceOf(address(lidoARM)), MIN_TOTAL_SUPPLY + amount * 2);
         assertEq(lidoARM.outstandingEther(), 0);
         assertEq(lidoARM.feesAccrued(), 0); // No perfs so no fees
-        assertEq(lidoARM.lastTotalAssets(), MIN_TOTAL_SUPPLY + amount * 2);
+        assertEq(lidoARM.lastAvailableAssets(), MIN_TOTAL_SUPPLY + amount * 2);
         assertEq(lidoARM.balanceOf(alice), shares);
         assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY + amount * 2);
         assertEq(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY + amount * 2);
@@ -251,7 +251,7 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         assertEq(weth.balanceOf(address(lidoARM)), MIN_TOTAL_SUPPLY + assetGain);
         assertEq(lidoARM.outstandingEther(), 0, "Outstanding ether before");
         assertEq(lidoARM.feesAccrued(), 0, "fee accrued before"); // No perfs so no fees
-        assertEq(lidoARM.lastTotalAssets(), MIN_TOTAL_SUPPLY, "last total assets before");
+        assertEq(lidoARM.lastAvailableAssets(), MIN_TOTAL_SUPPLY, "last available assets before");
         assertEq(lidoARM.balanceOf(address(this)), 0, "user shares before"); // Ensure no shares before
         assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY, "Total supply before"); // Minted to dead on deploy
         // 80% of the asset gain goes to the total assets
@@ -285,7 +285,7 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         assertEq(lidoARM.outstandingEther(), 0, "Outstanding ether after");
         assertEq(lidoARM.feesAccrued(), feesAccrued, "fees accrued after"); // No perfs so no fees
         assertEq(
-            lidoARM.lastTotalAssets(),
+            lidoARM.lastAvailableAssets(),
             MIN_TOTAL_SUPPLY + (assetGain * 80 / 100) + depositedAssets,
             "last total assets after"
         );
@@ -324,7 +324,7 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         assertEq(weth.balanceOf(address(lidoARM)), wethBalanceBefore, "WETH ARM balance before");
         assertEq(lidoARM.outstandingEther(), 0, "Outstanding ether before");
         assertEq(lidoARM.feesAccrued(), 0, "Fees accrued before");
-        assertEq(lidoARM.lastTotalAssets(), MIN_TOTAL_SUPPLY, "last total assets before");
+        assertEq(lidoARM.lastAvailableAssets(), MIN_TOTAL_SUPPLY, "last available assets before");
         assertEq(lidoARM.balanceOf(alice), 0, "alice shares before");
         assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY, "total supply before");
         assertEq(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY, "total assets before");
@@ -353,7 +353,7 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         assertEq(weth.balanceOf(address(lidoARM)), wethBalanceBefore + amount, "WETH ARM balance after");
         assertEq(lidoARM.outstandingEther(), 0, "Outstanding ether after");
         assertEq(lidoARM.feesAccrued(), 0, "Fees accrued after"); // No perfs so no fees
-        assertEq(lidoARM.lastTotalAssets(), MIN_TOTAL_SUPPLY + amount, "last total assets after");
+        assertEq(lidoARM.lastAvailableAssets(), MIN_TOTAL_SUPPLY + amount, "last available assets after");
         assertEq(lidoARM.balanceOf(alice), shares, "alice shares after");
         assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY + amount, "total supply after");
         assertEq(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY + amount, "total assets after");
@@ -381,7 +381,7 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         assertEq(weth.balanceOf(address(lidoARM)), MIN_TOTAL_SUPPLY);
         assertEq(lidoARM.outstandingEther(), DEFAULT_AMOUNT);
         assertEq(lidoARM.feesAccrued(), 0); // No perfs so no fees
-        assertEq(lidoARM.lastTotalAssets(), MIN_TOTAL_SUPPLY);
+        assertEq(lidoARM.lastAvailableAssets(), MIN_TOTAL_SUPPLY);
         assertEq(lidoARM.balanceOf(address(this)), 0); // Ensure no shares before
         assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY); // Minted to dead on deploy
         assertEq(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT * 80 / 100);
@@ -419,7 +419,7 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         assertEq(weth.balanceOf(address(lidoARM)), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT * 2);
         assertEq(lidoARM.outstandingEther(), 0);
         assertEq(lidoARM.feesAccrued(), DEFAULT_AMOUNT * 20 / 100); // No perfs so no fees
-        assertEq(lidoARM.lastTotalAssets(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT * 80 / 100 + excessLeftover);
+        assertEq(lidoARM.lastAvailableAssets(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT * 80 / 100 + excessLeftover);
         assertEq(lidoARM.balanceOf(address(this)), 0); // Ensure no shares after
         assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY); // Minted to dead on deploy
         assertEq(liquidityProviderController.liquidityProviderCaps(address(this)), 0); // All the caps are used
@@ -465,7 +465,7 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         assertEq(weth.balanceOf(address(lidoARM)), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT);
         assertEq(lidoARM.outstandingEther(), 0);
         assertEq(lidoARM.feesAccrued(), 0); // No perfs so no fees
-        assertEq(lidoARM.lastTotalAssets(), MIN_TOTAL_SUPPLY);
+        assertEq(lidoARM.lastAvailableAssets(), MIN_TOTAL_SUPPLY);
         assertEq(lidoARM.balanceOf(address(this)), 0); // Ensure no shares after
         assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY); // Minted to dead on deploy
         assertEq(liquidityProviderController.liquidityProviderCaps(address(this)), 0); // All the caps are used
@@ -511,7 +511,7 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         assertEq(weth.balanceOf(address(lidoARM)), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT * 2);
         assertEq(lidoARM.outstandingEther(), 0);
         assertEq(lidoARM.feesAccrued(), DEFAULT_AMOUNT * 20 / 100); // No perfs so no fees
-        assertApproxEqAbs(lidoARM.lastTotalAssets(), MIN_TOTAL_SUPPLY + deadAddressBenef, STETH_ERROR_ROUNDING);
+        assertApproxEqAbs(lidoARM.lastAvailableAssets(), MIN_TOTAL_SUPPLY + deadAddressBenef, STETH_ERROR_ROUNDING);
         assertEq(lidoARM.balanceOf(address(this)), 0); // Ensure no shares after
         assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY); // Minted to dead on deploy
         assertEq(liquidityProviderController.liquidityProviderCaps(address(this)), 0); // All the caps are used

@@ -98,11 +98,11 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// 500 = 5% performance fee
     uint16 public fee;
     /// @notice The performance fees accrued but not collected.
-    /// This is removed from the total assets.
+    /// This is removed from the available assets.
     uint112 public feesAccrued;
-    /// @notice The total assets at the last time performance fees were calculated.
+    /// @notice The available assets at the last time performance fees were calculated.
     /// This can only go up so is a high watermark.
-    uint128 public lastTotalAssets;
+    uint128 public lastAvailableAssets;
 
     address public liquidityProviderController;
 
@@ -166,9 +166,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         // This avoids donation attacks when there are no assets in the ARM contract
         _mint(DEAD_ACCOUNT, MIN_TOTAL_SUPPLY);
 
-        // Initialize the last total assets to the current total assets
+        // Initialize the last available assets to the current available assets
         // This ensures no performance fee is accrued when the performance fee is calculated when the fee is set
-        lastTotalAssets = SafeCast.toUint128(_rawTotalAssets());
+        lastAvailableAssets = SafeCast.toUint128(_availableAssets());
         _setFee(_fee);
         _setFeeCollector(_feeCollector);
 
@@ -406,12 +406,12 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @param assets The amount of liquidity assets to deposit
     /// @return shares The amount of shares that were minted
     function deposit(uint256 assets) external returns (uint256 shares) {
-        // Accrue any performance fees based on the increase in total assets before
+        // Accrue any performance fees based on the increase in available assets before
         // the liquidity asset from the deposit is transferred into the ARM
         _accruePerformanceFee();
 
         // Calculate the amount of shares to mint after the performance fees have been accrued
-        // which reduces the total assets and before new assets are deposited.
+        // which reduces the available assets, and before new assets are deposited.
         shares = convertToShares(assets);
 
         // Transfer the liquidity asset from the sender to this contract
@@ -420,8 +420,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         // mint shares
         _mint(msg.sender, shares);
 
-        // Save the new total assets after the performance fee accrued and new assets deposited
-        lastTotalAssets = SafeCast.toUint128(_rawTotalAssets());
+        // Save the new available assets after the performance fee accrued and new assets deposited
+        lastAvailableAssets = SafeCast.toUint128(_availableAssets());
 
         // Check the liquidity provider caps after the new assets have been deposited
         if (liquidityProviderController != address(0)) {
@@ -443,7 +443,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @return requestId The index of the withdrawal request
     /// @return assets The amount of liquidity assets that will be claimable by the redeemer
     function requestRedeem(uint256 shares) external returns (uint256 requestId, uint256 assets) {
-        // Accrue any performance fees based on the increase in total assets before
+        // Accrue any performance fees based on the increase in available assets before
         // the liquidity asset from the redeem is reserved for the ARM withdrawal queue
         _accruePerformanceFee();
 
@@ -470,8 +470,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         // burn redeemer's shares
         _burn(msg.sender, shares);
 
-        // Save the new total assets after performance fee accrued and withdrawal queue updated
-        lastTotalAssets = SafeCast.toUint128(_rawTotalAssets());
+        // Save the new available assets after performance fee accrued and withdrawal queue updated
+        lastAvailableAssets = SafeCast.toUint128(_availableAssets());
 
         emit RedeemRequested(msg.sender, requestId, assets, queued, claimTimestamp);
     }
@@ -559,22 +559,22 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @notice The total amount of assets in the ARM and external withdrawal queue,
     /// less the liquidity assets reserved for the ARM's withdrawal queue and accrued fees.
     function totalAssets() public view virtual returns (uint256) {
-        uint256 totalAssetsBeforeFees = _rawTotalAssets();
+        uint256 availableAssetsBeforeFees = _availableAssets();
 
-        // If the total assets have decreased, then we don't charge a performance fee
-        if (totalAssetsBeforeFees <= lastTotalAssets) return totalAssetsBeforeFees;
+        // If the available assets have decreased, then we don't charge a performance fee
+        if (availableAssetsBeforeFees <= lastAvailableAssets) return availableAssetsBeforeFees;
 
         // Calculate the increase in assets since the last time fees were calculated
-        uint256 assetIncrease = totalAssetsBeforeFees - lastTotalAssets;
+        uint256 assetIncrease = availableAssetsBeforeFees - lastAvailableAssets;
 
-        // Calculate the performance fee and remove from the total assets before new fees are removed
-        return totalAssetsBeforeFees - ((assetIncrease * fee) / FEE_SCALE);
+        // Calculate the performance fee and remove from the available assets before new fees are removed
+        return availableAssetsBeforeFees - ((assetIncrease * fee) / FEE_SCALE);
     }
 
-    /// @dev Calculate the total assets in the ARM, external withdrawal queue,
+    /// @dev Calculate the available assets in the ARM, external withdrawal queue,
     /// less liquidity assets reserved for the ARM's withdrawal queue and past accrued fees.
     /// The accrued fees are from the last time fees were calculated.
-    function _rawTotalAssets() internal view returns (uint256) {
+    function _availableAssets() internal view returns (uint256) {
         // Get the assets in the ARM and external withdrawal queue
         uint256 assets = token0.balanceOf(address(this)) + token1.balanceOf(address(this)) + _externalWithdrawQueue();
 
@@ -582,7 +582,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         uint256 queuedMem = withdrawsQueued;
         uint256 claimedMem = withdrawsClaimed;
 
-        // If the ARM becomes insolvent enough that the total value in the ARM and external withdrawal queue
+        // If the ARM becomes insolvent enough that the available assets in the ARM and external withdrawal queue
         // is less than the outstanding withdrawals and accrued fees.
         if (assets + claimedMem < queuedMem + feesAccrued) {
             return 0;
@@ -620,23 +620,23 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     ///         Performance Fee Functions
     ////////////////////////////////////////////////////
 
-    /// @dev Accrues the performance fee based on the increase in total assets
+    /// @dev Accrues the performance fee based on the increase in available assets
     /// Needs to be called before any action that changes the liquidity provider shares. eg deposit and redeem
     function _accruePerformanceFee() internal {
-        uint256 newTotalAssets = _rawTotalAssets();
+        uint256 newAvailableAssets = _availableAssets();
 
-        // Do not accrued a performance fee if the total assets has decreased
-        if (newTotalAssets <= lastTotalAssets) return;
+        // Do not accrued a performance fee if the available assets has decreased
+        if (newAvailableAssets <= lastAvailableAssets) return;
 
-        uint256 assetIncrease = newTotalAssets - lastTotalAssets;
+        uint256 assetIncrease = newAvailableAssets - lastAvailableAssets;
         uint256 newFeesAccrued = (assetIncrease * fee) / FEE_SCALE;
 
         // Save the new accrued fees back to storage
         feesAccrued = SafeCast.toUint112(feesAccrued + newFeesAccrued);
-        // Save the new total assets back to storage less the new accrued fees.
+        // Save the new available assets back to storage less the new accrued fees.
         // This is be updated again in the post deposit and post withdraw hooks to include
         // the assets deposited or withdrawn
-        lastTotalAssets = SafeCast.toUint128(newTotalAssets - newFeesAccrued);
+        lastAvailableAssets = SafeCast.toUint128(newAvailableAssets - newFeesAccrued);
 
         emit FeeCalculated(newFeesAccrued, assetIncrease);
     }
