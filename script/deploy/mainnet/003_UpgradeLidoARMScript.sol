@@ -71,10 +71,10 @@ contract UpgradeLidoARMMainnetScript is AbstractDeployScript {
 
     function _fork() internal override {
         if (tenderlyTestnet) {
-            vm.startBroadcast(Mainnet.ARM_MULTISIG);
-        } else {
             console.log("Broadcasting fork script to Tenderly as: %s", Mainnet.ARM_MULTISIG);
             vm.startBroadcast(Mainnet.ARM_MULTISIG);
+        } else {
+            vm.startPrank(Mainnet.ARM_MULTISIG);
         }
 
         if (lidoARMProxy == Proxy(0x0000000000000000000000000000000000000000)) {
