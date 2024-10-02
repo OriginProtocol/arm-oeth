@@ -30,13 +30,72 @@ abstract contract Invariant_Base_Test_ is Invariant_Shared_Test_ {
     }
 
     //////////////////////////////////////////////////////
+    /// --- INVARIANTS
+    //////////////////////////////////////////////////////
+    /*
+     * Swap functionnalities (swap)
+        * Invariant A: weth balance >= ∑deposit + ∑wethIn - ∑withdraw - ∑wethOut - ∑feesCollected
+        * Invariant A: steth balance >= ∑stethIn - ∑stethOut - ∑stethRedeem
+    
+     * Liquidity provider functionnalities (lp)
+        * Shares:
+            * Invariant A: ∑shares > 0 due to initial deposit
+            * Invariant B: totalShares == ∑userShares + deadShares
+            * Invariant C: previewRedeem(∑shares) == totalAssets
+            * Invariant D: previewRedeem(shares) == (, uint256 assets) = previewRedeem(shares) Not really invariant, but tested on handler
+            * Invariant E: previewDeposit(amount) == uint256 shares = previewDeposit(amount) Not really invariant, but tested on handler
+        * Withdraw Queue:
+            * Invariant F: nextWithdrawalIndex == requestRedeem call count
+            * Invariant G: withdrawsQueued == ∑requestRedeem.amount
+            * Invariant H: withdrawsQueued > withdrawsClaimable
+            * Invariant I: withdrawsClaimable > withdrawsClaimed
+            * Invariant J: withdrawsClaimed == ∑claimRedeem.amount
+        * Total Assets:
+            * Invariant K: totalAssets >= ∑deposit - ∑withdraw
+            * Invariant L :totalAssets >= lastAvailableAssets
+        * Fees:
+            * Invariant M: ∑feesCollected == feeCollector.balance
+
+     * Lido Liquidity Manager functionnalities
+        * Invariant A: outstandingEther == ∑lidoRequestRedeem.assets
+    
+    */
+
+    //////////////////////////////////////////////////////
     /// --- ASSERTIONS
     //////////////////////////////////////////////////////
-    function assert_invariant_A() public pure {
-        assertTrue(true);
+    function assert_lp_invariant_A() public view {
+        assertGt(lidoARM.totalSupply(), 0, "lpHandler.invariant_A");
     }
 
-    function assert_invariant_B() public pure {
-        assertFalse(false);
+    function assert_lp_invariant_B() public view {
+        uint256 sumOfUserShares;
+        for (uint256 i; i < lps.length; i++) {
+            address user = lps[i];
+            sumOfUserShares += lidoARM.balanceOf(user);
+        }
+        assertEq(lidoARM.totalSupply(), _sumOfUserShares(), "lpHandler.invariant_B");
+    }
+
+    function assert_lp_invariant_C() public view {
+        assertLt(lidoARM.previewRedeem(_sumOfUserShares()), lidoARM.totalAssets(), "lpHandler.invariant_C");
+    }
+
+    function assert_lp_invariant_D() public view {
+        // Not really an invariant, but tested on handler
+    }
+
+    function assert_lp_invariant_E() public view {
+        // Not really an invariant, but tested on handler
+    }
+
+    /// @notice Sum of users shares, including dead shares
+    function _sumOfUserShares() internal view returns (uint256) {
+        uint256 sumOfUserShares;
+        for (uint256 i; i < lps.length; i++) {
+            address user = lps[i];
+            sumOfUserShares += lidoARM.balanceOf(user);
+        }
+        return sumOfUserShares + lidoARM.balanceOf(address(0xdEaD));
     }
 }

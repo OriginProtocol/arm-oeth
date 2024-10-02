@@ -105,8 +105,11 @@ contract Invariant_Basic_Test_ is Invariant_Base_Test_ {
     //////////////////////////////////////////////////////
     /// --- INVARIANTS
     //////////////////////////////////////////////////////
-    function invariant_A() external {
-        assert_invariant_A();
-        assert_invariant_B();
+    function invariant_lp() external view {
+        assert_lp_invariant_A();
+        assert_lp_invariant_B();
+        assert_lp_invariant_C();
+        assert_lp_invariant_D();
+        assert_lp_invariant_E();
     }
 }
