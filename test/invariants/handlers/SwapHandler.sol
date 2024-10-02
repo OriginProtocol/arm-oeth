@@ -201,9 +201,7 @@ contract SwapHandler is BaseHandler {
 
         uint256 reserveOut = _liquidityAvailable(tokenOut);
 
-        uint256 price = tokenIn == steth ? arm.traderate0() : arm.traderate1();
-
-        uint256 amount = (reserveOut * arm.PRICE_SCALE()) / price;
+        uint256 amount = (reserveOut * arm.PRICE_SCALE()) / _price(tokenIn);
         emit GetMaxAmountOut(amount);
         return amount;
     }
@@ -217,9 +215,7 @@ contract SwapHandler is BaseHandler {
         uint256 reserveUser = tokenIn.balanceOf(user);
         if (reserveUser == 0) return 0;
 
-        uint256 price = tokenIn == steth ? arm.traderate0() : arm.traderate1();
-
-        uint256 amount = ((reserveUser - 1) * price) / arm.PRICE_SCALE();
+        uint256 amount = ((reserveUser - 1) * _price(tokenIn)) / arm.PRICE_SCALE();
         emit GetMaxAmountIn(amount);
         return amount;
     }
@@ -227,9 +223,7 @@ contract SwapHandler is BaseHandler {
     // To be used with swapExactTokensForTokens
     // Todo: add better comment
     function estimateAmountOut(IERC20 tokenIn, uint256 amountIn) public returns (uint256) {
-        uint256 price = tokenIn == steth ? arm.traderate0() : arm.traderate1();
-
-        uint256 amountOut = (amountIn * price) / arm.PRICE_SCALE();
+        uint256 amountOut = (amountIn * _price(tokenIn)) / arm.PRICE_SCALE();
         emit EstimateAmountOut(amountOut);
         return amountOut;
     }
@@ -248,5 +242,9 @@ contract SwapHandler is BaseHandler {
         } else if (token == steth) {
             return steth.balanceOf(address(arm));
         }
+    }
+
+    function _price(IERC20 token) public view returns (uint256 price) {
+        return token == arm.token0() ? arm.traderate0() : arm.traderate1();
     }
 }
