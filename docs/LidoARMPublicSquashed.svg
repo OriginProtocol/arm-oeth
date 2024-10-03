@@ -32,57 +32,57 @@
 <text text-anchor="start" x="8" y="-890.3" font-family="Times,serif" font-size="14.00"> &#160;&#160;withdrawsClaimable: uint128 &lt;&lt;AbstractARM&gt;&gt;</text>
 <text text-anchor="start" x="8" y="-873.5" font-family="Times,serif" font-size="14.00"> &#160;&#160;nextWithdrawalIndex: uint128 &lt;&lt;AbstractARM&gt;&gt;</text>
 <text text-anchor="start" x="8" y="-856.7" font-family="Times,serif" font-size="14.00"> &#160;&#160;withdrawalRequests: mapping(uint256=&gt;WithdrawalRequest) &lt;&lt;AbstractARM&gt;&gt;</text>
-<text text-anchor="start" x="8" y="-839.9" font-family="Times,serif" font-size="14.00"> &#160;&#160;feeCollector: address &lt;&lt;AbstractARM&gt;&gt;</text>
-<text text-anchor="start" x="8" y="-823.1" font-family="Times,serif" font-size="14.00"> &#160;&#160;fee: uint16 &lt;&lt;AbstractARM&gt;&gt;</text>
-<text text-anchor="start" x="8" y="-806.3" font-family="Times,serif" font-size="14.00"> &#160;&#160;feesAccrued: uint112 &lt;&lt;AbstractARM&gt;&gt;</text>
-<text text-anchor="start" x="8" y="-789.5" font-family="Times,serif" font-size="14.00"> &#160;&#160;lastAvailableAssets: uint128 &lt;&lt;AbstractARM&gt;&gt;</text>
-<text text-anchor="start" x="8" y="-772.7" font-family="Times,serif" font-size="14.00"> &#160;&#160;liquidityProviderController: address &lt;&lt;AbstractARM&gt;&gt;</text>
-<text text-anchor="start" x="8" y="-755.9" font-family="Times,serif" font-size="14.00"> &#160;&#160;steth: IERC20 &lt;&lt;LidoLiquidityManager&gt;&gt;</text>
-<text text-anchor="start" x="8" y="-739.1" font-family="Times,serif" font-size="14.00"> &#160;&#160;weth: IWETH &lt;&lt;LidoLiquidityManager&gt;&gt;</text>
-<text text-anchor="start" x="8" y="-722.3" font-family="Times,serif" font-size="14.00"> &#160;&#160;withdrawalQueue: IStETHWithdrawal &lt;&lt;LidoLiquidityManager&gt;&gt;</text>
-<text text-anchor="start" x="8" y="-705.5" font-family="Times,serif" font-size="14.00"> &#160;&#160;outstandingEther: uint256 &lt;&lt;LidoLiquidityManager&gt;&gt;</text>
-<polyline fill="none" stroke="black" points="0,-697.3 981.97,-697.3 "/>
-<text text-anchor="start" x="8" y="-680.7" font-family="Times,serif" font-size="14.00">External:</text>
-<text text-anchor="start" x="8" y="-663.9" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;&lt;&lt;payable&gt;&gt; null() &lt;&lt;LidoLiquidityManager&gt;&gt;</text>
-<text text-anchor="start" x="8" y="-647.1" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;owner(): address &lt;&lt;Ownable&gt;&gt;</text>
-<text text-anchor="start" x="8" y="-630.3" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;setOwner(newOwner: address) &lt;&lt;onlyOwner&gt;&gt; &lt;&lt;Ownable&gt;&gt;</text>
-<text text-anchor="start" x="8" y="-613.5" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;setOperator(newOperator: address) &lt;&lt;onlyOwner&gt;&gt; &lt;&lt;OwnableOperable&gt;&gt;</text>
-<text text-anchor="start" x="8" y="-596.7" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;swapExactTokensForTokens(inToken: IERC20, outToken: IERC20, amountIn: uint256, amountOutMin: uint256, to: address) &lt;&lt;AbstractARM&gt;&gt;</text>
-<text text-anchor="start" x="8" y="-579.9" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;swapExactTokensForTokens(amountIn: uint256, amountOutMin: uint256, path: address[], to: address, deadline: uint256): (amounts: uint256[]) &lt;&lt;AbstractARM&gt;&gt;</text>
-<text text-anchor="start" x="8" y="-563.1" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;swapTokensForExactTokens(inToken: IERC20, outToken: IERC20, amountOut: uint256, amountInMax: uint256, to: address) &lt;&lt;AbstractARM&gt;&gt;</text>
-<text text-anchor="start" x="8" y="-546.3" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;swapTokensForExactTokens(amountOut: uint256, amountInMax: uint256, path: address[], to: address, deadline: uint256): (amounts: uint256[]) &lt;&lt;AbstractARM&gt;&gt;</text>
-<text text-anchor="start" x="8" y="-529.5" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;setPrices(buyT1: uint256, sellT1: uint256) &lt;&lt;onlyOperatorOrOwner&gt;&gt; &lt;&lt;AbstractARM&gt;&gt;</text>
-<text text-anchor="start" x="8" y="-512.7" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;previewDeposit(assets: uint256): (shares: uint256) &lt;&lt;AbstractARM&gt;&gt;</text>
-<text text-anchor="start" x="8" y="-495.9" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;deposit(assets: uint256): (shares: uint256) &lt;&lt;AbstractARM&gt;&gt;</text>
-<text text-anchor="start" x="8" y="-479.1" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;previewRedeem(shares: uint256): (assets: uint256) &lt;&lt;AbstractARM&gt;&gt;</text>
-<text text-anchor="start" x="8" y="-462.3" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;requestRedeem(shares: uint256): (requestId: uint256, assets: uint256) &lt;&lt;AbstractARM&gt;&gt;</text>
-<text text-anchor="start" x="8" y="-445.5" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;claimRedeem(requestId: uint256): (assets: uint256) &lt;&lt;AbstractARM&gt;&gt;</text>
-<text text-anchor="start" x="8" y="-428.7" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;setLiquidityProviderController(_liquidityProviderController: address) &lt;&lt;onlyOwner&gt;&gt; &lt;&lt;AbstractARM&gt;&gt;</text>
-<text text-anchor="start" x="8" y="-411.9" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;setFee(_fee: uint256) &lt;&lt;onlyOwner&gt;&gt; &lt;&lt;AbstractARM&gt;&gt;</text>
-<text text-anchor="start" x="8" y="-395.1" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;setFeeCollector(_feeCollector: address) &lt;&lt;onlyOwner&gt;&gt; &lt;&lt;AbstractARM&gt;&gt;</text>
-<text text-anchor="start" x="8" y="-378.3" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;collectFees(): (fees: uint256) &lt;&lt;AbstractARM&gt;&gt;</text>
-<text text-anchor="start" x="8" y="-361.5" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;requestStETHWithdrawalForETH(amounts: uint256[]): (requestIds: uint256[]) &lt;&lt;onlyOperatorOrOwner&gt;&gt; &lt;&lt;LidoLiquidityManager&gt;&gt;</text>
-<text text-anchor="start" x="8" y="-344.7" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;claimStETHWithdrawalForWETH(requestIds: uint256[]) &lt;&lt;onlyOperatorOrOwner&gt;&gt; &lt;&lt;LidoLiquidityManager&gt;&gt;</text>
-<text text-anchor="start" x="8" y="-327.9" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;initialize(_name: string, _symbol: string, _operator: address, _fee: uint256, _feeCollector: address, _liquidityProviderController: address) &lt;&lt;initializer&gt;&gt; &lt;&lt;LidoARM&gt;&gt;</text>
-<text text-anchor="start" x="8" y="-311.1" font-family="Times,serif" font-size="14.00">Public:</text>
-<text text-anchor="start" x="8" y="-294.3" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;&lt;&lt;event&gt;&gt; AdminChanged(previousAdmin: address, newAdmin: address) &lt;&lt;Ownable&gt;&gt;</text>
-<text text-anchor="start" x="8" y="-277.5" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;&lt;&lt;event&gt;&gt; OperatorChanged(newAdmin: address) &lt;&lt;OwnableOperable&gt;&gt;</text>
-<text text-anchor="start" x="8" y="-260.7" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;&lt;&lt;event&gt;&gt; TraderateChanged(traderate0: uint256, traderate1: uint256) &lt;&lt;AbstractARM&gt;&gt;</text>
-<text text-anchor="start" x="8" y="-243.9" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;&lt;&lt;event&gt;&gt; Deposit(owner: address, assets: uint256, shares: uint256) &lt;&lt;AbstractARM&gt;&gt;</text>
-<text text-anchor="start" x="8" y="-227.1" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;&lt;&lt;event&gt;&gt; RedeemRequested(withdrawer: address, requestId: uint256, assets: uint256, queued: uint256, claimTimestamp: uint256) &lt;&lt;AbstractARM&gt;&gt;</text>
-<text text-anchor="start" x="8" y="-210.3" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;&lt;&lt;event&gt;&gt; RedeemClaimed(withdrawer: address, requestId: uint256, assets: uint256) &lt;&lt;AbstractARM&gt;&gt;</text>
-<text text-anchor="start" x="8" y="-193.5" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;&lt;&lt;event&gt;&gt; FeeCalculated(newFeesAccrued: uint256, assetIncrease: uint256) &lt;&lt;AbstractARM&gt;&gt;</text>
-<text text-anchor="start" x="8" y="-176.7" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;&lt;&lt;event&gt;&gt; FeeCollected(feeCollector: address, fee: uint256) &lt;&lt;AbstractARM&gt;&gt;</text>
-<text text-anchor="start" x="8" y="-159.9" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;&lt;&lt;event&gt;&gt; FeeUpdated(fee: uint256) &lt;&lt;AbstractARM&gt;&gt;</text>
-<text text-anchor="start" x="8" y="-143.1" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;&lt;&lt;event&gt;&gt; FeeCollectorUpdated(newFeeCollector: address) &lt;&lt;AbstractARM&gt;&gt;</text>
-<text text-anchor="start" x="8" y="-126.3" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;&lt;&lt;event&gt;&gt; LiquidityProviderControllerUpdated(liquidityProviderController: address) &lt;&lt;AbstractARM&gt;&gt;</text>
-<text text-anchor="start" x="8" y="-109.5" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;&lt;&lt;modifier&gt;&gt; onlyOwner() &lt;&lt;Ownable&gt;&gt;</text>
-<text text-anchor="start" x="8" y="-92.7" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;&lt;&lt;modifier&gt;&gt; onlyOperatorOrOwner() &lt;&lt;OwnableOperable&gt;&gt;</text>
-<text text-anchor="start" x="8" y="-75.9" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;constructor() &lt;&lt;Ownable&gt;&gt;</text>
-<text text-anchor="start" x="8" y="-59.1" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;constructor(_steth: address, _weth: address, _lidoWithdrawalQueue: address) &lt;&lt;LidoARM&gt;&gt;</text>
-<text text-anchor="start" x="8" y="-42.3" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;totalAssets(): uint256 &lt;&lt;AbstractARM&gt;&gt;</text>
-<text text-anchor="start" x="8" y="-25.5" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;convertToShares(assets: uint256): (shares: uint256) &lt;&lt;AbstractARM&gt;&gt;</text>
-<text text-anchor="start" x="8" y="-8.7" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;convertToAssets(shares: uint256): (assets: uint256) &lt;&lt;AbstractARM&gt;&gt;</text>
+<text text-anchor="start" x="8" y="-839.9" font-family="Times,serif" font-size="14.00"> &#160;&#160;fee: uint16 &lt;&lt;AbstractARM&gt;&gt;</text>
+<text text-anchor="start" x="8" y="-823.1" font-family="Times,serif" font-size="14.00"> &#160;&#160;lastAvailableAssets: int128 &lt;&lt;AbstractARM&gt;&gt;</text>
+<text text-anchor="start" x="8" y="-806.3" font-family="Times,serif" font-size="14.00"> &#160;&#160;feeCollector: address &lt;&lt;AbstractARM&gt;&gt;</text>
+<text text-anchor="start" x="8" y="-789.5" font-family="Times,serif" font-size="14.00"> &#160;&#160;liquidityProviderController: address &lt;&lt;AbstractARM&gt;&gt;</text>
+<text text-anchor="start" x="8" y="-772.7" font-family="Times,serif" font-size="14.00"> &#160;&#160;steth: IERC20 &lt;&lt;LidoLiquidityManager&gt;&gt;</text>
+<text text-anchor="start" x="8" y="-755.9" font-family="Times,serif" font-size="14.00"> &#160;&#160;weth: IWETH &lt;&lt;LidoLiquidityManager&gt;&gt;</text>
+<text text-anchor="start" x="8" y="-739.1" font-family="Times,serif" font-size="14.00"> &#160;&#160;withdrawalQueue: IStETHWithdrawal &lt;&lt;LidoLiquidityManager&gt;&gt;</text>
+<text text-anchor="start" x="8" y="-722.3" font-family="Times,serif" font-size="14.00"> &#160;&#160;outstandingEther: uint256 &lt;&lt;LidoLiquidityManager&gt;&gt;</text>
+<polyline fill="none" stroke="black" points="0,-714.1 981.97,-714.1 "/>
+<text text-anchor="start" x="8" y="-697.5" font-family="Times,serif" font-size="14.00">External:</text>
+<text text-anchor="start" x="8" y="-680.7" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;&lt;&lt;payable&gt;&gt; null() &lt;&lt;LidoLiquidityManager&gt;&gt;</text>
+<text text-anchor="start" x="8" y="-663.9" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;owner(): address &lt;&lt;Ownable&gt;&gt;</text>
+<text text-anchor="start" x="8" y="-647.1" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;setOwner(newOwner: address) &lt;&lt;onlyOwner&gt;&gt; &lt;&lt;Ownable&gt;&gt;</text>
+<text text-anchor="start" x="8" y="-630.3" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;setOperator(newOperator: address) &lt;&lt;onlyOwner&gt;&gt; &lt;&lt;OwnableOperable&gt;&gt;</text>
+<text text-anchor="start" x="8" y="-613.5" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;swapExactTokensForTokens(inToken: IERC20, outToken: IERC20, amountIn: uint256, amountOutMin: uint256, to: address) &lt;&lt;AbstractARM&gt;&gt;</text>
+<text text-anchor="start" x="8" y="-596.7" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;swapExactTokensForTokens(amountIn: uint256, amountOutMin: uint256, path: address[], to: address, deadline: uint256): (amounts: uint256[]) &lt;&lt;AbstractARM&gt;&gt;</text>
+<text text-anchor="start" x="8" y="-579.9" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;swapTokensForExactTokens(inToken: IERC20, outToken: IERC20, amountOut: uint256, amountInMax: uint256, to: address) &lt;&lt;AbstractARM&gt;&gt;</text>
+<text text-anchor="start" x="8" y="-563.1" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;swapTokensForExactTokens(amountOut: uint256, amountInMax: uint256, path: address[], to: address, deadline: uint256): (amounts: uint256[]) &lt;&lt;AbstractARM&gt;&gt;</text>
+<text text-anchor="start" x="8" y="-546.3" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;setPrices(buyT1: uint256, sellT1: uint256) &lt;&lt;onlyOperatorOrOwner&gt;&gt; &lt;&lt;AbstractARM&gt;&gt;</text>
+<text text-anchor="start" x="8" y="-529.5" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;previewDeposit(assets: uint256): (shares: uint256) &lt;&lt;AbstractARM&gt;&gt;</text>
+<text text-anchor="start" x="8" y="-512.7" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;deposit(assets: uint256): (shares: uint256) &lt;&lt;AbstractARM&gt;&gt;</text>
+<text text-anchor="start" x="8" y="-495.9" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;previewRedeem(shares: uint256): (assets: uint256) &lt;&lt;AbstractARM&gt;&gt;</text>
+<text text-anchor="start" x="8" y="-479.1" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;requestRedeem(shares: uint256): (requestId: uint256, assets: uint256) &lt;&lt;AbstractARM&gt;&gt;</text>
+<text text-anchor="start" x="8" y="-462.3" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;claimRedeem(requestId: uint256): (assets: uint256) &lt;&lt;AbstractARM&gt;&gt;</text>
+<text text-anchor="start" x="8" y="-445.5" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;setLiquidityProviderController(_liquidityProviderController: address) &lt;&lt;onlyOwner&gt;&gt; &lt;&lt;AbstractARM&gt;&gt;</text>
+<text text-anchor="start" x="8" y="-428.7" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;setFee(_fee: uint256) &lt;&lt;onlyOwner&gt;&gt; &lt;&lt;AbstractARM&gt;&gt;</text>
+<text text-anchor="start" x="8" y="-411.9" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;setFeeCollector(_feeCollector: address) &lt;&lt;onlyOwner&gt;&gt; &lt;&lt;AbstractARM&gt;&gt;</text>
+<text text-anchor="start" x="8" y="-395.1" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;requestStETHWithdrawalForETH(amounts: uint256[]): (requestIds: uint256[]) &lt;&lt;onlyOperatorOrOwner&gt;&gt; &lt;&lt;LidoLiquidityManager&gt;&gt;</text>
+<text text-anchor="start" x="8" y="-378.3" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;claimStETHWithdrawalForWETH(requestIds: uint256[]) &lt;&lt;onlyOperatorOrOwner&gt;&gt; &lt;&lt;LidoLiquidityManager&gt;&gt;</text>
+<text text-anchor="start" x="8" y="-361.5" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;initialize(_name: string, _symbol: string, _operator: address, _fee: uint256, _feeCollector: address, _liquidityProviderController: address) &lt;&lt;initializer&gt;&gt; &lt;&lt;LidoARM&gt;&gt;</text>
+<text text-anchor="start" x="8" y="-344.7" font-family="Times,serif" font-size="14.00">Public:</text>
+<text text-anchor="start" x="8" y="-327.9" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;&lt;&lt;event&gt;&gt; AdminChanged(previousAdmin: address, newAdmin: address) &lt;&lt;Ownable&gt;&gt;</text>
+<text text-anchor="start" x="8" y="-311.1" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;&lt;&lt;event&gt;&gt; OperatorChanged(newAdmin: address) &lt;&lt;OwnableOperable&gt;&gt;</text>
+<text text-anchor="start" x="8" y="-294.3" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;&lt;&lt;event&gt;&gt; TraderateChanged(traderate0: uint256, traderate1: uint256) &lt;&lt;AbstractARM&gt;&gt;</text>
+<text text-anchor="start" x="8" y="-277.5" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;&lt;&lt;event&gt;&gt; Deposit(owner: address, assets: uint256, shares: uint256) &lt;&lt;AbstractARM&gt;&gt;</text>
+<text text-anchor="start" x="8" y="-260.7" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;&lt;&lt;event&gt;&gt; RedeemRequested(withdrawer: address, requestId: uint256, assets: uint256, queued: uint256, claimTimestamp: uint256) &lt;&lt;AbstractARM&gt;&gt;</text>
+<text text-anchor="start" x="8" y="-243.9" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;&lt;&lt;event&gt;&gt; RedeemClaimed(withdrawer: address, requestId: uint256, assets: uint256) &lt;&lt;AbstractARM&gt;&gt;</text>
+<text text-anchor="start" x="8" y="-227.1" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;&lt;&lt;event&gt;&gt; FeeCollected(feeCollector: address, fee: uint256) &lt;&lt;AbstractARM&gt;&gt;</text>
+<text text-anchor="start" x="8" y="-210.3" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;&lt;&lt;event&gt;&gt; FeeUpdated(fee: uint256) &lt;&lt;AbstractARM&gt;&gt;</text>
+<text text-anchor="start" x="8" y="-193.5" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;&lt;&lt;event&gt;&gt; FeeCollectorUpdated(newFeeCollector: address) &lt;&lt;AbstractARM&gt;&gt;</text>
+<text text-anchor="start" x="8" y="-176.7" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;&lt;&lt;event&gt;&gt; LiquidityProviderControllerUpdated(liquidityProviderController: address) &lt;&lt;AbstractARM&gt;&gt;</text>
+<text text-anchor="start" x="8" y="-159.9" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;&lt;&lt;modifier&gt;&gt; onlyOwner() &lt;&lt;Ownable&gt;&gt;</text>
+<text text-anchor="start" x="8" y="-143.1" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;&lt;&lt;modifier&gt;&gt; onlyOperatorOrOwner() &lt;&lt;OwnableOperable&gt;&gt;</text>
+<text text-anchor="start" x="8" y="-126.3" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;constructor() &lt;&lt;Ownable&gt;&gt;</text>
+<text text-anchor="start" x="8" y="-109.5" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;constructor(_steth: address, _weth: address, _lidoWithdrawalQueue: address) &lt;&lt;LidoARM&gt;&gt;</text>
+<text text-anchor="start" x="8" y="-92.7" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;totalAssets(): uint256 &lt;&lt;AbstractARM&gt;&gt;</text>
+<text text-anchor="start" x="8" y="-75.9" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;convertToShares(assets: uint256): (shares: uint256) &lt;&lt;AbstractARM&gt;&gt;</text>
+<text text-anchor="start" x="8" y="-59.1" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;convertToAssets(shares: uint256): (assets: uint256) &lt;&lt;AbstractARM&gt;&gt;</text>
+<text text-anchor="start" x="8" y="-42.3" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;collectFees(): (fees: uint256) &lt;&lt;AbstractARM&gt;&gt;</text>
+<text text-anchor="start" x="8" y="-25.5" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;feesAccrued(): (fees: uint256) &lt;&lt;AbstractARM&gt;&gt;</text>
+<text text-anchor="start" x="8" y="-8.7" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;_feesAccrued(): (fees: uint256, newAvailableAssets: uint256) &lt;&lt;AbstractARM&gt;&gt;</text>
 </g>
 </g>
 </svg>
