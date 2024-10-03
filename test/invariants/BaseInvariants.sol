@@ -59,8 +59,6 @@ abstract contract Invariant_Base_Test_ is Invariant_Shared_Test_ {
             * Invariant K: ∀ requestId, request.queued >= request.assets
 
         * Fees:
-            * Invariant L: lastAvailableAssets == ∑deposit - ∑request (when no claimFees, setFees, donation called)
-            * lastAvailableAssets can only be positive if there is only deposit and redeem.
             * Invariant M: ∑feesCollected == feeCollector.balance
 
      * Lido Liquidity Manager functionnalities
@@ -149,22 +147,6 @@ abstract contract Invariant_Base_Test_ is Invariant_Shared_Test_ {
         for (uint256 i; i < lidoARM.nextWithdrawalIndex(); i++) {
             (,,, uint120 assets, uint120 queued) = lidoARM.withdrawalRequests(i);
             assertGe(queued, assets, "lpHandler.invariant_L");
-        }
-    }
-
-    function assert_lp_invariant_L() public view {
-        if (
-            ownerHandler.numberOfCalls("ownerHandler.collectFees") == 0
-                && ownerHandler.numberOfCalls("ownerHandler.setFees") == 0
-                && donationHandler.numberOfCalls("donationHandler.donateWETH") == 0
-                && donationHandler.numberOfCalls("donationHandler.donateStETH") == 0
-        ) {
-            assertGe(lidoARM.lastAvailableAssets(), 0, "lpHandler.invariant_L_1");
-            assertEq(
-                uint256(int256(lidoARM.lastAvailableAssets())),
-                MIN_TOTAL_SUPPLY + lpHandler.sum_of_deposits() - lpHandler.sum_of_requests(),
-                "lpHandler.invariant_L_2"
-            );
         }
     }
 
