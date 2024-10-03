@@ -62,8 +62,7 @@ contract Invariant_Basic_Test_ is Invariant_Base_Test_ {
         vm.prank(liquidityProviderController.owner());
         liquidityProviderController.setAccountCapEnabled(false);
 
-        // Set prices
-        // Todo: use handler to set prices "randomly", but fixed at almost 1:1 atm.
+        // Set prices, start with almost 1:1
         vm.prank(lidoARM.owner());
         lidoARM.setPrices(1e36 - 1, 1e36 + 1);
 
@@ -120,8 +119,10 @@ contract Invariant_Basic_Test_ is Invariant_Base_Test_ {
         assert_lp_invariant_F();
         assert_lp_invariant_G();
         assert_lp_invariant_H();
+        assert_lp_invariant_I();
         assert_lp_invariant_J();
-
+        assert_lp_invariant_K();
+        assert_lp_invariant_L();
         assert_lp_invariant_M();
     }
 
@@ -133,5 +134,6 @@ contract Invariant_Basic_Test_ is Invariant_Base_Test_ {
     function invariant_llm() external view {
         assert_llm_invariant_A();
         assert_llm_invariant_B();
+        assert_llm_invariant_C();
     }
 }

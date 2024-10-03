@@ -173,6 +173,7 @@ contract LpHandler is BaseHandler {
 
         // Claim redeem
         (uint256 amount) = arm.claimRedeem(request.id);
+        require(amount == asset, "LH: CLAIM_REDEEM - INVALID_AMOUNT");
 
         // End prank
         vm.stopPrank();

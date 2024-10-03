@@ -54,14 +54,19 @@ abstract contract Invariant_Base_Test_ is Invariant_Shared_Test_ {
             * Invariant F: nextWithdrawalIndex == requestRedeem call count
             * Invariant G: withdrawsQueued == ∑requestRedeem.amount
             * Invariant H: withdrawsQueued > withdrawsClaimed
+            * Invariant I: withdrawsQueued == ∑request.assets
             * Invariant J: withdrawsClaimed == ∑claimRedeem.amount
+            * Invariant K: ∀ requestId, request.queued >= request.assets
 
         * Fees:
+            * Invariant L: lastAvailableAssets == ∑deposit - ∑request (when no claimFees, setFees, donation called)
+            * lastAvailableAssets can only be positive if there is only deposit and redeem.
             * Invariant M: ∑feesCollected == feeCollector.balance
 
      * Lido Liquidity Manager functionnalities
         * Invariant A: outstandingEther == ∑lidoRequestRedeem.assets
         * Invariant B: address(arm).balance == 0
+        * Invariant C: All slot allow for gap are empty
     
     */
 
@@ -126,8 +131,41 @@ abstract contract Invariant_Base_Test_ is Invariant_Shared_Test_ {
         assertGe(lidoARM.withdrawsQueued(), lidoARM.withdrawsClaimed(), "lpHandler.invariant_H");
     }
 
+    function assert_lp_invariant_I() public view {
+        uint256 sum;
+        for (uint256 i; i < lidoARM.nextWithdrawalIndex(); i++) {
+            (,,, uint120 assets,) = lidoARM.withdrawalRequests(i);
+            sum += assets;
+        }
+
+        assertEq(lidoARM.withdrawsQueued(), sum, "lpHandler.invariant_I");
+    }
+
     function assert_lp_invariant_J() public view {
         assertEq(lidoARM.withdrawsClaimed(), lpHandler.sum_of_withdraws(), "lpHandler.invariant_J");
+    }
+
+    function assert_lp_invariant_K() public view {
+        for (uint256 i; i < lidoARM.nextWithdrawalIndex(); i++) {
+            (,,, uint120 assets, uint120 queued) = lidoARM.withdrawalRequests(i);
+            assertGe(queued, assets, "lpHandler.invariant_L");
+        }
+    }
+
+    function assert_lp_invariant_L() public view {
+        if (
+            ownerHandler.numberOfCalls("ownerHandler.collectFees") == 0
+                && ownerHandler.numberOfCalls("ownerHandler.setFees") == 0
+                && donationHandler.numberOfCalls("donationHandler.donateWETH") == 0
+                && donationHandler.numberOfCalls("donationHandler.donateStETH") == 0
+        ) {
+            assertGe(lidoARM.lastAvailableAssets(), 0, "lpHandler.invariant_L_1");
+            assertEq(
+                uint256(int256(lidoARM.lastAvailableAssets())),
+                MIN_TOTAL_SUPPLY + lpHandler.sum_of_deposits() - lpHandler.sum_of_requests(),
+                "lpHandler.invariant_L_2"
+            );
+        }
     }
 
     function assert_lp_invariant_M() public view {
@@ -150,6 +188,27 @@ abstract contract Invariant_Base_Test_ is Invariant_Shared_Test_ {
         assertEq(address(lidoARM).balance, 0, "llmHandler.invariant_B");
     }
 
+    function assert_llm_invariant_C() public view {
+        uint256 slotGap1 = 1;
+        uint256 slotGap2 = 57;
+        uint256 slotGap3 = 100;
+        uint256 gap1Length = 49;
+        uint256 gap2Length = 42;
+        uint256 gap3Length = 49;
+
+        for (uint256 i = slotGap1; i < slotGap1 + gap1Length; i++) {
+            assertEq(readStorageSlotOnARM(i), 0, "lpHandler.invariant_C.gap1");
+        }
+
+        for (uint256 i = slotGap2; i < slotGap2 + gap2Length; i++) {
+            assertEq(readStorageSlotOnARM(i), 0, "lpHandler.invariant_C.gap2");
+        }
+
+        for (uint256 i = slotGap3; i < slotGap3 + gap3Length; i++) {
+            assertEq(readStorageSlotOnARM(i), 0, "lpHandler.invariant_C.gap3");
+        }
+    }
+
     //////////////////////////////////////////////////////
     /// --- HELPERS
     //////////////////////////////////////////////////////
@@ -166,5 +225,9 @@ abstract contract Invariant_Base_Test_ is Invariant_Shared_Test_ {
     /// @notice Absolute difference between two numbers
     function absDiff(uint256 a, uint256 b) internal pure returns (uint256) {
         return a > b ? a - b : b - a;
+    }
+
+    function readStorageSlotOnARM(uint256 slotNumber) internal view returns (uint256 value) {
+        value = uint256(vm.load(address(lidoARM), bytes32(slotNumber)));
     }
 }
