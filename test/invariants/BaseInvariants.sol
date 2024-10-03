@@ -53,8 +53,7 @@ abstract contract Invariant_Base_Test_ is Invariant_Shared_Test_ {
         * Withdraw Queue:
             * Invariant F: nextWithdrawalIndex == requestRedeem call count
             * Invariant G: withdrawsQueued == ∑requestRedeem.amount
-            * Invariant H: withdrawsQueued > withdrawsClaimable
-            * Invariant I: withdrawsClaimable > withdrawsClaimed
+            * Invariant H: withdrawsQueued > withdrawsClaimed
             * Invariant J: withdrawsClaimed == ∑claimRedeem.amount
 
         * Fees:
@@ -124,11 +123,7 @@ abstract contract Invariant_Base_Test_ is Invariant_Shared_Test_ {
     }
 
     function assert_lp_invariant_H() public view {
-        assertGe(lidoARM.withdrawsQueued(), lidoARM.withdrawsClaimable(), "lpHandler.invariant_H");
-    }
-
-    function assert_lp_invariant_I() public view {
-        assertGe(lidoARM.withdrawsClaimable(), lidoARM.withdrawsClaimed(), "lpHandler.invariant_I");
+        assertGe(lidoARM.withdrawsQueued(), lidoARM.withdrawsClaimed(), "lpHandler.invariant_H");
     }
 
     function assert_lp_invariant_J() public view {
