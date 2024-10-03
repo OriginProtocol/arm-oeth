@@ -2,7 +2,7 @@
 pragma solidity 0.8.23;
 
 // Foundry
-import {console} from "forge-std/Console.sol";
+import {console} from "forge-std/console.sol";
 
 // Handlers
 import {BaseHandler} from "./BaseHandler.sol";
