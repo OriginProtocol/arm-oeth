@@ -321,7 +321,12 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         assertEq(weth.balanceOf(address(lidoARM)), wethBalanceBefore, "WETH ARM balance before");
         assertEq(lidoARM.outstandingEther(), 0, "Outstanding ether before");
         assertEq(lidoARM.feesAccrued(), 0, "Fees accrued before");
-        assertEq(lidoARM.lastAvailableAssets(), int256(MIN_TOTAL_SUPPLY), "last available assets before");
+        assertApproxEqAbs(
+            lidoARM.lastAvailableAssets(),
+            int256(MIN_TOTAL_SUPPLY),
+            STETH_ERROR_ROUNDING,
+            "last available assets before"
+        );
         assertEq(lidoARM.balanceOf(alice), 0, "alice shares before");
         assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY, "total supply before");
         assertEq(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY, "total assets before");
@@ -350,7 +355,12 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         assertEq(weth.balanceOf(address(lidoARM)), wethBalanceBefore + amount, "WETH ARM balance after");
         assertEq(lidoARM.outstandingEther(), 0, "Outstanding ether after");
         assertEq(lidoARM.feesAccrued(), 0, "Fees accrued after"); // No perfs so no fees
-        assertEq(lidoARM.lastAvailableAssets(), int256(MIN_TOTAL_SUPPLY + amount), "last available assets after");
+        assertApproxEqAbs(
+            lidoARM.lastAvailableAssets(),
+            int256(MIN_TOTAL_SUPPLY + amount),
+            STETH_ERROR_ROUNDING,
+            "last available assets after"
+        );
         assertEq(lidoARM.balanceOf(alice), shares, "alice shares after");
         assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY + amount, "total supply after");
         assertEq(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY + amount, "total assets after");
