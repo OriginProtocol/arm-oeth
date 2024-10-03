@@ -116,7 +116,7 @@ contract Fork_Concrete_LidoARM_SwapExactTokensForTokens_Test is Fork_Shared_Test
 
         initialBalance = weth.balanceOf(address(lidoARM));
         deal(address(steth), address(this), initialBalance * 2);
-        vm.expectRevert("ARM: Insufficient liquidity");
+        vm.expectRevert();
         lidoARM.swapExactTokensForTokens(
             steth, // inToken
             weth, // outToken

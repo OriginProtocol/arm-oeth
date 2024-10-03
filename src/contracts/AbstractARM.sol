@@ -539,11 +539,18 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         withdrawsClaimable = SafeCast.toUint128(withdrawsClaimableMem + addedClaimable);
     }
 
-    /// @dev Calculate how much of the liquidity asset in the ARM is not reserved for the withdrawal queue.
-    // That is, it is available to be swapped.
+    /// @dev Calculate how much of the liquidity asset (WETH) in the ARM is not reserved for the withdrawal queue.
+    // That is, the amount of liquidity assets (WETH) that is available to be swapped.
+    // If there are no outstanding withdrawals, then return the maximum uint256 value.
+    // The ARM can swap out liquidity assets (WETH) that has been accrued from the performance fee for the fee collector.
+    // There is no liquidity guarantee for the fee collector. If there is not enough liquidity assets (WETH) in
+    // the ARM to collect the accrued fees, then the fee collector will have to wait until there is enough liquidity assets.
     function _liquidityAvailable() internal view returns (uint256) {
         // The amount of WETH that is still to be claimed in the withdrawal queue
         uint256 outstandingWithdrawals = withdrawsQueued - withdrawsClaimed;
+
+        // Save gas on an external balanceOf call if there are no outstanding withdrawals
+        if (outstandingWithdrawals == 0) return type(uint256).max;
 
         // The amount of the liquidity asset is in the ARM
         uint256 liquidityBalance = IERC20(liquidityAsset).balanceOf(address(this));
