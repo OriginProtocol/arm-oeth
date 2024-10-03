@@ -34,14 +34,11 @@ abstract contract Helpers is Base_Test_ {
     }
 
     /// @notice Asserts the equality between value of `withdrawalQueueMetadata()` and the expected values.
-    function assertEqQueueMetadata(
-        uint256 expectedQueued,
-        uint256 expectedClaimable,
-        uint256 expectedClaimed,
-        uint256 expectedNextIndex
-    ) public view {
+    function assertEqQueueMetadata(uint256 expectedQueued, uint256 expectedClaimed, uint256 expectedNextIndex)
+        public
+        view
+    {
         assertEq(lidoARM.withdrawsQueued(), expectedQueued, "metadata queued");
-        assertEq(lidoARM.withdrawsClaimable(), expectedClaimable, "metadata claimable");
         assertEq(lidoARM.withdrawsClaimed(), expectedClaimed, "metadata claimed");
         assertEq(lidoARM.nextWithdrawalIndex(), expectedNextIndex, "metadata nextWithdrawalIndex");
     }

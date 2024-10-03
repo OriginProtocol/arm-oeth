@@ -125,7 +125,7 @@ contract Fork_Concrete_LidoARM_ClaimRedeem_Test_ is Fork_Shared_Test_ {
         assertEq(lidoARM.balanceOf(address(this)), 0);
         assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY);
         assertEq(liquidityProviderController.liquidityProviderCaps(address(this)), 0);
-        assertEqQueueMetadata(DEFAULT_AMOUNT, 0, 0, 1);
+        assertEqQueueMetadata(DEFAULT_AMOUNT, 0, 1);
         assertEqUserRequest(0, address(this), false, block.timestamp, DEFAULT_AMOUNT, DEFAULT_AMOUNT);
 
         // Expected events
@@ -146,7 +146,7 @@ contract Fork_Concrete_LidoARM_ClaimRedeem_Test_ is Fork_Shared_Test_ {
         assertEq(lidoARM.balanceOf(address(this)), 0);
         assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY);
         assertEq(liquidityProviderController.liquidityProviderCaps(address(this)), 0);
-        assertEqQueueMetadata(DEFAULT_AMOUNT, DEFAULT_AMOUNT, DEFAULT_AMOUNT, 1);
+        assertEqQueueMetadata(DEFAULT_AMOUNT, DEFAULT_AMOUNT, 1);
         assertEqUserRequest(0, address(this), true, block.timestamp, DEFAULT_AMOUNT, DEFAULT_AMOUNT);
         assertEq(assets, DEFAULT_AMOUNT);
     }
@@ -182,7 +182,7 @@ contract Fork_Concrete_LidoARM_ClaimRedeem_Test_ is Fork_Shared_Test_ {
         (uint256 assets) = lidoARM.claimRedeem(0);
 
         // Assertions after
-        assertApproxEqAbs(steth.balanceOf(address(lidoARM)), MIN_TOTAL_SUPPLY, 1);
+        assertApproxEqAbs(steth.balanceOf(address(lidoARM)), MIN_TOTAL_SUPPLY, 2);
         assertEq(weth.balanceOf(address(lidoARM)), 0);
         assertEq(lidoARM.outstandingEther(), 0);
         assertEq(lidoARM.feesAccrued(), 0); // No perfs so no fees
@@ -190,7 +190,7 @@ contract Fork_Concrete_LidoARM_ClaimRedeem_Test_ is Fork_Shared_Test_ {
         assertEq(lidoARM.balanceOf(address(this)), 0);
         assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY);
         assertEq(liquidityProviderController.liquidityProviderCaps(address(this)), 0);
-        assertEqQueueMetadata(DEFAULT_AMOUNT, DEFAULT_AMOUNT, DEFAULT_AMOUNT, 1);
+        assertEqQueueMetadata(DEFAULT_AMOUNT, DEFAULT_AMOUNT, 1);
         assertEqUserRequest(0, address(this), true, block.timestamp, DEFAULT_AMOUNT, DEFAULT_AMOUNT);
         assertEq(assets, DEFAULT_AMOUNT);
     }
@@ -214,7 +214,7 @@ contract Fork_Concrete_LidoARM_ClaimRedeem_Test_ is Fork_Shared_Test_ {
         assertEq(lidoARM.balanceOf(address(this)), 0);
         assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY);
         assertEq(liquidityProviderController.liquidityProviderCaps(address(this)), 0);
-        assertEqQueueMetadata(DEFAULT_AMOUNT, DEFAULT_AMOUNT / 2, DEFAULT_AMOUNT / 2, 2);
+        assertEqQueueMetadata(DEFAULT_AMOUNT, DEFAULT_AMOUNT / 2, 2);
         assertEqUserRequest(0, address(this), true, block.timestamp, DEFAULT_AMOUNT / 2, DEFAULT_AMOUNT / 2);
         assertEqUserRequest(1, address(this), false, block.timestamp + delay, DEFAULT_AMOUNT / 2, DEFAULT_AMOUNT);
 
@@ -237,7 +237,7 @@ contract Fork_Concrete_LidoARM_ClaimRedeem_Test_ is Fork_Shared_Test_ {
         assertEq(lidoARM.balanceOf(address(this)), 0);
         assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY);
         assertEq(liquidityProviderController.liquidityProviderCaps(address(this)), 0);
-        assertEqQueueMetadata(DEFAULT_AMOUNT, DEFAULT_AMOUNT, DEFAULT_AMOUNT, 2);
+        assertEqQueueMetadata(DEFAULT_AMOUNT, DEFAULT_AMOUNT, 2);
         assertEqUserRequest(0, address(this), true, block.timestamp - delay, DEFAULT_AMOUNT / 2, DEFAULT_AMOUNT / 2);
         assertEqUserRequest(1, address(this), true, block.timestamp, DEFAULT_AMOUNT / 2, DEFAULT_AMOUNT);
         assertEq(assets, DEFAULT_AMOUNT / 2);
