@@ -98,7 +98,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @notice The available assets the the last time performance fees were collected and adjusted
     /// for liquidity assets (WETH) deposited and redeemed.
     /// This can be negative if there were asset gains and then all the liquidity providers redeemed.
-    int256 public lastAvailableAssets;
+    int128 public lastAvailableAssets;
     /// @notice The account that can collect the performance fee
     address public feeCollector;
 
@@ -165,7 +165,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
         // Initialize the last available assets to the current available assets
         // This ensures no performance fee is accrued when the performance fee is calculated when the fee is set
-        lastAvailableAssets = SafeCast.toInt256(_availableAssets());
+        lastAvailableAssets = SafeCast.toInt128(SafeCast.toInt256(_availableAssets()));
         _setFee(_fee);
         _setFeeCollector(_feeCollector);
 
@@ -414,7 +414,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         _mint(msg.sender, shares);
 
         // Add the deposited assets to the last available assets
-        lastAvailableAssets += SafeCast.toInt256(assets);
+        lastAvailableAssets += SafeCast.toInt128(SafeCast.toInt256(assets));
 
         // Check the liquidity provider caps after the new assets have been deposited
         if (liquidityProviderController != address(0)) {
@@ -460,7 +460,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         _burn(msg.sender, shares);
 
         // Remove the redeemed assets from the last available assets
-        lastAvailableAssets -= SafeCast.toInt128(int256(assets));
+        lastAvailableAssets -= SafeCast.toInt128(SafeCast.toInt256(assets));
 
         emit RedeemRequested(msg.sender, requestId, assets, queued, claimTimestamp);
     }
@@ -657,7 +657,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         IERC20(liquidityAsset).transfer(feeCollector, fees);
 
         // Save the new available assets back to storage less the collected fees.
-        lastAvailableAssets = SafeCast.toInt256(newAvailableAssets) - SafeCast.toInt256(fees);
+        lastAvailableAssets = SafeCast.toInt128(SafeCast.toInt256(newAvailableAssets) - SafeCast.toInt256(fees));
 
         emit FeeCollected(feeCollector, fees);
     }
