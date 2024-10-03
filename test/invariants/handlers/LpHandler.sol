@@ -155,8 +155,9 @@ contract LpHandler is BaseHandler {
         Request storage request = userRequests[requestIndex];
 
         // Check if there is enough liquidity to claim the request, otherwise skip
-        (,,,, uint128 queued) = arm.withdrawalRequests(request.id);
-        if (queued > arm.withdrawsClaimed() + weth.balanceOf(address(arm))) {
+        (,,, uint120 asset, uint128 queued) = arm.withdrawalRequests(request.id);
+        uint256 balance = weth.balanceOf(address(arm));
+        if (queued > arm.withdrawsClaimed() + balance || asset < balance) {
             console.log("LpHandler.claimRedeem - Not enough liquidity to claim request");
             numberOfCalls["lpHandler.claimRedeem.skip"]++;
             return;
