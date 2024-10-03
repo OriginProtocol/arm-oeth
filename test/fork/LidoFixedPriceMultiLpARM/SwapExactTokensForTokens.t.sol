@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
-import {console} from "forge-std/Console.sol";
-
 // Test imports
 import {Fork_Shared_Test_} from "test/fork/shared/Shared.sol";
 
