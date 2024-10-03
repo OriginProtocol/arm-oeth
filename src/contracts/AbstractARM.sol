@@ -90,8 +90,6 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @notice Mapping of withdrawal request indices to the user withdrawal request data
     mapping(uint256 requestId => WithdrawalRequest) public withdrawalRequests;
 
-    /// @notice The account that can collect the performance fee
-    address public feeCollector;
     /// @notice Performance fee that is collected by the feeCollector measured in basis points (1/100th of a percent)
     /// 10,000 = 100% performance fee
     /// 2,000 = 20% performance fee
@@ -103,6 +101,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @notice The available assets at the last time performance fees were calculated.
     /// This can only go up so is a high watermark.
     uint128 public lastAvailableAssets;
+    /// @notice The account that can collect the performance fee
+    address public feeCollector;
 
     address public liquidityProviderController;
 
