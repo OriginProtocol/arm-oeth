@@ -67,13 +67,11 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     uint256 public traderate1;
 
     /// @notice cumulative total of all withdrawal requests included the ones that have already been claimed
-    uint128 public withdrawsQueued;
+    uint120 public withdrawsQueued;
     /// @notice total of all the withdrawal requests that have been claimed
-    uint128 public withdrawsClaimed;
-    /// @notice cumulative total of all the withdrawal requests that can be claimed including the ones already claimed
-    uint128 public withdrawsClaimable;
+    uint120 public withdrawsClaimed;
     /// @notice index of the next withdrawal request starting at 0
-    uint128 public nextWithdrawalIndex;
+    uint16 public nextWithdrawalIndex;
 
     struct WithdrawalRequest {
         address withdrawer;
@@ -81,10 +79,10 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         // When the withdrawal can be claimed
         uint40 claimTimestamp;
         // Amount of assets to withdraw
-        uint128 assets;
+        uint120 assets;
         // cumulative total of all withdrawal requests including this one.
         // this request can be claimed when this queued amount is less than or equal to the queue's claimable amount.
-        uint128 queued;
+        uint120 queued;
     }
 
     /// @notice Mapping of withdrawal request indices to the user withdrawal request data
@@ -440,11 +438,11 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         assets = convertToAssets(shares);
 
         requestId = nextWithdrawalIndex;
-        uint128 queued = SafeCast.toUint128(withdrawsQueued + assets);
+        uint120 queued = SafeCast.toUint120(withdrawsQueued + assets);
         uint40 claimTimestamp = uint40(block.timestamp + CLAIM_DELAY);
 
         // Store the next withdrawal request
-        nextWithdrawalIndex = SafeCast.toUint128(requestId + 1);
+        nextWithdrawalIndex = SafeCast.toUint16(requestId + 1);
         // Store the updated queued amount which reserves WETH in the withdrawal queue
         withdrawsQueued = queued;
         // Store requests
@@ -452,7 +450,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
             withdrawer: msg.sender,
             claimed: false,
             claimTimestamp: claimTimestamp,
-            assets: SafeCast.toUint128(assets),
+            assets: SafeCast.toUint120(assets),
             queued: queued
         });
 
@@ -469,15 +467,15 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @param requestId The index of the withdrawal request
     /// @return assets The amount of liquidity assets that were transferred to the redeemer
     function claimRedeem(uint256 requestId) external returns (uint256 assets) {
-        // Update the ARM's withdrawal queue's claimable amount
-        _updateWithdrawalQueueLiquidity();
-
         // Load the structs from storage into memory
         WithdrawalRequest memory request = withdrawalRequests[requestId];
 
         require(request.claimTimestamp <= block.timestamp, "Claim delay not met");
-        // If there isn't enough reserved liquidity in the queue to claim
-        require(request.queued <= withdrawsClaimable, "Queue pending liquidity");
+        // Is there enough liquidity to claim this request?
+        require(
+            request.queued <= withdrawsClaimed + IERC20(liquidityAsset).balanceOf(address(this)),
+            "Queue pending liquidity"
+        );
         require(request.withdrawer == msg.sender, "Not requester");
         require(request.claimed == false, "Already claimed");
 
@@ -494,38 +492,11 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         IERC20(liquidityAsset).transfer(msg.sender, assets);
     }
 
-    /// @dev Updates the claimable amount in the ARM's withdrawal queue.
-    /// That's the amount that is used to check if a request can be claimed or not.
-    function _updateWithdrawalQueueLiquidity() internal {
-        // Load the claimable amount from storage into memory
-        uint256 withdrawsClaimableMem = withdrawsClaimable;
-
-        // Check if the claimable amount is less than the queued amount
-        uint256 queueShortfall = withdrawsQueued - withdrawsClaimableMem;
-
-        // No need to do anything is the withdrawal queue is fully funded
-        if (queueShortfall == 0) {
-            return;
-        }
-
-        uint256 liquidityBalance = IERC20(liquidityAsset).balanceOf(address(this));
-
-        // Of the claimable withdrawal requests, how much is unclaimed?
-        // That is, the amount of the liquidity assets that is currently allocated for the withdrawal queue
-        uint256 allocatedLiquidity = withdrawsClaimableMem - withdrawsClaimed;
-
-        // If there is no unallocated liquidity assets then there is nothing to add to the queue
-        if (liquidityBalance <= allocatedLiquidity) {
-            return;
-        }
-
-        uint256 unallocatedLiquidity = liquidityBalance - allocatedLiquidity;
-
-        // the new claimable amount is the smaller of the queue shortfall or unallocated weth
-        uint256 addedClaimable = queueShortfall < unallocatedLiquidity ? queueShortfall : unallocatedLiquidity;
-
-        // Store the new claimable amount back to storage
-        withdrawsClaimable = SafeCast.toUint128(withdrawsClaimableMem + addedClaimable);
+    /// @notice Check if a withdrawal request can be claimed
+    /// @param requestId The index of the withdrawal request
+    function isClaimable(uint256 requestId) public view returns (bool) {
+        return
+            withdrawalRequests[requestId].queued <= withdrawsClaimed + IERC20(liquidityAsset).balanceOf(address(this));
     }
 
     /// @dev Calculate how much of the liquidity asset (WETH) in the ARM is not reserved for the withdrawal queue.
