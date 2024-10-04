@@ -311,16 +311,16 @@ contract Fork_Concrete_LidoARM_SwapExactTokensForTokens_Test is Fork_Shared_Test
 
         uint256 balanceWETHBeforeARM = weth.balanceOf(address(lidoARM));
         uint256 feesAccrued = lidoARM.feesAccrued();
-        // Increase outstandingEther
+        // Increase lidoWithdrawalQueueAmount
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = 1 ether + balanceWETHBeforeARM - feesAccrued - estimatedAmountOut;
         vm.prank(lidoARM.owner());
         lidoARM.requestStETHWithdrawalForETH(amounts);
-        uint256 outstandingEther = lidoARM.outstandingEther();
+        uint256 lidoWithdrawalQueueAmount = lidoARM.lidoWithdrawalQueueAmount();
 
         // Ensure test scenario is correct
-        require(balanceWETHBeforeARM > estimatedAmountOut + outstandingEther, "Balance too low");
-        require(balanceWETHBeforeARM < estimatedAmountOut + outstandingEther + feesAccrued, "Balance too high");
+        require(balanceWETHBeforeARM > estimatedAmountOut + lidoWithdrawalQueueAmount, "Balance too low");
+        require(balanceWETHBeforeARM < estimatedAmountOut + lidoWithdrawalQueueAmount + feesAccrued, "Balance too high");
 
         // State before
         uint256 balanceWETHBeforeThis = weth.balanceOf(address(this));

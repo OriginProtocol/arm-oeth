@@ -81,7 +81,7 @@ contract OwnerHandler is BaseHandler {
         numberOfCalls["ownerHandler.setFees"]++;
 
         uint256 feeAccrued = arm.feesAccrued();
-        if (feeAccrued > weth.balanceOf(address(arm))) {
+        if (feeAccrued > estimatedAvailableLiquidity() || feeAccrued > weth.balanceOf(address(arm))) {
             console.log("OwnerHandler.setFees() - Not enough liquidity to collect fees");
             numberOfCalls["ownerHandler.setFees.skip"]++;
             return;
@@ -109,7 +109,7 @@ contract OwnerHandler is BaseHandler {
         numberOfCalls["ownerHandler.collectFees"]++;
 
         uint256 feeAccrued = arm.feesAccrued();
-        if (feeAccrued > weth.balanceOf(address(arm))) {
+        if (feeAccrued > estimatedAvailableLiquidity() || feeAccrued > weth.balanceOf(address(arm))) {
             console.log("OwnerHandler.collectFees() - Not enough liquidity to collect fees");
             numberOfCalls["ownerHandler.collectFees.skip"]++;
             return;
@@ -123,5 +123,26 @@ contract OwnerHandler is BaseHandler {
 
         // Update sum of fees
         sum_of_fees += fees;
+    }
+
+    ////////////////////////////////////////////////////
+    /// --- ACTIONS
+    ////////////////////////////////////////////////////
+    function estimatedAvailableLiquidity() public view returns (uint256) {
+        // The amount of liquidity assets (WETH) that is still to be claimed in the withdrawal queue
+        uint256 outstandingWithdrawals = arm.withdrawsQueued() - arm.withdrawsClaimed();
+
+        // Save gas on an external balanceOf call if there are no outstanding withdrawals
+        if (outstandingWithdrawals == 0) return type(uint256).max;
+
+        // The amount of the liquidity asset is in the ARM
+        uint256 liquidityBalance = weth.balanceOf(address(arm));
+
+        // If there is not enough liquidity assets in the ARM to cover the outstanding withdrawals
+        if (liquidityBalance <= outstandingWithdrawals) {
+            return 0;
+        }
+
+        return liquidityBalance - outstandingWithdrawals;
     }
 }

@@ -62,7 +62,7 @@ abstract contract Invariant_Base_Test_ is Invariant_Shared_Test_ {
             * Invariant M: ∑feesCollected == feeCollector.balance
 
      * Lido Liquidity Manager functionnalities
-        * Invariant A: outstandingEther == ∑lidoRequestRedeem.assets
+        * Invariant A: lidoWithdrawalQueueAmount == ∑lidoRequestRedeem.assets
         * Invariant B: address(arm).balance == 0
         * Invariant C: All slot allow for gap are empty
     
@@ -131,7 +131,8 @@ abstract contract Invariant_Base_Test_ is Invariant_Shared_Test_ {
 
     function assert_lp_invariant_I() public view {
         uint256 sum;
-        for (uint256 i; i < lidoARM.nextWithdrawalIndex(); i++) {
+        uint256 nextWithdrawalIndex = lidoARM.nextWithdrawalIndex();
+        for (uint256 i; i < nextWithdrawalIndex; i++) {
             (,,, uint120 assets,) = lidoARM.withdrawalRequests(i);
             sum += assets;
         }
@@ -144,7 +145,8 @@ abstract contract Invariant_Base_Test_ is Invariant_Shared_Test_ {
     }
 
     function assert_lp_invariant_K() public view {
-        for (uint256 i; i < lidoARM.nextWithdrawalIndex(); i++) {
+        uint256 nextWithdrawalIndex = lidoARM.nextWithdrawalIndex();
+        for (uint256 i; i < nextWithdrawalIndex; i++) {
             (,,, uint120 assets, uint120 queued) = lidoARM.withdrawalRequests(i);
             assertGe(queued, assets, "lpHandler.invariant_L");
         }
@@ -160,7 +162,7 @@ abstract contract Invariant_Base_Test_ is Invariant_Shared_Test_ {
     //////////////////////////////////////////////////////
     function assert_llm_invariant_A() public view {
         assertEq(
-            lidoARM.outstandingEther(),
+            lidoARM.lidoWithdrawalQueueAmount(),
             llmHandler.sum_of_requested_ether() - llmHandler.sum_of_redeemed_ether(),
             "llmHandler.invariant_A"
         );
@@ -173,10 +175,8 @@ abstract contract Invariant_Base_Test_ is Invariant_Shared_Test_ {
     function assert_llm_invariant_C() public view {
         uint256 slotGap1 = 1;
         uint256 slotGap2 = 57;
-        uint256 slotGap3 = 100;
         uint256 gap1Length = 49;
-        uint256 gap2Length = 42;
-        uint256 gap3Length = 49;
+        uint256 gap2Length = 43;
 
         for (uint256 i = slotGap1; i < slotGap1 + gap1Length; i++) {
             assertEq(readStorageSlotOnARM(i), 0, "lpHandler.invariant_C.gap1");
@@ -184,10 +184,6 @@ abstract contract Invariant_Base_Test_ is Invariant_Shared_Test_ {
 
         for (uint256 i = slotGap2; i < slotGap2 + gap2Length; i++) {
             assertEq(readStorageSlotOnARM(i), 0, "lpHandler.invariant_C.gap2");
-        }
-
-        for (uint256 i = slotGap3; i < slotGap3 + gap3Length; i++) {
-            assertEq(readStorageSlotOnARM(i), 0, "lpHandler.invariant_C.gap3");
         }
     }
 

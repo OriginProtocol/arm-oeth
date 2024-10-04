@@ -7,7 +7,7 @@ import {Base_Test_} from "test/Base.sol";
 // Contracts
 import {Proxy} from "contracts/Proxy.sol";
 import {LidoARM} from "contracts/LidoARM.sol";
-import {LiquidityProviderController} from "contracts/LiquidityProviderController.sol";
+import {CapManager} from "contracts/CapManager.sol";
 import {WETH} from "@solmate/tokens/WETH.sol";
 
 // Mocks
@@ -114,15 +114,15 @@ abstract contract Invariant_Shared_Test_ is Base_Test_ {
     }
 
     function _deployLPC() private {
-        // Deploy LiquidityProviderController implementation.
-        LiquidityProviderController lpcImpl = new LiquidityProviderController(address(lidoProxy));
+        // Deploy CapManager implementation.
+        CapManager lpcImpl = new CapManager(address(lidoProxy));
 
-        // Initialize Proxy with LiquidityProviderController implementation.
+        // Initialize Proxy with CapManager implementation.
         bytes memory data = abi.encodeWithSignature("initialize(address)", operator);
         lpcProxy.initialize(address(lpcImpl), address(this), data);
 
-        // Set the Proxy as the LiquidityProviderController.
-        liquidityProviderController = LiquidityProviderController(payable(address(lpcProxy)));
+        // Set the Proxy as the CapManager.
+        capManager = CapManager(payable(address(lpcProxy)));
     }
 
     function _deployLidoARM() private {

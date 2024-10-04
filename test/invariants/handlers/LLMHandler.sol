@@ -108,7 +108,7 @@ contract LLMHandler is BaseHandler {
         requestIds = newRequestIds;
 
         // As `claimStETHWithdrawalForWETH` doesn't send back the amount, we need to calculate it
-        uint256 outstandingBefore = arm.outstandingEther();
+        uint256 outstandingBefore = arm.lidoWithdrawalQueueAmount();
 
         // Prank Owner
         vm.startPrank(owner);
@@ -119,7 +119,7 @@ contract LLMHandler is BaseHandler {
         // Stop Prank
         vm.stopPrank();
 
-        uint256 outstandingAfter = arm.outstandingEther();
+        uint256 outstandingAfter = arm.lidoWithdrawalQueueAmount();
         uint256 diff = outstandingBefore - outstandingAfter;
 
         console.log("LLMHandler.claimStETHWithdrawalForWETH(%18e)", diff);

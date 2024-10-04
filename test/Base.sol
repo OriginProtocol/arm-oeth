@@ -85,7 +85,7 @@ abstract contract Base_Test_ is Test {
         _labelNotNull(address(lidoProxy), "LIDO ARM PROXY");
         _labelNotNull(address(oethARM), "OETH ARM");
         _labelNotNull(address(lidoARM), "LIDO ARM");
-        _labelNotNull(address(liquidityProviderController), "LPC");
+        _labelNotNull(address(capManager), "CAP MANAGER");
 
         _labelNotNull(address(oeth), "OETH");
         _labelNotNull(address(weth), "WETH");

@@ -55,12 +55,12 @@ contract Invariant_Basic_Test_ is Invariant_Base_Test_ {
 
         // --- Setup ARM ---
         // Max caps on the total asset that can be deposited
-        vm.prank(liquidityProviderController.owner());
-        liquidityProviderController.setTotalAssetsCap(type(uint248).max);
+        vm.prank(capManager.owner());
+        capManager.setTotalAssetsCap(type(uint248).max);
 
         // Disable account cap, unlimited capacity for user to provide liquidity
-        vm.prank(liquidityProviderController.owner());
-        liquidityProviderController.setAccountCapEnabled(false);
+        vm.prank(capManager.owner());
+        capManager.setAccountCapEnabled(false);
 
         // Set prices, start with almost 1:1
         vm.prank(lidoARM.owner());
