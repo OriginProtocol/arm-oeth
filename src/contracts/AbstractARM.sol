@@ -13,8 +13,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     ////////////////////////////////////////////////////
 
     /// @notice Maximum amount the Operator can set the price from 1 scaled to 36 decimals.
-    /// 1e33 is a 0.1% deviation, or 10 basis points.
-    uint256 public constant MAX_PRICE_DEVIATION = 1e33;
+    /// 2e33 is a 0.02% deviation, or 2 basis points.
+    uint256 public constant MAX_PRICE_DEVIATION = 2e32;
     /// @notice Scale of the prices.
     uint256 public constant PRICE_SCALE = 1e36;
     /// @notice The delay before a withdrawal request can be claimed in seconds
@@ -524,7 +524,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
         if (fees > newAvailableAssets) return 0;
 
-        // Calculate the performance fee and remove from the available assets
+        // Remove the performance fee from the available assets
         return newAvailableAssets - fees;
     }
 

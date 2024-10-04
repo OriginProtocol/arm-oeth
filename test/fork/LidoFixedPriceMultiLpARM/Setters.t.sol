@@ -137,15 +137,15 @@ contract Fork_Concrete_lidoARM_Setters_Test_ is Fork_Shared_Test_ {
     /// --- Set Prices - PASSING TESTS
     //////////////////////////////////////////////////////
     function test_SetPrices_Operator() public asOperator {
-        // buy price 10 basis points higher than 1.0
-        lidoARM.setPrices(1001e33, 1002e33);
-        // sell price 10 basis points lower than 1.0
-        lidoARM.setPrices(9980e32, 9991e32);
+        // buy price 2 basis points higher than 1.0
+        lidoARM.setPrices(1002e32, 10004e32);
+        // sell price 2 basis points lower than 1.0
+        lidoARM.setPrices(9980e32, 99998e32);
         // 2% of one basis point spread
         lidoARM.setPrices(999999e30, 1000001e30);
 
         lidoARM.setPrices(992 * 1e33, 1001 * 1e33);
-        lidoARM.setPrices(1001 * 1e33, 1004 * 1e33);
+        lidoARM.setPrices(10002 * 1e32, 1004 * 1e33);
         lidoARM.setPrices(992 * 1e33, 2000 * 1e33);
 
         // Check the traderates
