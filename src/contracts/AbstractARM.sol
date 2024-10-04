@@ -486,10 +486,10 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
         assets = request.assets;
 
-        emit RedeemClaimed(msg.sender, requestId, assets);
-
         // transfer the liquidity asset to the withdrawer
         IERC20(liquidityAsset).transfer(msg.sender, assets);
+
+        emit RedeemClaimed(msg.sender, requestId, assets);
     }
 
     /// @notice Used to work out if an ARM's withdrawal request can be claimed.
