@@ -479,12 +479,12 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         require(request.withdrawer == msg.sender, "Not requester");
         require(request.claimed == false, "Already claimed");
 
+        assets = request.assets;
+
         // Store the request as claimed
         withdrawalRequests[requestId].claimed = true;
         // Store the updated claimed amount
-        withdrawsClaimed += request.assets;
-
-        assets = request.assets;
+        withdrawsClaimed += SafeCast.toUint120(assets);
 
         // transfer the liquidity asset to the withdrawer
         IERC20(liquidityAsset).transfer(msg.sender, assets);
