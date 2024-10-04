@@ -130,10 +130,10 @@ contract Fork_Concrete_LidoARM_ClaimRedeem_Test_ is Fork_Shared_Test_ {
         assertEq(lidoARM.claimable(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT);
 
         // Expected events
-        vm.expectEmit({emitter: address(lidoARM)});
-        emit AbstractARM.RedeemClaimed(address(this), 0, DEFAULT_AMOUNT);
         vm.expectEmit({emitter: address(weth)});
         emit IERC20.Transfer(address(lidoARM), address(this), DEFAULT_AMOUNT);
+        vm.expectEmit({emitter: address(lidoARM)});
+        emit AbstractARM.RedeemClaimed(address(this), 0, DEFAULT_AMOUNT);
 
         // Main call
         (uint256 assets) = lidoARM.claimRedeem(0);
@@ -175,10 +175,10 @@ contract Fork_Concrete_LidoARM_ClaimRedeem_Test_ is Fork_Shared_Test_ {
         }
 
         // Expected events
-        vm.expectEmit({emitter: address(lidoARM)});
-        emit AbstractARM.RedeemClaimed(address(this), 0, DEFAULT_AMOUNT);
         vm.expectEmit({emitter: address(weth)});
         emit IERC20.Transfer(address(lidoARM), address(this), DEFAULT_AMOUNT);
+        vm.expectEmit({emitter: address(lidoARM)});
+        emit AbstractARM.RedeemClaimed(address(this), 0, DEFAULT_AMOUNT);
 
         // Main call
         (uint256 assets) = lidoARM.claimRedeem(0);
@@ -222,10 +222,10 @@ contract Fork_Concrete_LidoARM_ClaimRedeem_Test_ is Fork_Shared_Test_ {
         assertEq(lidoARM.claimable(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT);
 
         // Expected events
-        vm.expectEmit({emitter: address(lidoARM)});
-        emit AbstractARM.RedeemClaimed(address(this), 1, DEFAULT_AMOUNT / 2);
         vm.expectEmit({emitter: address(weth)});
         emit IERC20.Transfer(address(lidoARM), address(this), DEFAULT_AMOUNT / 2);
+        vm.expectEmit({emitter: address(lidoARM)});
+        emit AbstractARM.RedeemClaimed(address(this), 1, DEFAULT_AMOUNT / 2);
 
         // Main call
         skip(delay);
