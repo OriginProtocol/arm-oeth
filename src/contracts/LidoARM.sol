@@ -67,9 +67,9 @@ contract LidoARM is Initializable, AbstractARM {
      */
     function _transferAsset(address asset, address to, uint256 amount) internal override {
         // Add 2 wei if transferring stETH
-        uint256 transferAmount = asset == address(steth) ? amount + 2 : amount;
+        if (asset == address(steth)) amount += 2;
 
-        super._transferAsset(asset, to, transferAmount);
+        super._transferAsset(asset, to, amount);
     }
 
     /**
