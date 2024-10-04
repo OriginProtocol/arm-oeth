@@ -621,7 +621,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         // Accrue any performance fees up to this point
         (fees, newAvailableAssets) = _feesAccrued();
 
-        if (fee == 0) return fees;
+        if (fee == 0) return 0;
 
         require(fees <= IERC20(liquidityAsset).balanceOf(address(this)), "ARM: insufficient liquidity");
 
