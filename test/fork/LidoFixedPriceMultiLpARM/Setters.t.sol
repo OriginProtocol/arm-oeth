@@ -63,7 +63,7 @@ contract Fork_Concrete_lidoARM_Setters_Test_ is Fork_Shared_Test_ {
     function test_PerformanceFee_SetFee_() public asLidoARMOwner {
         uint256 feeBefore = lidoARM.fee();
 
-        uint256 newFee = _bound(vm.randomUint(), 0, lidoARM.FEE_SCALE());
+        uint256 newFee = _bound(vm.randomUint(), 0, lidoARM.FEE_SCALE() / 2);
 
         vm.expectEmit({emitter: address(lidoARM)});
         emit AbstractARM.FeeUpdated(newFee);

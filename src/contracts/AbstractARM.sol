@@ -595,7 +595,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     }
 
     function _setFee(uint256 _fee) internal {
-        require(_fee <= FEE_SCALE, "ARM: fee too high");
+        require(_fee <= FEE_SCALE / 2, "ARM: fee too high");
 
         // Collect any performance fees up to this point using the old fee
         collectFees();
