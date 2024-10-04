@@ -633,11 +633,11 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     }
 
     /// @notice Calculates the performance fees accrued since the last time fees were collected
-    function feesAccrued() public view returns (uint256 fees) {
+    function feesAccrued() external view returns (uint256 fees) {
         (fees,) = _feesAccrued();
     }
 
-    function _feesAccrued() public view returns (uint256 fees, uint256 newAvailableAssets) {
+    function _feesAccrued() internal view returns (uint256 fees, uint256 newAvailableAssets) {
         newAvailableAssets = _availableAssets();
 
         // Calculate the increase in assets since the last time fees were calculated
