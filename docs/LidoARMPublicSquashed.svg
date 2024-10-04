@@ -38,7 +38,7 @@
 <text text-anchor="start" x="8" y="-772.7" font-family="Times,serif" font-size="14.00"> &#160;&#160;steth: IERC20 &lt;&lt;LidoARM&gt;&gt;</text>
 <text text-anchor="start" x="8" y="-755.9" font-family="Times,serif" font-size="14.00"> &#160;&#160;weth: IWETH &lt;&lt;LidoARM&gt;&gt;</text>
 <text text-anchor="start" x="8" y="-739.1" font-family="Times,serif" font-size="14.00"> &#160;&#160;withdrawalQueue: IStETHWithdrawal &lt;&lt;LidoARM&gt;&gt;</text>
-<text text-anchor="start" x="8" y="-722.3" font-family="Times,serif" font-size="14.00"> &#160;&#160;outstandingEther: uint256 &lt;&lt;LidoARM&gt;&gt;</text>
+<text text-anchor="start" x="8" y="-722.3" font-family="Times,serif" font-size="14.00"> &#160;&#160;lidoWithdrawalQueueAmount: uint256 &lt;&lt;LidoARM&gt;&gt;</text>
 <polyline fill="none" stroke="black" points="0,-714.1 951.2,-714.1 "/>
 <text text-anchor="start" x="8" y="-697.5" font-family="Times,serif" font-size="14.00">External:</text>
 <text text-anchor="start" x="8" y="-680.7" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;&lt;&lt;payable&gt;&gt; null() &lt;&lt;LidoARM&gt;&gt;</text>

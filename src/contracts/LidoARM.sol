@@ -23,7 +23,8 @@ contract LidoARM is Initializable, AbstractARM {
     /// @notice The address of the Lido Withdrawal Queue contract
     IStETHWithdrawal public immutable withdrawalQueue;
 
-    uint256 public outstandingEther;
+    /// @notice The amount of stETH in the Lido Withdrawal Queue
+    uint256 public lidoWithdrawalQueueAmount;
 
     /// @param _steth The address of the stETH token
     /// @param _weth The address of the WETH token
@@ -90,7 +91,7 @@ contract LidoARM is Initializable, AbstractARM {
         }
 
         // Increase the Ether outstanding from the Lido Withdrawal Queue
-        outstandingEther += totalAmountRequested;
+        lidoWithdrawalQueueAmount += totalAmountRequested;
     }
 
     /**
@@ -108,7 +109,7 @@ contract LidoARM is Initializable, AbstractARM {
         uint256 etherAfter = address(this).balance;
 
         // Reduce the Ether outstanding from the Lido Withdrawal Queue
-        outstandingEther -= etherAfter - etherBefore;
+        lidoWithdrawalQueueAmount -= etherAfter - etherBefore;
 
         // Wrap all the received ETH to WETH.
         weth.deposit{value: etherAfter}();
@@ -118,7 +119,7 @@ contract LidoARM is Initializable, AbstractARM {
      * @dev Calculates the amount of stETH in the Lido Withdrawal Queue.
      */
     function _externalWithdrawQueue() internal view override returns (uint256) {
-        return outstandingEther;
+        return lidoWithdrawalQueueAmount;
     }
 
     // This method is necessary for receiving the ETH claimed as part of the withdrawal.

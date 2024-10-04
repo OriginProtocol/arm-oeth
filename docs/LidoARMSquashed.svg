@@ -45,7 +45,7 @@
 <text text-anchor="start" x="8" y="-1091.9" font-family="Times,serif" font-size="14.00"> &#160;&#160;steth: IERC20 &lt;&lt;LidoARM&gt;&gt;</text>
 <text text-anchor="start" x="8" y="-1075.1" font-family="Times,serif" font-size="14.00"> &#160;&#160;weth: IWETH &lt;&lt;LidoARM&gt;&gt;</text>
 <text text-anchor="start" x="8" y="-1058.3" font-family="Times,serif" font-size="14.00"> &#160;&#160;withdrawalQueue: IStETHWithdrawal &lt;&lt;LidoARM&gt;&gt;</text>
-<text text-anchor="start" x="8" y="-1041.5" font-family="Times,serif" font-size="14.00"> &#160;&#160;outstandingEther: uint256 &lt;&lt;LidoARM&gt;&gt;</text>
+<text text-anchor="start" x="8" y="-1041.5" font-family="Times,serif" font-size="14.00"> &#160;&#160;lidoWithdrawalQueueAmount: uint256 &lt;&lt;LidoARM&gt;&gt;</text>
 <polyline fill="none" stroke="black" points="0,-1033.3 951.2,-1033.3 "/>
 <text text-anchor="start" x="8" y="-1016.7" font-family="Times,serif" font-size="14.00">Internal:</text>
 <text text-anchor="start" x="8" y="-999.9" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;_owner(): (ownerOut: address) &lt;&lt;Ownable&gt;&gt;</text>
