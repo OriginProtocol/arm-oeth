@@ -102,7 +102,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
     address public liquidityProviderController;
 
-    uint256[42] private _gap;
+    uint256[43] private _gap;
 
     ////////////////////////////////////////////////////
     ///                 Events
