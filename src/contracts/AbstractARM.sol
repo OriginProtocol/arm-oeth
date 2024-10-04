@@ -443,7 +443,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
         // Store the next withdrawal request
         nextWithdrawalIndex = SafeCast.toUint16(requestId + 1);
-        // Store the updated queued amount which reserves WETH in the withdrawal queue
+        // Store the updated queued amount which reserves liquidity assets (WETH) in the withdrawal queue
         withdrawsQueued = queued;
         // Store requests
         withdrawalRequests[requestId] = WithdrawalRequest({
@@ -505,7 +505,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     // There is no liquidity guarantee for the fee collector. If there is not enough liquidity assets (WETH) in
     // the ARM to collect the accrued fees, then the fee collector will have to wait until there is enough liquidity assets.
     function _liquidityAvailable() internal view returns (uint256) {
-        // The amount of WETH that is still to be claimed in the withdrawal queue
+        // The amount of liquidity assets (WETH) that is still to be claimed in the withdrawal queue
         uint256 outstandingWithdrawals = withdrawsQueued - withdrawsClaimed;
 
         // Save gas on an external balanceOf call if there are no outstanding withdrawals
@@ -540,18 +540,17 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         // Get the assets in the ARM and external withdrawal queue
         uint256 assets = token0.balanceOf(address(this)) + token1.balanceOf(address(this)) + _externalWithdrawQueue();
 
-        // Load the queue metadata from storage into memory
-        uint256 queuedMem = withdrawsQueued;
-        uint256 claimedMem = withdrawsClaimed;
+        // The amount of liquidity assets (WETH) that is still to be claimed in the withdrawal queue
+        uint256 outstandingWithdrawals = withdrawsQueued - withdrawsClaimed;
 
         // If the ARM becomes insolvent enough that the available assets in the ARM and external withdrawal queue
         // is less than the outstanding withdrawals and accrued fees.
-        if (assets + claimedMem < queuedMem) {
+        if (assets < outstandingWithdrawals) {
             return 0;
         }
 
         // Need to remove the liquidity assets that have been reserved for the withdrawal queue
-        return assets + claimedMem - queuedMem;
+        return assets - outstandingWithdrawals;
     }
 
     /// @dev Hook for calculating the amount of assets in an external withdrawal queue like Lido or OETH
