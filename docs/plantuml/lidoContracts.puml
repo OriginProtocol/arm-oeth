@@ -24,7 +24,7 @@ object "LidoARM" as arm <<Origin>><<Proxy>> #$originColor {
     assets: stETH, WETH
 }
 
-object "LiquidityProviderController" as lpc <<Origin>><<Proxy>> #$originColor {
+object "CapManager" as capMan <<Origin>><<Proxy>> #$originColor {
 }
 
 object "WithdrawalQueueERC721" as lidoQ <<Lido>><<Proxy>> #$thirdPartyColor {
@@ -32,7 +32,7 @@ object "WithdrawalQueueERC721" as lidoQ <<Lido>><<Proxy>> #$thirdPartyColor {
 }
 
 zap ..> arm
-arm .> lpc
+arm .> capMan
 arm ..> lidoQ
 
 
