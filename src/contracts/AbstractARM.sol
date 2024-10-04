@@ -585,6 +585,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @param _fee The performance fee measured in basis points (1/100th of a percent)
     /// 10,000 = 100% performance fee
     /// 500 = 5% performance fee
+    /// The max allowed performance fee is 50% (5000)
     function setFee(uint256 _fee) external onlyOwner {
         _setFee(_fee);
     }
