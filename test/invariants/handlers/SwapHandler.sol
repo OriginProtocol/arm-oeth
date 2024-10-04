@@ -82,6 +82,12 @@ contract SwapHandler is BaseHandler {
             return;
         }
 
+        if (requireLiquidityAvailable(inputToken, amountIn)) {
+            numberOfCalls["swapHandler.swapExact.skip"]++;
+            console.log("SwapHandler.swapExactTokens - Not enough liquidity available");
+            return;
+        }
+
         console.log(
             "SwapHandler.swapExactTokensForTokens(%18e), %s, %s", amountIn, names[user], names[address(inputToken)]
         );
@@ -152,6 +158,12 @@ contract SwapHandler is BaseHandler {
         if (outputToken == steth && steth.balanceOf(address(arm)) < amountOut + 2) {
             numberOfCalls["swapHandler.swapTokensExact.skip"]++;
             console.log("SwapHandler.swapTokensForExactTokens - Not enough stETH in the ARM");
+            return;
+        }
+
+        if (requireLiquidityAvailable(outputToken, amountOut)) {
+            numberOfCalls["swapHandler.swapTokensExact.skip"]++;
+            console.log("SwapHandler.swapTokensForExactTokens - Not enough liquidity available");
             return;
         }
 
@@ -252,15 +264,16 @@ contract SwapHandler is BaseHandler {
     function _liquidityAvailable(IERC20 token) public view returns (uint256 liquidity) {
         if (token == weth) {
             uint256 outstandingWithdrawals = arm.withdrawsQueued() - arm.withdrawsClaimed();
-            uint256 liquidityBalance = weth.balanceOf(address(arm));
-            if (liquidityBalance <= outstandingWithdrawals) {
-                return 0;
-            }
-
-            return liquidityBalance - outstandingWithdrawals;
+            uint256 reserve = weth.balanceOf(address(arm));
+            if (outstandingWithdrawals > reserve) return 0;
+            return reserve - outstandingWithdrawals;
         } else if (token == steth) {
             return steth.balanceOf(address(arm));
         }
+    }
+
+    function requireLiquidityAvailable(IERC20 token, uint256 amount) public view returns (bool) {
+        return (_liquidityAvailable(token) >= amount);
     }
 
     function _price(IERC20 token) public view returns (uint256 price) {
