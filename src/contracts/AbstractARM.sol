@@ -367,7 +367,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         // Limit funds and loss when called by the Operator
         if (msg.sender == operator) {
             require(sellT1 >= PRICE_SCALE - MAX_PRICE_DEVIATION, "ARM: sell price too low");
-            require(buyT1 <= PRICE_SCALE + MAX_PRICE_DEVIATION, "ARM: buy price too high");
+            require(buyT1 < PRICE_SCALE, "ARM: buy price too high");
         }
         _setTraderates(
             PRICE_SCALE * PRICE_SCALE / sellT1, // base (t0) -> token (t1)
