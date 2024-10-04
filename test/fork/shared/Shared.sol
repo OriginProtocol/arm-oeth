@@ -11,7 +11,7 @@ import {Modifiers} from "test/fork/utils/Modifiers.sol";
 import {Proxy} from "contracts/Proxy.sol";
 import {OethARM} from "contracts/OethARM.sol";
 import {LidoARM} from "contracts/LidoARM.sol";
-import {LiquidityProviderController} from "contracts/LiquidityProviderController.sol";
+import {CapManager} from "contracts/CapManager.sol";
 
 // Interfaces
 import {IERC20} from "contracts/Interfaces.sol";
@@ -122,22 +122,22 @@ abstract contract Fork_Shared_Test_ is Modifiers {
         // Set the Proxy as the OethARM.
         oethARM = OethARM(address(proxy));
 
-        // --- Deploy LiquidityProviderController implementation ---
-        // Deploy LiquidityProviderController implementation.
-        LiquidityProviderController lpcImpl = new LiquidityProviderController(address(lidoProxy));
+        // --- Deploy CapManager implementation ---
+        // Deploy CapManager implementation.
+        CapManager capManagerImpl = new CapManager(address(lidoProxy));
 
-        // Initialize Proxy with LiquidityProviderController implementation.
-        lpcProxy.initialize(address(lpcImpl), address(this), data);
+        // Initialize Proxy with CapManager implementation.
+        lpcProxy.initialize(address(capManagerImpl), address(this), data);
 
-        // Set the Proxy as the LiquidityProviderController.
-        liquidityProviderController = LiquidityProviderController(payable(address(lpcProxy)));
+        // Set the Proxy as the CapManager.
+        capManager = CapManager(payable(address(lpcProxy)));
 
-        liquidityProviderController.setTotalAssetsCap(100 ether);
+        capManager.setTotalAssetsCap(100 ether);
 
         address[] memory liquidityProviders = new address[](1);
         liquidityProviders[0] = address(this);
-        liquidityProviderController.setLiquidityProviderCaps(liquidityProviders, 20 ether);
-        liquidityProviderController.setTotalAssetsCap(100 ether);
+        capManager.setLiquidityProviderCaps(liquidityProviders, 20 ether);
+        capManager.setTotalAssetsCap(100 ether);
 
         // --- Deploy LidoARM implementation ---
         // Deploy LidoARM implementation.
@@ -177,7 +177,7 @@ abstract contract Fork_Shared_Test_ is Modifiers {
         vm.label(address(proxy), "OETH ARM PROXY");
         vm.label(address(lidoARM), "LIDO ARM");
         vm.label(address(lidoProxy), "LIDO ARM PROXY");
-        vm.label(address(liquidityProviderController), "LIQUIDITY PROVIDER CONTROLLER");
+        vm.label(address(capManager), "LIQUIDITY PROVIDER CONTROLLER");
         vm.label(operator, "OPERATOR");
         vm.label(oethWhale, "WHALE OETH");
         vm.label(governor, "GOVERNOR");

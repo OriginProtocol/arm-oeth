@@ -62,18 +62,18 @@ abstract contract Modifiers is Helpers {
         _;
     }
 
-    /// @notice Set the liquidity provider cap for a given provider on the LiquidityProviderController contract.
+    /// @notice Set the liquidity provider cap for a given provider on the CapManager contract.
     modifier setLiquidityProviderCap(address provider, uint256 cap) {
         address[] memory providers = new address[](1);
         providers[0] = provider;
 
-        liquidityProviderController.setLiquidityProviderCaps(providers, cap);
+        capManager.setLiquidityProviderCaps(providers, cap);
         _;
     }
 
-    /// @notice Set the total assets cap on the LiquidityProviderController contract.
+    /// @notice Set the total assets cap on the CapManager contract.
     modifier setTotalAssetsCap(uint256 cap) {
-        liquidityProviderController.setTotalAssetsCap(uint248(cap));
+        capManager.setTotalAssetsCap(uint248(cap));
         _;
     }
 

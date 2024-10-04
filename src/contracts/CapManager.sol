@@ -7,10 +7,11 @@ import {OwnableOperable} from "./OwnableOperable.sol";
 import {ILiquidityProviderARM} from "./Interfaces.sol";
 
 /**
- * @title Controller of ARM liquidity providers.
+ * @title Manages capital limits of an Automated Redemption Manager (ARM).
+ * Caps the total assets and individual liquidity provider assets.
  * @author Origin Protocol Inc
  */
-contract LiquidityProviderController is Initializable, OwnableOperable {
+contract CapManager is Initializable, OwnableOperable {
     /// @notice The address of the linked Automated Redemption Manager (ARM).
     address public immutable arm;
 

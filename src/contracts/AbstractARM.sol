@@ -5,7 +5,7 @@ import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 import {OwnableOperable} from "./OwnableOperable.sol";
-import {IERC20, ILiquidityProviderController} from "./Interfaces.sol";
+import {IERC20, ICapManager} from "./Interfaces.sol";
 
 abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     ////////////////////////////////////////////////////
@@ -100,7 +100,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @notice The account that can collect the performance fee
     address public feeCollector;
 
-    address public liquidityProviderController;
+    address public capManager;
 
     uint256[43] private _gap;
 
@@ -117,7 +117,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     event FeeCollected(address indexed feeCollector, uint256 fee);
     event FeeUpdated(uint256 fee);
     event FeeCollectorUpdated(address indexed newFeeCollector);
-    event LiquidityProviderControllerUpdated(address indexed liquidityProviderController);
+    event CapManagerUpdated(address indexed capManager);
 
     constructor(address _token0, address _token1, address _liquidityAsset) {
         require(IERC20(_token0).decimals() == 18);
@@ -141,14 +141,14 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// 10,000 = 100% performance fee
     /// 500 = 5% performance fee
     /// @param _feeCollector The account that can collect the performance fee
-    /// @param _liquidityProviderController The address of the Liquidity Provider Controller
+    /// @param _capManager The address of the CapManager contract
     function _initARM(
         address _operator,
         string calldata _name,
         string calldata _symbol,
         uint256 _fee,
         address _feeCollector,
-        address _liquidityProviderController
+        address _capManager
     ) internal {
         _initOwnableOperable(_operator);
 
@@ -167,8 +167,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         _setFee(_fee);
         _setFeeCollector(_feeCollector);
 
-        liquidityProviderController = _liquidityProviderController;
-        emit LiquidityProviderControllerUpdated(_liquidityProviderController);
+        capManager = _capManager;
+        emit CapManagerUpdated(_capManager);
     }
 
     ////////////////////////////////////////////////////
@@ -415,8 +415,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         lastAvailableAssets += SafeCast.toInt128(SafeCast.toInt256(assets));
 
         // Check the liquidity provider caps after the new assets have been deposited
-        if (liquidityProviderController != address(0)) {
-            ILiquidityProviderController(liquidityProviderController).postDepositHook(msg.sender, assets);
+        if (capManager != address(0)) {
+            ICapManager(capManager).postDepositHook(msg.sender, assets);
         }
 
         emit Deposit(msg.sender, assets, shares);
@@ -568,12 +568,12 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         assets = (shares * totalAssets()) / totalSupply();
     }
 
-    /// @notice Set the Liquidity Provider Controller contract address.
+    /// @notice Set the CapManager contract address.
     /// Set to a zero address to disable the controller.
-    function setLiquidityProviderController(address _liquidityProviderController) external onlyOwner {
-        liquidityProviderController = _liquidityProviderController;
+    function setCapManager(address _capManager) external onlyOwner {
+        capManager = _capManager;
 
-        emit LiquidityProviderControllerUpdated(_liquidityProviderController);
+        emit CapManagerUpdated(_capManager);
     }
 
     ////////////////////////////////////////////////////

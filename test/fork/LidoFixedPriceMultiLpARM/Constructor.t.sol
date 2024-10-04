@@ -28,6 +28,6 @@ contract Fork_Concrete_LidoARM_Constructor_Test is Fork_Shared_Test_ {
         assertEq(lidoARM.totalAssets(), 1e12);
         assertEq(lidoARM.totalSupply(), 1e12);
         assertEq(weth.balanceOf(address(lidoARM)), 1e12);
-        assertEq(liquidityProviderController.totalAssetsCap(), 100 ether);
+        assertEq(capManager.totalAssetsCap(), 100 ether);
     }
 }

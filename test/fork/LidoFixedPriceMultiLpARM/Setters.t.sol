@@ -7,7 +7,7 @@ import {Fork_Shared_Test_} from "test/fork/shared/Shared.sol";
 // Contracts
 import {IERC20} from "contracts/Interfaces.sol";
 import {AbstractARM} from "contracts/AbstractARM.sol";
-import {LiquidityProviderController} from "contracts/LiquidityProviderController.sol";
+import {CapManager} from "contracts/CapManager.sol";
 
 contract Fork_Concrete_lidoARM_Setters_Test_ is Fork_Shared_Test_ {
     address[] testProviders;
@@ -187,129 +187,117 @@ contract Fork_Concrete_lidoARM_Setters_Test_ is Fork_Shared_Test_ {
     //////////////////////////////////////////////////////
     /// --- LIQUIIDITY PROVIDER CONTROLLER - REVERTING TESTS
     //////////////////////////////////////////////////////
-    function test_RevertWhen_LiquidityProviderController_SetLiquidityProvider_Because_NotOwner()
-        public
-        asRandomAddress
-    {
+    function test_RevertWhen_CapManager_SetLiquidityProvider_Because_NotOwner() public asRandomAddress {
         vm.expectRevert("ARM: Only owner can call this function.");
-        lidoARM.setLiquidityProviderController(address(0));
+        lidoARM.setCapManager(address(0));
     }
 
-    function test_RevertWhen_LiquidityProviderController_SetLiquidityProvider_Because_Operator() public asOperator {
+    function test_RevertWhen_CapManager_SetLiquidityProvider_Because_Operator() public asOperator {
         vm.expectRevert("ARM: Only owner can call this function.");
-        lidoARM.setLiquidityProviderController(address(0));
+        lidoARM.setCapManager(address(0));
     }
 
     //////////////////////////////////////////////////////
     /// --- LIQUIIDITY PROVIDER CONTROLLER - PASSING TESTS
     //////////////////////////////////////////////////////
-    function test_LiquidityProviderController_SetLiquidityProvider() public asLidoARMOwner {
-        address newLiquidityProviderController = vm.randomAddress();
+    function test_CapManager_SetLiquidityProvider() public asLidoARMOwner {
+        address newCapManager = vm.randomAddress();
 
         vm.expectEmit({emitter: address(lidoARM)});
-        emit AbstractARM.LiquidityProviderControllerUpdated(newLiquidityProviderController);
-        lidoARM.setLiquidityProviderController(newLiquidityProviderController);
+        emit AbstractARM.CapManagerUpdated(newCapManager);
+        lidoARM.setCapManager(newCapManager);
 
-        assertEq(lidoARM.liquidityProviderController(), newLiquidityProviderController);
+        assertEq(lidoARM.capManager(), newCapManager);
     }
 
     //////////////////////////////////////////////////////
     /// --- AccountCapEnabled - REVERTING TEST
     //////////////////////////////////////////////////////
-    function test_RevertWhen_LiquidityProviderController_SetAccountCapEnabled_Because_NotOwner()
-        public
-        asRandomAddress
-    {
+    function test_RevertWhen_CapManager_SetAccountCapEnabled_Because_NotOwner() public asRandomAddress {
         vm.expectRevert("ARM: Only owner can call this function.");
-        liquidityProviderController.setAccountCapEnabled(false);
+        capManager.setAccountCapEnabled(false);
     }
 
-    function test_RevertWhen_LiquidityProviderController_SetAccountCapEnabled_Because_Operator() public asOperator {
+    function test_RevertWhen_CapManager_SetAccountCapEnabled_Because_Operator() public asOperator {
         vm.expectRevert("ARM: Only owner can call this function.");
-        liquidityProviderController.setAccountCapEnabled(false);
+        capManager.setAccountCapEnabled(false);
     }
 
-    function test_RevertWhen_LiquidityProviderController_SetAccountCapEnabled_Because_AlreadySet()
-        public
-        asLidoARMOwner
-    {
+    function test_RevertWhen_CapManager_SetAccountCapEnabled_Because_AlreadySet() public asLidoARMOwner {
         vm.expectRevert("LPC: Account cap already set");
-        liquidityProviderController.setAccountCapEnabled(true);
+        capManager.setAccountCapEnabled(true);
     }
 
     //////////////////////////////////////////////////////
     /// --- AccountCapEnabled - PASSING TESTS
     //////////////////////////////////////////////////////
-    function test_LiquidityProviderController_SetAccountCapEnabled() public asLidoARMOwner {
-        vm.expectEmit({emitter: address(liquidityProviderController)});
-        emit LiquidityProviderController.AccountCapEnabled(false);
-        liquidityProviderController.setAccountCapEnabled(false);
+    function test_CapManager_SetAccountCapEnabled() public asLidoARMOwner {
+        vm.expectEmit({emitter: address(capManager)});
+        emit CapManager.AccountCapEnabled(false);
+        capManager.setAccountCapEnabled(false);
 
-        assertEq(liquidityProviderController.accountCapEnabled(), false);
+        assertEq(capManager.accountCapEnabled(), false);
     }
 
     //////////////////////////////////////////////////////
     /// --- TotalAssetsCap - REVERTING TEST
     //////////////////////////////////////////////////////
-    function test_RevertWhen_LiquidityProviderController_SetTotalAssetsCap_Because_NotOwner() public asRandomAddress {
+    function test_RevertWhen_CapManager_SetTotalAssetsCap_Because_NotOwner() public asRandomAddress {
         vm.expectRevert("ARM: Only operator or owner can call this function.");
-        liquidityProviderController.setTotalAssetsCap(100 ether);
+        capManager.setTotalAssetsCap(100 ether);
     }
 
     //////////////////////////////////////////////////////
     /// --- TotalAssetsCap - PASSING TESTS
     //////////////////////////////////////////////////////
-    function test_LiquidityProviderController_SetTotalAssetsCap_Owner() public asLidoARMOwner {
-        vm.expectEmit({emitter: address(liquidityProviderController)});
-        emit LiquidityProviderController.TotalAssetsCap(100 ether);
-        liquidityProviderController.setTotalAssetsCap(100 ether);
+    function test_CapManager_SetTotalAssetsCap_Owner() public asLidoARMOwner {
+        vm.expectEmit({emitter: address(capManager)});
+        emit CapManager.TotalAssetsCap(100 ether);
+        capManager.setTotalAssetsCap(100 ether);
 
-        assertEq(liquidityProviderController.totalAssetsCap(), 100 ether);
+        assertEq(capManager.totalAssetsCap(), 100 ether);
     }
 
-    function test_LiquidityProviderController_SetTotalAssetsCap_Operator() public asOperator {
-        vm.expectEmit({emitter: address(liquidityProviderController)});
-        emit LiquidityProviderController.TotalAssetsCap(0);
-        liquidityProviderController.setTotalAssetsCap(0);
+    function test_CapManager_SetTotalAssetsCap_Operator() public asOperator {
+        vm.expectEmit({emitter: address(capManager)});
+        emit CapManager.TotalAssetsCap(0);
+        capManager.setTotalAssetsCap(0);
 
-        assertEq(liquidityProviderController.totalAssetsCap(), 0);
+        assertEq(capManager.totalAssetsCap(), 0);
     }
 
     //////////////////////////////////////////////////////
     /// --- LiquidityProviderCaps - REVERTING TEST
     //////////////////////////////////////////////////////
-    function test_RevertWhen_LiquidityProviderController_SetLiquidityProviderCaps_Because_NotOwner()
-        public
-        asRandomAddress
-    {
+    function test_RevertWhen_CapManager_SetLiquidityProviderCaps_Because_NotOwner() public asRandomAddress {
         vm.expectRevert("ARM: Only operator or owner can call this function.");
-        liquidityProviderController.setLiquidityProviderCaps(testProviders, 50 ether);
+        capManager.setLiquidityProviderCaps(testProviders, 50 ether);
     }
 
     //////////////////////////////////////////////////////
     /// --- LiquidityProviderCaps - PASSING TESTS
     //////////////////////////////////////////////////////
-    function test_LiquidityProviderController_SetLiquidityProviderCaps_Owner() public asLidoARMOwner {
-        vm.expectEmit({emitter: address(liquidityProviderController)});
-        emit LiquidityProviderController.LiquidityProviderCap(testProviders[0], 50 ether);
-        emit LiquidityProviderController.LiquidityProviderCap(testProviders[1], 50 ether);
-        liquidityProviderController.setLiquidityProviderCaps(testProviders, 50 ether);
+    function test_CapManager_SetLiquidityProviderCaps_Owner() public asLidoARMOwner {
+        vm.expectEmit({emitter: address(capManager)});
+        emit CapManager.LiquidityProviderCap(testProviders[0], 50 ether);
+        emit CapManager.LiquidityProviderCap(testProviders[1], 50 ether);
+        capManager.setLiquidityProviderCaps(testProviders, 50 ether);
 
-        assertEq(liquidityProviderController.liquidityProviderCaps(testProviders[0]), 50 ether);
-        assertEq(liquidityProviderController.liquidityProviderCaps(testProviders[1]), 50 ether);
+        assertEq(capManager.liquidityProviderCaps(testProviders[0]), 50 ether);
+        assertEq(capManager.liquidityProviderCaps(testProviders[1]), 50 ether);
     }
 
-    function test_LiquidityProviderController_SetLiquidityProviderCaps_Operator() public asOperator {
-        vm.expectEmit({emitter: address(liquidityProviderController)});
-        emit LiquidityProviderController.LiquidityProviderCap(testProviders[0], 50 ether);
-        emit LiquidityProviderController.LiquidityProviderCap(testProviders[1], 50 ether);
-        liquidityProviderController.setLiquidityProviderCaps(testProviders, 50 ether);
+    function test_CapManager_SetLiquidityProviderCaps_Operator() public asOperator {
+        vm.expectEmit({emitter: address(capManager)});
+        emit CapManager.LiquidityProviderCap(testProviders[0], 50 ether);
+        emit CapManager.LiquidityProviderCap(testProviders[1], 50 ether);
+        capManager.setLiquidityProviderCaps(testProviders, 50 ether);
 
-        assertEq(liquidityProviderController.liquidityProviderCaps(testProviders[0]), 50 ether);
-        assertEq(liquidityProviderController.liquidityProviderCaps(testProviders[1]), 50 ether);
+        assertEq(capManager.liquidityProviderCaps(testProviders[0]), 50 ether);
+        assertEq(capManager.liquidityProviderCaps(testProviders[1]), 50 ether);
     }
 
-    function test_LiquidityProviderController_SetLiquidityProviderCaps_ToZero()
+    function test_CapManager_SetLiquidityProviderCaps_ToZero()
         public
         asOperator
         setLiquidityProviderCap(testProviders[0], 10 ether)
@@ -317,11 +305,11 @@ contract Fork_Concrete_lidoARM_Setters_Test_ is Fork_Shared_Test_ {
         address[] memory providers = new address[](1);
         providers[0] = testProviders[0];
 
-        vm.expectEmit({emitter: address(liquidityProviderController)});
-        emit LiquidityProviderController.LiquidityProviderCap(providers[0], 0);
+        vm.expectEmit({emitter: address(capManager)});
+        emit CapManager.LiquidityProviderCap(providers[0], 0);
 
-        liquidityProviderController.setLiquidityProviderCaps(providers, 0);
+        capManager.setLiquidityProviderCaps(providers, 0);
 
-        assertEq(liquidityProviderController.liquidityProviderCaps(providers[0]), 0);
+        assertEq(capManager.liquidityProviderCaps(providers[0]), 0);
     }
 }

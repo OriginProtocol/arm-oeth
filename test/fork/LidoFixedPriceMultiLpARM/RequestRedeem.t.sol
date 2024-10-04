@@ -36,7 +36,7 @@ contract Fork_Concrete_LidoARM_RequestRedeem_Test_ is Fork_Shared_Test_ {
         assertEq(lidoARM.lastAvailableAssets(), int256(MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT));
         assertEq(lidoARM.balanceOf(address(this)), DEFAULT_AMOUNT);
         assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT);
-        assertEq(liquidityProviderController.liquidityProviderCaps(address(this)), 0);
+        assertEq(capManager.liquidityProviderCaps(address(this)), 0);
         assertEqQueueMetadata(0, 0, 0);
 
         uint256 delay = lidoARM.CLAIM_DELAY();
@@ -60,7 +60,7 @@ contract Fork_Concrete_LidoARM_RequestRedeem_Test_ is Fork_Shared_Test_ {
         assertEq(lidoARM.lastAvailableAssets(), int256(MIN_TOTAL_SUPPLY));
         assertEq(lidoARM.balanceOf(address(this)), 0);
         assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY);
-        assertEq(liquidityProviderController.liquidityProviderCaps(address(this)), 0);
+        assertEq(capManager.liquidityProviderCaps(address(this)), 0);
     }
 
     /// @notice Test the `requestRedeem` function when there are no profits and the first deposit is made.
@@ -79,7 +79,7 @@ contract Fork_Concrete_LidoARM_RequestRedeem_Test_ is Fork_Shared_Test_ {
         assertEq(lidoARM.lastAvailableAssets(), int256(MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT * 3 / 4));
         assertEq(lidoARM.balanceOf(address(this)), DEFAULT_AMOUNT * 3 / 4);
         assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT * 3 / 4);
-        assertEq(liquidityProviderController.liquidityProviderCaps(address(this)), 0); // Down only
+        assertEq(capManager.liquidityProviderCaps(address(this)), 0); // Down only
         assertEqQueueMetadata(DEFAULT_AMOUNT / 4, 0, 1);
 
         uint256 delay = lidoARM.CLAIM_DELAY();
@@ -107,7 +107,7 @@ contract Fork_Concrete_LidoARM_RequestRedeem_Test_ is Fork_Shared_Test_ {
         assertEq(lidoARM.lastAvailableAssets(), int256(MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT * 1 / 4));
         assertEq(lidoARM.balanceOf(address(this)), DEFAULT_AMOUNT * 1 / 4);
         assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT * 1 / 4);
-        assertEq(liquidityProviderController.liquidityProviderCaps(address(this)), 0); // Down only
+        assertEq(capManager.liquidityProviderCaps(address(this)), 0); // Down only
     }
 
     /// @notice Test the `requestRedeem` function when there are profits and the first deposit is already made.
@@ -152,7 +152,7 @@ contract Fork_Concrete_LidoARM_RequestRedeem_Test_ is Fork_Shared_Test_ {
         ); // 1 wei of error
         assertEq(lidoARM.balanceOf(address(this)), 0);
         assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY);
-        assertEq(liquidityProviderController.liquidityProviderCaps(address(this)), 0);
+        assertEq(capManager.liquidityProviderCaps(address(this)), 0);
         assertEqQueueMetadata(expectedAssetsFromRedeem, 0, 1);
         assertEqUserRequest(
             0,
@@ -204,7 +204,7 @@ contract Fork_Concrete_LidoARM_RequestRedeem_Test_ is Fork_Shared_Test_ {
         assertEq(lidoARM.balanceOf(address(this)), 0, "user LP balance");
         assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY, "total supply");
         assertEq(lidoARM.totalAssets(), assetsAfterLoss - actualAssetsFromRedeem, "total assets");
-        assertEq(liquidityProviderController.liquidityProviderCaps(address(this)), 0);
+        assertEq(capManager.liquidityProviderCaps(address(this)), 0);
         assertEqQueueMetadata(expectedAssetsFromRedeem, 0, 1);
         assertEqUserRequest(
             0, address(this), false, block.timestamp + delay, expectedAssetsFromRedeem, expectedAssetsFromRedeem

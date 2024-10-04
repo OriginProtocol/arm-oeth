@@ -10,7 +10,7 @@ import {IERC20, IStETHWithdrawal, IWETH} from "./Interfaces.sol";
 /**
  * @title Lido (stETH) Automated Redemption Manager (ARM)
  * @dev This implementation supports multiple Liquidity Providers (LPs) with single buy and sell prices.
- * It also integrates to a LiquidityProviderController contract that caps the amount of assets a liquidity provider
+ * It also integrates to a CapManager contract that caps the amount of assets a liquidity provider
  * can deposit and caps the ARM's total assets.
  * A performance fee is also collected on increases in the ARM's total assets.
  * @author Origin Protocol Inc
@@ -43,16 +43,16 @@ contract LidoARM is Initializable, AbstractARM {
     /// 10,000 = 100% performance fee
     /// 1,500 = 15% performance fee
     /// @param _feeCollector The account that can collect the performance fee
-    /// @param _liquidityProviderController The address of the Liquidity Provider Controller
+    /// @param _capManager The address of the CapManager contract
     function initialize(
         string calldata _name,
         string calldata _symbol,
         address _operator,
         uint256 _fee,
         address _feeCollector,
-        address _liquidityProviderController
+        address _capManager
     ) external initializer {
-        _initARM(_operator, _name, _symbol, _fee, _feeCollector, _liquidityProviderController);
+        _initARM(_operator, _name, _symbol, _fee, _feeCollector, _capManager);
 
         // Approve the Lido withdrawal queue contract. Used for redemption requests.
         steth.approve(address(withdrawalQueue), type(uint256).max);
