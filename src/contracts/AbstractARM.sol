@@ -492,11 +492,10 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         IERC20(liquidityAsset).transfer(msg.sender, assets);
     }
 
-    /// @notice Check if a withdrawal request can be claimed
-    /// @param requestId The index of the withdrawal request
-    function isClaimable(uint256 requestId) public view returns (bool) {
-        return
-            withdrawalRequests[requestId].queued <= withdrawsClaimed + IERC20(liquidityAsset).balanceOf(address(this));
+    /// @notice Used to work out if an ARM's withdrawal request can be claimed.
+    /// If the withdrawal request's `queued` amount is less than the returned `claimable` amount, then if can be claimed.
+    function claimable() public view returns (uint256) {
+        return withdrawsClaimed + IERC20(liquidityAsset).balanceOf(address(this));
     }
 
     /// @dev Calculate how much of the liquidity asset (WETH) in the ARM is not reserved for the withdrawal queue.
