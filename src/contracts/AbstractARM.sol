@@ -614,7 +614,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     }
 
     /// @notice Transfer accrued performance fees to the fee collector
-    /// This requires enough liquidity assets in the ARM to cover the accrued fees.
+    /// This requires enough liquidity assets (WETH) in the ARM that are not reserved
+    /// for the withdrawal queue to cover the accrued fees.
     function collectFees() public returns (uint256 fees) {
         uint256 newAvailableAssets;
         // Accrue any performance fees up to this point
@@ -622,7 +623,15 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
         if (fee == 0) return 0;
 
-        require(fees <= IERC20(liquidityAsset).balanceOf(address(this)), "ARM: insufficient liquidity");
+        // Check there is enough liquidity assets (WETH) in the ARM that are not reserved for the withdrawal queue.
+        // _liquidityAvailable() is optimized for swaps so will return max uint256 if there are no outstanding withdrawals.
+        // That's why we also need to check the available assets.
+        // We could try the transfer and let it revert if there are not enough assets, but there is no error message with
+        // a failed WETH transfer so we spend the extra gas to check and give a meaningful error message.
+        require(
+            fees <= _liquidityAvailable() && fees <= IERC20(liquidityAsset).balanceOf(address(this)),
+            "ARM: insufficient liquidity"
+        );
 
         IERC20(liquidityAsset).transfer(feeCollector, fees);
 
