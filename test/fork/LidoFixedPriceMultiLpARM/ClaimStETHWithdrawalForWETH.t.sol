@@ -43,13 +43,13 @@ contract Fork_Concrete_LidoARM_RequestStETHWithdrawalForETH_Test_ is Fork_Shared
         requestStETHWithdrawalForETHOnLidoARM(new uint256[](0))
     {
         assertEq(address(lidoARM).balance, 0);
-        assertEq(lidoARM.outstandingEther(), 0);
+        assertEq(lidoARM.lidoWithdrawalQueueAmount(), 0);
 
         // Main call
         lidoARM.claimStETHWithdrawalForWETH(new uint256[](0));
 
         assertEq(address(lidoARM).balance, 0);
-        assertEq(lidoARM.outstandingEther(), 0);
+        assertEq(lidoARM.lidoWithdrawalQueueAmount(), 0);
     }
 
     function test_ClaimStETHWithdrawalForWETH_SingleRequest()
@@ -60,7 +60,7 @@ contract Fork_Concrete_LidoARM_RequestStETHWithdrawalForETH_Test_ is Fork_Shared
     {
         // Assertions before
         uint256 balanceBefore = weth.balanceOf(address(lidoARM));
-        assertEq(lidoARM.outstandingEther(), DEFAULT_AMOUNT);
+        assertEq(lidoARM.lidoWithdrawalQueueAmount(), DEFAULT_AMOUNT);
 
         stETHWithdrawal.getLastRequestId();
         uint256[] memory requests = new uint256[](1);
@@ -69,7 +69,7 @@ contract Fork_Concrete_LidoARM_RequestStETHWithdrawalForETH_Test_ is Fork_Shared
         lidoARM.claimStETHWithdrawalForWETH(requests);
 
         // Assertions after
-        assertEq(lidoARM.outstandingEther(), 0);
+        assertEq(lidoARM.lidoWithdrawalQueueAmount(), 0);
         assertEq(weth.balanceOf(address(lidoARM)), balanceBefore + DEFAULT_AMOUNT);
     }
 
@@ -82,7 +82,7 @@ contract Fork_Concrete_LidoARM_RequestStETHWithdrawalForETH_Test_ is Fork_Shared
     {
         // Assertions before
         uint256 balanceBefore = weth.balanceOf(address(lidoARM));
-        assertEq(lidoARM.outstandingEther(), amounts2[0] + amounts2[1]);
+        assertEq(lidoARM.lidoWithdrawalQueueAmount(), amounts2[0] + amounts2[1]);
 
         stETHWithdrawal.getLastRequestId();
         uint256[] memory requests = new uint256[](2);
@@ -92,7 +92,7 @@ contract Fork_Concrete_LidoARM_RequestStETHWithdrawalForETH_Test_ is Fork_Shared
         lidoARM.claimStETHWithdrawalForWETH(requests);
 
         // Assertions after
-        assertEq(lidoARM.outstandingEther(), 0);
+        assertEq(lidoARM.lidoWithdrawalQueueAmount(), 0);
         assertEq(weth.balanceOf(address(lidoARM)), balanceBefore + amounts2[0] + amounts2[1]);
     }
 }

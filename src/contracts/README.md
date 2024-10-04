@@ -40,12 +40,12 @@
 
 ![Lido ARM Storage](../../docs/LidoARMStorage.svg) -->
 
-## Liquidity Provider Controller
+## Cap Manager
 
 ### Hierarchy
 
-![Liquidity Provider Controller Hierarchy](../../docs/LiquidityProviderControllerHierarchy.svg)
+![Cap Manager Hierarchy](../../docs/CapManagerHierarchy.svg)
 
 ## Squashed
 
-![Liquidity Provider Controller Squashed](../../docs/LiquidityProviderControllerSquashed.svg)
+![Cap Manager Squashed](../../docs/CapManagerSquashed.svg)

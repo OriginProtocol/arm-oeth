@@ -21,5 +21,5 @@ sol2uml storage ../src/contracts,../lib -c LidoARM -o LidoARMStorage.svg \
     -st address,address \
     --hideExpand gap,_gap
 
-sol2uml ../src/contracts -v -hv -hf -he -hs -hl -hi -b LiquidityProviderController -o LiquidityProviderControllerHierarchy.svg
-sol2uml ../src/contracts -s -d 0 -b LiquidityProviderController -o LiquidityProviderControllerSquashed.svg
+sol2uml ../src/contracts -v -hv -hf -he -hs -hl -hi -b CapManager -o CapManagerHierarchy.svg
+sol2uml ../src/contracts -s -d 0 -b CapManager -o CapManagerSquashed.svg

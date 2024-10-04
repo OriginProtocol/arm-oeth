@@ -7,7 +7,7 @@ import {Vm} from "forge-std/Vm.sol";
 
 import {IERC20, IWETH, LegacyAMM} from "contracts/Interfaces.sol";
 import {LidoARM} from "contracts/LidoARM.sol";
-import {LiquidityProviderController} from "contracts/LiquidityProviderController.sol";
+import {CapManager} from "contracts/CapManager.sol";
 import {Proxy} from "contracts/Proxy.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
 import {GovProposal, GovSixHelper} from "contracts/utils/GovSixHelper.sol";
@@ -22,7 +22,7 @@ contract UpgradeLidoARMMainnetScript is AbstractDeployScript {
     bool public constant override proposalExecuted = false;
 
     Proxy lidoARMProxy;
-    Proxy lpcProxy;
+    Proxy capManProxy;
     LidoARM lidoARMImpl;
 
     function _execute() internal override {
@@ -33,31 +33,31 @@ contract UpgradeLidoARMMainnetScript is AbstractDeployScript {
         _recordDeploy("LIDO_ARM", Mainnet.LIDO_ARM);
         lidoARMProxy = Proxy(Mainnet.LIDO_ARM);
 
-        // 2. Deploy proxy for the Liquidity Provider Controller
-        lpcProxy = new Proxy();
-        _recordDeploy("LIDO_ARM_LPC", address(lpcProxy));
+        // 2. Deploy proxy for the CapManager
+        capManProxy = new Proxy();
+        _recordDeploy("LIDO_ARM_CAP_MAN", address(capManProxy));
 
-        // 3. Deploy Liquidity Provider Controller implementation
-        LiquidityProviderController lpcImpl = new LiquidityProviderController(address(lidoARMProxy));
-        _recordDeploy("LIDO_ARM_LPC_IMPL", address(lpcImpl));
+        // 3. Deploy CapManager implementation
+        CapManager capManagerImpl = new CapManager(address(lidoARMProxy));
+        _recordDeploy("LIDO_ARM_CAP_IMPL", address(capManagerImpl));
 
-        // 4. Initialize Proxy with LiquidityProviderController implementation and set the owner to the deployer for now
+        // 4. Initialize Proxy with CapManager implementation and set the owner to the deployer for now
         bytes memory data = abi.encodeWithSignature("initialize(address)", Mainnet.ARM_RELAYER);
-        lpcProxy.initialize(address(lpcImpl), deployer, data);
-        LiquidityProviderController liquidityProviderController = LiquidityProviderController(address(lpcProxy));
+        capManProxy.initialize(address(capManagerImpl), deployer, data);
+        CapManager capManager = CapManager(address(capManProxy));
 
         // 5. Set the liquidity Provider caps
-        liquidityProviderController.setTotalAssetsCap(10 ether);
+        capManager.setTotalAssetsCap(10 ether);
         address[] memory liquidityProviders = new address[](1);
         liquidityProviders[0] = Mainnet.TREASURY;
-        liquidityProviderController.setLiquidityProviderCaps(liquidityProviders, 10 ether);
+        capManager.setLiquidityProviderCaps(liquidityProviders, 10 ether);
 
         // 6. Deploy Lido implementation
         lidoARMImpl = new LidoARM(Mainnet.STETH, Mainnet.WETH, Mainnet.LIDO_WITHDRAWAL);
         _recordDeploy("LIDO_ARM_IMPL", address(lidoARMImpl));
 
-        // 7. Transfer ownership of LiquidityProviderController to the mainnet 5/8 multisig
-        lpcProxy.setOwner(Mainnet.GOV_MULTISIG);
+        // 7. Transfer ownership of CapManager to the mainnet 5/8 multisig
+        capManProxy.setOwner(Mainnet.GOV_MULTISIG);
 
         console.log("Finished deploying", DEPLOY_NAME);
 
@@ -102,7 +102,7 @@ contract UpgradeLidoARMMainnetScript is AbstractDeployScript {
             Mainnet.ARM_RELAYER,
             1500, // 15% performance fee
             Mainnet.ARM_BUYBACK,
-            address(lpcProxy)
+            address(capManProxy)
         );
         console.log("lidoARM initialize data:");
         console.logBytes(data);

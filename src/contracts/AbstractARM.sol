@@ -5,7 +5,7 @@ import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 import {OwnableOperable} from "./OwnableOperable.sol";
-import {IERC20, ILiquidityProviderController} from "./Interfaces.sol";
+import {IERC20, ICapManager} from "./Interfaces.sol";
 
 abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     ////////////////////////////////////////////////////
@@ -100,9 +100,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @notice The account that can collect the performance fee
     address public feeCollector;
 
-    address public liquidityProviderController;
+    address public capManager;
 
-    uint256[42] private _gap;
+    uint256[43] private _gap;
 
     ////////////////////////////////////////////////////
     ///                 Events
@@ -117,7 +117,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     event FeeCollected(address indexed feeCollector, uint256 fee);
     event FeeUpdated(uint256 fee);
     event FeeCollectorUpdated(address indexed newFeeCollector);
-    event LiquidityProviderControllerUpdated(address indexed liquidityProviderController);
+    event CapManagerUpdated(address indexed capManager);
 
     constructor(address _token0, address _token1, address _liquidityAsset) {
         require(IERC20(_token0).decimals() == 18);
@@ -141,14 +141,14 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// 10,000 = 100% performance fee
     /// 500 = 5% performance fee
     /// @param _feeCollector The account that can collect the performance fee
-    /// @param _liquidityProviderController The address of the Liquidity Provider Controller
+    /// @param _capManager The address of the CapManager contract
     function _initARM(
         address _operator,
         string calldata _name,
         string calldata _symbol,
         uint256 _fee,
         address _feeCollector,
-        address _liquidityProviderController
+        address _capManager
     ) internal {
         _initOwnableOperable(_operator);
 
@@ -167,8 +167,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         _setFee(_fee);
         _setFeeCollector(_feeCollector);
 
-        liquidityProviderController = _liquidityProviderController;
-        emit LiquidityProviderControllerUpdated(_liquidityProviderController);
+        capManager = _capManager;
+        emit CapManagerUpdated(_capManager);
     }
 
     ////////////////////////////////////////////////////
@@ -415,8 +415,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         lastAvailableAssets += SafeCast.toInt128(SafeCast.toInt256(assets));
 
         // Check the liquidity provider caps after the new assets have been deposited
-        if (liquidityProviderController != address(0)) {
-            ILiquidityProviderController(liquidityProviderController).postDepositHook(msg.sender, assets);
+        if (capManager != address(0)) {
+            ICapManager(capManager).postDepositHook(msg.sender, assets);
         }
 
         emit Deposit(msg.sender, assets, shares);
@@ -443,7 +443,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
         // Store the next withdrawal request
         nextWithdrawalIndex = SafeCast.toUint16(requestId + 1);
-        // Store the updated queued amount which reserves WETH in the withdrawal queue
+        // Store the updated queued amount which reserves liquidity assets (WETH) in the withdrawal queue
         withdrawsQueued = queued;
         // Store requests
         withdrawalRequests[requestId] = WithdrawalRequest({
@@ -479,24 +479,23 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         require(request.withdrawer == msg.sender, "Not requester");
         require(request.claimed == false, "Already claimed");
 
+        assets = request.assets;
+
         // Store the request as claimed
         withdrawalRequests[requestId].claimed = true;
         // Store the updated claimed amount
-        withdrawsClaimed += request.assets;
-
-        assets = request.assets;
-
-        emit RedeemClaimed(msg.sender, requestId, assets);
+        withdrawsClaimed += SafeCast.toUint120(assets);
 
         // transfer the liquidity asset to the withdrawer
         IERC20(liquidityAsset).transfer(msg.sender, assets);
+
+        emit RedeemClaimed(msg.sender, requestId, assets);
     }
 
-    /// @notice Check if a withdrawal request can be claimed
-    /// @param requestId The index of the withdrawal request
-    function isClaimable(uint256 requestId) public view returns (bool) {
-        return
-            withdrawalRequests[requestId].queued <= withdrawsClaimed + IERC20(liquidityAsset).balanceOf(address(this));
+    /// @notice Used to work out if an ARM's withdrawal request can be claimed.
+    /// If the withdrawal request's `queued` amount is less than the returned `claimable` amount, then if can be claimed.
+    function claimable() public view returns (uint256) {
+        return withdrawsClaimed + IERC20(liquidityAsset).balanceOf(address(this));
     }
 
     /// @dev Calculate how much of the liquidity asset (WETH) in the ARM is not reserved for the withdrawal queue.
@@ -506,7 +505,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     // There is no liquidity guarantee for the fee collector. If there is not enough liquidity assets (WETH) in
     // the ARM to collect the accrued fees, then the fee collector will have to wait until there is enough liquidity assets.
     function _liquidityAvailable() internal view returns (uint256) {
-        // The amount of WETH that is still to be claimed in the withdrawal queue
+        // The amount of liquidity assets (WETH) that is still to be claimed in the withdrawal queue
         uint256 outstandingWithdrawals = withdrawsQueued - withdrawsClaimed;
 
         // Save gas on an external balanceOf call if there are no outstanding withdrawals
@@ -541,18 +540,17 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         // Get the assets in the ARM and external withdrawal queue
         uint256 assets = token0.balanceOf(address(this)) + token1.balanceOf(address(this)) + _externalWithdrawQueue();
 
-        // Load the queue metadata from storage into memory
-        uint256 queuedMem = withdrawsQueued;
-        uint256 claimedMem = withdrawsClaimed;
+        // The amount of liquidity assets (WETH) that is still to be claimed in the withdrawal queue
+        uint256 outstandingWithdrawals = withdrawsQueued - withdrawsClaimed;
 
         // If the ARM becomes insolvent enough that the available assets in the ARM and external withdrawal queue
         // is less than the outstanding withdrawals and accrued fees.
-        if (assets + claimedMem < queuedMem) {
+        if (assets < outstandingWithdrawals) {
             return 0;
         }
 
         // Need to remove the liquidity assets that have been reserved for the withdrawal queue
-        return assets + claimedMem - queuedMem;
+        return assets - outstandingWithdrawals;
     }
 
     /// @dev Hook for calculating the amount of assets in an external withdrawal queue like Lido or OETH
@@ -570,12 +568,12 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         assets = (shares * totalAssets()) / totalSupply();
     }
 
-    /// @notice Set the Liquidity Provider Controller contract address.
+    /// @notice Set the CapManager contract address.
     /// Set to a zero address to disable the controller.
-    function setLiquidityProviderController(address _liquidityProviderController) external onlyOwner {
-        liquidityProviderController = _liquidityProviderController;
+    function setCapManager(address _capManager) external onlyOwner {
+        capManager = _capManager;
 
-        emit LiquidityProviderControllerUpdated(_liquidityProviderController);
+        emit CapManagerUpdated(_capManager);
     }
 
     ////////////////////////////////////////////////////
@@ -586,6 +584,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @param _fee The performance fee measured in basis points (1/100th of a percent)
     /// 10,000 = 100% performance fee
     /// 500 = 5% performance fee
+    /// The max allowed performance fee is 50% (5000)
     function setFee(uint256 _fee) external onlyOwner {
         _setFee(_fee);
     }
@@ -596,7 +595,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     }
 
     function _setFee(uint256 _fee) internal {
-        require(_fee <= FEE_SCALE, "ARM: fee too high");
+        require(_fee <= FEE_SCALE / 2, "ARM: fee too high");
 
         // Collect any performance fees up to this point using the old fee
         collectFees();
@@ -615,15 +614,24 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     }
 
     /// @notice Transfer accrued performance fees to the fee collector
-    /// This requires enough liquidity assets in the ARM to cover the accrued fees.
+    /// This requires enough liquidity assets (WETH) in the ARM that are not reserved
+    /// for the withdrawal queue to cover the accrued fees.
     function collectFees() public returns (uint256 fees) {
         uint256 newAvailableAssets;
         // Accrue any performance fees up to this point
         (fees, newAvailableAssets) = _feesAccrued();
 
-        if (fee == 0) return fees;
+        if (fee == 0) return 0;
 
-        require(fees <= IERC20(liquidityAsset).balanceOf(address(this)), "ARM: insufficient liquidity");
+        // Check there is enough liquidity assets (WETH) in the ARM that are not reserved for the withdrawal queue.
+        // _liquidityAvailable() is optimized for swaps so will return max uint256 if there are no outstanding withdrawals.
+        // That's why we also need to check the available assets.
+        // We could try the transfer and let it revert if there are not enough assets, but there is no error message with
+        // a failed WETH transfer so we spend the extra gas to check and give a meaningful error message.
+        require(
+            fees <= _liquidityAvailable() && fees <= IERC20(liquidityAsset).balanceOf(address(this)),
+            "ARM: insufficient liquidity"
+        );
 
         IERC20(liquidityAsset).transfer(feeCollector, fees);
 
@@ -634,11 +642,11 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     }
 
     /// @notice Calculates the performance fees accrued since the last time fees were collected
-    function feesAccrued() public view returns (uint256 fees) {
+    function feesAccrued() external view returns (uint256 fees) {
         (fees,) = _feesAccrued();
     }
 
-    function _feesAccrued() public view returns (uint256 fees, uint256 newAvailableAssets) {
+    function _feesAccrued() internal view returns (uint256 fees, uint256 newAvailableAssets) {
         newAvailableAssets = _availableAssets();
 
         // Calculate the increase in assets since the last time fees were calculated

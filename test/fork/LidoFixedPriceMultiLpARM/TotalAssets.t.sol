@@ -21,8 +21,8 @@ contract Fork_Concrete_LidoARM_TotalAssets_Test_ is Fork_Shared_Test_ {
         // Set Cap to max, as not to interfere with the tests
         address[] memory providers = new address[](1);
         providers[0] = address(this);
-        liquidityProviderController.setLiquidityProviderCaps(providers, type(uint256).max);
-        liquidityProviderController.setTotalAssetsCap(type(uint248).max);
+        capManager.setLiquidityProviderCaps(providers, type(uint256).max);
+        capManager.setTotalAssetsCap(type(uint248).max);
 
         deal(address(weth), address(this), 1_000 ether);
         weth.approve(address(lidoARM), type(uint256).max);

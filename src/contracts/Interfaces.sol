@@ -121,7 +121,7 @@ interface ILiquidityProviderARM {
     function lastTotalAssets() external returns (uint256 assets);
 }
 
-interface ILiquidityProviderController {
+interface ICapManager {
     function postDepositHook(address liquidityProvider, uint256 assets) external;
 }
 
