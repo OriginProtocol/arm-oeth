@@ -47,7 +47,7 @@ contract UpgradeLidoARMMainnetScript is AbstractDeployScript {
         CapManager capManager = CapManager(address(capManProxy));
 
         // 5. Set the liquidity Provider caps
-        capManager.setTotalAssetsCap(10 ether);
+        capManager.setTotalAssetsCap(1000 ether);
         address[] memory liquidityProviders = new address[](1);
         liquidityProviders[0] = Mainnet.TREASURY;
         capManager.setLiquidityProviderCaps(liquidityProviders, 10 ether);
