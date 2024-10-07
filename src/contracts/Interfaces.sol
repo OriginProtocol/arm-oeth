@@ -255,3 +255,8 @@ interface IStETHWithdrawal {
     function getWithdrawalRequests(address _owner) external view returns (uint256[] memory requestsIds);
     function getLastRequestId() external view returns (uint256);
 }
+
+interface ILidoARM {
+    function deposit(uint256 assets) external returns (uint256 shares);
+    function transfer(address to, uint256 shares) external returns (bool);
+}
