@@ -37,7 +37,9 @@ const snapLido = async ({ block }) => {
 
   const steth = await resolveAsset("STETH");
   const liquiditySteth = await steth.balanceOf(armAddress, { blockTag });
-  const liquidityLidoWithdraws = await lidoARM.outstandingEther({ blockTag });
+  const liquidityLidoWithdraws = await lidoARM.lidoWithdrawalQueueAmount({
+    blockTag,
+  });
 
   const total = liquidityWeth + liquiditySteth + liquidityLidoWithdraws;
   const wethPercent = total == 0 ? 0 : (liquidityWeth * 10000n) / total;

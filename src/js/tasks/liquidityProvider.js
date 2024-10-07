@@ -50,16 +50,13 @@ async function setLiquidityProviderCaps({ accounts, cap }) {
 
   const liquidityProviders = accounts.split(",");
 
-  const lpcAddress = await parseDeployedAddress("LIDO_ARM_LPC");
-  const liquidityProviderController = await ethers.getContractAt(
-    "LiquidityProviderController",
-    lpcAddress
-  );
+  const lpcAddress = await parseDeployedAddress("LIDO_ARM_CAP_MAN");
+  const capManager = await ethers.getContractAt("CapManager", lpcAddress);
 
   log(
     `About to set deposit cap of ${cap} WETH for liquidity providers ${liquidityProviders}`
   );
-  const tx = await liquidityProviderController
+  const tx = await capManager
     .connect(signer)
     .setLiquidityProviderCaps(liquidityProviders, capBn);
   await logTxDetails(tx, "setLiquidityProviderCaps");
@@ -70,16 +67,11 @@ async function setTotalAssetsCap({ cap }) {
 
   const capBn = parseUnits(cap.toString());
 
-  const lpcAddress = await parseDeployedAddress("LIDO_ARM_LPC");
-  const liquidityProviderController = await ethers.getContractAt(
-    "LiquidityProviderController",
-    lpcAddress
-  );
+  const lpcAddress = await parseDeployedAddress("LIDO_ARM_CAP_MAN");
+  const capManager = await ethers.getContractAt("CapManager", lpcAddress);
 
   log(`About to set total asset cap of ${cap} WETH`);
-  const tx = await liquidityProviderController
-    .connect(signer)
-    .setTotalAssetsCap(capBn);
+  const tx = await capManager.connect(signer).setTotalAssetsCap(capBn);
   await logTxDetails(tx, "setTotalAssetsCap");
 }
 
