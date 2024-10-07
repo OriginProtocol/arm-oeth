@@ -66,8 +66,8 @@ contract OwnerHandler is BaseHandler {
 
         console.log("OwnerHandler.setPrices(%36e,%36e)", buyT1, sellT1);
 
-        // Prank operator instead of owner, to ensure price check
-        vm.startPrank(operator);
+        // Prank owner instead of operator to bypass price check
+        vm.startPrank(owner);
 
         // Set prices
         arm.setPrices(buyT1, sellT1);
