@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
+// Contracts
+import {Ownable} from "./Ownable.sol";
+
+// Interfaces
 import {IWETH} from "./Interfaces.sol";
 import {IERC20} from "./Interfaces.sol";
 import {ILidoARM} from "./Interfaces.sol";
-
-import {Ownable} from "./Ownable.sol";
 
 contract ZapperLidoARM is Ownable {
     IWETH public immutable weth;
