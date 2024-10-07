@@ -12,6 +12,7 @@ import {Proxy} from "contracts/Proxy.sol";
 import {OethARM} from "contracts/OethARM.sol";
 import {LidoARM} from "contracts/LidoARM.sol";
 import {CapManager} from "contracts/CapManager.sol";
+import {ZapperLidoARM} from "contracts/ZapperLidoARM.sol";
 
 // Interfaces
 import {IERC20} from "contracts/Interfaces.sol";
@@ -165,6 +166,9 @@ abstract contract Fork_Shared_Test_ is Modifiers {
 
         // set prices
         lidoARM.setPrices(992 * 1e33, 1001 * 1e33);
+
+        // --- Deploy ZapperLidoARM ---
+        zapperLidoARM = new ZapperLidoARM(address(weth), address(lidoProxy));
     }
 
     function _label() internal {
@@ -178,6 +182,7 @@ abstract contract Fork_Shared_Test_ is Modifiers {
         vm.label(address(lidoARM), "LIDO ARM");
         vm.label(address(lidoProxy), "LIDO ARM PROXY");
         vm.label(address(capManager), "LIQUIDITY PROVIDER CONTROLLER");
+        vm.label(address(zapperLidoARM), "ZAPPER LIDO ARM");
         vm.label(operator, "OPERATOR");
         vm.label(oethWhale, "WHALE OETH");
         vm.label(governor, "GOVERNOR");
