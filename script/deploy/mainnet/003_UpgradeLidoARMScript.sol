@@ -55,7 +55,8 @@ contract UpgradeLidoARMMainnetScript is AbstractDeployScript {
         capManager.setLiquidityProviderCaps(liquidityProviders, 100 ether);
 
         // 6. Deploy Lido implementation
-        lidoARMImpl = new LidoARM(Mainnet.STETH, Mainnet.WETH, Mainnet.LIDO_WITHDRAWAL);
+        uint256 claimDelay = tenderlyTestnet ? 1 minutes : 10 minutes;
+        lidoARMImpl = new LidoARM(Mainnet.STETH, Mainnet.WETH, Mainnet.LIDO_WITHDRAWAL, claimDelay);
         _recordDeploy("LIDO_ARM_IMPL", address(lidoARMImpl));
 
         // 7. Transfer ownership of CapManager to the mainnet 5/8 multisig

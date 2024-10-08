@@ -50,7 +50,8 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
         assertEq(address(lidoARM.withdrawalQueue()), Mainnet.LIDO_WITHDRAWAL, "Lido withdrawal queue");
         assertEq(address(lidoARM.steth()), Mainnet.STETH, "stETH");
         assertEq(address(lidoARM.weth()), Mainnet.WETH, "WETH");
-        assertEq(lidoARM.liquidityAsset(), Mainnet.WETH, "liquidityAsset");
+        assertEq(lidoARM.liquidityAsset(), Mainnet.WETH, "liquidity asset");
+        assertEq(lidoARM.claimDelay(), 10 minutes, "claim delay");
 
         assertEq(capManager.accountCapEnabled(), true, "account cap enabled");
         assertEq(capManager.operator(), Mainnet.ARM_RELAYER, "Operator");

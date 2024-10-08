@@ -39,7 +39,7 @@ contract Fork_Concrete_LidoARM_RequestRedeem_Test_ is Fork_Shared_Test_ {
         assertEq(capManager.liquidityProviderCaps(address(this)), 0);
         assertEqQueueMetadata(0, 0, 0);
 
-        uint256 delay = lidoARM.CLAIM_DELAY();
+        uint256 delay = lidoARM.claimDelay();
 
         vm.expectEmit({emitter: address(lidoARM)});
         emit IERC20.Transfer(address(this), address(0), DEFAULT_AMOUNT);
@@ -82,7 +82,7 @@ contract Fork_Concrete_LidoARM_RequestRedeem_Test_ is Fork_Shared_Test_ {
         assertEq(capManager.liquidityProviderCaps(address(this)), 0); // Down only
         assertEqQueueMetadata(DEFAULT_AMOUNT / 4, 0, 1);
 
-        uint256 delay = lidoARM.CLAIM_DELAY();
+        uint256 delay = lidoARM.claimDelay();
 
         vm.expectEmit({emitter: address(lidoARM)});
         emit IERC20.Transfer(address(this), address(0), DEFAULT_AMOUNT / 2);
@@ -158,7 +158,7 @@ contract Fork_Concrete_LidoARM_RequestRedeem_Test_ is Fork_Shared_Test_ {
             0,
             address(this),
             false,
-            block.timestamp + lidoARM.CLAIM_DELAY(),
+            block.timestamp + lidoARM.claimDelay(),
             expectedAssetsFromRedeem,
             expectedAssetsFromRedeem
         );
@@ -187,7 +187,7 @@ contract Fork_Concrete_LidoARM_RequestRedeem_Test_ is Fork_Shared_Test_ {
         // Main call
         (, uint256 actualAssetsFromRedeem) = lidoARM.requestRedeem(DEFAULT_AMOUNT);
 
-        uint256 delay = lidoARM.CLAIM_DELAY();
+        uint256 delay = lidoARM.claimDelay();
         // Assertions After
         uint256 expectedAssetsFromRedeem = DEFAULT_AMOUNT * assetsAfterLoss / (MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT);
         assertEq(actualAssetsFromRedeem, expectedAssetsFromRedeem, "Assets from redeem");
