@@ -255,4 +255,3 @@ interface IStETHWithdrawal {
     function getWithdrawalRequests(address _owner) external view returns (uint256[] memory requestsIds);
     function getLastRequestId() external view returns (uint256);
 }
-

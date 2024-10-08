@@ -9,6 +9,7 @@ import {IERC20, IWETH, LegacyAMM} from "contracts/Interfaces.sol";
 import {LidoARM} from "contracts/LidoARM.sol";
 import {CapManager} from "contracts/CapManager.sol";
 import {Proxy} from "contracts/Proxy.sol";
+import {ZapperLidoARM} from "contracts/ZapperLidoARM.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
 import {GovProposal, GovSixHelper} from "contracts/utils/GovSixHelper.sol";
 import {AbstractDeployScript} from "../AbstractDeployScript.sol";
@@ -58,6 +59,11 @@ contract UpgradeLidoARMMainnetScript is AbstractDeployScript {
 
         // 7. Transfer ownership of CapManager to the mainnet 5/8 multisig
         capManProxy.setOwner(Mainnet.GOV_MULTISIG);
+
+        // 8. Deploy the Zapper
+        ZapperLidoARM zapper = new ZapperLidoARM(Mainnet.WETH, Mainnet.LIDO_ARM);
+        zapper.setOwner(Mainnet.STRATEGIST);
+        _recordDeploy("LIDO_ARM_ZAPPER", address(zapper));
 
         console.log("Finished deploying", DEPLOY_NAME);
 
