@@ -3,7 +3,10 @@ const { formatUnits, parseUnits, MaxInt256 } = require("ethers");
 const { getBlock } = require("../utils/block");
 const { getSigner } = require("../utils/signers");
 const { logTxDetails } = require("../utils/txLogger");
-const { parseAddress } = require("../utils/addressParser");
+const {
+  parseAddress,
+  parseDeployedAddress,
+} = require("../utils/addressParser");
 const { resolveAddress, resolveAsset } = require("../utils/assets");
 
 const log = require("../utils/logger")("task:lido");
@@ -31,6 +34,11 @@ const snapLido = async ({ block }) => {
 
   const armAddress = await parseAddress("LIDO_ARM");
   const lidoARM = await ethers.getContractAt("LidoARM", armAddress);
+  const capManagerAddress = await parseDeployedAddress("LIDO_ARM_CAP_MAN");
+  const capManager = await ethers.getContractAt(
+    "CapManager",
+    capManagerAddress
+  );
 
   const weth = await resolveAsset("WETH");
   const liquidityWeth = await weth.balanceOf(armAddress, { blockTag });
@@ -46,6 +54,11 @@ const snapLido = async ({ block }) => {
   const stethWithdrawsPercent =
     total == 0 ? 0 : (liquidityLidoWithdraws * 10000n) / total;
   const oethPercent = total == 0 ? 0 : (liquiditySteth * 10000n) / total;
+  const totalAssets = await lidoARM.totalAssets({ blockTag });
+  const feesAccrued = await lidoARM.feesAccrued({ blockTag });
+  const totalAssetsCap = await capManager.totalAssetsCap({ blockTag });
+  const capRemaining = totalAssetsCap - totalAssets;
+  const capUsedPercent = (totalAssets * 10000n) / totalAssetsCap;
 
   console.log(
     `${formatUnits(liquidityWeth, 18)} WETH  ${formatUnits(wethPercent, 2)}%`
@@ -60,6 +73,14 @@ const snapLido = async ({ block }) => {
     )} Lido withdrawal requests ${formatUnits(stethWithdrawsPercent, 2)}%`
   );
   console.log(`${formatUnits(total, 18)} total WETH and stETH`);
+  console.log(`${formatUnits(totalAssets, 18)} total assets`);
+  console.log(
+    `\n${formatUnits(totalAssetsCap, 18)} total assets cap, ${formatUnits(
+      capUsedPercent,
+      2
+    )}% used, ${formatUnits(capRemaining, 18)} remaining`
+  );
+  console.log(`${formatUnits(feesAccrued, 18)} in accrued fees`);
 };
 
 const swapLido = async ({ from, to, amount }) => {
