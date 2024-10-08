@@ -35,6 +35,14 @@ contract SwapHandler is BaseHandler {
     uint256 public sum_of_steth_out;
 
     ////////////////////////////////////////////////////
+    /// --- EVENTS
+    ////////////////////////////////////////////////////
+    event GetAmountInMax(uint256 amount);
+    event GetAmountOutMax(uint256 amount);
+    event EstimateAmountIn(uint256 amount);
+    event EstimateAmountOut(uint256 amount);
+
+    ////////////////////////////////////////////////////
     /// --- CONSTRUCTOR
     ////////////////////////////////////////////////////
     constructor(address _arm, address _weth, address _steth, address[] memory _swaps) {
@@ -72,10 +80,9 @@ contract SwapHandler is BaseHandler {
         path[1] = address(outputToken);
 
         // Select a random amount, maximum is the minimum between the balance of the user and the liquidity available
-        uint256 amountIn = _bound(_seed, 0, min(inputToken.balanceOf(user), getMaxAmountOut(inputToken)));
+        uint256 amountIn = _bound(_seed, 0, min(inputToken.balanceOf(user), getAmountInMax(inputToken)));
 
-        // Prevent swap when no liquidity on steth, but it will try to transfer the +2 stETH.
-        // Todo: add better comment
+        // Prevent swap when not enough liquidity on steth to cover +2 wei of stETH
         if (inputToken == weth && steth.balanceOf(address(arm)) < estimateAmountOut(inputToken, amountIn) + 2) {
             numberOfCalls["swapHandler.swapExactTokens.skip"]++;
             console.log("SwapHandler.swapExactTokens - Not enough stETH in the ARM");
@@ -144,7 +151,7 @@ contract SwapHandler is BaseHandler {
         path[1] = address(outputToken);
 
         // Select a random amount, maximum is the minimum between the balance of the user and the liquidity available
-        uint256 amountOut = _bound(_seed, 0, min(_liquidityAvailable(outputToken), getMaxAmountIn(outputToken, user)));
+        uint256 amountOut = _bound(_seed, 0, min(liquidityAvailable(outputToken), getAmountOutMax(outputToken, user)));
 
         // Edge case where user balance is 0, so amountOut is 0 too,
         // but due to rounding in protocol favor, we transferFrom 1 wei from user.
@@ -154,7 +161,7 @@ contract SwapHandler is BaseHandler {
             return;
         }
 
-        // Todo: add better comment
+        // Prevent swap when not enough liquidity on steth to cover +2 wei of stETH
         if (outputToken == steth && steth.balanceOf(address(arm)) < amountOut + 2) {
             numberOfCalls["swapHandler.swapTokensExact.skip"]++;
             console.log("SwapHandler.swapTokensForExactTokens - Not enough stETH in the ARM");
@@ -211,57 +218,61 @@ contract SwapHandler is BaseHandler {
     ////////////////////////////////////////////////////
     /// --- HELPERS
     ////////////////////////////////////////////////////
-    event GetMaxAmountIn(uint256 amount);
-    event GetMaxAmountOut(uint256 amount);
-    event EstimateAmountIn(uint256 amount);
-    event EstimateAmountOut(uint256 amount);
-
-    /// @notice Helpers to calcul the maximum amount of token that we can use as input
-    /// @dev Useful for swapExactTokensForTokens
-    // Todo: add better comment
-    function getMaxAmountOut(IERC20 tokenIn) public returns (uint256) {
+    /// @notice Helpers to calcul the maximum amountIn of token that we can use as input in swapExactTokensForTokens.
+    /// @dev Depends on the reserve of the output token in ARM and the price of the input token.
+    function getAmountInMax(IERC20 tokenIn) public returns (uint256) {
         IERC20 tokenOut = tokenIn == weth ? steth : weth;
 
-        uint256 reserveOut = _liquidityAvailable(tokenOut);
+        uint256 reserveOut = liquidityAvailable(tokenOut);
 
-        uint256 amount = (reserveOut * arm.PRICE_SCALE()) / _price(tokenIn);
-        emit GetMaxAmountOut(amount);
+        uint256 amount = (reserveOut * arm.PRICE_SCALE()) / price(tokenIn);
+
+        // Emit event to see it directly in logs
+        emit GetAmountInMax(amount);
+
         return amount;
     }
 
-    /// @notice Helpers to calcul the maximum amount of token that we can use as input
-    /// @dev Useful for swapTokensForExactTokens
-    // Todo: add better comment
-    function getMaxAmountIn(IERC20 tokenOut, address user) public returns (uint256) {
+    /// @notice Helpers to calcul the maximum amountOut of token that we can use as input in swapTokensForExactTokens.
+    /// @dev Depends on the reserve of the input token of user and the price of the output token.
+    function getAmountOutMax(IERC20 tokenOut, address user) public returns (uint256) {
         IERC20 tokenIn = tokenOut == weth ? steth : weth;
 
         uint256 reserveUser = tokenIn.balanceOf(user);
         if (reserveUser == 0) return 0;
 
-        uint256 amount = ((reserveUser - 1) * _price(tokenIn)) / arm.PRICE_SCALE();
-        emit GetMaxAmountIn(amount);
+        uint256 amount = ((reserveUser - 1) * price(tokenIn)) / arm.PRICE_SCALE();
+
+        // Emit event to see it directly in logs
+        emit GetAmountOutMax(amount);
+
         return amount;
     }
 
+    /// @notice Helpers to calcul the expected amountIn of tokenIn used in swapTokensForExactTokens.
     function estimateAmountIn(IERC20 tokenOut, uint256 amountOut) public returns (uint256) {
         IERC20 tokenIn = tokenOut == weth ? steth : weth;
 
-        uint256 amountIn = (amountOut * arm.PRICE_SCALE()) / _price(tokenIn) + 1;
+        uint256 amountIn = (amountOut * arm.PRICE_SCALE()) / price(tokenIn) + 1;
+
+        // Emit event to see it directly in logs
         emit EstimateAmountIn(amountIn);
+
         return amountIn;
     }
 
-    // To be used with swapExactTokensForTokens
-    // Todo: add better comment
+    /// @notice Helpers to calcul the expected amountOut of tokenOut used in swapExactTokensForTokens.
     function estimateAmountOut(IERC20 tokenIn, uint256 amountIn) public returns (uint256) {
-        uint256 amountOut = (amountIn * _price(tokenIn)) / arm.PRICE_SCALE();
+        uint256 amountOut = (amountIn * price(tokenIn)) / arm.PRICE_SCALE();
+
+        // Emit event to see it directly in logs
         emit EstimateAmountOut(amountOut);
+
         return amountOut;
     }
 
-    /// @notice Helpers to calcul the liquidity available for a token, especially for WETH
-    // Todo: emit event
-    function _liquidityAvailable(IERC20 token) public view returns (uint256 liquidity) {
+    /// @notice Helpers to calcul the liquidity available for a token, especially for WETH and withdraw queue.
+    function liquidityAvailable(IERC20 token) public view returns (uint256 liquidity) {
         if (token == weth) {
             uint256 outstandingWithdrawals = arm.withdrawsQueued() - arm.withdrawsClaimed();
             uint256 reserve = weth.balanceOf(address(arm));
@@ -272,11 +283,13 @@ contract SwapHandler is BaseHandler {
         }
     }
 
+    /// @notice Helpers to check if there is enough liquidity available for a token.
     function requireLiquidityAvailable(IERC20 token, uint256 amount) public view returns (bool) {
-        return (_liquidityAvailable(token) >= amount);
+        return (liquidityAvailable(token) >= amount);
     }
 
-    function _price(IERC20 token) public view returns (uint256 price) {
+    /// @notice Helpers to get the price of a token in the ARM.
+    function price(IERC20 token) public view returns (uint256 price) {
         return token == arm.token0() ? arm.traderate0() : arm.traderate1();
     }
 }

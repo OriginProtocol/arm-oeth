@@ -116,8 +116,6 @@ contract LpHandler is BaseHandler {
         // End prank
         vm.stopPrank();
 
-        // Note: Sum of deposit isn't updated here, it will be updated when redeem is claimed
-
         // Add request to user
         requests[user].push(Request(id, amount));
 
