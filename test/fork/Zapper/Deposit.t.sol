@@ -19,7 +19,7 @@ contract Fork_Concrete_ZapperLidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         uint256 expectedShares = lidoARM.previewDeposit(DEFAULT_AMOUNT);
 
         vm.expectEmit({emitter: address(zapperLidoARM)});
-        emit ZapperLidoARM.Zap(address(this), expectedShares);
+        emit ZapperLidoARM.Zap(address(this), DEFAULT_AMOUNT, expectedShares);
         // Deposit
         zapperLidoARM.deposit{value: DEFAULT_AMOUNT}();
 
@@ -32,7 +32,7 @@ contract Fork_Concrete_ZapperLidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         uint256 expectedShares = lidoARM.previewDeposit(DEFAULT_AMOUNT);
 
         vm.expectEmit({emitter: address(zapperLidoARM)});
-        emit ZapperLidoARM.Zap(address(this), expectedShares);
+        emit ZapperLidoARM.Zap(address(this), DEFAULT_AMOUNT, expectedShares);
         // Deposit
         (bool success,) = address(zapperLidoARM).call{value: DEFAULT_AMOUNT}("");
         assertTrue(success);

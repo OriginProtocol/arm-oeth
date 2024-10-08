@@ -7,40 +7,47 @@ import {Ownable} from "./Ownable.sol";
 // Interfaces
 import {IWETH} from "./Interfaces.sol";
 import {IERC20} from "./Interfaces.sol";
-import {ILidoARM} from "./Interfaces.sol";
+import {ILiquidityProviderARM} from "./Interfaces.sol";
 
+/**
+ * @title Zapper contract for the Lido (stETH) Automated Redemption Manager (ARM)
+ * Converts ETH to WETH and deposits it to the Lido ARM to receive ARM LP shares.
+ * @author Origin Protocol Inc
+ */
 contract ZapperLidoARM is Ownable {
     IWETH public immutable weth;
-    ILidoARM public immutable lidoArm;
+    /// @notice The address of the Lido ARM contract
+    ILiquidityProviderARM public immutable lidoArm;
 
-    event Zap(address indexed sender, uint256 shares);
+    event Zap(address indexed sender, uint256 assets, uint256 shares);
 
     constructor(address _weth, address _lidoArm) {
         weth = IWETH(_weth);
-        lidoArm = ILidoARM(_lidoArm);
+        lidoArm = ILiquidityProviderARM(_lidoArm);
 
         weth.approve(_lidoArm, type(uint256).max);
     }
 
-    /// @notice Deposit ETH to LidoARM and receive shares
+    /// @notice Deposit ETH to LidoARM and receive ARM LP shares
     receive() external payable {
         deposit();
     }
 
     /// @notice Deposit ETH to LidoARM and receive shares
+    /// @return shares The amount of ARM LP shares sent to the depositor
     function deposit() public payable returns (uint256 shares) {
         // Wrap all ETH to WETH
-        uint256 balance = address(this).balance;
-        weth.deposit{value: balance}();
+        uint256 ethBalance = address(this).balance;
+        weth.deposit{value: ethBalance}();
 
         // Deposit all WETH to LidoARM
-        shares = lidoArm.deposit(balance);
+        shares = lidoArm.deposit(ethBalance);
 
-        // Transfer received shares to msg.sender
+        // Transfer received ARM LP shares to msg.sender
         lidoArm.transfer(msg.sender, shares);
 
         // Emit event
-        emit Zap(msg.sender, shares);
+        emit Zap(msg.sender, ethBalance, shares);
     }
 
     /// @notice Rescue ERC20 tokens
