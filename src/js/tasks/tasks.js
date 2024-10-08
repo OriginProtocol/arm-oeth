@@ -3,7 +3,7 @@ const { subtask, task, types } = require("hardhat/config");
 const { parseAddress } = require("../utils/addressParser");
 const { setAutotaskVars } = require("./autotask");
 const { setActionVars } = require("./defender");
-const { submitLido, snapLido, swapLido } = require("./lido");
+const { submitLido, snapLido, swapLido, collectFees } = require("./lido");
 const {
   autoRequestWithdraw,
   autoClaimWithdraw,
@@ -546,6 +546,14 @@ task("setTotalAssetsCap").setAction(async (_, __, runSuper) => {
 });
 
 // Lido
+
+subtask(
+  "collectFees",
+  "Collect the performance fees from the Lido ARM"
+).setAction(collectFees);
+task("collectFees").setAction(async (_, __, runSuper) => {
+  return runSuper();
+});
 
 subtask("snapLido", "Take a snapshot of the Lido ARM")
   .addOptionalParam(
