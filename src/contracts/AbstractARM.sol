@@ -17,8 +17,6 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     uint256 public constant MAX_PRICE_DEVIATION = 2e32;
     /// @notice Scale of the prices.
     uint256 public constant PRICE_SCALE = 1e36;
-    /// @notice The delay before a withdrawal request can be claimed in seconds
-    uint256 public constant CLAIM_DELAY = 10 minutes;
     /// @dev The amount of shares that are minted to a dead address on initalization
     uint256 internal constant MIN_TOTAL_SUPPLY = 1e12;
     /// @dev The address with no known private key that the initial shares are minted to
@@ -41,6 +39,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// From a User perspective, this is the token being bought.
     /// token1 is also compatible with the Uniswap V2 Router interface.
     IERC20 public immutable token1;
+    /// @notice The delay before a withdrawal request can be claimed in seconds
+    uint256 public immutable claimDelay;
 
     ////////////////////////////////////////////////////
     ///             Storage Variables
@@ -119,12 +119,14 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     event FeeCollectorUpdated(address indexed newFeeCollector);
     event CapManagerUpdated(address indexed capManager);
 
-    constructor(address _token0, address _token1, address _liquidityAsset) {
+    constructor(address _token0, address _token1, address _liquidityAsset, uint256 _claimDelay) {
         require(IERC20(_token0).decimals() == 18);
         require(IERC20(_token1).decimals() == 18);
 
         token0 = IERC20(_token0);
         token1 = IERC20(_token1);
+
+        claimDelay = _claimDelay;
 
         _setOwner(address(0)); // Revoke owner for implementation contract at deployment
 
@@ -437,7 +439,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
         requestId = nextWithdrawalIndex;
         uint120 queued = SafeCast.toUint120(withdrawsQueued + assets);
-        uint40 claimTimestamp = uint40(block.timestamp + CLAIM_DELAY);
+        uint40 claimTimestamp = uint40(block.timestamp + claimDelay);
 
         // Store the next withdrawal request
         nextWithdrawalIndex = SafeCast.toUint16(requestId + 1);
