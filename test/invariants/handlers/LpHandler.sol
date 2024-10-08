@@ -166,7 +166,7 @@ contract LpHandler is BaseHandler {
         console.log("LpHandler.claimRedeem(%d), %s", request.id, names[user]);
 
         // Timejump to request deadline
-        skip(arm.CLAIM_DELAY());
+        skip(arm.claimDelay());
 
         // Prank user
         vm.startPrank(user);
@@ -179,7 +179,7 @@ contract LpHandler is BaseHandler {
         vm.stopPrank();
 
         // Jump back to current time, to avoid issues with other tests
-        rewind(arm.CLAIM_DELAY());
+        rewind(arm.claimDelay());
 
         // Remove request
         userRequests[requestIndex] = userRequests[userRequests.length - 1];

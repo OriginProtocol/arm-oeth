@@ -127,7 +127,7 @@ abstract contract Invariant_Shared_Test_ is Base_Test_ {
 
     function _deployLidoARM() private {
         // Deploy LidoARM implementation.
-        LidoARM lidoImpl = new LidoARM(address(steth), address(weth), lidoWithdraw);
+        LidoARM lidoImpl = new LidoARM(address(steth), address(weth), lidoWithdraw, 10 minutes);
 
         // Deployer will need WETH to initialize the ARM.
         deal(address(weth), address(deployer), MIN_TOTAL_SUPPLY);
