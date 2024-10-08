@@ -107,7 +107,7 @@ interface IOethARM {
     function claimWithdrawals(uint256[] calldata requestIds) external;
 }
 
-interface ILiquidityProviderARM {
+interface ILiquidityProviderARM is IERC20 {
     function previewDeposit(uint256 assets) external returns (uint256 shares);
     function deposit(uint256 assets) external returns (uint256 shares);
 
@@ -160,7 +160,7 @@ interface IOETHVault {
         view
         returns (address withdrawer, bool claimed, uint40 timestamp, uint128 amount, uint128 queued);
 
-    function CLAIM_DELAY() external view returns (uint256);
+    function claimDelay() external view returns (uint256);
 }
 
 interface IGovernance {

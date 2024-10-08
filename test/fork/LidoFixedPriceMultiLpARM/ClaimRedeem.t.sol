@@ -17,7 +17,7 @@ contract Fork_Concrete_LidoARM_ClaimRedeem_Test_ is Fork_Shared_Test_ {
     function setUp() public override {
         super.setUp();
 
-        delay = lidoARM.CLAIM_DELAY();
+        delay = lidoARM.claimDelay();
 
         deal(address(weth), address(this), 1_000 ether);
     }

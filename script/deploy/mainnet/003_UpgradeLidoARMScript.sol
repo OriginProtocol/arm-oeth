@@ -9,6 +9,7 @@ import {IERC20, IWETH, LegacyAMM} from "contracts/Interfaces.sol";
 import {LidoARM} from "contracts/LidoARM.sol";
 import {CapManager} from "contracts/CapManager.sol";
 import {Proxy} from "contracts/Proxy.sol";
+import {ZapperLidoARM} from "contracts/ZapperLidoARM.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
 import {GovProposal, GovSixHelper} from "contracts/utils/GovSixHelper.sol";
 import {AbstractDeployScript} from "../AbstractDeployScript.sol";
@@ -24,6 +25,7 @@ contract UpgradeLidoARMMainnetScript is AbstractDeployScript {
     Proxy lidoARMProxy;
     Proxy capManProxy;
     LidoARM lidoARMImpl;
+    CapManager capManager;
 
     function _execute() internal override {
         console.log("Deploy:", DEPLOY_NAME);
@@ -44,20 +46,26 @@ contract UpgradeLidoARMMainnetScript is AbstractDeployScript {
         // 4. Initialize Proxy with CapManager implementation and set the owner to the deployer for now
         bytes memory data = abi.encodeWithSignature("initialize(address)", Mainnet.ARM_RELAYER);
         capManProxy.initialize(address(capManagerImpl), deployer, data);
-        CapManager capManager = CapManager(address(capManProxy));
+        capManager = CapManager(address(capManProxy));
 
         // 5. Set the liquidity Provider caps
-        capManager.setTotalAssetsCap(1000 ether);
+        capManager.setTotalAssetsCap(100 ether);
         address[] memory liquidityProviders = new address[](1);
         liquidityProviders[0] = Mainnet.TREASURY;
-        capManager.setLiquidityProviderCaps(liquidityProviders, 10 ether);
+        capManager.setLiquidityProviderCaps(liquidityProviders, 100 ether);
 
         // 6. Deploy Lido implementation
-        lidoARMImpl = new LidoARM(Mainnet.STETH, Mainnet.WETH, Mainnet.LIDO_WITHDRAWAL);
+        uint256 claimDelay = tenderlyTestnet ? 1 minutes : 10 minutes;
+        lidoARMImpl = new LidoARM(Mainnet.STETH, Mainnet.WETH, Mainnet.LIDO_WITHDRAWAL, claimDelay);
         _recordDeploy("LIDO_ARM_IMPL", address(lidoARMImpl));
 
         // 7. Transfer ownership of CapManager to the mainnet 5/8 multisig
         capManProxy.setOwner(Mainnet.GOV_MULTISIG);
+
+        // 8. Deploy the Zapper
+        ZapperLidoARM zapper = new ZapperLidoARM(Mainnet.WETH, Mainnet.LIDO_ARM);
+        zapper.setOwner(Mainnet.STRATEGIST);
+        _recordDeploy("LIDO_ARM_ZAPPER", address(zapper));
 
         console.log("Finished deploying", DEPLOY_NAME);
 
@@ -120,12 +128,30 @@ contract UpgradeLidoARMMainnetScript is AbstractDeployScript {
         lidoARMProxy.upgradeToAndCall(address(lidoARMImpl), data);
 
         // Set the buy price with a 8 basis point discount. The sell price is 1.0
-        LidoARM(payable(Mainnet.LIDO_ARM)).setPrices(9994e32, 1e36);
+        LidoARM(payable(Mainnet.LIDO_ARM)).setPrices(0.9994e36, 0.9998e36);
 
         // transfer ownership of the Lido ARM proxy to the mainnet 5/8 multisig
         lidoARMProxy.setOwner(Mainnet.GOV_MULTISIG);
 
         console.log("Finished running initializing Lido ARM as ARM_MULTISIG");
+
+        if (tenderlyTestnet) {
+            vm.stopBroadcast();
+        } else {
+            vm.stopPrank();
+        }
+
+        if (tenderlyTestnet) {
+            console.log("Broadcasting fork script to Tenderly as: %s", Mainnet.ARM_RELAYER);
+            vm.startBroadcast(Mainnet.ARM_RELAYER);
+        } else {
+            vm.startPrank(Mainnet.ARM_RELAYER);
+        }
+
+        // Add some test liquidity providers
+        address[] memory testProviders = new address[](1);
+        testProviders[0] = 0x3bB354a1E0621F454c5D5CE98f6ea21a53bf2d7d;
+        capManager.setLiquidityProviderCaps(testProviders, 100 ether);
 
         if (tenderlyTestnet) {
             vm.stopBroadcast();

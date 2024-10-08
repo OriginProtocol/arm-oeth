@@ -9,6 +9,7 @@ import {Proxy} from "contracts/Proxy.sol";
 import {OethARM} from "contracts/OethARM.sol";
 import {LidoARM} from "contracts/LidoARM.sol";
 import {CapManager} from "contracts/CapManager.sol";
+import {ZapperLidoARM} from "contracts/ZapperLidoARM.sol";
 
 // Interfaces
 import {IERC20} from "contracts/Interfaces.sol";
@@ -36,6 +37,7 @@ abstract contract Base_Test_ is Test {
     OethARM public oethARM;
     LidoARM public lidoARM;
     CapManager public capManager;
+    ZapperLidoARM public zapperLidoARM;
 
     IERC20 public oeth;
     IERC20 public weth;
