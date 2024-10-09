@@ -127,6 +127,9 @@ contract UpgradeLidoARMMainnetScript is AbstractDeployScript {
         // upgrade and initialize the Lido ARM
         lidoARMProxy.upgradeToAndCall(address(lidoARMImpl), data);
 
+        // Set the price that buy and sell prices can not cross
+        LidoARM(payable(Mainnet.LIDO_ARM)).setCrossPrice(0.9998e36);
+
         // Set the buy price with a 8 basis point discount. The sell price is 1.0
         LidoARM(payable(Mainnet.LIDO_ARM)).setPrices(0.9994e36, 0.9998e36);
 

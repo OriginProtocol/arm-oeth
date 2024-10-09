@@ -12,9 +12,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     ///                 Constants
     ////////////////////////////////////////////////////
 
-    /// @notice Maximum amount the Operator can set the price from 1 scaled to 36 decimals.
-    /// 2e33 is a 0.02% deviation, or 2 basis points.
-    uint256 public constant MAX_PRICE_DEVIATION = 2e32;
+    /// @notice Maximum amount the Owner can set the cross price below 1 scaled to 36 decimals.
+    /// 20e32 is a 0.2% deviation, or 20 basis points.
+    uint256 public constant MAX_CROSS_PRICE_DEVIATION = 20e32;
     /// @notice Scale of the prices.
     uint256 public constant PRICE_SCALE = 1e36;
     /// @dev The amount of shares that are minted to a dead address on initalization
@@ -66,6 +66,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
      */
     uint256 public traderate1;
 
+    uint256 public crossPrice;
+
     /// @notice cumulative total of all withdrawal requests included the ones that have already been claimed
     uint120 public withdrawsQueued;
     /// @notice total of all the withdrawal requests that have been claimed
@@ -109,6 +111,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     ////////////////////////////////////////////////////
 
     event TraderateChanged(uint256 traderate0, uint256 traderate1);
+    event CrossPriceUpdated(uint256 crossPrice);
     event Deposit(address indexed owner, uint256 assets, uint256 shares);
     event RedeemRequested(
         address indexed withdrawer, uint256 indexed requestId, uint256 assets, uint256 queued, uint256 claimTimestamp
@@ -171,6 +174,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
         capManager = _capManager;
         emit CapManagerUpdated(_capManager);
+
+        crossPrice = PRICE_SCALE;
+        emit CrossPriceUpdated(PRICE_SCALE);
     }
 
     ////////////////////////////////////////////////////
@@ -368,8 +374,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     function setPrices(uint256 buyT1, uint256 sellT1) external onlyOperatorOrOwner {
         // Limit funds and loss when called by the Operator
         if (msg.sender == operator) {
-            require(sellT1 >= PRICE_SCALE - MAX_PRICE_DEVIATION, "ARM: sell price too low");
-            require(buyT1 < PRICE_SCALE, "ARM: buy price too high");
+            require(sellT1 >= crossPrice, "ARM: sell price too low");
+            require(buyT1 < crossPrice, "ARM: buy price too high");
         }
         _setTraderates(
             PRICE_SCALE * PRICE_SCALE / sellT1, // base (t0) -> token (t1)
@@ -383,6 +389,32 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         traderate1 = _tokenToBaseRate;
 
         emit TraderateChanged(_baseToTokenRate, _tokenToBaseRate);
+    }
+
+    /**
+     * @notice set the price that buy and sell prices can not cross.
+     * That is, the buy prices must be below the cross price
+     * and the sell prices must be above the cross price.
+     * If the cross price is being lowered, there can not be any base assets in the ARM. eg stETH.
+     * The base assets should be sent to the withdrawal queue before the cross price can be lowered.
+     * The cross price can be increased with assets in the ARM.
+     * @param newCrossPrice The new cross price scaled to 36 decimals.
+     */
+    function setCrossPrice(uint256 newCrossPrice) external onlyOwner {
+        require(newCrossPrice >= PRICE_SCALE - MAX_CROSS_PRICE_DEVIATION, "ARM: cross price too low");
+        require(newCrossPrice <= PRICE_SCALE, "ARM: cross price too high");
+
+        // If the new cross price is lower than the current cross price
+        if (newCrossPrice < crossPrice) {
+            // The base asset, eg stETH, is not the liquidity asset, eg WETH
+            address baseAsset = liquidityAsset == address(token0) ? address(token1) : address(token0);
+            // Check there is not a significant amount of base assets in the ARM
+            require(IERC20(baseAsset).balanceOf(address(this)) < MIN_TOTAL_SUPPLY, "ARM: too many base assets");
+        }
+
+        crossPrice = newCrossPrice;
+
+        emit CrossPriceUpdated(newCrossPrice);
     }
 
     ////////////////////////////////////////////////////
@@ -493,7 +525,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     }
 
     /// @notice Used to work out if an ARM's withdrawal request can be claimed.
-    /// If the withdrawal request's `queued` amount is less than the returned `claimable` amount, then if can be claimed.
+    /// If the withdrawal request's `queued` amount is less than the returned `claimable` amount, then it can be claimed.
     function claimable() public view returns (uint256) {
         return withdrawsClaimed + IERC20(liquidityAsset).balanceOf(address(this));
     }

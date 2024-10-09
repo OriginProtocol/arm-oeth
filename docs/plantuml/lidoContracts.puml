@@ -16,7 +16,7 @@
 title "Lido Automated Redemption Manager (ARM) Contract Dependencies"
 
 
-object "Zapper" as zap <<Origin>><<Proxy>> #$originColor {
+object "ZapperLidoARM" as zap <<Origin>> #$originColor {
 }
 
 object "LidoARM" as arm <<Origin>><<Proxy>> #$originColor {
