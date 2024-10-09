@@ -561,12 +561,11 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// less liquidity assets reserved for the ARM's withdrawal queue.
     /// This does not exclude any accrued performance fees.
     function _availableAssets() internal view returns (uint256) {
-        // Get the base assets, eg stETH, in the ARM and external withdrawal queue
-        uint256 baseAssets = IERC20(baseAsset).balanceOf(address(this)) + _externalWithdrawQueue();
-
         // Liquidity assets, eg WETH, are priced at 1.0
-        // Base assets, eg stETH, are priced at the cross price which is a discounted price
-        uint256 assets = IERC20(liquidityAsset).balanceOf(address(this)) + baseAssets * crossPrice / PRICE_SCALE;
+        // Base assets, eg stETH, in the withdrawal queue are also priced at 1.0
+        // Base assets, eg stETH, in the ARM are priced at the cross price which is a discounted price
+        uint256 assets = IERC20(liquidityAsset).balanceOf(address(this)) + _externalWithdrawQueue()
+            + IERC20(baseAsset).balanceOf(address(this)) * crossPrice / PRICE_SCALE;
 
         // The amount of liquidity assets (WETH) that is still to be claimed in the withdrawal queue
         uint256 outstandingWithdrawals = withdrawsQueued - withdrawsClaimed;
