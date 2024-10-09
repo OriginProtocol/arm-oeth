@@ -104,7 +104,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
     address public capManager;
 
-    uint256[43] private _gap;
+    address public zap;
+
+    uint256[41] private _gap;
 
     ////////////////////////////////////////////////////
     ///                 Events
@@ -121,6 +123,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     event FeeUpdated(uint256 fee);
     event FeeCollectorUpdated(address indexed newFeeCollector);
     event CapManagerUpdated(address indexed capManager);
+    event ZapUpdated(address indexed zap);
 
     constructor(address _token0, address _token1, address _liquidityAsset, uint256 _claimDelay) {
         require(IERC20(_token0).decimals() == 18);
@@ -424,6 +427,22 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @param assets The amount of liquidity assets to deposit
     /// @return shares The amount of shares that were minted
     function deposit(uint256 assets) external returns (uint256 shares) {
+        shares = _deposit(assets, msg.sender);
+    }
+
+    /// @notice deposit liquidity assets in exchange for liquidity provider (LP) shares.
+    /// This function is restricted to the Zap contract.
+    /// @param assets The amount of liquidity assets to deposit
+    /// @param liquidityProvider The address of the liquidity provider
+    /// @return shares The amount of shares that were minted
+    function deposit(uint256 assets, address liquidityProvider) external returns (uint256 shares) {
+        require(msg.sender == zap, "Only Zap");
+
+        shares = _deposit(assets, liquidityProvider);
+    }
+
+    /// @dev Internal logic for depositing liquidity assets in exchange for liquidity provider (LP) shares.
+    function _deposit(uint256 assets, address liquidityProvider) internal returns (uint256 shares) {
         // Calculate the amount of shares to mint after the performance fees have been accrued
         // which reduces the available assets, and before new assets are deposited.
         shares = convertToShares(assets);
@@ -432,17 +451,17 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         IERC20(liquidityAsset).transferFrom(msg.sender, address(this), assets);
 
         // mint shares
-        _mint(msg.sender, shares);
+        _mint(liquidityProvider, shares);
 
         // Add the deposited assets to the last available assets
         lastAvailableAssets += SafeCast.toInt128(SafeCast.toInt256(assets));
 
         // Check the liquidity provider caps after the new assets have been deposited
         if (capManager != address(0)) {
-            ICapManager(capManager).postDepositHook(msg.sender, assets);
+            ICapManager(capManager).postDepositHook(liquidityProvider, assets);
         }
 
-        emit Deposit(msg.sender, assets, shares);
+        emit Deposit(liquidityProvider, assets, shares);
     }
 
     /// @notice Preview the amount of assets that would be received for burning a given amount of shares
@@ -597,6 +616,13 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         capManager = _capManager;
 
         emit CapManagerUpdated(_capManager);
+    }
+
+    /// @notice Set the Zap contract address.
+    function setZap(address _zap) external onlyOwner {
+        zap = _zap;
+
+        emit ZapUpdated(_zap);
     }
 
     ////////////////////////////////////////////////////

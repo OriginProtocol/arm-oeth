@@ -41,10 +41,7 @@ contract ZapperLidoARM is Ownable {
         weth.deposit{value: ethBalance}();
 
         // Deposit all WETH to LidoARM
-        shares = lidoArm.deposit(ethBalance);
-
-        // Transfer received ARM LP shares to msg.sender
-        lidoArm.transfer(msg.sender, shares);
+        shares = lidoArm.deposit(ethBalance, msg.sender);
 
         // Emit event
         emit Zap(msg.sender, ethBalance, shares);
