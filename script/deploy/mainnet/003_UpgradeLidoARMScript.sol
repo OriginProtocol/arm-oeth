@@ -33,7 +33,7 @@ contract UpgradeLidoARMMainnetScript is AbstractDeployScript {
 
         // 1. Record the proxy address used for AMM v1
         _recordDeploy("LIDO_ARM", Mainnet.LIDO_ARM);
-        lidoARMProxy = Proxy(Mainnet.LIDO_ARM);
+        lidoARMProxy = Proxy(payable(Mainnet.LIDO_ARM));
 
         // 2. Deploy proxy for the CapManager
         capManProxy = new Proxy();
@@ -85,7 +85,7 @@ contract UpgradeLidoARMMainnetScript is AbstractDeployScript {
             vm.startPrank(Mainnet.ARM_MULTISIG);
         }
 
-        if (lidoARMProxy == Proxy(0x0000000000000000000000000000000000000000)) {
+        if (lidoARMProxy == Proxy(payable(address(0)))) {
             revert("Lido ARM proxy not found");
         }
 
