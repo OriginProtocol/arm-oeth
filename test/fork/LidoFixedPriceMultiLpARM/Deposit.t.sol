@@ -302,7 +302,8 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         depositInLidoARM(address(this), DEFAULT_AMOUNT)
     {
         // set stETH/WETH buy price to 1
-        lidoARM.setPrices(1e36, 1e36 + 1);
+        lidoARM.setCrossPrice(1e36);
+        lidoARM.setPrices(1e36 - 1, 1e36);
 
         // User Swap stETH for 3/4 of WETH in the ARM
         deal(address(steth), address(this), DEFAULT_AMOUNT);

@@ -372,23 +372,14 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
      * From the Trader's perspective, this is the buy price.
      */
     function setPrices(uint256 buyT1, uint256 sellT1) external onlyOperatorOrOwner {
-        // Limit funds and loss when called by the Operator
-        if (msg.sender == operator) {
-            require(sellT1 >= crossPrice, "ARM: sell price too low");
-            require(buyT1 < crossPrice, "ARM: buy price too high");
-        }
-        _setTraderates(
-            PRICE_SCALE * PRICE_SCALE / sellT1, // base (t0) -> token (t1)
-            buyT1 // token (t1) -> base (t0)
-        );
-    }
+        // Ensure buy price is always below past sell prices
+        require(sellT1 >= crossPrice, "ARM: sell price too low");
+        require(buyT1 < crossPrice, "ARM: buy price too high");
 
-    function _setTraderates(uint256 _baseToTokenRate, uint256 _tokenToBaseRate) internal {
-        require((PRICE_SCALE * PRICE_SCALE / (_baseToTokenRate)) > _tokenToBaseRate, "ARM: Price cross");
-        traderate0 = _baseToTokenRate;
-        traderate1 = _tokenToBaseRate;
+        traderate0 = PRICE_SCALE * PRICE_SCALE / sellT1; // base (t0) -> token (t1);
+        traderate1 = buyT1; // token (t1) -> base (t0)
 
-        emit TraderateChanged(_baseToTokenRate, _tokenToBaseRate);
+        emit TraderateChanged(traderate0, traderate1);
     }
 
     /**
@@ -556,7 +547,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     function totalAssets() public view virtual returns (uint256) {
         (uint256 fees, uint256 newAvailableAssets) = _feesAccrued();
 
-        if (fees > newAvailableAssets) return 0;
+        // total assets should only go up from the initial deposit amount that is burnt
+        // but in case of something unforeseen, return MIN_TOTAL_SUPPLY if fees is greater than the available assets
+        if (fees > newAvailableAssets) return MIN_TOTAL_SUPPLY;
 
         // Remove the performance fee from the available assets
         return newAvailableAssets - fees;
@@ -587,12 +580,13 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     function _externalWithdrawQueue() internal view virtual returns (uint256 assets);
 
     /// @notice Calculates the amount of shares for a given amount of liquidity assets
+    /// @dev Total assets can't be zero. The lowest it can be is MIN_TOTAL_SUPPLY
     function convertToShares(uint256 assets) public view returns (uint256 shares) {
-        uint256 totalAssetsMem = totalAssets();
-        shares = (totalAssetsMem == 0) ? assets : (assets * totalSupply()) / totalAssetsMem;
+        shares = assets * totalSupply() / totalAssets();
     }
 
     /// @notice Calculates the amount of liquidity assets for a given amount of shares
+    /// @dev Total supply can't be zero. The lowest it can be is MIN_TOTAL_SUPPLY
     function convertToAssets(uint256 shares) public view returns (uint256 assets) {
         assets = (shares * totalAssets()) / totalSupply();
     }

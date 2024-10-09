@@ -146,6 +146,6 @@ contract Fork_Concrete_LidoARM_TotalAssets_Test_ is Fork_Shared_Test_ {
         simulateAssetGainInLidoARM(DEFAULT_AMOUNT * 2, address(weth), false)
     {
         // vm.expectRevert(stdError.arithmeticError);
-        assertEq(lidoARM.totalAssets(), 0);
+        assertEq(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY);
     }
 }
