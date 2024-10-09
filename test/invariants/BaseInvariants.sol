@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
+// Foundry
+import {console} from "forge-std/Console.sol";
+
 // Test imports
 import {Invariant_Shared_Test_} from "./shared/Shared.sol";
 
@@ -207,5 +210,91 @@ abstract contract Invariant_Base_Test_ is Invariant_Shared_Test_ {
 
     function readStorageSlotOnARM(uint256 slotNumber) internal view returns (uint256 value) {
         value = uint256(vm.load(address(lidoARM), bytes32(slotNumber)));
+    }
+
+    function logsStats() public view {
+        console.log("");
+        console.log("--- Stats ---");
+
+        console.log("");
+        console.log("# LP Handler #");
+        console.log(
+            "Number of Call: Deposit %d (skipped: %d)",
+            lpHandler.numberOfCalls("lpHandler.deposit"),
+            lpHandler.numberOfCalls("lpHandler.deposit.skip")
+        );
+        console.log(
+            "Number of Call: RequestRedeem %d (skipped: %d)",
+            lpHandler.numberOfCalls("lpHandler.requestRedeem"),
+            lpHandler.numberOfCalls("lpHandler.requestRedeem.skip")
+        );
+
+        console.log(
+            "Number of Call: ClaimRedeem %d (skipped: %d)",
+            lpHandler.numberOfCalls("lpHandler.claimRedeem"),
+            lpHandler.numberOfCalls("lpHandler.claimRedeem.skip")
+        );
+
+        console.log("");
+        console.log("# Swap Handler #");
+        console.log(
+            "Number of Call: SwapExactTokensForTokens %d (skipped: %d)",
+            swapHandler.numberOfCalls("swapHandler.swapExactTokens"),
+            swapHandler.numberOfCalls("swapHandler.swapExactTokens.skip")
+        );
+        console.log(
+            "Number of Call: SwapTokensForExactTokens %d (skipped: %d)",
+            swapHandler.numberOfCalls("swapHandler.swapTokensExact"),
+            swapHandler.numberOfCalls("swapHandler.swapTokensExact.skip")
+        );
+
+        console.log("");
+        console.log("# Owner Handler #");
+        console.log(
+            "Number of Call: SetPrices %d (skipped: %d)",
+            ownerHandler.numberOfCalls("ownerHandler.setPrices"),
+            ownerHandler.numberOfCalls("ownerHandler.setPrices.skip")
+        );
+        console.log(
+            "Number of Call: SetCrossPrice %d (skipped: %d)",
+            ownerHandler.numberOfCalls("ownerHandler.setCrossPrice"),
+            ownerHandler.numberOfCalls("ownerHandler.setCrossPrice.skip")
+        );
+        console.log(
+            "Number of Call: CollectFees %d (skipped: %d)",
+            ownerHandler.numberOfCalls("ownerHandler.collectFees"),
+            ownerHandler.numberOfCalls("ownerHandler.collectFees.skip")
+        );
+        console.log(
+            "Number of Call: SetFees %d (skipped: %d)",
+            ownerHandler.numberOfCalls("ownerHandler.setFees"),
+            ownerHandler.numberOfCalls("ownerHandler.setFees.skip")
+        );
+
+        console.log("");
+        console.log("# LLM Handler #");
+        console.log(
+            "Number of Call: RequestStETHWithdrawalForETH %d (skipped: %d)",
+            llmHandler.numberOfCalls("llmHandler.requestStETHWithdraw"),
+            0
+        );
+        console.log(
+            "Number of Call: ClaimStETHWithdrawalForWETH %d (skipped: %d)",
+            llmHandler.numberOfCalls("llmHandler.claimStETHWithdraw"),
+            0
+        );
+
+        console.log("");
+        console.log("# Donation Handler #");
+        console.log(
+            "Number of Call: DonateStETH %d (skipped: %d)",
+            donationHandler.numberOfCalls("donationHandler.donateStETH"),
+            donationHandler.numberOfCalls("donationHandler.donateStETH.skip")
+        );
+        console.log(
+            "Number of Call: DonateWETH %d (skipped: %d)",
+            donationHandler.numberOfCalls("donationHandler.donateWETH"),
+            donationHandler.numberOfCalls("donationHandler.donateWETH.skip")
+        );
     }
 }
