@@ -52,6 +52,7 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
         assertEq(address(lidoARM.weth()), Mainnet.WETH, "WETH");
         assertEq(lidoARM.liquidityAsset(), Mainnet.WETH, "liquidity asset");
         assertEq(lidoARM.claimDelay(), 10 minutes, "claim delay");
+        assertEq(lidoARM.crossPrice(), 0.9998e36, "cross price");
 
         assertEq(capManager.accountCapEnabled(), true, "account cap enabled");
         assertEq(capManager.operator(), Mainnet.ARM_RELAYER, "Operator");
