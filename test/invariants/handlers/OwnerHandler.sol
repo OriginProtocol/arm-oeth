@@ -84,7 +84,7 @@ contract OwnerHandler is BaseHandler {
         uint256 currentPrice = arm.crossPrice();
         uint256 newCrossPrice = _bound(_seed, priceScale - arm.MAX_CROSS_PRICE_DEVIATION(), priceScale);
 
-        if (newCrossPrice < currentPrice && weth.balanceOf(address(arm)) >= MIN_TOTAL_SUPPLY) {
+        if (newCrossPrice < currentPrice && steth.balanceOf(address(arm)) >= MIN_TOTAL_SUPPLY) {
             console.log("OwnerHandler.setCrossPrice() - Skipping price decrease");
             numberOfCalls["ownerHandler.setCrossPrice.skip"]++;
             return;
