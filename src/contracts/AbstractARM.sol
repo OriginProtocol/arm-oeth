@@ -391,13 +391,21 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         emit TraderateChanged(_baseToTokenRate, _tokenToBaseRate);
     }
 
-    function setCrossPrice(uint256 _crossPrice) external onlyOwner {
-        require(_crossPrice >= PRICE_SCALE - MAX_PRICE_DEVIATION, "ARM: cross price too low");
-        require(_crossPrice <= PRICE_SCALE, "ARM: cross price too high");
+    function setCrossPrice(uint256 newCrossPrice) external onlyOwner {
+        require(newCrossPrice >= PRICE_SCALE - MAX_PRICE_DEVIATION, "ARM: cross price too low");
+        require(newCrossPrice <= PRICE_SCALE, "ARM: cross price too high");
 
-        crossPrice = _crossPrice;
+        // If the new cross price is lower than the current cross price
+        if (newCrossPrice < crossPrice) {
+            // The base asset, eg stETH, is not the liquidity asset, eg WETH
+            address baseAsset = liquidityAsset == address(token0) ? address(token1) : address(token0);
+            // Check there is not a significant amount of base assets in the ARM
+            require(IERC20(baseAsset).balanceOf(address(this)) < MIN_TOTAL_SUPPLY, "ARM: too many base assets");
+        }
 
-        emit CrossPriceUpdated(_crossPrice);
+        crossPrice = newCrossPrice;
+
+        emit CrossPriceUpdated(newCrossPrice);
     }
 
     ////////////////////////////////////////////////////

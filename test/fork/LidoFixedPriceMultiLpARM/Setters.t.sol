@@ -89,7 +89,7 @@ contract Fork_Concrete_lidoARM_Setters_Test_ is Fork_Shared_Test_ {
     //////////////////////////////////////////////////////
     /// --- Set Prices - REVERTING TESTS
     //////////////////////////////////////////////////////
-    function test_RevertWhen_SetPrices_Because_PriceCross() public {
+    function test_RevertWhen_SetPrices_Because_PriceCross() public asLidoARMOwner {
         vm.expectRevert("ARM: Price cross");
         lidoARM.setPrices(90 * 1e33, 89 * 1e33);
 
@@ -160,7 +160,7 @@ contract Fork_Concrete_lidoARM_Setters_Test_ is Fork_Shared_Test_ {
     }
 
     //////////////////////////////////////////////////////
-    /// --- Set Prices - REVERTING TESTS
+    /// --- Set Cross Price - REVERTING TESTS
     //////////////////////////////////////////////////////
     function test_RevertWhen_SetCrossPrice_Because_NotOwner() public asRandomAddress {
         vm.expectRevert("ARM: Only owner can call this function.");
@@ -182,11 +182,20 @@ contract Fork_Concrete_lidoARM_Setters_Test_ is Fork_Shared_Test_ {
         lidoARM.setCrossPrice(1.0001e36);
     }
 
+    function test_RevertWhen_SetCrossPrice_With_stETH_Because_PriceDrop() public {
+        deal(address(steth), address(lidoARM), MIN_TOTAL_SUPPLY + 1);
+
+        vm.expectRevert("ARM: too many base assets");
+        lidoARM.setCrossPrice(0.9998e36);
+    }
+
     //////////////////////////////////////////////////////
-    /// --- Set Prices - PASSING TESTS
+    /// --- Set Cross Price - PASSING TESTS
     //////////////////////////////////////////////////////
 
-    function test_SetCrossPrice_Owner() public {
+    function test_SetCrossPrice_No_StETH_Owner() public {
+        deal(address(steth), address(lidoARM), MIN_TOTAL_SUPPLY - 1);
+
         // at 1.0
         vm.expectEmit({emitter: address(lidoARM)});
         emit AbstractARM.CrossPriceUpdated(1e36);
@@ -196,6 +205,18 @@ contract Fork_Concrete_lidoARM_Setters_Test_ is Fork_Shared_Test_ {
         vm.expectEmit({emitter: address(lidoARM)});
         emit AbstractARM.CrossPriceUpdated(0.9998e36);
         lidoARM.setCrossPrice(0.9998e36);
+    }
+
+    function test_SetCrossPrice_With_StETH_PriceUp_Owner() public {
+        // 2 basis points lower than 1.0
+        lidoARM.setCrossPrice(0.9998e36);
+
+        deal(address(steth), address(lidoARM), MIN_TOTAL_SUPPLY + 1);
+
+        // 4 basis points lower than 1.0
+        // vm.expectEmit({emitter: address(lidoARM)});
+        // emit AbstractARM.CrossPriceUpdated(0.9996e36);
+        lidoARM.setCrossPrice(0.9999e36);
     }
 
     //////////////////////////////////////////////////////
