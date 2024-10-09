@@ -12,9 +12,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     ///                 Constants
     ////////////////////////////////////////////////////
 
-    /// @notice Maximum amount the Operator can set the price from 1 scaled to 36 decimals.
-    /// 2e33 is a 0.02% deviation, or 2 basis points.
-    uint256 public constant MAX_PRICE_DEVIATION = 2e32;
+    /// @notice Maximum amount the Owner can set the cross price below 1 scaled to 36 decimals.
+    /// 20e32 is a 0.2% deviation, or 20 basis points.
+    uint256 public constant MAX_CROSS_PRICE_DEVIATION = 20e32;
     /// @notice Scale of the prices.
     uint256 public constant PRICE_SCALE = 1e36;
     /// @dev The amount of shares that are minted to a dead address on initalization
@@ -391,8 +391,17 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         emit TraderateChanged(_baseToTokenRate, _tokenToBaseRate);
     }
 
+    /**
+     * @notice set the price that buy and sell prices can not cross.
+     * That is, the buy prices must be below the cross price
+     * and the sell prices must be above the cross price.
+     * If the cross price is being lowered, there can not be any base assets in the ARM. eg stETH.
+     * The base assets should be sent to the withdrawal queue before the cross price can be lowered.
+     * The cross price can be increased with assets in the ARM.
+     * @param newCrossPrice The new cross price scaled to 36 decimals.
+     */
     function setCrossPrice(uint256 newCrossPrice) external onlyOwner {
-        require(newCrossPrice >= PRICE_SCALE - MAX_PRICE_DEVIATION, "ARM: cross price too low");
+        require(newCrossPrice >= PRICE_SCALE - MAX_CROSS_PRICE_DEVIATION, "ARM: cross price too low");
         require(newCrossPrice <= PRICE_SCALE, "ARM: cross price too high");
 
         // If the new cross price is lower than the current cross price

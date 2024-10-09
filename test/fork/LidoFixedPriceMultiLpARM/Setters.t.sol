@@ -173,9 +173,9 @@ contract Fork_Concrete_lidoARM_Setters_Test_ is Fork_Shared_Test_ {
     }
 
     function test_RevertWhen_SetCrossPrice_Because_PriceRange() public asLidoARMOwner {
-        // 3 basis points lower than 1.0
+        // 21 basis points lower than 1.0
         vm.expectRevert("ARM: cross price too low");
-        lidoARM.setCrossPrice(0.9997e36);
+        lidoARM.setCrossPrice(0.9979e36);
 
         // 1 basis points higher than 1.0
         vm.expectRevert("ARM: cross price too high");
@@ -201,10 +201,10 @@ contract Fork_Concrete_lidoARM_Setters_Test_ is Fork_Shared_Test_ {
         emit AbstractARM.CrossPriceUpdated(1e36);
         lidoARM.setCrossPrice(1e36);
 
-        // 2 basis points lower than 1.0
+        // 20 basis points lower than 1.0
         vm.expectEmit({emitter: address(lidoARM)});
-        emit AbstractARM.CrossPriceUpdated(0.9998e36);
-        lidoARM.setCrossPrice(0.9998e36);
+        emit AbstractARM.CrossPriceUpdated(0.9980e36);
+        lidoARM.setCrossPrice(0.9980e36);
     }
 
     function test_SetCrossPrice_With_StETH_PriceUp_Owner() public {
