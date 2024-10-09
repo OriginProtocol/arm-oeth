@@ -203,8 +203,8 @@ contract Fork_Concrete_lidoARM_Setters_Test_ is Fork_Shared_Test_ {
 
         // 20 basis points lower than 1.0
         vm.expectEmit({emitter: address(lidoARM)});
-        emit AbstractARM.CrossPriceUpdated(0.9980e36);
-        lidoARM.setCrossPrice(0.9980e36);
+        emit AbstractARM.CrossPriceUpdated(0.998e36);
+        lidoARM.setCrossPrice(0.998e36);
     }
 
     function test_SetCrossPrice_With_StETH_PriceUp_Owner() public {
