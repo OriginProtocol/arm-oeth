@@ -65,7 +65,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
      * Rate is to 36 decimals (1e36).
      */
     uint256 public traderate1;
-
+    /// @notice The price that buy and sell prices can not cross scaled to 36 decimals.
     uint256 public crossPrice;
 
     /// @notice cumulative total of all withdrawal requests included the ones that have already been claimed
@@ -101,7 +101,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     int128 public lastAvailableAssets;
     /// @notice The account that can collect the performance fee
     address public feeCollector;
-
+    /// @notice The address of the CapManager contract used to manage the ARM's liquidity provider and total assets caps
     address public capManager;
 
     address public zap;
