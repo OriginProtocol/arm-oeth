@@ -174,7 +174,7 @@ abstract contract Invariant_Base_Test_ is Invariant_Shared_Test_ {
 
     function assert_llm_invariant_C() public view {
         uint256 slotGap1 = 1;
-        uint256 slotGap2 = 57;
+        uint256 slotGap2 = 58;
         uint256 gap1Length = 49;
         uint256 gap2Length = 43;
 

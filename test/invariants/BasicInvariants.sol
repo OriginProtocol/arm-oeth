@@ -79,7 +79,8 @@ contract Invariant_Basic_Test_ is Invariant_Base_Test_ {
         lpHandler.setSelectorWeight(lpHandler.claimRedeem.selector, 2_500); // 25%
         swapHandler.setSelectorWeight(swapHandler.swapExactTokensForTokens.selector, 5_000); // 50%
         swapHandler.setSelectorWeight(swapHandler.swapTokensForExactTokens.selector, 5_000); // 50%
-        ownerHandler.setSelectorWeight(ownerHandler.setPrices.selector, 7_000); // 70%
+        ownerHandler.setSelectorWeight(ownerHandler.setPrices.selector, 5_000); // 50%
+        ownerHandler.setSelectorWeight(ownerHandler.setCrossPrice.selector, 2_000); // 20%
         ownerHandler.setSelectorWeight(ownerHandler.collectFees.selector, 2_000); // 20%
         ownerHandler.setSelectorWeight(ownerHandler.setFees.selector, 1_000); // 10%
         llmHandler.setSelectorWeight(llmHandler.requestStETHWithdrawalForETH.selector, 5_000); // 50%

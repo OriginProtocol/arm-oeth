@@ -26,7 +26,7 @@ contract OwnerHandler is BaseHandler {
     uint256 public immutable minBuyT1;
     uint256 public immutable maxSellT1;
     uint256 public immutable priceScale;
-    uint256 public immutable maxDeviation;
+    uint256 public constant MIN_TOTAL_SUPPLY = 1e12;
 
     ////////////////////////////////////////////////////
     /// --- VARIABLES
@@ -50,7 +50,6 @@ contract OwnerHandler is BaseHandler {
         owner = arm.owner();
         operator = arm.operator();
         priceScale = arm.PRICE_SCALE();
-        maxDeviation = arm.MAX_PRICE_DEVIATION();
     }
 
     ////////////////////////////////////////////////////
@@ -61,8 +60,9 @@ contract OwnerHandler is BaseHandler {
         numberOfCalls["ownerHandler.setPrices"]++;
 
         // Bound prices
-        uint256 buyT1 = _bound(_randomize(_seed, "buy"), minBuyT1, priceScale + maxDeviation);
-        uint256 sellT1 = _bound(_randomize(_seed, "sell"), max(buyT1, priceScale - maxDeviation), maxSellT1);
+        uint256 crossPrice = arm.crossPrice();
+        uint256 buyT1 = _bound(_randomize(_seed, "buy"), minBuyT1, crossPrice - 1);
+        uint256 sellT1 = _bound(_randomize(_seed, "sell"), crossPrice, maxSellT1);
 
         console.log("OwnerHandler.setPrices(%36e,%36e)", buyT1, sellT1);
 
@@ -71,6 +71,32 @@ contract OwnerHandler is BaseHandler {
 
         // Set prices
         arm.setPrices(buyT1, sellT1);
+
+        // Stop prank
+        vm.stopPrank();
+    }
+
+    /// @notice Set cross price for the ARM
+    function setCrossPrice(uint256 _seed) external {
+        numberOfCalls["ownerHandler.setCrossPrice"]++;
+
+        // Bound prices
+        uint256 currentPrice = arm.crossPrice();
+        uint256 newCrossPrice = _bound(_seed, priceScale - arm.MAX_CROSS_PRICE_DEVIATION(), priceScale);
+
+        if (newCrossPrice < currentPrice && weth.balanceOf(address(arm)) >= MIN_TOTAL_SUPPLY) {
+            console.log("OwnerHandler.setCrossPrice() - Skipping price decrease");
+            numberOfCalls["ownerHandler.setCrossPrice.skip"]++;
+            return;
+        }
+
+        console.log("OwnerHandler.setCrossPrice(%36e)", newCrossPrice);
+
+        // Prank owner instead of operator to bypass price check
+        vm.startPrank(owner);
+
+        // Set prices
+        arm.setCrossPrice(newCrossPrice);
 
         // Stop prank
         vm.stopPrank();

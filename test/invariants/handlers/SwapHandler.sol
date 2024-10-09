@@ -289,7 +289,7 @@ contract SwapHandler is BaseHandler {
     }
 
     /// @notice Helpers to get the price of a token in the ARM.
-    function price(IERC20 token) public view returns (uint256 price) {
+    function price(IERC20 token) public view returns (uint256) {
         return token == arm.token0() ? arm.traderate0() : arm.traderate1();
     }
 }
