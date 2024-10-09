@@ -31,7 +31,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
     /// @notice The address of the asset that is used to add and remove liquidity. eg WETH
     address public immutable liquidityAsset;
-    /// @notice The base asset is the asset being purchased by the ARM and put in the withdrawal queue. eg stETH
+    /// @notice The asset being purchased by the ARM and put in the withdrawal queue. eg stETH
     address public immutable baseAsset;
     /// @notice The swap input token that is transferred to this contract.
     /// From a User perspective, this is the token being sold.
@@ -41,7 +41,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// From a User perspective, this is the token being bought.
     /// token1 is also compatible with the Uniswap V2 Router interface.
     IERC20 public immutable token1;
-    /// @notice The delay before a withdrawal request can be claimed in seconds
+    /// @notice The delay before a withdrawal request can be claimed in seconds. eg 600 is 10 minutes.
     uint256 public immutable claimDelay;
 
     ////////////////////////////////////////////////////
@@ -68,13 +68,14 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
      */
     uint256 public traderate1;
     /// @notice The price that buy and sell prices can not cross scaled to 36 decimals.
+    /// This is also the price the base assets, eg stETH, in the ARM contract are priced at in `totalAssets`.
     uint256 public crossPrice;
 
-    /// @notice cumulative total of all withdrawal requests included the ones that have already been claimed
+    /// @notice Cumulative total of all withdrawal requests including the ones that have already been claimed.
     uint120 public withdrawsQueued;
-    /// @notice total of all the withdrawal requests that have been claimed
+    /// @notice Total of all the withdrawal requests that have been claimed.
     uint120 public withdrawsClaimed;
-    /// @notice index of the next withdrawal request starting at 0
+    /// @notice Index of the next withdrawal request starting at 0.
     uint16 public nextWithdrawalIndex;
 
     struct WithdrawalRequest {
@@ -82,28 +83,27 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         bool claimed;
         // When the withdrawal can be claimed
         uint40 claimTimestamp;
-        // Amount of assets to withdraw
+        // Amount of liquidity assets to withdraw. eg WETH
         uint120 assets;
-        // cumulative total of all withdrawal requests including this one.
-        // this request can be claimed when this queued amount is less than or equal to the queue's claimable amount.
+        // Cumulative total of all withdrawal requests including this one when the redeem request was made.
         uint120 queued;
     }
 
-    /// @notice Mapping of withdrawal request indices to the user withdrawal request data
+    /// @notice Mapping of withdrawal request indices to the user withdrawal request data.
     mapping(uint256 requestId => WithdrawalRequest) public withdrawalRequests;
 
-    /// @notice Performance fee that is collected by the feeCollector measured in basis points (1/100th of a percent)
+    /// @notice Performance fee that is collected by the feeCollector measured in basis points (1/100th of a percent).
     /// 10,000 = 100% performance fee
     /// 2,000 = 20% performance fee
     /// 500 = 5% performance fee
     uint16 public fee;
-    /// @notice The available assets the the last time performance fees were collected and adjusted
+    /// @notice The available assets the last time the performance fees were collected and adjusted
     /// for liquidity assets (WETH) deposited and redeemed.
     /// This can be negative if there were asset gains and then all the liquidity providers redeemed.
     int128 public lastAvailableAssets;
-    /// @notice The account that can collect the performance fee
+    /// @notice The account or contract that can collect the performance fee.
     address public feeCollector;
-    /// @notice The address of the CapManager contract used to manage the ARM's liquidity provider and total assets caps
+    /// @notice The address of the CapManager contract used to manage the ARM's liquidity provider and total assets caps.
     address public capManager;
 
     uint256[43] private _gap;
