@@ -135,7 +135,7 @@ contract Fork_Concrete_LidoARM_TotalAssets_Test_ is Fork_Shared_Test_ {
         // Simulate a loss of assets
         deal(address(weth), address(lidoARM), DEFAULT_AMOUNT - 1);
 
-        assertEq(lidoARM.totalAssets(), 0);
+        assertEq(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY);
     }
 
     function test_RevertWhen_TotalAssets_Because_MathError()

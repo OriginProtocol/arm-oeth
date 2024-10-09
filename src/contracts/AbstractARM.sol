@@ -550,8 +550,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         (uint256 fees, uint256 newAvailableAssets) = _feesAccrued();
 
         // total assets should only go up from the initial deposit amount that is burnt
-        // but in case of something unforeseen, return MIN_TOTAL_SUPPLY if fees is greater than the available assets
-        if (fees > newAvailableAssets) return MIN_TOTAL_SUPPLY;
+        // but in case of something unforeseen, return MIN_TOTAL_SUPPLY if fees is
+        // greater than or equal the available assets
+        if (fees >= newAvailableAssets) return MIN_TOTAL_SUPPLY;
 
         // Remove the performance fee from the available assets
         return newAvailableAssets - fees;
