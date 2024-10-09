@@ -31,6 +31,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
     /// @notice The address of the asset that is used to add and remove liquidity. eg WETH
     address public immutable liquidityAsset;
+    /// @notice The base asset is the asset being purchased by the ARM and put in the withdrawal queue. eg stETH
+    address public immutable baseAsset;
     /// @notice The swap input token that is transferred to this contract.
     /// From a User perspective, this is the token being sold.
     /// token0 is also compatible with the Uniswap V2 Router interface.
@@ -135,6 +137,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
         require(_liquidityAsset == address(token0) || _liquidityAsset == address(token1), "invalid liquidity asset");
         liquidityAsset = _liquidityAsset;
+        // The base asset, eg stETH, is not the liquidity asset, eg WETH
+        baseAsset = _liquidityAsset == address(token0) ? address(token1) : address(token0);
     }
 
     /// @notice Initialize the contract.
@@ -397,8 +401,6 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
         // If the new cross price is lower than the current cross price
         if (newCrossPrice < crossPrice) {
-            // The base asset, eg stETH, is not the liquidity asset, eg WETH
-            address baseAsset = liquidityAsset == address(token0) ? address(token1) : address(token0);
             // Check there is not a significant amount of base assets in the ARM
             require(IERC20(baseAsset).balanceOf(address(this)) < MIN_TOTAL_SUPPLY, "ARM: too many base assets");
         }
@@ -559,8 +561,12 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// less liquidity assets reserved for the ARM's withdrawal queue.
     /// This does not exclude any accrued performance fees.
     function _availableAssets() internal view returns (uint256) {
-        // Get the assets in the ARM and external withdrawal queue
-        uint256 assets = token0.balanceOf(address(this)) + token1.balanceOf(address(this)) + _externalWithdrawQueue();
+        // Get the base assets, eg stETH, in the ARM and external withdrawal queue
+        uint256 baseAssets = IERC20(baseAsset).balanceOf(address(this)) + _externalWithdrawQueue();
+
+        // Liquidity assets, eg WETH, are priced at 1.0
+        // Base assets, eg stETH, are priced at the cross price which is a discounted price
+        uint256 assets = IERC20(liquidityAsset).balanceOf(address(this)) + baseAssets * crossPrice / PRICE_SCALE;
 
         // The amount of liquidity assets (WETH) that is still to be claimed in the withdrawal queue
         uint256 outstandingWithdrawals = withdrawsQueued - withdrawsClaimed;
