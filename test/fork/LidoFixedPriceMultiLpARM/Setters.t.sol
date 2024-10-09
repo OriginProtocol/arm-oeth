@@ -151,12 +151,51 @@ contract Fork_Concrete_lidoARM_Setters_Test_ is Fork_Shared_Test_ {
         assertEq(lidoARM.traderate1(), 992 * 1e33);
     }
 
-    function test_SetPrices_Owner() public {
+    function test_SetPrices_Owner() public asLidoARMOwner {
         // buy price 11 basis points higher than 1.0
         lidoARM.setPrices(10011e32, 10020e32);
 
         // sell price 11 basis points lower than 1.0
         lidoARM.setPrices(9980e32, 9989e32);
+    }
+
+    //////////////////////////////////////////////////////
+    /// --- Set Prices - REVERTING TESTS
+    //////////////////////////////////////////////////////
+    function test_RevertWhen_SetCrossPrice_Because_NotOwner() public asRandomAddress {
+        vm.expectRevert("ARM: Only owner can call this function.");
+        lidoARM.setCrossPrice(0.9998e36);
+    }
+
+    function test_RevertWhen_SetCrossPrice_Because_Operator() public asOperator {
+        vm.expectRevert("ARM: Only owner can call this function.");
+        lidoARM.setCrossPrice(0.9998e36);
+    }
+
+    function test_RevertWhen_SetCrossPrice_Because_PriceRange() public asLidoARMOwner {
+        // 3 basis points lower than 1.0
+        vm.expectRevert("ARM: cross price too low");
+        lidoARM.setCrossPrice(0.9997e36);
+
+        // 1 basis points higher than 1.0
+        vm.expectRevert("ARM: cross price too high");
+        lidoARM.setCrossPrice(1.0001e36);
+    }
+
+    //////////////////////////////////////////////////////
+    /// --- Set Prices - PASSING TESTS
+    //////////////////////////////////////////////////////
+
+    function test_SetCrossPrice_Owner() public {
+        // at 1.0
+        vm.expectEmit({emitter: address(lidoARM)});
+        emit AbstractARM.CrossPriceUpdated(1e36);
+        lidoARM.setCrossPrice(1e36);
+
+        // 2 basis points lower than 1.0
+        vm.expectEmit({emitter: address(lidoARM)});
+        emit AbstractARM.CrossPriceUpdated(0.9998e36);
+        lidoARM.setCrossPrice(0.9998e36);
     }
 
     //////////////////////////////////////////////////////

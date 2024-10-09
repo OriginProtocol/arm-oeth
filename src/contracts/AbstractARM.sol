@@ -66,6 +66,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
      */
     uint256 public traderate1;
 
+    uint256 public crossPrice;
+
     /// @notice cumulative total of all withdrawal requests included the ones that have already been claimed
     uint120 public withdrawsQueued;
     /// @notice total of all the withdrawal requests that have been claimed
@@ -109,6 +111,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     ////////////////////////////////////////////////////
 
     event TraderateChanged(uint256 traderate0, uint256 traderate1);
+    event CrossPriceUpdated(uint256 crossPrice);
     event Deposit(address indexed owner, uint256 assets, uint256 shares);
     event RedeemRequested(
         address indexed withdrawer, uint256 indexed requestId, uint256 assets, uint256 queued, uint256 claimTimestamp
@@ -171,6 +174,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
         capManager = _capManager;
         emit CapManagerUpdated(_capManager);
+
+        crossPrice = PRICE_SCALE;
+        emit CrossPriceUpdated(PRICE_SCALE);
     }
 
     ////////////////////////////////////////////////////
@@ -368,8 +374,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     function setPrices(uint256 buyT1, uint256 sellT1) external onlyOperatorOrOwner {
         // Limit funds and loss when called by the Operator
         if (msg.sender == operator) {
-            require(sellT1 >= PRICE_SCALE - MAX_PRICE_DEVIATION, "ARM: sell price too low");
-            require(buyT1 < PRICE_SCALE, "ARM: buy price too high");
+            require(sellT1 >= crossPrice, "ARM: sell price too low");
+            require(buyT1 < crossPrice, "ARM: buy price too high");
         }
         _setTraderates(
             PRICE_SCALE * PRICE_SCALE / sellT1, // base (t0) -> token (t1)
@@ -383,6 +389,15 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         traderate1 = _tokenToBaseRate;
 
         emit TraderateChanged(_baseToTokenRate, _tokenToBaseRate);
+    }
+
+    function setCrossPrice(uint256 _crossPrice) external onlyOwner {
+        require(_crossPrice >= PRICE_SCALE - MAX_PRICE_DEVIATION, "ARM: cross price too low");
+        require(_crossPrice <= PRICE_SCALE, "ARM: cross price too high");
+
+        crossPrice = _crossPrice;
+
+        emit CrossPriceUpdated(_crossPrice);
     }
 
     ////////////////////////////////////////////////////
