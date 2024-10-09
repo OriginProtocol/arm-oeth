@@ -31,7 +31,7 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
         vm.label(address(steth), "stETH");
         vm.label(address(operator), "OPERATOR");
 
-        proxy = Proxy(deployManager.getDeployment("LIDO_ARM"));
+        proxy = Proxy(payable(deployManager.getDeployment("LIDO_ARM")));
         lidoARM = LidoARM(payable(deployManager.getDeployment("LIDO_ARM")));
         capManager = CapManager(deployManager.getDeployment("LIDO_ARM_CAP_MAN"));
 
