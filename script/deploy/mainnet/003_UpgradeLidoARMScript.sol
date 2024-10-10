@@ -26,6 +26,7 @@ contract UpgradeLidoARMMainnetScript is AbstractDeployScript {
     Proxy capManProxy;
     LidoARM lidoARMImpl;
     CapManager capManager;
+    ZapperLidoARM zapper;
 
     function _execute() internal override {
         console.log("Deploy:", DEPLOY_NAME);
@@ -63,7 +64,7 @@ contract UpgradeLidoARMMainnetScript is AbstractDeployScript {
         capManProxy.setOwner(Mainnet.GOV_MULTISIG);
 
         // 8. Deploy the Zapper
-        ZapperLidoARM zapper = new ZapperLidoARM(Mainnet.WETH, Mainnet.LIDO_ARM);
+        zapper = new ZapperLidoARM(Mainnet.WETH, Mainnet.LIDO_ARM);
         zapper.setOwner(Mainnet.STRATEGIST);
         _recordDeploy("LIDO_ARM_ZAPPER", address(zapper));
 
@@ -132,6 +133,9 @@ contract UpgradeLidoARMMainnetScript is AbstractDeployScript {
 
         // Set the buy price with a 8 basis point discount. The sell price is 1.0
         LidoARM(payable(Mainnet.LIDO_ARM)).setPrices(0.9994e36, 0.9998e36);
+
+        // Set the Zapper contract on the Lido ARM
+        LidoARM(payable(Mainnet.LIDO_ARM)).setZap(zapper);
 
         // transfer ownership of the Lido ARM proxy to the mainnet 5/8 multisig
         lidoARMProxy.setOwner(Mainnet.GOV_MULTISIG);
