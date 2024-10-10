@@ -51,12 +51,66 @@ const snapLido = async ({ block }) => {
     capManagerAddress
   );
 
+  await logRates(lidoARM, blockTag);
+  const { totalAssets, totalSupply, liquidityWeth } = await logAssets(
+    lidoARM,
+    blockTag
+  );
+  await logWithdrawalQueue(lidoARM, blockTag, liquidityWeth);
+  await logUser(lidoARM, capManager, blockTag, totalSupply);
+
+  const feesAccrued = await lidoARM.feesAccrued({ blockTag });
+  const totalAssetsCap = await capManager.totalAssetsCap({ blockTag });
+  const capRemaining = totalAssetsCap - totalAssets;
+  const capUsedPercent = (totalAssets * 10000n) / totalAssetsCap;
+
+  console.log(`\nCaps`);
+  console.log(
+    `${formatUnits(totalAssetsCap, 18)} total assets cap, ${formatUnits(
+      capUsedPercent,
+      2
+    )}% used, ${formatUnits(capRemaining, 18)} remaining`
+  );
+  console.log(`${formatUnits(feesAccrued, 18)} in accrued performance fees`);
+};
+
+const logUser = async (arm, capManager, blockTag, totalSupply) => {
+  const user = await getSigner();
+  console.log(`\nUser ${await user.getAddress()}`);
+
+  const shares = await arm.balanceOf(user.getAddress(), { blockTag });
+  const sharesPercentage = (shares * 10000n) / totalSupply;
+  const userCap = await capManager.liquidityProviderCaps(user.getAddress(), {
+    blockTag,
+  });
+
+  console.log(
+    `${formatUnits(shares, 18)} shares (${formatUnits(sharesPercentage, 2)}%)`
+  );
+  console.log(`${formatUnits(userCap, 18)} cap remaining`);
+};
+
+const logWithdrawalQueue = async (arm, blockTag, liquidityWeth) => {
+  const queue = await arm.withdrawsQueued({
+    blockTag,
+  });
+  const claimed = await arm.withdrawsClaimed({ blockTag });
+  const outstanding = queue - claimed;
+  const shortfall =
+    liquidityWeth < outstanding ? liquidityWeth - outstanding : 0;
+
+  console.log(`\nARM Withdrawal Queue`);
+  console.log(`${formatUnits(outstanding, 18)} outstanding`);
+  console.log(`${formatUnits(shortfall, 18)} shortfall`);
+};
+
+const logAssets = async (arm, blockTag) => {
   const weth = await resolveAsset("WETH");
-  const liquidityWeth = await weth.balanceOf(armAddress, { blockTag });
+  const liquidityWeth = await weth.balanceOf(arm.getAddress(), { blockTag });
 
   const steth = await resolveAsset("STETH");
-  const liquiditySteth = await steth.balanceOf(armAddress, { blockTag });
-  const liquidityLidoWithdraws = await lidoARM.lidoWithdrawalQueueAmount({
+  const liquiditySteth = await steth.balanceOf(arm.getAddress(), { blockTag });
+  const liquidityLidoWithdraws = await arm.lidoWithdrawalQueueAmount({
     blockTag,
   });
 
@@ -65,14 +119,13 @@ const snapLido = async ({ block }) => {
   const stethWithdrawsPercent =
     total == 0 ? 0 : (liquidityLidoWithdraws * 10000n) / total;
   const oethPercent = total == 0 ? 0 : (liquiditySteth * 10000n) / total;
-  const totalAssets = await lidoARM.totalAssets({ blockTag });
-  const feesAccrued = await lidoARM.feesAccrued({ blockTag });
-  const totalAssetsCap = await capManager.totalAssetsCap({ blockTag });
-  const capRemaining = totalAssetsCap - totalAssets;
-  const capUsedPercent = (totalAssets * 10000n) / totalAssetsCap;
+  const totalAssets = await arm.totalAssets({ blockTag });
+  const totalSupply = await arm.totalSupply({ blockTag });
+  const assetPerShare = await arm.convertToAssets(parseUnits("1"), {
+    blockTag,
+  });
 
-  await armRates(lidoARM, blockTag);
-
+  console.log(`\nAssets`);
   console.log(
     `${formatUnits(liquidityWeth, 18)} WETH  ${formatUnits(wethPercent, 2)}%`
   );
@@ -87,51 +140,49 @@ const snapLido = async ({ block }) => {
   );
   console.log(`${formatUnits(total, 18)} total WETH and stETH`);
   console.log(`${formatUnits(totalAssets, 18)} total assets`);
-  console.log(
-    `\n${formatUnits(totalAssetsCap, 18)} total assets cap, ${formatUnits(
-      capUsedPercent,
-      2
-    )}% used, ${formatUnits(capRemaining, 18)} remaining`
-  );
-  console.log(`${formatUnits(feesAccrued, 18)} in accrued performance fees`);
+  console.log(`${formatUnits(totalSupply, 18)} total supply`);
+  console.log(`${formatUnits(assetPerShare, 18)} asset per share`);
+
+  return { totalAssets, totalSupply, liquidityWeth };
 };
 
-const armRates = async (arm, blockTag) => {
+const logRates = async (arm, blockTag) => {
+  console.log(`\nPrices`);
   // The rate of 1 WETH for stETH to 36 decimals from the perspective of the AMM. ie WETH/stETH
   // from the trader's perspective, this is the stETH/WETH buy price
   const OWethStEthRate = await arm.traderate0({ blockTag });
   console.log(`traderate0: ${formatUnits(OWethStEthRate, 36)} WETH/stETH`);
 
   // convert from WETH/stETH rate with 36 decimals to stETH/WETH rate with 18 decimals
-  const buyPrice = BigInt(1e54) / BigInt(OWethStEthRate);
+  const sellPrice = BigInt(1e54) / BigInt(OWethStEthRate);
 
   // The rate of 1 stETH for WETH to 36 decimals. ie stETH/WETH
   const OStEthWethRate = await arm.traderate1({ blockTag });
   console.log(`traderate1: ${formatUnits(OStEthWethRate, 36)} stETH/WETH`);
   // Convert back to 18 decimals
-  const sellPrice = BigInt(OStEthWethRate) / BigInt(1e18);
+  const buyPrice = BigInt(OStEthWethRate) / BigInt(1e18);
 
-  const midPrice = (buyPrice + sellPrice) / 2n;
+  const midPrice = (sellPrice + buyPrice) / 2n;
 
   const crossPrice = await arm.crossPrice({ blockTag });
 
-  console.log(`buy   : ${formatUnits(buyPrice, 18).padEnd(20)} stETH/WETH`);
-  if (crossPrice > buyPrice) {
-    console.log(`cross : ${formatUnits(crossPrice, 18).padEnd(20)} stETH/WETH`);
+  console.log(`sell  : ${formatUnits(sellPrice, 18).padEnd(20)} stETH/WETH`);
+  if (crossPrice > sellPrice) {
+    console.log(`cross : ${formatUnits(crossPrice, 36).padEnd(20)} stETH/WETH`);
     console.log(`mid   : ${formatUnits(midPrice, 18).padEnd(20)} stETH/WETH`);
   } else {
     console.log(`mid   : ${formatUnits(midPrice, 18).padEnd(20)} stETH/WETH`);
     console.log(`cross : ${formatUnits(crossPrice, 18).padEnd(20)} stETH/WETH`);
   }
-  console.log(`sell  : ${formatUnits(sellPrice, 18).padEnd(20)} stETH/WETH`);
+  console.log(`buy   : ${formatUnits(buyPrice, 18).padEnd(20)} stETH/WETH`);
 
-  const spread = BigInt(buyPrice) - BigInt(sellPrice);
+  const spread = BigInt(sellPrice) - BigInt(buyPrice);
   // Origin rates are to 36 decimals
-  console.log(`spread: ${formatUnits(spread, 14)} bps\n`);
+  console.log(`spread: ${formatUnits(spread, 14)} bps`);
 
   return {
-    buyPrice,
-    sellPrice,
+    buyPrice: sellPrice,
+    sellPrice: buyPrice,
     midPrice,
     crossPrice,
     spread,
