@@ -46,7 +46,7 @@ contract LLMHandler is BaseHandler {
     ////////////////////////////////////////////////////
     /// --- ACTIONS
     ////////////////////////////////////////////////////
-    function requestStETHWithdrawalForETH(uint256 _seed) external {
+    function requestLidoWithdrawals(uint256 _seed) external {
         numberOfCalls["llmHandler.requestStETHWithdraw"]++;
 
         // Select a random amount
@@ -67,13 +67,13 @@ contract LLMHandler is BaseHandler {
         }
         require(totalAmount_ == 0, "LLMHandler: Invalid total amount");
 
-        console.log("LLMHandler.requestStETHWithdrawalForETH(%18e)", totalAmount);
+        console.log("LLMHandler.requestLidoWithdrawals(%18e)", totalAmount);
 
         // Prank Owner
         vm.startPrank(owner);
 
         // Request stETH withdrawal for ETH
-        uint256[] memory requestId = arm.requestStETHWithdrawalForETH(amounts);
+        uint256[] memory requestId = arm.requestLidoWithdrawals(amounts);
 
         // Stop Prank
         vm.stopPrank();
@@ -89,7 +89,7 @@ contract LLMHandler is BaseHandler {
         sum_of_requested_ether += totalAmount;
     }
 
-    function claimStETHWithdrawalForWETH(uint256 _seed) external {
+    function claimLidoWithdrawals(uint256 _seed) external {
         numberOfCalls["llmHandler.claimStETHWithdraw"]++;
 
         // Select multiple requestIds
@@ -107,14 +107,14 @@ contract LLMHandler is BaseHandler {
         }
         requestIds = newRequestIds;
 
-        // As `claimStETHWithdrawalForWETH` doesn't send back the amount, we need to calculate it
+        // As `claimLidoWithdrawals` doesn't send back the amount, we need to calculate it
         uint256 outstandingBefore = arm.lidoWithdrawalQueueAmount();
 
         // Prank Owner
         vm.startPrank(owner);
 
         // Claim stETH withdrawal for WETH
-        arm.claimStETHWithdrawalForWETH(requestIds_);
+        arm.claimLidoWithdrawals(requestIds_);
 
         // Stop Prank
         vm.stopPrank();
@@ -122,7 +122,7 @@ contract LLMHandler is BaseHandler {
         uint256 outstandingAfter = arm.lidoWithdrawalQueueAmount();
         uint256 diff = outstandingBefore - outstandingAfter;
 
-        console.log("LLMHandler.claimStETHWithdrawalForWETH(%18e)", diff);
+        console.log("LLMHandler.claimLidoWithdrawals(%18e)", diff);
 
         // Update sum_of_outstanding_ether
         sum_of_outstanding_ether -= diff;

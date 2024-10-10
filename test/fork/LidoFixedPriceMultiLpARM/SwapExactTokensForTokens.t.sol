@@ -315,7 +315,7 @@ contract Fork_Concrete_LidoARM_SwapExactTokensForTokens_Test is Fork_Shared_Test
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = 1 ether + balanceWETHBeforeARM - feesAccrued - estimatedAmountOut;
         vm.prank(lidoARM.owner());
-        lidoARM.requestStETHWithdrawalForETH(amounts);
+        lidoARM.requestLidoWithdrawals(amounts);
         uint256 lidoWithdrawalQueueAmount = lidoARM.lidoWithdrawalQueueAmount();
 
         // Ensure test scenario is correct
