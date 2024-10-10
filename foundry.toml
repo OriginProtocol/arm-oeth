@@ -9,6 +9,7 @@ auto_detect_remappings = false
 gas_reports = ["OEthARM", "Proxy"]
 fs_permissions = [{ access = "read-write", path = "./build" }]
 extra_output_files = ["metadata"]
+ignored_warnings_from = ["src/contracts/Proxy.sol"]
 remappings = [
   "contracts/=./src/contracts",
   "script/=./script",
