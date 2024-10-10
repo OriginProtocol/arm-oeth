@@ -125,6 +125,6 @@ contract LidoARM is Initializable, AbstractARM {
         return lidoWithdrawalQueueAmount;
     }
 
-    // This method is necessary for receiving the ETH claimed as part of the withdrawal.
+    /// @notice This payable method is necessary for receiving ETH claimed from the Lido withdrawal queue.
     receive() external payable {}
 }
