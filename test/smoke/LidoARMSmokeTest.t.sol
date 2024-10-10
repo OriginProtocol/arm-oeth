@@ -92,7 +92,7 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
         if (inToken == weth) {
             // Trader is buying stETH and selling WETH
             // the ARM is selling stETH and buying WETH
-            _dealWETH(address(this), 1000 ether);
+            deal(address(weth), address(this), 1000 ether);
             _dealStETH(address(lidoARM), 1000 ether);
 
             expectedOut = amountIn * 1e36 / price;
@@ -103,7 +103,7 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
             // Trader is selling stETH and buying WETH
             // the ARM is buying stETH and selling WETH
             _dealStETH(address(this), 1000 ether);
-            _dealWETH(address(lidoARM), 1000 ether);
+            deal(address(weth), address(lidoARM), 1000 ether);
 
             expectedOut = amountIn * price / 1e36;
 
@@ -128,7 +128,7 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
         if (inToken == weth) {
             // Trader is buying stETH and selling WETH
             // the ARM is selling stETH and buying WETH
-            _dealWETH(address(this), 1000 ether);
+            deal(address(weth), address(this), 1000 ether);
             _dealStETH(address(lidoARM), 1000 ether);
 
             expectedIn = amountOut * price / 1e36;
@@ -139,7 +139,8 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
             // Trader is selling stETH and buying WETH
             // the ARM is buying stETH and selling WETH
             _dealStETH(address(this), 1000 ether);
-            _dealWETH(address(lidoARM), 1000 ether);
+            deal(address(weth), address(lidoARM), 1000 ether);
+            // _dealWETH(address(lidoARM), 1000 ether);
 
             expectedIn = amountOut * 1e36 / price;
 
@@ -183,13 +184,11 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
         lidoARM.setOwner(RANDOM_ADDRESS);
     }
 
+    // TODO replace _dealStETH with just deal
     function _dealStETH(address to, uint256 amount) internal {
         vm.prank(0xEB9c1CE881F0bDB25EAc4D74FccbAcF4Dd81020a);
         steth.transfer(to, amount + 2);
-    }
-
-    function _dealWETH(address to, uint256 amount) internal {
-        deal(address(weth), to, amount);
+        // deal(address(steth), to, amount);
     }
 
     /* Operator Tests */
