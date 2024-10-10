@@ -14,13 +14,51 @@ const log = require("../utils/logger")("task:lido");
 async function collectFees() {
   const signer = await getSigner();
 
-  const lidArmAddress = await parseDeployedAddress("LIDO_ARM");
-  const lidoARM = await ethers.getContractAt("LidoARM", lidArmAddress);
+  const lidoArmAddress = await parseDeployedAddress("LIDO_ARM");
+  const lidoARM = await ethers.getContractAt("LidoARM", lidoArmAddress);
 
   log(`About to collect fees from the Lido ARM`);
   const tx = await lidoARM.connect(signer).collectFees();
   await logTxDetails(tx, "collectFees");
 }
+
+async function requestLidoWithdrawals({ amount }) {
+  const signer = await getSigner();
+
+  const lidoArmAddress = await parseDeployedAddress("LIDO_ARM");
+  const lidoARM = await ethers.getContractAt("LidoARM", lidoArmAddress);
+
+  const amountBI = parseUnits(amount.toString(), 18);
+
+  log(`About to request the withdrawal of ${amount} stETH from Lido`);
+  const tx = await lidoARM.connect(signer).requestLidoWithdrawals([amountBI]);
+  await logTxDetails(tx, "requestLidoWithdrawals");
+}
+
+async function claimLidoWithdrawals({ id }) {
+  const signer = await getSigner();
+
+  const lidoArmAddress = await parseDeployedAddress("LIDO_ARM");
+  const lidoARM = await ethers.getContractAt("LidoARM", lidoArmAddress);
+
+  log(`About to claim the withdrawal with ${id} from Lido`);
+  const tx = await lidoARM.connect(signer).claimLidoWithdrawals([id]);
+  await logTxDetails(tx, "claimLidoWithdrawals");
+}
+
+const lidoWithdrawStatus = async ({ id }) => {
+  const lidoWithdrawalQueueAddress = await parseAddress("LIDO_WITHDRAWAL");
+  const stEthWithdrawQueue = await hre.ethers.getContractAt(
+    "IStETHWithdrawal",
+    lidoWithdrawalQueueAddress
+  );
+
+  const status = await stEthWithdrawQueue.getWithdrawalStatus([id]);
+
+  console.log(
+    `Withdrawal request ${id} is finalized ${status[0].isFinalized} and claimed ${status[0].isClaimed}`
+  );
+};
 
 const submitLido = async ({ amount }) => {
   const signer = await getSigner();
@@ -250,6 +288,9 @@ const swapLido = async ({ from, to, amount }) => {
 
 module.exports = {
   collectFees,
+  requestLidoWithdrawals,
+  claimLidoWithdrawals,
+  lidoWithdrawStatus,
   submitLido,
   swapLido,
   snapLido,

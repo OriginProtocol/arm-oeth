@@ -3,7 +3,15 @@ const { subtask, task, types } = require("hardhat/config");
 const { parseAddress } = require("../utils/addressParser");
 const { setAutotaskVars } = require("./autotask");
 const { setActionVars } = require("./defender");
-const { submitLido, snapLido, swapLido, collectFees } = require("./lido");
+const {
+  submitLido,
+  snapLido,
+  swapLido,
+  collectFees,
+  requestLidoWithdrawals,
+  claimLidoWithdrawals,
+  lidoWithdrawStatus,
+} = require("./lido");
 const {
   autoRequestWithdraw,
   autoClaimWithdraw,
@@ -546,6 +554,30 @@ task("setTotalAssetsCap").setAction(async (_, __, runSuper) => {
 });
 
 // Lido
+
+subtask(
+  "requestLidoWithdrawals",
+  "Collect the performance fees from the Lido ARM"
+)
+  .addParam("amount", "stETH withdraw amount", undefined, types.float)
+  .setAction(requestLidoWithdrawals);
+task("requestLidoWithdrawals").setAction(async (_, __, runSuper) => {
+  return runSuper();
+});
+
+subtask("lidoClaimWithdraw", "Claim a requested withdrawal from Lido (stETH)")
+  .addParam("id", "Request identifier", undefined, types.string)
+  .setAction(claimLidoWithdrawals);
+task("lidoClaimWithdraw").setAction(async (_, __, runSuper) => {
+  return runSuper();
+});
+
+subtask("lidoWithdrawStatus", "Get the status of a Lido withdrawal request")
+  .addParam("id", "Request identifier", undefined, types.string)
+  .setAction(lidoWithdrawStatus);
+task("lidoWithdrawStatus").setAction(async (_, __, runSuper) => {
+  return runSuper();
+});
 
 subtask(
   "collectFees",

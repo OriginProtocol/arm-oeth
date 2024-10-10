@@ -11,8 +11,8 @@ async function depositLido({ amount }) {
 
   const amountBn = parseUnits(amount.toString());
 
-  const lidArmAddress = await parseDeployedAddress("LIDO_ARM");
-  const lidoARM = await ethers.getContractAt("LidoARM", lidArmAddress);
+  const lidoArmAddress = await parseDeployedAddress("LIDO_ARM");
+  const lidoARM = await ethers.getContractAt("LidoARM", lidoArmAddress);
 
   log(`About to deposit ${amount} WETH to the Lido ARM`);
   const tx = await lidoARM.connect(signer).deposit(amountBn);
@@ -24,8 +24,8 @@ async function requestRedeemLido({ amount }) {
 
   const amountBn = parseUnits(amount.toString());
 
-  const lidArmAddress = await parseDeployedAddress("LIDO_ARM");
-  const lidoARM = await ethers.getContractAt("LidoARM", lidArmAddress);
+  const lidoArmAddress = await parseDeployedAddress("LIDO_ARM");
+  const lidoARM = await ethers.getContractAt("LidoARM", lidoArmAddress);
 
   log(`About to request a redeem of ${amount} Lido ARM LP tokens`);
   const tx = await lidoARM.connect(signer).requestRedeem(amountBn);
@@ -35,8 +35,8 @@ async function requestRedeemLido({ amount }) {
 async function claimRedeemLido({ id }) {
   const signer = await getSigner();
 
-  const lidArmAddress = await parseDeployedAddress("LIDO_ARM");
-  const lidoARM = await ethers.getContractAt("LidoARM", lidArmAddress);
+  const lidoArmAddress = await parseDeployedAddress("LIDO_ARM");
+  const lidoARM = await ethers.getContractAt("LidoARM", lidoArmAddress);
 
   log(`About to claim request with id ${id} from the Lido ARM`);
   const tx = await lidoARM.connect(signer).claimRedeem(id);
