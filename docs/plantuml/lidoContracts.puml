@@ -31,8 +31,8 @@ object "WithdrawalQueueERC721" as lidoQ <<Lido>><<Proxy>> #$thirdPartyColor {
     assets: stETH, WETH
 }
 
-zap ..> arm
-arm .> capMan
+zap <..> arm
+arm <.> capMan
 arm ..> lidoQ
 
 
