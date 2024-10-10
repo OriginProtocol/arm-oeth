@@ -103,7 +103,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     address public feeCollector;
     /// @notice The address of the CapManager contract used to manage the ARM's liquidity provider and total assets caps
     address public capManager;
-
+    /// @notice The address of the Zapper contract that converts ETH to WETH before ARM deposits
     address public zap;
 
     uint256[41] private _gap;
