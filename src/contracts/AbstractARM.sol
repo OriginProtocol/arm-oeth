@@ -538,7 +538,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
     /// @notice Used to work out if an ARM's withdrawal request can be claimed.
     /// If the withdrawal request's `queued` amount is less than the returned `claimable` amount, then it can be claimed.
-    function claimable() public view returns (uint256) {
+    function claimable() external view returns (uint256) {
         return withdrawsClaimed + IERC20(liquidityAsset).balanceOf(address(this));
     }
 
