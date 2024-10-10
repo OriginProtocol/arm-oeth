@@ -2,7 +2,7 @@
 pragma solidity 0.8.23;
 
 // Foundry
-import {console} from "forge-std/Console.sol";
+import {console} from "forge-std/console.sol";
 
 // Test imports
 import {Invariant_Shared_Test_} from "./shared/Shared.sol";
