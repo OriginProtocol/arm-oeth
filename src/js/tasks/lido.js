@@ -71,6 +71,8 @@ const snapLido = async ({ block }) => {
   const capRemaining = totalAssetsCap - totalAssets;
   const capUsedPercent = (totalAssets * 10000n) / totalAssetsCap;
 
+  await armRates(lidoARM, blockTag);
+
   console.log(
     `${formatUnits(liquidityWeth, 18)} WETH  ${formatUnits(wethPercent, 2)}%`
   );
@@ -91,7 +93,49 @@ const snapLido = async ({ block }) => {
       2
     )}% used, ${formatUnits(capRemaining, 18)} remaining`
   );
-  console.log(`${formatUnits(feesAccrued, 18)} in accrued fees`);
+  console.log(`${formatUnits(feesAccrued, 18)} in accrued performance fees`);
+};
+
+const armRates = async (arm, blockTag) => {
+  // The rate of 1 WETH for stETH to 36 decimals from the perspective of the AMM. ie WETH/stETH
+  // from the trader's perspective, this is the stETH/WETH buy price
+  const OWethStEthRate = await arm.traderate0({ blockTag });
+  console.log(`traderate0: ${formatUnits(OWethStEthRate, 36)} WETH/stETH`);
+
+  // convert from WETH/stETH rate with 36 decimals to stETH/WETH rate with 18 decimals
+  const buyPrice = BigInt(1e54) / BigInt(OWethStEthRate);
+
+  // The rate of 1 stETH for WETH to 36 decimals. ie stETH/WETH
+  const OStEthWethRate = await arm.traderate1({ blockTag });
+  console.log(`traderate1: ${formatUnits(OStEthWethRate, 36)} stETH/WETH`);
+  // Convert back to 18 decimals
+  const sellPrice = BigInt(OStEthWethRate) / BigInt(1e18);
+
+  const midPrice = (buyPrice + sellPrice) / 2n;
+
+  const crossPrice = await arm.crossPrice({ blockTag });
+
+  console.log(`buy   : ${formatUnits(buyPrice, 18).padEnd(20)} stETH/WETH`);
+  if (crossPrice > buyPrice) {
+    console.log(`cross : ${formatUnits(crossPrice, 18).padEnd(20)} stETH/WETH`);
+    console.log(`mid   : ${formatUnits(midPrice, 18).padEnd(20)} stETH/WETH`);
+  } else {
+    console.log(`mid   : ${formatUnits(midPrice, 18).padEnd(20)} stETH/WETH`);
+    console.log(`cross : ${formatUnits(crossPrice, 18).padEnd(20)} stETH/WETH`);
+  }
+  console.log(`sell  : ${formatUnits(sellPrice, 18).padEnd(20)} stETH/WETH`);
+
+  const spread = BigInt(buyPrice) - BigInt(sellPrice);
+  // Origin rates are to 36 decimals
+  console.log(`spread: ${formatUnits(spread, 14)} bps\n`);
+
+  return {
+    buyPrice,
+    sellPrice,
+    midPrice,
+    crossPrice,
+    spread,
+  };
 };
 
 const swapLido = async ({ from, to, amount }) => {
