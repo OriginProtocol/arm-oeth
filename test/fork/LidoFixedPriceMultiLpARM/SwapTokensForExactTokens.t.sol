@@ -309,7 +309,7 @@ contract Fork_Concrete_LidoARM_SwapTokensForExactTokens_Test is Fork_Shared_Test
         vm.expectEmit({emitter: address(weth)});
         emit IERC20.Transfer(address(this), address(lidoARM), amountIn);
         vm.expectEmit({emitter: address(steth)});
-        emit IERC20.Transfer(address(lidoARM), address(this), amountOut + 2);
+        emit IERC20.Transfer(address(lidoARM), address(this), amountOut);
         // Main call
         lidoARM.swapTokensForExactTokens(
             weth, // inToken

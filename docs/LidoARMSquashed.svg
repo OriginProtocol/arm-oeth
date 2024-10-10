@@ -58,7 +58,7 @@
 <text text-anchor="start" x="8" y="-1016.7" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;_setOperator(newOperator: address) &lt;&lt;OwnableOperable&gt;&gt;</text>
 <text text-anchor="start" x="8" y="-999.9" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;_initARM(_operator: address, _name: string, _symbol: string, _fee: uint256, _feeCollector: address, _capManager: address) &lt;&lt;AbstractARM&gt;&gt;</text>
 <text text-anchor="start" x="8" y="-983.1" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;_inDeadline(deadline: uint256) &lt;&lt;AbstractARM&gt;&gt;</text>
-<text text-anchor="start" x="8" y="-966.3" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;_transferAsset(asset: address, to: address, amount: uint256) &lt;&lt;LidoARM&gt;&gt;</text>
+<text text-anchor="start" x="8" y="-966.3" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;_transferAsset(asset: address, to: address, amount: uint256) &lt;&lt;AbstractARM&gt;&gt;</text>
 <text text-anchor="start" x="8" y="-949.5" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;_transferAssetFrom(asset: address, from: address, to: address, amount: uint256) &lt;&lt;AbstractARM&gt;&gt;</text>
 <text text-anchor="start" x="8" y="-932.7" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;_swapExactTokensForTokens(inToken: IERC20, outToken: IERC20, amountIn: uint256, to: address): (amountOut: uint256) &lt;&lt;AbstractARM&gt;&gt;</text>
 <text text-anchor="start" x="8" y="-915.9" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;_swapTokensForExactTokens(inToken: IERC20, outToken: IERC20, amountOut: uint256, to: address): (amountIn: uint256) &lt;&lt;AbstractARM&gt;&gt;</text>

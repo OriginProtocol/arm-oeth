@@ -63,19 +63,6 @@ contract LidoARM is Initializable, AbstractARM {
     }
 
     /**
-     * @dev Due to internal stETH mechanics required for rebasing support, in most cases stETH transfers are performed
-     * for the value of 1 wei less than passed to transfer method. Larger transfer amounts can be 2 wei less.
-     *
-     * The MultiLP implementation ensures any WETH reserved for the withdrawal queue is not used in swaps from stETH to WETH.
-     */
-    function _transferAsset(address asset, address to, uint256 amount) internal override {
-        // Add 2 wei if transferring stETH
-        if (asset == address(steth)) amount += 2;
-
-        super._transferAsset(asset, to, amount);
-    }
-
-    /**
      * @notice Request a stETH for ETH withdrawal.
      * Reference: https://docs.lido.fi/contracts/withdrawal-queue-erc721/
      * Note: There is a 1k amount limit. Caller should split large withdrawals in chunks of less or equal to 1k each.)
