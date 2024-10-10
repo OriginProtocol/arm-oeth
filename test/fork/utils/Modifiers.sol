@@ -170,13 +170,13 @@ abstract contract Modifiers is Helpers {
     }
 
     /// @notice Request stETH withdrawal for ETH on LidoARM contract.
-    modifier requestStETHWithdrawalForETHOnLidoARM(uint256[] memory amounts) {
+    modifier requestLidoWithdrawalsOnLidoARM(uint256[] memory amounts) {
         // Todo: extend this logic to other modifier if needed
         (VmSafe.CallerMode mode, address _address, address _origin) = vm.readCallers();
         vm.stopPrank();
 
         vm.prank(lidoARM.owner());
-        lidoARM.requestStETHWithdrawalForETH(amounts);
+        lidoARM.requestLidoWithdrawals(amounts);
 
         if (mode == VmSafe.CallerMode.Prank) {
             vm.prank(_address, _origin);

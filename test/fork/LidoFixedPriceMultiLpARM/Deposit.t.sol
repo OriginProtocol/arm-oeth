@@ -372,7 +372,7 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
     function test_Deposit_WithOutStandingWithdrawRequest_BeforeDeposit_ClaimedLidoWithdraw_WithAssetGain()
         public
         deal_(address(steth), address(lidoARM), DEFAULT_AMOUNT)
-        requestStETHWithdrawalForETHOnLidoARM(amounts1)
+        requestLidoWithdrawalsOnLidoARM(amounts1)
         setLiquidityProviderCap(address(this), DEFAULT_AMOUNT)
     {
         // Assertions Before
@@ -422,7 +422,7 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
 
         // 4. Operator claim withdrawal on lido
         lidoARM.totalAssets();
-        lidoARM.claimStETHWithdrawalForWETH(requests);
+        lidoARM.claimLidoWithdrawals(requests);
 
         // 5. User burn shares
         (, uint256 receivedAssets) = lidoARM.requestRedeem(shares);
@@ -481,14 +481,14 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         deal(address(weth), address(lidoARM), MIN_TOTAL_SUPPLY);
         deal(address(steth), address(lidoARM), DEFAULT_AMOUNT);
         // 2. Operator request a claim on withdraw
-        lidoARM.requestStETHWithdrawalForETH(amounts1);
+        lidoARM.requestLidoWithdrawals(amounts1);
         // 3. We simulate the finalization of the process
         _mockFunctionClaimWithdrawOnLidoARM(DEFAULT_AMOUNT);
         uint256 requestId = stETHWithdrawal.getLastRequestId();
         uint256[] memory requests = new uint256[](1);
         requests[0] = requestId;
         // 4. Operator claim the withdrawal on lido
-        lidoARM.claimStETHWithdrawalForWETH(requests);
+        lidoARM.claimLidoWithdrawals(requests);
         // 5. User burn shares
         (, uint256 receivedAssets) = lidoARM.requestRedeem(shares);
 
@@ -539,7 +539,7 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         );
 
         // 3. Operator request a claim on withdraw
-        lidoARM.requestStETHWithdrawalForETH(amounts1);
+        lidoARM.requestLidoWithdrawals(amounts1);
 
         // 3. We simulate the finalization of the process
         _mockFunctionClaimWithdrawOnLidoARM(DEFAULT_AMOUNT);
@@ -548,7 +548,7 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         requests[0] = requestId;
 
         // 4. Operator claim the withdrawal on lido
-        lidoARM.claimStETHWithdrawalForWETH(requests);
+        lidoARM.claimLidoWithdrawals(requests);
 
         // 5. User burn shares
         (, uint256 receivedAssets) = lidoARM.requestRedeem(shares);

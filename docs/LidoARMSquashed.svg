@@ -92,8 +92,8 @@
 <text text-anchor="start" x="8" y="-445.5" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;setFeeCollector(_feeCollector: address) &lt;&lt;onlyOwner&gt;&gt; &lt;&lt;AbstractARM&gt;&gt;</text>
 <text text-anchor="start" x="8" y="-428.7" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;feesAccrued(): (fees: uint256) &lt;&lt;AbstractARM&gt;&gt;</text>
 <text text-anchor="start" x="8" y="-411.9" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;initialize(_name: string, _symbol: string, _operator: address, _fee: uint256, _feeCollector: address, _capManager: address) &lt;&lt;initializer&gt;&gt; &lt;&lt;LidoARM&gt;&gt;</text>
-<text text-anchor="start" x="8" y="-395.1" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;requestStETHWithdrawalForETH(amounts: uint256[]): (requestIds: uint256[]) &lt;&lt;onlyOperatorOrOwner&gt;&gt; &lt;&lt;LidoARM&gt;&gt;</text>
-<text text-anchor="start" x="8" y="-378.3" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;claimStETHWithdrawalForWETH(requestIds: uint256[]) &lt;&lt;onlyOperatorOrOwner&gt;&gt; &lt;&lt;LidoARM&gt;&gt;</text>
+<text text-anchor="start" x="8" y="-395.1" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;requestLidoWithdrawals(amounts: uint256[]): (requestIds: uint256[]) &lt;&lt;onlyOperatorOrOwner&gt;&gt; &lt;&lt;LidoARM&gt;&gt;</text>
+<text text-anchor="start" x="8" y="-378.3" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;claimLidoWithdrawals(requestIds: uint256[]) &lt;&lt;onlyOperatorOrOwner&gt;&gt; &lt;&lt;LidoARM&gt;&gt;</text>
 <text text-anchor="start" x="8" y="-361.5" font-family="Times,serif" font-size="14.00">Public:</text>
 <text text-anchor="start" x="8" y="-344.7" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;&lt;&lt;event&gt;&gt; AdminChanged(previousAdmin: address, newAdmin: address) &lt;&lt;Ownable&gt;&gt;</text>
 <text text-anchor="start" x="8" y="-327.9" font-family="Times,serif" font-size="14.00"> &#160;&#160;&#160;&lt;&lt;event&gt;&gt; OperatorChanged(newAdmin: address) &lt;&lt;OwnableOperable&gt;&gt;</text>
