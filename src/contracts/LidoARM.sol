@@ -21,7 +21,7 @@ contract LidoARM is Initializable, AbstractARM {
     /// @notice The address of the Wrapped ETH (WETH) token
     IWETH public immutable weth;
     /// @notice The address of the Lido Withdrawal Queue contract
-    IStETHWithdrawal public immutable withdrawalQueue;
+    IStETHWithdrawal public immutable lidoWithdrawalQueue;
 
     /// @notice The amount of stETH in the Lido Withdrawal Queue
     uint256 public lidoWithdrawalQueueAmount;
@@ -35,7 +35,7 @@ contract LidoARM is Initializable, AbstractARM {
     {
         steth = IERC20(_steth);
         weth = IWETH(_weth);
-        withdrawalQueue = IStETHWithdrawal(_lidoWithdrawalQueue);
+        lidoWithdrawalQueue = IStETHWithdrawal(_lidoWithdrawalQueue);
     }
 
     /// @notice Initialize the storage variables stored in the proxy contract.
@@ -59,20 +59,7 @@ contract LidoARM is Initializable, AbstractARM {
         _initARM(_operator, _name, _symbol, _fee, _feeCollector, _capManager);
 
         // Approve the Lido withdrawal queue contract. Used for redemption requests.
-        steth.approve(address(withdrawalQueue), type(uint256).max);
-    }
-
-    /**
-     * @dev Due to internal stETH mechanics required for rebasing support, in most cases stETH transfers are performed
-     * for the value of 1 wei less than passed to transfer method. Larger transfer amounts can be 2 wei less.
-     *
-     * The MultiLP implementation ensures any WETH reserved for the withdrawal queue is not used in swaps from stETH to WETH.
-     */
-    function _transferAsset(address asset, address to, uint256 amount) internal override {
-        // Add 2 wei if transferring stETH
-        if (asset == address(steth)) amount += 2;
-
-        super._transferAsset(asset, to, amount);
+        steth.approve(address(lidoWithdrawalQueue), type(uint256).max);
     }
 
     /**
@@ -80,12 +67,12 @@ contract LidoARM is Initializable, AbstractARM {
      * Reference: https://docs.lido.fi/contracts/withdrawal-queue-erc721/
      * Note: There is a 1k amount limit. Caller should split large withdrawals in chunks of less or equal to 1k each.)
      */
-    function requestStETHWithdrawalForETH(uint256[] memory amounts)
+    function requestLidoWithdrawals(uint256[] memory amounts)
         external
         onlyOperatorOrOwner
         returns (uint256[] memory requestIds)
     {
-        requestIds = withdrawalQueue.requestWithdrawals(amounts, address(this));
+        requestIds = lidoWithdrawalQueue.requestWithdrawals(amounts, address(this));
 
         // Sum the total amount of stETH being withdraw
         uint256 totalAmountRequested = 0;
@@ -101,13 +88,13 @@ contract LidoARM is Initializable, AbstractARM {
      * @notice Claim the ETH owed from the redemption requests and convert it to WETH.
      * Before calling this method, caller should check on the request NFTs to ensure the withdrawal was processed.
      */
-    function claimStETHWithdrawalForWETH(uint256[] memory requestIds) external onlyOperatorOrOwner {
+    function claimLidoWithdrawals(uint256[] memory requestIds) external onlyOperatorOrOwner {
         uint256 etherBefore = address(this).balance;
 
         // Claim the NFTs for ETH.
-        uint256 lastIndex = withdrawalQueue.getLastCheckpointIndex();
-        uint256[] memory hintIds = withdrawalQueue.findCheckpointHints(requestIds, 1, lastIndex);
-        withdrawalQueue.claimWithdrawals(requestIds, hintIds);
+        uint256 lastIndex = lidoWithdrawalQueue.getLastCheckpointIndex();
+        uint256[] memory hintIds = lidoWithdrawalQueue.findCheckpointHints(requestIds, 1, lastIndex);
+        lidoWithdrawalQueue.claimWithdrawals(requestIds, hintIds);
 
         uint256 etherAfter = address(this).balance;
 
@@ -125,6 +112,6 @@ contract LidoARM is Initializable, AbstractARM {
         return lidoWithdrawalQueueAmount;
     }
 
-    // This method is necessary for receiving the ETH claimed as part of the withdrawal.
+    /// @notice This payable method is necessary for receiving ETH claimed from the Lido withdrawal queue.
     receive() external payable {}
 }

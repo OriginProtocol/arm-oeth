@@ -89,25 +89,10 @@ contract Fork_Concrete_lidoARM_Setters_Test_ is Fork_Shared_Test_ {
     //////////////////////////////////////////////////////
     /// --- Set Prices - REVERTING TESTS
     //////////////////////////////////////////////////////
-    function test_RevertWhen_SetPrices_Because_PriceCross() public asLidoARMOwner {
-        vm.expectRevert("ARM: Price cross");
-        lidoARM.setPrices(90 * 1e33, 89 * 1e33);
-
-        vm.expectRevert("ARM: Price cross");
-        lidoARM.setPrices(72, 70);
-
-        vm.expectRevert("ARM: Price cross");
-        lidoARM.setPrices(1005 * 1e33, 1000 * 1e33);
-
-        // Both set to 1.0
-        vm.expectRevert("ARM: Price cross");
-        lidoARM.setPrices(1e36, 1e36);
-    }
-
-    function test_RevertWhen_SetPrices_Because_PriceRange() public asOperator {
-        // buy price 11 basis points higher than 1.0
+    function test_RevertWhen_SetPrices_Because_PriceRange_Operator() public asOperator {
+        // buy price 1 basis points higher than 1.0
         vm.expectRevert("ARM: buy price too high");
-        lidoARM.setPrices(1.0011 * 1e36, 1.002 * 1e36);
+        lidoARM.setPrices(1.0001 * 1e36, 1.002 * 1e36);
 
         // sell price 11 basis points lower than 1.0
         vm.expectRevert("ARM: sell price too low");
@@ -116,6 +101,16 @@ contract Fork_Concrete_lidoARM_Setters_Test_ is Fork_Shared_Test_ {
         // Forgot to scale up to 36 decimals
         vm.expectRevert("ARM: sell price too low");
         lidoARM.setPrices(1e18, 1e18);
+    }
+
+    function test_RevertWhen_SetPrices_Because_PriceRange_Owner() public asLidoARMOwner {
+        // buy price 1 basis points higher than 1.0
+        vm.expectRevert("ARM: buy price too high");
+        lidoARM.setPrices(1.0001 * 1e36, 1.002 * 1e36);
+
+        // sell price 11 basis points lower than 1.0
+        vm.expectRevert("ARM: sell price too low");
+        lidoARM.setPrices(0.998 * 1e36, 0.9989 * 1e36);
     }
 
     function test_RevertWhen_SetPrices_Because_NotOwnerOrOperator() public asRandomAddress {
@@ -149,14 +144,6 @@ contract Fork_Concrete_lidoARM_Setters_Test_ is Fork_Shared_Test_ {
         // Check the traderates
         assertEq(lidoARM.traderate0(), 500 * 1e33);
         assertEq(lidoARM.traderate1(), 992 * 1e33);
-    }
-
-    function test_SetPrices_Owner() public asLidoARMOwner {
-        // buy price 11 basis points higher than 1.0
-        lidoARM.setPrices(10011e32, 10020e32);
-
-        // sell price 11 basis points lower than 1.0
-        lidoARM.setPrices(9980e32, 9989e32);
     }
 
     //////////////////////////////////////////////////////

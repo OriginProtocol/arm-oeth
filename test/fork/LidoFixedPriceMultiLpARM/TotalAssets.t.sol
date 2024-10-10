@@ -107,7 +107,7 @@ contract Fork_Concrete_LidoARM_TotalAssets_Test_ is Fork_Shared_Test_ {
         // Request a redeem on Lido
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = swapAmount;
-        lidoARM.requestStETHWithdrawalForETH(amounts);
+        lidoARM.requestLidoWithdrawals(amounts);
 
         // Check total assets after withdrawal is the same as before
         assertApproxEqAbs(lidoARM.totalAssets(), totalAssetsBefore, STETH_ERROR_ROUNDING);
@@ -135,7 +135,7 @@ contract Fork_Concrete_LidoARM_TotalAssets_Test_ is Fork_Shared_Test_ {
         // Simulate a loss of assets
         deal(address(weth), address(lidoARM), DEFAULT_AMOUNT - 1);
 
-        assertEq(lidoARM.totalAssets(), 0);
+        assertEq(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY);
     }
 
     function test_RevertWhen_TotalAssets_Because_MathError()
@@ -146,6 +146,6 @@ contract Fork_Concrete_LidoARM_TotalAssets_Test_ is Fork_Shared_Test_ {
         simulateAssetGainInLidoARM(DEFAULT_AMOUNT * 2, address(weth), false)
     {
         // vm.expectRevert(stdError.arithmeticError);
-        assertEq(lidoARM.totalAssets(), 0);
+        assertEq(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY);
     }
 }

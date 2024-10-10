@@ -28,7 +28,7 @@ contract Fork_OethARM_Smoke_Test is AbstractSmokeTest {
         vm.label(address(oeth), "OETH");
         vm.label(address(operator), "OPERATOR");
 
-        proxy = Proxy(deployManager.getDeployment("OETH_ARM"));
+        proxy = Proxy(payable(deployManager.getDeployment("OETH_ARM")));
         oethARM = OethARM(deployManager.getDeployment("OETH_ARM"));
 
         _dealWETH(address(oethARM), 100 ether);

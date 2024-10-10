@@ -110,6 +110,7 @@ interface IOethARM {
 interface ILiquidityProviderARM is IERC20 {
     function previewDeposit(uint256 assets) external returns (uint256 shares);
     function deposit(uint256 assets) external returns (uint256 shares);
+    function deposit(uint256 assets, address liquidityProvider) external returns (uint256 shares);
 
     function previewRedeem(uint256 shares) external returns (uint256 assets);
     function requestRedeem(uint256 shares) external returns (uint256 requestId, uint256 assets);

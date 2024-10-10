@@ -9,7 +9,7 @@ import {IERC20} from "contracts/Interfaces.sol";
 import {IStETHWithdrawal} from "contracts/Interfaces.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
 
-contract Fork_Concrete_LidoARM_RequestStETHWithdrawalForETH_Test_ is Fork_Shared_Test_ {
+contract Fork_Concrete_LidoARM_RequestLidoWithdrawals_Test_ is Fork_Shared_Test_ {
     uint256[] amounts0;
     uint256[] amounts1;
     uint256[] amounts2;
@@ -37,25 +37,25 @@ contract Fork_Concrete_LidoARM_RequestStETHWithdrawalForETH_Test_ is Fork_Shared
     //////////////////////////////////////////////////////
     /// --- PASSING TESTS
     //////////////////////////////////////////////////////
-    function test_ClaimStETHWithdrawalForWETH_EmptyList()
+    function test_ClaimLidoWithdrawals_EmptyList()
         public
         asOperator
-        requestStETHWithdrawalForETHOnLidoARM(new uint256[](0))
+        requestLidoWithdrawalsOnLidoARM(new uint256[](0))
     {
         assertEq(address(lidoARM).balance, 0);
         assertEq(lidoARM.lidoWithdrawalQueueAmount(), 0);
 
         // Main call
-        lidoARM.claimStETHWithdrawalForWETH(new uint256[](0));
+        lidoARM.claimLidoWithdrawals(new uint256[](0));
 
         assertEq(address(lidoARM).balance, 0);
         assertEq(lidoARM.lidoWithdrawalQueueAmount(), 0);
     }
 
-    function test_ClaimStETHWithdrawalForWETH_SingleRequest()
+    function test_ClaimLidoWithdrawals_SingleRequest()
         public
         asOperator
-        requestStETHWithdrawalForETHOnLidoARM(amounts1)
+        requestLidoWithdrawalsOnLidoARM(amounts1)
         mockFunctionClaimWithdrawOnLidoARM(DEFAULT_AMOUNT)
     {
         // Assertions before
@@ -66,17 +66,17 @@ contract Fork_Concrete_LidoARM_RequestStETHWithdrawalForETH_Test_ is Fork_Shared
         uint256[] memory requests = new uint256[](1);
         requests[0] = stETHWithdrawal.getLastRequestId();
         // Main call
-        lidoARM.claimStETHWithdrawalForWETH(requests);
+        lidoARM.claimLidoWithdrawals(requests);
 
         // Assertions after
         assertEq(lidoARM.lidoWithdrawalQueueAmount(), 0);
         assertEq(weth.balanceOf(address(lidoARM)), balanceBefore + DEFAULT_AMOUNT);
     }
 
-    function test_ClaimStETHWithdrawalForWETH_MultiRequest()
+    function test_ClaimLidoWithdrawals_MultiRequest()
         public
         asOperator
-        requestStETHWithdrawalForETHOnLidoARM(amounts2)
+        requestLidoWithdrawalsOnLidoARM(amounts2)
         mockCallLidoFindCheckpointHints
         mockFunctionClaimWithdrawOnLidoARM(amounts2[0] + amounts2[1])
     {
@@ -89,7 +89,7 @@ contract Fork_Concrete_LidoARM_RequestStETHWithdrawalForETH_Test_ is Fork_Shared
         requests[0] = stETHWithdrawal.getLastRequestId() - 1;
         requests[1] = stETHWithdrawal.getLastRequestId();
         // Main call
-        lidoARM.claimStETHWithdrawalForWETH(requests);
+        lidoARM.claimLidoWithdrawals(requests);
 
         // Assertions after
         assertEq(lidoARM.lidoWithdrawalQueueAmount(), 0);

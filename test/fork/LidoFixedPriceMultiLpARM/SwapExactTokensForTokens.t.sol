@@ -11,7 +11,7 @@ contract Fork_Concrete_LidoARM_SwapExactTokensForTokens_Test is Fork_Shared_Test
     /// --- CONSTANTS
     //////////////////////////////////////////////////////
     uint256 private constant MIN_PRICE0 = 980e33; // 0.98
-    uint256 private constant MAX_PRICE0 = 1_000e33; // 1.00
+    uint256 private constant MAX_PRICE0 = 1_000e33 - 1; // just under 1.00
     uint256 private constant MIN_PRICE1 = 1_000e33; // 1.00
     uint256 private constant MAX_PRICE1 = 1_020e33; // 1.02
     uint256 private constant MAX_WETH_RESERVE = 1_000_000 ether; // 1M WETH, no limit, but need to be consistent.
@@ -366,6 +366,7 @@ contract Fork_Concrete_LidoARM_SwapExactTokensForTokens_Test is Fork_Shared_Test
         // Use random stETH/WETH sell price between 0.98 and 1,
         // the buy price doesn't matter as it is not used in this test.
         price = _bound(price, MIN_PRICE1, MAX_PRICE1);
+        lidoARM.setCrossPrice(1e36);
         lidoARM.setPrices(MIN_PRICE0, price);
 
         // Set random amount of stETH in the ARM
@@ -429,6 +430,7 @@ contract Fork_Concrete_LidoARM_SwapExactTokensForTokens_Test is Fork_Shared_Test
         // Use random stETH/WETH buy price between MIN_PRICE0 and MAX_PRICE0,
         // the sell price doesn't matter as it is not used in this test.
         price = _bound(price, MIN_PRICE0, MAX_PRICE0);
+        lidoARM.setCrossPrice(1e36);
         lidoARM.setPrices(price, MAX_PRICE1);
 
         // Set random amount of WETH in the ARM

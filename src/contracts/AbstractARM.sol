@@ -31,6 +31,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
     /// @notice The address of the asset that is used to add and remove liquidity. eg WETH
     address public immutable liquidityAsset;
+    /// @notice The asset being purchased by the ARM and put in the withdrawal queue. eg stETH
+    address public immutable baseAsset;
     /// @notice The swap input token that is transferred to this contract.
     /// From a User perspective, this is the token being sold.
     /// token0 is also compatible with the Uniswap V2 Router interface.
@@ -39,7 +41,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// From a User perspective, this is the token being bought.
     /// token1 is also compatible with the Uniswap V2 Router interface.
     IERC20 public immutable token1;
-    /// @notice The delay before a withdrawal request can be claimed in seconds
+    /// @notice The delay before a withdrawal request can be claimed in seconds. eg 600 is 10 minutes.
     uint256 public immutable claimDelay;
 
     ////////////////////////////////////////////////////
@@ -65,14 +67,15 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
      * Rate is to 36 decimals (1e36).
      */
     uint256 public traderate1;
-
+    /// @notice The price that buy and sell prices can not cross scaled to 36 decimals.
+    /// This is also the price the base assets, eg stETH, in the ARM contract are priced at in `totalAssets`.
     uint256 public crossPrice;
 
-    /// @notice cumulative total of all withdrawal requests included the ones that have already been claimed
+    /// @notice Cumulative total of all withdrawal requests including the ones that have already been claimed.
     uint120 public withdrawsQueued;
-    /// @notice total of all the withdrawal requests that have been claimed
+    /// @notice Total of all the withdrawal requests that have been claimed.
     uint120 public withdrawsClaimed;
-    /// @notice index of the next withdrawal request starting at 0
+    /// @notice Index of the next withdrawal request starting at 0.
     uint16 public nextWithdrawalIndex;
 
     struct WithdrawalRequest {
@@ -80,31 +83,32 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         bool claimed;
         // When the withdrawal can be claimed
         uint40 claimTimestamp;
-        // Amount of assets to withdraw
+        // Amount of liquidity assets to withdraw. eg WETH
         uint120 assets;
-        // cumulative total of all withdrawal requests including this one.
-        // this request can be claimed when this queued amount is less than or equal to the queue's claimable amount.
+        // Cumulative total of all withdrawal requests including this one when the redeem request was made.
         uint120 queued;
     }
 
-    /// @notice Mapping of withdrawal request indices to the user withdrawal request data
+    /// @notice Mapping of withdrawal request indices to the user withdrawal request data.
     mapping(uint256 requestId => WithdrawalRequest) public withdrawalRequests;
 
-    /// @notice Performance fee that is collected by the feeCollector measured in basis points (1/100th of a percent)
+    /// @notice Performance fee that is collected by the feeCollector measured in basis points (1/100th of a percent).
     /// 10,000 = 100% performance fee
     /// 2,000 = 20% performance fee
     /// 500 = 5% performance fee
     uint16 public fee;
-    /// @notice The available assets the the last time performance fees were collected and adjusted
+    /// @notice The available assets the last time the performance fees were collected and adjusted
     /// for liquidity assets (WETH) deposited and redeemed.
     /// This can be negative if there were asset gains and then all the liquidity providers redeemed.
     int128 public lastAvailableAssets;
-    /// @notice The account that can collect the performance fee
+    /// @notice The account or contract that can collect the performance fee.
     address public feeCollector;
-
+    /// @notice The address of the CapManager contract used to manage the ARM's liquidity provider and total assets caps.
     address public capManager;
+    /// @notice The address of the Zapper contract that converts ETH to WETH before ARM deposits
+    address public zap;
 
-    uint256[43] private _gap;
+    uint256[41] private _gap;
 
     ////////////////////////////////////////////////////
     ///                 Events
@@ -121,6 +125,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     event FeeUpdated(uint256 fee);
     event FeeCollectorUpdated(address indexed newFeeCollector);
     event CapManagerUpdated(address indexed capManager);
+    event ZapUpdated(address indexed zap);
 
     constructor(address _token0, address _token1, address _liquidityAsset, uint256 _claimDelay) {
         require(IERC20(_token0).decimals() == 18);
@@ -135,6 +140,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
         require(_liquidityAsset == address(token0) || _liquidityAsset == address(token1), "invalid liquidity asset");
         liquidityAsset = _liquidityAsset;
+        // The base asset, eg stETH, is not the liquidity asset, eg WETH
+        baseAsset = _liquidityAsset == address(token0) ? address(token1) : address(token0);
     }
 
     /// @notice Initialize the contract.
@@ -372,23 +379,14 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
      * From the Trader's perspective, this is the buy price.
      */
     function setPrices(uint256 buyT1, uint256 sellT1) external onlyOperatorOrOwner {
-        // Limit funds and loss when called by the Operator
-        if (msg.sender == operator) {
-            require(sellT1 >= crossPrice, "ARM: sell price too low");
-            require(buyT1 < crossPrice, "ARM: buy price too high");
-        }
-        _setTraderates(
-            PRICE_SCALE * PRICE_SCALE / sellT1, // base (t0) -> token (t1)
-            buyT1 // token (t1) -> base (t0)
-        );
-    }
+        // Ensure buy price is always below past sell prices
+        require(sellT1 >= crossPrice, "ARM: sell price too low");
+        require(buyT1 < crossPrice, "ARM: buy price too high");
 
-    function _setTraderates(uint256 _baseToTokenRate, uint256 _tokenToBaseRate) internal {
-        require((PRICE_SCALE * PRICE_SCALE / (_baseToTokenRate)) > _tokenToBaseRate, "ARM: Price cross");
-        traderate0 = _baseToTokenRate;
-        traderate1 = _tokenToBaseRate;
+        traderate0 = PRICE_SCALE * PRICE_SCALE / sellT1; // base (t0) -> token (t1);
+        traderate1 = buyT1; // token (t1) -> base (t0)
 
-        emit TraderateChanged(_baseToTokenRate, _tokenToBaseRate);
+        emit TraderateChanged(traderate0, traderate1);
     }
 
     /**
@@ -406,8 +404,6 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
         // If the new cross price is lower than the current cross price
         if (newCrossPrice < crossPrice) {
-            // The base asset, eg stETH, is not the liquidity asset, eg WETH
-            address baseAsset = liquidityAsset == address(token0) ? address(token1) : address(token0);
             // Check there is not a significant amount of base assets in the ARM
             require(IERC20(baseAsset).balanceOf(address(this)) < MIN_TOTAL_SUPPLY, "ARM: too many base assets");
         }
@@ -433,6 +429,22 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @param assets The amount of liquidity assets to deposit
     /// @return shares The amount of shares that were minted
     function deposit(uint256 assets) external returns (uint256 shares) {
+        shares = _deposit(assets, msg.sender);
+    }
+
+    /// @notice deposit liquidity assets in exchange for liquidity provider (LP) shares.
+    /// This function is restricted to the Zap contract.
+    /// @param assets The amount of liquidity assets to deposit
+    /// @param liquidityProvider The address of the liquidity provider
+    /// @return shares The amount of shares that were minted
+    function deposit(uint256 assets, address liquidityProvider) external returns (uint256 shares) {
+        require(msg.sender == zap, "Only Zap");
+
+        shares = _deposit(assets, liquidityProvider);
+    }
+
+    /// @dev Internal logic for depositing liquidity assets in exchange for liquidity provider (LP) shares.
+    function _deposit(uint256 assets, address liquidityProvider) internal returns (uint256 shares) {
         // Calculate the amount of shares to mint after the performance fees have been accrued
         // which reduces the available assets, and before new assets are deposited.
         shares = convertToShares(assets);
@@ -441,17 +453,17 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         IERC20(liquidityAsset).transferFrom(msg.sender, address(this), assets);
 
         // mint shares
-        _mint(msg.sender, shares);
+        _mint(liquidityProvider, shares);
 
         // Add the deposited assets to the last available assets
         lastAvailableAssets += SafeCast.toInt128(SafeCast.toInt256(assets));
 
         // Check the liquidity provider caps after the new assets have been deposited
         if (capManager != address(0)) {
-            ICapManager(capManager).postDepositHook(msg.sender, assets);
+            ICapManager(capManager).postDepositHook(liquidityProvider, assets);
         }
 
-        emit Deposit(msg.sender, assets, shares);
+        emit Deposit(liquidityProvider, assets, shares);
     }
 
     /// @notice Preview the amount of assets that would be received for burning a given amount of shares
@@ -526,7 +538,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
     /// @notice Used to work out if an ARM's withdrawal request can be claimed.
     /// If the withdrawal request's `queued` amount is less than the returned `claimable` amount, then it can be claimed.
-    function claimable() public view returns (uint256) {
+    function claimable() external view returns (uint256) {
         return withdrawsClaimed + IERC20(liquidityAsset).balanceOf(address(this));
     }
 
@@ -556,7 +568,10 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     function totalAssets() public view virtual returns (uint256) {
         (uint256 fees, uint256 newAvailableAssets) = _feesAccrued();
 
-        if (fees > newAvailableAssets) return 0;
+        // total assets should only go up from the initial deposit amount that is burnt
+        // but in case of something unforeseen, return MIN_TOTAL_SUPPLY if fees is
+        // greater than or equal the available assets
+        if (fees >= newAvailableAssets) return MIN_TOTAL_SUPPLY;
 
         // Remove the performance fee from the available assets
         return newAvailableAssets - fees;
@@ -566,8 +581,11 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// less liquidity assets reserved for the ARM's withdrawal queue.
     /// This does not exclude any accrued performance fees.
     function _availableAssets() internal view returns (uint256) {
-        // Get the assets in the ARM and external withdrawal queue
-        uint256 assets = token0.balanceOf(address(this)) + token1.balanceOf(address(this)) + _externalWithdrawQueue();
+        // Liquidity assets, eg WETH, are priced at 1.0
+        // Base assets, eg stETH, in the withdrawal queue are also priced at 1.0
+        // Base assets, eg stETH, in the ARM are priced at the cross price which is a discounted price
+        uint256 assets = IERC20(liquidityAsset).balanceOf(address(this)) + _externalWithdrawQueue()
+            + IERC20(baseAsset).balanceOf(address(this)) * crossPrice / PRICE_SCALE;
 
         // The amount of liquidity assets (WETH) that is still to be claimed in the withdrawal queue
         uint256 outstandingWithdrawals = withdrawsQueued - withdrawsClaimed;
@@ -587,12 +605,13 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     function _externalWithdrawQueue() internal view virtual returns (uint256 assets);
 
     /// @notice Calculates the amount of shares for a given amount of liquidity assets
+    /// @dev Total assets can't be zero. The lowest it can be is MIN_TOTAL_SUPPLY
     function convertToShares(uint256 assets) public view returns (uint256 shares) {
-        uint256 totalAssetsMem = totalAssets();
-        shares = (totalAssetsMem == 0) ? assets : (assets * totalSupply()) / totalAssetsMem;
+        shares = assets * totalSupply() / totalAssets();
     }
 
     /// @notice Calculates the amount of liquidity assets for a given amount of shares
+    /// @dev Total supply can't be zero. The lowest it can be is MIN_TOTAL_SUPPLY
     function convertToAssets(uint256 shares) public view returns (uint256 assets) {
         assets = (shares * totalAssets()) / totalSupply();
     }
@@ -603,6 +622,13 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         capManager = _capManager;
 
         emit CapManagerUpdated(_capManager);
+    }
+
+    /// @notice Set the Zap contract address.
+    function setZap(address _zap) external onlyOwner {
+        zap = _zap;
+
+        emit ZapUpdated(_zap);
     }
 
     ////////////////////////////////////////////////////

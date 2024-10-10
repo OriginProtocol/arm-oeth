@@ -11,7 +11,7 @@ contract Fork_Concrete_LidoARM_SwapTokensForExactTokens_Test is Fork_Shared_Test
     /// --- CONSTANTS
     //////////////////////////////////////////////////////
     uint256 private constant MIN_PRICE0 = 980e33; // 0.98
-    uint256 private constant MAX_PRICE0 = 1_000e33; // 1.00
+    uint256 private constant MAX_PRICE0 = 1_000e33 - 1; // just under 1.00
     uint256 private constant MIN_PRICE1 = 1_000e33; // 1.00
     uint256 private constant MAX_PRICE1 = 1_020e33; // 1.02
     uint256 private constant MAX_WETH_RESERVE = 1_000_000 ether; // 1M WETH, no limit, but need to be consistent.
@@ -309,7 +309,7 @@ contract Fork_Concrete_LidoARM_SwapTokensForExactTokens_Test is Fork_Shared_Test
         vm.expectEmit({emitter: address(weth)});
         emit IERC20.Transfer(address(this), address(lidoARM), amountIn);
         vm.expectEmit({emitter: address(steth)});
-        emit IERC20.Transfer(address(lidoARM), address(this), amountOut + 2);
+        emit IERC20.Transfer(address(lidoARM), address(this), amountOut);
         // Main call
         lidoARM.swapTokensForExactTokens(
             weth, // inToken
