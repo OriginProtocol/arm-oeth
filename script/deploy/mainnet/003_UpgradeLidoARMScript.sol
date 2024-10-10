@@ -93,12 +93,12 @@ contract UpgradeLidoARMMainnetScript is AbstractDeployScript {
         // remove all liquidity from the old AMM v1 contract
         uint256 wethLegacyBalance = IERC20(Mainnet.WETH).balanceOf(Mainnet.LIDO_ARM);
         if (wethLegacyBalance > 0) {
-            console.log("Withdrawing WETH from legacy Lido ARM");
+            console.log("About to withdraw WETH from legacy Lido ARM");
             LegacyAMM(Mainnet.LIDO_ARM).transferToken(Mainnet.WETH, Mainnet.ARM_MULTISIG, wethLegacyBalance);
         }
         uint256 stethLegacyBalance = IERC20(Mainnet.STETH).balanceOf(Mainnet.LIDO_ARM);
         if (stethLegacyBalance > 0) {
-            console.log("Withdrawing stETH from legacy Lido ARM");
+            console.log("About to withdraw stETH from legacy Lido ARM");
             LegacyAMM(Mainnet.LIDO_ARM).transferToken(Mainnet.STETH, Mainnet.ARM_MULTISIG, stethLegacyBalance);
         }
         // TODO need to also remove anything in the Lido withdrawal queue
@@ -113,7 +113,7 @@ contract UpgradeLidoARMMainnetScript is AbstractDeployScript {
             Mainnet.ARM_BUYBACK,
             address(capManProxy)
         );
-        console.log("lidoARM initialize data:");
+        console.log("LidoARM initialize data:");
         console.logBytes(data);
 
         uint256 tinyMintAmount = 1e12;
@@ -126,18 +126,23 @@ contract UpgradeLidoARMMainnetScript is AbstractDeployScript {
         IERC20(Mainnet.WETH).approve(address(lidoARMProxy), tinyMintAmount);
 
         // upgrade and initialize the Lido ARM
+        console.log("About to upgrade the ARM contract");
         lidoARMProxy.upgradeToAndCall(address(lidoARMImpl), data);
 
         // Set the price that buy and sell prices can not cross
+        console.log("About to set the cross price on the ARM contract");
         LidoARM(payable(Mainnet.LIDO_ARM)).setCrossPrice(0.9998e36);
 
         // Set the buy price with a 8 basis point discount. The sell price is 1.0
+        console.log("About to set prices on the ARM contract");
         LidoARM(payable(Mainnet.LIDO_ARM)).setPrices(0.9994e36, 0.9998e36);
 
         // Set the Zapper contract on the Lido ARM
+        console.log("About to set the Zapper on the ARM contract");
         LidoARM(payable(Mainnet.LIDO_ARM)).setZap(address(zapper));
 
         // transfer ownership of the Lido ARM proxy to the mainnet 5/8 multisig
+        console.log("About to set ARM owner to", Mainnet.GOV_MULTISIG);
         lidoARMProxy.setOwner(Mainnet.GOV_MULTISIG);
 
         console.log("Finished running initializing Lido ARM as ARM_MULTISIG");
