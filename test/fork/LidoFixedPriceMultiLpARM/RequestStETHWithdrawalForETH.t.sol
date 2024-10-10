@@ -50,7 +50,7 @@ contract Fork_Concrete_LidoARM_RequestLidoWithdrawals_Test_ is Fork_Shared_Test_
 
         // Expected events
         vm.expectEmit({emitter: address(steth)});
-        emit IERC20.Transfer(address(lidoARM), address(lidoARM.withdrawalQueue()), amounts[0]);
+        emit IERC20.Transfer(address(lidoARM), address(lidoARM.lidoWithdrawalQueue()), amounts[0]);
 
         // Main call
         uint256[] memory requestIds = lidoARM.requestLidoWithdrawals(amounts);
@@ -65,7 +65,7 @@ contract Fork_Concrete_LidoARM_RequestLidoWithdrawals_Test_ is Fork_Shared_Test_
 
         // Expected events
         vm.expectEmit({emitter: address(steth)});
-        emit IERC20.Transfer(address(lidoARM), address(lidoARM.withdrawalQueue()), amounts[0]);
+        emit IERC20.Transfer(address(lidoARM), address(lidoARM.lidoWithdrawalQueue()), amounts[0]);
 
         // Main call
         uint256[] memory requestIds = lidoARM.requestLidoWithdrawals(amounts);

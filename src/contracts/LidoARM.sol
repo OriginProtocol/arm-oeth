@@ -21,7 +21,7 @@ contract LidoARM is Initializable, AbstractARM {
     /// @notice The address of the Wrapped ETH (WETH) token
     IWETH public immutable weth;
     /// @notice The address of the Lido Withdrawal Queue contract
-    IStETHWithdrawal public immutable withdrawalQueue;
+    IStETHWithdrawal public immutable lidoWithdrawalQueue;
 
     /// @notice The amount of stETH in the Lido Withdrawal Queue
     uint256 public lidoWithdrawalQueueAmount;
@@ -35,7 +35,7 @@ contract LidoARM is Initializable, AbstractARM {
     {
         steth = IERC20(_steth);
         weth = IWETH(_weth);
-        withdrawalQueue = IStETHWithdrawal(_lidoWithdrawalQueue);
+        lidoWithdrawalQueue = IStETHWithdrawal(_lidoWithdrawalQueue);
     }
 
     /// @notice Initialize the storage variables stored in the proxy contract.
@@ -59,7 +59,7 @@ contract LidoARM is Initializable, AbstractARM {
         _initARM(_operator, _name, _symbol, _fee, _feeCollector, _capManager);
 
         // Approve the Lido withdrawal queue contract. Used for redemption requests.
-        steth.approve(address(withdrawalQueue), type(uint256).max);
+        steth.approve(address(lidoWithdrawalQueue), type(uint256).max);
     }
 
     /**
@@ -85,7 +85,7 @@ contract LidoARM is Initializable, AbstractARM {
         onlyOperatorOrOwner
         returns (uint256[] memory requestIds)
     {
-        requestIds = withdrawalQueue.requestWithdrawals(amounts, address(this));
+        requestIds = lidoWithdrawalQueue.requestWithdrawals(amounts, address(this));
 
         // Sum the total amount of stETH being withdraw
         uint256 totalAmountRequested = 0;
@@ -105,9 +105,9 @@ contract LidoARM is Initializable, AbstractARM {
         uint256 etherBefore = address(this).balance;
 
         // Claim the NFTs for ETH.
-        uint256 lastIndex = withdrawalQueue.getLastCheckpointIndex();
-        uint256[] memory hintIds = withdrawalQueue.findCheckpointHints(requestIds, 1, lastIndex);
-        withdrawalQueue.claimWithdrawals(requestIds, hintIds);
+        uint256 lastIndex = lidoWithdrawalQueue.getLastCheckpointIndex();
+        uint256[] memory hintIds = lidoWithdrawalQueue.findCheckpointHints(requestIds, 1, lastIndex);
+        lidoWithdrawalQueue.claimWithdrawals(requestIds, hintIds);
 
         uint256 etherAfter = address(this).balance;
 
