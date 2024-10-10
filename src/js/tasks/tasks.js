@@ -11,6 +11,7 @@ const {
   requestLidoWithdrawals,
   claimLidoWithdrawals,
   lidoWithdrawStatus,
+  setZapper,
 } = require("./lido");
 const {
   autoRequestWithdraw,
@@ -499,6 +500,12 @@ subtask(
     undefined,
     types.float
   )
+  .addOptionalParam(
+    "asset",
+    "Symbol of the asset to deposit. eg ETH or WETH",
+    "WETH",
+    types.string
+  )
   .setAction(depositLido);
 task("depositLido").setAction(async (_, __, runSuper) => {
   return runSuper();
@@ -584,6 +591,13 @@ subtask(
   "Collect the performance fees from the Lido ARM"
 ).setAction(collectFees);
 task("collectFees").setAction(async (_, __, runSuper) => {
+  return runSuper();
+});
+
+subtask("setZapper", "Set the Zapper contract on the Lido ARM").setAction(
+  setZapper
+);
+task("setZapper").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
 

@@ -46,6 +46,19 @@ async function claimLidoWithdrawals({ id }) {
   await logTxDetails(tx, "claimLidoWithdrawals");
 }
 
+async function setZapper() {
+  const signer = await getSigner();
+
+  const lidoArmAddress = await parseDeployedAddress("LIDO_ARM");
+  const lidoARM = await ethers.getContractAt("LidoARM", lidoArmAddress);
+
+  const zapperAddress = await parseDeployedAddress("LIDO_ARM_ZAPPER");
+
+  log(`About to set the Zapper contract on the Lido ARM to ${zapperAddress}`);
+  const tx = await lidoARM.connect(signer).setZap(zapperAddress);
+  await logTxDetails(tx, "setZap");
+}
+
 const lidoWithdrawStatus = async ({ id }) => {
   const lidoWithdrawalQueueAddress = await parseAddress("LIDO_WITHDRAWAL");
   const stEthWithdrawQueue = await hre.ethers.getContractAt(
@@ -294,4 +307,5 @@ module.exports = {
   submitLido,
   swapLido,
   snapLido,
+  setZapper,
 };
