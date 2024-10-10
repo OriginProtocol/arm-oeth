@@ -135,7 +135,7 @@ contract UpgradeLidoARMMainnetScript is AbstractDeployScript {
         LidoARM(payable(Mainnet.LIDO_ARM)).setPrices(0.9994e36, 0.9998e36);
 
         // Set the Zapper contract on the Lido ARM
-        LidoARM(payable(Mainnet.LIDO_ARM)).setZap(zapper);
+        LidoARM(payable(Mainnet.LIDO_ARM)).setZap(address(zapper));
 
         // transfer ownership of the Lido ARM proxy to the mainnet 5/8 multisig
         lidoARMProxy.setOwner(Mainnet.GOV_MULTISIG);
