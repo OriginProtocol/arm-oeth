@@ -214,10 +214,19 @@ abstract contract Invariant_Base_Test_ is Invariant_Shared_Test_ {
 
     function logsStats() public view {
         console.log("");
+        console.log("");
+        console.log("");
         console.log("--- Stats ---");
 
+        // --- LP Handler ---
         console.log("");
-        console.log("# LP Handler #");
+        console.log("# LP Handler # ");
+        uint256 sumOfCall_lp = lpHandler.numberOfCalls("lpHandler.deposit")
+            + lpHandler.numberOfCalls("lpHandler.requestRedeem") + lpHandler.numberOfCalls("lpHandler.claimRedeem");
+        uint256 sumOfCall_lp_skip = lpHandler.numberOfCalls("lpHandler.deposit.skip")
+            + lpHandler.numberOfCalls("lpHandler.requestRedeem.skip")
+            + lpHandler.numberOfCalls("lpHandler.claimRedeem.skip");
+        console.log("Total call: %d (skipped: %d)", sumOfCall_lp, sumOfCall_lp_skip);
         console.log(
             "Number of Call: Deposit %d (skipped: %d)",
             lpHandler.numberOfCalls("lpHandler.deposit"),
@@ -235,19 +244,26 @@ abstract contract Invariant_Base_Test_ is Invariant_Shared_Test_ {
             lpHandler.numberOfCalls("lpHandler.claimRedeem.skip")
         );
 
+        // --- Swap Handler ---
         console.log("");
         console.log("# Swap Handler #");
+        uint256 sumOfCall_swap =
+            swapHandler.numberOfCalls("swapHandler.swapExact") + swapHandler.numberOfCalls("swapHandler.swapTokens");
+        uint256 sumOfCall_swap_skip = swapHandler.numberOfCalls("swapHandler.swapExact.skip")
+            + swapHandler.numberOfCalls("swapHandler.swapTokens.skip");
+        console.log("Total call: %d (skipped: %d)", sumOfCall_swap, sumOfCall_swap_skip);
         console.log(
             "Number of Call: SwapExactTokensForTokens %d (skipped: %d)",
-            swapHandler.numberOfCalls("swapHandler.swapExactTokens"),
-            swapHandler.numberOfCalls("swapHandler.swapExactTokens.skip")
+            swapHandler.numberOfCalls("swapHandler.swapExact"),
+            swapHandler.numberOfCalls("swapHandler.swapExact.skip")
         );
         console.log(
             "Number of Call: SwapTokensForExactTokens %d (skipped: %d)",
-            swapHandler.numberOfCalls("swapHandler.swapTokensExact"),
-            swapHandler.numberOfCalls("swapHandler.swapTokensExact.skip")
+            swapHandler.numberOfCalls("swapHandler.swapTokens"),
+            swapHandler.numberOfCalls("swapHandler.swapTokens.skip")
         );
 
+        /*
         console.log("");
         console.log("# Owner Handler #");
         console.log(
@@ -296,5 +312,13 @@ abstract contract Invariant_Base_Test_ is Invariant_Shared_Test_ {
             donationHandler.numberOfCalls("donationHandler.donateWETH"),
             donationHandler.numberOfCalls("donationHandler.donateWETH.skip")
         );
+        */
+
+        // --- Global ---
+        console.log("");
+        console.log("# Global Data #");
+        uint256 sumOfCall = sumOfCall_lp + sumOfCall_swap;
+        uint256 sumOfCall_skip = sumOfCall_lp_skip + sumOfCall_swap_skip;
+        console.log("Total call: %d (skipped: %d)", sumOfCall, sumOfCall_skip);
     }
 }

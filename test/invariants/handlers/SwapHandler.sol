@@ -61,16 +61,7 @@ contract SwapHandler is BaseHandler {
     /// --- ACTIONS
     ////////////////////////////////////////////////////
     function swapExactTokensForTokens(uint256 _seed) external {
-        numberOfCalls["swapHandler.swapExactTokens"]++;
-
-        // Select a random user
-        address user;
-        uint256 len = swaps.length;
-        uint256 __seed = _bound(_seed, 0, type(uint256).max - len);
-        for (uint256 i; i < len; i++) {
-            user = swaps[(__seed + i) % len];
-            if (weth.balanceOf(user) > 0 || steth.balanceOf(user) > 0) break;
-        }
+        numberOfCalls["swapHandler.swapExact"]++;
 
         // Select an input token and build path
         IERC20 inputToken = _seed % 2 == 0 ? weth : steth;
@@ -79,19 +70,23 @@ contract SwapHandler is BaseHandler {
         path[0] = address(inputToken);
         path[1] = address(outputToken);
 
-        // Select a random amount, maximum is the minimum between the balance of the user and the liquidity available
-        uint256 amountIn = _bound(_seed, 0, min(inputToken.balanceOf(user), getAmountInMax(inputToken)));
-
-        // Prevent swap when not enough liquidity on steth to cover +2 wei of stETH
-        if (inputToken == weth && steth.balanceOf(address(arm)) < estimateAmountOut(inputToken, amountIn) + 2) {
-            numberOfCalls["swapHandler.swapExactTokens.skip"]++;
-            console.log("SwapHandler.swapExactTokens - Not enough stETH in the ARM");
-            return;
+        // Select a random user thah have the input token. If no one, it will be skipped after.
+        address user;
+        uint256 len = swaps.length;
+        uint256 __seed = _bound(_seed, 0, type(uint256).max - len);
+        for (uint256 i; i < len; i++) {
+            user = swaps[(__seed + i) % len];
+            if (inputToken.balanceOf(user) > 0) break;
         }
 
-        if (requireLiquidityAvailable(inputToken, amountIn)) {
+        // Select a random amount, maximum is the minimum between the balance of the user and the liquidity available
+        uint256 amountIn = _bound(_seed, 0, min(inputToken.balanceOf(user), getAmountInMax(inputToken)));
+        uint256 estimatedAmountOut = estimateAmountOut(inputToken, amountIn);
+
+        // Even this is possible in some case, there is not interest to swap 0 amount, so we skip it.
+        if (amountIn == 0) {
             numberOfCalls["swapHandler.swapExact.skip"]++;
-            console.log("SwapHandler.swapExactTokens - Not enough liquidity available");
+            console.log("SwapHandler.swapExactTokensForTokens - Swapping 0 amount");
             return;
         }
 
@@ -109,7 +104,7 @@ contract SwapHandler is BaseHandler {
         // Note: this implementation is prefered as it returns the amountIn of output tokens
         uint256[] memory amounts = arm.swapExactTokensForTokens({
             amountIn: amountIn,
-            amountOutMin: 0,
+            amountOutMin: estimatedAmountOut,
             path: path,
             to: address(user),
             deadline: block.timestamp + 1
@@ -121,27 +116,18 @@ contract SwapHandler is BaseHandler {
         // Update sum of swaps
         if (inputToken == weth) {
             sum_of_weth_in += amounts[0];
-            sum_of_steth_out += amounts[1] + 2; // Take into account the +2 stETH
+            sum_of_steth_out += amounts[1];
         } else {
             sum_of_steth_in += amounts[0];
             sum_of_weth_out += amounts[1];
         }
 
         require(amountIn == amounts[0], "SH: SWAP - INVALID_AMOUNT_IN");
-        require(estimateAmountOut(inputToken, amountIn) == amounts[1], "SH: SWAP - INVALID_AMOUNT_OUT");
+        require(estimatedAmountOut == amounts[1], "SH: SWAP - INVALID_AMOUNT_OUT");
     }
 
     function swapTokensForExactTokens(uint256 _seed) external {
-        numberOfCalls["swapHandler.swapTokensExact"]++;
-
-        // Select a random user
-        address user;
-        uint256 len = swaps.length;
-        uint256 __seed = _bound(_seed, 0, type(uint256).max - len);
-        for (uint256 i; i < len; i++) {
-            user = swaps[(__seed + i) % len];
-            if (weth.balanceOf(user) > 0 || steth.balanceOf(user) > 0) break;
-        }
+        numberOfCalls["swapHandler.swapTokens"]++;
 
         // Select an input token and build path
         IERC20 inputToken = _seed % 2 == 0 ? weth : steth;
@@ -150,27 +136,24 @@ contract SwapHandler is BaseHandler {
         path[0] = address(inputToken);
         path[1] = address(outputToken);
 
+        // Select a random user thah have the input token. If no one, it will be skipped after.
+        address user;
+        uint256 len = swaps.length;
+        uint256 __seed = _bound(_seed, 0, type(uint256).max - len);
+        for (uint256 i; i < len; i++) {
+            user = swaps[(__seed + i) % len];
+            if (inputToken.balanceOf(user) > 0) break;
+        }
+
         // Select a random amount, maximum is the minimum between the balance of the user and the liquidity available
         uint256 amountOut = _bound(_seed, 0, min(liquidityAvailable(outputToken), getAmountOutMax(outputToken, user)));
 
-        // Edge case where user balance is 0, so amountOut is 0 too,
-        // but due to rounding in protocol favor, we transferFrom 1 wei from user.
-        if (amountOut == 0 && inputToken.balanceOf(user) == 0) {
-            numberOfCalls["swapHandler.swapTokensExact.skip"]++;
-            console.log("SwapHandler.swapTokensForExactTokens - Not enough input token in the user");
-            return;
-        }
-
-        // Prevent swap when not enough liquidity on steth to cover +2 wei of stETH
-        if (outputToken == steth && steth.balanceOf(address(arm)) < amountOut + 2) {
-            numberOfCalls["swapHandler.swapTokensExact.skip"]++;
-            console.log("SwapHandler.swapTokensForExactTokens - Not enough stETH in the ARM");
-            return;
-        }
-
-        if (requireLiquidityAvailable(outputToken, amountOut)) {
-            numberOfCalls["swapHandler.swapTokensExact.skip"]++;
-            console.log("SwapHandler.swapTokensForExactTokens - Not enough liquidity available");
+        // Even this is possible in some case, there is not interest to swap 0 amount, so we skip it.
+        // It could have been interesting to check it, to see what's happen if someone swap 0 and thus send 1 wei to the contract,
+        // but this will be tested with Donation Handler. So we skip it.
+        if (amountOut == 0) {
+            numberOfCalls["swapHandler.swapTokens.skip"]++;
+            console.log("SwapHandler.swapTokensForExactTokens - Swapping 0 amount");
             return;
         }
 
@@ -205,7 +188,7 @@ contract SwapHandler is BaseHandler {
         // Update sum of swaps
         if (inputToken == weth) {
             sum_of_weth_in += amounts[0];
-            sum_of_steth_out += amounts[1] + 2; // Take into account the +2 stETH
+            sum_of_steth_out += amounts[1];
         } else {
             sum_of_steth_in += amounts[0];
             sum_of_weth_out += amounts[1];
@@ -281,11 +264,6 @@ contract SwapHandler is BaseHandler {
         } else if (token == steth) {
             return steth.balanceOf(address(arm));
         }
-    }
-
-    /// @notice Helpers to check if there is enough liquidity available for a token.
-    function requireLiquidityAvailable(IERC20 token, uint256 amount) public view returns (bool) {
-        return (liquidityAvailable(token) >= amount);
     }
 
     /// @notice Helpers to get the price of a token in the ARM.

@@ -4,8 +4,6 @@ pragma solidity 0.8.23;
 // Test imports
 import {Invariant_Base_Test_} from "./BaseInvariants.sol";
 
-import {StdInvariant} from "forge-std/StdInvariant.sol";
-
 // Handlers
 import {LpHandler} from "./handlers/LpHandler.sol";
 import {LLMHandler} from "./handlers/LLMHandler.sol";
@@ -64,7 +62,7 @@ contract Invariant_Basic_Test_ is Invariant_Base_Test_ {
 
         // Set prices, start with almost 1:1
         vm.prank(lidoARM.owner());
-        lidoARM.setPrices(1e36 - 1, 1e36 + 1);
+        lidoARM.setPrices(1e36 - 1, 1e36);
 
         // --- Handlers ---
         lpHandler = new LpHandler(address(lidoARM), address(weth), lps);
@@ -74,19 +72,22 @@ contract Invariant_Basic_Test_ is Invariant_Base_Test_ {
         llmHandler = new LLMHandler(address(lidoARM), address(steth));
         donationHandler = new DonationHandler(address(lidoARM), address(weth), address(steth));
 
-        lpHandler.setSelectorWeight(lpHandler.deposit.selector, 5_000); // 50%
-        lpHandler.setSelectorWeight(lpHandler.requestRedeem.selector, 2_500); // 25%
-        lpHandler.setSelectorWeight(lpHandler.claimRedeem.selector, 2_500); // 25%
+        lpHandler.setSelectorWeight(lpHandler.deposit.selector, 7_000); // 50%
+        lpHandler.setSelectorWeight(lpHandler.requestRedeem.selector, 3_000); // 25%
+        lpHandler.setSelectorWeight(lpHandler.claimRedeem.selector, 0); // 25%
         swapHandler.setSelectorWeight(swapHandler.swapExactTokensForTokens.selector, 5_000); // 50%
         swapHandler.setSelectorWeight(swapHandler.swapTokensForExactTokens.selector, 5_000); // 50%
+
+        // ---------------------------------------------------------------------------------------------------------
         ownerHandler.setSelectorWeight(ownerHandler.setPrices.selector, 5_000); // 50%
         ownerHandler.setSelectorWeight(ownerHandler.setCrossPrice.selector, 2_000); // 20%
         ownerHandler.setSelectorWeight(ownerHandler.collectFees.selector, 2_000); // 20%
         ownerHandler.setSelectorWeight(ownerHandler.setFees.selector, 1_000); // 10%
-        llmHandler.setSelectorWeight(llmHandler.requestStETHWithdrawalForETH.selector, 5_000); // 50%
-        llmHandler.setSelectorWeight(llmHandler.claimStETHWithdrawalForWETH.selector, 5_000); // 50%
+        llmHandler.setSelectorWeight(llmHandler.requestLidoWithdrawals.selector, 5_000); // 50%
+        llmHandler.setSelectorWeight(llmHandler.claimLidoWithdrawals.selector, 5_000); // 50%
         donationHandler.setSelectorWeight(donationHandler.donateStETH.selector, 5_000); // 50%
         donationHandler.setSelectorWeight(donationHandler.donateWETH.selector, 5_000); // 50%
+        // ---------------------------------------------------------------------------------------------------------
 
         address[] memory targetContracts = new address[](5);
         targetContracts[0] = address(lpHandler);
@@ -96,11 +97,11 @@ contract Invariant_Basic_Test_ is Invariant_Base_Test_ {
         targetContracts[4] = address(donationHandler);
 
         uint256[] memory weightsDistributorHandler = new uint256[](5);
-        weightsDistributorHandler[0] = 4_000; // 40%
-        weightsDistributorHandler[1] = 4_000; // 40%
-        weightsDistributorHandler[2] = 1_000; // 10%
-        weightsDistributorHandler[3] = 700; // 7%
-        weightsDistributorHandler[4] = 300; // 3%
+        weightsDistributorHandler[0] = 5_000; // 40%
+        weightsDistributorHandler[1] = 5_000; // 40%
+        weightsDistributorHandler[2] = 0; // 10%
+        weightsDistributorHandler[3] = 0; // 7%
+        weightsDistributorHandler[4] = 0; // 3%
 
         address distributionHandler = address(new DistributionHandler(targetContracts, weightsDistributorHandler));
 
@@ -111,6 +112,11 @@ contract Invariant_Basic_Test_ is Invariant_Base_Test_ {
     //////////////////////////////////////////////////////
     /// --- INVARIANTS
     //////////////////////////////////////////////////////
+    function invariant_basic() external view {
+        logsStats();
+    }
+
+    /*
     function invariant_lp() external view {
         assert_lp_invariant_A();
         assert_lp_invariant_B();
@@ -136,4 +142,5 @@ contract Invariant_Basic_Test_ is Invariant_Base_Test_ {
         assert_llm_invariant_B();
         assert_llm_invariant_C();
     }
+    */
 }

@@ -76,6 +76,8 @@ contract LpHandler is BaseHandler {
         // Deposit WETH
         uint256 expectedShares = arm.previewDeposit(amount);
         uint256 shares = arm.deposit(amount);
+
+        // This is an invariant check. The shares should be equal to the expected shares
         require(shares == expectedShares, "LH: DEPOSIT - INVALID_SHARES");
 
         // End prank
@@ -111,6 +113,8 @@ contract LpHandler is BaseHandler {
         // Redeem shares
         uint256 expectedAmount = arm.previewRedeem(shares);
         (uint256 id, uint256 amount) = arm.requestRedeem(shares);
+
+        // This is an invariant check. The amount should be equal to the expected amount
         require(amount == expectedAmount, "LH: REDEEM_REQUEST - INVALID_AMOUNT");
 
         // End prank
@@ -126,6 +130,9 @@ contract LpHandler is BaseHandler {
     /// @notice Claim redeem request for a user on the ARM
     /// @dev This call will be skipped if there is no request to claim at all. However, claiming zero is allowed.
     /// @dev A jump in time is done to the request deadline, but the time is rewinded back to the current time.
+    /// @dev List of reasons claimRequest may fail:
+    /// - Claim delay has not passed
+    /// - On hold, waiting for this comment https://github.com/OriginProtocol/arm-oeth/pull/13#discussion_r1796047889
     function claimRedeem(uint256 _seed) external {
         numberOfCalls["lpHandler.claimRedeem"]++;
 
