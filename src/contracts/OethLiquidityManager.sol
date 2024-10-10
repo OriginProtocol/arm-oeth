@@ -4,6 +4,10 @@ pragma solidity ^0.8.23;
 import {OwnableOperable} from "./OwnableOperable.sol";
 import {IERC20, IOETHVault} from "./Interfaces.sol";
 
+/**
+ * @title Manages OETH liquidity against the OETH Vault.
+ * @author Origin Protocol Inc
+ */
 contract OethLiquidityManager is OwnableOperable {
     address public immutable oeth;
     address public immutable oethVault;

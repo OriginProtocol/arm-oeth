@@ -33,7 +33,7 @@ contract UpgradeHoleskyScript is AbstractDeployScript {
 
     function _fork() internal override {
         // Upgrade the proxy
-        Proxy proxy = Proxy(deployManager.getDeployment("OETH_ARM"));
+        Proxy proxy = Proxy(payable(deployManager.getDeployment("OETH_ARM")));
 
         vm.prank(Holesky.RELAYER);
         proxy.upgradeTo(newImpl);

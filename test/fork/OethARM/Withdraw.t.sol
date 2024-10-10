@@ -63,8 +63,8 @@ contract Fork_Concrete_OethARM_Withdraw_Test_ is Fork_Shared_Test_ {
         (uint256 requestId,) = oethARM.requestWithdrawal(1 ether);
 
         // Add more liquidity to facilitate withdrawal
-        (, uint128 claimable, uint128 claimed,) = vault.withdrawalQueueMetadata();
-        deal(address(weth), address(vault), claimable - claimed + 1 ether);
+        (uint128 queued,, uint128 claimed,) = vault.withdrawalQueueMetadata();
+        deal(address(weth), address(vault), queued - claimed + 1 ether);
 
         // Add liquidity to the withdrawal queue
         vault.addWithdrawalQueueLiquidity();
@@ -87,8 +87,8 @@ contract Fork_Concrete_OethARM_Withdraw_Test_ is Fork_Shared_Test_ {
         oethARM.requestWithdrawal(1 ether);
 
         // Add more liquidity to facilitate withdrawal
-        (, uint128 claimable, uint128 claimed,) = vault.withdrawalQueueMetadata();
-        deal(address(weth), address(vault), claimable - claimed + 2 ether);
+        (uint128 queued,, uint128 claimed,) = vault.withdrawalQueueMetadata();
+        deal(address(weth), address(vault), queued - claimed + 2 ether);
 
         // Skip withdrawal queue delay
         skip(10 minutes);

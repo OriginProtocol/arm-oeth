@@ -3,6 +3,33 @@ const { readFileSync } = require("fs");
 
 const log = require("./logger")("utils:addressParser");
 
+const parseDeployedAddress = async (name) => {
+  const network = await ethers.provider.getNetwork();
+  const chainId = network.chainId;
+
+  const fileName = `./build/deployments-${chainId}.json`;
+  log(`Parsing deployed contract ${name} from ${fileName}.`);
+  try {
+    const data = await readFileSync(fileName, "utf-8");
+
+    // Parse the JSON data
+    const deploymentData = JSON.parse(data);
+
+    if (!deploymentData?.contracts[name]) {
+      throw new Error(`Failed to find deployed address for ${name}.`);
+    }
+
+    return deploymentData.contracts[name];
+  } catch (err) {
+    throw new Error(
+      `Failed to parse deployed contract "${name}" from "${fileName}".`,
+      {
+        cause: err,
+      }
+    );
+  }
+};
+
 // Parse an address from the Solidity Addresses file
 const parseAddress = async (name) => {
   // parse from Addresses.sol file
@@ -57,4 +84,5 @@ const parseAddress = async (name) => {
 
 module.exports = {
   parseAddress,
+  parseDeployedAddress,
 };

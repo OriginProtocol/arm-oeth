@@ -1,14 +1,28 @@
 
-sol2uml ../src/contracts -v -hv -hf -he -hs -hl -b OethARM -o OethARMHierarchy.svg
+
+sol2uml ../src/contracts -v -hv -hf -he -hs -hl -hi -b Proxy -o ProxyHierarchy.svg
+sol2uml ../src/contracts -s -d 0 -b Proxy -o ProxySquashed.svg
+sol2uml storage ../src/contracts -c Proxy -o ProxyStorage.svg \
+    -sn eip1967.proxy.implementation,eip1967.proxy.admin \
+    -st address,address
+
+sol2uml ../src/contracts -v -hv -hf -he -hs -hl -hi -b OethARM -o OethARMHierarchy.svg
 sol2uml ../src/contracts -s -d 0 -b OethARM -o OethARMSquashed.svg
 sol2uml storage ../src/contracts -c OethARM -o OethARMStorage.svg \
     -sn eip1967.proxy.implementation,eip1967.proxy.admin \
     -st address,address \
     --hideExpand gap,_gap
 
-sol2uml ../src/contracts -v -hv -hf -he -hs -hl -b Proxy -o ProxyHierarchy.svg
-sol2uml ../src/contracts -s -d 0 -b Proxy -o ProxySquashed.svg
-sol2uml storage ../src/contracts -c Proxy -o ProxyStorage.svg \
+sol2uml ../src/contracts -v -hv -hf -he -hs -hl -hi -b LidoARM -o LidoARMHierarchy.svg
+sol2uml ../src/contracts -s -d 0 -b LidoARM -o LidoARMSquashed.svg
+sol2uml ../src/contracts -hp -s -d 0 -b LidoARM -o LidoARMPublicSquashed.svg
+sol2uml storage ../src/contracts,../lib -c LidoARM -o LidoARMStorage.svg \
     -sn eip1967.proxy.implementation,eip1967.proxy.admin \
-    -st address,address
-    
+    -st address,address \
+    --hideExpand gap,_gap
+
+sol2uml ../src/contracts -v -hv -hf -he -hs -hl -hi -b CapManager -o CapManagerHierarchy.svg
+sol2uml ../src/contracts -s -d 0 -b CapManager -o CapManagerSquashed.svg
+
+sol2uml ../src/contracts -v -hv -hf -he -hs -hl -hi -b ZapperLidoARM -o ZapperLidoARMHierarchy.svg
+sol2uml ../src/contracts -s -d 0 -b ZapperLidoARM -o ZapperLidoARMSquashed.svg

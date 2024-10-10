@@ -1,11 +1,11 @@
 const log = require("../utils/logger")("task:block");
 
-// Get the block details like number and timestamp
+// Get the block number
 const getBlock = async (block) => {
-  const blockDetails = await hre.ethers.provider.getBlock(block);
-  log(`block: ${blockDetails.number}`);
+  const blockTag = !block ? await hre.ethers.provider.getBlockNumber() : block;
+  log(`block: ${blockTag}`);
 
-  return blockDetails;
+  return blockTag;
 };
 
 const logBlock = async (blockTag) => {

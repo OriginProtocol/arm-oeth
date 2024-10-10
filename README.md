@@ -116,13 +116,17 @@ function swapTokensForExactTokens(
 ### Install
 
 ```
-foundryup
-forge install
-forge compile
+make install
 cp .env.example .env
 ```
 
 In the `.env` file, set the environment variables as needed. eg `PROVIDER_URL` for the RPC endpoint.
+
+### Format and Compile
+
+```
+make
+```
 
 ### Running tests
 

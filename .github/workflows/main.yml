@@ -40,5 +40,8 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
 
+      - name: Install Dependencies
+        run: forge soldeer install
+
       - name: Run fork tests
         run: forge test -vvv --summary --detailed

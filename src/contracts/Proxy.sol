@@ -88,7 +88,7 @@ contract Proxy is Ownable {
      * @notice Fallback function.
      * Implemented entirely in `_delegate`.
      */
-    fallback() external {
+    fallback() external payable {
         _delegate(_implementation());
     }
 

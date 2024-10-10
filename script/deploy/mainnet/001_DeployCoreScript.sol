@@ -17,7 +17,7 @@ contract DeployCoreMainnetScript is AbstractDeployScript {
     GovProposal public govProposal;
 
     string public constant override DEPLOY_NAME = "001_CoreMainnet";
-    bool public constant override proposalExecuted = false;
+    bool public constant override proposalExecuted = true;
 
     function _execute() internal override {
         console.log("Deploy:", DEPLOY_NAME);
@@ -31,8 +31,8 @@ contract DeployCoreMainnetScript is AbstractDeployScript {
         OethARM implementation = new OethARM(Mainnet.OETH, Mainnet.WETH, Mainnet.OETH_VAULT);
         _recordDeploy("OETH_ARM_IMPL", address(implementation));
 
-        // 3. Initialize proxy, set the owner to TIMELOCK, set the operator to RELAYER and approve the OETH Vault to transfer OETH
-        bytes memory data = abi.encodeWithSignature("initialize(address)", Mainnet.RELAYER);
+        // 3. Initialize proxy, set the owner to TIMELOCK, set the operator to the OETH Relayer and approve the OETH Vault to transfer OETH
+        bytes memory data = abi.encodeWithSignature("initialize(address)", Mainnet.OETH_RELAYER);
         proxy.initialize(address(implementation), Mainnet.TIMELOCK, data);
     }
 
@@ -43,7 +43,7 @@ contract DeployCoreMainnetScript is AbstractDeployScript {
         // but doing this here to test governance flow.
 
         // Set operator
-        // govProposal.action(deployedContracts["OETH_ARM"], "initialize(address)", abi.encode(Mainnet.RELAYER));
+        // govProposal.action(deployedContracts["OETH_ARM"], "initialize(address)", abi.encode(Mainnet.OETH_RELAYER));
     }
 
     function _fork() internal override {

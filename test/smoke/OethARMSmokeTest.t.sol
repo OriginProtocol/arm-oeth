@@ -10,7 +10,7 @@ import {OethARM} from "contracts/OethARM.sol";
 import {Proxy} from "contracts/Proxy.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
 
-contract OethARMSmokeTest is AbstractSmokeTest {
+contract Fork_OethARM_Smoke_Test is AbstractSmokeTest {
     IERC20 BAD_TOKEN = IERC20(makeAddr("bad token"));
 
     IERC20 weth;
@@ -28,7 +28,7 @@ contract OethARMSmokeTest is AbstractSmokeTest {
         vm.label(address(oeth), "OETH");
         vm.label(address(operator), "OPERATOR");
 
-        proxy = Proxy(deployManager.getDeployment("OETH_ARM"));
+        proxy = Proxy(payable(deployManager.getDeployment("OETH_ARM")));
         oethARM = OethARM(deployManager.getDeployment("OETH_ARM"));
 
         _dealWETH(address(oethARM), 100 ether);

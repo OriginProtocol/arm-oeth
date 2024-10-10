@@ -13,7 +13,7 @@ import {DeployManager} from "../DeployManager.sol";
 
 contract UpgradeMainnetScript is AbstractDeployScript {
     string public constant override DEPLOY_NAME = "002_UpgradeMainnet";
-    bool public constant override proposalExecuted = false;
+    bool public constant override proposalExecuted = true;
 
     address newImpl;
     DeployManager internal deployManager;
@@ -33,7 +33,7 @@ contract UpgradeMainnetScript is AbstractDeployScript {
 
     function _fork() internal override {
         // Upgrade the proxy
-        Proxy proxy = Proxy(deployManager.getDeployment("OETH_ARM"));
+        Proxy proxy = Proxy(payable(deployManager.getDeployment("OETH_ARM")));
 
         vm.prank(Mainnet.TIMELOCK);
         proxy.upgradeTo(newImpl);

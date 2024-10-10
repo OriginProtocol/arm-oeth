@@ -9,11 +9,17 @@ import {IERC20} from "contracts/Interfaces.sol";
 
 /// @notice The purpose of this contract is to test the `swapTokensForExactTokens` function in the `OethARM` contract.
 contract Fork_Concrete_OethARM_SwapTokensForExactTokens_Test_ is Fork_Shared_Test_ {
+    address[] path;
+
     //////////////////////////////////////////////////////
     /// --- SETUP
     //////////////////////////////////////////////////////
     function setUp() public override {
         super.setUp();
+
+        path = new address[](2);
+        path[0] = address(oeth);
+        path[1] = address(weth);
 
         // Deal tokens
         deal(address(oeth), address(this), 100 ether);
@@ -27,10 +33,9 @@ contract Fork_Concrete_OethARM_SwapTokensForExactTokens_Test_ is Fork_Shared_Tes
     //////////////////////////////////////////////////////
     /// --- REVERTING TESTS
     //////////////////////////////////////////////////////
-
     function test_RevertWhen_SwapTokensForExactTokens_Simple_Because_InsufficientOutputAmount() public {
         vm.expectRevert("ARM: Excess input amount");
-        oethARM.swapTokensForExactTokens(weth, oeth, 10 ether, 9 ether, address(this));
+        oethARM.swapTokensForExactTokens(oeth, weth, 10 ether, 9 ether, address(this));
     }
 
     function test_RevertWhen_SwapTokensForExactTokens_Simple_Because_InvalidSwap_TokenIn() public {
@@ -45,33 +50,31 @@ contract Fork_Concrete_OethARM_SwapTokensForExactTokens_Test_ is Fork_Shared_Tes
 
     function test_RevertWhen_SwapTokensForExactTokens_Complex_Because_InsufficientOutputAmount() public {
         vm.expectRevert("ARM: Excess input amount");
-        oethARM.swapTokensForExactTokens(10 ether, 9 ether, new address[](2), address(this), 0);
+        oethARM.swapTokensForExactTokens(10 ether, 9 ether, path, address(this), block.timestamp + 10);
     }
 
     function test_RevertWhen_SwapTokensForExactTokens_Complex_Because_InvalidPathLength() public {
         vm.expectRevert("ARM: Invalid path length");
-        oethARM.swapTokensForExactTokens(10 ether, 10 ether, new address[](3), address(this), 0);
+        oethARM.swapTokensForExactTokens(10 ether, 10 ether, new address[](3), address(this), block.timestamp + 10);
     }
 
     function test_RevertWhen_SwapTokensForExactTokens_Complex_Because_DeadlineExpired() public {
         vm.expectRevert("ARM: Deadline expired");
-        oethARM.swapTokensForExactTokens(10 ether, 10 ether, new address[](2), address(this), 0);
+        oethARM.swapTokensForExactTokens(10 ether, 10 ether, path, address(this), block.timestamp - 1);
     }
 
     function test_RevertWhen_SwapTokensForExactTokens_Complex_Because_InvalidSwap_TokenIn() public {
-        address[] memory path = new address[](2);
         path[0] = address(weth);
         path[1] = address(weth);
         vm.expectRevert("ARM: Invalid swap");
-        oethARM.swapTokensForExactTokens(10 ether, 10 ether, new address[](2), address(this), block.timestamp + 1000);
+        oethARM.swapTokensForExactTokens(10 ether, 10 ether, path, address(this), block.timestamp + 10);
     }
 
     function test_RevertWhen_SwapTokensForExactTokens_Complex_Because_InvalidSwap_TokenOut() public {
-        address[] memory path = new address[](2);
         path[0] = address(oeth);
         path[1] = address(oeth);
         vm.expectRevert("ARM: Invalid swap");
-        oethARM.swapTokensForExactTokens(10 ether, 10 ether, new address[](2), address(this), block.timestamp + 1000);
+        oethARM.swapTokensForExactTokens(10 ether, 10 ether, path, address(this), block.timestamp + 10);
     }
 
     //////////////////////////////////////////////////////
@@ -106,7 +109,6 @@ contract Fork_Concrete_OethARM_SwapTokensForExactTokens_Test_ is Fork_Shared_Tes
         assertEq(weth.balanceOf(address(oethARM)), 100 ether, "OETH balance ARM");
         assertEq(weth.balanceOf(address(oethARM)), 100 ether, "WETH balance ARM");
 
-        address[] memory path = new address[](2);
         path[0] = address(oeth);
         path[1] = address(weth);
         // Expected events
