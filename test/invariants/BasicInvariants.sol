@@ -109,12 +109,7 @@ contract Invariant_Basic_Test_ is Invariant_Base_Test_ {
     //////////////////////////////////////////////////////
     /// --- INVARIANTS
     //////////////////////////////////////////////////////
-    function invariant_basic() external view {
-        logStats();
-    }
-
-    /*
-    function invariant_lp() external view {
+    function invariant_lp() external view logStat {
         assert_lp_invariant_A();
         assert_lp_invariant_B();
         assert_lp_invariant_C();
@@ -129,15 +124,14 @@ contract Invariant_Basic_Test_ is Invariant_Base_Test_ {
         assert_lp_invariant_M();
     }
 
-    function invariant_swap() external view {
+    function invariant_swap() external view logStat {
         assert_swap_invariant_A();
         assert_swap_invariant_B();
     }
 
-    function invariant_llm() external view {
+    function invariant_llm() external view logStat {
         assert_llm_invariant_A();
         assert_llm_invariant_B();
         assert_llm_invariant_C();
     }
-    */
 }

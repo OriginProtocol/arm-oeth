@@ -177,9 +177,9 @@ abstract contract Invariant_Base_Test_ is Invariant_Shared_Test_ {
 
     function assert_llm_invariant_C() public view {
         uint256 slotGap1 = 1;
-        uint256 slotGap2 = 58;
+        uint256 slotGap2 = 59;
         uint256 gap1Length = 49;
-        uint256 gap2Length = 43;
+        uint256 gap2Length = 41;
 
         for (uint256 i = slotGap1; i < slotGap1 + gap1Length; i++) {
             assertEq(readStorageSlotOnARM(i), 0, "lpHandler.invariant_C.gap1");
@@ -210,6 +210,11 @@ abstract contract Invariant_Base_Test_ is Invariant_Shared_Test_ {
 
     function readStorageSlotOnARM(uint256 slotNumber) internal view returns (uint256 value) {
         value = uint256(vm.load(address(lidoARM), bytes32(slotNumber)));
+    }
+
+    modifier logStat() {
+        _;
+        logStats();
     }
 
     function logStats() public view {
