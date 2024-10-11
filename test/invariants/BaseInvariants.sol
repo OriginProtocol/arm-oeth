@@ -332,12 +332,18 @@ abstract contract Invariant_Base_Test_ is Invariant_Shared_Test_ {
             + ownerHandlerStats.collectFees_skip + ownerHandlerStats.setFees_skip + swapHandlerStats.swapExact_skip
             + swapHandlerStats.swapTokens_skip + lpHandlerStats.deposit_skip + lpHandlerStats.requestRedeem_skip
             + lpHandlerStats.claimRedeem_skip;
-        console.log("Total call: %d (skipped: %d)", sumOfCall, sumOfCall_skip);
+
+        uint256 skipPct = (sumOfCall_skip * 10_000) / max(sumOfCall, 1);
+        console.log("Total call: %d (skipped: %d) -> %2e%", sumOfCall, sumOfCall_skip, skipPct);
         console.log("");
         console.log("-------------");
         console.log("");
         console.log("");
         console.log("");
+    }
+
+    function max(uint256 a, uint256 b) internal pure returns (uint256) {
+        return a > b ? a : b;
     }
 
     struct _LPHandler {
