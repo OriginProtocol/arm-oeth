@@ -444,14 +444,14 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         // which reduces the available assets, and before new assets are deposited.
         shares = convertToShares(assets);
 
+        // Add the deposited assets to the last available assets
+        lastAvailableAssets += SafeCast.toInt128(SafeCast.toInt256(assets));
+
         // Transfer the liquidity asset from the sender to this contract
         IERC20(liquidityAsset).transferFrom(msg.sender, address(this), assets);
 
         // mint shares
         _mint(receiver, shares);
-
-        // Add the deposited assets to the last available assets
-        lastAvailableAssets += SafeCast.toInt128(SafeCast.toInt256(assets));
 
         // Check the liquidity provider caps after the new assets have been deposited
         if (capManager != address(0)) {
