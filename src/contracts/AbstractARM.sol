@@ -105,10 +105,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     address public feeCollector;
     /// @notice The address of the CapManager contract used to manage the ARM's liquidity provider and total assets caps.
     address public capManager;
-    /// @notice The address of the Zapper contract that converts ETH to WETH before ARM deposits
-    address public zap;
 
-    uint256[41] private _gap;
+    uint256[42] private _gap;
 
     ////////////////////////////////////////////////////
     ///                 Events
@@ -125,7 +123,6 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     event FeeUpdated(uint256 fee);
     event FeeCollectorUpdated(address indexed newFeeCollector);
     event CapManagerUpdated(address indexed capManager);
-    event ZapUpdated(address indexed zap);
 
     constructor(address _token0, address _token1, address _liquidityAsset, uint256 _claimDelay) {
         require(IERC20(_token0).decimals() == 18);
@@ -433,13 +430,11 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     }
 
     /// @notice deposit liquidity assets in exchange for liquidity provider (LP) shares.
-    /// This function is restricted to the Zap contract.
+    /// Funds will be transfered from msg.sender.
     /// @param assets The amount of liquidity assets to deposit
     /// @param liquidityProvider The address of the liquidity provider
     /// @return shares The amount of shares that were minted
     function deposit(uint256 assets, address liquidityProvider) external returns (uint256 shares) {
-        require(msg.sender == zap, "Only Zap");
-
         shares = _deposit(assets, liquidityProvider);
     }
 
@@ -622,13 +617,6 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         capManager = _capManager;
 
         emit CapManagerUpdated(_capManager);
-    }
-
-    /// @notice Set the Zap contract address.
-    function setZap(address _zap) external onlyOwner {
-        zap = _zap;
-
-        emit ZapUpdated(_zap);
     }
 
     ////////////////////////////////////////////////////
