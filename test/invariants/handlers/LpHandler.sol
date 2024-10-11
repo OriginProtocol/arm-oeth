@@ -120,6 +120,7 @@ contract LpHandler is BaseHandler {
     }
 
     event UserFound(address user, uint256 requestId, uint256 requestIndex);
+
     /// @notice Claim redeem request for a user on the ARM
     /// @dev This call will be skipped if there is no request to claim at all. However, claiming zero is allowed.
     /// @dev A jump in time is done to the request deadline, but the time is rewinded back to the current time.

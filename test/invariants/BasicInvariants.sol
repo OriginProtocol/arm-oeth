@@ -77,14 +77,14 @@ contract Invariant_Basic_Test_ is Invariant_Base_Test_ {
         lpHandler.setSelectorWeight(lpHandler.claimRedeem.selector, 3_000); // 25%
         swapHandler.setSelectorWeight(swapHandler.swapExactTokensForTokens.selector, 5_000); // 50%
         swapHandler.setSelectorWeight(swapHandler.swapTokensForExactTokens.selector, 5_000); // 50%
-        llmHandler.setSelectorWeight(llmHandler.requestLidoWithdrawals.selector, 5_000); // 50%
-        llmHandler.setSelectorWeight(llmHandler.claimLidoWithdrawals.selector, 5_000); // 50%
-
-        // ---------------------------------------------------------------------------------------------------------
         ownerHandler.setSelectorWeight(ownerHandler.setPrices.selector, 5_000); // 50%
         ownerHandler.setSelectorWeight(ownerHandler.setCrossPrice.selector, 2_000); // 20%
         ownerHandler.setSelectorWeight(ownerHandler.collectFees.selector, 2_000); // 20%
         ownerHandler.setSelectorWeight(ownerHandler.setFees.selector, 1_000); // 10%
+        llmHandler.setSelectorWeight(llmHandler.requestLidoWithdrawals.selector, 5_000); // 50%
+        llmHandler.setSelectorWeight(llmHandler.claimLidoWithdrawals.selector, 5_000); // 50%
+
+        // ---------------------------------------------------------------------------------------------------------
         donationHandler.setSelectorWeight(donationHandler.donateStETH.selector, 5_000); // 50%
         donationHandler.setSelectorWeight(donationHandler.donateWETH.selector, 5_000); // 50%
         // ---------------------------------------------------------------------------------------------------------
@@ -99,8 +99,8 @@ contract Invariant_Basic_Test_ is Invariant_Base_Test_ {
         uint256[] memory weightsDistributorHandler = new uint256[](5);
         weightsDistributorHandler[0] = 4_000; // 40%
         weightsDistributorHandler[1] = 4_000; // 40%
-        weightsDistributorHandler[2] = 0; // 10%
-        weightsDistributorHandler[3] = 2_000; // 7%
+        weightsDistributorHandler[2] = 1_000; // 10%
+        weightsDistributorHandler[3] = 1_000; // 7%
         weightsDistributorHandler[4] = 0; // 3%
 
         address distributionHandler = address(new DistributionHandler(targetContracts, weightsDistributorHandler));

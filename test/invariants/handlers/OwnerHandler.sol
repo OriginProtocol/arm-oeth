@@ -141,7 +141,7 @@ contract OwnerHandler is BaseHandler {
             return;
         }
 
-        console.log("OwnerHandler.collectFees()");
+        console.log("OwnerHandler.collectFees(%18e)", feeAccrued);
 
         // Collect fees
         uint256 fees = arm.collectFees();
@@ -161,10 +161,6 @@ contract OwnerHandler is BaseHandler {
         // Save gas on an external balanceOf call if there are no outstanding withdrawals
         if (outstandingWithdrawals == 0) return true;
 
-        if (amount + outstandingWithdrawals <= weth.balanceOf(address(arm))) {
-            return true;
-        } else {
-            return false;
-        }
+        return amount + outstandingWithdrawals <= weth.balanceOf(address(arm));
     }
 }

@@ -263,9 +263,16 @@ abstract contract Invariant_Base_Test_ is Invariant_Shared_Test_ {
             swapHandler.numberOfCalls("swapHandler.swapTokens.skip")
         );
 
-        /*
+        // --- Owner Handler ---
         console.log("");
         console.log("# Owner Handler #");
+        uint256 sumOfCall_owner = ownerHandler.numberOfCalls("ownerHandler.setPrices")
+            + ownerHandler.numberOfCalls("ownerHandler.setCrossPrice")
+            + ownerHandler.numberOfCalls("ownerHandler.collectFees") + ownerHandler.numberOfCalls("ownerHandler.setFees");
+        uint256 sumOfCall_owner_skip = ownerHandler.numberOfCalls("ownerHandler.setPrices.skip")
+            + ownerHandler.numberOfCalls("ownerHandler.setCrossPrice.skip")
+            + ownerHandler.numberOfCalls("ownerHandler.collectFees.skip")
+            + ownerHandler.numberOfCalls("ownerHandler.setFees.skip");
         console.log(
             "Number of Call: SetPrices %d (skipped: %d)",
             ownerHandler.numberOfCalls("ownerHandler.setPrices"),
@@ -285,8 +292,9 @@ abstract contract Invariant_Base_Test_ is Invariant_Shared_Test_ {
             "Number of Call: SetFees %d (skipped: %d)",
             ownerHandler.numberOfCalls("ownerHandler.setFees"),
             ownerHandler.numberOfCalls("ownerHandler.setFees.skip")
-        );*/
+        );
 
+        // --- LLM Handler ---
         console.log("");
         uint256 sumOfCall_llm = llmHandler.numberOfCalls("llmHandler.requestStETHWithdraw")
             + llmHandler.numberOfCalls("llmHandler.claimStETHWithdraw");
@@ -320,8 +328,8 @@ abstract contract Invariant_Base_Test_ is Invariant_Shared_Test_ {
         // --- Global ---
         console.log("");
         console.log("# Global Data #");
-        uint256 sumOfCall = sumOfCall_lp + sumOfCall_swap + sumOfCall_llm;
-        uint256 sumOfCall_skip = sumOfCall_lp_skip + sumOfCall_swap_skip;
+        uint256 sumOfCall = sumOfCall_lp + sumOfCall_swap + sumOfCall_llm + sumOfCall_owner;
+        uint256 sumOfCall_skip = sumOfCall_lp_skip + sumOfCall_swap_skip + sumOfCall_owner_skip;
         console.log("Total call: %d (skipped: %d)", sumOfCall, sumOfCall_skip);
     }
 }
