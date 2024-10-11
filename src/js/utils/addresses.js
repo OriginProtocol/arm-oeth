@@ -17,8 +17,18 @@ addresses.mainnet.OETHVaultProxy = "0x39254033945aa2e4809cc2977e7087bee48bd7ab";
 
 // Tokens
 addresses.mainnet.WETH = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
-
+addresses.mainnet.stETH = "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84";
+addresses.mainnet.wstETH = "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0";
 
 addresses.mainnet.OethARM = "0x6bac785889A4127dB0e0CeFEE88E0a9F1Aaf3cC7";
+
+// AMMs
+addresses.mainnet.CurveStEthPool = "0xDC24316b9AE028F1497c275EB9192a3Ea0f67022";
+addresses.mainnet.CurveNgStEthPool =
+  "0x21e27a5e5513d6e65c4f830167390997aa84843a";
+addresses.mainnet.UniswapV3Quoter =
+  "0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6";
+addresses.mainnet.UniswapV3stETHWETHPool =
+  "0x109830a1AAaD605BbF02a9dFA7B0B92EC2FB7dAa";
 
 module.exports = addresses;

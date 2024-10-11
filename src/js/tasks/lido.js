@@ -1,5 +1,12 @@
 const { formatUnits, parseUnits, MaxInt256 } = require("ethers");
 
+const addresses = require("../utils/addresses");
+const {
+  logArmPrices,
+  log1InchPrices,
+  logCurvePrices,
+  logUniswapSpotPrices,
+} = require("./markets");
 const { getBlock } = require("../utils/block");
 const { getSigner } = require("../utils/signers");
 const { logTxDetails } = require("../utils/txLogger");
@@ -90,9 +97,9 @@ const submitLido = async ({ amount }) => {
   await logTxDetails(tx, "submit");
 };
 
-const snapLido = async ({ block }) => {
+const snapLido = async ({ amount, block, curve, oneInch, uniswap }) => {
   const blockTag = await getBlock(block);
-  console.log(`\nLiquidity`);
+  const pair = "stETH/ETH";
 
   const armAddress = await parseAddress("LIDO_ARM");
   const lidoARM = await ethers.getContractAt("LidoARM", armAddress);
@@ -102,7 +109,40 @@ const snapLido = async ({ block }) => {
     capManagerAddress
   );
 
-  await logRates(lidoARM, blockTag);
+  const ammPrices = await logArmPrices(lidoARM, blockTag);
+
+  if (oneInch) {
+    await log1InchPrices(amount, ammPrices);
+  }
+
+  if (curve) {
+    await logCurvePrices(
+      {
+        blockTag,
+        amount,
+        pair,
+        poolName: "Old",
+        poolAddress: addresses.mainnet.CurveStEthPool,
+      },
+      ammPrices
+    );
+
+    await logCurvePrices(
+      {
+        blockTag,
+        amount,
+        pair,
+        poolName: "NextGen",
+        poolAddress: addresses.mainnet.CurveNgStEthPool,
+      },
+      ammPrices
+    );
+  }
+
+  if (uniswap) {
+    await logUniswapSpotPrices({ blockTag, pair, amount }, ammPrices);
+  }
+
   const { totalAssets, totalSupply, liquidityWeth } = await logAssets(
     lidoARM,
     blockTag
@@ -178,66 +218,28 @@ const logAssets = async (arm, blockTag) => {
 
   console.log(`\nAssets`);
   console.log(
-    `${formatUnits(liquidityWeth, 18)} WETH  ${formatUnits(wethPercent, 2)}%`
+    `${formatUnits(liquidityWeth, 18).padEnd(23)} WETH  ${formatUnits(
+      wethPercent,
+      2
+    )}%`
   );
   console.log(
-    `${formatUnits(liquiditySteth, 18)} stETH ${formatUnits(oethPercent, 2)}%`
+    `${formatUnits(liquiditySteth, 18).padEnd(23)} stETH ${formatUnits(
+      oethPercent,
+      2
+    )}%`
   );
   console.log(
-    `${formatUnits(
-      liquidityLidoWithdraws,
-      18
-    )} Lido withdrawal requests ${formatUnits(stethWithdrawsPercent, 2)}%`
+    `${formatUnits(liquidityLidoWithdraws, 18).padEnd(
+      23
+    )} Lido withdraw ${formatUnits(stethWithdrawsPercent, 2)}%`
   );
-  console.log(`${formatUnits(total, 18)} total WETH and stETH`);
-  console.log(`${formatUnits(totalAssets, 18)} total assets`);
-  console.log(`${formatUnits(totalSupply, 18)} total supply`);
-  console.log(`${formatUnits(assetPerShare, 18)} asset per share`);
+  console.log(`${formatUnits(total, 18).padEnd(23)} total WETH and stETH`);
+  console.log(`${formatUnits(totalAssets, 18).padEnd(23)} total assets`);
+  console.log(`${formatUnits(totalSupply, 18).padEnd(23)} total supply`);
+  console.log(`${formatUnits(assetPerShare, 18).padEnd(23)} asset per share`);
 
   return { totalAssets, totalSupply, liquidityWeth };
-};
-
-const logRates = async (arm, blockTag) => {
-  console.log(`\nPrices`);
-  // The rate of 1 WETH for stETH to 36 decimals from the perspective of the AMM. ie WETH/stETH
-  // from the trader's perspective, this is the stETH/WETH buy price
-  const OWethStEthRate = await arm.traderate0({ blockTag });
-  console.log(`traderate0: ${formatUnits(OWethStEthRate, 36)} WETH/stETH`);
-
-  // convert from WETH/stETH rate with 36 decimals to stETH/WETH rate with 18 decimals
-  const sellPrice = BigInt(1e54) / BigInt(OWethStEthRate);
-
-  // The rate of 1 stETH for WETH to 36 decimals. ie stETH/WETH
-  const OStEthWethRate = await arm.traderate1({ blockTag });
-  console.log(`traderate1: ${formatUnits(OStEthWethRate, 36)} stETH/WETH`);
-  // Convert back to 18 decimals
-  const buyPrice = BigInt(OStEthWethRate) / BigInt(1e18);
-
-  const midPrice = (sellPrice + buyPrice) / 2n;
-
-  const crossPrice = await arm.crossPrice({ blockTag });
-
-  console.log(`sell  : ${formatUnits(sellPrice, 18).padEnd(20)} stETH/WETH`);
-  if (crossPrice > sellPrice) {
-    console.log(`cross : ${formatUnits(crossPrice, 36).padEnd(20)} stETH/WETH`);
-    console.log(`mid   : ${formatUnits(midPrice, 18).padEnd(20)} stETH/WETH`);
-  } else {
-    console.log(`mid   : ${formatUnits(midPrice, 18).padEnd(20)} stETH/WETH`);
-    console.log(`cross : ${formatUnits(crossPrice, 18).padEnd(20)} stETH/WETH`);
-  }
-  console.log(`buy   : ${formatUnits(buyPrice, 18).padEnd(20)} stETH/WETH`);
-
-  const spread = BigInt(sellPrice) - BigInt(buyPrice);
-  // Origin rates are to 36 decimals
-  console.log(`spread: ${formatUnits(spread, 14)} bps`);
-
-  return {
-    buyPrice: sellPrice,
-    sellPrice: buyPrice,
-    midPrice,
-    crossPrice,
-    spread,
-  };
 };
 
 const swapLido = async ({ from, to, amount }) => {
