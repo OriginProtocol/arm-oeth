@@ -72,9 +72,9 @@ contract Invariant_Basic_Test_ is Invariant_Base_Test_ {
         llmHandler = new LLMHandler(address(lidoARM), address(steth));
         donationHandler = new DonationHandler(address(lidoARM), address(weth), address(steth));
 
-        lpHandler.setSelectorWeight(lpHandler.deposit.selector, 4_000); // 50%
-        lpHandler.setSelectorWeight(lpHandler.requestRedeem.selector, 3_000); // 25%
-        lpHandler.setSelectorWeight(lpHandler.claimRedeem.selector, 3_000); // 25%
+        lpHandler.setSelectorWeight(lpHandler.deposit.selector, 5_000); // 50%
+        lpHandler.setSelectorWeight(lpHandler.requestRedeem.selector, 2_500); // 25%
+        lpHandler.setSelectorWeight(lpHandler.claimRedeem.selector, 2_500); // 25%
         swapHandler.setSelectorWeight(swapHandler.swapExactTokensForTokens.selector, 5_000); // 50%
         swapHandler.setSelectorWeight(swapHandler.swapTokensForExactTokens.selector, 5_000); // 50%
         ownerHandler.setSelectorWeight(ownerHandler.setPrices.selector, 5_000); // 50%
@@ -83,11 +83,8 @@ contract Invariant_Basic_Test_ is Invariant_Base_Test_ {
         ownerHandler.setSelectorWeight(ownerHandler.setFees.selector, 1_000); // 10%
         llmHandler.setSelectorWeight(llmHandler.requestLidoWithdrawals.selector, 5_000); // 50%
         llmHandler.setSelectorWeight(llmHandler.claimLidoWithdrawals.selector, 5_000); // 50%
-
-        // ---------------------------------------------------------------------------------------------------------
         donationHandler.setSelectorWeight(donationHandler.donateStETH.selector, 5_000); // 50%
         donationHandler.setSelectorWeight(donationHandler.donateWETH.selector, 5_000); // 50%
-        // ---------------------------------------------------------------------------------------------------------
 
         address[] memory targetContracts = new address[](5);
         targetContracts[0] = address(lpHandler);
@@ -100,8 +97,8 @@ contract Invariant_Basic_Test_ is Invariant_Base_Test_ {
         weightsDistributorHandler[0] = 4_000; // 40%
         weightsDistributorHandler[1] = 4_000; // 40%
         weightsDistributorHandler[2] = 1_000; // 10%
-        weightsDistributorHandler[3] = 1_000; // 7%
-        weightsDistributorHandler[4] = 0; // 3%
+        weightsDistributorHandler[3] = 700; // 7%
+        weightsDistributorHandler[4] = 300; // 3%
 
         address distributionHandler = address(new DistributionHandler(targetContracts, weightsDistributorHandler));
 
@@ -113,7 +110,7 @@ contract Invariant_Basic_Test_ is Invariant_Base_Test_ {
     /// --- INVARIANTS
     //////////////////////////////////////////////////////
     function invariant_basic() external view {
-        logsStats();
+        logStats();
     }
 
     /*
