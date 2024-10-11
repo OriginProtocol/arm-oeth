@@ -478,7 +478,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
         requestId = nextWithdrawalIndex;
         nextWithdrawalIndex = SafeCast.toUint16(requestId + 1);
-        
+
         uint120 queued = SafeCast.toUint120(withdrawsQueued + assets);
         uint40 claimTimestamp = uint40(block.timestamp + claimDelay);
 
@@ -512,10 +512,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
         require(request.claimTimestamp <= block.timestamp, "Claim delay not met");
         // Is there enough liquidity to claim this request?
-        require(
-            request.queued <= withdrawsClaimed + IERC20(liquidityAsset).balanceOf(address(this)),
-            "Queue pending liquidity"
-        );
+        require(request.queued <= claimable(), "Queue pending liquidity");
         require(request.withdrawer == msg.sender, "Not requester");
         require(request.claimed == false, "Already claimed");
 
@@ -534,7 +531,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
     /// @notice Used to work out if an ARM's withdrawal request can be claimed.
     /// If the withdrawal request's `queued` amount is less than the returned `claimable` amount, then it can be claimed.
-    function claimable() external view returns (uint256) {
+    function claimable() public view returns (uint256) {
         return withdrawsClaimed + IERC20(liquidityAsset).balanceOf(address(this));
     }
 
