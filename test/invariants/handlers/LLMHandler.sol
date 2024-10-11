@@ -30,7 +30,6 @@ contract LLMHandler is BaseHandler {
     ////////////////////////////////////////////////////
     /// --- VARIABLES FOR INVARIANT ASSERTIONS
     ////////////////////////////////////////////////////
-    uint256 public sum_of_outstanding_ether;
     uint256 public sum_of_requested_ether;
     uint256 public sum_of_redeemed_ether;
 
@@ -83,9 +82,7 @@ contract LLMHandler is BaseHandler {
             requestIds.push(requestId[i]);
         }
 
-        // Update sum_of_outstanding_ether
-        sum_of_outstanding_ether += totalAmount;
-
+        // Update sum of requested ether
         sum_of_requested_ether += totalAmount;
     }
 
@@ -124,9 +121,7 @@ contract LLMHandler is BaseHandler {
 
         console.log("LLMHandler.claimLidoWithdrawals(%18e)", diff);
 
-        // Update sum_of_outstanding_ether
-        sum_of_outstanding_ether -= diff;
-
+        // Update sum of redeemed ether
         sum_of_redeemed_ether += diff;
     }
 }

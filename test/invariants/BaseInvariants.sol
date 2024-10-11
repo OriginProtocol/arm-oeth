@@ -285,9 +285,11 @@ abstract contract Invariant_Base_Test_ is Invariant_Shared_Test_ {
             "Number of Call: SetFees %d (skipped: %d)",
             ownerHandler.numberOfCalls("ownerHandler.setFees"),
             ownerHandler.numberOfCalls("ownerHandler.setFees.skip")
-        );
+        );*/
 
         console.log("");
+        uint256 sumOfCall_llm = llmHandler.numberOfCalls("llmHandler.requestStETHWithdraw")
+            + llmHandler.numberOfCalls("llmHandler.claimStETHWithdraw");
         console.log("# LLM Handler #");
         console.log(
             "Number of Call: RequestStETHWithdrawalForETH %d (skipped: %d)",
@@ -300,6 +302,7 @@ abstract contract Invariant_Base_Test_ is Invariant_Shared_Test_ {
             0
         );
 
+        /*
         console.log("");
         console.log("# Donation Handler #");
         console.log(
@@ -317,7 +320,7 @@ abstract contract Invariant_Base_Test_ is Invariant_Shared_Test_ {
         // --- Global ---
         console.log("");
         console.log("# Global Data #");
-        uint256 sumOfCall = sumOfCall_lp + sumOfCall_swap;
+        uint256 sumOfCall = sumOfCall_lp + sumOfCall_swap + sumOfCall_llm;
         uint256 sumOfCall_skip = sumOfCall_lp_skip + sumOfCall_swap_skip;
         console.log("Total call: %d (skipped: %d)", sumOfCall, sumOfCall_skip);
     }
