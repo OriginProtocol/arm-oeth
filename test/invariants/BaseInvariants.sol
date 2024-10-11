@@ -212,7 +212,46 @@ abstract contract Invariant_Base_Test_ is Invariant_Shared_Test_ {
         value = uint256(vm.load(address(lidoARM), bytes32(slotNumber)));
     }
 
-    function logsStats() public view {
+    function logStats() public view {
+        // Get data
+        _LPHandler memory lpHandlerStats = _LPHandler({
+            deposit: lpHandler.numberOfCalls("lpHandler.deposit"),
+            deposit_skip: lpHandler.numberOfCalls("lpHandler.deposit.skip"),
+            requestRedeem: lpHandler.numberOfCalls("lpHandler.requestRedeem"),
+            requestRedeem_skip: lpHandler.numberOfCalls("lpHandler.requestRedeem.skip"),
+            claimRedeem: lpHandler.numberOfCalls("lpHandler.claimRedeem"),
+            claimRedeem_skip: lpHandler.numberOfCalls("lpHandler.claimRedeem.skip")
+        });
+
+        _SwapHandler memory swapHandlerStats = _SwapHandler({
+            swapExact: swapHandler.numberOfCalls("swapHandler.swapExact"),
+            swapExact_skip: swapHandler.numberOfCalls("swapHandler.swapExact.skip"),
+            swapTokens: swapHandler.numberOfCalls("swapHandler.swapTokens"),
+            swapTokens_skip: swapHandler.numberOfCalls("swapHandler.swapTokens.skip")
+        });
+
+        _OwnerHandler memory ownerHandlerStats = _OwnerHandler({
+            setPrices: ownerHandler.numberOfCalls("ownerHandler.setPrices"),
+            setPrices_skip: ownerHandler.numberOfCalls("ownerHandler.setPrices.skip"),
+            setCrossPrice: ownerHandler.numberOfCalls("ownerHandler.setCrossPrice"),
+            setCrossPrice_skip: ownerHandler.numberOfCalls("ownerHandler.setCrossPrice.skip"),
+            collectFees: ownerHandler.numberOfCalls("ownerHandler.collectFees"),
+            collectFees_skip: ownerHandler.numberOfCalls("ownerHandler.collectFees.skip"),
+            setFees: ownerHandler.numberOfCalls("ownerHandler.setFees"),
+            setFees_skip: ownerHandler.numberOfCalls("ownerHandler.setFees.skip")
+        });
+
+        _LLMHandler memory llmHandlerStats = _LLMHandler({
+            requestStETHWithdraw: llmHandler.numberOfCalls("llmHandler.requestStETHWithdraw"),
+            claimStETHWithdraw: llmHandler.numberOfCalls("llmHandler.claimStETHWithdraw")
+        });
+
+        _DonationHandler memory donationHandlerStats = _DonationHandler({
+            donateStETH: donationHandler.numberOfCalls("donationHandler.donateStETH"),
+            donateWETH: donationHandler.numberOfCalls("donationHandler.donateWETH")
+        });
+
+        // Log data
         console.log("");
         console.log("");
         console.log("");
@@ -221,115 +260,120 @@ abstract contract Invariant_Base_Test_ is Invariant_Shared_Test_ {
         // --- LP Handler ---
         console.log("");
         console.log("# LP Handler # ");
-        uint256 sumOfCall_lp = lpHandler.numberOfCalls("lpHandler.deposit")
-            + lpHandler.numberOfCalls("lpHandler.requestRedeem") + lpHandler.numberOfCalls("lpHandler.claimRedeem");
-        uint256 sumOfCall_lp_skip = lpHandler.numberOfCalls("lpHandler.deposit.skip")
-            + lpHandler.numberOfCalls("lpHandler.requestRedeem.skip")
-            + lpHandler.numberOfCalls("lpHandler.claimRedeem.skip");
-        console.log("Total call: %d (skipped: %d)", sumOfCall_lp, sumOfCall_lp_skip);
-        console.log(
-            "Number of Call: Deposit %d (skipped: %d)",
-            lpHandler.numberOfCalls("lpHandler.deposit"),
-            lpHandler.numberOfCalls("lpHandler.deposit.skip")
-        );
+        console.log("Number of Call: Deposit %d (skipped: %d)", lpHandlerStats.deposit, lpHandlerStats.deposit_skip);
         console.log(
             "Number of Call: RequestRedeem %d (skipped: %d)",
-            lpHandler.numberOfCalls("lpHandler.requestRedeem"),
-            lpHandler.numberOfCalls("lpHandler.requestRedeem.skip")
+            lpHandlerStats.requestRedeem,
+            lpHandlerStats.requestRedeem_skip
         );
-
         console.log(
-            "Number of Call: ClaimRedeem %d (skipped: %d)",
-            lpHandler.numberOfCalls("lpHandler.claimRedeem"),
-            lpHandler.numberOfCalls("lpHandler.claimRedeem.skip")
+            "Number of Call: ClaimRedeem %d (skipped: %d)", lpHandlerStats.claimRedeem, lpHandlerStats.claimRedeem_skip
         );
 
         // --- Swap Handler ---
         console.log("");
         console.log("# Swap Handler #");
-        uint256 sumOfCall_swap =
-            swapHandler.numberOfCalls("swapHandler.swapExact") + swapHandler.numberOfCalls("swapHandler.swapTokens");
-        uint256 sumOfCall_swap_skip = swapHandler.numberOfCalls("swapHandler.swapExact.skip")
-            + swapHandler.numberOfCalls("swapHandler.swapTokens.skip");
-        console.log("Total call: %d (skipped: %d)", sumOfCall_swap, sumOfCall_swap_skip);
         console.log(
             "Number of Call: SwapExactTokensForTokens %d (skipped: %d)",
-            swapHandler.numberOfCalls("swapHandler.swapExact"),
-            swapHandler.numberOfCalls("swapHandler.swapExact.skip")
+            swapHandlerStats.swapExact,
+            swapHandlerStats.swapExact_skip
         );
         console.log(
             "Number of Call: SwapTokensForExactTokens %d (skipped: %d)",
-            swapHandler.numberOfCalls("swapHandler.swapTokens"),
-            swapHandler.numberOfCalls("swapHandler.swapTokens.skip")
+            swapHandlerStats.swapTokens,
+            swapHandlerStats.swapTokens_skip
         );
 
         // --- Owner Handler ---
         console.log("");
         console.log("# Owner Handler #");
-        uint256 sumOfCall_owner = ownerHandler.numberOfCalls("ownerHandler.setPrices")
-            + ownerHandler.numberOfCalls("ownerHandler.setCrossPrice")
-            + ownerHandler.numberOfCalls("ownerHandler.collectFees") + ownerHandler.numberOfCalls("ownerHandler.setFees");
-        uint256 sumOfCall_owner_skip = ownerHandler.numberOfCalls("ownerHandler.setPrices.skip")
-            + ownerHandler.numberOfCalls("ownerHandler.setCrossPrice.skip")
-            + ownerHandler.numberOfCalls("ownerHandler.collectFees.skip")
-            + ownerHandler.numberOfCalls("ownerHandler.setFees.skip");
         console.log(
-            "Number of Call: SetPrices %d (skipped: %d)",
-            ownerHandler.numberOfCalls("ownerHandler.setPrices"),
-            ownerHandler.numberOfCalls("ownerHandler.setPrices.skip")
+            "Number of Call: SetPrices %d (skipped: %d)", ownerHandlerStats.setPrices, ownerHandlerStats.setPrices_skip
         );
         console.log(
             "Number of Call: SetCrossPrice %d (skipped: %d)",
-            ownerHandler.numberOfCalls("ownerHandler.setCrossPrice"),
-            ownerHandler.numberOfCalls("ownerHandler.setCrossPrice.skip")
+            ownerHandlerStats.setCrossPrice,
+            ownerHandlerStats.setCrossPrice_skip
         );
         console.log(
             "Number of Call: CollectFees %d (skipped: %d)",
-            ownerHandler.numberOfCalls("ownerHandler.collectFees"),
-            ownerHandler.numberOfCalls("ownerHandler.collectFees.skip")
+            ownerHandlerStats.collectFees,
+            ownerHandlerStats.collectFees_skip
         );
         console.log(
-            "Number of Call: SetFees %d (skipped: %d)",
-            ownerHandler.numberOfCalls("ownerHandler.setFees"),
-            ownerHandler.numberOfCalls("ownerHandler.setFees.skip")
+            "Number of Call: SetFees %d (skipped: %d)", ownerHandlerStats.setFees, ownerHandlerStats.setFees_skip
         );
 
         // --- LLM Handler ---
         console.log("");
-        uint256 sumOfCall_llm = llmHandler.numberOfCalls("llmHandler.requestStETHWithdraw")
-            + llmHandler.numberOfCalls("llmHandler.claimStETHWithdraw");
         console.log("# LLM Handler #");
         console.log(
-            "Number of Call: RequestStETHWithdrawalForETH %d (skipped: %d)",
-            llmHandler.numberOfCalls("llmHandler.requestStETHWithdraw"),
-            0
+            "Number of Call: RequestStETHWithdrawalForETH %d (skipped: %d)", llmHandlerStats.requestStETHWithdraw, 0
         );
         console.log(
-            "Number of Call: ClaimStETHWithdrawalForWETH %d (skipped: %d)",
-            llmHandler.numberOfCalls("llmHandler.claimStETHWithdraw"),
-            0
+            "Number of Call: ClaimStETHWithdrawalForWETH %d (skipped: %d)", llmHandlerStats.claimStETHWithdraw, 0
         );
 
-        /*
+        // --- Donation Handler ---
         console.log("");
         console.log("# Donation Handler #");
-        console.log(
-            "Number of Call: DonateStETH %d (skipped: %d)",
-            donationHandler.numberOfCalls("donationHandler.donateStETH"),
-            donationHandler.numberOfCalls("donationHandler.donateStETH.skip")
-        );
-        console.log(
-            "Number of Call: DonateWETH %d (skipped: %d)",
-            donationHandler.numberOfCalls("donationHandler.donateWETH"),
-            donationHandler.numberOfCalls("donationHandler.donateWETH.skip")
-        );
-        */
+        console.log("Number of Call: DonateStETH %d (skipped: %d)", donationHandlerStats.donateStETH, 0);
+        console.log("Number of Call: DonateWETH %d (skipped: %d)", donationHandlerStats.donateWETH, 0);
 
         // --- Global ---
         console.log("");
         console.log("# Global Data #");
-        uint256 sumOfCall = sumOfCall_lp + sumOfCall_swap + sumOfCall_llm + sumOfCall_owner;
-        uint256 sumOfCall_skip = sumOfCall_lp_skip + sumOfCall_swap_skip + sumOfCall_owner_skip;
+        uint256 sumOfCall = donationHandlerStats.donateStETH + donationHandlerStats.donateWETH
+            + llmHandlerStats.requestStETHWithdraw + llmHandlerStats.claimStETHWithdraw + ownerHandlerStats.setPrices
+            + ownerHandlerStats.setCrossPrice + ownerHandlerStats.collectFees + ownerHandlerStats.setFees
+            + swapHandlerStats.swapExact + swapHandlerStats.swapTokens + lpHandlerStats.deposit
+            + lpHandlerStats.requestRedeem + lpHandlerStats.claimRedeem;
+        uint256 sumOfCall_skip = ownerHandlerStats.setPrices_skip + ownerHandlerStats.setCrossPrice_skip
+            + ownerHandlerStats.collectFees_skip + ownerHandlerStats.setFees_skip + swapHandlerStats.swapExact_skip
+            + swapHandlerStats.swapTokens_skip + lpHandlerStats.deposit_skip + lpHandlerStats.requestRedeem_skip
+            + lpHandlerStats.claimRedeem_skip;
         console.log("Total call: %d (skipped: %d)", sumOfCall, sumOfCall_skip);
+        console.log("");
+        console.log("-------------");
+        console.log("");
+        console.log("");
+        console.log("");
+    }
+
+    struct _LPHandler {
+        uint256 deposit;
+        uint256 deposit_skip;
+        uint256 requestRedeem;
+        uint256 requestRedeem_skip;
+        uint256 claimRedeem;
+        uint256 claimRedeem_skip;
+    }
+
+    struct _SwapHandler {
+        uint256 swapExact;
+        uint256 swapExact_skip;
+        uint256 swapTokens;
+        uint256 swapTokens_skip;
+    }
+
+    struct _OwnerHandler {
+        uint256 setPrices;
+        uint256 setPrices_skip;
+        uint256 setCrossPrice;
+        uint256 setCrossPrice_skip;
+        uint256 collectFees;
+        uint256 collectFees_skip;
+        uint256 setFees;
+        uint256 setFees_skip;
+    }
+
+    struct _LLMHandler {
+        uint256 requestStETHWithdraw;
+        uint256 claimStETHWithdraw;
+    }
+
+    struct _DonationHandler {
+        uint256 donateStETH;
+        uint256 donateWETH;
     }
 }
