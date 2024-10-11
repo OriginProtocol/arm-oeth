@@ -477,11 +477,12 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         assets = convertToAssets(shares);
 
         requestId = nextWithdrawalIndex;
+        nextWithdrawalIndex = SafeCast.toUint16(requestId + 1);
+        
         uint120 queued = SafeCast.toUint120(withdrawsQueued + assets);
         uint40 claimTimestamp = uint40(block.timestamp + claimDelay);
 
         // Store the next withdrawal request
-        nextWithdrawalIndex = SafeCast.toUint16(requestId + 1);
         // Store the updated queued amount which reserves liquidity assets (WETH) in the withdrawal queue
         withdrawsQueued = queued;
         // Store requests
