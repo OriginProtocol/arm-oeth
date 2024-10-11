@@ -675,10 +675,10 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         // a failed WETH transfer so we spend the extra gas to check and give a meaningful error message.
         require(fees <= IERC20(liquidityAsset).balanceOf(address(this)), "ARM: insufficient liquidity");
 
-        IERC20(liquidityAsset).transfer(feeCollector, fees);
-
         // Save the new available assets back to storage less the collected fees.
         lastAvailableAssets = SafeCast.toInt128(SafeCast.toInt256(newAvailableAssets) - SafeCast.toInt256(fees));
+
+        IERC20(liquidityAsset).transfer(feeCollector, fees);
 
         emit FeeCollected(feeCollector, fees);
     }
