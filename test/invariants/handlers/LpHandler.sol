@@ -15,14 +15,6 @@ import {LidoARM} from "contracts/LidoARM.sol";
 /// @dev This contract is used to handle all functionnalities related to providing liquidity in the ARM.
 contract LpHandler is BaseHandler {
     ////////////////////////////////////////////////////
-    /// --- STRUCTS && ENUMS
-    ////////////////////////////////////////////////////
-    struct Request {
-        uint256 id;
-        uint256 amount;
-    }
-
-    ////////////////////////////////////////////////////
     /// --- CONSTANTS && IMMUTABLES
     ////////////////////////////////////////////////////
     IERC20 public immutable weth;
@@ -32,7 +24,7 @@ contract LpHandler is BaseHandler {
     /// --- VARIABLES
     ////////////////////////////////////////////////////
     address[] public lps; // Users that provide liquidity
-    mapping(address user => Request[] request) public requests;
+    mapping(address user => uint256[] ids) public requests;
 
     ////////////////////////////////////////////////////
     /// --- VARIABLES FOR INVARIANT ASSERTIONS
@@ -105,7 +97,7 @@ contract LpHandler is BaseHandler {
 
         // Amount of shares to redeem should be between 0 and user total shares balance
         uint256 shares = _bound(_seed, 0, arm.balanceOf(user));
-        console.log("LpHandler.requestRedeem(%18e), %s", shares, names[user]);
+        console.log("LpHandler.requestRedeem(%18e -- id: %d), %s", shares, arm.nextWithdrawalIndex(), names[user]);
 
         // Prank user
         vm.startPrank(user);
@@ -121,54 +113,75 @@ contract LpHandler is BaseHandler {
         vm.stopPrank();
 
         // Add request to user
-        requests[user].push(Request(id, amount));
+        requests[user].push(id);
 
         // Update sum of requests
         sum_of_requests += amount;
     }
 
+    event UserFound(address user, uint256 requestId, uint256 requestIndex);
     /// @notice Claim redeem request for a user on the ARM
     /// @dev This call will be skipped if there is no request to claim at all. However, claiming zero is allowed.
     /// @dev A jump in time is done to the request deadline, but the time is rewinded back to the current time.
     /// @dev List of reasons claimRequest may fail:
     /// - Claim delay has not passed
     /// - On hold, waiting for this comment https://github.com/OriginProtocol/arm-oeth/pull/13#discussion_r1796047889
+
     function claimRedeem(uint256 _seed) external {
         numberOfCalls["lpHandler.claimRedeem"]++;
 
         // Get a user that have a request to claim
         // If no user have a request, skip this call
         address user;
+        uint256 requestId; // on the ARM
+        uint256 requestIndex; // local
+        uint256 requestAmount;
         uint256 len = lps.length;
         uint256 __seed = _bound(_seed, 0, type(uint256).max - len);
+        uint256 withdrawsClaimed = arm.withdrawsClaimed();
+
+        // 1. Loop to find a user with a request
         for (uint256 i; i < len; i++) {
+            // Take a random user
             address user_ = lps[(__seed + i) % len];
+            // Check if user have a request
             if (requests[user_].length > 0) {
-                user = user_;
-                break;
+                // Cache user requests length
+                uint256 requestLen = requests[user_].length;
+
+                // 2. Loop to find a request that can be claimed
+                for (uint256 j; j < requestLen; j++) {
+                    uint256 ___seed = _bound(_seed, 0, type(uint256).max - requestLen);
+                    // Take a random request among user requests
+                    uint256 requestIndex_ = (___seed + j) % requestLen;
+
+                    // Get data about the request (in ARM contract)
+                    (,,, uint120 amount_, uint120 queued) = arm.withdrawalRequests(requests[user_][requestIndex_]);
+
+                    // 3. Check if the request can be claimed
+                    if (queued < withdrawsClaimed + weth.balanceOf(address(arm))) {
+                        user = user_;
+                        requestId = requests[user_][requestIndex_];
+                        requestIndex = requestIndex_;
+                        requestAmount = amount_;
+                        emit UserFound(user, requestId, requestIndex);
+                        break;
+                    }
+                }
             }
+
+            // If we found a user with a request, break the loop
+            if (user != address(0)) break;
         }
+
+        // If no user have a request, skip this call
         if (user == address(0)) {
             console.log("LpHandler.claimRedeem - No user have a request");
             numberOfCalls["lpHandler.claimRedeem.skip"]++;
             return;
         }
 
-        // Get a request to claim
-        Request[] storage userRequests = requests[user];
-        uint256 requestIndex = _seed % userRequests.length;
-        Request storage request = userRequests[requestIndex];
-
-        // Check if there is enough liquidity to claim the request, otherwise skip
-        (,,, uint120 asset, uint128 queued) = arm.withdrawalRequests(request.id);
-        uint256 balance = weth.balanceOf(address(arm));
-        if (queued > arm.withdrawsClaimed() + balance || asset < balance) {
-            console.log("LpHandler.claimRedeem - Not enough liquidity to claim request");
-            numberOfCalls["lpHandler.claimRedeem.skip"]++;
-            return;
-        }
-
-        console.log("LpHandler.claimRedeem(%d), %s", request.id, names[user]);
+        console.log("LpHandler.claimRedeem(%18e -- id: %d), %s", requestAmount, requestId, names[user]);
 
         // Timejump to request deadline
         skip(arm.claimDelay());
@@ -177,8 +190,8 @@ contract LpHandler is BaseHandler {
         vm.startPrank(user);
 
         // Claim redeem
-        (uint256 amount) = arm.claimRedeem(request.id);
-        require(amount == asset, "LH: CLAIM_REDEEM - INVALID_AMOUNT");
+        (uint256 amount) = arm.claimRedeem(requestId);
+        require(amount == requestAmount, "LH: CLAIM_REDEEM - INVALID_AMOUNT");
 
         // End prank
         vm.stopPrank();
@@ -187,6 +200,7 @@ contract LpHandler is BaseHandler {
         rewind(arm.claimDelay());
 
         // Remove request
+        uint256[] storage userRequests = requests[user];
         userRequests[requestIndex] = userRequests[userRequests.length - 1];
         userRequests.pop();
 
