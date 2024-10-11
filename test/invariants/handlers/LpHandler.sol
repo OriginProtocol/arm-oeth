@@ -123,10 +123,6 @@ contract LpHandler is BaseHandler {
     /// @notice Claim redeem request for a user on the ARM
     /// @dev This call will be skipped if there is no request to claim at all. However, claiming zero is allowed.
     /// @dev A jump in time is done to the request deadline, but the time is rewinded back to the current time.
-    /// @dev List of reasons claimRequest may fail:
-    /// - Claim delay has not passed
-    /// - On hold, waiting for this comment https://github.com/OriginProtocol/arm-oeth/pull/13#discussion_r1796047889
-
     function claimRedeem(uint256 _seed) external {
         numberOfCalls["lpHandler.claimRedeem"]++;
 
