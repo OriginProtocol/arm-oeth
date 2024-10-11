@@ -432,14 +432,14 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @notice deposit liquidity assets in exchange for liquidity provider (LP) shares.
     /// Funds will be transfered from msg.sender.
     /// @param assets The amount of liquidity assets to deposit
-    /// @param liquidityProvider The address of the liquidity provider
+    /// @param receiver The address that will receive shares.
     /// @return shares The amount of shares that were minted
-    function deposit(uint256 assets, address liquidityProvider) external returns (uint256 shares) {
-        shares = _deposit(assets, liquidityProvider);
+    function deposit(uint256 assets, address receiver) external returns (uint256 shares) {
+        shares = _deposit(assets, receiver);
     }
 
     /// @dev Internal logic for depositing liquidity assets in exchange for liquidity provider (LP) shares.
-    function _deposit(uint256 assets, address liquidityProvider) internal returns (uint256 shares) {
+    function _deposit(uint256 assets, address receiver) internal returns (uint256 shares) {
         // Calculate the amount of shares to mint after the performance fees have been accrued
         // which reduces the available assets, and before new assets are deposited.
         shares = convertToShares(assets);
@@ -448,17 +448,17 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         IERC20(liquidityAsset).transferFrom(msg.sender, address(this), assets);
 
         // mint shares
-        _mint(liquidityProvider, shares);
+        _mint(receiver, shares);
 
         // Add the deposited assets to the last available assets
         lastAvailableAssets += SafeCast.toInt128(SafeCast.toInt256(assets));
 
         // Check the liquidity provider caps after the new assets have been deposited
         if (capManager != address(0)) {
-            ICapManager(capManager).postDepositHook(liquidityProvider, assets);
+            ICapManager(capManager).postDepositHook(receiver, assets);
         }
 
-        emit Deposit(liquidityProvider, assets, shares);
+        emit Deposit(receiver, assets, shares);
     }
 
     /// @notice Preview the amount of assets that would be received for burning a given amount of shares
