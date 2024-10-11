@@ -664,7 +664,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         // Accrue any performance fees up to this point
         (fees, newAvailableAssets) = _feesAccrued();
 
-        if (fee == 0) return 0;
+        if (fees == 0) return 0;
 
         // Check there is enough liquidity assets (WETH) that are not reserved for the withdrawal queue
         // to cover the fee being collected.
