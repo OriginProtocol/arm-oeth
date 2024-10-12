@@ -169,9 +169,6 @@ abstract contract Fork_Shared_Test_ is Modifiers {
 
         // --- Deploy ZapperLidoARM ---
         zapperLidoARM = new ZapperLidoARM(address(weth), address(lidoProxy));
-
-        // Set zap address in LidoARM.
-        lidoARM.setZap(address(zapperLidoARM));
     }
 
     function _label() internal {
