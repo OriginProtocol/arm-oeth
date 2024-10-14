@@ -409,7 +409,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         require(newCrossPrice >= PRICE_SCALE - MAX_CROSS_PRICE_DEVIATION, "ARM: cross price too low");
         require(newCrossPrice <= PRICE_SCALE, "ARM: cross price too high");
         // The exiting sell price must be greater than or equal to the new cross price
-        require(PRICE_SCALE * PRICE_SCALE / traderate0 >= crossPrice, "ARM: sell price too low");
+        require(PRICE_SCALE * PRICE_SCALE / traderate0 >= newCrossPrice, "ARM: sell price too low");
         // The existing buy price must be less than the new cross price
         require(traderate1 < newCrossPrice, "ARM: buy price too high");
 
