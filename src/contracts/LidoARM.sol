@@ -93,7 +93,7 @@ contract LidoARM is Initializable, AbstractARM {
      * @notice Claim the ETH owed from the redemption requests and convert it to WETH.
      * Before calling this method, caller should check on the request NFTs to ensure the withdrawal was processed.
      */
-    function claimLidoWithdrawals(uint256[] memory requestIds) external onlyOperatorOrOwner {
+    function claimLidoWithdrawals(uint256[] memory requestIds) external {
         uint256 etherBefore = address(this).balance;
 
         // Claim the NFTs for ETH.
