@@ -305,13 +305,9 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         lidoARM.setCrossPrice(1e36);
         lidoARM.setPrices(1e36 - 1, 1e36);
 
-        //assertEq(lidoARM.lastAvailableAssets(), int256(MIN_TOTAL_SUPPLY), "last available assets before Ahhhh");
-
         // User Swap stETH for 3/4 of WETH in the ARM
         deal(address(steth), address(this), DEFAULT_AMOUNT);
         lidoARM.swapTokensForExactTokens(steth, weth, 3 * DEFAULT_AMOUNT / 4, DEFAULT_AMOUNT, address(this));
-        emit log_named_uint("WETH balance after swap", weth.balanceOf(address(lidoARM)));
-        emit log_named_uint("stETH balance after swap", steth.balanceOf(address(lidoARM)));
 
         // First user requests a full withdrawal
         uint256 firstUserShares = lidoARM.balanceOf(address(this));
