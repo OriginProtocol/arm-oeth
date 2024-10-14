@@ -119,7 +119,31 @@ contract LLMHandler is BaseHandler {
         uint256 outstandingAfter = arm.lidoWithdrawalQueueAmount();
         uint256 diff = outstandingBefore - outstandingAfter;
 
-        console.log("LLMHandler.claimLidoWithdrawals(%18e)", diff);
+        console.log("LLMHandler.claimLidoWithdrawals(%18e -- count: %d)", diff, requestCount);
+
+        // Update sum of redeemed ether
+        sum_of_redeemed_ether += diff;
+    }
+
+    ////////////////////////////////////////////////////
+    /// --- HELPERS
+    ////////////////////////////////////////////////////
+    /// @notice Claim all the remaining requested withdrawals
+    function finalizeAllClaims() external {
+        // As `claimLidoWithdrawals` doesn't send back the amount, we need to calculate it
+        uint256 outstandingBefore = arm.lidoWithdrawalQueueAmount();
+
+        // Prank Owner
+        vm.startPrank(owner);
+
+        // Claim stETH withdrawal for WETH
+        arm.claimLidoWithdrawals(requestIds);
+
+        // Stop Prank
+        vm.stopPrank();
+
+        uint256 outstandingAfter = arm.lidoWithdrawalQueueAmount();
+        uint256 diff = outstandingBefore - outstandingAfter;
 
         // Update sum of redeemed ether
         sum_of_redeemed_ether += diff;

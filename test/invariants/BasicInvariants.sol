@@ -21,9 +21,9 @@ contract Invariant_Basic_Test_ is Invariant_Base_Test_ {
     uint256 private constant MAX_FEES = 5_000; // 50%
     uint256 private constant MIN_BUY_T1 = 0.98 * 1e36; // We could have use 0, but this is non-sense
     uint256 private constant MAX_SELL_T1 = 1.02 * 1e36; // We could have use type(uint256).max, but this is non-sense
-    uint256 private constant MAX_WETH_PER_USERS = 10_000_000 ether; // 10M
-    uint256 private constant MAX_STETH_PER_USERS = 10_000_000 ether; // 10M, actual total supply
-    bool private constant LOG_STATS = false;
+    uint256 private constant MAX_WETH_PER_USERS = 10_000 ether; // 10M
+    uint256 private constant MAX_STETH_PER_USERS = 10_000 ether; // 10M, actual total supply
+    bool private constant LOG_STATS = true; // Reduce speed but increase readability when debugging invariants.
 
     //////////////////////////////////////////////////////
     /// --- SETUP
@@ -110,7 +110,7 @@ contract Invariant_Basic_Test_ is Invariant_Base_Test_ {
     //////////////////////////////////////////////////////
     /// --- INVARIANTS
     //////////////////////////////////////////////////////
-    function invariant_lp() external view logStat(LOG_STATS) {
+    function invariant_lp() external logStat(LOG_STATS) {
         assert_lp_invariant_A();
         assert_lp_invariant_B();
         assert_lp_invariant_C();
@@ -122,6 +122,7 @@ contract Invariant_Basic_Test_ is Invariant_Base_Test_ {
         assert_lp_invariant_I();
         assert_lp_invariant_J();
         assert_lp_invariant_K();
+        assert_lp_invariant_L(MAX_WETH_PER_USERS);
         assert_lp_invariant_M();
     }
 

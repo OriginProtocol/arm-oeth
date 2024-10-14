@@ -52,6 +52,7 @@ abstract contract Invariant_Base_Test_ is Invariant_Shared_Test_ {
             * Invariant C: previewRedeem(∑shares) == totalAssets
             * Invariant D: previewRedeem(shares) == (, uint256 assets) = previewRedeem(shares) Not really invariant, but tested on handler
             * Invariant E: previewDeposit(amount) == uint256 shares = previewDeposit(amount) Not really invariant, but tested on handler
+            * Invariant L: ∀ user, weth balances + previewRedeem(user shares) >= initialWETHBalance. // i.e. shares are up only.
 
         * Withdraw Queue:
             * Invariant F: nextWithdrawalIndex == requestRedeem call count
@@ -160,6 +161,21 @@ abstract contract Invariant_Base_Test_ is Invariant_Shared_Test_ {
         assertEq(weth.balanceOf(feeCollector), ownerHandler.sum_of_fees(), "lpHandler.invariant_M");
     }
 
+    function assert_lp_invariant_L(uint256 initialUserWETHBalance) public {
+        // 1. Finalize all claims on Lido
+        llmHandler.finalizeAllClaims();
+        // 2. Swap all stETH to WETH
+        _sweepAllStETH();
+        // 3. Finalize all claim redeem on ARM.
+        lpHandler.finalizeAllClaims();
+        // 4. Check that all shares values are up only -> WETH balance + previewRedeem(shares) >=  MAX_WETH_PER_USERS
+        for (uint256 i; i < lps.length; i++) {
+            address user = lps[i];
+            uint256 previewRedeem = lidoARM.previewRedeem(lidoARM.balanceOf(user));
+            assertGe(weth.balanceOf(user) + previewRedeem + 1, initialUserWETHBalance, "lpHandler.invariant_L");
+        }
+    }
+
     //////////////////////////////////////////////////////
     /// --- LIDO LIQUIDITY MANAGER ASSERTIONS
     //////////////////////////////////////////////////////
@@ -203,6 +219,15 @@ abstract contract Invariant_Base_Test_ is Invariant_Shared_Test_ {
         return sumOfUserShares + lidoARM.balanceOf(address(0xdEaD));
     }
 
+    /// @notice Swap all stETH to WETH at the current price
+    function _sweepAllStETH() internal {
+        uint256 stETHBalance = steth.balanceOf(address(lidoARM));
+        deal(address(weth), address(this), 1_000_000_000 ether);
+        weth.approve(address(lidoARM), type(uint256).max);
+        lidoARM.swapTokensForExactTokens(weth, steth, stETHBalance, type(uint256).max, address(this));
+        assertApproxEqAbs(steth.balanceOf(address(lidoARM)), 0, 1, "SwepAllStETH");
+    }
+
     /// @notice Absolute difference between two numbers
     function absDiff(uint256 a, uint256 b) internal pure returns (uint256) {
         return a > b ? a - b : b - a;
@@ -218,6 +243,8 @@ abstract contract Invariant_Base_Test_ is Invariant_Shared_Test_ {
     }
 
     function logStats() public view {
+        // Don't trace this function as it's only for logging data.
+        vm.pauseTracing();
         // Get data
         _LPHandler memory lpHandlerStats = _LPHandler({
             deposit: lpHandler.numberOfCalls("lpHandler.deposit"),
@@ -345,6 +372,7 @@ abstract contract Invariant_Base_Test_ is Invariant_Shared_Test_ {
         console.log("");
         console.log("");
         console.log("");
+        vm.resumeTracing();
     }
 
     function max(uint256 a, uint256 b) internal pure returns (uint256) {

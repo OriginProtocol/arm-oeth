@@ -204,4 +204,36 @@ contract LpHandler is BaseHandler {
         // Update sum of withdraws
         sum_of_withdraws += amount;
     }
+
+    ////////////////////////////////////////////////////
+    /// --- HELPERS
+    ////////////////////////////////////////////////////
+    /// @notice Finalize all user claim request for all users
+    function finalizeAllClaims() external {
+        // Timejump to request deadline
+        skip(arm.claimDelay());
+
+        for (uint256 i; i < lps.length; i++) {
+            address user = lps[i];
+
+            vm.startPrank(user);
+            uint256[] memory userRequests = requests[user];
+            for (uint256 j; j < userRequests.length; j++) {
+                uint256 amount = arm.claimRedeem(userRequests[j]);
+                sum_of_withdraws += amount;
+            }
+            // Delete all requests
+            delete requests[user];
+
+            vm.stopPrank();
+        }
+
+        // Jump back to current time, to avoid issues with other tests
+        rewind(arm.claimDelay());
+    }
+
+    /// @notice Get all requests for a user
+    function getRequests(address user) external view returns (uint256[] memory) {
+        return requests[user];
+    }
 }
