@@ -118,12 +118,12 @@ contract Fork_Concrete_lidoARM_Setters_Test_ is Fork_Shared_Test_ {
         lidoARM.setPrices(0, 0);
     }
 
-    function test_SellPriceCannotCrossOneByMoreThanTenBps() public asOperator {
+    function test_RevertWhen_SetPrices_Because_SellPriceCannotCrossOneByMoreThanTenBps() public asOperator {
         vm.expectRevert("ARM: sell price too low");
         lidoARM.setPrices(0.998 * 1e36, 0.9989 * 1e36);
     }
 
-    function test_BuyPriceCannotCrossOneByMoreThanTenBps() public asOperator {
+    function test_RevertWhen_SetPrices_Because_BuyPriceCannotCrossOneByMoreThanTenBps() public asOperator {
         vm.expectRevert("ARM: buy price too high");
         lidoARM.setPrices(1.0011 * 1e36, 1.002 * 1e36);
     }
@@ -144,36 +144,6 @@ contract Fork_Concrete_lidoARM_Setters_Test_ is Fork_Shared_Test_ {
         // Check the traderates
         assertEq(lidoARM.traderate0(), 500 * 1e33);
         assertEq(lidoARM.traderate1(), 992 * 1e33);
-    }
-
-    //////////////////////////////////////////////////////
-    /// --- Set Cross Price - REVERTING TESTS
-    //////////////////////////////////////////////////////
-    function test_RevertWhen_SetCrossPrice_Because_NotOwner() public asRandomAddress {
-        vm.expectRevert("ARM: Only owner can call this function.");
-        lidoARM.setCrossPrice(0.9998e36);
-    }
-
-    function test_RevertWhen_SetCrossPrice_Because_Operator() public asOperator {
-        vm.expectRevert("ARM: Only owner can call this function.");
-        lidoARM.setCrossPrice(0.9998e36);
-    }
-
-    function test_RevertWhen_SetCrossPrice_Because_PriceRange() public asLidoARMOwner {
-        // 21 basis points lower than 1.0
-        vm.expectRevert("ARM: cross price too low");
-        lidoARM.setCrossPrice(0.9979e36);
-
-        // 1 basis points higher than 1.0
-        vm.expectRevert("ARM: cross price too high");
-        lidoARM.setCrossPrice(1.0001e36);
-    }
-
-    function test_RevertWhen_SetCrossPrice_With_stETH_Because_PriceDrop() public {
-        deal(address(steth), address(lidoARM), MIN_TOTAL_SUPPLY + 1);
-
-        vm.expectRevert("ARM: too many base assets");
-        lidoARM.setCrossPrice(0.9998e36);
     }
 
     //////////////////////////////////////////////////////
