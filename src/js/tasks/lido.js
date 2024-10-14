@@ -97,9 +97,9 @@ const submitLido = async ({ amount }) => {
   await logTxDetails(tx, "submit");
 };
 
-const snapLido = async ({ amount, block, curve, oneInch, uniswap }) => {
+const snapLido = async ({ amount, block, curve, oneInch, uniswap, gas }) => {
   const blockTag = await getBlock(block);
-  const pair = "stETH/ETH";
+  const commonOptions = { amount, blockTag, pair: "stETH/ETH", gas };
 
   const armAddress = await parseAddress("LIDO_ARM");
   const lidoARM = await ethers.getContractAt("LidoARM", armAddress);
@@ -109,18 +109,16 @@ const snapLido = async ({ amount, block, curve, oneInch, uniswap }) => {
     capManagerAddress
   );
 
-  const ammPrices = await logArmPrices(lidoARM, blockTag);
+  const ammPrices = await logArmPrices(commonOptions, lidoARM);
 
   if (oneInch) {
-    await log1InchPrices(amount, ammPrices);
+    await log1InchPrices(commonOptions, ammPrices);
   }
 
   if (curve) {
     await logCurvePrices(
       {
-        blockTag,
-        amount,
-        pair,
+        ...commonOptions,
         poolName: "Old",
         poolAddress: addresses.mainnet.CurveStEthPool,
       },
@@ -129,9 +127,7 @@ const snapLido = async ({ amount, block, curve, oneInch, uniswap }) => {
 
     await logCurvePrices(
       {
-        blockTag,
-        amount,
-        pair,
+        ...commonOptions,
         poolName: "NextGen",
         poolAddress: addresses.mainnet.CurveNgStEthPool,
       },
@@ -140,7 +136,7 @@ const snapLido = async ({ amount, block, curve, oneInch, uniswap }) => {
   }
 
   if (uniswap) {
-    await logUniswapSpotPrices({ blockTag, pair, amount }, ammPrices);
+    await logUniswapSpotPrices(commonOptions, ammPrices);
   }
 
   const { totalAssets, totalSupply, liquidityWeth } = await logAssets(

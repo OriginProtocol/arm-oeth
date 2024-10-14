@@ -8,7 +8,7 @@ const { getSigner } = require("./signers");
 
 const log = require("../utils/logger")("task:uniswap");
 
-const getUniswapV3SpotPrices = async ({ amount, blockTag }) => {
+const getUniswapV3SpotPrices = async ({ amount, blockTag, gas }) => {
   const signer = await getSigner();
   const quoter = new ethers.Contract(
     addresses.mainnet.UniswapV3Quoter,
@@ -37,16 +37,6 @@ const getUniswapV3SpotPrices = async ({ amount, blockTag }) => {
     );
   const buyToAmount = await wstEth.getStETHByWstETH(wstEthAmount);
   log(`buyToAmount: ${buyToAmount}`);
-  const buyGas = await quoter
-    .connect(signer)
-    .quoteExactInputSingle.estimateGas(
-      addresses.mainnet.WETH,
-      addresses.mainnet.wstETH,
-      100,
-      amountBI,
-      0,
-      { blockTag }
-    );
   // stETH/ETH rate = ETH amount / stETH amount
   const buyPrice = (amountBI * BigInt(1e18)) / buyToAmount;
 
@@ -65,6 +55,33 @@ const getUniswapV3SpotPrices = async ({ amount, blockTag }) => {
       0,
       { blockTag }
     );
+  // stETH/WETH rate = WETH amount / stETH amount
+  const sellPrice = (sellToAmount * BigInt(1e18)) / amountBI;
+
+  const midPrice = (buyPrice + sellPrice) / 2n;
+  const spread = buyPrice - sellPrice;
+
+  if (!gas) {
+    return {
+      buyToAmount,
+      buyPrice,
+      sellToAmount,
+      sellPrice,
+      midPrice,
+      spread,
+    };
+  }
+
+  const buyGas = await quoter
+    .connect(signer)
+    .quoteExactInputSingle.estimateGas(
+      addresses.mainnet.WETH,
+      addresses.mainnet.wstETH,
+      100,
+      amountBI,
+      0,
+      { blockTag }
+    );
   const sellGas = await quoter
     .connect(signer)
     .quoteExactInputSingle.estimateGas(
@@ -75,11 +92,6 @@ const getUniswapV3SpotPrices = async ({ amount, blockTag }) => {
       0,
       { blockTag }
     );
-  // stETH/WETH rate = WETH amount / stETH amount
-  const sellPrice = (sellToAmount * BigInt(1e18)) / amountBI;
-
-  const midPrice = (buyPrice + sellPrice) / 2n;
-  const spread = buyPrice - sellPrice;
 
   return {
     buyToAmount,
