@@ -212,9 +212,9 @@ abstract contract Invariant_Base_Test_ is Invariant_Shared_Test_ {
         value = uint256(vm.load(address(lidoARM), bytes32(slotNumber)));
     }
 
-    modifier logStat() {
+    modifier logStat(bool display) {
         _;
-        logStats();
+        if (display) logStats();
     }
 
     function logStats() public view {
