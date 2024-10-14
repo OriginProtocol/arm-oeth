@@ -172,6 +172,12 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         // This avoids donation attacks when there are no assets in the ARM contract
         _mint(DEAD_ACCOUNT, MIN_TOTAL_SUPPLY);
 
+        // Set the sell price to its highest value. 1.0
+        traderate0 = PRICE_SCALE;
+        // Set the buy price to its lowest value. 0.998
+        traderate1 = PRICE_SCALE - MAX_CROSS_PRICE_DEVIATION;
+        emit TraderateChanged(traderate0, traderate1);
+
         // Initialize the last available assets to the current available assets
         // This ensures no performance fee is accrued when the performance fee is calculated when the fee is set
         lastAvailableAssets = SafeCast.toInt128(SafeCast.toInt256(_availableAssets()));
@@ -402,6 +408,10 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     function setCrossPrice(uint256 newCrossPrice) external onlyOwner {
         require(newCrossPrice >= PRICE_SCALE - MAX_CROSS_PRICE_DEVIATION, "ARM: cross price too low");
         require(newCrossPrice <= PRICE_SCALE, "ARM: cross price too high");
+        // The exiting sell price must be greater than or equal to the new cross price
+        require(PRICE_SCALE * PRICE_SCALE / traderate0 >= crossPrice, "ARM: sell price too low");
+        // The existing buy price must be less than the new cross price
+        require(traderate1 < newCrossPrice, "ARM: buy price too high");
 
         // If the cross price is being lowered, there can not be a significant amount of base assets in the ARM. eg stETH.
         // This prevents the ARM making a loss when the base asset is sold at a lower price than it was bought
