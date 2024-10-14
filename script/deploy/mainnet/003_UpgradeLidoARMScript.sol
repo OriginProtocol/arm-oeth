@@ -137,10 +137,6 @@ contract UpgradeLidoARMMainnetScript is AbstractDeployScript {
         console.log("About to set prices on the ARM contract");
         LidoARM(payable(Mainnet.LIDO_ARM)).setPrices(0.9994e36, 0.9998e36);
 
-        // Set the Zapper contract on the Lido ARM
-        console.log("About to set the Zapper on the ARM contract");
-        LidoARM(payable(Mainnet.LIDO_ARM)).setZap(address(zapper));
-
         // transfer ownership of the Lido ARM proxy to the mainnet 5/8 multisig
         console.log("About to set ARM owner to", Mainnet.GOV_MULTISIG);
         lidoARMProxy.setOwner(Mainnet.GOV_MULTISIG);

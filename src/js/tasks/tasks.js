@@ -608,6 +608,11 @@ subtask("snapLido", "Take a snapshot of the Lido ARM")
     undefined,
     types.int
   )
+  .addOptionalParam("amount", "Swap quantity", 100, types.int)
+  .addOptionalParam("oneInch", "Include 1Inch prices", true, types.boolean)
+  .addOptionalParam("curve", "Include Curve prices", true, types.boolean)
+  .addOptionalParam("uniswap", "Include Uniswap V3 prices", true, types.boolean)
+  .addOptionalParam("gas", "Include gas costs", true, types.boolean)
   .setAction(snapLido);
 task("snapLido").setAction(async (_, __, runSuper) => {
   return runSuper();

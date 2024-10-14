@@ -26,6 +26,9 @@ contract LidoARM is Initializable, AbstractARM {
     /// @notice The amount of stETH in the Lido Withdrawal Queue
     uint256 public lidoWithdrawalQueueAmount;
 
+    event RequestLidoWithdrawals(uint256[] amounts, uint256[] requestIds);
+    event ClaimLidoWithdrawals(uint256[] requestIds);
+
     /// @param _steth The address of the stETH token
     /// @param _weth The address of the WETH token
     /// @param _lidoWithdrawalQueue The address of the Lido's withdrawal queue contract
@@ -82,6 +85,8 @@ contract LidoARM is Initializable, AbstractARM {
 
         // Increase the Ether outstanding from the Lido Withdrawal Queue
         lidoWithdrawalQueueAmount += totalAmountRequested;
+
+        emit RequestLidoWithdrawals(amounts, requestIds);
     }
 
     /**
@@ -103,6 +108,8 @@ contract LidoARM is Initializable, AbstractARM {
 
         // Wrap all the received ETH to WETH.
         weth.deposit{value: etherAfter}();
+
+        emit ClaimLidoWithdrawals(requestIds);
     }
 
     /**
