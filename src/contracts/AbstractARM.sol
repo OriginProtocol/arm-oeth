@@ -72,11 +72,11 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     uint256 public crossPrice;
 
     /// @notice Cumulative total of all withdrawal requests including the ones that have already been claimed.
-    uint120 public withdrawsQueued;
+    uint128 public withdrawsQueued;
     /// @notice Total of all the withdrawal requests that have been claimed.
-    uint120 public withdrawsClaimed;
+    uint128 public withdrawsClaimed;
     /// @notice Index of the next withdrawal request starting at 0.
-    uint16 public nextWithdrawalIndex;
+    uint256 public nextWithdrawalIndex;
 
     struct WithdrawalRequest {
         address withdrawer;
@@ -84,9 +84,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         // When the withdrawal can be claimed
         uint40 claimTimestamp;
         // Amount of liquidity assets to withdraw. eg WETH
-        uint120 assets;
+        uint128 assets;
         // Cumulative total of all withdrawal requests including this one when the redeem request was made.
-        uint120 queued;
+        uint128 queued;
     }
 
     /// @notice Mapping of withdrawal request indices to the user withdrawal request data.
@@ -106,7 +106,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @notice The address of the CapManager contract used to manage the ARM's liquidity provider and total assets caps.
     address public capManager;
 
-    uint256[42] private _gap;
+    uint256[41] private _gap;
 
     ////////////////////////////////////////////////////
     ///                 Events
@@ -478,9 +478,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
         requestId = nextWithdrawalIndex;
         // Store the next withdrawal request
-        nextWithdrawalIndex = SafeCast.toUint16(requestId + 1);
+        nextWithdrawalIndex = requestId + 1;
 
-        uint120 queued = SafeCast.toUint120(withdrawsQueued + assets);
+        uint128 queued = SafeCast.toUint128(withdrawsQueued + assets);
         // Store the updated queued amount which reserves liquidity assets (WETH) in the withdrawal queue
         withdrawsQueued = queued;
 
@@ -491,7 +491,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
             withdrawer: msg.sender,
             claimed: false,
             claimTimestamp: claimTimestamp,
-            assets: SafeCast.toUint120(assets),
+            assets: SafeCast.toUint128(assets),
             queued: queued
         });
 
@@ -522,7 +522,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         // Store the request as claimed
         withdrawalRequests[requestId].claimed = true;
         // Store the updated claimed amount
-        withdrawsClaimed += SafeCast.toUint120(assets);
+        withdrawsClaimed += SafeCast.toUint128(assets);
 
         // transfer the liquidity asset to the withdrawer
         IERC20(liquidityAsset).transfer(msg.sender, assets);
