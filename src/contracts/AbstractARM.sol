@@ -17,7 +17,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     uint256 public constant MAX_CROSS_PRICE_DEVIATION = 20e32;
     /// @notice Scale of the prices.
     uint256 public constant PRICE_SCALE = 1e36;
-    /// @dev The amount of shares that are minted to a dead address on initalization
+    /// @dev The amount of shares that are minted to a dead address on initialization
     uint256 internal constant MIN_TOTAL_SUPPLY = 1e12;
     /// @dev The address with no known private key that the initial shares are minted to
     address internal constant DEAD_ACCOUNT = 0x000000000000000000000000000000000000dEaD;
@@ -30,6 +30,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     ////////////////////////////////////////////////////
 
     /// @notice The address of the asset that is used to add and remove liquidity. eg WETH
+    /// This is also the quote asset when the prices are set.
+    /// eg the stETH/WETH price has a base asset of stETH and quote asset of WETH.
     address public immutable liquidityAsset;
     /// @notice The asset being purchased by the ARM and put in the withdrawal queue. eg stETH
     address public immutable baseAsset;
@@ -163,7 +165,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
         __ERC20_init(_name, _symbol);
 
-        // Transfer a small bit of liquidity from the intializer to this contract
+        // Transfer a small bit of liquidity from the initializer to this contract
         IERC20(liquidityAsset).transferFrom(msg.sender, address(this), MIN_TOTAL_SUPPLY);
 
         // mint a small amount of shares to a dead account so the total supply can never be zero
@@ -380,8 +382,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         require(sellT1 >= crossPrice, "ARM: sell price too low");
         require(buyT1 < crossPrice, "ARM: buy price too high");
 
-        traderate0 = PRICE_SCALE * PRICE_SCALE / sellT1; // base (t0) -> token (t1);
-        traderate1 = buyT1; // token (t1) -> base (t0)
+        traderate0 = PRICE_SCALE * PRICE_SCALE / sellT1; // quote (t0) -> base (t1); eg WETH -> stETH
+        traderate1 = buyT1; // base (t1) -> quote (t0). eg stETH -> WETH
 
         emit TraderateChanged(traderate0, traderate1);
     }
@@ -435,7 +437,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     }
 
     /// @notice deposit liquidity assets in exchange for liquidity provider (LP) shares.
-    /// Funds will be transfered from msg.sender.
+    /// Funds will be transferred from msg.sender.
     /// @param assets The amount of liquidity assets to deposit
     /// @param receiver The address that will receive shares.
     /// @return shares The amount of shares that were minted
@@ -513,7 +515,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @param requestId The index of the withdrawal request
     /// @return assets The amount of liquidity assets that were transferred to the redeemer
     function claimRedeem(uint256 requestId) external returns (uint256 assets) {
-        // Load the structs from storage into memory
+        // Load the struct from storage into memory
         WithdrawalRequest memory request = withdrawalRequests[requestId];
 
         require(request.claimTimestamp <= block.timestamp, "Claim delay not met");
