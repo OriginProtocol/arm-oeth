@@ -418,7 +418,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         // before the cross price was lowered.
         if (newCrossPrice < crossPrice) {
             // Check there is not a significant amount of base assets in the ARM
-            require(IERC20(baseAsset).balanceOf(address(this)) < MIN_TOTAL_SUPPLY, "ARM: too many base assets");
+            require(IERC20(baseAsset).balanceOf(address(this)) <= MIN_TOTAL_SUPPLY, "ARM: too many base assets");
         }
 
         // Save the new cross price to storage
