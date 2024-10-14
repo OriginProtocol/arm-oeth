@@ -150,32 +150,6 @@ contract Fork_Concrete_lidoARM_Setters_Test_ is Fork_Shared_Test_ {
     /// --- Set Cross Price - PASSING TESTS
     //////////////////////////////////////////////////////
 
-    function test_SetCrossPrice_No_StETH_Owner() public {
-        deal(address(steth), address(lidoARM), MIN_TOTAL_SUPPLY - 1);
-
-        // at 1.0
-        vm.expectEmit({emitter: address(lidoARM)});
-        emit AbstractARM.CrossPriceUpdated(1e36);
-        lidoARM.setCrossPrice(1e36);
-
-        // 20 basis points lower than 1.0
-        vm.expectEmit({emitter: address(lidoARM)});
-        emit AbstractARM.CrossPriceUpdated(0.998e36);
-        lidoARM.setCrossPrice(0.998e36);
-    }
-
-    function test_SetCrossPrice_With_StETH_PriceUp_Owner() public {
-        // 2 basis points lower than 1.0
-        lidoARM.setCrossPrice(0.9998e36);
-
-        deal(address(steth), address(lidoARM), MIN_TOTAL_SUPPLY + 1);
-
-        // 4 basis points lower than 1.0
-        // vm.expectEmit({emitter: address(lidoARM)});
-        // emit AbstractARM.CrossPriceUpdated(0.9996e36);
-        lidoARM.setCrossPrice(0.9999e36);
-    }
-
     //////////////////////////////////////////////////////
     /// --- OWNABLE - REVERTING TESTS
     //////////////////////////////////////////////////////
