@@ -390,7 +390,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
      * @notice set the price that buy and sell prices can not cross.
      * That is, the buy prices must be below the cross price
      * and the sell prices must be above the cross price.
-     * If the cross price is being lowered, there can not be any base assets in the ARM. eg stETH.
+     * If the cross price is being lowered, there can not be a significant amount of base assets in the ARM. eg stETH.
+     * This prevents the ARM making a loss when the base asset is sold at a lower price than it was bought
+     * before the cross price was lowered.
      * The base assets should be sent to the withdrawal queue before the cross price can be lowered.
      * The cross price can be increased with assets in the ARM.
      * @param newCrossPrice The new cross price scaled to 36 decimals.
@@ -399,12 +401,15 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         require(newCrossPrice >= PRICE_SCALE - MAX_CROSS_PRICE_DEVIATION, "ARM: cross price too low");
         require(newCrossPrice <= PRICE_SCALE, "ARM: cross price too high");
 
-        // If the new cross price is lower than the current cross price
+        // If the cross price is being lowered, there can not be a significant amount of base assets in the ARM. eg stETH.
+        // This prevents the ARM making a loss when the base asset is sold at a lower price than it was bought
+        // before the cross price was lowered.
         if (newCrossPrice < crossPrice) {
             // Check there is not a significant amount of base assets in the ARM
             require(IERC20(baseAsset).balanceOf(address(this)) < MIN_TOTAL_SUPPLY, "ARM: too many base assets");
         }
 
+        // Save the new cross price to storage
         crossPrice = newCrossPrice;
 
         emit CrossPriceUpdated(newCrossPrice);
