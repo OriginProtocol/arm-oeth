@@ -366,7 +366,10 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         } else {
             revert("ARM: Invalid in token");
         }
-        amountIn = ((amountOut * PRICE_SCALE) / price) + 1; // +1 to always round in our favor
+        // always round in our favor
+        // +1 for truncation when dividing integers
+        // +2 to cover stETH transfers being up to 2 wei short of the requested transfer amount
+        amountIn = ((amountOut * PRICE_SCALE) / price) + 3;
 
         // Transfer the input tokens from the caller to this ARM contract
         _transferAssetFrom(address(inToken), msg.sender, address(this), amountIn);

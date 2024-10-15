@@ -35,7 +35,7 @@ contract CapManager is Initializable, OwnableOperable {
 
     function initialize(address _operator) external initializer {
         _initOwnableOperable(_operator);
-        accountCapEnabled = true;
+        accountCapEnabled = false;
     }
 
     function postDepositHook(address liquidityProvider, uint256 assets) external {
