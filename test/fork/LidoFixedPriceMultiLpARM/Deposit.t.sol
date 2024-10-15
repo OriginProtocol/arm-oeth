@@ -11,8 +11,9 @@ import {IStETHWithdrawal} from "contracts/Interfaces.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
 
 contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
-    uint256[] amounts1 = new uint256[](1);
-    IStETHWithdrawal public stETHWithdrawal = IStETHWithdrawal(Mainnet.LIDO_WITHDRAWAL);
+    bool private ac;
+    uint256[] private amounts1 = new uint256[](1);
+    IStETHWithdrawal private stETHWithdrawal = IStETHWithdrawal(Mainnet.LIDO_WITHDRAWAL);
 
     //////////////////////////////////////////////////////
     /// --- SETUP
@@ -30,6 +31,8 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
 
         // Amounts arrays
         amounts1[0] = DEFAULT_AMOUNT;
+
+        ac = capManager.accountCapEnabled();
     }
 
     //////////////////////////////////////////////////////
@@ -37,6 +40,7 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
     //////////////////////////////////////////////////////
     function test_RevertWhen_Deposit_Because_LiquidityProviderCapExceeded_WithCapNull()
         public
+        enableCaps
         setLiquidityProviderCap(address(this), 0)
     {
         vm.expectRevert("LPC: LP cap exceeded");
@@ -45,6 +49,7 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
 
     function test_RevertWhen_Deposit_Because_LiquidityProviderCapExceeded_WithCapNotNull()
         public
+        enableCaps
         setLiquidityProviderCap(address(this), DEFAULT_AMOUNT)
     {
         vm.expectRevert("LPC: LP cap exceeded");
@@ -53,6 +58,7 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
 
     function test_RevertWhen_Deposit_Because_LiquidityProviderCapExceeded_WithCapReached()
         public
+        enableCaps
         setLiquidityProviderCap(address(this), DEFAULT_AMOUNT)
     {
         // Initial deposit
@@ -108,7 +114,7 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         assertEq(weth.balanceOf(address(lidoARM)), MIN_TOTAL_SUPPLY);
         assertEq(lidoARM.lidoWithdrawalQueueAmount(), 0);
         assertEq(lidoARM.feesAccrued(), 0); // No perfs so no fees
-        assertEq(lidoARM.lastAvailableAssets(), int256(MIN_TOTAL_SUPPLY));
+        if (ac) assertEq(lidoARM.lastAvailableAssets(), int256(MIN_TOTAL_SUPPLY));
         assertEq(lidoARM.balanceOf(address(this)), 0); // Ensure no shares before
         assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY, "total supply before"); // Minted to dead on deploy
         assertEq(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY, "total assets before");
@@ -120,8 +126,10 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         emit IERC20.Transfer(address(this), address(lidoARM), amount);
         vm.expectEmit({emitter: address(lidoARM)});
         emit IERC20.Transfer(address(0), address(this), amount); // shares == amount here
-        vm.expectEmit({emitter: address(capManager)});
-        emit CapManager.LiquidityProviderCap(address(this), 0);
+        if (ac) {
+            vm.expectEmit({emitter: address(capManager)});
+            emit CapManager.LiquidityProviderCap(address(this), 0);
+        }
 
         // Main call
         uint256 shares = lidoARM.deposit(amount);
@@ -135,7 +143,7 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         assertEq(lidoARM.balanceOf(address(this)), shares);
         assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY + amount, "total supply after");
         assertEq(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY + amount, "total assets after");
-        assertEq(capManager.liquidityProviderCaps(address(this)), 0, "lp cap after"); // All the caps are used
+        if (ac) assertEq(capManager.liquidityProviderCaps(address(this)), 0, "lp cap after"); // All the caps are used
         assertEqQueueMetadata(0, 0, 0);
         assertEq(shares, amount); // No perfs, so 1 ether * totalSupply (1e12) / totalAssets (1e12) = 1 ether
     }
@@ -149,6 +157,7 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         depositInLidoARM(address(this), DEFAULT_AMOUNT)
     {
         uint256 amount = DEFAULT_AMOUNT;
+
         // Assertions Before
         assertEq(steth.balanceOf(address(lidoARM)), 0);
         assertEq(weth.balanceOf(address(lidoARM)), MIN_TOTAL_SUPPLY + amount);
@@ -158,7 +167,7 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         assertEq(lidoARM.balanceOf(address(this)), amount);
         assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY + amount); // Minted to dead on deploy
         assertEq(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY + amount);
-        assertEq(capManager.liquidityProviderCaps(address(this)), amount);
+        if (ac) assertEq(capManager.liquidityProviderCaps(address(this)), amount);
         assertEqQueueMetadata(0, 0, 0);
 
         // Expected events
@@ -166,8 +175,10 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         emit IERC20.Transfer(address(this), address(lidoARM), amount);
         vm.expectEmit({emitter: address(lidoARM)});
         emit IERC20.Transfer(address(0), address(this), amount); // shares == amount here
-        vm.expectEmit({emitter: address(capManager)});
-        emit CapManager.LiquidityProviderCap(address(this), 0);
+        if (ac) {
+            vm.expectEmit({emitter: address(capManager)});
+            emit CapManager.LiquidityProviderCap(address(this), 0);
+        }
 
         // Main call
         uint256 shares = lidoARM.deposit(amount);
@@ -181,7 +192,7 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         assertEq(lidoARM.balanceOf(address(this)), shares * 2);
         assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY + amount * 2);
         assertEq(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY + amount * 2);
-        assertEq(capManager.liquidityProviderCaps(address(this)), 0); // All the caps are used
+        if (ac) assertEq(capManager.liquidityProviderCaps(address(this)), 0); // All the caps are used
         assertEqQueueMetadata(0, 0, 0);
         assertEq(shares, amount); // No perfs, so 1 ether * totalSupply (1e18 + 1e12) / totalAssets (1e18 + 1e12) = 1 ether
     }
@@ -196,6 +207,7 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         depositInLidoARM(address(this), DEFAULT_AMOUNT)
     {
         uint256 amount = DEFAULT_AMOUNT;
+
         // Assertions Before
         assertEq(steth.balanceOf(address(lidoARM)), 0);
         assertEq(weth.balanceOf(address(lidoARM)), MIN_TOTAL_SUPPLY + amount);
@@ -205,7 +217,7 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         assertEq(lidoARM.balanceOf(alice), 0);
         assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY + amount); // Minted to dead on deploy
         assertEq(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY + amount);
-        assertEq(capManager.liquidityProviderCaps(alice), amount);
+        if (ac) assertEq(capManager.liquidityProviderCaps(alice), amount);
         assertEqQueueMetadata(0, 0, 0);
 
         // Expected events
@@ -213,8 +225,10 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         emit IERC20.Transfer(alice, address(lidoARM), amount);
         vm.expectEmit({emitter: address(lidoARM)});
         emit IERC20.Transfer(address(0), alice, amount); // shares == amount here
-        vm.expectEmit({emitter: address(capManager)});
-        emit CapManager.LiquidityProviderCap(alice, 0);
+        if (ac) {
+            vm.expectEmit({emitter: address(capManager)});
+            emit CapManager.LiquidityProviderCap(alice, 0);
+        }
 
         vm.prank(alice);
         // Main call
@@ -229,7 +243,7 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         assertEq(lidoARM.balanceOf(alice), shares);
         assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY + amount * 2);
         assertEq(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY + amount * 2);
-        assertEq(capManager.liquidityProviderCaps(alice), 0); // All the caps are used
+        if (ac) assertEq(capManager.liquidityProviderCaps(alice), 0); // All the caps are used
         assertEqQueueMetadata(0, 0, 0);
         assertEq(shares, amount); // No perfs, so 1 ether * totalSupply (1e18 + 1e12) / totalAssets (1e18 + 1e12) = 1 ether
     }
@@ -260,7 +274,7 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY, "Total supply before"); // Minted to dead on deploy
         // 80% of the asset gain goes to the total assets
         assertEq(lidoARM.totalAssets(), expectedTotalAssetsBeforeDeposit, "Total assets before");
-        assertEq(capManager.liquidityProviderCaps(address(this)), DEFAULT_AMOUNT * 20, "lp cap before");
+        if (ac) assertEq(capManager.liquidityProviderCaps(address(this)), DEFAULT_AMOUNT * 20, "lp cap before");
         assertEqQueueMetadata(0, 0, 0);
 
         uint256 depositedAssets = DEFAULT_AMOUNT * 20;
@@ -270,8 +284,10 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         emit IERC20.Transfer(address(this), address(lidoARM), depositedAssets);
         vm.expectEmit({emitter: address(lidoARM)});
         emit IERC20.Transfer(address(0), address(this), expectedShares);
-        vm.expectEmit({emitter: address(capManager)});
-        emit CapManager.LiquidityProviderCap(address(this), 0);
+        if (ac) {
+            vm.expectEmit({emitter: address(capManager)});
+            emit CapManager.LiquidityProviderCap(address(this), 0);
+        }
 
         // deposit assets
         uint256 shares = lidoARM.deposit(depositedAssets);
@@ -288,7 +304,7 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         assertEq(lidoARM.balanceOf(address(this)), expectedShares, "user shares after");
         assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY + expectedShares, "total supply after");
         assertEq(lidoARM.totalAssets(), expectedTotalAssetsBeforeDeposit + depositedAssets, "Total assets after");
-        assertEq(capManager.liquidityProviderCaps(address(this)), 0, "lp cap after"); // All the caps are used
+        if (ac) assertEq(capManager.liquidityProviderCaps(address(this)), 0, "lp cap after"); // All the caps are used
         assertEqQueueMetadata(0, 0, 0);
     }
 
@@ -339,7 +355,7 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         assertEq(lidoARM.balanceOf(alice), 0, "alice shares before deposit");
         assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY, "total supply before deposit");
         assertEq(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY + 1, "total assets before deposit");
-        assertEq(capManager.liquidityProviderCaps(alice), DEFAULT_AMOUNT * 5, "lp cap before deposit");
+        if (ac) assertEq(capManager.liquidityProviderCaps(alice), DEFAULT_AMOUNT * 5, "lp cap before deposit");
         assertEqQueueMetadata(assetsRedeem, 0, 1);
         assertApproxEqAbs(assetsRedeem, DEFAULT_AMOUNT, STETH_ERROR_ROUNDING, "assets redeem before deposit");
 
@@ -353,8 +369,10 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         emit IERC20.Transfer(alice, address(lidoARM), amount);
         vm.expectEmit({emitter: address(lidoARM)});
         emit IERC20.Transfer(address(0), alice, expectedShares);
-        vm.expectEmit({emitter: address(capManager)});
-        emit CapManager.LiquidityProviderCap(alice, DEFAULT_AMOUNT * 3);
+        if (ac) {
+            vm.expectEmit({emitter: address(capManager)});
+            emit CapManager.LiquidityProviderCap(alice, DEFAULT_AMOUNT * 3);
+        }
 
         vm.prank(alice);
         // Main call
@@ -376,7 +394,7 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         assertEq(lidoARM.balanceOf(alice), shares, "alice shares after deposit");
         assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY + expectedShares, "total supply after deposit");
         assertEq(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY + amount + 1, "total assets after deposit");
-        assertEq(capManager.liquidityProviderCaps(alice), DEFAULT_AMOUNT * 3, "alice cap after deposit"); // All the caps are used
+        if (ac) assertEq(capManager.liquidityProviderCaps(alice), DEFAULT_AMOUNT * 3, "alice cap after deposit"); // All the caps are used
         // withdrawal request is now claimable
         assertEqQueueMetadata(assetsRedeem, 0, 1);
         assertApproxEqAbs(shares, expectedShares, STETH_ERROR_ROUNDING, "shares after deposit"); // No perfs, so 1 ether * totalSupply (1e18 + 1e12) / totalAssets (1e18 + 1e12) = 1 ether
@@ -407,7 +425,7 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         assertEq(lidoARM.feesAccrued(), DEFAULT_AMOUNT * 20 / 100, "fees accrued before deposit");
         assertEq(lidoARM.lastAvailableAssets(), int256(MIN_TOTAL_SUPPLY), "last available assets before deposit");
         assertEq(lidoARM.balanceOf(address(this)), 0); // Ensure no shares before
-        assertEq(capManager.liquidityProviderCaps(address(this)), DEFAULT_AMOUNT);
+        if (ac) assertEq(capManager.liquidityProviderCaps(address(this)), DEFAULT_AMOUNT);
         assertEqQueueMetadata(0, 0, 0);
 
         // Expected values = 1249998437501
@@ -463,7 +481,7 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
             lidoARM.lastAvailableAssets(), int256(MIN_TOTAL_SUPPLY), 4e6, "last available assets after redeem"
         );
         assertEq(lidoARM.balanceOf(address(this)), 0, "User shares after redeem");
-        assertEq(capManager.liquidityProviderCaps(address(this)), 0, "all user cap used");
+        if (ac) assertEq(capManager.liquidityProviderCaps(address(this)), 0, "all user cap used");
         assertEqQueueMetadata(receivedAssets, 0, 1);
 
         // 6. collect fees
@@ -521,7 +539,7 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         assertEq(lidoARM.lastAvailableAssets(), int256(MIN_TOTAL_SUPPLY));
         assertEq(lidoARM.balanceOf(address(this)), 0); // Ensure no shares after
         assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY); // Minted to dead on deploy
-        assertEq(capManager.liquidityProviderCaps(address(this)), 0); // All the caps are used
+        if (ac) assertEq(capManager.liquidityProviderCaps(address(this)), 0); // All the caps are used
         assertEqQueueMetadata(receivedAssets, 0, 1);
         assertEq(receivedAssets, DEFAULT_AMOUNT, "received assets");
     }
@@ -590,7 +608,7 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         );
         assertEq(lidoARM.balanceOf(address(this)), 0, "user shares after"); // Ensure no shares after
         assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY, "total supply after"); // Minted to dead on deploy
-        assertEq(capManager.liquidityProviderCaps(address(this)), 0, "user cap"); // All the caps are used
+        if (ac) assertEq(capManager.liquidityProviderCaps(address(this)), 0, "user cap"); // All the caps are used
         assertEqQueueMetadata(receivedAssets, 0, 1);
     }
 }

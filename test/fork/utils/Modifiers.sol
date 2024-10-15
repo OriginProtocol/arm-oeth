@@ -77,6 +77,19 @@ abstract contract Modifiers is Helpers {
         _;
     }
 
+    /// @notice Enable the total assets cap on the CapManager contract.
+    modifier enableCaps() {
+        require(address(capManager) != address(0), "CapManager not set");
+        vm.prank(lidoARM.owner());
+        lidoARM.setCapManager(address(capManager));
+
+        if (!capManager.accountCapEnabled()) {
+            vm.prank(capManager.owner());
+            capManager.setAccountCapEnabled(true);
+        }
+        _;
+    }
+
     /// @notice Set the stETH/WETH swap prices on the LidoARM contract.
     modifier setPrices(uint256 buyPrice, uint256 crossPrice, uint256 sellPrice) {
         lidoARM.setCrossPrice(crossPrice);

@@ -15,7 +15,7 @@ contract Fork_Concrete_ZapperLidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         vm.deal(address(this), DEFAULT_AMOUNT);
     }
 
-    function test_Deposit_ViaFunction() public {
+    function test_Deposit_ViaFunction() public enableCaps {
         assertEq(lidoARM.balanceOf(address(this)), 0);
         uint256 expectedShares = lidoARM.previewDeposit(DEFAULT_AMOUNT);
         uint256 capBefore = capManager.liquidityProviderCaps(address(this));
@@ -32,7 +32,7 @@ contract Fork_Concrete_ZapperLidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         assertEq(capManager.liquidityProviderCaps(address(this)), capBefore - DEFAULT_AMOUNT);
     }
 
-    function test_Deposit_ViaCall() public {
+    function test_Deposit_ViaCall() public enableCaps {
         assertEq(lidoARM.balanceOf(address(this)), 0);
         uint256 expectedShares = lidoARM.previewDeposit(DEFAULT_AMOUNT);
         uint256 capBefore = capManager.liquidityProviderCaps(address(this));
