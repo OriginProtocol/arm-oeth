@@ -15,8 +15,6 @@ contract Fork_Concrete_LidoARM_SwapTokensForExactTokens_Test is Fork_Shared_Test
     uint256 private constant MIN_PRICE1 = 1_000e33; // 1.00
     uint256 private constant MAX_PRICE1 = 1_020e33; // 1.02
     uint256 private constant INITIAL_BALANCE = 1_000 ether;
-    uint256 private constant MAX_WETH_RESERVE = 1_000_000 ether; // 1M WETH, no limit, but need to be consistent.
-    uint256 private constant MAX_STETH_RESERVE = 2_000_000 ether; // 2M stETH, limited by wsteth balance of steth.
 
     //////////////////////////////////////////////////////
     /// --- SETUP
@@ -24,11 +22,11 @@ contract Fork_Concrete_LidoARM_SwapTokensForExactTokens_Test is Fork_Shared_Test
     function setUp() public override {
         super.setUp();
 
-        deal(address(weth), address(this), 1_000 ether);
-        deal(address(steth), address(this), 1_000 ether);
+        deal(address(weth), address(this), INITIAL_BALANCE);
+        deal(address(steth), address(this), INITIAL_BALANCE);
 
-        deal(address(weth), address(lidoARM), 1_000 ether);
-        deal(address(steth), address(lidoARM), 1_000 ether);
+        deal(address(weth), address(lidoARM), INITIAL_BALANCE);
+        deal(address(steth), address(lidoARM), INITIAL_BALANCE);
 
         // We are artificially adding assets so collect the performance fees to reset the fees collected
         lidoARM.collectFees();
