@@ -17,7 +17,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     uint256 public constant MAX_CROSS_PRICE_DEVIATION = 20e32;
     /// @notice Scale of the prices.
     uint256 public constant PRICE_SCALE = 1e36;
-    /// @dev The amount of shares that are minted to a dead address on initalization
+    /// @dev The amount of shares that are minted to a dead address on initialization
     uint256 internal constant MIN_TOTAL_SUPPLY = 1e12;
     /// @dev The address with no known private key that the initial shares are minted to
     address internal constant DEAD_ACCOUNT = 0x000000000000000000000000000000000000dEaD;
@@ -30,6 +30,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     ////////////////////////////////////////////////////
 
     /// @notice The address of the asset that is used to add and remove liquidity. eg WETH
+    /// This is also the quote asset when the prices are set.
+    /// eg the stETH/WETH price has a base asset of stETH and quote asset of WETH.
     address public immutable liquidityAsset;
     /// @notice The asset being purchased by the ARM and put in the withdrawal queue. eg stETH
     address public immutable baseAsset;
@@ -72,11 +74,11 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     uint256 public crossPrice;
 
     /// @notice Cumulative total of all withdrawal requests including the ones that have already been claimed.
-    uint120 public withdrawsQueued;
+    uint128 public withdrawsQueued;
     /// @notice Total of all the withdrawal requests that have been claimed.
-    uint120 public withdrawsClaimed;
+    uint128 public withdrawsClaimed;
     /// @notice Index of the next withdrawal request starting at 0.
-    uint16 public nextWithdrawalIndex;
+    uint256 public nextWithdrawalIndex;
 
     struct WithdrawalRequest {
         address withdrawer;
@@ -84,9 +86,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         // When the withdrawal can be claimed
         uint40 claimTimestamp;
         // Amount of liquidity assets to withdraw. eg WETH
-        uint120 assets;
+        uint128 assets;
         // Cumulative total of all withdrawal requests including this one when the redeem request was made.
-        uint120 queued;
+        uint128 queued;
     }
 
     /// @notice Mapping of withdrawal request indices to the user withdrawal request data.
@@ -106,7 +108,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @notice The address of the CapManager contract used to manage the ARM's liquidity provider and total assets caps.
     address public capManager;
 
-    uint256[42] private _gap;
+    uint256[41] private _gap;
 
     ////////////////////////////////////////////////////
     ///                 Events
@@ -163,12 +165,18 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
         __ERC20_init(_name, _symbol);
 
-        // Transfer a small bit of liquidity from the intializer to this contract
+        // Transfer a small bit of liquidity from the initializer to this contract
         IERC20(liquidityAsset).transferFrom(msg.sender, address(this), MIN_TOTAL_SUPPLY);
 
         // mint a small amount of shares to a dead account so the total supply can never be zero
         // This avoids donation attacks when there are no assets in the ARM contract
         _mint(DEAD_ACCOUNT, MIN_TOTAL_SUPPLY);
+
+        // Set the sell price to its highest value. 1.0
+        traderate0 = PRICE_SCALE;
+        // Set the buy price to its lowest value. 0.998
+        traderate1 = PRICE_SCALE - MAX_CROSS_PRICE_DEVIATION;
+        emit TraderateChanged(traderate0, traderate1);
 
         // Initialize the last available assets to the current available assets
         // This ensures no performance fee is accrued when the performance fee is calculated when the fee is set
@@ -380,8 +388,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         require(sellT1 >= crossPrice, "ARM: sell price too low");
         require(buyT1 < crossPrice, "ARM: buy price too high");
 
-        traderate0 = PRICE_SCALE * PRICE_SCALE / sellT1; // base (t0) -> token (t1);
-        traderate1 = buyT1; // token (t1) -> base (t0)
+        traderate0 = PRICE_SCALE * PRICE_SCALE / sellT1; // quote (t0) -> base (t1); eg WETH -> stETH
+        traderate1 = buyT1; // base (t1) -> quote (t0). eg stETH -> WETH
 
         emit TraderateChanged(traderate0, traderate1);
     }
@@ -390,7 +398,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
      * @notice set the price that buy and sell prices can not cross.
      * That is, the buy prices must be below the cross price
      * and the sell prices must be above the cross price.
-     * If the cross price is being lowered, there can not be any base assets in the ARM. eg stETH.
+     * If the cross price is being lowered, there can not be a significant amount of base assets in the ARM. eg stETH.
+     * This prevents the ARM making a loss when the base asset is sold at a lower price than it was bought
+     * before the cross price was lowered.
      * The base assets should be sent to the withdrawal queue before the cross price can be lowered.
      * The cross price can be increased with assets in the ARM.
      * @param newCrossPrice The new cross price scaled to 36 decimals.
@@ -398,13 +408,20 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     function setCrossPrice(uint256 newCrossPrice) external onlyOwner {
         require(newCrossPrice >= PRICE_SCALE - MAX_CROSS_PRICE_DEVIATION, "ARM: cross price too low");
         require(newCrossPrice <= PRICE_SCALE, "ARM: cross price too high");
+        // The exiting sell price must be greater than or equal to the new cross price
+        require(PRICE_SCALE * PRICE_SCALE / traderate0 >= newCrossPrice, "ARM: sell price too low");
+        // The existing buy price must be less than the new cross price
+        require(traderate1 < newCrossPrice, "ARM: buy price too high");
 
-        // If the new cross price is lower than the current cross price
+        // If the cross price is being lowered, there can not be a significant amount of base assets in the ARM. eg stETH.
+        // This prevents the ARM making a loss when the base asset is sold at a lower price than it was bought
+        // before the cross price was lowered.
         if (newCrossPrice < crossPrice) {
             // Check there is not a significant amount of base assets in the ARM
             require(IERC20(baseAsset).balanceOf(address(this)) < MIN_TOTAL_SUPPLY, "ARM: too many base assets");
         }
 
+        // Save the new cross price to storage
         crossPrice = newCrossPrice;
 
         emit CrossPriceUpdated(newCrossPrice);
@@ -430,7 +447,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     }
 
     /// @notice deposit liquidity assets in exchange for liquidity provider (LP) shares.
-    /// Funds will be transfered from msg.sender.
+    /// Funds will be transferred from msg.sender.
     /// @param assets The amount of liquidity assets to deposit
     /// @param receiver The address that will receive shares.
     /// @return shares The amount of shares that were minted
@@ -478,9 +495,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
         requestId = nextWithdrawalIndex;
         // Store the next withdrawal request
-        nextWithdrawalIndex = SafeCast.toUint16(requestId + 1);
+        nextWithdrawalIndex = requestId + 1;
 
-        uint120 queued = SafeCast.toUint120(withdrawsQueued + assets);
+        uint128 queued = SafeCast.toUint128(withdrawsQueued + assets);
         // Store the updated queued amount which reserves liquidity assets (WETH) in the withdrawal queue
         withdrawsQueued = queued;
 
@@ -491,7 +508,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
             withdrawer: msg.sender,
             claimed: false,
             claimTimestamp: claimTimestamp,
-            assets: SafeCast.toUint120(assets),
+            assets: SafeCast.toUint128(assets),
             queued: queued
         });
 
@@ -508,7 +525,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @param requestId The index of the withdrawal request
     /// @return assets The amount of liquidity assets that were transferred to the redeemer
     function claimRedeem(uint256 requestId) external returns (uint256 assets) {
-        // Load the structs from storage into memory
+        // Load the struct from storage into memory
         WithdrawalRequest memory request = withdrawalRequests[requestId];
 
         require(request.claimTimestamp <= block.timestamp, "Claim delay not met");
@@ -522,7 +539,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         // Store the request as claimed
         withdrawalRequests[requestId].claimed = true;
         // Store the updated claimed amount
-        withdrawsClaimed += SafeCast.toUint120(assets);
+        withdrawsClaimed += SafeCast.toUint128(assets);
 
         // transfer the liquidity asset to the withdrawer
         IERC20(liquidityAsset).transfer(msg.sender, assets);
