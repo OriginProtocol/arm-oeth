@@ -327,7 +327,12 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         // User Swap stETH for 3/4 of WETH in the ARM
         deal(address(steth), address(this), DEFAULT_AMOUNT);
         lidoARM.swapTokensForExactTokens(steth, weth, 3 * DEFAULT_AMOUNT / 4, DEFAULT_AMOUNT, address(this));
-        assertEq(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT + 2, "total assets after swap");
+        assertApproxEqAbs(
+            lidoARM.totalAssets(),
+            MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT + 2,
+            STETH_ERROR_ROUNDING,
+            "total assets after swap"
+        );
         assertEq(lidoARM.lastAvailableAssets(), int256(MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT), "last available after swap");
 
         // First user requests a full withdrawal
