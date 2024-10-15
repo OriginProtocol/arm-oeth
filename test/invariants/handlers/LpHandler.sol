@@ -232,6 +232,29 @@ contract LpHandler is BaseHandler {
         rewind(arm.claimDelay());
     }
 
+    /// @notice Withdraw all user funds
+    /// @dev This function assumes that all pending request on lido have been finalized,
+    /// all stETH have been swapped to WETH and all claim redeem requests have been finalized.
+    function withdrawAllUserFunds() external {
+        for (uint256 i; i < lps.length; i++) {
+            address user = lps[i];
+            vm.startPrank(user);
+
+            // Request Claim
+            (uint256 requestId,) = arm.requestRedeem(arm.balanceOf(user));
+
+            // Timejump to request deadline
+            skip(arm.claimDelay());
+
+            // Claim request
+            arm.claimRedeem(requestId);
+
+            // Jump back to current time, to avoid issues with other tests
+            rewind(arm.claimDelay());
+            vm.stopPrank();
+        }
+    }
+
     /// @notice Get all requests for a user
     function getRequests(address user) external view returns (uint256[] memory) {
         return requests[user];
