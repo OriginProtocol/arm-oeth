@@ -222,9 +222,9 @@ contract SwapHandler is BaseHandler {
         IERC20 tokenIn = tokenOut == weth ? steth : weth;
 
         uint256 reserveUser = tokenIn.balanceOf(user);
-        if (reserveUser == 0) return 0;
+        if (reserveUser < 3) return 0;
 
-        uint256 amount = ((reserveUser - 1) * price(tokenIn)) / arm.PRICE_SCALE();
+        uint256 amount = ((reserveUser - 3) * price(tokenIn)) / arm.PRICE_SCALE();
 
         // Emit event to see it directly in logs
         emit GetAmountOutMax(amount);
@@ -236,7 +236,7 @@ contract SwapHandler is BaseHandler {
     function estimateAmountIn(IERC20 tokenOut, uint256 amountOut) public returns (uint256) {
         IERC20 tokenIn = tokenOut == weth ? steth : weth;
 
-        uint256 amountIn = (amountOut * arm.PRICE_SCALE()) / price(tokenIn) + 1;
+        uint256 amountIn = (amountOut * arm.PRICE_SCALE()) / price(tokenIn) + 3;
 
         // Emit event to see it directly in logs
         emit EstimateAmountIn(amountIn);

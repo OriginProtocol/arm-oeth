@@ -23,6 +23,7 @@ contract Invariant_Basic_Test_ is Invariant_Base_Test_ {
     uint256 private constant MAX_SELL_T1 = 1.02 * 1e36; // We could have use type(uint256).max, but this is non-sense
     uint256 private constant MAX_WETH_PER_USERS = 10_000 ether; // 10M
     uint256 private constant MAX_STETH_PER_USERS = 10_000 ether; // 10M, actual total supply
+    uint256 private constant MAX_LOSS_IN_PCT = 1e12; // 0.0001%
 
     //////////////////////////////////////////////////////
     /// --- SETUP
@@ -55,10 +56,6 @@ contract Invariant_Basic_Test_ is Invariant_Base_Test_ {
         // Max caps on the total asset that can be deposited
         vm.prank(capManager.owner());
         capManager.setTotalAssetsCap(type(uint248).max);
-
-        // Disable account cap, unlimited capacity for user to provide liquidity
-        vm.prank(capManager.owner());
-        capManager.setAccountCapEnabled(false);
 
         // Set prices, start with almost 1:1
         vm.prank(lidoARM.owner());
@@ -121,7 +118,7 @@ contract Invariant_Basic_Test_ is Invariant_Base_Test_ {
         assert_lp_invariant_I();
         assert_lp_invariant_J();
         assert_lp_invariant_K();
-        assert_lp_invariant_L(MAX_WETH_PER_USERS);
+        assert_lp_invariant_L(MAX_WETH_PER_USERS, MAX_LOSS_IN_PCT);
         assert_lp_invariant_M();
     }
 

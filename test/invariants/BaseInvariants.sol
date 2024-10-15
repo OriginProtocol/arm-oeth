@@ -160,7 +160,7 @@ abstract contract Invariant_Base_Test_ is Invariant_Shared_Test_ {
         }
     }
 
-    function assert_lp_invariant_L(uint256 initialBalance) public {
+    function assert_lp_invariant_L(uint256 initialBalance, uint256 maxError) public {
         // As  we will manipulate state here, we will snapshot the state and revert it after
         uint256 snapshotId = vm.snapshot();
 
@@ -181,7 +181,7 @@ abstract contract Invariant_Base_Test_ is Invariant_Shared_Test_ {
 
             if (sum < initialBalance) {
                 // In this situation user have lost a bit of asset, ensure this is not too much
-                assertApproxEqRel(sum, initialBalance, 1e14, "lpHandler.invariant_L_a");
+                assertApproxEqRel(sum, initialBalance, maxError, "lpHandler.invariant_L_a");
             } else {
                 // In this case user have gained asset.
                 assertGe(sum, initialBalance, "lpHandler.invariant_L_b");
