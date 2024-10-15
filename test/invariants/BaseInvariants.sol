@@ -160,6 +160,37 @@ abstract contract Invariant_Base_Test_ is Invariant_Shared_Test_ {
         }
     }
 
+    function assert_lp_invariant_L(uint256 initialBalance) public {
+        // As  we will manipulate state here, we will snapshot the state and revert it after
+        uint256 snapshotId = vm.snapshot();
+
+        // 1. Finalize all claims on Lido
+        llmHandler.finalizeAllClaims();
+
+        // 2. Swap all stETH to WETH
+        _sweepAllStETH();
+
+        // 3. Finalize all claim redeem on ARM.
+        lpHandler.finalizeAllClaims();
+
+        for (uint256 i; i < lps.length; i++) {
+            address user = lps[i];
+            uint256 userShares = lidoARM.balanceOf(user);
+            uint256 assets = lidoARM.previewRedeem(userShares);
+            uint256 sum = assets + weth.balanceOf(user);
+
+            if (sum < initialBalance) {
+                // In this situation user have lost a bit of asset, ensure this is not too much
+                assertApproxEqRel(sum, initialBalance, 1e14, "lpHandler.invariant_L_a");
+            } else {
+                // In this case user have gained asset.
+                assertGe(sum, initialBalance, "lpHandler.invariant_L_b");
+            }
+        }
+
+        vm.revertToAndDelete(snapshotId);
+    }
+
     function assert_lp_invariant_M() public view {
         address feeCollector = lidoARM.feeCollector();
         assertEq(weth.balanceOf(feeCollector), ownerHandler.sum_of_fees(), "lpHandler.invariant_M");

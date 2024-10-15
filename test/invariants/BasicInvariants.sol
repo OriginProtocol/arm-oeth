@@ -109,7 +109,7 @@ contract Invariant_Basic_Test_ is Invariant_Base_Test_ {
     //////////////////////////////////////////////////////
     /// --- INVARIANTS
     //////////////////////////////////////////////////////
-    function invariant_lp() external view {
+    function invariant_lp() external {
         assert_lp_invariant_A();
         assert_lp_invariant_B();
         assert_lp_invariant_C();
@@ -121,6 +121,7 @@ contract Invariant_Basic_Test_ is Invariant_Base_Test_ {
         assert_lp_invariant_I();
         assert_lp_invariant_J();
         assert_lp_invariant_K();
+        assert_lp_invariant_L(MAX_WETH_PER_USERS);
         assert_lp_invariant_M();
     }
 
