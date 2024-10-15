@@ -17,6 +17,8 @@ import {MockLidoWithdraw} from "../mocks/MockLidoWithdraw.sol";
 // Interfaces
 import {IERC20} from "contracts/Interfaces.sol";
 
+/// @notice Shared invariant test contract
+/// @dev This contract should be used for deploying all contracts and mocks needed for the test.
 abstract contract Invariant_Shared_Test_ is Base_Test_ {
     address[] public users;
     //////////////////////////////////////////////////////

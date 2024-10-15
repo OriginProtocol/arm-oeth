@@ -12,6 +12,10 @@ import {OwnerHandler} from "./handlers/OwnerHandler.sol";
 import {DonationHandler} from "./handlers/DonationHandler.sol";
 import {DistributionHandler} from "./handlers/DistributionHandler.sol";
 
+/// @notice Basic invariant test contract
+/// @dev This contract holds all the configuration needed for the basic invariant tests,
+/// like call distribution %, user configuration, max values etc.
+/// @dev This is where all the invariant are checked.
 contract Invariant_Basic_Test_ is Invariant_Base_Test_ {
     //////////////////////////////////////////////////////
     /// --- CONSTANTS && IMMUTABLES

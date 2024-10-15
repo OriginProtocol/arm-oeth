@@ -17,6 +17,9 @@ import {DonationHandler} from "./handlers/DonationHandler.sol";
 // Mocks
 import {MockSTETH} from "./mocks/MockSTETH.sol";
 
+/// @notice Base invariant test contract
+/// @dev This contract should be used as a base contract that hold all 
+/// invariants properties independently from deployment context.
 abstract contract Invariant_Base_Test_ is Invariant_Shared_Test_ {
     //////////////////////////////////////////////////////
     /// --- VARIABLES
@@ -52,6 +55,7 @@ abstract contract Invariant_Base_Test_ is Invariant_Shared_Test_ {
             * Invariant C: previewRedeem(∑shares) == totalAssets
             * Invariant D: previewRedeem(shares) == (, uint256 assets) = previewRedeem(shares) Not really invariant, but tested on handler
             * Invariant E: previewDeposit(amount) == uint256 shares = previewDeposit(amount) Not really invariant, but tested on handler
+            * Invariant L: ∀ user, user.weth + previewRedeem(user.shares) >=~ initialBalance , approxGe, to handle rounding error on deposit.
 
         * Withdraw Queue:
             * Invariant F: nextWithdrawalIndex == requestRedeem call count

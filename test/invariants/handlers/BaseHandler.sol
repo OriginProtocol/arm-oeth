@@ -6,6 +6,10 @@ import {Vm} from "forge-std/Vm.sol";
 import {StdUtils} from "forge-std/StdUtils.sol";
 import {StdCheats} from "forge-std/StdCheats.sol";
 
+/// @notice Base handler contract
+/// @dev This contract should be used as a base contract for all handlers
+/// as this it holds the sole and exclusive callable function `entryPoint`.
+/// @dev Highly inspired from Maple-Core-V2 repo: https://github.com/maple-labs/maple-core-v2
 abstract contract BaseHandler is StdUtils, StdCheats {
     //////////////////////////////////////////////////////
     /// --- CONSTANTS && IMMUTABLES

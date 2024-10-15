@@ -1,8 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
+// Contract
 import {BaseHandler} from "./BaseHandler.sol";
 
+/// @title Distribution Handler contract
+/// @dev This contract should be the only callable contract from test and will distribute calls to other contracts
+/// @dev Highly inspired from Maple-Core-V2 repo: https://github.com/maple-labs/maple-core-v2
 contract DistributionHandler {
     //////////////////////////////////////////////////////
     /// --- CONSTANTS && IMMUTABLES
