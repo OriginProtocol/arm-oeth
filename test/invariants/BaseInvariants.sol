@@ -137,7 +137,7 @@ abstract contract Invariant_Base_Test_ is Invariant_Shared_Test_ {
         uint256 sum;
         uint256 nextWithdrawalIndex = lidoARM.nextWithdrawalIndex();
         for (uint256 i; i < nextWithdrawalIndex; i++) {
-            (,,, uint120 assets,) = lidoARM.withdrawalRequests(i);
+            (,,, uint128 assets,) = lidoARM.withdrawalRequests(i);
             sum += assets;
         }
 
@@ -151,7 +151,7 @@ abstract contract Invariant_Base_Test_ is Invariant_Shared_Test_ {
     function assert_lp_invariant_K() public view {
         uint256 nextWithdrawalIndex = lidoARM.nextWithdrawalIndex();
         for (uint256 i; i < nextWithdrawalIndex; i++) {
-            (,,, uint120 assets, uint120 queued) = lidoARM.withdrawalRequests(i);
+            (,,, uint128 assets, uint128 queued) = lidoARM.withdrawalRequests(i);
             assertGe(queued, assets, "lpHandler.invariant_L");
         }
     }

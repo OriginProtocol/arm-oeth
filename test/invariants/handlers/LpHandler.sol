@@ -153,7 +153,7 @@ contract LpHandler is BaseHandler {
                     uint256 requestIndex_ = (___seed + j) % requestLen;
 
                     // Get data about the request (in ARM contract)
-                    (,,, uint120 amount_, uint120 queued) = arm.withdrawalRequests(requests[user_][requestIndex_]);
+                    (,,, uint128 amount_, uint128 queued) = arm.withdrawalRequests(requests[user_][requestIndex_]);
 
                     // 3. Check if the request can be claimed
                     if (queued < withdrawsClaimed + weth.balanceOf(address(arm))) {
