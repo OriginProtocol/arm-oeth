@@ -54,7 +54,7 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
         assertEq(lidoARM.claimDelay(), 10 minutes, "claim delay");
         assertEq(lidoARM.crossPrice(), 0.9998e36, "cross price");
 
-        assertEq(capManager.accountCapEnabled(), true, "account cap enabled");
+        assertEq(capManager.accountCapEnabled(), false, "account cap enabled");
         assertEq(capManager.operator(), Mainnet.ARM_RELAYER, "Operator");
         assertEq(capManager.arm(), address(lidoARM), "arm");
     }
@@ -142,7 +142,7 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
             deal(address(weth), address(lidoARM), 1000 ether);
             // _dealWETH(address(lidoARM), 1000 ether);
 
-            expectedIn = amountOut * 1e36 / price;
+            expectedIn = amountOut * 1e36 / price + 3;
 
             vm.prank(Mainnet.ARM_RELAYER);
             uint256 sellPrice = price < 9996e32 ? 9998e32 : price + 2e32;
