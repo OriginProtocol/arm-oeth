@@ -50,7 +50,7 @@ contract UpgradeLidoARMMainnetScript is AbstractDeployScript {
         capManager = CapManager(address(capManProxy));
 
         // 5. Set the liquidity Provider caps
-        capManager.setTotalAssetsCap(100 ether);
+        capManager.setTotalAssetsCap(400 ether);
         address[] memory liquidityProviders = new address[](1);
         liquidityProviders[0] = Mainnet.TREASURY;
         capManager.setLiquidityProviderCaps(liquidityProviders, 100 ether);
@@ -107,9 +107,9 @@ contract UpgradeLidoARMMainnetScript is AbstractDeployScript {
         bytes memory data = abi.encodeWithSignature(
             "initialize(string,string,address,uint256,address,address)",
             "Lido ARM",
-            "ARM-ST",
+            "ARM-WETH-stETH",
             Mainnet.ARM_RELAYER,
-            1500, // 15% performance fee
+            2000, // 20% performance fee
             Mainnet.ARM_BUYBACK,
             address(capManProxy)
         );
@@ -133,9 +133,10 @@ contract UpgradeLidoARMMainnetScript is AbstractDeployScript {
         console.log("About to set the cross price on the ARM contract");
         LidoARM(payable(Mainnet.LIDO_ARM)).setCrossPrice(0.9998e36);
 
-        // Set the buy price with a 8 basis point discount. The sell price is 1.0
+        // Set the buy price with a 4 basis point discount.
+        // The sell price has a 1 basis point discount.
         console.log("About to set prices on the ARM contract");
-        LidoARM(payable(Mainnet.LIDO_ARM)).setPrices(0.9994e36, 0.9998e36);
+        LidoARM(payable(Mainnet.LIDO_ARM)).setPrices(0.9996e36, 0.9999e36);
 
         // transfer ownership of the Lido ARM proxy to the mainnet 5/8 multisig
         console.log("About to set ARM owner to", Mainnet.GOV_MULTISIG);

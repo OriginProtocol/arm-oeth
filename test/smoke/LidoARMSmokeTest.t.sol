@@ -41,11 +41,11 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
 
     function test_initialConfig() external view {
         assertEq(lidoARM.name(), "Lido ARM", "Name");
-        assertEq(lidoARM.symbol(), "ARM-ST", "Symbol");
+        assertEq(lidoARM.symbol(), "ARM-WETH-stETH", "Symbol");
         assertEq(lidoARM.owner(), Mainnet.GOV_MULTISIG, "Owner");
         assertEq(lidoARM.operator(), Mainnet.ARM_RELAYER, "Operator");
         assertEq(lidoARM.feeCollector(), Mainnet.ARM_BUYBACK, "Fee collector");
-        assertEq((100 * uint256(lidoARM.fee())) / lidoARM.FEE_SCALE(), 15, "Performance fee as a percentage");
+        assertEq((100 * uint256(lidoARM.fee())) / lidoARM.FEE_SCALE(), 20, "Performance fee as a percentage");
         // LidoLiquidityManager
         assertEq(address(lidoARM.lidoWithdrawalQueue()), Mainnet.LIDO_WITHDRAWAL, "Lido withdrawal queue");
         assertEq(address(lidoARM.steth()), Mainnet.STETH, "stETH");
