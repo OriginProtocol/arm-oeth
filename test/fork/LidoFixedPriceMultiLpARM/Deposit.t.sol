@@ -305,9 +305,14 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         lidoARM.setCrossPrice(1e36);
         lidoARM.setPrices(1e36 - 1, 1e36);
 
+        assertEq(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT, "total assets before swap");
+        assertEq(lidoARM.lastAvailableAssets(), int256(MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT), "last available before swap");
+
         // User Swap stETH for 3/4 of WETH in the ARM
         deal(address(steth), address(this), DEFAULT_AMOUNT);
         lidoARM.swapTokensForExactTokens(steth, weth, 3 * DEFAULT_AMOUNT / 4, DEFAULT_AMOUNT, address(this));
+        assertEq(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT + 2, "total assets after swap");
+        assertEq(lidoARM.lastAvailableAssets(), int256(MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT), "last available after swap");
 
         // First user requests a full withdrawal
         uint256 firstUserShares = lidoARM.balanceOf(address(this));
@@ -316,32 +321,38 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         // Assertions Before
         uint256 stethBalanceBefore = 3 * DEFAULT_AMOUNT / 4;
         assertApproxEqAbs(
-            steth.balanceOf(address(lidoARM)), stethBalanceBefore, STETH_ERROR_ROUNDING, "stETH ARM balance before"
+            steth.balanceOf(address(lidoARM)),
+            stethBalanceBefore,
+            STETH_ERROR_ROUNDING,
+            "stETH ARM balance before deposit"
         );
         uint256 wethBalanceBefore = MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT - 3 * DEFAULT_AMOUNT / 4;
-        assertEq(weth.balanceOf(address(lidoARM)), wethBalanceBefore, "WETH ARM balance before");
+        assertEq(weth.balanceOf(address(lidoARM)), wethBalanceBefore, "WETH ARM balance before deposit");
         assertEq(lidoARM.lidoWithdrawalQueueAmount(), 0, "Outstanding ether before");
-        assertEq(lidoARM.feesAccrued(), 0, "Fees accrued before");
+        assertEq(lidoARM.feesAccrued(), 0, "Fees accrued before deposit");
         assertApproxEqAbs(
             lidoARM.lastAvailableAssets(),
             int256(MIN_TOTAL_SUPPLY),
             STETH_ERROR_ROUNDING,
             "last available assets before"
         );
-        assertEq(lidoARM.balanceOf(alice), 0, "alice shares before");
-        assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY, "total supply before");
-        assertEq(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY, "total assets before");
-        assertEq(capManager.liquidityProviderCaps(alice), DEFAULT_AMOUNT * 5, "lp cap before");
+        assertEq(lidoARM.balanceOf(alice), 0, "alice shares before deposit");
+        assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY, "total supply before deposit");
+        assertEq(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY + 1, "total assets before deposit");
+        assertEq(capManager.liquidityProviderCaps(alice), DEFAULT_AMOUNT * 5, "lp cap before deposit");
         assertEqQueueMetadata(assetsRedeem, 0, 1);
-        assertApproxEqAbs(assetsRedeem, DEFAULT_AMOUNT, STETH_ERROR_ROUNDING, "assets redeem before");
+        assertApproxEqAbs(assetsRedeem, DEFAULT_AMOUNT, STETH_ERROR_ROUNDING, "assets redeem before deposit");
 
         uint256 amount = DEFAULT_AMOUNT * 2;
+
+        // Expected values
+        uint256 expectedShares = amount * MIN_TOTAL_SUPPLY / (MIN_TOTAL_SUPPLY + 1);
 
         // Expected events
         vm.expectEmit({emitter: address(weth)});
         emit IERC20.Transfer(alice, address(lidoARM), amount);
         vm.expectEmit({emitter: address(lidoARM)});
-        emit IERC20.Transfer(address(0), alice, amount); // shares == amount here
+        emit IERC20.Transfer(address(0), alice, expectedShares);
         vm.expectEmit({emitter: address(capManager)});
         emit CapManager.LiquidityProviderCap(alice, DEFAULT_AMOUNT * 3);
 
@@ -353,22 +364,22 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         assertApproxEqAbs(
             steth.balanceOf(address(lidoARM)), stethBalanceBefore, STETH_ERROR_ROUNDING, "stETH ARM balance after"
         );
-        assertEq(weth.balanceOf(address(lidoARM)), wethBalanceBefore + amount, "WETH ARM balance after");
-        assertEq(lidoARM.lidoWithdrawalQueueAmount(), 0, "Outstanding ether after");
-        assertEq(lidoARM.feesAccrued(), 0, "Fees accrued after"); // No perfs so no fees
+        assertEq(weth.balanceOf(address(lidoARM)), wethBalanceBefore + amount, "WETH ARM balance after deposit");
+        assertEq(lidoARM.lidoWithdrawalQueueAmount(), 0, "Outstanding ether after deposit");
+        assertEq(lidoARM.feesAccrued(), 0, "Fees accrued after deposit"); // No perfs so no fees
         assertApproxEqAbs(
             lidoARM.lastAvailableAssets(),
             int256(MIN_TOTAL_SUPPLY + amount),
             STETH_ERROR_ROUNDING,
-            "last available assets after"
+            "last available assets after deposit"
         );
-        assertEq(lidoARM.balanceOf(alice), shares, "alice shares after");
-        assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY + amount, "total supply after");
-        assertEq(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY + amount, "total assets after");
-        assertEq(capManager.liquidityProviderCaps(alice), DEFAULT_AMOUNT * 3, "alice cap after"); // All the caps are used
+        assertEq(lidoARM.balanceOf(alice), shares, "alice shares after deposit");
+        assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY + expectedShares, "total supply after deposit");
+        assertEq(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY + amount + 1, "total assets after deposit");
+        assertEq(capManager.liquidityProviderCaps(alice), DEFAULT_AMOUNT * 3, "alice cap after deposit"); // All the caps are used
         // withdrawal request is now claimable
         assertEqQueueMetadata(assetsRedeem, 0, 1);
-        assertApproxEqAbs(shares, amount, STETH_ERROR_ROUNDING, "shares after"); // No perfs, so 1 ether * totalSupply (1e18 + 1e12) / totalAssets (1e18 + 1e12) = 1 ether
+        assertApproxEqAbs(shares, expectedShares, STETH_ERROR_ROUNDING, "shares after deposit"); // No perfs, so 1 ether * totalSupply (1e18 + 1e12) / totalAssets (1e18 + 1e12) = 1 ether
     }
 
     /// @notice Test the following scenario:
