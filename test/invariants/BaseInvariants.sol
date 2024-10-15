@@ -18,7 +18,7 @@ import {DonationHandler} from "./handlers/DonationHandler.sol";
 import {MockSTETH} from "./mocks/MockSTETH.sol";
 
 /// @notice Base invariant test contract
-/// @dev This contract should be used as a base contract that hold all 
+/// @dev This contract should be used as a base contract that hold all
 /// invariants properties independently from deployment context.
 abstract contract Invariant_Base_Test_ is Invariant_Shared_Test_ {
     //////////////////////////////////////////////////////
