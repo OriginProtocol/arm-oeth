@@ -114,9 +114,8 @@ contract UpgradeLidoARMMainnetScript is AbstractDeployScript {
         console.log("LidoARM initialize data:");
         console.logBytes(data);
 
-        uint256 tinyMintAmount = 1e12;
-
         // Get some WETH which has already been done on mainnet
+        // uint256 tinyMintAmount = 1e12;
         // vm.deal(Mainnet.ARM_MULTISIG, tinyMintAmount);
         // IWETH(Mainnet.WETH).deposit{value: tinyMintAmount}();
 
