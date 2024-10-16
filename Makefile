@@ -26,14 +26,20 @@ snapshot:
 	@forge snapshot
 
 # Tests
+test-std:
+	forge test --summary --fail-fast --show-progress
+
 test:
-	@forge test --summary --fail-fast --show-progress
+	@FOUNDRY_NO_MATCH_CONTRACT=Invariant make test-std
 
 test-f-%:
-	@FOUNDRY_MATCH_TEST=$* make test
+	@FOUNDRY_MATCH_TEST=$* make test-std
 
 test-c-%:
-	@FOUNDRY_MATCH_CONTRACT=$* make test
+	@FOUNDRY_MATCH_CONTRACT=$* make test-std
+
+test-all:
+	@make test-std
 
 # Coverage
 coverage:
