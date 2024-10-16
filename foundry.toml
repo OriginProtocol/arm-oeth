@@ -47,7 +47,4 @@ remappings_location = "config"
 [rpc_endpoints]
 mainnet = "${PROVIDER_URL}"
 
-[etherscan]
-mainnet = { key = "${ETHERSCAN_API_KEY}", url = "https://etherscan.io/", chain = "mainnet" }
-
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
