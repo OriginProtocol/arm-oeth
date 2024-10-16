@@ -212,7 +212,7 @@ contract Fork_Concrete_lidoARM_Setters_Test_ is Fork_Shared_Test_ {
         capManager.setAccountCapEnabled(false);
     }
 
-    function test_RevertWhen_CapManager_SetAccountCapEnabled_Because_AlreadySet() public asLidoARMOwner {
+    function test_RevertWhen_CapManager_SetAccountCapEnabled_Because_AlreadySet() public enableCaps asLidoARMOwner {
         vm.expectRevert("LPC: Account cap already set");
         capManager.setAccountCapEnabled(true);
     }
@@ -220,7 +220,7 @@ contract Fork_Concrete_lidoARM_Setters_Test_ is Fork_Shared_Test_ {
     //////////////////////////////////////////////////////
     /// --- AccountCapEnabled - PASSING TESTS
     //////////////////////////////////////////////////////
-    function test_CapManager_SetAccountCapEnabled() public asLidoARMOwner {
+    function test_CapManager_SetAccountCapEnabled() public enableCaps asLidoARMOwner {
         vm.expectEmit({emitter: address(capManager)});
         emit CapManager.AccountCapEnabled(false);
         capManager.setAccountCapEnabled(false);
