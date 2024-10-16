@@ -67,11 +67,6 @@ contract UpgradeLidoARMMainnetScript is AbstractDeployScript {
         _recordDeploy("LIDO_ARM_ZAPPER", address(zapper));
 
         console.log("Finished deploying", DEPLOY_NAME);
-
-        // Post deploy
-        // 1. The Lido ARM multisig needs to set the owner to the mainnet 5/8 multisig
-        // 1. The mainnet 5/8 multisig needs to upgrade and call initialize on the Lido ARM
-        // 2. the Relayer needs to set the swap prices
     }
 
     function _buildGovernanceProposal() internal override {}
@@ -131,10 +126,10 @@ contract UpgradeLidoARMMainnetScript is AbstractDeployScript {
         console.log("About to set the cross price on the ARM contract");
         LidoARM(payable(Mainnet.LIDO_ARM)).setCrossPrice(0.9998e36);
 
-        // Set the buy price with a 4 basis point discount.
+        // Set the buy price with a 2.5 basis point discount.
         // The sell price has a 1 basis point discount.
         console.log("About to set prices on the ARM contract");
-        LidoARM(payable(Mainnet.LIDO_ARM)).setPrices(0.9996e36, 0.9999e36);
+        LidoARM(payable(Mainnet.LIDO_ARM)).setPrices(0.99975e36, 0.9999e36);
 
         // transfer ownership of the Lido ARM proxy to the mainnet 5/8 multisig
         console.log("About to set ARM owner to", Mainnet.GOV_MULTISIG);
