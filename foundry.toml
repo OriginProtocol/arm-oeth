@@ -15,7 +15,7 @@ remappings = [
   "script/=./script",
   "test/=./test",
   "utils/=./src/contracts/utils",
-  "forge-std/=dependencies/forge-std-1.9.2/src/",
+  "forge-std/=dependencies/forge-std-1.9.3/src/",
   "@openzeppelin/contracts/=dependencies/@openzeppelin-contracts-5.0.2/",
   "@openzeppelin/contracts-upgradeable/=dependencies/@openzeppelin-contracts-upgradeable-5.0.2/",
   "@solmate/=dependencies/solmate-6.7.0/src/",
@@ -33,8 +33,8 @@ shrink_run_limit = 5_000
 [dependencies]
 "@openzeppelin-contracts" = "5.0.2"
 "@openzeppelin-contracts-upgradeable" = "5.0.2"
-forge-std = { version = "1.9.2", git = "https://github.com/foundry-rs/forge-std.git", rev = "5a802d7c10abb4bbfb3e7214c75052ef9e6a06f8" }
 solmate = "6.7.0"
+forge-std = "1.9.3"
 
 [soldeer]
 recursive_deps = false
