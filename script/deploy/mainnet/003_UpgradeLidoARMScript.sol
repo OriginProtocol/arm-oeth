@@ -53,13 +53,13 @@ contract UpgradeLidoARMMainnetScript is AbstractDeployScript {
         // 5. Set total assets cap
         capManager.setTotalAssetsCap(740 ether);
 
-        // 6. Deploy Lido implementation
+        // 6. Transfer ownership of CapManager to the mainnet 5/8 multisig
+        capManProxy.setOwner(Mainnet.GOV_MULTISIG);
+
+        // 7. Deploy Lido implementation
         uint256 claimDelay = tenderlyTestnet ? 1 minutes : 10 minutes;
         lidoARMImpl = new LidoARM(Mainnet.STETH, Mainnet.WETH, Mainnet.LIDO_WITHDRAWAL, claimDelay);
         _recordDeploy("LIDO_ARM_IMPL", address(lidoARMImpl));
-
-        // 7. Transfer ownership of CapManager to the mainnet 5/8 multisig
-        capManProxy.setOwner(Mainnet.GOV_MULTISIG);
 
         // 8. Deploy the Zapper
         zapper = new ZapperLidoARM(Mainnet.WETH, Mainnet.LIDO_ARM);
