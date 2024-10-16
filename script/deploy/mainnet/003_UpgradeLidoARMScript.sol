@@ -25,6 +25,7 @@ contract UpgradeLidoARMMainnetScript is AbstractDeployScript {
     Proxy lidoARMProxy;
     Proxy capManProxy;
     LidoARM lidoARMImpl;
+    LidoARM lidoARM;
     CapManager capManager;
     ZapperLidoARM zapper;
 
@@ -49,11 +50,8 @@ contract UpgradeLidoARMMainnetScript is AbstractDeployScript {
         capManProxy.initialize(address(capManagerImpl), deployer, data);
         capManager = CapManager(address(capManProxy));
 
-        // 5. Set the liquidity Provider caps
-        capManager.setTotalAssetsCap(400 ether);
-        address[] memory liquidityProviders = new address[](1);
-        liquidityProviders[0] = Mainnet.TREASURY;
-        capManager.setLiquidityProviderCaps(liquidityProviders, 100 ether);
+        // 5. Set total assets cap
+        capManager.setTotalAssetsCap(740 ether);
 
         // 6. Deploy Lido implementation
         uint256 claimDelay = tenderlyTestnet ? 1 minutes : 10 minutes;
@@ -101,7 +99,7 @@ contract UpgradeLidoARMMainnetScript is AbstractDeployScript {
             console.log("About to withdraw stETH from legacy Lido ARM");
             LegacyAMM(Mainnet.LIDO_ARM).transferToken(Mainnet.STETH, Mainnet.ARM_MULTISIG, stethLegacyBalance);
         }
-        // TODO need to also remove anything in the Lido withdrawal queue
+        // need to also remove anything in the Lido withdrawal queue
 
         // Initialize Lido ARM proxy and implementation contract
         bytes memory data = abi.encodeWithSignature(
@@ -123,11 +121,12 @@ contract UpgradeLidoARMMainnetScript is AbstractDeployScript {
         // IWETH(Mainnet.WETH).deposit{value: tinyMintAmount}();
 
         // Approve the Lido ARM proxy to spend WETH
-        IERC20(Mainnet.WETH).approve(address(lidoARMProxy), tinyMintAmount);
+        IERC20(Mainnet.WETH).approve(address(lidoARMProxy), type(uint256).max);
 
         // upgrade and initialize the Lido ARM
         console.log("About to upgrade the ARM contract");
         lidoARMProxy.upgradeToAndCall(address(lidoARMImpl), data);
+        lidoARM = LidoARM(payable(Mainnet.LIDO_ARM));
 
         // Set the price that buy and sell prices can not cross
         console.log("About to set the cross price on the ARM contract");
@@ -142,25 +141,11 @@ contract UpgradeLidoARMMainnetScript is AbstractDeployScript {
         console.log("About to set ARM owner to", Mainnet.GOV_MULTISIG);
         lidoARMProxy.setOwner(Mainnet.GOV_MULTISIG);
 
+        // Deposit 10 WETH to the Lido ARM
+        console.log("About to deposit 10 WETH into the ARM contract", Mainnet.GOV_MULTISIG);
+        lidoARM.deposit(10 ether);
+
         console.log("Finished running initializing Lido ARM as ARM_MULTISIG");
-
-        if (tenderlyTestnet) {
-            vm.stopBroadcast();
-        } else {
-            vm.stopPrank();
-        }
-
-        if (tenderlyTestnet) {
-            console.log("Broadcasting fork script to Tenderly as: %s", Mainnet.ARM_RELAYER);
-            vm.startBroadcast(Mainnet.ARM_RELAYER);
-        } else {
-            vm.startPrank(Mainnet.ARM_RELAYER);
-        }
-
-        // Add some test liquidity providers
-        address[] memory testProviders = new address[](1);
-        testProviders[0] = 0x3bB354a1E0621F454c5D5CE98f6ea21a53bf2d7d;
-        capManager.setLiquidityProviderCaps(testProviders, 100 ether);
 
         if (tenderlyTestnet) {
             vm.stopBroadcast();
