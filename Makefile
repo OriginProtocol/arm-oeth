@@ -27,7 +27,7 @@ snapshot:
 
 # Tests
 test:
-	@forge test --summary
+	@forge test --summary --fail-fast --show-progress
 
 test-f-%:
 	@FOUNDRY_MATCH_TEST=$* make test
