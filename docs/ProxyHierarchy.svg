@@ -9,23 +9,23 @@
 <g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 125.2)">
 <title>UmlClassDiagram</title>
 <polygon fill="white" stroke="transparent" points="-4,4 -4,-125.2 175.9,-125.2 175.9,4 -4,4"/>
-<!-- 9 -->
+<!-- 19 -->
 <g id="node1" class="node">
-<title>9</title>
+<title>19</title>
 <polygon fill="#f2f2f2" stroke="black" points="0,-79.1 0,-120.7 171.9,-120.7 171.9,-79.1 0,-79.1"/>
 <text text-anchor="middle" x="85.95" y="-104.1" font-family="Times,serif" font-size="14.00">Ownable</text>
 <text text-anchor="middle" x="85.95" y="-87.3" font-family="Times,serif" font-size="14.00">../src/contracts/Ownable.sol</text>
 </g>
-<!-- 12 -->
+<!-- 23 -->
 <g id="node2" class="node">
-<title>12</title>
+<title>23</title>
 <polygon fill="#f2f2f2" stroke="black" points="8.54,-0.5 8.54,-42.1 163.36,-42.1 163.36,-0.5 8.54,-0.5"/>
 <text text-anchor="middle" x="85.95" y="-25.5" font-family="Times,serif" font-size="14.00">Proxy</text>
 <text text-anchor="middle" x="85.95" y="-8.7" font-family="Times,serif" font-size="14.00">../src/contracts/Proxy.sol</text>
 </g>
-<!-- 12&#45;&gt;9 -->
+<!-- 23&#45;&gt;19 -->
 <g id="edge1" class="edge">
-<title>12&#45;&gt;9</title>
+<title>23&#45;&gt;19</title>
 <path fill="none" stroke="black" d="M85.95,-42.43C85.95,-44.45 85.95,-46.56 85.95,-48.73"/>
 <polygon fill="none" stroke="black" points="75.45,-48.91 85.95,-78.91 96.45,-48.91 75.45,-48.91"/>
 </g>

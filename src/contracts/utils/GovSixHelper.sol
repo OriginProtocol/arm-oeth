@@ -5,7 +5,7 @@ import {AddressResolver} from "./Addresses.sol";
 import {IGovernance} from "../Interfaces.sol";
 
 import {Vm} from "forge-std/Vm.sol";
-import "forge-std/console.sol";
+import {console} from "forge-std/console.sol";
 
 struct GovAction {
     address target;

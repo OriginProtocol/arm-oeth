@@ -13,12 +13,6 @@ interface IERC20 {
     event Transfer(address indexed from, address indexed to, uint256 value);
 }
 
-interface IERC20Metadata is IERC20 {
-    function name() external view returns (string memory);
-    function symbol() external view returns (string memory);
-    function decimals() external view returns (uint8);
-}
-
 interface IOethARM {
     function token0() external returns (address);
     function token1() external returns (address);
@@ -113,6 +107,29 @@ interface IOethARM {
     function claimWithdrawals(uint256[] calldata requestIds) external;
 }
 
+interface ILiquidityProviderARM is IERC20 {
+    function previewDeposit(uint256 assets) external returns (uint256 shares);
+    function deposit(uint256 assets) external returns (uint256 shares);
+    function deposit(uint256 assets, address liquidityProvider) external returns (uint256 shares);
+
+    function previewRedeem(uint256 shares) external returns (uint256 assets);
+    function requestRedeem(uint256 shares) external returns (uint256 requestId, uint256 assets);
+    function claimRedeem(uint256 requestId) external returns (uint256 assets);
+
+    function totalAssets() external returns (uint256 assets);
+    function convertToShares(uint256 assets) external returns (uint256 shares);
+    function convertToAssets(uint256 shares) external returns (uint256 assets);
+    function lastTotalAssets() external returns (uint256 assets);
+}
+
+interface ICapManager {
+    function postDepositHook(address liquidityProvider, uint256 assets) external;
+}
+
+interface LegacyAMM {
+    function transferToken(address tokenOut, address to, uint256 amount) external;
+}
+
 interface IOETHVault {
     function mint(address _asset, uint256 _amount, uint256 _minimumOusdAmount) external;
 
@@ -144,7 +161,7 @@ interface IOETHVault {
         view
         returns (address withdrawer, bool claimed, uint40 timestamp, uint128 amount, uint128 queued);
 
-    function CLAIM_DELAY() external view returns (uint256);
+    function claimDelay() external view returns (uint256);
 }
 
 interface IGovernance {
@@ -182,4 +199,60 @@ interface IWETH is IERC20 {
 
     function deposit() external payable;
     function withdraw(uint256 wad) external;
+}
+
+interface ISTETH is IERC20 {
+    event Submitted(address indexed sender, uint256 amount, address referral);
+
+    // function() external payable;
+    function submit(address _referral) external payable returns (uint256);
+}
+
+interface IStETHWithdrawal {
+    event WithdrawalRequested(
+        uint256 indexed requestId,
+        address indexed requestor,
+        address indexed owner,
+        uint256 amountOfStETH,
+        uint256 amountOfShares
+    );
+    event WithdrawalsFinalized(
+        uint256 indexed from, uint256 indexed to, uint256 amountOfETHLocked, uint256 sharesToBurn, uint256 timestamp
+    );
+    event WithdrawalClaimed(
+        uint256 indexed requestId, address indexed owner, address indexed receiver, uint256 amountOfETH
+    );
+
+    struct WithdrawalRequestStatus {
+        /// @notice stETH token amount that was locked on withdrawal queue for this request
+        uint256 amountOfStETH;
+        /// @notice amount of stETH shares locked on withdrawal queue for this request
+        uint256 amountOfShares;
+        /// @notice address that can claim or transfer this request
+        address owner;
+        /// @notice timestamp of when the request was created, in seconds
+        uint256 timestamp;
+        /// @notice true, if request is finalized
+        bool isFinalized;
+        /// @notice true, if request is claimed. Request is claimable if (isFinalized && !isClaimed)
+        bool isClaimed;
+    }
+
+    function transferFrom(address _from, address _to, uint256 _requestId) external;
+    function ownerOf(uint256 _requestId) external returns (address);
+    function requestWithdrawals(uint256[] calldata _amounts, address _owner)
+        external
+        returns (uint256[] memory requestIds);
+    function getLastCheckpointIndex() external view returns (uint256);
+    function findCheckpointHints(uint256[] calldata _requestIds, uint256 _firstIndex, uint256 _lastIndex)
+        external
+        view
+        returns (uint256[] memory hintIds);
+    function claimWithdrawals(uint256[] calldata _requestIds, uint256[] calldata _hints) external;
+    function getWithdrawalStatus(uint256[] calldata _requestIds)
+        external
+        view
+        returns (WithdrawalRequestStatus[] memory statuses);
+    function getWithdrawalRequests(address _owner) external view returns (uint256[] memory requestsIds);
+    function getLastRequestId() external view returns (uint256);
 }

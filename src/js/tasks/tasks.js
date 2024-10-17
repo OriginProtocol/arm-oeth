@@ -4,6 +4,16 @@ const { parseAddress } = require("../utils/addressParser");
 const { setAutotaskVars } = require("./autotask");
 const { setActionVars } = require("./defender");
 const {
+  submitLido,
+  snapLido,
+  swapLido,
+  collectFees,
+  requestLidoWithdrawals,
+  claimLidoWithdrawals,
+  lidoWithdrawStatus,
+  setZapper,
+} = require("./lido");
+const {
   autoRequestWithdraw,
   autoClaimWithdraw,
   requestWithdraw,
@@ -11,6 +21,13 @@ const {
   logLiquidity,
   withdrawRequestStatus,
 } = require("./liquidity");
+const {
+  depositLido,
+  requestRedeemLido,
+  claimRedeemLido,
+  setLiquidityProviderCaps,
+  setTotalAssetsCap,
+} = require("./liquidityProvider");
 const { swap } = require("./swap");
 const {
   tokenAllowance,
@@ -33,17 +50,34 @@ const {
 } = require("./vault");
 const { upgradeProxy } = require("./proxy");
 
-subtask("snap", "Take a snapshot of the ARM").setAction(logLiquidity);
+subtask("snap", "Take a snapshot of the OETH ARM")
+  .addOptionalParam(
+    "block",
+    "Block number. (default: latest)",
+    undefined,
+    types.int
+  )
+  .setAction(logLiquidity);
 task("snap").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
 
 subtask(
   "swap",
-  "Swap from one asset to another. Can only specify the from or to asset"
+  "Swap from one asset to another. Can only specify the from or to asset as that will be the exact amount."
 )
-  .addOptionalParam("from", "Symbol of the from asset", "OETH", types.string)
-  .addOptionalParam("to", "Symbol of the to asset", undefined, types.string)
+  .addOptionalParam(
+    "from",
+    "Symbol of the from asset when swapping from an exact amount",
+    "OETH",
+    types.string
+  )
+  .addOptionalParam(
+    "to",
+    "Symbol of the to asset when swapping to an exact amount",
+    undefined,
+    types.string
+  )
   .addParam(
     "amount",
     "Swap quantity in either the from or to asset",
@@ -52,6 +86,33 @@ subtask(
   )
   .setAction(swap);
 task("swap").setAction(async (_, __, runSuper) => {
+  return runSuper();
+});
+
+subtask(
+  "swapLido",
+  "Swap from one asset to another. Can only specify the from or to asset as that will be the exact amount."
+)
+  .addOptionalParam(
+    "from",
+    "Symbol of the from asset when swapping from an exact amount",
+    undefined,
+    types.string
+  )
+  .addOptionalParam(
+    "to",
+    "Symbol of the to asset when swapping to an exact amount",
+    undefined,
+    types.string
+  )
+  .addParam(
+    "amount",
+    "Swap quantity in either the from or to asset",
+    undefined,
+    types.float
+  )
+  .setAction(swapLido);
+task("swapLido").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
 
@@ -304,6 +365,15 @@ task("withdrawWETH").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
 
+// Lido tasks
+
+subtask("submitLido", "Convert ETH to Lido's stETH")
+  .addParam("amount", "Amount of ETH to convert", undefined, types.float)
+  .setAction(submitLido);
+task("submitLido").setAction(async (_, __, runSuper) => {
+  return runSuper();
+});
+
 // Vault tasks.
 
 task(
@@ -415,6 +485,136 @@ subtask("redeemAll", "Redeem all OTokens for collateral assets from the Vault")
   )
   .setAction(redeemAll);
 task("redeemAll").setAction(async (_, __, runSuper) => {
+  return runSuper();
+});
+
+// ARM Liquidity Provider Functions
+
+subtask(
+  "depositLido",
+  "Deposit WETH into the Lido ARM as receive ARM LP tokens"
+)
+  .addParam(
+    "amount",
+    "Amount of WETH not scaled to 18 decimals",
+    undefined,
+    types.float
+  )
+  .addOptionalParam(
+    "asset",
+    "Symbol of the asset to deposit. eg ETH or WETH",
+    "WETH",
+    types.string
+  )
+  .setAction(depositLido);
+task("depositLido").setAction(async (_, __, runSuper) => {
+  return runSuper();
+});
+
+subtask("requestRedeemLido", "Request redeem from the Lido ARM")
+  .addParam(
+    "amount",
+    "Amount of ARM LP tokens not scaled to 18 decimals",
+    undefined,
+    types.float
+  )
+  .setAction(requestRedeemLido);
+task("requestRedeemLido").setAction(async (_, __, runSuper) => {
+  return runSuper();
+});
+
+subtask("claimRedeemLido", "Claim WETH from a previously requested redeem")
+  .addParam("id", "Request identifier", undefined, types.float)
+  .setAction(claimRedeemLido);
+task("claimRedeemLido").setAction(async (_, __, runSuper) => {
+  return runSuper();
+});
+
+subtask("setLiquidityProviderCaps", "Set deposit cap for liquidity providers")
+  .addParam(
+    "cap",
+    "Amount of WETH not scaled to 18 decimals",
+    undefined,
+    types.float
+  )
+  .addParam(
+    "accounts",
+    "Comma separated list of addresses",
+    undefined,
+    types.string
+  )
+  .setAction(setLiquidityProviderCaps);
+task("setLiquidityProviderCaps").setAction(async (_, __, runSuper) => {
+  return runSuper();
+});
+
+subtask("setTotalAssetsCap", "Set total assets cap")
+  .addParam(
+    "cap",
+    "Amount of WETH not scaled to 18 decimals",
+    undefined,
+    types.float
+  )
+  .setAction(setTotalAssetsCap);
+task("setTotalAssetsCap").setAction(async (_, __, runSuper) => {
+  return runSuper();
+});
+
+// Lido
+
+subtask(
+  "requestLidoWithdrawals",
+  "Collect the performance fees from the Lido ARM"
+)
+  .addParam("amount", "stETH withdraw amount", undefined, types.float)
+  .setAction(requestLidoWithdrawals);
+task("requestLidoWithdrawals").setAction(async (_, __, runSuper) => {
+  return runSuper();
+});
+
+subtask("lidoClaimWithdraw", "Claim a requested withdrawal from Lido (stETH)")
+  .addParam("id", "Request identifier", undefined, types.string)
+  .setAction(claimLidoWithdrawals);
+task("lidoClaimWithdraw").setAction(async (_, __, runSuper) => {
+  return runSuper();
+});
+
+subtask("lidoWithdrawStatus", "Get the status of a Lido withdrawal request")
+  .addParam("id", "Request identifier", undefined, types.string)
+  .setAction(lidoWithdrawStatus);
+task("lidoWithdrawStatus").setAction(async (_, __, runSuper) => {
+  return runSuper();
+});
+
+subtask(
+  "collectFees",
+  "Collect the performance fees from the Lido ARM"
+).setAction(collectFees);
+task("collectFees").setAction(async (_, __, runSuper) => {
+  return runSuper();
+});
+
+subtask("setZapper", "Set the Zapper contract on the Lido ARM").setAction(
+  setZapper
+);
+task("setZapper").setAction(async (_, __, runSuper) => {
+  return runSuper();
+});
+
+subtask("snapLido", "Take a snapshot of the Lido ARM")
+  .addOptionalParam(
+    "block",
+    "Block number. (default: latest)",
+    undefined,
+    types.int
+  )
+  .addOptionalParam("amount", "Swap quantity", 100, types.int)
+  .addOptionalParam("oneInch", "Include 1Inch prices", true, types.boolean)
+  .addOptionalParam("curve", "Include Curve prices", true, types.boolean)
+  .addOptionalParam("uniswap", "Include Uniswap V3 prices", true, types.boolean)
+  .addOptionalParam("gas", "Include gas costs", true, types.boolean)
+  .setAction(snapLido);
+task("snapLido").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
 

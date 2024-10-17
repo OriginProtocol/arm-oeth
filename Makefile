@@ -9,7 +9,14 @@ default:
 # Always keep Forge up to date
 install:
 	foundryup
-	forge install
+	forge soldeer install
+	yarn install
+
+clean:
+	@rm -rf broadcast cache out
+
+clean-all:
+	@rm -rf broadcast cache out dependencies node_modules soldeer.lock
 
 gas:
 	@forge test --gas-report
@@ -19,14 +26,20 @@ snapshot:
 	@forge snapshot
 
 # Tests
+test-std:
+	forge test --summary --fail-fast --show-progress
+
 test:
-	@forge test --summary
+	@FOUNDRY_NO_MATCH_CONTRACT=Invariant make test-std
 
 test-f-%:
-	@FOUNDRY_MATCH_TEST=$* make test
+	@FOUNDRY_MATCH_TEST=$* make test-std
 
 test-c-%:
-	@FOUNDRY_MATCH_CONTRACT=$* make test
+	@FOUNDRY_MATCH_CONTRACT=$* make test-std
+
+test-all:
+	@make test-std
 
 # Coverage
 coverage:
@@ -49,20 +62,10 @@ deploy:
 	@forge script script/deploy/DeployManager.sol --rpc-url $(PROVIDER_URL) --private-key ${DEPLOYER_PRIVATE_KEY} --broadcast --slow --verify -vvvv
 
 deploy-testnet:
-	@forge script script/deploy/DeployManager.sol --rpc-url $(TESTNET_URL) --private-key ${DEPLOYER_PRIVATE_KEY} --broadcast --slow -vvvv
+	@forge script script/deploy/DeployManager.sol --rpc-url $(TESTNET_URL) --broadcast --slow --unlocked -vvvv
 
 deploy-holesky:
-	@forge script script/deploy/DeployManager.sol --rpc-url $(HOLESKY_URL) --private-key ${DEPLOYER_PRIVATE_KEY} --broadcast --slow --verify -vvvv
-
-# Upgrade scripts
-upgrade:
-	@forge script script/002_Upgrade.s.sol --rpc-url $(PROVIDER_URL) --private-key ${DEPLOYER_PRIVATE_KEY} --broadcast --slow --verify -vvvv
-
-upgrade-testnet:
-	@forge script script/002_Upgrade.s.sol --rpc-url $(TESTNET_URL) --private-key ${DEPLOYER_PRIVATE_KEY} --broadcast --slow -vvvv
-
-upgrade-holesky:
-	@forge script script/002_Upgrade.s.sol --rpc-url $(HOLESKY_URL) --private-key ${DEPLOYER_PRIVATE_KEY} --broadcast --slow --verify -vvvv
+	@forge script script/deploy/DeployManager.sol --rpc-url $(HOLESKY_URL) --private-key ${DEPLOYER_PRIVATE_KEY} --broadcast --slow --verify -vvv
 
 # Override default `test` and `coverage` targets
 .PHONY: test coverage

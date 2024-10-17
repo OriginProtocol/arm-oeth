@@ -1,22 +1,50 @@
 [profile.default]
 src = "src/contracts"
 out = "out"
-libs = ["lib"]
+libs = ["dependencies"]
 verbosity = 3
 sender = "0x0165C55EF814dEFdd658532A48Bd17B2c8356322"
 tx_origin = "0x0165C55EF814dEFdd658532A48Bd17B2c8356322"
-# See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
-
-gas_reports = ["OEthARM", "Proxy" ]
-
+auto_detect_remappings = false
+gas_reports = ["OEthARM", "Proxy"]
+fs_permissions = [{ access = "read-write", path = "./build" }]
+extra_output_files = ["metadata"]
+ignored_warnings_from = ["src/contracts/Proxy.sol"]
 remappings = [
   "contracts/=./src/contracts",
   "script/=./script",
   "test/=./test",
-  "utils/=./src/contracts/utils"
+  "utils/=./src/contracts/utils",
+  "forge-std/=dependencies/forge-std-1.9.3/src/",
+  "@openzeppelin/contracts/=dependencies/@openzeppelin-contracts-5.0.2/",
+  "@openzeppelin/contracts-upgradeable/=dependencies/@openzeppelin-contracts-upgradeable-5.0.2/",
+  "@solmate/=dependencies/solmate-6.7.0/src/",
 ]
 
-fs_permissions = [{ access = "read-write", path = "./build"}]
-extra_output_files = [
-  "metadata"
-]
+[fuzz]
+runs = 1_000
+
+[invariant]
+runs = 256
+depth = 500
+fail_on_revert = true
+shrink_run_limit = 5_000
+
+[dependencies]
+"@openzeppelin-contracts" = "5.0.2"
+"@openzeppelin-contracts-upgradeable" = "5.0.2"
+solmate = "6.7.0"
+forge-std = "1.9.3"
+
+[soldeer]
+recursive_deps = false
+remappings_version = false
+remappings_generate = false
+remappings_regenerate = false
+remappings_prefix = "@"
+remappings_location = "config"
+
+[rpc_endpoints]
+mainnet = "${PROVIDER_URL}"
+
+# See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
