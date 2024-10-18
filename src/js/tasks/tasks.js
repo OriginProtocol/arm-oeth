@@ -1,18 +1,25 @@
 const { subtask, task, types } = require("hardhat/config");
 
-const { parseAddress } = require("../utils/addressParser");
+const { mainnet } = require("../utils/addresses");
+const {
+  parseAddress,
+  parseDeployedAddress,
+} = require("../utils/addressParser");
 const { setAutotaskVars } = require("./autotask");
 const { setActionVars } = require("./defender");
 const {
   submitLido,
   snapLido,
   swapLido,
-  collectFees,
-  requestLidoWithdrawals,
-  claimLidoWithdrawals,
   lidoWithdrawStatus,
+  setPrices,
   setZapper,
 } = require("./lido");
+const {
+  requestLidoWithdrawals,
+  claimLidoWithdrawals,
+  collectFees,
+} = require("./lidoQueue");
 const {
   autoRequestWithdraw,
   autoClaimWithdraw,
@@ -562,20 +569,120 @@ task("setTotalAssetsCap").setAction(async (_, __, runSuper) => {
 
 // Lido
 
-subtask(
-  "requestLidoWithdrawals",
-  "Collect the performance fees from the Lido ARM"
-)
-  .addParam("amount", "stETH withdraw amount", undefined, types.float)
-  .setAction(requestLidoWithdrawals);
-task("requestLidoWithdrawals").setAction(async (_, __, runSuper) => {
+subtask("setPrices", "Update Lido ARM's swap prices")
+  .addOptionalParam(
+    "amount",
+    "Swap quantity used for 1Inch pricing",
+    100,
+    types.int
+  )
+  .addOptionalParam(
+    "buyPrice",
+    "The buy price if not using the midPrice.",
+    undefined,
+    types.float
+  )
+  .addOptionalParam(
+    "midPrice",
+    "The middle of the buy and sell prices.",
+    undefined,
+    types.float
+  )
+  .addOptionalParam(
+    "sellPrice",
+    "The sell price if not using the midPrice.",
+    undefined,
+    types.float
+  )
+  .addOptionalParam(
+    "inch",
+    "Set prices off the current 1Inch mid price.",
+    undefined,
+    types.boolean
+  )
+  .addOptionalParam(
+    "fee",
+    "ARM swap fee in basis points if using mid price",
+    1,
+    types.float
+  )
+  .addOptionalParam(
+    "tolerance",
+    "Allowed difference in basis points. eg 1 = 0.0001%",
+    0.2,
+    types.float
+  )
+  .setAction(async (taskArgs) => {
+    const signer = await getSigner();
+
+    const lidoArmAddress = await parseDeployedAddress("LIDO_ARM");
+    const arm = await ethers.getContractAt("LidoARM", lidoArmAddress);
+    await setPrices({ ...taskArgs, signer, arm });
+  });
+task("setPrices").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
 
-subtask("lidoClaimWithdraw", "Claim a requested withdrawal from Lido (stETH)")
-  .addParam("id", "Request identifier", undefined, types.string)
-  .setAction(claimLidoWithdrawals);
-task("lidoClaimWithdraw").setAction(async (_, __, runSuper) => {
+subtask(
+  "requestLidoWithdraws",
+  "Request withdrawals from the Lido withdrawal queue"
+)
+  .addOptionalParam(
+    "amount",
+    "Exact amount of stETH to withdraw. (default: all)",
+    undefined,
+    types.float
+  )
+  .addOptionalParam(
+    "minAmount",
+    "Minimum amount of stETH to withdraw.",
+    1,
+    types.float
+  )
+  .setAction(async (taskArgs) => {
+    const signer = await getSigner();
+    const steth = await resolveAsset("STETH");
+
+    const lidoArmAddress = await parseDeployedAddress("LIDO_ARM");
+    const arm = await ethers.getContractAt("LidoARM", lidoArmAddress);
+
+    await requestLidoWithdrawals({
+      ...taskArgs,
+      signer,
+      steth,
+      arm,
+    });
+  });
+task("requestLidoWithdraws").setAction(async (_, __, runSuper) => {
+  return runSuper();
+});
+
+subtask("claimLidoWithdraws", "Claim requested withdrawals from Lido (stETH)")
+  .addOptionalParam(
+    "id",
+    "Request identifier. (default: all)",
+    undefined,
+    types.string
+  )
+  .setAction(async (taskArgs) => {
+    const signer = await getSigner();
+
+    const lidoArmAddress = await parseDeployedAddress("LIDO_ARM");
+    const arm = await ethers.getContractAt("LidoARM", lidoArmAddress);
+
+    const withdrawalQueue = await hre.ethers.getContractAt(
+      "IStETHWithdrawal",
+      mainnet.lidoWithdrawalQueue
+    );
+
+    await claimLidoWithdrawals({
+      ...taskArgs,
+      signer,
+      arm,
+      withdrawalQueue,
+    });
+  });
+task("claimLidoWithdraws").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
 
@@ -589,7 +696,14 @@ task("lidoWithdrawStatus").setAction(async (_, __, runSuper) => {
 subtask(
   "collectFees",
   "Collect the performance fees from the Lido ARM"
-).setAction(collectFees);
+).setAction(async () => {
+  const signer = await getSigner();
+
+  const lidoArmAddress = await parseDeployedAddress("LIDO_ARM");
+  const lidoARM = await ethers.getContractAt("LidoARM", lidoArmAddress);
+
+  await collectFees({ signer, arm: lidoARM });
+});
 task("collectFees").setAction(async (_, __, runSuper) => {
   return runSuper();
 });

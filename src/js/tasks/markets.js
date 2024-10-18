@@ -13,14 +13,12 @@ const logArmPrices = async ({ blockTag, gas }, arm) => {
   // The rate of 1 WETH for stETH to 36 decimals from the perspective of the AMM. ie WETH/stETH
   // from the trader's perspective, this is the stETH/WETH buy price
   const OWethStEthRate = await arm.traderate0({ blockTag });
-  console.log(`traderate0: ${formatUnits(OWethStEthRate, 36)} WETH/stETH`);
 
   // convert from WETH/stETH rate with 36 decimals to stETH/WETH rate with 18 decimals
   const sellPrice = BigInt(1e54) / BigInt(OWethStEthRate);
 
   // The rate of 1 stETH for WETH to 36 decimals. ie stETH/WETH
   const OStEthWethRate = await arm.traderate1({ blockTag });
-  console.log(`traderate1: ${formatUnits(OStEthWethRate, 36)} stETH/WETH`);
   // Convert back to 18 decimals
   const buyPrice = BigInt(OStEthWethRate) / BigInt(1e18);
 
