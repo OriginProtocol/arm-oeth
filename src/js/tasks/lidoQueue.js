@@ -88,7 +88,14 @@ const claimLidoWithdrawals = async (options) => {
   }
 };
 
+async function collectFees({ arm, signer }) {
+  log(`About to collect fees from the Lido ARM`);
+  const tx = await arm.connect(signer).collectFees();
+  await logTxDetails(tx, "collectFees");
+}
+
 module.exports = {
+  collectFees,
   requestLidoWithdrawals,
   claimLidoWithdrawals,
 };

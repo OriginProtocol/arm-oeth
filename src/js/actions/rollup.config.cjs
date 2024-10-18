@@ -61,4 +61,12 @@ module.exports = [
     },
     ...commonConfig,
   },
+  {
+    input: "collectLidoFees.js",
+    output: {
+      file: "dist/collectLidoFees/index.js",
+      format: "cjs",
+    },
+    ...commonConfig,
+  },
 ];

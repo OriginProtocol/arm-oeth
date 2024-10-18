@@ -236,6 +236,9 @@ The following will upload the different Action bundles to Defender.
 # Set the DEBUG environment variable to oeth* for the Defender Action
 npx hardhat setActionVars --id 93c010f9-05b5-460f-bd10-1205dd80a7c9
 npx hardhat setActionVars --id 563d8d0c-17dc-46d3-8955-e4824864869f
+npx hardhat setActionVars --id c010fb76-ea63-409d-9981-69322d27993a
+npx hardhat setActionVars --id 127171fd-7b85-497e-8335-fd7907c08386
+npx hardhat setActionVars --id 84b5f134-8351-4402-8f6a-fb4376034bc4
 
 # The Defender autotask client uses generic env var names so we'll set them first from the values in the .env file
 export API_KEY=
@@ -244,6 +247,9 @@ export API_SECRET=
 # Mainnet
 npx defender-autotask update-code 93c010f9-05b5-460f-bd10-1205dd80a7c9 ./dist/autoRequestWithdraw
 npx defender-autotask update-code 563d8d0c-17dc-46d3-8955-e4824864869f ./dist/autoClaimWithdraw
+npx defender-autotask update-code c010fb76-ea63-409d-9981-69322d27993a ./dist/autoRequestLidoWithdraw
+npx defender-autotask update-code 127171fd-7b85-497e-8335-fd7907c08386 ./dist/autoClaimLidoWithdraw
+npx defender-autotask update-code 84b5f134-8351-4402-8f6a-fb4376034bc4 ./dist/collectLidoFees
 ```
 
 `rollup` and `defender-autotask` can be installed globally to avoid the `npx` prefix.

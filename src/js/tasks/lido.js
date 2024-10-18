@@ -18,17 +18,6 @@ const { resolveAddress, resolveAsset } = require("../utils/assets");
 
 const log = require("../utils/logger")("task:lido");
 
-async function collectFees() {
-  const signer = await getSigner();
-
-  const lidoArmAddress = await parseDeployedAddress("LIDO_ARM");
-  const lidoARM = await ethers.getContractAt("LidoARM", lidoArmAddress);
-
-  log(`About to collect fees from the Lido ARM`);
-  const tx = await lidoARM.connect(signer).collectFees();
-  await logTxDetails(tx, "collectFees");
-}
-
 async function setZapper() {
   const signer = await getSigner();
 
@@ -274,7 +263,6 @@ const swapLido = async ({ from, to, amount }) => {
 };
 
 module.exports = {
-  collectFees,
   lidoWithdrawStatus,
   submitLido,
   swapLido,

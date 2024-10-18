@@ -11,11 +11,14 @@ const {
   submitLido,
   snapLido,
   swapLido,
-  collectFees,
   lidoWithdrawStatus,
   setZapper,
 } = require("./lido");
-const { requestLidoWithdrawals, claimLidoWithdrawals } = require("./lidoQueue");
+const {
+  requestLidoWithdrawals,
+  claimLidoWithdrawals,
+  collectFees,
+} = require("./lidoQueue");
 const {
   autoRequestWithdraw,
   autoClaimWithdraw,
@@ -638,7 +641,14 @@ task("lidoWithdrawStatus").setAction(async (_, __, runSuper) => {
 subtask(
   "collectFees",
   "Collect the performance fees from the Lido ARM"
-).setAction(collectFees);
+).setAction(async () => {
+  const signer = await getSigner();
+
+  const lidoArmAddress = await parseDeployedAddress("LIDO_ARM");
+  const lidoARM = await ethers.getContractAt("LidoARM", lidoArmAddress);
+
+  await collectFees({ signer, arm: lidoARM });
+});
 task("collectFees").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
