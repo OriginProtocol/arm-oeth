@@ -29,30 +29,6 @@ async function collectFees() {
   await logTxDetails(tx, "collectFees");
 }
 
-async function requestLidoWithdrawals({ amount }) {
-  const signer = await getSigner();
-
-  const lidoArmAddress = await parseDeployedAddress("LIDO_ARM");
-  const lidoARM = await ethers.getContractAt("LidoARM", lidoArmAddress);
-
-  const amountBI = parseUnits(amount.toString(), 18);
-
-  log(`About to request the withdrawal of ${amount} stETH from Lido`);
-  const tx = await lidoARM.connect(signer).requestLidoWithdrawals([amountBI]);
-  await logTxDetails(tx, "requestLidoWithdrawals");
-}
-
-async function claimLidoWithdrawals({ id }) {
-  const signer = await getSigner();
-
-  const lidoArmAddress = await parseDeployedAddress("LIDO_ARM");
-  const lidoARM = await ethers.getContractAt("LidoARM", lidoArmAddress);
-
-  log(`About to claim the withdrawal with ${id} from Lido`);
-  const tx = await lidoARM.connect(signer).claimLidoWithdrawals([id]);
-  await logTxDetails(tx, "claimLidoWithdrawals");
-}
-
 async function setZapper() {
   const signer = await getSigner();
 
@@ -299,8 +275,6 @@ const swapLido = async ({ from, to, amount }) => {
 
 module.exports = {
   collectFees,
-  requestLidoWithdrawals,
-  claimLidoWithdrawals,
   lidoWithdrawStatus,
   submitLido,
   swapLido,
