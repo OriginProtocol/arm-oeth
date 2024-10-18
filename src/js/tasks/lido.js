@@ -8,6 +8,8 @@ const {
   logUniswapSpotPrices,
 } = require("./markets");
 const { getBlock } = require("../utils/block");
+const { abs } = require("../utils/maths");
+const { get1InchPrices } = require("../utils/1Inch");
 const { getSigner } = require("../utils/signers");
 const { logTxDetails } = require("../utils/txLogger");
 const {
@@ -17,6 +19,78 @@ const {
 const { resolveAddress, resolveAsset } = require("../utils/assets");
 
 const log = require("../utils/logger")("task:lido");
+
+const setPrices = async (options) => {
+  const { signer, arm, fee, tolerance, buyPrice, midPrice, sellPrice, inch } =
+    options;
+
+  // get current ARM stETH/WETH prices
+  const currentTradeRate0 = parseUnits("1", 72) / (await arm.traderate0());
+  const currentTradeRate1 = await arm.traderate1();
+  log(`current sell price : ${formatUnits(currentTradeRate0, 36)}`);
+  log(`current buy price  : ${formatUnits(currentTradeRate1, 36)}`);
+
+  let targetSellPrice;
+  let targetBuyPrice;
+  if (!buyPrice && !sellPrice && (midPrice || inch)) {
+    // get latest 1inch prices if no midPrice is provided
+    const referencePrices = midPrice
+      ? {
+          midPrice: parseUnits(midPrice.toString(), 18),
+        }
+      : await get1InchPrices(options.amount);
+    log(`mid price          : ${formatUnits(referencePrices.midPrice)}`);
+
+    const FeeScale = BigInt(1e6);
+    const feeRate = FeeScale - BigInt(fee * 100);
+    log(`fee                : ${formatUnits(BigInt(fee * 1000000), 6)} bps`);
+    log(`fee rate           : ${formatUnits(feeRate, 6)} bps`);
+
+    targetSellPrice =
+      (referencePrices.midPrice * BigInt(1e18) * FeeScale) / feeRate;
+    targetBuyPrice =
+      (referencePrices.midPrice * BigInt(1e18) * feeRate) / FeeScale;
+  } else if (buyPrice && sellPrice) {
+    targetSellPrice = parseUnits(sellPrice.toString(), 18) * BigInt(1e18);
+    targetBuyPrice = parseUnits(buyPrice.toString(), 18) * BigInt(1e18);
+  } else {
+    throw new Error(
+      `Either both buy and sell prices should be provided or midPrice`
+    );
+  }
+
+  log(`target sell price  : ${formatUnits(targetSellPrice, 36)}`);
+  log(`target buy  price  : ${formatUnits(targetBuyPrice, 36)}`);
+
+  const diffBuyPrice = abs(targetBuyPrice - currentTradeRate1);
+  log(`buy price diff     : ${formatUnits(diffBuyPrice, 36)}`);
+
+  // tolerance option is in basis points
+  const toleranceScaled = parseUnits(tolerance.toString(), 36 - 4);
+  log(`tolerance          : ${formatUnits(toleranceScaled, 36)}`);
+
+  // decide if rates need to be updated
+  if (diffBuyPrice > toleranceScaled) {
+    // Note the prices of setPrices is from the AMM perspective and not the Trader
+    // hence the buy and sell prices are swapped
+    console.log(`About to update ARM prices`);
+    console.log(`sell: ${formatUnits(targetSellPrice, 36)}`);
+    console.log(`buy : ${formatUnits(targetBuyPrice, 36)}`);
+
+    const tx = await arm
+      .connect(signer)
+      .setPrices(targetBuyPrice, targetSellPrice);
+
+    await logTxDetails(tx, "setPrices", options.confirm);
+  } else {
+    console.log(
+      `No price update as price diff of ${formatUnits(
+        diffBuyPrice,
+        36
+      )} < tolerance ${formatUnits(toleranceScaled, 36)}`
+    );
+  }
+};
 
 async function setZapper() {
   const signer = await getSigner();
@@ -267,5 +341,6 @@ module.exports = {
   submitLido,
   swapLido,
   snapLido,
+  setPrices,
   setZapper,
 };

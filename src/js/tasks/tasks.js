@@ -12,6 +12,7 @@ const {
   snapLido,
   swapLido,
   lidoWithdrawStatus,
+  setPrices,
   setZapper,
 } = require("./lido");
 const {
@@ -567,6 +568,60 @@ task("setTotalAssetsCap").setAction(async (_, __, runSuper) => {
 });
 
 // Lido
+
+subtask("setPrices", "Update Lido ARM's swap prices")
+  .addOptionalParam(
+    "amount",
+    "Swap quantity used for 1Inch pricing",
+    100,
+    types.int
+  )
+  .addOptionalParam(
+    "buyPrice",
+    "The buy price if not using the midPrice.",
+    undefined,
+    types.float
+  )
+  .addOptionalParam(
+    "midPrice",
+    "The middle of the buy and sell prices.",
+    undefined,
+    types.float
+  )
+  .addOptionalParam(
+    "sellPrice",
+    "The sell price if not using the midPrice.",
+    undefined,
+    types.float
+  )
+  .addOptionalParam(
+    "inch",
+    "Set prices off the current 1Inch mid price.",
+    undefined,
+    types.boolean
+  )
+  .addOptionalParam(
+    "fee",
+    "ARM swap fee in basis points if using mid price",
+    1,
+    types.float
+  )
+  .addOptionalParam(
+    "tolerance",
+    "Allowed difference in basis points. eg 1 = 0.0001%",
+    0.2,
+    types.float
+  )
+  .setAction(async (taskArgs) => {
+    const signer = await getSigner();
+
+    const lidoArmAddress = await parseDeployedAddress("LIDO_ARM");
+    const arm = await ethers.getContractAt("LidoARM", lidoArmAddress);
+    await setPrices({ ...taskArgs, signer, arm });
+  });
+task("setPrices").setAction(async (_, __, runSuper) => {
+  return runSuper();
+});
 
 subtask(
   "requestLidoWithdraws",
