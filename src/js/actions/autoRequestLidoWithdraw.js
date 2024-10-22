@@ -21,13 +21,13 @@ const handler = async (event) => {
   );
 
   // References to contracts
-  const stEth = new ethers.Contract(mainnet.stETH, erc20Abi, signer);
+  const steth = new ethers.Contract(mainnet.stETH, erc20Abi, signer);
   const arm = new ethers.Contract(mainnet.lidoARM, lidoARMAbi, signer);
 
   try {
     await requestLidoWithdrawals({
       signer,
-      stEth,
+      steth,
       arm,
       minAmount: 1,
     });
