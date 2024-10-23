@@ -8,6 +8,8 @@ const {
   logUniswapSpotPrices,
 } = require("./markets");
 const { getBlock } = require("../utils/block");
+const { abs } = require("../utils/maths");
+const { get1InchPrices } = require("../utils/1Inch");
 const { getSigner } = require("../utils/signers");
 const { logTxDetails } = require("../utils/txLogger");
 const {
@@ -18,40 +20,77 @@ const { resolveAddress, resolveAsset } = require("../utils/assets");
 
 const log = require("../utils/logger")("task:lido");
 
-async function collectFees() {
-  const signer = await getSigner();
+const setPrices = async (options) => {
+  const { signer, arm, fee, tolerance, buyPrice, midPrice, sellPrice, inch } =
+    options;
 
-  const lidoArmAddress = await parseDeployedAddress("LIDO_ARM");
-  const lidoARM = await ethers.getContractAt("LidoARM", lidoArmAddress);
+  // get current ARM stETH/WETH prices
+  const currentTradeRate0 = parseUnits("1", 72) / (await arm.traderate0());
+  const currentTradeRate1 = await arm.traderate1();
+  log(`current sell price : ${formatUnits(currentTradeRate0, 36)}`);
+  log(`current buy price  : ${formatUnits(currentTradeRate1, 36)}`);
 
-  log(`About to collect fees from the Lido ARM`);
-  const tx = await lidoARM.connect(signer).collectFees();
-  await logTxDetails(tx, "collectFees");
-}
+  let targetSellPrice;
+  let targetBuyPrice;
+  if (!buyPrice && !sellPrice && (midPrice || inch)) {
+    // get latest 1inch prices if no midPrice is provided
+    const referencePrices = midPrice
+      ? {
+          midPrice: parseUnits(midPrice.toString(), 18),
+        }
+      : await get1InchPrices(options.amount);
+    log(`mid price          : ${formatUnits(referencePrices.midPrice)}`);
 
-async function requestLidoWithdrawals({ amount }) {
-  const signer = await getSigner();
+    const FeeScale = BigInt(1e6);
+    const feeRate = FeeScale - BigInt(fee * 100);
+    log(`fee                : ${formatUnits(BigInt(fee * 1000000), 6)} bps`);
+    log(`fee rate           : ${formatUnits(feeRate, 6)} bps`);
 
-  const lidoArmAddress = await parseDeployedAddress("LIDO_ARM");
-  const lidoARM = await ethers.getContractAt("LidoARM", lidoArmAddress);
+    targetSellPrice =
+      (referencePrices.midPrice * BigInt(1e18) * FeeScale) / feeRate;
+    targetBuyPrice =
+      (referencePrices.midPrice * BigInt(1e18) * feeRate) / FeeScale;
+  } else if (buyPrice && sellPrice) {
+    targetSellPrice = parseUnits(sellPrice.toString(), 18) * BigInt(1e18);
+    targetBuyPrice = parseUnits(buyPrice.toString(), 18) * BigInt(1e18);
+  } else {
+    throw new Error(
+      `Either both buy and sell prices should be provided or midPrice`
+    );
+  }
 
-  const amountBI = parseUnits(amount.toString(), 18);
+  log(`target sell price  : ${formatUnits(targetSellPrice, 36)}`);
+  log(`target buy  price  : ${formatUnits(targetBuyPrice, 36)}`);
 
-  log(`About to request the withdrawal of ${amount} stETH from Lido`);
-  const tx = await lidoARM.connect(signer).requestLidoWithdrawals([amountBI]);
-  await logTxDetails(tx, "requestLidoWithdrawals");
-}
+  const diffBuyPrice = abs(targetBuyPrice - currentTradeRate1);
+  log(`buy price diff     : ${formatUnits(diffBuyPrice, 36)}`);
 
-async function claimLidoWithdrawals({ id }) {
-  const signer = await getSigner();
+  // tolerance option is in basis points
+  const toleranceScaled = parseUnits(tolerance.toString(), 36 - 4);
+  log(`tolerance          : ${formatUnits(toleranceScaled, 36)}`);
 
-  const lidoArmAddress = await parseDeployedAddress("LIDO_ARM");
-  const lidoARM = await ethers.getContractAt("LidoARM", lidoArmAddress);
+  // decide if rates need to be updated
+  if (diffBuyPrice > toleranceScaled) {
+    // Note the prices of setPrices is from the AMM perspective and not the Trader
+    // hence the buy and sell prices are swapped
+    console.log(`About to update ARM prices`);
+    console.log(`sell: ${formatUnits(targetSellPrice, 36)}`);
+    console.log(`buy : ${formatUnits(targetBuyPrice, 36)}`);
 
-  log(`About to claim the withdrawal with ${id} from Lido`);
-  const tx = await lidoARM.connect(signer).claimLidoWithdrawals([id]);
-  await logTxDetails(tx, "claimLidoWithdrawals");
-}
+    const tx = await arm
+      .connect(signer)
+      .setPrices(targetBuyPrice, targetSellPrice);
+
+    await logTxDetails(tx, "setPrices", options.confirm);
+  } else {
+    console.log(
+      `No price update as price diff of ${formatUnits(
+        diffBuyPrice,
+        36
+      )} < tolerance ${formatUnits(toleranceScaled, 36)}`
+    );
+  }
+};
 
 async function setZapper() {
   const signer = await getSigner();
@@ -145,8 +184,10 @@ const snapLido = async ({ amount, block, curve, oneInch, uniswap, gas }) => {
   );
   await logWithdrawalQueue(lidoARM, blockTag, liquidityWeth);
   await logUser(lidoARM, capManager, blockTag, totalSupply);
+  await logCaps(capManager, totalAssets, blockTag);
+};
 
-  const feesAccrued = await lidoARM.feesAccrued({ blockTag });
+const logCaps = async (capManager, totalAssets, blockTag) => {
   const totalAssetsCap = await capManager.totalAssetsCap({ blockTag });
   const capRemaining = totalAssetsCap - totalAssets;
   const capUsedPercent = (totalAssets * 10000n) / totalAssetsCap;
@@ -158,7 +199,6 @@ const snapLido = async ({ amount, block, curve, oneInch, uniswap, gas }) => {
       2
     )}% used, ${formatUnits(capRemaining, 18)} remaining`
   );
-  console.log(`${formatUnits(feesAccrued, 18)} in accrued performance fees`);
 };
 
 const logUser = async (arm, capManager, blockTag, totalSupply) => {
@@ -192,8 +232,10 @@ const logWithdrawalQueue = async (arm, blockTag, liquidityWeth) => {
 };
 
 const logAssets = async (arm, blockTag) => {
+  const armBuybackAddress = await parseAddress("ARM_BUYBACK");
   const weth = await resolveAsset("WETH");
   const liquidityWeth = await weth.balanceOf(arm.getAddress(), { blockTag });
+  const armBuybackWeth = await weth.balanceOf(armBuybackAddress, { blockTag });
 
   const steth = await resolveAsset("STETH");
   const liquiditySteth = await steth.balanceOf(arm.getAddress(), { blockTag });
@@ -211,6 +253,7 @@ const logAssets = async (arm, blockTag) => {
   const assetPerShare = await arm.convertToAssets(parseUnits("1"), {
     blockTag,
   });
+  const feesAccrued = await arm.feesAccrued({ blockTag });
 
   console.log(`\nAssets`);
   console.log(
@@ -234,6 +277,10 @@ const logAssets = async (arm, blockTag) => {
   console.log(`${formatUnits(totalAssets, 18).padEnd(23)} total assets`);
   console.log(`${formatUnits(totalSupply, 18).padEnd(23)} total supply`);
   console.log(`${formatUnits(assetPerShare, 18).padEnd(23)} asset per share`);
+  console.log(
+    `${formatUnits(feesAccrued, 18).padEnd(23)} accrued performance fees`
+  );
+  console.log(`${formatUnits(armBuybackWeth, 18).padEnd(23)} WETH in Buyback`);
 
   return { totalAssets, totalSupply, liquidityWeth };
 };
@@ -298,12 +345,10 @@ const swapLido = async ({ from, to, amount }) => {
 };
 
 module.exports = {
-  collectFees,
-  requestLidoWithdrawals,
-  claimLidoWithdrawals,
   lidoWithdrawStatus,
   submitLido,
   swapLido,
   snapLido,
+  setPrices,
   setZapper,
 };

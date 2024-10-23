@@ -16,6 +16,12 @@ const commonConfig = {
     "axios",
     "chai",
     /^defender-relay-client(\/.*)?$/,
+    "@openzeppelin/defender-relay-client/lib/ethers",
+    "@openzeppelin/defender-sdk",
+    "@openzeppelin/defender-autotask-client",
+    "@openzeppelin/defender-kvstore-client",
+    "@openzeppelin/defender-relay-client/lib/ethers",
+    "@nomicfoundation/solidity-analyzer-darwin-arm64",
     "@nomicfoundation/solidity-analyzer-darwin-x64",
     "fsevents",
   ],
@@ -34,6 +40,30 @@ module.exports = [
     input: "autoClaimWithdraw.js",
     output: {
       file: "dist/autoClaimWithdraw/index.js",
+      format: "cjs",
+    },
+    ...commonConfig,
+  },
+  {
+    input: "autoRequestLidoWithdraw.js",
+    output: {
+      file: "dist/autoRequestLidoWithdraw/index.js",
+      format: "cjs",
+    },
+    ...commonConfig,
+  },
+  {
+    input: "autoClaimLidoWithdraw.js",
+    output: {
+      file: "dist/autoClaimLidoWithdraw/index.js",
+      format: "cjs",
+    },
+    ...commonConfig,
+  },
+  {
+    input: "collectLidoFees.js",
+    output: {
+      file: "dist/collectLidoFees/index.js",
       format: "cjs",
     },
     ...commonConfig,

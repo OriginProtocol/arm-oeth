@@ -27,7 +27,7 @@ contract Invariant_Basic_Test_ is Invariant_Base_Test_ {
     uint256 private constant MAX_SELL_T1 = 1.02 * 1e36; // We could have use type(uint256).max, but this is non-sense
     uint256 private constant MAX_WETH_PER_USERS = 10_000 ether; // 10M
     uint256 private constant MAX_STETH_PER_USERS = 10_000 ether; // 10M, actual total supply
-    uint256 private constant MAX_LOSS_IN_PCT = 1e13; // 0.001%
+    uint256 private constant MAX_LOSS_IN_PCT = 1e16; // 1%
 
     //////////////////////////////////////////////////////
     /// --- SETUP

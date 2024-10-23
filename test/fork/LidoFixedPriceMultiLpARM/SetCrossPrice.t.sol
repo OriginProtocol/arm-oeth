@@ -61,7 +61,7 @@ contract Fork_Concrete_LidoARM_SetCrossPrice_Test_ is Fork_Shared_Test_ {
     }
 
     function test_RevertWhen_SetCrossPrice_Because_TooManyBaseAssets() public {
-        deal(address(steth), address(lidoARM), MIN_TOTAL_SUPPLY + 1);
+        deal(address(steth), address(lidoARM), MIN_TOTAL_SUPPLY + STETH_ERROR_ROUNDING);
         vm.expectRevert("ARM: too many base assets");
         lidoARM.setCrossPrice(1e36 - 1);
     }
