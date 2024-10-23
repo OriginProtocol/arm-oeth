@@ -184,8 +184,10 @@ const snapLido = async ({ amount, block, curve, oneInch, uniswap, gas }) => {
   );
   await logWithdrawalQueue(lidoARM, blockTag, liquidityWeth);
   await logUser(lidoARM, capManager, blockTag, totalSupply);
+  await logCaps(capManager, totalAssets, blockTag);
+};
 
-  const feesAccrued = await lidoARM.feesAccrued({ blockTag });
+const logCaps = async (capManager, totalAssets, blockTag) => {
   const totalAssetsCap = await capManager.totalAssetsCap({ blockTag });
   const capRemaining = totalAssetsCap - totalAssets;
   const capUsedPercent = (totalAssets * 10000n) / totalAssetsCap;
@@ -197,7 +199,6 @@ const snapLido = async ({ amount, block, curve, oneInch, uniswap, gas }) => {
       2
     )}% used, ${formatUnits(capRemaining, 18)} remaining`
   );
-  console.log(`${formatUnits(feesAccrued, 18)} in accrued performance fees`);
 };
 
 const logUser = async (arm, capManager, blockTag, totalSupply) => {
@@ -231,8 +232,10 @@ const logWithdrawalQueue = async (arm, blockTag, liquidityWeth) => {
 };
 
 const logAssets = async (arm, blockTag) => {
+  const armBuybackAddress = await parseAddress("ARM_BUYBACK");
   const weth = await resolveAsset("WETH");
   const liquidityWeth = await weth.balanceOf(arm.getAddress(), { blockTag });
+  const armBuybackWeth = await weth.balanceOf(armBuybackAddress, { blockTag });
 
   const steth = await resolveAsset("STETH");
   const liquiditySteth = await steth.balanceOf(arm.getAddress(), { blockTag });
@@ -250,6 +253,7 @@ const logAssets = async (arm, blockTag) => {
   const assetPerShare = await arm.convertToAssets(parseUnits("1"), {
     blockTag,
   });
+  const feesAccrued = await arm.feesAccrued({ blockTag });
 
   console.log(`\nAssets`);
   console.log(
@@ -273,6 +277,10 @@ const logAssets = async (arm, blockTag) => {
   console.log(`${formatUnits(totalAssets, 18).padEnd(23)} total assets`);
   console.log(`${formatUnits(totalSupply, 18).padEnd(23)} total supply`);
   console.log(`${formatUnits(assetPerShare, 18).padEnd(23)} asset per share`);
+  console.log(
+    `${formatUnits(feesAccrued, 18).padEnd(23)} accrued performance fees`
+  );
+  console.log(`${formatUnits(armBuybackWeth, 18).padEnd(23)} WETH in Buyback`);
 
   return { totalAssets, totalSupply, liquidityWeth };
 };
