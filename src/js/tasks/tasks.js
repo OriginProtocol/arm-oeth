@@ -12,9 +12,9 @@ const {
   snapLido,
   swapLido,
   lidoWithdrawStatus,
-  setPrices,
   setZapper,
 } = require("./lido");
+const { setPrices } = require("./lidoPrices");
 const {
   requestLidoWithdrawals,
   claimLidoWithdrawals,
@@ -589,16 +589,22 @@ subtask("setPrices", "Update Lido ARM's swap prices")
     types.float
   )
   .addOptionalParam(
-    "sellPrice",
-    "The sell price if not using the midPrice.",
+    "minSellPrice",
+    "The min sell price when pricing off market. eg 1Inch or Curve",
     undefined,
     types.float
   )
   .addOptionalParam(
-    "inch",
-    "Set prices off the current 1Inch mid price.",
+    "maxBuyPrice",
+    "The max buy price when pricing off market. eg 1Inch or Curve",
     undefined,
-    types.boolean
+    types.float
+  )
+  .addOptionalParam(
+    "sellPrice",
+    "The sell price if not using the midPrice.",
+    undefined,
+    types.float
   )
   .addOptionalParam(
     "fee",
@@ -609,8 +615,20 @@ subtask("setPrices", "Update Lido ARM's swap prices")
   .addOptionalParam(
     "tolerance",
     "Allowed difference in basis points. eg 1 = 0.0001%",
-    0.2,
+    0.1,
     types.float
+  )
+  .addOptionalParam(
+    "curve",
+    "Set prices off the current Curve mid price.",
+    undefined,
+    types.boolean
+  )
+  .addOptionalParam(
+    "inch",
+    "Set prices off the current 1Inch mid price.",
+    undefined,
+    types.boolean
   )
   .setAction(async (taskArgs) => {
     const signer = await getSigner();

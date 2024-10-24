@@ -1,9 +1,18 @@
-const { parseUnits } = require("ethers");
+const { parseUnits, formatUnits } = require("ethers");
+const { ethers } = require("ethers");
 
 const curvePoolAbi = require("../../abis/CurveStEthPool.json");
 
-const getCurvePrices = async ({ amount, poolAddress, blockTag, gas }) => {
-  const pool = await ethers.getContractAt(curvePoolAbi, poolAddress);
+const log = require("../utils/logger")("task:curve");
+
+const getCurvePrices = async ({
+  amount,
+  poolAddress,
+  blockTag,
+  gas,
+  signer,
+}) => {
+  const pool = new ethers.Contract(poolAddress, curvePoolAbi, signer);
 
   const amountBI = parseUnits(amount.toString(), 18);
 
@@ -16,6 +25,7 @@ const getCurvePrices = async ({ amount, poolAddress, blockTag, gas }) => {
   );
   // stETH/ETH rate = ETH amount / stETH amount
   const buyPrice = (amountBI * BigInt(1e18)) / buyToAmount;
+  log(`Curve buy price ${formatUnits(buyPrice)} stETH/ETH`);
 
   // Swap stETH for ETH
   const sellToAmount = await pool["get_dy(int128,int128,uint256)"](
@@ -26,6 +36,7 @@ const getCurvePrices = async ({ amount, poolAddress, blockTag, gas }) => {
   );
   // stETH/WETH rate = WETH amount / stETH amount
   const sellPrice = (sellToAmount * BigInt(1e18)) / amountBI;
+  log(`Curve sell price ${formatUnits(sellPrice)} stETH/ETH`);
 
   const midPrice = (buyPrice + sellPrice) / 2n;
   const spread = buyPrice - sellPrice;

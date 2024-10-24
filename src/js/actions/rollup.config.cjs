@@ -2,15 +2,19 @@ const resolve = require("@rollup/plugin-node-resolve");
 const commonjs = require("@rollup/plugin-commonjs");
 const json = require("@rollup/plugin-json");
 const builtins = require("builtin-modules");
+const { visualizer } = require("rollup-plugin-visualizer");
 
 const commonConfig = {
   plugins: [
     resolve({ preferBuiltins: true }),
     commonjs(),
     json({ compact: true }),
+    // Generates a stats.html file in the actions folder.
+    // This is a visual of the Action dependencies for the last Action in the rollup config.
+    visualizer(),
   ],
   // Do not bundle these packages.
-  // ethers is required to be bundled even though it an Autotask package.
+  // ethers is required to be bundled as we need v6 and not v5 that is packaged with Defender Actions.
   external: [
     ...builtins,
     "axios",
@@ -64,6 +68,14 @@ module.exports = [
     input: "collectLidoFees.js",
     output: {
       file: "dist/collectLidoFees/index.js",
+      format: "cjs",
+    },
+    ...commonConfig,
+  },
+  {
+    input: "setPrices.js",
+    output: {
+      file: "dist/setPrices/index.js",
       format: "cjs",
     },
     ...commonConfig,
