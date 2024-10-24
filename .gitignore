@@ -34,3 +34,6 @@ lcov.info*
 dist
 
 build/deployments-fork*.json
+
+# Reports. eg stats.html
+*.html

@@ -239,6 +239,7 @@ npx hardhat setActionVars --id 563d8d0c-17dc-46d3-8955-e4824864869f
 npx hardhat setActionVars --id c010fb76-ea63-409d-9981-69322d27993a
 npx hardhat setActionVars --id 127171fd-7b85-497e-8335-fd7907c08386
 npx hardhat setActionVars --id 84b5f134-8351-4402-8f6a-fb4376034bc4
+npx hardhat setActionVars --id ffcfc580-7b0a-42ed-a4f2-3f0a3add9779
 
 # The Defender autotask client uses generic env var names so we'll set them first from the values in the .env file
 export API_KEY=
@@ -250,6 +251,11 @@ npx defender-autotask update-code 563d8d0c-17dc-46d3-8955-e4824864869f ./dist/au
 npx defender-autotask update-code c010fb76-ea63-409d-9981-69322d27993a ./dist/autoRequestLidoWithdraw
 npx defender-autotask update-code 127171fd-7b85-497e-8335-fd7907c08386 ./dist/autoClaimLidoWithdraw
 npx defender-autotask update-code 84b5f134-8351-4402-8f6a-fb4376034bc4 ./dist/collectLidoFees
+npx defender-autotask update-code ffcfc580-7b0a-42ed-a4f2-3f0a3add9779 ./dist/setPrices
 ```
 
 `rollup` and `defender-autotask` can be installed globally to avoid the `npx` prefix.
+
+The Defender Actions need to be under 5MB in size. The [rollup-plugin-visualizer](https://www.npmjs.com/package/rollup-plugin-visualizer) can be used to visualize the size of an Action's dependencies.
+A `stats.html` file is generated in the`src/js/actions` folder that can be opened in a browser to see the size of the Action's dependencies.
+This will be for the last Action in the rollup config `src/js/actions/rollup.config.cjs`.

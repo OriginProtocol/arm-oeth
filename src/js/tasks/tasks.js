@@ -12,9 +12,9 @@ const {
   snapLido,
   swapLido,
   lidoWithdrawStatus,
-  setPrices,
   setZapper,
 } = require("./lido");
+const { setPrices } = require("./lidoPrices");
 const {
   requestLidoWithdrawals,
   claimLidoWithdrawals,

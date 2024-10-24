@@ -230,7 +230,7 @@ const logUniswapSpotPrices = async (options, ammPrices) => {
       20
     )} ${pair}, diff ${formatUnits(sellRateDiff, 14)} bps to ARM${sellGasCosts}`
   );
-  console.log(`spread  : ${formatUnits(uniswap.spread, 14)} bps`);
+  console.log(`spread : ${formatUnits(uniswap.spread, 14)} bps`);
 
   return uniswap;
 };
