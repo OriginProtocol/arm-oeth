@@ -70,7 +70,7 @@ contract LidoARM is Initializable, AbstractARM {
      * Reference: https://docs.lido.fi/contracts/withdrawal-queue-erc721/
      * Note: There is a 1k amount limit. Caller should split large withdrawals in chunks of less or equal to 1k each.)
      */
-    function requestLidoWithdrawals(uint256[] memory amounts)
+    function requestLidoWithdrawals(uint256[] calldata amounts)
         external
         onlyOperatorOrOwner
         returns (uint256[] memory requestIds)
@@ -93,7 +93,7 @@ contract LidoARM is Initializable, AbstractARM {
      * @notice Claim the ETH owed from the redemption requests and convert it to WETH.
      * Before calling this method, caller should check on the request NFTs to ensure the withdrawal was processed.
      */
-    function claimLidoWithdrawals(uint256[] memory requestIds) external {
+    function claimLidoWithdrawals(uint256[] calldata requestIds) external {
         uint256 etherBefore = address(this).balance;
 
         // Claim the NFTs for ETH.
