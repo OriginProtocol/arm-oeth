@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
+/**
+ * @title Base contract that provides ownership control
+ * @author Origin Protocol Inc
+ */
 contract Ownable {
     /// @notice The slot used to store the owner of the contract.
     /// This is also used as the proxy admin.
