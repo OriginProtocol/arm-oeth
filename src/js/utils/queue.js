@@ -22,6 +22,7 @@ const outstandingWithdrawalAmount = async ({ withdrawer }) => {
     query OutstandingRequestsQuery($withdrawer: String!) {
       oethWithdrawalRequests(
         where: { withdrawer_eq: $withdrawer, claimed_eq: false }
+        limit: 100
       ) {
         id
         amount
