@@ -39,6 +39,8 @@ contract LidoARM is Initializable, AbstractARM {
         steth = IERC20(_steth);
         weth = IWETH(_weth);
         lidoWithdrawalQueue = IStETHWithdrawal(_lidoWithdrawalQueue);
+
+        _disableInitializers();
     }
 
     /// @notice Initialize the storage variables stored in the proxy contract.
