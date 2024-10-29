@@ -6,7 +6,7 @@ const { resolveAsset } = require("../utils/assets");
 const {
   claimableRequests,
   outstandingWithdrawalAmount,
-} = require("../utils/queue");
+} = require("../utils/armQueue");
 const { logTxDetails } = require("../utils/txLogger");
 
 const log = require("../utils/logger")("task:liquidity");
