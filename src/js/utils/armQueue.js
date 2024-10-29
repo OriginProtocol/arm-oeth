@@ -83,6 +83,7 @@ const claimableRequests = async ({ withdrawer, queuedAmountClaimable }) => {
           queued_lte: $liquidity
           timestamp_lt: $tenMinutesAgo
         }
+        limit: 100
       ) {
         id
         amount
