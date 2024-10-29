@@ -744,7 +744,11 @@ subtask("snapLido", "Take a snapshot of the Lido ARM")
   .addOptionalParam("oneInch", "Include 1Inch prices", true, types.boolean)
   .addOptionalParam("curve", "Include Curve prices", true, types.boolean)
   .addOptionalParam("uniswap", "Include Uniswap V3 prices", true, types.boolean)
-  .addOptionalParam("gas", "Include gas costs", true, types.boolean)
+  .addOptionalParam("queue", "Include ARM withdrawal queue data", true, types.boolean)
+  .addOptionalParam("lido", "Include Lido withdrawal queue data", true, types.boolean)
+  .addOptionalParam("user", "Include user data", false, types.boolean)
+  .addOptionalParam("cap", "Include cap limit data", false, types.boolean)
+  .addOptionalParam("gas", "Include gas costs", false, types.boolean)
   .setAction(snapLido);
 task("snapLido").setAction(async (_, __, runSuper) => {
   return runSuper();

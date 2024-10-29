@@ -62,7 +62,18 @@ const submitLido = async ({ amount }) => {
   await logTxDetails(tx, "submit");
 };
 
-const snapLido = async ({ amount, block, curve, oneInch, uniswap, gas }) => {
+const snapLido = async ({
+  amount,
+  block,
+  curve,
+  oneInch,
+  uniswap,
+  gas,
+  queue,
+  lido,
+  user,
+  cap,
+}) => {
   const blockTag = await getBlock(block);
   const signer = await getSigner();
   const commonOptions = { amount, blockTag, pair: "stETH/ETH", gas, signer };
@@ -109,9 +120,63 @@ const snapLido = async ({ amount, block, curve, oneInch, uniswap, gas }) => {
     lidoARM,
     blockTag
   );
-  await logWithdrawalQueue(lidoARM, blockTag, liquidityWeth);
-  await logUser(lidoARM, capManager, blockTag, totalSupply);
-  await logCaps(capManager, totalAssets, blockTag);
+  if (lido) {
+    await logLidoQueue(signer, blockTag);
+  }
+  if (queue) {
+    await logWithdrawalQueue(lidoARM, blockTag, liquidityWeth);
+  }
+  if (user) {
+    await logUser(lidoARM, capManager, blockTag, totalSupply);
+  }
+  if (cap) {
+    await logCaps(capManager, totalAssets, blockTag);
+  }
+};
+
+const logLidoQueue = async (signer, blockTag) => {
+  // get stETH in the withdrawal queue
+  const stETH = await resolveAsset("STETH");
+  const lidoWithdrawalQueueAddress = await parseAddress("LIDO_WITHDRAWAL");
+  const withdrawals = await stETH.balanceOf(lidoWithdrawalQueueAddress, {
+    blockTag,
+  });
+
+  // Get Lido deposits
+  const deposits = await signer.provider.getBalance(
+    stETH.getAddress(),
+    blockTag
+  );
+
+  // Get execution rewards
+  const elVaultAddress = await parseAddress("LIDO_EL_VAULT");
+  const elRewards = await signer.provider.getBalance(elVaultAddress, blockTag);
+
+  // Get ETH swept from exited validators
+  const withdrawalManager = await parseAddress("LIDO_WITHDRAWAL_MANAGER");
+  const ethFromValidators = await signer.provider.getBalance(
+    withdrawalManager,
+    blockTag
+  );
+
+  const finalization = deposits + elRewards + ethFromValidators;
+  const outstanding = withdrawals - finalization;
+
+  console.log(`\nLido withdrawal queue`);
+  console.log(
+    `${formatUnits(withdrawals, 18).padEnd(24)} requested withdrawals`
+  );
+  console.log(`${formatUnits(deposits, 18).padEnd(24)} ETH from deposits`);
+  console.log(
+    `${formatUnits(elRewards, 18).padEnd(24)} ETH from execution rewards`
+  );
+  console.log(
+    `${formatUnits(ethFromValidators, 18).padEnd(24)} ETH from validators`
+  );
+  console.log(
+    `${formatUnits(finalization, 18).padEnd(24)} ETH to be finalized`
+  );
+  console.log(`${formatUnits(outstanding, 18).padEnd(24)} ETH outstanding`);
 };
 
 const logCaps = async (capManager, totalAssets, blockTag) => {
@@ -154,8 +219,8 @@ const logWithdrawalQueue = async (arm, blockTag, liquidityWeth) => {
     liquidityWeth < outstanding ? liquidityWeth - outstanding : 0;
 
   console.log(`\nARM Withdrawal Queue`);
-  console.log(`${formatUnits(outstanding, 18)} outstanding`);
-  console.log(`${formatUnits(shortfall, 18)} shortfall`);
+  console.log(`${formatUnits(outstanding, 18).padEnd(23)} outstanding`);
+  console.log(`${formatUnits(shortfall, 18).padEnd(23)} shortfall`);
 };
 
 const logAssets = async (arm, blockTag) => {
