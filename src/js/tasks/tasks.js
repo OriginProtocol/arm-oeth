@@ -613,6 +613,12 @@ subtask("setPrices", "Update Lido ARM's swap prices")
     types.float
   )
   .addOptionalParam(
+    "offset",
+    "Adds extra basis points to the discount if using the mid price. A positive number will lower the prices. A negative number will increase the prices.",
+    0,
+    types.float
+  )
+  .addOptionalParam(
     "tolerance",
     "Allowed difference in basis points. eg 1 = 0.0001%",
     0.1,
@@ -744,8 +750,18 @@ subtask("snapLido", "Take a snapshot of the Lido ARM")
   .addOptionalParam("oneInch", "Include 1Inch prices", true, types.boolean)
   .addOptionalParam("curve", "Include Curve prices", true, types.boolean)
   .addOptionalParam("uniswap", "Include Uniswap V3 prices", true, types.boolean)
-  .addOptionalParam("queue", "Include ARM withdrawal queue data", true, types.boolean)
-  .addOptionalParam("lido", "Include Lido withdrawal queue data", true, types.boolean)
+  .addOptionalParam(
+    "queue",
+    "Include ARM withdrawal queue data",
+    true,
+    types.boolean
+  )
+  .addOptionalParam(
+    "lido",
+    "Include Lido withdrawal queue data",
+    true,
+    types.boolean
+  )
   .addOptionalParam("user", "Include user data", false, types.boolean)
   .addOptionalParam("cap", "Include cap limit data", false, types.boolean)
   .addOptionalParam("gas", "Include gas costs", false, types.boolean)

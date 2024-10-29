@@ -27,11 +27,12 @@ const handler = async (event) => {
       signer,
       arm,
       curve: true,
-      amount: 50,
-      tolerance: 0.2,
+      amount: 100,
+      tolerance: 0.1,
       maxBuyPrice: 0.9997,
-      minSellPrice: 0.9999,
-      fee: 1,
+      minSellPrice: 0.9998,
+      fee: 0.8,
+      offset: 0.2,
       blockTag: "latest",
     });
   } catch (error) {

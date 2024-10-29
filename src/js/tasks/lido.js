@@ -146,9 +146,7 @@ const logLidoQueue = async (signer, blockTag) => {
   } = await getLidoQueueData(signer, blockTag);
 
   console.log(`\nLido withdrawal queue`);
-  console.log(
-    `${formatUnits(withdrawals, 18).padEnd(24)} requested withdrawals`
-  );
+  console.log(`${formatUnits(withdrawals, 18).padEnd(24)} stETH withdrawals`);
   console.log(`${formatUnits(deposits, 18).padEnd(24)} ETH from deposits`);
   console.log(
     `${formatUnits(elRewards, 18).padEnd(24)} ETH from execution rewards`
