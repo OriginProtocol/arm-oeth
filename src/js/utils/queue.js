@@ -6,7 +6,7 @@ const { formatUnits } = require("ethers");
 // Extend Day.js with the UTC plugin
 dayjs.extend(utc);
 
-const log = require("../utils/logger")("task:queue");
+const log = require("../utils/logger")("utils:queue");
 
 const uri = "https://origin.squids.live/origin-squid/graphql";
 

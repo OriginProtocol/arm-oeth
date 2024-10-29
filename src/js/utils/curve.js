@@ -3,7 +3,7 @@ const { ethers } = require("ethers");
 
 const curvePoolAbi = require("../../abis/CurveStEthPool.json");
 
-const log = require("../utils/logger")("task:curve");
+const log = require("../utils/logger")("utils:curve");
 
 const getCurvePrices = async ({
   amount,
