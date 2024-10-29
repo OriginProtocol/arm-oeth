@@ -8,6 +8,7 @@ const {
   logUniswapSpotPrices,
 } = require("./markets");
 const { getBlock } = require("../utils/block");
+const { getLidoQueueData } = require("../utils/lido");
 const { getSigner } = require("../utils/signers");
 const { logTxDetails } = require("../utils/txLogger");
 const {
@@ -135,32 +136,14 @@ const snapLido = async ({
 };
 
 const logLidoQueue = async (signer, blockTag) => {
-  // get stETH in the withdrawal queue
-  const stETH = await resolveAsset("STETH");
-  const lidoWithdrawalQueueAddress = await parseAddress("LIDO_WITHDRAWAL");
-  const withdrawals = await stETH.balanceOf(lidoWithdrawalQueueAddress, {
-    blockTag,
-  });
-
-  // Get Lido deposits
-  const deposits = await signer.provider.getBalance(
-    stETH.getAddress(),
-    blockTag
-  );
-
-  // Get execution rewards
-  const elVaultAddress = await parseAddress("LIDO_EL_VAULT");
-  const elRewards = await signer.provider.getBalance(elVaultAddress, blockTag);
-
-  // Get ETH swept from exited validators
-  const withdrawalManager = await parseAddress("LIDO_WITHDRAWAL_MANAGER");
-  const ethFromValidators = await signer.provider.getBalance(
-    withdrawalManager,
-    blockTag
-  );
-
-  const finalization = deposits + elRewards + ethFromValidators;
-  const outstanding = withdrawals - finalization;
+  const {
+    withdrawals,
+    deposits,
+    elRewards,
+    ethFromValidators,
+    finalization,
+    outstanding,
+  } = await getLidoQueueData(signer, blockTag);
 
   console.log(`\nLido withdrawal queue`);
   console.log(

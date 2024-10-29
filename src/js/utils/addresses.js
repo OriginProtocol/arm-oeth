@@ -26,6 +26,10 @@ addresses.mainnet.lidoARM = "0x85B78AcA6Deae198fBF201c82DAF6Ca21942acc6";
 // Lido
 addresses.mainnet.lidoWithdrawalQueue =
   "0x889edc2edab5f40e902b864ad4d7ade8e412f9b1";
+addresses.mainnet.lidoExecutionLayerVault =
+  "0x388C818CA8B9251b393131C08a736A67ccB19297";
+addresses.mainnet.lidoWithdrawalManager =
+  "0xB9D7934878B5FB9610B3fE8A5e441e8fad7E293f";
 
 // AMMs
 addresses.mainnet.CurveStEthPool = "0xDC24316b9AE028F1497c275EB9192a3Ea0f67022";
