@@ -26,17 +26,13 @@ const handler = async (event) => {
   const vault = new ethers.Contract(mainnet.OETHVaultProxy, vaultAbi, signer);
   const oethARM = new ethers.Contract(mainnet.OethARM, oethARMAbi, signer);
 
-  try {
-    await autoClaimWithdraw({
-      signer,
-      weth,
-      oethARM,
-      vault,
-      confirm: true,
-    });
-  } catch (error) {
-    console.error(error);
-  }
+  await autoClaimWithdraw({
+    signer,
+    weth,
+    oethARM,
+    vault,
+    confirm: true,
+  });
 };
 
 module.exports = { handler };

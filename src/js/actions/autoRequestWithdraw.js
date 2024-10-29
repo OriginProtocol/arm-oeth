@@ -24,17 +24,13 @@ const handler = async (event) => {
   const oeth = new ethers.Contract(mainnet.OETHProxy, erc20Abi, signer);
   const oethARM = new ethers.Contract(mainnet.OethARM, oethARMAbi, signer);
 
-  try {
-    await autoRequestWithdraw({
-      signer,
-      oeth,
-      oethARM,
-      minAmount: 1,
-      confirm: true,
-    });
-  } catch (error) {
-    console.error(error);
-  }
+  await autoRequestWithdraw({
+    signer,
+    oeth,
+    oethARM,
+    minAmount: 1,
+    confirm: true,
+  });
 };
 
 module.exports = { handler };

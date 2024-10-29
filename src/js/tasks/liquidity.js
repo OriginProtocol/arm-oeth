@@ -78,12 +78,15 @@ const autoClaimWithdraw = async ({ signer, weth, oethARM, vault, confirm }) => {
     queuedAmountClaimable,
   });
 
+  if (requestIds.length === 0) {
+    log("No claimable requests");
+    return;
+  }
+
   log(`About to claim requests: ${requestIds} `);
 
-  if (requestIds.length > 0) {
-    const tx = await oethARM.connect(signer).claimWithdrawals(requestIds);
-    await logTxDetails(tx, "claimWithdrawals", confirm);
-  }
+  const tx = await oethARM.connect(signer).claimWithdrawals(requestIds);
+  await logTxDetails(tx, "claimWithdrawals", confirm);
 };
 
 const withdrawRequestStatus = async ({ id, oethARM, vault }) => {
