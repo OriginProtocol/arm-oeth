@@ -249,30 +249,30 @@ const logAssets = async (arm, blockTag) => {
 
   console.log(`\nAssets`);
   console.log(
-    `${formatUnits(liquidityWeth, 18).padEnd(23)} WETH  ${formatUnits(
+    `${formatUnits(liquidityWeth, 18).padEnd(24)} WETH  ${formatUnits(
       wethPercent,
       2
     )}%`
   );
   console.log(
-    `${formatUnits(liquiditySteth, 18).padEnd(23)} stETH ${formatUnits(
+    `${formatUnits(liquiditySteth, 18).padEnd(24)} stETH ${formatUnits(
       oethPercent,
       2
     )}%`
   );
   console.log(
     `${formatUnits(liquidityLidoWithdraws, 18).padEnd(
-      23
+      24
     )} Lido withdraw ${formatUnits(stethWithdrawsPercent, 2)}%`
   );
-  console.log(`${formatUnits(total, 18).padEnd(23)} total WETH and stETH`);
-  console.log(`${formatUnits(totalAssets, 18).padEnd(23)} total assets`);
-  console.log(`${formatUnits(totalSupply, 18).padEnd(23)} total supply`);
-  console.log(`${formatUnits(assetPerShare, 18).padEnd(23)} asset per share`);
+  console.log(`${formatUnits(total, 18).padEnd(24)} total WETH and stETH`);
+  console.log(`${formatUnits(totalAssets, 18).padEnd(24)} total assets`);
+  console.log(`${formatUnits(totalSupply, 18).padEnd(24)} total supply`);
+  console.log(`${formatUnits(assetPerShare, 18).padEnd(24)} asset per share`);
   console.log(
-    `${formatUnits(feesAccrued, 18).padEnd(23)} accrued performance fees`
+    `${formatUnits(feesAccrued, 18).padEnd(24)} accrued performance fees`
   );
-  console.log(`${formatUnits(armBuybackWeth, 18).padEnd(23)} WETH in Buyback`);
+  console.log(`${formatUnits(armBuybackWeth, 18).padEnd(24)} WETH in Buyback`);
 
   return { totalAssets, totalSupply, liquidityWeth };
 };
