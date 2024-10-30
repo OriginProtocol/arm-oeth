@@ -20,8 +20,8 @@ const outstandingWithdrawalAmount = async ({ withdrawer }) => {
 
   const query = gql`
     query OutstandingRequestsQuery($withdrawer: String!) {
-      oethWithdrawalRequests(
-        where: { withdrawer_eq: $withdrawer, claimed_eq: false }
+      armWithdrawalRequests(
+        where: { account_eq: $withdrawer, claimed_eq: false }
         limit: 100
       ) {
         id
@@ -42,10 +42,10 @@ const outstandingWithdrawalAmount = async ({ withdrawer }) => {
     });
 
     log(
-      `Found ${data.oethWithdrawalRequests.length} outstanding withdrawal requests`
+      `Found ${data.armWithdrawalRequests.length} outstanding withdrawal requests`
     );
 
-    const amount = data.oethWithdrawalRequests.reduce(
+    const amount = data.armWithdrawalRequests.reduce(
       (acc, request) => acc + BigInt(request.amount),
       0n
     );
