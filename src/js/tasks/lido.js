@@ -227,6 +227,10 @@ const logAssets = async (arm, blockTag) => {
     blockTag,
   });
   const feesAccrued = await arm.feesAccrued({ blockTag });
+  const strategistAddress = await parseAddress("STRATEGIST");
+  const wethInStrategist = await weth.balanceOf(strategistAddress, {
+    blockTag,
+  });
 
   console.log(`\nAssets`);
   console.log(
@@ -246,12 +250,15 @@ const logAssets = async (arm, blockTag) => {
       24
     )} Lido withdraw ${formatUnits(stethWithdrawsPercent, 2)}%`
   );
-  console.log(`${formatUnits(total, 18).padEnd(24)} total WETH and stETH`);
-  console.log(`${formatUnits(totalAssets, 18).padEnd(24)} total assets`);
-  console.log(`${formatUnits(totalSupply, 18).padEnd(24)} total supply`);
-  console.log(`${formatUnits(assetPerShare, 18).padEnd(24)} asset per share`);
+  console.log(`${formatUnits(total, 18).padEnd(24)} Total WETH and stETH`);
+  console.log(`${formatUnits(totalAssets, 18).padEnd(24)} Total assets`);
+  console.log(`${formatUnits(totalSupply, 18).padEnd(24)} Total supply`);
+  console.log(`${formatUnits(assetPerShare, 18).padEnd(24)} Asset per share`);
   console.log(
-    `${formatUnits(feesAccrued, 18).padEnd(24)} accrued performance fees`
+    `${formatUnits(feesAccrued, 18).padEnd(24)} Accrued performance fees`
+  );
+  console.log(
+    `${formatUnits(wethInStrategist, 18).padEnd(24)} WETH in Strategist (fees)`
   );
   console.log(`${formatUnits(armBuybackWeth, 18).padEnd(24)} WETH in Buyback`);
 
