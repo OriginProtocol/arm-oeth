@@ -28,15 +28,11 @@ const handler = async (event) => {
     signer
   );
 
-  try {
-    await claimLidoWithdrawals({
-      signer,
-      arm,
-      withdrawalQueue,
-    });
-  } catch (error) {
-    console.error(error);
-  }
+  await claimLidoWithdrawals({
+    signer,
+    arm,
+    withdrawalQueue,
+  });
 };
 
 module.exports = { handler };

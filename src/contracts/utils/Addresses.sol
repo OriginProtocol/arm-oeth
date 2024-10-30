@@ -36,6 +36,8 @@ library Mainnet {
 
     // Lido
     address public constant LIDO_WITHDRAWAL = 0x889edC2eDab5f40e902b864aD4d7AdE8E412F9B1;
+    address public constant LIDO_EL_VAULT = 0x388C818CA8B9251b393131C08a736A67ccB19297;
+    address public constant LIDO_WITHDRAWAL_MANAGER = 0xB9D7934878B5FB9610B3fE8A5e441e8fad7E293f;
 }
 
 library Holesky {

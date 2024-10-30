@@ -20,6 +20,7 @@ const setPrices = async (options) => {
     sellPrice,
     minSellPrice,
     maxBuyPrice,
+    offset,
     curve,
     inch,
   } = options;
@@ -46,15 +47,17 @@ const setPrices = async (options) => {
         });
     log(`mid price          : ${formatUnits(referencePrices.midPrice)}`);
 
+    const offsetBN = parseUnits(offset.toString(), 14);
+    const offsetMidPrice = referencePrices.midPrice - offsetBN;
+    log(`offset mid price   : ${formatUnits(offsetMidPrice)}`);
+
     const FeeScale = BigInt(1e6);
     const feeRate = FeeScale - BigInt(fee * 100);
-    log(`fee                : ${formatUnits(BigInt(fee * 1000000), 6)} bps`);
-    log(`fee rate           : ${formatUnits(feeRate, 6)} bps`);
+    log(`fee                : ${formatUnits(BigInt(fee * 1000000), 6)} basis points`);
+    log(`fee rate           : ${formatUnits(feeRate, 6)} basis points`);
 
-    targetSellPrice =
-      (referencePrices.midPrice * BigInt(1e18) * FeeScale) / feeRate;
-    targetBuyPrice =
-      (referencePrices.midPrice * BigInt(1e18) * feeRate) / FeeScale;
+    targetSellPrice = (offsetMidPrice * BigInt(1e18) * FeeScale) / feeRate;
+    targetBuyPrice = (offsetMidPrice * BigInt(1e18) * feeRate) / FeeScale;
 
     const minSellPriceBN = parseUnits(minSellPrice.toString(), 36);
     const maxBuyPriceBN = parseUnits(maxBuyPrice.toString(), 36);
@@ -115,13 +118,13 @@ const setPrices = async (options) => {
   log(`target buy  price  : ${formatUnits(targetBuyPrice, 36)}`);
 
   const diffSellPrice = abs(targetSellPrice - currentSellPrice);
-  log(`sell price diff     : ${formatUnits(diffSellPrice, 36)}`);
+  log(`sell price diff     : ${formatUnits(diffSellPrice, 32)} basis points`);
   const diffBuyPrice = abs(targetBuyPrice - currentBuyPrice);
-  log(`buy price diff     : ${formatUnits(diffBuyPrice, 36)}`);
+  log(`buy price diff     : ${formatUnits(diffBuyPrice, 32)} basis points`);
 
   // tolerance option is in basis points
   const toleranceScaled = parseUnits(tolerance.toString(), 36 - 4);
-  log(`tolerance          : ${formatUnits(toleranceScaled, 36)}`);
+  log(`tolerance          : ${formatUnits(toleranceScaled, 32)} basis points`);
 
   // decide if rates need to be updated
   if (diffSellPrice > toleranceScaled || diffBuyPrice > toleranceScaled) {

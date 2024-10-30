@@ -24,16 +24,12 @@ const handler = async (event) => {
   const steth = new ethers.Contract(mainnet.stETH, erc20Abi, signer);
   const arm = new ethers.Contract(mainnet.lidoARM, lidoARMAbi, signer);
 
-  try {
-    await requestLidoWithdrawals({
-      signer,
-      steth,
-      arm,
-      minAmount: 1,
-    });
-  } catch (error) {
-    console.error(error);
-  }
+  await requestLidoWithdrawals({
+    signer,
+    steth,
+    arm,
+    minAmount: 1,
+  });
 };
 
 module.exports = { handler };
