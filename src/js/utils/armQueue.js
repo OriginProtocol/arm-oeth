@@ -76,9 +76,9 @@ const claimableRequests = async ({ withdrawer, queuedAmountClaimable }) => {
       $liquidity: BigInt!
       $tenMinutesAgo: DateTime!
     ) {
-      oethWithdrawalRequests(
+      armWithdrawalRequests(
         where: {
-          withdrawer_eq: $withdrawer
+          account_eq: $withdrawer
           claimed_eq: false
           queued_lte: $liquidity
           timestamp_lt: $tenMinutesAgo
@@ -113,10 +113,10 @@ const claimableRequests = async ({ withdrawer, queuedAmountClaimable }) => {
     });
 
     log(
-      `Found ${data.oethWithdrawalRequests.length} claimable withdrawal requests`
+      `Found ${data.armWithdrawalRequests.length} claimable withdrawal requests`
     );
 
-    return data.oethWithdrawalRequests.map((request) => request.requestId);
+    return data.armWithdrawalRequests.map((request) => request.requestId);
   } catch (error) {
     const msg = `Failed to get claimable OETH withdrawals for ${withdrawer}`;
     console.error(msg);
