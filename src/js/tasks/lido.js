@@ -42,7 +42,11 @@ const lidoWithdrawStatus = async ({ id }) => {
   const status = await stEthWithdrawQueue.getWithdrawalStatus([id]);
 
   console.log(
-    `Withdrawal request ${id} is finalized ${status[0].isFinalized} and claimed ${status[0].isClaimed}`
+    `Withdrawal request ${id} for ${formatUnits(
+      status[0].amountOfStETH
+    )} stETH is finalized ${status[0].isFinalized} and claimed ${
+      status[0].isClaimed
+    }`
   );
 };
 
@@ -126,6 +130,8 @@ const snapLido = async ({
   }
   if (queue) {
     await logWithdrawalQueue(lidoARM, blockTag, liquidityWeth);
+
+    await logLidoWithdrawals(lidoARM, blockTag);
   }
   if (user) {
     await logUser(lidoARM, capManager, blockTag, totalSupply);
@@ -133,6 +139,22 @@ const snapLido = async ({
   if (cap) {
     await logCaps(capManager, totalAssets, blockTag);
   }
+};
+
+const logLidoWithdrawals = async (lidoARM, blockTag) => {
+  const lidoWithdrawalQueueAddress = await parseAddress("LIDO_WITHDRAWAL");
+  const stEthWithdrawQueue = await hre.ethers.getContractAt(
+    "IStETHWithdrawal",
+    lidoWithdrawalQueueAddress
+  );
+  const outstandingRequests = await stEthWithdrawQueue.getWithdrawalRequests(
+    lidoARM.getAddress(),
+    { blockTag }
+  );
+
+  console.log(
+    `\n${outstandingRequests.length} Lido withdrawal requests: ${outstandingRequests}`
+  );
 };
 
 const logLidoQueue = async (signer, blockTag) => {
