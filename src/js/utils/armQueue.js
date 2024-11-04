@@ -20,8 +20,11 @@ const outstandingWithdrawalAmount = async ({ withdrawer }) => {
 
   const query = gql`
     query OutstandingRequestsQuery($withdrawer: String!) {
-      armWithdrawalRequests(
-        where: { account_eq: $withdrawer, claimed_eq: false }
+      oTokenWithdrawalRequests(
+        where: {
+          withdrawer_eq: $withdrawer
+          claimed_eq: false
+        }
         limit: 100
       ) {
         id
@@ -42,10 +45,10 @@ const outstandingWithdrawalAmount = async ({ withdrawer }) => {
     });
 
     log(
-      `Found ${data.armWithdrawalRequests.length} outstanding withdrawal requests`
+      `Found ${data.oTokenWithdrawalRequests.length} outstanding withdrawal requests`
     );
 
-    const amount = data.armWithdrawalRequests.reduce(
+    const amount = data.oTokenWithdrawalRequests.reduce(
       (acc, request) => acc + BigInt(request.amount),
       0n
     );
@@ -76,9 +79,9 @@ const claimableRequests = async ({ withdrawer, queuedAmountClaimable }) => {
       $liquidity: BigInt!
       $tenMinutesAgo: DateTime!
     ) {
-      armWithdrawalRequests(
+      oTokenWithdrawalRequests(
         where: {
-          account_eq: $withdrawer
+          withdrawer_eq: $withdrawer
           claimed_eq: false
           queued_lte: $liquidity
           timestamp_lt: $tenMinutesAgo
@@ -113,10 +116,10 @@ const claimableRequests = async ({ withdrawer, queuedAmountClaimable }) => {
     });
 
     log(
-      `Found ${data.armWithdrawalRequests.length} claimable withdrawal requests`
+      `Found ${data.oTokenWithdrawalRequests.length} claimable withdrawal requests`
     );
 
-    return data.armWithdrawalRequests.map((request) => request.requestId);
+    return data.oTokenWithdrawalRequests.map((request) => request.requestId);
   } catch (error) {
     const msg = `Failed to get claimable OETH withdrawals for ${withdrawer}`;
     console.error(msg);
