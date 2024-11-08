@@ -110,7 +110,7 @@ const log1InchPrices = async ({ amount, gas }, ammPrices) => {
   log(`sell ${amount} stETH for ${formatUnits(oneInch.sellToAmount)} WETH`);
 
   console.log(`\n1Inch prices for swap size ${amount}`);
-  const buyRateDiff = oneInch.buyPrice - ammPrices.buyPrice;
+  const buyRateDiff = oneInch.buyPrice - ammPrices.sellPrice;
   const buyGasCosts = gas ? `, ${oneInch.buyGas.toLocaleString()} gas` : "";
   console.log(
     `buy    : ${formatUnits(oneInch.buyPrice, 18).padEnd(
@@ -127,7 +127,7 @@ const log1InchPrices = async ({ amount, gas }, ammPrices) => {
     )} stETH/WETH, diff ${formatUnits(midRateDiff, 14).padEnd(17)} bps to ARM`
   );
 
-  const sellRateDiff = oneInch.sellPrice - ammPrices.sellPrice;
+  const sellRateDiff = oneInch.sellPrice - ammPrices.buyPrice;
   const sellGasCosts = gas ? `, ${oneInch.sellGas.toLocaleString()} gas` : "";
   console.log(
     `sell   : ${formatUnits(oneInch.sellPrice, 18).padEnd(
@@ -166,9 +166,9 @@ const logCurvePrices = async (options, ammPrices) => {
   const { amount, pair, poolName, gas } = options;
 
   const curve = await getCurvePrices(options);
-  const buyRateDiff = curve.buyPrice - ammPrices.buyPrice;
+  const buyRateDiff = curve.buyPrice - ammPrices.sellPrice;
   const midRateDiff = curve.midPrice - ammPrices.midPrice;
-  const sellRateDiff = curve.sellPrice - ammPrices.sellPrice;
+  const sellRateDiff = curve.sellPrice - ammPrices.buyPrice;
 
   log(`buy  ${formatUnits(curve.buyToAmount)} stETH for ${amount} WETH`);
   log(`sell ${amount} stETH for ${formatUnits(curve.sellToAmount)} WETH`);
@@ -191,7 +191,7 @@ const logCurvePrices = async (options, ammPrices) => {
   console.log(
     `sell   : ${formatUnits(curve.sellPrice, 18).padEnd(
       20
-    )} ${pair}, diff ${formatUnits(sellRateDiff, 1).padEnd(
+    )} ${pair}, diff ${formatUnits(sellRateDiff, 14).padEnd(
       17
     )} bps to ARM${sellGasCosts}`
   );
@@ -203,9 +203,9 @@ const logCurvePrices = async (options, ammPrices) => {
 const logUniswapSpotPrices = async (options, ammPrices) => {
   const { amount, pair, gas } = options;
   const uniswap = await getUniswapV3SpotPrices(options);
-  const buyRateDiff = uniswap.buyPrice - ammPrices.buyPrice;
+  const buyRateDiff = uniswap.buyPrice - ammPrices.sellPrice;
   const midRateDiff = uniswap.midPrice - ammPrices.midPrice;
-  const sellRateDiff = uniswap.sellPrice - ammPrices.sellPrice;
+  const sellRateDiff = uniswap.sellPrice - ammPrices.buyPrice;
 
   log(`buy  ${formatUnits(uniswap.buyToAmount)} stETH for ${amount} WETH`);
   log(`sell ${amount} stETH for ${formatUnits(uniswap.sellToAmount)} WETH`);
