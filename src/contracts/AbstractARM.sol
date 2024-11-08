@@ -140,7 +140,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         require(_liquidityAsset == address(token0) || _liquidityAsset == address(token1), "invalid liquidity asset");
         liquidityAsset = _liquidityAsset;
         // The base asset, eg stETH, is not the liquidity asset, eg WETH
-        baseAsset = _liquidityAsset == address(token0) ? address(token1) : address(token0);
+        baseAsset = _liquidityAsset == _token0 ? _token1 : _token0;
     }
 
     /// @notice Initialize the contract.
