@@ -7,6 +7,10 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {OwnableOperable} from "./OwnableOperable.sol";
 import {IERC20, ICapManager} from "./Interfaces.sol";
 
+/**
+ * @title Generic Automated Redemption Manager (ARM)
+ * @author Origin Protocol Inc
+ */
 abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     ////////////////////////////////////////////////////
     ///                 Constants
