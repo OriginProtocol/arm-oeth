@@ -19,6 +19,8 @@ const setPrices = async (options) => {
     midPrice,
     sellPrice,
     minSellPrice,
+    maxSellPrice,
+    minBuyPrice,
     maxBuyPrice,
     offset,
     curve,
@@ -53,31 +55,64 @@ const setPrices = async (options) => {
 
     const FeeScale = BigInt(1e6);
     const feeRate = FeeScale - BigInt(fee * 100);
-    log(`fee                : ${formatUnits(BigInt(fee * 1000000), 6)} basis points`);
+    log(
+      `fee                : ${formatUnits(
+        BigInt(fee * 1000000),
+        6
+      )} basis points`
+    );
     log(`fee rate           : ${formatUnits(feeRate, 6)} basis points`);
 
     targetSellPrice = (offsetMidPrice * BigInt(1e18) * FeeScale) / feeRate;
     targetBuyPrice = (offsetMidPrice * BigInt(1e18) * feeRate) / FeeScale;
 
-    const minSellPriceBN = parseUnits(minSellPrice.toString(), 36);
-    const maxBuyPriceBN = parseUnits(maxBuyPrice.toString(), 36);
-    if (targetSellPrice < minSellPriceBN) {
-      log(
-        `target sell price ${formatUnits(
-          targetSellPrice,
-          36
-        )} is below min sell price ${minSellPrice} so will use min`
-      );
-      targetSellPrice = minSellPriceBN;
+    if (maxSellPrice) {
+      const maxSellPriceBN = parseUnits(maxSellPrice.toString(), 36);
+      if (targetSellPrice > maxSellPriceBN) {
+        log(
+          `target sell price ${formatUnits(
+            targetSellPrice,
+            36
+          )} is above max sell price ${maxSellPrice} so will use max`
+        );
+        targetSellPrice = maxSellPriceBN;
+      }
     }
-    if (targetBuyPrice > maxBuyPriceBN) {
-      log(
-        `target buy price ${formatUnits(
-          targetBuyPrice,
-          36
-        )} is above max buy price ${maxBuyPrice} so will use max`
-      );
-      targetBuyPrice = maxBuyPriceBN;
+    if (minSellPrice) {
+      const minSellPriceBN = parseUnits(minSellPrice.toString(), 36);
+      if (targetSellPrice < minSellPriceBN) {
+        log(
+          `target sell price ${formatUnits(
+            targetSellPrice,
+            36
+          )} is below min sell price ${minSellPrice} so will use min`
+        );
+        targetSellPrice = minSellPriceBN;
+      }
+    }
+    if (maxBuyPrice) {
+      const maxBuyPriceBN = parseUnits(maxBuyPrice.toString(), 36);
+      if (targetBuyPrice > maxBuyPriceBN) {
+        log(
+          `target buy price ${formatUnits(
+            targetBuyPrice,
+            36
+          )} is above max buy price ${maxBuyPrice} so will use max`
+        );
+        targetBuyPrice = maxBuyPriceBN;
+      }
+    }
+    if (minBuyPrice) {
+      const minBuyPriceBN = parseUnits(minBuyPrice.toString(), 36);
+      if (targetBuyPrice < minBuyPriceBN) {
+        log(
+          `target buy price ${formatUnits(
+            targetBuyPrice,
+            36
+          )} is below min buy price ${minBuyPrice} so will use min`
+        );
+        targetBuyPrice = minBuyPriceBN;
+      }
     }
 
     const crossPrice = await arm.crossPrice();
