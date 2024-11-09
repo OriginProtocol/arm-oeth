@@ -26,6 +26,8 @@ const handler = async (event) => {
     await setPrices({
       signer,
       arm,
+      // sellPrice: 0.9998,
+      // buyPrice: 0.9997,
       maxSellPrice: 0.9999,
       minSellPrice: 0.9998,
       maxBuyPrice: 0.9997,
