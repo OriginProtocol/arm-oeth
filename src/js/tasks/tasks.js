@@ -675,6 +675,12 @@ subtask(
     1,
     types.float
   )
+  .addOptionalParam(
+    "maxAmount",
+    "Maximum amount of stETH to withdraw in each request.",
+    300,
+    types.float
+  )
   .setAction(async (taskArgs) => {
     const signer = await getSigner();
     const steth = await resolveAsset("STETH");

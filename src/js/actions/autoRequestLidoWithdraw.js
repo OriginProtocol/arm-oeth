@@ -29,6 +29,7 @@ const handler = async (event) => {
     steth,
     arm,
     minAmount: 1,
+    maxAmount: 300,
   });
 };
 
