@@ -42,7 +42,11 @@ const lidoWithdrawStatus = async ({ id }) => {
   const status = await stEthWithdrawQueue.getWithdrawalStatus([id]);
 
   console.log(
-    `Withdrawal request ${id} is finalized ${status[0].isFinalized} and claimed ${status[0].isClaimed}`
+    `Withdrawal request ${id} for ${formatUnits(
+      status[0].amountOfStETH
+    )} stETH is finalized ${status[0].isFinalized} and claimed ${
+      status[0].isClaimed
+    }`
   );
 };
 
@@ -126,6 +130,8 @@ const snapLido = async ({
   }
   if (queue) {
     await logWithdrawalQueue(lidoARM, blockTag, liquidityWeth);
+
+    await logLidoWithdrawals(lidoARM, blockTag);
   }
   if (user) {
     await logUser(lidoARM, capManager, blockTag, totalSupply);
@@ -133,6 +139,22 @@ const snapLido = async ({
   if (cap) {
     await logCaps(capManager, totalAssets, blockTag);
   }
+};
+
+const logLidoWithdrawals = async (lidoARM, blockTag) => {
+  const lidoWithdrawalQueueAddress = await parseAddress("LIDO_WITHDRAWAL");
+  const stEthWithdrawQueue = await hre.ethers.getContractAt(
+    "IStETHWithdrawal",
+    lidoWithdrawalQueueAddress
+  );
+  const outstandingRequests = await stEthWithdrawQueue.getWithdrawalRequests(
+    lidoARM.getAddress(),
+    { blockTag }
+  );
+
+  console.log(
+    `\n${outstandingRequests.length} Lido withdrawal requests: ${outstandingRequests}`
+  );
 };
 
 const logLidoQueue = async (signer, blockTag) => {
@@ -227,6 +249,10 @@ const logAssets = async (arm, blockTag) => {
     blockTag,
   });
   const feesAccrued = await arm.feesAccrued({ blockTag });
+  const strategistAddress = await parseAddress("STRATEGIST");
+  const wethInStrategist = await weth.balanceOf(strategistAddress, {
+    blockTag,
+  });
 
   console.log(`\nAssets`);
   console.log(
@@ -246,12 +272,15 @@ const logAssets = async (arm, blockTag) => {
       24
     )} Lido withdraw ${formatUnits(stethWithdrawsPercent, 2)}%`
   );
-  console.log(`${formatUnits(total, 18).padEnd(24)} total WETH and stETH`);
-  console.log(`${formatUnits(totalAssets, 18).padEnd(24)} total assets`);
-  console.log(`${formatUnits(totalSupply, 18).padEnd(24)} total supply`);
-  console.log(`${formatUnits(assetPerShare, 18).padEnd(24)} asset per share`);
+  console.log(`${formatUnits(total, 18).padEnd(24)} Total WETH and stETH`);
+  console.log(`${formatUnits(totalAssets, 18).padEnd(24)} Total assets`);
+  console.log(`${formatUnits(totalSupply, 18).padEnd(24)} Total supply`);
+  console.log(`${formatUnits(assetPerShare, 18).padEnd(24)} Asset per share`);
   console.log(
-    `${formatUnits(feesAccrued, 18).padEnd(24)} accrued performance fees`
+    `${formatUnits(feesAccrued, 18).padEnd(24)} Accrued performance fees`
+  );
+  console.log(
+    `${formatUnits(wethInStrategist, 18).padEnd(24)} WETH in Strategist (fees)`
   );
   console.log(`${formatUnits(armBuybackWeth, 18).padEnd(24)} WETH in Buyback`);
 

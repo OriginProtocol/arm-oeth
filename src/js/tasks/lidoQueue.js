@@ -5,7 +5,7 @@ const { logTxDetails } = require("../utils/txLogger");
 const log = require("../utils/logger")("task:lidoQueue");
 
 const requestLidoWithdrawals = async (options) => {
-  const { signer, steth, arm, amount, minAmount } = options;
+  const { signer, steth, arm, amount, minAmount, maxAmount } = options;
 
   const withdrawAmount = amount
     ? parseUnits(amount.toString())
@@ -13,6 +13,7 @@ const requestLidoWithdrawals = async (options) => {
   log(`${formatUnits(withdrawAmount)} stETH withdraw amount`);
 
   const minAmountBI = parseUnits(minAmount.toString());
+  const maxAmountBI = parseUnits(maxAmount.toString());
 
   if (!amount && withdrawAmount <= minAmountBI) {
     console.log(
@@ -23,11 +24,21 @@ const requestLidoWithdrawals = async (options) => {
     return;
   }
 
-  log(
-    `About to request ${formatUnits(withdrawAmount)} stETH withdrawal from Lido`
-  );
+  const requestAmounts = [];
+  let remainingAmount = withdrawAmount;
+  while (remainingAmount > 0) {
+    const requestAmount =
+      remainingAmount > maxAmountBI ? maxAmountBI : remainingAmount;
+    requestAmounts.push(requestAmount);
+    remainingAmount -= requestAmount;
+    log(
+      `About to request ${formatUnits(
+        requestAmount
+      )} stETH withdrawal from Lido`
+    );
+  }
 
-  const tx = await arm.connect(signer).requestLidoWithdrawals([withdrawAmount]);
+  const tx = await arm.connect(signer).requestLidoWithdrawals(requestAmounts);
 
   await logTxDetails(tx, "requestLidoWithdrawals");
 };

@@ -28,7 +28,8 @@ const handler = async (event) => {
     signer,
     steth,
     arm,
-    minAmount: 1,
+    minAmount: 10,
+    maxAmount: 300,
   });
 };
 

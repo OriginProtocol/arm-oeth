@@ -595,8 +595,20 @@ subtask("setPrices", "Update Lido ARM's swap prices")
     types.float
   )
   .addOptionalParam(
+    "maxSellPrice",
+    "The max sell price when pricing off market. eg 1Inch or Curve",
+    undefined,
+    types.float
+  )
+  .addOptionalParam(
     "maxBuyPrice",
     "The max buy price when pricing off market. eg 1Inch or Curve",
+    undefined,
+    types.float
+  )
+  .addOptionalParam(
+    "minBuyPrice",
+    "The min buy price when pricing off market. eg 1Inch or Curve",
     undefined,
     types.float
   )
@@ -661,6 +673,12 @@ subtask(
     "minAmount",
     "Minimum amount of stETH to withdraw.",
     1,
+    types.float
+  )
+  .addOptionalParam(
+    "maxAmount",
+    "Maximum amount of stETH to withdraw in each request.",
+    300,
     types.float
   )
   .setAction(async (taskArgs) => {
