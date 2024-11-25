@@ -70,7 +70,7 @@ contract Invariant_Basic_Test_ is Invariant_Base_Test_ {
         swapHandler = new SwapHandler(address(lidoARM), address(weth), address(steth), swaps);
         ownerHandler =
             new OwnerHandler(address(lidoARM), address(weth), address(steth), MIN_BUY_T1, MAX_SELL_T1, MAX_FEES);
-        llmHandler = new LLMHandler(address(lidoARM), address(steth));
+        llmHandler = new LLMHandler(address(lidoARM), address(steth), address(lidoWithdraw));
         donationHandler = new DonationHandler(address(lidoARM), address(weth), address(steth));
 
         lpHandler.setSelectorWeight(lpHandler.deposit.selector, 5_000); // 50%

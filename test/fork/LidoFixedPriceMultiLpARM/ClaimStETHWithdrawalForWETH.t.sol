@@ -52,7 +52,7 @@ contract Fork_Concrete_LidoARM_RequestLidoWithdrawals_Test_ is Fork_Shared_Test_
         emit LidoARM.ClaimLidoWithdrawals(emptyList);
 
         // Main call
-        lidoARM.claimLidoWithdrawals(new uint256[](0));
+        lidoARM.claimLidoWithdrawals(emptyList, emptyList);
 
         assertEq(address(lidoARM).balance, 0);
         assertEq(lidoARM.lidoWithdrawalQueueAmount(), 0);
@@ -72,12 +72,15 @@ contract Fork_Concrete_LidoARM_RequestLidoWithdrawals_Test_ is Fork_Shared_Test_
         uint256[] memory requests = new uint256[](1);
         requests[0] = stETHWithdrawal.getLastRequestId();
 
+        uint256 lastIndex = stETHWithdrawal.getLastCheckpointIndex();
+        uint256[] memory hintIds = stETHWithdrawal.findCheckpointHints(requests, 1, lastIndex);
+
         // Expected events
         vm.expectEmit({emitter: address(lidoARM)});
         emit LidoARM.ClaimLidoWithdrawals(requests);
 
         // Main call
-        lidoARM.claimLidoWithdrawals(requests);
+        lidoARM.claimLidoWithdrawals(requests, hintIds);
 
         // Assertions after
         assertEq(lidoARM.lidoWithdrawalQueueAmount(), 0);
@@ -100,12 +103,15 @@ contract Fork_Concrete_LidoARM_RequestLidoWithdrawals_Test_ is Fork_Shared_Test_
         requests[0] = stETHWithdrawal.getLastRequestId() - 1;
         requests[1] = stETHWithdrawal.getLastRequestId();
 
+        uint256 lastIndex = stETHWithdrawal.getLastCheckpointIndex();
+        uint256[] memory hintIds = stETHWithdrawal.findCheckpointHints(requests, 1, lastIndex);
+
         // Expected events
         vm.expectEmit({emitter: address(lidoARM)});
         emit LidoARM.ClaimLidoWithdrawals(requests);
 
         // Main call
-        lidoARM.claimLidoWithdrawals(requests);
+        lidoARM.claimLidoWithdrawals(requests, hintIds);
 
         // Assertions after
         assertEq(lidoARM.lidoWithdrawalQueueAmount(), 0);
