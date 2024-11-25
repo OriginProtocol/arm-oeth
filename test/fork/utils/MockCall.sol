@@ -46,6 +46,25 @@ contract MockLidoWithdraw {
     function claimWithdrawals(uint256[] memory, uint256[] memory) external {
         ethSender.sendETH(lidoARM);
     }
+
+    /// @notice Mock the call to the Lido contract's `getLastCheckpointIndex` function.
+    function getLastCheckpointIndex() public pure returns (uint256) {
+        // hardcoded as this is not used by the Lido ARM
+        return 300;
+    }
+
+    /// @notice Mock the call to the Lido contract's `findCheckpointHints` function.
+    function findCheckpointHints(uint256[] calldata _requestIds, uint256, uint256)
+        external
+        pure
+        returns (uint256[] memory hintIds)
+    {
+        hintIds = new uint256[](_requestIds.length);
+        for (uint256 i = 0; i < _requestIds.length; ++i) {
+            // hardcoded as this is not used by the Lido ARM
+            hintIds[i] = 300;
+        }
+    }
 }
 
 contract ETHSender {
