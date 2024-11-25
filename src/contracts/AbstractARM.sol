@@ -408,7 +408,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
      * The cross price can be increased with assets in the ARM.
      * @param newCrossPrice The new cross price scaled to 36 decimals.
      */
-    function setCrossPrice(uint256 newCrossPrice) external onlyOwner {
+    function setCrossPrice(uint256 newCrossPrice) external onlyOperatorOrOwner {
         require(newCrossPrice >= PRICE_SCALE - MAX_CROSS_PRICE_DEVIATION, "ARM: cross price too low");
         require(newCrossPrice <= PRICE_SCALE, "ARM: cross price too high");
         // The exiting sell price must be greater than or equal to the new cross price
