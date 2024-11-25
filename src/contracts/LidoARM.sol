@@ -70,7 +70,7 @@ contract LidoARM is Initializable, AbstractARM {
      * Reference: https://docs.lido.fi/contracts/withdrawal-queue-erc721/
      * Note: There is a 1k amount limit. Caller should split large withdrawals in chunks of less or equal to 1k each.)
      */
-    function requestLidoWithdrawals(uint256[] memory amounts)
+    function requestLidoWithdrawals(uint256[] calldata amounts)
         external
         onlyOperatorOrOwner
         returns (uint256[] memory requestIds)
