@@ -104,7 +104,14 @@ contract LidoARM is Initializable, AbstractARM {
         uint256 etherAfter = address(this).balance;
 
         // Reduce the Ether outstanding from the Lido Withdrawal Queue
-        lidoWithdrawalQueueAmount -= etherAfter - etherBefore;
+        uint256 etherClaimed = etherAfter - etherBefore;
+        if (etherClaimed > lidoWithdrawalQueueAmount) {
+            // This is a very unlikely scenario, but can happen if a Lido withdrawal NFT was transferred to the ARM contract
+            // and then claimed using `claimLidoWithdrawals`.
+            lidoWithdrawalQueueAmount = 0;
+        } else {
+            lidoWithdrawalQueueAmount -= etherClaimed;
+        }
 
         // Wrap all the received ETH to WETH.
         weth.deposit{value: etherAfter}();

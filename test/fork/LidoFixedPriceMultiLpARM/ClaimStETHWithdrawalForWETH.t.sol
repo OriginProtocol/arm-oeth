@@ -111,4 +111,30 @@ contract Fork_Concrete_LidoARM_RequestLidoWithdrawals_Test_ is Fork_Shared_Test_
         assertEq(lidoARM.lidoWithdrawalQueueAmount(), 0);
         assertEq(weth.balanceOf(address(lidoARM)), balanceBefore + amounts2[0] + amounts2[1]);
     }
+
+    function test_ClaimLidoWithdrawals_BiggerClaim()
+        public
+        asOperator
+        requestLidoWithdrawalsOnLidoARM(amounts1)
+        mockFunctionClaimWithdrawOnLidoARM(DEFAULT_AMOUNT + 5)
+    {
+        // Assertions before
+        uint256 balanceBefore = weth.balanceOf(address(lidoARM));
+        assertEq(lidoARM.lidoWithdrawalQueueAmount(), DEFAULT_AMOUNT);
+
+        stETHWithdrawal.getLastRequestId();
+        uint256[] memory requests = new uint256[](1);
+        requests[0] = stETHWithdrawal.getLastRequestId();
+
+        // Expected events
+        vm.expectEmit({emitter: address(lidoARM)});
+        emit LidoARM.ClaimLidoWithdrawals(requests);
+
+        // Main call
+        lidoARM.claimLidoWithdrawals(requests);
+
+        // Assertions after
+        assertEq(lidoARM.lidoWithdrawalQueueAmount(), 0);
+        assertEq(weth.balanceOf(address(lidoARM)), balanceBefore + DEFAULT_AMOUNT + 5);
+    }
 }
