@@ -52,7 +52,7 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
         assertEq(address(lidoARM.weth()), Mainnet.WETH, "WETH");
         assertEq(lidoARM.liquidityAsset(), Mainnet.WETH, "liquidity asset");
         assertEq(lidoARM.claimDelay(), 10 minutes, "claim delay");
-        assertEq(lidoARM.crossPrice(), 0.9998e36, "cross price");
+        assertEq(lidoARM.crossPrice(), 0.99985e36, "cross price");
 
         assertEq(capManager.accountCapEnabled(), false, "account cap enabled");
         assertEq(capManager.operator(), Mainnet.ARM_RELAYER, "Operator");
@@ -62,29 +62,29 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
     function test_swap_exact_steth_for_weth() external {
         // trader sells stETH and buys WETH, the ARM buys stETH as a
         // 4 bps discount
-        _swapExactTokensForTokens(steth, weth, 9996e32, 100 ether);
+        _swapExactTokensForTokens(steth, weth, 0.9996e36, 100 ether);
         // 10 bps discount
-        _swapExactTokensForTokens(steth, weth, 9990e32, 1e15);
+        _swapExactTokensForTokens(steth, weth, 0.9990e36, 1e15);
         // 20 bps discount
-        _swapExactTokensForTokens(steth, weth, 9980e32, 1 ether);
+        _swapExactTokensForTokens(steth, weth, 0.9980e36, 1 ether);
     }
 
     function test_swap_exact_weth_for_steth() external {
         // trader buys stETH and sells WETH, the ARM sells stETH at a
         // 1 bps discount
-        _swapExactTokensForTokens(weth, steth, 9999e32, 10 ether);
-        // 2 bps discount
-        _swapExactTokensForTokens(weth, steth, 9998e32, 100 ether);
+        _swapExactTokensForTokens(weth, steth, 0.9999e36, 10 ether);
+        // 1.5 bps discount
+        _swapExactTokensForTokens(weth, steth, 0.99985e36, 100 ether);
     }
 
     function test_swapTokensForExactTokens() external {
         // trader sells stETH and buys WETH, the ARM buys stETH at a
         // 4 bps discount
-        _swapTokensForExactTokens(steth, weth, 9996e32, 10 ether);
+        _swapTokensForExactTokens(steth, weth, 0.9996e36, 10 ether);
         // 10 bps discount
-        _swapTokensForExactTokens(steth, weth, 9990e32, 100 ether);
+        _swapTokensForExactTokens(steth, weth, 0.9990e36, 100 ether);
         // 50 bps discount
-        _swapTokensForExactTokens(steth, weth, 9950e32, 10 ether);
+        _swapTokensForExactTokens(steth, weth, 0.9950e36, 10 ether);
     }
 
     function _swapExactTokensForTokens(IERC20 inToken, IERC20 outToken, uint256 price, uint256 amountIn) internal {
@@ -108,7 +108,7 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
             expectedOut = amountIn * price / 1e36;
 
             vm.prank(Mainnet.ARM_RELAYER);
-            uint256 sellPrice = price < 9996e32 ? 9998e32 : price + 2e32;
+            uint256 sellPrice = price < 0.99965e36 ? 0.99985e36 : price + 2e32;
             lidoARM.setPrices(price, sellPrice);
         }
         // Approve the ARM to transfer the input token of the swap.
@@ -145,7 +145,7 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
             expectedIn = amountOut * 1e36 / price + 3;
 
             vm.prank(Mainnet.ARM_RELAYER);
-            uint256 sellPrice = price < 9996e32 ? 9998e32 : price + 2e32;
+            uint256 sellPrice = price < 0.99965e36 ? 0.99985e36 : price + 2e32;
             lidoARM.setPrices(price, sellPrice);
         }
         // Approve the ARM to transfer the input token of the swap.
