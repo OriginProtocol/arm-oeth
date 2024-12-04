@@ -64,9 +64,9 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
         // 4 bps discount
         _swapExactTokensForTokens(steth, weth, 0.9996e36, 100 ether);
         // 10 bps discount
-        _swapExactTokensForTokens(steth, weth, 0.9990e36, 1e15);
+        _swapExactTokensForTokens(steth, weth, 0.999e36, 1e15);
         // 20 bps discount
-        _swapExactTokensForTokens(steth, weth, 0.9980e36, 1 ether);
+        _swapExactTokensForTokens(steth, weth, 0.998e36, 1 ether);
     }
 
     function test_swap_exact_weth_for_steth() external {
@@ -82,9 +82,9 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
         // 4 bps discount
         _swapTokensForExactTokens(steth, weth, 0.9996e36, 10 ether);
         // 10 bps discount
-        _swapTokensForExactTokens(steth, weth, 0.9990e36, 100 ether);
+        _swapTokensForExactTokens(steth, weth, 0.999e36, 100 ether);
         // 50 bps discount
-        _swapTokensForExactTokens(steth, weth, 0.9950e36, 10 ether);
+        _swapTokensForExactTokens(steth, weth, 0.995e36, 10 ether);
     }
 
     function _swapExactTokensForTokens(IERC20 inToken, IERC20 outToken, uint256 price, uint256 amountIn) internal {
