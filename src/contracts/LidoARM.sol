@@ -26,6 +26,9 @@ contract LidoARM is Initializable, AbstractARM {
     /// @notice The amount of stETH in the Lido Withdrawal Queue
     uint256 public lidoWithdrawalQueueAmount;
 
+    /// @notice stores the requested amount for each Lido withdrawal
+    mapping(uint256 id => uint256 amount) public lidoWithdrawalRequests;
+
     event RequestLidoWithdrawals(uint256[] amounts, uint256[] requestIds);
     event ClaimLidoWithdrawals(uint256[] requestIds);
 
@@ -81,6 +84,9 @@ contract LidoARM is Initializable, AbstractARM {
         uint256 totalAmountRequested = 0;
         for (uint256 i = 0; i < amounts.length; i++) {
             totalAmountRequested += amounts[i];
+
+            // Store the amount of each withdrawal request
+            lidoWithdrawalRequests[requestIds[i]] = amounts[i];
         }
 
         // Increase the Ether outstanding from the Lido Withdrawal Queue
@@ -94,20 +100,31 @@ contract LidoARM is Initializable, AbstractARM {
      * Before calling this method, caller should check on the request NFTs to ensure the withdrawal was processed.
      */
     function claimLidoWithdrawals(uint256[] memory requestIds) external {
-        uint256 etherBefore = address(this).balance;
-
         // Claim the NFTs for ETH.
         uint256 lastIndex = lidoWithdrawalQueue.getLastCheckpointIndex();
         uint256[] memory hintIds = lidoWithdrawalQueue.findCheckpointHints(requestIds, 1, lastIndex);
         lidoWithdrawalQueue.claimWithdrawals(requestIds, hintIds);
 
-        uint256 etherAfter = address(this).balance;
+        // Reduce the amount outstanding from the Lido Withdrawal Queue.
+        // The amount of ETH claimed from the Lido Withdrawal Queue can be less than the requested amount
+        // in the event of a mass slashing event of Lido validators.
+        uint256 totalAmountRequested = 0;
+        for (uint256 i = 0; i < requestIds.length; i++) {
+            // Read the requested amount from storage
+            uint256 requestAmount = lidoWithdrawalRequests[requestIds[i]];
 
-        // Reduce the Ether outstanding from the Lido Withdrawal Queue
-        lidoWithdrawalQueueAmount -= etherAfter - etherBefore;
+            // Validate the request came from this Lido ARM contract and not
+            // transferred in from another account.
+            require(requestAmount > 0, "LidoARM: invalid request");
+
+            totalAmountRequested += requestAmount;
+        }
+
+        // Store the reduced amount outstanding from the Lido Withdrawal Queue
+        lidoWithdrawalQueueAmount -= totalAmountRequested;
 
         // Wrap all the received ETH to WETH.
-        weth.deposit{value: etherAfter}();
+        weth.deposit{value: address(this).balance}();
 
         emit ClaimLidoWithdrawals(requestIds);
     }

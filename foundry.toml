@@ -6,7 +6,7 @@ verbosity = 3
 sender = "0x0165C55EF814dEFdd658532A48Bd17B2c8356322"
 tx_origin = "0x0165C55EF814dEFdd658532A48Bd17B2c8356322"
 auto_detect_remappings = false
-gas_reports = ["OEthARM", "Proxy"]
+gas_reports = ["OethARM", "Proxy"]
 fs_permissions = [{ access = "read-write", path = "./build" }]
 extra_output_files = ["metadata"]
 ignored_warnings_from = ["src/contracts/Proxy.sol"]
