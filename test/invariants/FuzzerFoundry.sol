@@ -145,9 +145,9 @@ contract FuzzerFoundry is TargetFunction {
     }
 
     function afterInvariant() public {
-        sweepAllStETH();
         finalizeLidoClaims();
+        sweepAllStETH();
         finalizeUserClaims();
-        assertTrue(ensureSharesAreUpOnly(MAX_WETH_PER_USERS));
+        assertTrue(ensureSharesAreUpOnly(MAX_WETH_PER_USERS), "Shares are not up only");
     }
 }

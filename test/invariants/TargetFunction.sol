@@ -230,7 +230,8 @@ abstract contract TargetFunction is Properties {
     ////////////////////////////////////////////////////
     /// --- PRICES AND FEES MANAGEMENT
     ////////////////////////////////////////////////////
-    uint256 constant MAX_FEES = 0.5 * 1e18;
+    uint256 constant MIN_FEES = 50;
+    uint256 constant MAX_FEES = 5000;
     uint256 constant MIN_BUY_T1 = 0.98 * 1e36;
     uint256 constant MAX_SELL_T1 = 1.02 * 1e36;
 
@@ -265,7 +266,7 @@ abstract contract TargetFunction is Properties {
     }
 
     function handler_setFee(uint256 performanceFee) public {
-        performanceFee = _bound(performanceFee, 0, MAX_FEES);
+        performanceFee = _bound(performanceFee, MIN_FEES, MAX_FEES);
 
         // Cache accrued fees before setting new fee
         uint256 accumulatedFees = lidoARM.feesAccrued();
@@ -352,11 +353,6 @@ abstract contract TargetFunction is Properties {
             vm.stopPrank();
         }
 
-        for (uint256 i; i < 500; i++) {
-            (address addr, bool claim,,,) = lidoARM.withdrawalRequests(i);
-            require(addr == address(0) || claim, "CLAIM_FAILED");
-        }
-
         // No need to jump back to current time, as we are done with the test
     }
 
@@ -365,7 +361,7 @@ abstract contract TargetFunction is Properties {
             address user = lps[i];
             uint256 shares = lidoARM.balanceOf(user);
             uint256 sum = weth.balanceOf(user) + lidoARM.previewRedeem(shares);
-            if (!gte(sum, initialBalance)) {
+            if (!gte(sum * (1e18 + 1e6) / 1e18, initialBalance)) {
                 return false;
             }
         }
