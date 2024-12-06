@@ -143,4 +143,11 @@ contract FuzzerFoundry is TargetFunction {
     function invariant_llm_A() public view {
         assertTrue(property_llm_A());
     }
+
+    function afterInvariant() public {
+        sweepAllStETH();
+        finalizeLidoClaims();
+        finalizeUserClaims();
+        assertTrue(ensureSharesAreUpOnly(MAX_WETH_PER_USERS));
+    }
 }

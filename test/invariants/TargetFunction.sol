@@ -148,7 +148,15 @@ abstract contract TargetFunction is Properties {
         rewind(lidoARM.claimDelay());
 
         // Update state
-        requests[user].pop();
+        for (uint256 i = 0; i < requests[user].length; i++) {
+            // Get position of the requestId in the array
+            if (requests[user][i] == requestId) {
+                // Remove it from the list
+                requests[user][i] = requests[user][requests[user].length - 1];
+                requests[user].pop();
+                break;
+            }
+        }
 
         // Update ghost
         sum_weth_withdraw += amount;
@@ -300,5 +308,67 @@ abstract contract TargetFunction is Properties {
 
         // Update ghost
         stETH ? sum_steth_donated += amount : sum_weth_donated += amount;
+    }
+
+    ////////////////////////////////////////////////////
+    /// --- HELPERS
+    ////////////////////////////////////////////////////
+    function finalizeLidoClaims() public {
+        if (lidoWithdrawRequests.length == 0) return;
+
+        // Prank Owner
+        vm.prank(lidoARM.owner());
+        lidoARM.claimLidoWithdrawals(lidoWithdrawRequests);
+
+        require(lidoARM.lidoWithdrawalQueueAmount() == 0, "FINALIZE_FAILED");
+    }
+
+    function sweepAllStETH() public {
+        deal(address(weth), address(this), 1e30);
+        weth.approve(address(lidoARM), type(uint256).max);
+        lidoARM.swapTokensForExactTokens(
+            weth, steth, steth.balanceOf(address(lidoARM)), type(uint256).max, address(this)
+        );
+        require(steth.balanceOf(address(lidoARM)) == 0, "SWEEP_FAILED");
+    }
+
+    function finalizeUserClaims() public {
+        // Timejump to request deadline
+        skip(lidoARM.claimDelay());
+
+        // Loop on all LPs
+        for (uint256 i; i < lps.length; i++) {
+            address user = lps[i];
+            uint256 requestCount = requests[user].length;
+
+            // Prank LP
+            vm.startPrank(user);
+
+            // Loop on all requests && Claim redeem
+            for (uint256 j; j < requestCount; j++) {
+                lidoARM.claimRedeem(requests[user][j]);
+            }
+
+            vm.stopPrank();
+        }
+
+        for (uint256 i; i < 500; i++) {
+            (address addr, bool claim,,,) = lidoARM.withdrawalRequests(i);
+            require(addr == address(0) || claim, "CLAIM_FAILED");
+        }
+
+        // No need to jump back to current time, as we are done with the test
+    }
+
+    function ensureSharesAreUpOnly(uint256 initialBalance) public view returns (bool) {
+        for (uint256 i; i < lps.length; i++) {
+            address user = lps[i];
+            uint256 shares = lidoARM.balanceOf(user);
+            uint256 sum = weth.balanceOf(user) + lidoARM.previewRedeem(shares);
+            if (!gte(sum, initialBalance)) {
+                return false;
+            }
+        }
+        return true;
     }
 }
