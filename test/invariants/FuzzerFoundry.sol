@@ -82,7 +82,16 @@ contract FuzzerFoundry is TargetFunction {
     //////////////////////////////////////////////////////
     /// --- INVARIANTS
     //////////////////////////////////////////////////////
-    function invariant_A() public view {
+    function invariant_swap_A() public view {
         assertTrue(property_swap_A());
+    }
+
+    function invariant_swap_B() public view {
+        assertTrue(property_swap_B());
+    }
+
+    function invariant_swap_C_D() public view {
+        assertTrue(property_swap_C());
+        assertTrue(property_swap_D());
     }
 }

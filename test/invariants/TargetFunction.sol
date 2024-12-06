@@ -2,14 +2,12 @@
 pragma solidity 0.8.23;
 
 // Interfaces
-import {IERC20} from "src/contracts/AbstractARM.sol";
+import {IERC20} from "contracts/Interfaces.sol";
 
 // Test imports
 import {Properties} from "test/invariants/Properties.sol";
 
 abstract contract TargetFunction is Properties {
-    uint256 constant MAX_BATCH_SIZE = 1_000 ether;
-
     ////////////////////////////////////////////////////
     /// --- SWAPS
     ////////////////////////////////////////////////////
@@ -21,15 +19,24 @@ abstract contract TargetFunction is Properties {
         // Select a random user
         address user = swaps[account % swaps.length];
 
+        // Cache estimated amount out
+        uint256 estimatedAmountOut = estimateAmountOut(IERC20(path[0]), amount);
+
         // Prank the user
         vm.prank(user);
-        lidoARM.swapExactTokensForTokens({
+        uint256[] memory amounts = lidoARM.swapExactTokensForTokens({
             amountIn: amount,
             amountOutMin: 0,
             path: path,
             to: address(user),
             deadline: block.timestamp
         });
+
+        // Update ghost
+        ghost_swap_C = amounts[0] == amount;
+        ghost_swap_D = amounts[1] == estimatedAmountOut;
+        stETHForWETH ? sum_steth_swap_in += amounts[0] : sum_weth_swap_in += amounts[0];
+        stETHForWETH ? sum_weth_swap_out += amounts[1] : sum_steth_swap_out += amounts[1];
     }
 
     function handler_swapTokensForExactTokens(uint8 account, bool stETHForWETH, uint80 amount) public {
@@ -40,15 +47,24 @@ abstract contract TargetFunction is Properties {
         // Select a random user
         address user = swaps[account % swaps.length];
 
+        // Cache estimated amount in
+        uint256 estimatedAmountIn = estimateAmountIn(IERC20(path[1]), amount);
+
         // Prank the user
         vm.prank(user);
-        lidoARM.swapTokensForExactTokens({
+        uint256[] memory amounts = lidoARM.swapTokensForExactTokens({
             amountOut: amount,
             amountInMax: type(uint256).max,
             path: path,
             to: address(user),
             deadline: block.timestamp
         });
+
+        // Update ghost
+        ghost_swap_C = amounts[0] == estimatedAmountIn;
+        ghost_swap_D = amounts[1] == amount;
+        stETHForWETH ? sum_steth_swap_in += amounts[0] : sum_weth_swap_in += amounts[0];
+        stETHForWETH ? sum_weth_swap_out += amounts[1] : sum_steth_swap_out += amounts[1];
     }
 
     ////////////////////////////////////////////////////
@@ -63,6 +79,9 @@ abstract contract TargetFunction is Properties {
         // Prank the user
         vm.prank(user);
         lidoARM.deposit(amount);
+
+        // Update ghost
+        sum_weth_deposit += amount;
     }
 
     function handler_requestRedeem(uint8 account, uint80 shares) public {
@@ -113,18 +132,22 @@ abstract contract TargetFunction is Properties {
         vm.prank(user);
 
         // Claim redeem
-        lidoARM.claimRedeem(requestId);
+        uint256 amount = lidoARM.claimRedeem(requestId);
 
         // Jump back to current time, to avoid issues with other tests
         rewind(lidoARM.claimDelay());
 
         // Update state
         requests[user].pop();
+
+        // Update ghost
+        sum_weth_withdraw += amount;
     }
 
     ////////////////////////////////////////////////////
     /// --- LIDO LIQUIDITY MANAGMENT
     ////////////////////////////////////////////////////
+    uint256 constant MAX_BATCH_SIZE = 1_000 ether;
     uint256[] public lidoWithdrawRequests;
 
     function handler_requestLidoWithdrawals(uint80 amount) public {
@@ -150,6 +173,9 @@ abstract contract TargetFunction is Properties {
         for (uint256 i = 0; i < newLidoWithdrawRequests.length; i++) {
             lidoWithdrawRequests.push(newLidoWithdrawRequests[i]);
         }
+
+        // Update ghost
+        sum_steth_lido_requested += amount;
     }
 
     function handler_claimLidoWithdrawals(uint256 requestToClaimCount) public {
@@ -163,14 +189,14 @@ abstract contract TargetFunction is Properties {
         }
 
         // As `claimLidoWithdrawals` doesn't send back the amount, we need to calculate it
-        //uint256 outstandingBefore = lidoARM.lidoWithdrawalQueueAmount();
+        uint256 outstandingBefore = lidoARM.lidoWithdrawalQueueAmount();
 
         // Prank Owner
         vm.prank(lidoARM.owner());
         lidoARM.claimLidoWithdrawals(requestToClaim);
 
-        //uint256 outstandingAfter = lidoARM.lidoWithdrawalQueueAmount();
-        //uint256 diff = outstandingBefore - outstandingAfter;
+        uint256 outstandingAfter = lidoARM.lidoWithdrawalQueueAmount();
+        uint256 diff = outstandingBefore - outstandingAfter;
 
         // Remove it from the list
         uint256[] memory newLidoWithdrawRequests = new uint256[](len - requestToClaimCount);
@@ -178,6 +204,9 @@ abstract contract TargetFunction is Properties {
             newLidoWithdrawRequests[i - requestToClaimCount] = lidoWithdrawRequests[i];
         }
         lidoWithdrawRequests = newLidoWithdrawRequests;
+
+        // Update ghost
+        sum_weth_lido_redeem += diff;
     }
 
     ////////////////////////////////////////////////////
@@ -220,11 +249,17 @@ abstract contract TargetFunction is Properties {
     function handler_setFee(uint256 performanceFee) public {
         performanceFee = _bound(performanceFee, 0, MAX_FEES);
 
+        // Cache accrued fees before setting new fee
+        uint256 accumulatedFees = lidoARM.feesAccrued();
+
         // Prank owner
         vm.prank(lidoARM.owner());
 
         // Set fees
         lidoARM.setFee(performanceFee);
+
+        // Update ghost
+        sum_weth_fees += accumulatedFees;
     }
 
     function handler_collectFees() public {
@@ -232,7 +267,10 @@ abstract contract TargetFunction is Properties {
         vm.prank(lidoARM.owner());
 
         // Collect fees
-        lidoARM.collectFees();
+        uint256 collectedFees = lidoARM.collectFees();
+
+        // Update ghost
+        sum_weth_fees += collectedFees;
     }
 
     ////////////////////////////////////////////////////
@@ -249,5 +287,8 @@ abstract contract TargetFunction is Properties {
         deal(address(token), address(this), amount);
 
         token.transfer(address(lidoARM), amount);
+
+        // Update ghost
+        stETH ? sum_steth_donated += amount : sum_weth_donated += amount;
     }
 }
