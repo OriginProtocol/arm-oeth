@@ -94,4 +94,53 @@ contract FuzzerFoundry is TargetFunction {
         assertTrue(property_swap_C());
         assertTrue(property_swap_D());
     }
+
+    function invariant_lp_A() public view {
+        assertTrue(property_lp_A());
+    }
+
+    function invariant_lp_B() public view {
+        assertTrue(property_lp_B());
+    }
+
+    function invariant_lp_C() public view {
+        assertTrue(property_lp_C());
+    }
+
+    function invariant_lp_D_E() public view {
+        assertTrue(property_lp_D());
+        assertTrue(property_lp_E());
+    }
+
+    function invariant_lp_F() public view {
+        assertTrue(property_lp_F());
+    }
+
+    function invariant_lp_G() public view {
+        assertTrue(property_lp_G());
+    }
+
+    function invariant_lp_H() public view {
+        assertTrue(property_lp_H());
+    }
+
+    function invariant_lp_I() public view {
+        assertTrue(property_lp_I());
+    }
+
+    function invariant_lp_J() public view {
+        assertTrue(property_lp_invariant_J());
+    }
+
+    function invariant_lp_K() public view {
+        assertTrue(property_lp_invariant_K());
+    }
+
+    function invariant_lp_M() public view {
+        assertTrue(property_lp_invariant_M());
+    }
+
+    function invariant_llm_A() public view {
+        assertTrue(property_llm_A());
+    }
 }

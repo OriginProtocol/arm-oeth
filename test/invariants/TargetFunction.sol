@@ -76,12 +76,16 @@ abstract contract TargetFunction is Properties {
         // Select a random user
         address user = lps[account % lps.length];
 
+        // Cache preview deposit
+        uint256 expectedShares = lidoARM.previewDeposit(amount);
+
         // Prank the user
         vm.prank(user);
-        lidoARM.deposit(amount);
+        uint256 shares = lidoARM.deposit(amount);
 
         // Update ghost
         sum_weth_deposit += amount;
+        ghost_lp_D = shares == expectedShares;
     }
 
     function handler_requestRedeem(uint8 account, uint80 shares) public {
@@ -100,14 +104,20 @@ abstract contract TargetFunction is Properties {
             return;
         }
 
+        // Cache preview redeem
+        uint256 expectedAmount = lidoARM.previewRedeem(shares);
+
         // Prank the user
         vm.prank(user);
 
         // Request redeem
-        (uint256 id,) = lidoARM.requestRedeem(shares);
+        (uint256 id, uint256 amount) = lidoARM.requestRedeem(shares);
 
         // Update state
         requests[user].push(id);
+        sum_weth_request += amount;
+        ghost_lp_E = amount == expectedAmount;
+        ghost_requestCounter++;
     }
 
     function handler_claimRedeem(uint8 account, uint256 id) public {
