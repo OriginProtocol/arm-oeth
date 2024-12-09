@@ -3,6 +3,10 @@ pragma solidity ^0.8.23;
 
 import {Ownable} from "./Ownable.sol";
 
+/**
+ * @title Base contract that provides ownership and operational control
+ * @author Origin Protocol Inc
+ */
 contract OwnableOperable is Ownable {
     /// @notice The account that can request and claim withdrawals.
     address public operator;

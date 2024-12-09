@@ -39,10 +39,12 @@ contract LidoARM is Initializable, AbstractARM {
         steth = IERC20(_steth);
         weth = IWETH(_weth);
         lidoWithdrawalQueue = IStETHWithdrawal(_lidoWithdrawalQueue);
+
+        _disableInitializers();
     }
 
     /// @notice Initialize the storage variables stored in the proxy contract.
-    /// The deployer that calls initialize has to approve the this ARM's proxy contract to transfer 1e12 WETH.
+    /// The deployer that calls initialize has to approve the ARM's proxy contract to transfer 1e12 WETH.
     /// @param _name The name of the liquidity provider (LP) token.
     /// @param _symbol The symbol of the liquidity provider (LP) token.
     /// @param _operator The address of the account that can request and claim Lido withdrawals.
