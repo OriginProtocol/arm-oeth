@@ -730,6 +730,12 @@ task("claimLidoWithdraws").setAction(async (_, __, runSuper) => {
 
 subtask("lidoWithdrawStatus", "Get the status of a Lido withdrawal request")
   .addParam("id", "Request identifier", undefined, types.string)
+  .addOptionalParam(
+    "block",
+    "Block number. (default: latest)",
+    undefined,
+    types.int
+  )
   .setAction(lidoWithdrawStatus);
 task("lidoWithdrawStatus").setAction(async (_, __, runSuper) => {
   return runSuper();
