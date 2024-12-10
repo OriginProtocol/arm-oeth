@@ -32,14 +32,17 @@ async function setZapper() {
   await logTxDetails(tx, "setZap");
 }
 
-const lidoWithdrawStatus = async ({ id }) => {
+const lidoWithdrawStatus = async ({ block, id }) => {
+  const blockTag = await getBlock(block);
   const lidoWithdrawalQueueAddress = await parseAddress("LIDO_WITHDRAWAL");
   const stEthWithdrawQueue = await hre.ethers.getContractAt(
     "IStETHWithdrawal",
     lidoWithdrawalQueueAddress
   );
 
-  const status = await stEthWithdrawQueue.getWithdrawalStatus([id]);
+  const status = await stEthWithdrawQueue.getWithdrawalStatus([id], {
+    blockTag,
+  });
 
   console.log(
     `Withdrawal request ${id} for ${formatUnits(

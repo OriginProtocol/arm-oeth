@@ -9,6 +9,10 @@ import {IERC20, ICapManager} from "./Interfaces.sol";
 
 import {console} from "forge-std/console.sol";
 
+/**
+ * @title Generic Automated Redemption Manager (ARM)
+ * @author Origin Protocol Inc
+ */
 abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     ////////////////////////////////////////////////////
     ///                 Constants
@@ -142,7 +146,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         require(_liquidityAsset == address(token0) || _liquidityAsset == address(token1), "invalid liquidity asset");
         liquidityAsset = _liquidityAsset;
         // The base asset, eg stETH, is not the liquidity asset, eg WETH
-        baseAsset = _liquidityAsset == address(token0) ? address(token1) : address(token0);
+        baseAsset = _liquidityAsset == _token0 ? _token1 : _token0;
     }
 
     /// @notice Initialize the contract.
@@ -406,7 +410,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
      * If the cross price is being lowered, there can not be a significant amount of base assets in the ARM. eg stETH.
      * This prevents the ARM making a loss when the base asset is sold at a lower price than it was bought
      * before the cross price was lowered.
-     * The base assets should be sent to the withdrawal queue before the cross price can be lowered.
+     * The base assets should be sent to the withdrawal queue before the cross price can be lowered. For example, the
+     * `Owner` should construct a tx that calls `requestLidoWithdrawals` before `setCrossPrice` for the Lido ARM
+     * when the cross price is being lowered.
      * The cross price can be increased with assets in the ARM.
      * @param newCrossPrice The new cross price scaled to 36 decimals.
      */
