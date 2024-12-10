@@ -465,8 +465,10 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         _mockFunctionClaimWithdrawOnLidoARM(DEFAULT_AMOUNT);
 
         // 4. Operator claim withdrawal on lido
+        uint256 lastIndex = stETHWithdrawal.getLastCheckpointIndex();
+        uint256[] memory hintIds = stETHWithdrawal.findCheckpointHints(requests, 1, lastIndex);
         lidoARM.totalAssets();
-        lidoARM.claimLidoWithdrawals(requests);
+        lidoARM.claimLidoWithdrawals(requests, hintIds);
 
         // 5. User burn shares
         (, uint256 receivedAssets) = lidoARM.requestRedeem(shares);
@@ -532,7 +534,9 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         uint256[] memory requests = new uint256[](1);
         requests[0] = requestId;
         // 4. Operator claim the withdrawal on lido
-        lidoARM.claimLidoWithdrawals(requests);
+        uint256 lastIndex = stETHWithdrawal.getLastCheckpointIndex();
+        uint256[] memory hintIds = stETHWithdrawal.findCheckpointHints(requests, 1, lastIndex);
+        lidoARM.claimLidoWithdrawals(requests, hintIds);
         // 5. User burn shares
         (, uint256 receivedAssets) = lidoARM.requestRedeem(shares);
 
@@ -592,7 +596,9 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         requests[0] = requestId;
 
         // 4. Operator claim the withdrawal on lido
-        lidoARM.claimLidoWithdrawals(requests);
+        uint256 lastIndex = stETHWithdrawal.getLastCheckpointIndex();
+        uint256[] memory hintIds = stETHWithdrawal.findCheckpointHints(requests, 1, lastIndex);
+        lidoARM.claimLidoWithdrawals(requests, hintIds);
 
         // 5. User burn shares
         (, uint256 receivedAssets) = lidoARM.requestRedeem(shares);
