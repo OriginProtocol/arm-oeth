@@ -7,8 +7,6 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {OwnableOperable} from "./OwnableOperable.sol";
 import {IERC20, ICapManager} from "./Interfaces.sol";
 
-import {console} from "forge-std/console.sol";
-
 /**
  * @title Generic Automated Redemption Manager (ARM)
  * @author Origin Protocol Inc
@@ -589,8 +587,6 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// less the liquidity assets reserved for the ARM's withdrawal queue and accrued fees.
     function totalAssets() public view virtual returns (uint256) {
         (uint256 fees, uint256 newAvailableAssets) = _feesAccrued();
-        console.log("fees", fees);
-        console.log("newAvailableAssets", newAvailableAssets);
 
         // total assets should only go up from the initial deposit amount that is burnt
         // but in case of something unforeseen, return MIN_TOTAL_SUPPLY if fees is

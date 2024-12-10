@@ -621,18 +621,19 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
     /// 1. ARM gain assets in WETH
     /// 2. User deposit liquidity
     /// 3. Operator collects the performance fees
-    /// Checking that amount depositor hasn't lost value
+    /// Check depositor hasn't lost value
     function test_Deposit_WithAssetGain()
         public
-        deal_(address(weth), address(lidoARM), DEFAULT_AMOUNT)
+        deal_(address(weth), address(lidoARM), 2 * MIN_TOTAL_SUPPLY)
         setLiquidityProviderCap(address(this), DEFAULT_AMOUNT)
     {
         // Assertions Before
         uint256 expectedTotalSupplyBeforeDeposit = MIN_TOTAL_SUPPLY;
-        uint256 expectTotalAssetsBeforeDeposit = MIN_TOTAL_SUPPLY + (DEFAULT_AMOUNT * 80 / 100);
+        uint256 expectTotalAssetsBeforeDeposit = MIN_TOTAL_SUPPLY + (MIN_TOTAL_SUPPLY * 80 / 100);
+        uint256 assetsPerShareBefore = expectTotalAssetsBeforeDeposit * 1e18 / expectedTotalSupplyBeforeDeposit;
         assertEq(lidoARM.totalSupply(), expectedTotalSupplyBeforeDeposit, "total supply before deposit");
         assertEq(lidoARM.totalAssets(), expectTotalAssetsBeforeDeposit, "total assets before deposit");
-        assertEq(lidoARM.feesAccrued(), DEFAULT_AMOUNT * 20 / 100, "fees accrued before deposit");
+        assertEq(lidoARM.feesAccrued(), MIN_TOTAL_SUPPLY * 20 / 100, "fees accrued before deposit");
 
         // Expected values = 1249998437501
         // shares = assets * total supply / total assets
@@ -650,28 +651,36 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
 
         assertEq(shares, expectShares, "shares after deposit");
         assertEq(lidoARM.totalAssets(), expectTotalAssetsBeforeDeposit + DEFAULT_AMOUNT, "total assets after deposit");
-        assertEq(lidoARM.feesAccrued(), DEFAULT_AMOUNT * 20 / 100 - 1, "fees accrued after deposit");
+        assertEq(lidoARM.totalSupply(), expectedTotalSupplyBeforeDeposit + shares, "total supply after deposit");
+        assertEq(lidoARM.feesAccrued(), MIN_TOTAL_SUPPLY * 20 / 100, "fees accrued after deposit");
         assertEq(
             lidoARM.lastAvailableAssets(),
             int256(MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT),
             "last available assets after deposit"
         );
-        assertEq(lidoARM.convertToAssets(shares), DEFAULT_AMOUNT - 1, "depositor has not lost value after deposit");
+        assertGe(
+            lidoARM.totalAssets() * 1e18 / lidoARM.totalSupply(), assetsPerShareBefore, "assets per share after deposit"
+        );
+        assertGe(lidoARM.convertToAssets(shares), DEFAULT_AMOUNT - 1, "depositor has not lost value after deposit");
 
         // 3. collect fees
         lidoARM.collectFees();
 
         // Assertions after collect fees
-        assertEq(lidoARM.totalSupply(), expectedTotalSupplyBeforeDeposit, "total supply after collect fees");
-        assertApproxEqRel(lidoARM.totalAssets(), expectTotalAssetsBeforeDeposit, 1e6, "total assets after collect fees");
+        assertEq(lidoARM.totalSupply(), expectedTotalSupplyBeforeDeposit + shares, "total supply after collect fees");
+        assertApproxEqRel(
+            lidoARM.totalAssets(),
+            expectTotalAssetsBeforeDeposit + DEFAULT_AMOUNT,
+            1e6,
+            "total assets after collect fees"
+        );
         assertEq(lidoARM.feesAccrued(), 0, "fees accrued after collect fees");
-        assertApproxEqAbs(
+        assertEq(
             lidoARM.lastAvailableAssets(),
-            int256(expectTotalAssetsBeforeDeposit),
-            4e6,
+            int256(expectTotalAssetsBeforeDeposit + DEFAULT_AMOUNT),
             "last available assets after collect fees"
         );
-        assertEq(
+        assertGe(
             lidoARM.convertToAssets(shares), DEFAULT_AMOUNT - 1, "depositor has not lost value after collected fees"
         );
     }
