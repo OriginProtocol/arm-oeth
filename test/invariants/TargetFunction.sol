@@ -230,7 +230,7 @@ abstract contract TargetFunction is Properties {
     ////////////////////////////////////////////////////
     /// --- PRICES AND FEES MANAGEMENT
     ////////////////////////////////////////////////////
-    uint256 constant MIN_FEES = 50;
+    uint256 constant MIN_FEES = 0;
     uint256 constant MAX_FEES = 5000;
     uint256 constant MIN_BUY_T1 = 0.98 * 1e36;
     uint256 constant MAX_SELL_T1 = 1.02 * 1e36;
@@ -290,6 +290,18 @@ abstract contract TargetFunction is Properties {
 
         // Update ghost
         sum_weth_fees += collectedFees;
+    }
+
+    function handler_totalAsset() public view returns (uint256) {
+        return lidoARM.totalAssets();
+    }
+
+    function handler_feeAccrued() public view returns (uint256) {
+        return lidoARM.feesAccrued();
+    }
+
+    function handler_lastAvailableAsset() public view returns (int128) {
+        return lidoARM.lastAvailableAssets();
     }
 
     ////////////////////////////////////////////////////

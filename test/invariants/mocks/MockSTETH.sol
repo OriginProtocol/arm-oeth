@@ -34,15 +34,15 @@ contract MockSTETH is ERC20 {
 
     function brutalizeAmount(uint256 amount) public returns (uint256) {
         // Only brutalize the sender doesn't sent all of their balance
-        if (balanceOf[msg.sender] != amount && amount > 0) {
-            // Get a random number between 0 and 1
-            uint256 randomUint = vm.randomUint(0, 1);
-            // If the amount is greater than the random number, subtract the random number from the amount
-            if (amount > randomUint) {
-                amount -= randomUint;
-                sum_of_errors += randomUint;
-            }
-        }
+        //if (balanceOf[msg.sender] != amount && amount > 0) {
+        //    // Get a random number between 0 and 1
+        //    uint256 randomUint = vm.randomUint(0, 1);
+        //    // If the amount is greater than the random number, subtract the random number from the amount
+        //    if (amount > randomUint) {
+        //        amount -= randomUint;
+        //        sum_of_errors += randomUint;
+        //    }
+        //}
         return amount;
     }
 }
