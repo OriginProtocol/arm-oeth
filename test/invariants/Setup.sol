@@ -11,20 +11,22 @@ import {CapManager} from "contracts/CapManager.sol";
 import {WETH} from "@solmate/tokens/WETH.sol";
 
 // Mocks
-import {MockSTETH} from "../mocks/MockSTETH.sol";
-import {MockLidoWithdraw} from "../mocks/MockLidoWithdraw.sol";
+import {MockSTETH} from "./mocks/MockSTETH.sol";
+import {MockLidoWithdraw} from "./mocks/MockLidoWithdraw.sol";
 
 // Interfaces
 import {IERC20} from "contracts/Interfaces.sol";
 
 /// @notice Shared invariant test contract
 /// @dev This contract should be used for deploying all contracts and mocks needed for the test.
-abstract contract Invariant_Shared_Test_ is Base_Test_ {
+abstract contract Setup is Base_Test_ {
     address[] public users;
+    address[] public lps;
+    address[] public swaps;
+
     //////////////////////////////////////////////////////
     /// --- SETUP
     //////////////////////////////////////////////////////
-
     function setUp() public virtual override {
         super.setUp();
 
@@ -149,5 +151,13 @@ abstract contract Invariant_Shared_Test_ is Base_Test_ {
 
         // Set the Proxy as the LidoARM.
         lidoARM = LidoARM(payable(address(lidoProxy)));
+    }
+
+    function min(uint256 a, uint256 b) public pure returns (uint256) {
+        return a < b ? a : b;
+    }
+
+    function max(uint256 a, uint256 b) public pure returns (uint256) {
+        return a > b ? a : b;
     }
 }
