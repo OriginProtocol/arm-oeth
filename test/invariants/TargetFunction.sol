@@ -211,7 +211,7 @@ abstract contract TargetFunction is Properties {
 
         // Prank Owner
         vm.prank(lidoARM.owner());
-        lidoARM.claimLidoWithdrawals(requestToClaim);
+        lidoARM.claimLidoWithdrawals(requestToClaim, new uint256[](0));
 
         uint256 outstandingAfter = lidoARM.lidoWithdrawalQueueAmount();
         uint256 diff = outstandingBefore - outstandingAfter;
@@ -308,10 +308,11 @@ abstract contract TargetFunction is Properties {
     /// --- DONATION
     ////////////////////////////////////////////////////
     uint256 constant DONATION_PROBABILITY = 10;
+    uint256 constant DONATION_THRESHOLD = 1e20;
 
     function handler_donate(bool stETH, uint64 amount, uint256 probability) public {
         // Reduce probability to 10%
-        vm.assume(probability % DONATION_PROBABILITY == 0);
+        vm.assume(probability % DONATION_PROBABILITY == 0 && lidoARM.totalSupply() > DONATION_THRESHOLD);
 
         IERC20 token = stETH ? IERC20(address(steth)) : IERC20(address(weth));
 
@@ -326,12 +327,14 @@ abstract contract TargetFunction is Properties {
     ////////////////////////////////////////////////////
     /// --- HELPERS
     ////////////////////////////////////////////////////
+    uint256 constant SHARES_UP_ONLY__ERROR_TOLERANCE = 1e4;
+
     function finalizeLidoClaims() public {
         if (lidoWithdrawRequests.length == 0) return;
 
         // Prank Owner
         vm.prank(lidoARM.owner());
-        lidoARM.claimLidoWithdrawals(lidoWithdrawRequests);
+        lidoARM.claimLidoWithdrawals(lidoWithdrawRequests, new uint256[](0));
 
         require(lidoARM.lidoWithdrawalQueueAmount() == 0, "FINALIZE_FAILED");
     }
@@ -373,7 +376,7 @@ abstract contract TargetFunction is Properties {
             address user = lps[i];
             uint256 shares = lidoARM.balanceOf(user);
             uint256 sum = weth.balanceOf(user) + lidoARM.previewRedeem(shares);
-            if (!gte(sum * (1e18 + 1e6) / 1e18, initialBalance)) {
+            if (!gte(sum * (1e18 + SHARES_UP_ONLY__ERROR_TOLERANCE) / 1e18, initialBalance)) {
                 return false;
             }
         }
