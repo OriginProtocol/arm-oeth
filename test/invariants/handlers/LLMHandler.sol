@@ -10,9 +10,10 @@ import {BaseHandler} from "./BaseHandler.sol";
 // Contracts
 import {IERC20} from "contracts/Interfaces.sol";
 import {LidoARM} from "contracts/LidoARM.sol";
+import {IStETHWithdrawal} from "contracts/Interfaces.sol";
 
 /// @notice LidoLiquidityManager Handler contract
-/// @dev This contract is used to handle all functionnalities that are related to the Lido Liquidity Manager.
+/// @dev This contract is used to handle all functionalities that are related to the Lido Liquidity Manager.
 contract LLMHandler is BaseHandler {
     ////////////////////////////////////////////////////
     /// --- CONSTANTS && IMMUTABLES
@@ -20,6 +21,7 @@ contract LLMHandler is BaseHandler {
     IERC20 public immutable steth;
     LidoARM public immutable arm;
     address public immutable owner;
+    IStETHWithdrawal public stETHWithdrawal;
     uint256 public constant MAX_AMOUNT = 1_000 ether;
 
     ////////////////////////////////////////////////////
@@ -36,9 +38,10 @@ contract LLMHandler is BaseHandler {
     ////////////////////////////////////////////////////
     /// --- CONSTRUCTOR
     ////////////////////////////////////////////////////
-    constructor(address _arm, address _steth) {
+    constructor(address _arm, address _steth, address _lidoWithdrawalQueue) {
         arm = LidoARM(payable(_arm));
         owner = arm.owner();
+        stETHWithdrawal = IStETHWithdrawal(_lidoWithdrawalQueue);
         steth = IERC20(_steth);
     }
 
@@ -111,7 +114,9 @@ contract LLMHandler is BaseHandler {
         vm.startPrank(owner);
 
         // Claim stETH withdrawal for WETH
-        arm.claimLidoWithdrawals(requestIds_);
+        uint256 lastIndex = stETHWithdrawal.getLastCheckpointIndex();
+        uint256[] memory hintIds = stETHWithdrawal.findCheckpointHints(requestIds_, 1, lastIndex);
+        arm.claimLidoWithdrawals(requestIds_, hintIds);
 
         // Stop Prank
         vm.stopPrank();
@@ -137,7 +142,9 @@ contract LLMHandler is BaseHandler {
         vm.startPrank(owner);
 
         // Claim stETH withdrawal for WETH
-        arm.claimLidoWithdrawals(requestIds);
+        uint256 lastIndex = stETHWithdrawal.getLastCheckpointIndex();
+        uint256[] memory hintIds = stETHWithdrawal.findCheckpointHints(requestIds, 1, lastIndex);
+        arm.claimLidoWithdrawals(requestIds, hintIds);
 
         // Stop Prank
         vm.stopPrank();

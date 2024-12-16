@@ -100,11 +100,12 @@ contract LidoARM is Initializable, AbstractARM {
     /**
      * @notice Claim the ETH owed from the redemption requests and convert it to WETH.
      * Before calling this method, caller should check on the request NFTs to ensure the withdrawal was processed.
+     * @param requestIds The request IDs of the withdrawal requests.
+     * @param hintIds The hint IDs of the withdrawal requests.
+     * Call `findCheckpointHints` on the Lido withdrawal queue contract to get the hint IDs.
      */
-    function claimLidoWithdrawals(uint256[] calldata requestIds) external {
+    function claimLidoWithdrawals(uint256[] calldata requestIds, uint256[] calldata hintIds) external {
         // Claim the NFTs for ETH.
-        uint256 lastIndex = lidoWithdrawalQueue.getLastCheckpointIndex();
-        uint256[] memory hintIds = lidoWithdrawalQueue.findCheckpointHints(requestIds, 1, lastIndex);
         lidoWithdrawalQueue.claimWithdrawals(requestIds, hintIds);
 
         // Reduce the amount outstanding from the Lido Withdrawal Queue.
