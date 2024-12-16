@@ -55,11 +55,11 @@ contract LLMHandler is BaseHandler {
         uint256 totalAmount = _bound(_seed, 0, min(MAX_AMOUNT * 3, steth.balanceOf(address(arm))));
 
         // We can only request only 1k amount at a time
-        uint256 batch = (totalAmount / MAX_AMOUNT) + 1;
+        uint256 batch = ((totalAmount + MAX_AMOUNT - 1) / MAX_AMOUNT);
         uint256[] memory amounts = new uint256[](batch);
         uint256 totalAmount_ = totalAmount;
         for (uint256 i = 0; i < batch; i++) {
-            if (totalAmount_ >= MAX_AMOUNT) {
+            if (totalAmount_ > MAX_AMOUNT) {
                 amounts[i] = MAX_AMOUNT;
                 totalAmount_ -= MAX_AMOUNT;
             } else {
