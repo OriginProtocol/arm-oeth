@@ -7,6 +7,10 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {OwnableOperable} from "./OwnableOperable.sol";
 import {IERC20, ICapManager} from "./Interfaces.sol";
 
+/**
+ * @title Generic Automated Redemption Manager (ARM)
+ * @author Origin Protocol Inc
+ */
 abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     ////////////////////////////////////////////////////
     ///                 Constants
@@ -140,7 +144,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         require(_liquidityAsset == address(token0) || _liquidityAsset == address(token1), "invalid liquidity asset");
         liquidityAsset = _liquidityAsset;
         // The base asset, eg stETH, is not the liquidity asset, eg WETH
-        baseAsset = _liquidityAsset == address(token0) ? address(token1) : address(token0);
+        baseAsset = _liquidityAsset == _token0 ? _token1 : _token0;
     }
 
     /// @notice Initialize the contract.
@@ -404,7 +408,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
      * If the cross price is being lowered, there can not be a significant amount of base assets in the ARM. eg stETH.
      * This prevents the ARM making a loss when the base asset is sold at a lower price than it was bought
      * before the cross price was lowered.
-     * The base assets should be sent to the withdrawal queue before the cross price can be lowered.
+     * The base assets should be sent to the withdrawal queue before the cross price can be lowered. For example, the
+     * `Owner` should construct a tx that calls `requestLidoWithdrawals` before `setCrossPrice` for the Lido ARM
+     * when the cross price is being lowered.
      * The cross price can be increased with assets in the ARM.
      * @param newCrossPrice The new cross price scaled to 36 decimals.
      */
@@ -683,6 +689,11 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         // Accrue any performance fees up to this point
         (fees, newAvailableAssets) = _feesAccrued();
 
+        // Save the new available assets back to storage less the collected fees.
+        // This needs to be done before the fees == 0 check to cover the scenario where the performance fee is zero
+        // and there has been an increase in assets since the last time fees were collected.
+        lastAvailableAssets = SafeCast.toInt128(SafeCast.toInt256(newAvailableAssets) - SafeCast.toInt256(fees));
+
         if (fees == 0) return 0;
 
         // Check there is enough liquidity assets (WETH) that are not reserved for the withdrawal queue
@@ -693,9 +704,6 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         // We could try the transfer and let it revert if there are not enough assets, but there is no error message with
         // a failed WETH transfer so we spend the extra gas to check and give a meaningful error message.
         require(fees <= IERC20(liquidityAsset).balanceOf(address(this)), "ARM: insufficient liquidity");
-
-        // Save the new available assets back to storage less the collected fees.
-        lastAvailableAssets = SafeCast.toInt128(SafeCast.toInt256(newAvailableAssets) - SafeCast.toInt256(fees));
 
         IERC20(liquidityAsset).transfer(feeCollector, fees);
 
