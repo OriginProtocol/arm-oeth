@@ -104,7 +104,7 @@ contract LidoARM is Initializable, AbstractARM {
      * @param hintIds The hint IDs of the withdrawal requests.
      * Call `findCheckpointHints` on the Lido withdrawal queue contract to get the hint IDs.
      */
-    function claimLidoWithdrawals(uint256[] calldata requestIds) external {
+    function claimLidoWithdrawals(uint256[] calldata requestIds, uint256[] calldata hintIds) external {
         // Claim the NFTs for ETH.
         lidoWithdrawalQueue.claimWithdrawals(requestIds, hintIds);
 
