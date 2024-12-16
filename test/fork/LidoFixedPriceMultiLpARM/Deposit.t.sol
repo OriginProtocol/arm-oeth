@@ -752,7 +752,9 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         assertEq(lidoARM.totalSupply(), expectedTotalSupplyBeforeDeposit + bobShares, "total supply after deposit");
         assertEq(lidoARM.feesAccrued(), 0, "fees accrued after deposit");
         assertEq(
-            lidoARM.lastAvailableAssets(), int256(expectTotalAssetsBeforeSwap + bobDeposit), "last available assets after deposit"
+            lidoARM.lastAvailableAssets(),
+            int256(expectTotalAssetsBeforeSwap + bobDeposit),
+            "last available assets after deposit"
         );
         assertGe(
             lidoARM.totalAssets() * 1e18 / lidoARM.totalSupply(),
