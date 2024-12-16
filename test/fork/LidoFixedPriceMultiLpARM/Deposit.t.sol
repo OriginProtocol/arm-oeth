@@ -772,7 +772,7 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         assertEq(lidoARM.feesAccrued(), 0, "fees accrued after collect fees");
         assertEq(
             lidoARM.lastAvailableAssets(),
-            int256(expectTotalAssetsBeforeSwap + bobDeposit),
+            int256(expectTotalAssetsBeforeDeposit + bobDeposit),
             "last available assets after collect fees"
         );
         assertGe(
