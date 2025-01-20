@@ -689,6 +689,11 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         // Accrue any performance fees up to this point
         (fees, newAvailableAssets) = _feesAccrued();
 
+        // Save the new available assets back to storage less the collected fees.
+        // This needs to be done before the fees == 0 check to cover the scenario where the performance fee is zero
+        // and there has been an increase in assets since the last time fees were collected.
+        lastAvailableAssets = SafeCast.toInt128(SafeCast.toInt256(newAvailableAssets) - SafeCast.toInt256(fees));
+
         if (fees == 0) return 0;
 
         // Check there is enough liquidity assets (WETH) that are not reserved for the withdrawal queue
@@ -699,9 +704,6 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         // We could try the transfer and let it revert if there are not enough assets, but there is no error message with
         // a failed WETH transfer so we spend the extra gas to check and give a meaningful error message.
         require(fees <= IERC20(liquidityAsset).balanceOf(address(this)), "ARM: insufficient liquidity");
-
-        // Save the new available assets back to storage less the collected fees.
-        lastAvailableAssets = SafeCast.toInt128(SafeCast.toInt256(newAvailableAssets) - SafeCast.toInt256(fees));
 
         IERC20(liquidityAsset).transfer(feeCollector, fees);
 
