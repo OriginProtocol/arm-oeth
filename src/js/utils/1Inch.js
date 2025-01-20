@@ -6,7 +6,7 @@ const { sleep } = require("../utils/time");
 
 const log = require("./logger")("utils:1inch");
 
-const ONEINCH_API_ENDPOINT = "https://api.1inch.dev/swap/v5.2/1/quote";
+const ONEINCH_API_ENDPOINT = "https://api.1inch.dev/swap/v6.0/1/quote";
 
 /**
  * Gets a swap quote from 1Inch's V5.2 swap API
@@ -46,9 +46,9 @@ const get1InchSwapQuote = async ({ fromAsset, toAsset, fromAmount }) => {
         },
       });
 
-      if (!response.data.toAmount) {
+      if (!response.data.dstAmount) {
         console.error(response.data);
-        throw Error("response is missing toAmount");
+        throw Error("response is missing dstAmount");
       }
 
       log("swap API response data: %j", response.data);
@@ -77,7 +77,6 @@ const get1InchSwapQuote = async ({ fromAsset, toAsset, fromAmount }) => {
 };
 
 const get1InchPrices = async (amount) => {
-
   const amountBI = parseUnits(amount.toString(), 18);
 
   const buyQuote = await get1InchSwapQuote({
@@ -85,8 +84,9 @@ const get1InchPrices = async (amount) => {
     toAsset: addresses.mainnet.stETH,
     fromAmount: amountBI, // WETH amount
   });
-  // stETH buy amount
-  const buyToAmount = BigInt(buyQuote.toAmount);
+  // stETH buy amount adjusted by 1Inch's 0.1% infrastructure fee
+  // https://portal.1inch.dev/documentation/faq/infrastructure-fee
+  const buyToAmount = (BigInt(buyQuote.dstAmount) * 1001n) / 1000n;
   // stETH/ETH rate = ETH amount / stETH amount
   const buyPrice = (amountBI * BigInt(1e18)) / buyToAmount;
 
@@ -97,8 +97,9 @@ const get1InchPrices = async (amount) => {
     toAsset: addresses.mainnet.WETH,
     fromAmount: amountBI, // stETH amount
   });
-  // WETH sell amount
-  const sellToAmount = BigInt(sellQuote.toAmount);
+  // WETH sell amount adjusted by 1Inch's 0.1% infrastructure fee
+  // https://portal.1inch.dev/documentation/faq/infrastructure-fee
+  const sellToAmount = (BigInt(sellQuote.dstAmount) * 1001n) / 1000n;
   // stETH/WETH rate = WETH amount / stETH amount
   const sellPrice = (sellToAmount * BigInt(1e18)) / amountBI;
 
