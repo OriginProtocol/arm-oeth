@@ -94,22 +94,32 @@ const snapLido = async ({
     capManagerAddress
   );
 
+  const { totalAssets, totalSupply, liquidityWeth } = await logAssets(
+    lidoARM,
+    blockTag
+  );
+  if (lido) {
+    await logLidoQueue(signer, blockTag);
+
+    await logLidoWithdrawals(lidoARM, blockTag);
+  }
+  if (queue) {
+    await logWithdrawalQueue(lidoARM, blockTag, liquidityWeth);
+  }
+  if (user) {
+    await logUser(lidoARM, capManager, blockTag, totalSupply);
+  }
+  if (cap) {
+    await logCaps(capManager, totalAssets, blockTag);
+  }
+
   const ammPrices = await logArmPrices(commonOptions, lidoARM);
 
-  if (oneInch) {
-    await log1InchPrices(commonOptions, ammPrices);
+  if (uniswap) {
+    await logUniswapSpotPrices(commonOptions, ammPrices);
   }
 
   if (curve) {
-    await logCurvePrices(
-      {
-        ...commonOptions,
-        poolName: "Old",
-        poolAddress: addresses.mainnet.CurveStEthPool,
-      },
-      ammPrices
-    );
-
     await logCurvePrices(
       {
         ...commonOptions,
@@ -118,29 +128,19 @@ const snapLido = async ({
       },
       ammPrices
     );
+
+    await logCurvePrices(
+      {
+        ...commonOptions,
+        poolName: "Old",
+        poolAddress: addresses.mainnet.CurveStEthPool,
+      },
+      ammPrices
+    );
   }
 
-  if (uniswap) {
-    await logUniswapSpotPrices(commonOptions, ammPrices);
-  }
-
-  const { totalAssets, totalSupply, liquidityWeth } = await logAssets(
-    lidoARM,
-    blockTag
-  );
-  if (lido) {
-    await logLidoQueue(signer, blockTag);
-  }
-  if (queue) {
-    await logWithdrawalQueue(lidoARM, blockTag, liquidityWeth);
-
-    await logLidoWithdrawals(lidoARM, blockTag);
-  }
-  if (user) {
-    await logUser(lidoARM, capManager, blockTag, totalSupply);
-  }
-  if (cap) {
-    await logCaps(capManager, totalAssets, blockTag);
+  if (oneInch) {
+    await log1InchPrices(commonOptions, ammPrices);
   }
 };
 
@@ -257,7 +257,7 @@ const logAssets = async (arm, blockTag) => {
     blockTag,
   });
 
-  console.log(`\nAssets`);
+  console.log(`Assets`);
   console.log(
     `${formatUnits(liquidityWeth, 18).padEnd(24)} WETH  ${formatUnits(
       wethPercent,

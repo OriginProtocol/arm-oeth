@@ -155,6 +155,15 @@ const log1InchPrices = async ({ amount, gas }, ammPrices) => {
   console.log(`sell path for stETH/WETH`);
   log1InchProtocols(oneInch.sellQuote);
 
+  console.log(
+    `\nBest buy : ${
+      ammPrices.sellPrice < oneInch.buyPrice ? "Origin" : "1Inch"
+    }`
+  );
+  console.log(
+    `Best sell: ${ammPrices.buyPrice > oneInch.sellPrice ? "Origin" : "1Inch"}`
+  );
+
   return oneInch;
 };
 
