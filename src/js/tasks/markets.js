@@ -95,6 +95,17 @@ const logArmPrices = async ({ blockTag, gas }, arm) => {
   // Origin rates are to 36 decimals
   console.log(`spread : ${formatUnits(spread, 14)} bps`);
 
+  const buyDiscount = BigInt(1e18) - buyPrice;
+
+  console.log(
+    `\nYield on ${formatUnits(buyDiscount * 10000n, 18)} bps buy discount:`
+  );
+  console.log(`1 day  : ${formatUnits(buyDiscount * 36500n, 18)}% APY`);
+  console.log(`2 day  : ${formatUnits((buyDiscount * 36500n) / 2n, 18)}% APY`);
+  console.log(`3 day  : ${formatUnits((buyDiscount * 36500n) / 3n, 18)}% APY`);
+  console.log(`4 day  : ${formatUnits((buyDiscount * 36500n) / 4n, 18)}% APY`);
+  console.log(`5 day  : ${formatUnits((buyDiscount * 36500n) / 5n, 18)}% APY`);
+
   return {
     buyPrice,
     sellPrice,
