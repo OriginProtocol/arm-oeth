@@ -15,7 +15,12 @@ const ONEINCH_API_ENDPOINT = "https://api.1inch.dev/swap/v6.0/1/quote";
  * @param fromAmount The unit amount of fromAsset to swap. eg 1.1 WETH = 1.1e18
  * See https://docs.1inch.io/docs/aggregation-protocol/api/swagger
  */
-const get1InchSwapQuote = async ({ fromAsset, toAsset, fromAmount }) => {
+const get1InchSwapQuote = async ({
+  fromAsset,
+  toAsset,
+  fromAmount,
+  excludedProtocols,
+}) => {
   const apiKey = process.env.ONEINCH_API_KEY;
   if (!apiKey) {
     throw Error(
@@ -32,6 +37,7 @@ const get1InchSwapQuote = async ({ fromAsset, toAsset, fromAmount }) => {
     includeProtocols: true,
     includeGas: true,
     includeTokensInfo: false,
+    excludedProtocols: excludedProtocols || [],
   };
   log("swap API params: ", params);
 
@@ -83,6 +89,7 @@ const get1InchPrices = async (amount) => {
     fromAsset: addresses.mainnet.WETH,
     toAsset: addresses.mainnet.stETH,
     fromAmount: amountBI, // WETH amount
+    excludedProtocols: ["ORIGIN"],
   });
   // stETH buy amount adjusted by 1Inch's 0.1% infrastructure fee
   // https://portal.1inch.dev/documentation/faq/infrastructure-fee
@@ -96,6 +103,7 @@ const get1InchPrices = async (amount) => {
     fromAsset: addresses.mainnet.stETH,
     toAsset: addresses.mainnet.WETH,
     fromAmount: amountBI, // stETH amount
+    excludedProtocols: ["ORIGIN"],
   });
   // WETH sell amount adjusted by 1Inch's 0.1% infrastructure fee
   // https://portal.1inch.dev/documentation/faq/infrastructure-fee

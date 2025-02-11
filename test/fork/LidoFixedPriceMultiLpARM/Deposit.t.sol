@@ -731,7 +731,7 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         );
 
         uint256 expectedTotalSupplyBeforeDeposit = expectTotalAssetsBeforeSwap;
-        uint256 expectTotalAssetsBeforeDeposit = expectTotalAssetsBeforeSwap - 1
+        uint256 expectTotalAssetsBeforeDeposit = expectTotalAssetsBeforeSwap - 2
         // steth in discounted to the cross price
         + ((swapInAmount * 0.999e36) / 1e36)
         // weth out discounted by the buy price

@@ -95,6 +95,32 @@ const logArmPrices = async ({ blockTag, gas }, arm) => {
   // Origin rates are to 36 decimals
   console.log(`spread : ${formatUnits(spread, 14)} bps`);
 
+  // take 80% of the discount to cover the 20% fee
+  const buyDiscount = BigInt(1e18) - buyPrice;
+  const buyDiscountPostFee = (buyDiscount * 8n) / 10n;
+
+  console.log(
+    `\nYield on ${formatUnits(
+      buyDiscount * 10000n,
+      18
+    )} bps buy discount after fee`
+  );
+  console.log(
+    `1 day ${formatUnits(
+      buyDiscountPostFee * 36500n,
+      18
+    )}%, 2 days ${formatUnits(
+      (buyDiscountPostFee * 36500n) / 2n,
+      18
+    )}%, 3 days ${formatUnits(
+      (buyDiscountPostFee * 36500n) / 3n,
+      18
+    )}%, 4 days ${formatUnits(
+      (buyDiscountPostFee * 36500n) / 4n,
+      18
+    )}%, 5 days ${formatUnits((buyDiscountPostFee * 36500n) / 5n, 18)}% APY`
+  );
+
   return {
     buyPrice,
     sellPrice,
@@ -108,6 +134,12 @@ const log1InchPrices = async ({ amount, gas }, ammPrices) => {
 
   log(`buy  ${formatUnits(oneInch.buyToAmount)} stETH for ${amount} WETH`);
   log(`sell ${amount} stETH for ${formatUnits(oneInch.sellToAmount)} WETH`);
+
+  console.log(`\n1Inch buy path for stETH/WETH`);
+  log1InchProtocols(oneInch.buyQuote);
+
+  console.log(`\n1Inch sell path for stETH/WETH`);
+  log1InchProtocols(oneInch.sellQuote);
 
   console.log(`\n1Inch prices for swap size ${amount}`);
   const buyRateDiff = oneInch.buyPrice - ammPrices.sellPrice;
@@ -138,11 +170,14 @@ const log1InchPrices = async ({ amount, gas }, ammPrices) => {
   );
   console.log(`spread : ${formatUnits(oneInch.spread, 14)} bps`);
 
-  console.log(`buy path for stETH/WETH`);
-  log1InchProtocols(oneInch.buyQuote);
-
-  console.log(`sell path for stETH/WETH`);
-  log1InchProtocols(oneInch.sellQuote);
+  console.log(
+    `\nBest buy : ${
+      ammPrices.sellPrice < oneInch.buyPrice ? "Origin" : "1Inch"
+    }`
+  );
+  console.log(
+    `Best sell: ${ammPrices.buyPrice > oneInch.sellPrice ? "Origin" : "1Inch"}`
+  );
 
   return oneInch;
 };
