@@ -67,5 +67,8 @@ deploy-testnet:
 deploy-holesky:
 	@forge script script/deploy/DeployManager.sol --rpc-url $(HOLESKY_URL) --private-key ${DEPLOYER_PRIVATE_KEY} --broadcast --slow --verify -vvv
 
+simulate-deploys:
+	@forge script script/deploy/DeployManager.sol --fork-url $(PROVIDER_URL) --private-key ${DEPLOYER_PRIVATE_KEY} -vvvv
+
 # Override default `test` and `coverage` targets
 .PHONY: test coverage
