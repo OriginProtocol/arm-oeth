@@ -8,6 +8,7 @@ import {AbstractDeployScript} from "./AbstractDeployScript.sol";
 import {DeployCoreMainnetScript} from "./mainnet/001_DeployCoreScript.sol";
 import {UpgradeMainnetScript} from "./mainnet/002_UpgradeScript.sol";
 import {UpgradeLidoARMMainnetScript} from "./mainnet/003_UpgradeLidoARMScript.sol";
+import {UpdateCrossPriceMainnetScript} from "./mainnet/004_UpdateCrossPriceScript.sol";
 import {DeployCoreHoleskyScript} from "./holesky/001_DeployCoreScript.sol";
 import {UpgradeHoleskyScript} from "./holesky/002_UpgradeScript.sol";
 
@@ -60,6 +61,7 @@ contract DeployManager is Script {
             _runDeployFile(new DeployCoreMainnetScript());
             _runDeployFile(new UpgradeMainnetScript(this));
             _runDeployFile(new UpgradeLidoARMMainnetScript());
+            _runDeployFile(new UpdateCrossPriceMainnetScript());
         } else if (block.chainid == 17000) {
             _runDeployFile(new DeployCoreHoleskyScript());
             _runDeployFile(new UpgradeHoleskyScript(this));
