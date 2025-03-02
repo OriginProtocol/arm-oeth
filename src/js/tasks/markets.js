@@ -152,11 +152,8 @@ const log1InchPrices = async ({ amount, gas }, ammPrices) => {
     )} bps to ARM${buyGasCosts}`
   );
 
-  const midRateDiff = oneInch.midPrice - ammPrices.midPrice;
   console.log(
-    `mid    : ${formatUnits(oneInch.midPrice, 18).padEnd(
-      20
-    )} stETH/WETH, diff ${formatUnits(midRateDiff, 14).padEnd(17)} bps to ARM`
+    `mid    : ${formatUnits(oneInch.midPrice, 18).padEnd(20)} stETH/WETH`
   );
 
   const sellRateDiff = oneInch.sellPrice - ammPrices.buyPrice;
@@ -202,7 +199,6 @@ const logCurvePrices = async (options, ammPrices) => {
 
   const curve = await getCurvePrices(options);
   const buyRateDiff = curve.buyPrice - ammPrices.sellPrice;
-  const midRateDiff = curve.midPrice - ammPrices.midPrice;
   const sellRateDiff = curve.sellPrice - ammPrices.buyPrice;
 
   log(`buy  ${formatUnits(curve.buyToAmount)} stETH for ${amount} WETH`);
@@ -218,11 +214,7 @@ const logCurvePrices = async (options, ammPrices) => {
       17
     )} bps to ARM${buyGasCosts}`
   );
-  console.log(
-    `mid    : ${formatUnits(curve.midPrice, 18).padEnd(
-      20
-    )} ${pair}, diff ${formatUnits(midRateDiff, 14).padEnd(17)} bps to ARM`
-  );
+  console.log(`mid    : ${formatUnits(curve.midPrice, 18).padEnd(20)} ${pair}`);
   console.log(
     `sell   : ${formatUnits(curve.sellPrice, 18).padEnd(
       20
@@ -239,7 +231,6 @@ const logUniswapSpotPrices = async (options, ammPrices) => {
   const { amount, pair, gas } = options;
   const uniswap = await getUniswapV3SpotPrices(options);
   const buyRateDiff = uniswap.buyPrice - ammPrices.sellPrice;
-  const midRateDiff = uniswap.midPrice - ammPrices.midPrice;
   const sellRateDiff = uniswap.sellPrice - ammPrices.buyPrice;
 
   log(`buy  ${formatUnits(uniswap.buyToAmount)} stETH for ${amount} WETH`);
@@ -256,9 +247,7 @@ const logUniswapSpotPrices = async (options, ammPrices) => {
     )} ${pair}, diff ${formatUnits(buyRateDiff, 14)} bps to ARM${buyGasCosts}`
   );
   console.log(
-    `mid    : ${formatUnits(uniswap.midPrice, 18).padEnd(
-      20
-    )} ${pair}, diff ${formatUnits(midRateDiff, 14)} bps to ARM`
+    `mid    : ${formatUnits(uniswap.midPrice, 18).padEnd(20)} ${pair}`
   );
   console.log(
     `sell   : ${formatUnits(uniswap.sellPrice, 18).padEnd(
