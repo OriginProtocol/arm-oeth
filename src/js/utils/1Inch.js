@@ -89,7 +89,7 @@ const get1InchPrices = async (amount) => {
     fromAsset: addresses.mainnet.WETH,
     toAsset: addresses.mainnet.stETH,
     fromAmount: amountBI, // WETH amount
-    excludedProtocols: ["ORIGIN"],
+    excludedProtocols: "ORIGIN",
   });
   // stETH buy amount adjusted by 1Inch's 0.1% infrastructure fee
   // https://portal.1inch.dev/documentation/faq/infrastructure-fee
@@ -103,7 +103,7 @@ const get1InchPrices = async (amount) => {
     fromAsset: addresses.mainnet.stETH,
     toAsset: addresses.mainnet.WETH,
     fromAmount: amountBI, // stETH amount
-    excludedProtocols: ["ORIGIN"],
+    excludedProtocols: "ORIGIN",
   });
   // WETH sell amount adjusted by 1Inch's 0.1% infrastructure fee
   // https://portal.1inch.dev/documentation/faq/infrastructure-fee
