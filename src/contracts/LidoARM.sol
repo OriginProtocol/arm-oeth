@@ -31,6 +31,7 @@ contract LidoARM is Initializable, AbstractARM {
 
     event RequestLidoWithdrawals(uint256[] amounts, uint256[] requestIds);
     event ClaimLidoWithdrawals(uint256[] requestIds);
+    event RegisterLidoWithdrawalRequests(uint256[] requestIds, uint256 totalAmountRequested);
 
     /// @param _steth The address of the stETH token
     /// @param _weth The address of the WETH token
@@ -68,6 +69,33 @@ contract LidoARM is Initializable, AbstractARM {
 
         // Approve the Lido withdrawal queue contract. Used for redemption requests.
         steth.approve(address(lidoWithdrawalQueue), type(uint256).max);
+    }
+
+    /**
+     * @notice Register the Lido withdrawal requests to the ARM contract.
+     * This can only be called once by the contract Owner.
+     */
+    function registerLidoWithdrawalRequests() external reinitializer(2) onlyOwner {
+        uint256 totalAmountRequested = 0;
+        // Get all the ARM's outstanding withdrawal requests
+        uint256[] memory requestIds = IStETHWithdrawal(lidoWithdrawalQueue).getWithdrawalRequests(address(this));
+        // Get the status of all the withdrawal requests. eg amount, owner, claimed status
+        IStETHWithdrawal.WithdrawalRequestStatus[] memory statuses =
+            IStETHWithdrawal(lidoWithdrawalQueue).getWithdrawalStatus(requestIds);
+
+        for (uint256 i = 0; i < requestIds.length; i++) {
+            // The following should always be true given the requestIds came from calling getWithdrawalRequests
+            require(statuses[i].isClaimed == false, "LidoARM: already claimed");
+            require(statuses[i].owner == address(this), "LidoARM: not owner");
+
+            // Store the amount of stETH of each Lido withdraw request
+            lidoWithdrawalRequests[requestIds[i]] = statuses[i].amountOfStETH;
+            totalAmountRequested += statuses[i].amountOfStETH;
+        }
+
+        require(totalAmountRequested == lidoWithdrawalQueueAmount, "LidoARM: missing requests");
+
+        emit RegisterLidoWithdrawalRequests(requestIds, totalAmountRequested);
     }
 
     /**
