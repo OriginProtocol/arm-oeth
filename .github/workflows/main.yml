@@ -43,5 +43,8 @@ jobs:
       - name: Install Dependencies
         run: forge soldeer install
 
+      - name: Check contract sizes
+        run: forge build --sizes
+
       - name: Run fork tests
         run: forge test -vvv --summary --detailed
