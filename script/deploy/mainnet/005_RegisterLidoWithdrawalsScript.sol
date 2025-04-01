@@ -44,8 +44,6 @@ contract RegisterLidoWithdrawalsScript is AbstractDeployScript {
         console.logBytes(proxyData);
 
         govProposal.action(deployedContracts["LIDO_ARM"], "upgradeToAndCall(address,bytes)", proxyData);
-
-        _fork();
     }
 
     function _fork() internal override {
