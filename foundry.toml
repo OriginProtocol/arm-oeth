@@ -20,6 +20,8 @@ remappings = [
   "@openzeppelin/contracts-upgradeable/=dependencies/@openzeppelin-contracts-upgradeable-5.0.2/",
   "@solmate/=dependencies/solmate-6.7.0/src/",
 ]
+optimizer = true
+optimizer_runs = 200
 
 [fuzz]
 runs = 1_000
