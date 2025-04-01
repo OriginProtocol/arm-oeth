@@ -214,7 +214,7 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
         lidoARM.registerLidoWithdrawalRequests();
     }
 
-    function test_lidoWithdrawalRequests() external {
+    function test_lidoWithdrawalRequests() external view {
         uint256 totalAmountRequested = 0;
         uint256[] memory requestIds = IStETHWithdrawal(Mainnet.LIDO_WITHDRAWAL).getWithdrawalRequests(address(lidoARM));
         // Get the status of all the withdrawal requests. eg amount, owner, claimed status

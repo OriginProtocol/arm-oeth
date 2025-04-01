@@ -5,11 +5,7 @@ pragma solidity 0.8.23;
 import "forge-std/console.sol";
 import {Vm} from "forge-std/Vm.sol";
 
-import {IERC20, IWETH, LegacyAMM} from "contracts/Interfaces.sol";
 import {LidoARM} from "contracts/LidoARM.sol";
-import {CapManager} from "contracts/CapManager.sol";
-import {Proxy} from "contracts/Proxy.sol";
-import {ZapperLidoARM} from "contracts/ZapperLidoARM.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
 import {GovProposal, GovSixHelper} from "contracts/utils/GovSixHelper.sol";
 import {AbstractDeployScript} from "../AbstractDeployScript.sol";
@@ -22,12 +18,7 @@ contract RegisterLidoWithdrawalsScript is AbstractDeployScript {
     string public constant override DEPLOY_NAME = "005_RegisterLidoWithdrawalsScript";
     bool public constant override proposalExecuted = false;
 
-    Proxy lidoARMProxy;
-    Proxy capManProxy;
     LidoARM lidoARMImpl;
-    LidoARM lidoARM;
-    CapManager capManager;
-    ZapperLidoARM zapper;
 
     function _execute() internal override {
         console.log("Deploy:", DEPLOY_NAME);
