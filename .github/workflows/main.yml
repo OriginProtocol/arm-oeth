@@ -24,6 +24,9 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
 
+      - name: Check contract sizes
+        run: forge build --sizes
+
       - name: Run Linter
         run: forge fmt --check
 
