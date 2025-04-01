@@ -5,7 +5,7 @@ import {Test, console2} from "forge-std/Test.sol";
 
 import {AbstractSmokeTest} from "./AbstractSmokeTest.sol";
 
-import {IERC20} from "contracts/Interfaces.sol";
+import {IERC20, IStETHWithdrawal} from "contracts/Interfaces.sol";
 import {LidoARM} from "contracts/LidoARM.sol";
 import {CapManager} from "contracts/CapManager.sol";
 import {Proxy} from "contracts/Proxy.sol";
@@ -203,5 +203,31 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
         vm.expectRevert("ARM: Only owner can call this function.");
         vm.prank(operator);
         lidoARM.setOperator(operator);
+    }
+
+    error InvalidInitialization();
+
+    // Can not be called again after reinitialized by the deploy script
+    function test_registerLidoWithdrawalRequests() external {
+        vm.expectRevert(InvalidInitialization.selector);
+        vm.prank(operator);
+        lidoARM.registerLidoWithdrawalRequests();
+    }
+
+    function test_lidoWithdrawalRequests() external view {
+        uint256 totalAmountRequested = 0;
+        uint256[] memory requestIds = IStETHWithdrawal(Mainnet.LIDO_WITHDRAWAL).getWithdrawalRequests(address(lidoARM));
+        // Get the status of all the withdrawal requests. eg amount, owner, claimed status
+        IStETHWithdrawal.WithdrawalRequestStatus[] memory statuses =
+            IStETHWithdrawal(Mainnet.LIDO_WITHDRAWAL).getWithdrawalStatus(requestIds);
+
+        console.log("Got %d withdrawal requests", requestIds.length);
+
+        for (uint256 i = 0; i < requestIds.length; i++) {
+            assertEq(lidoARM.lidoWithdrawalRequests(requestIds[i]), statuses[i].amountOfStETH);
+            totalAmountRequested += statuses[i].amountOfStETH;
+        }
+
+        assertEq(totalAmountRequested, lidoARM.lidoWithdrawalQueueAmount());
     }
 }
