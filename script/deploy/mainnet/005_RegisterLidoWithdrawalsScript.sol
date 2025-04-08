@@ -39,7 +39,7 @@ contract RegisterLidoWithdrawalsScript is AbstractDeployScript {
         console.log("registerLidoWithdrawalRequests data:");
         console.logBytes(callData);
 
-        bytes memory proxyData = abi.encode(address(lidoARMImpl), callData);
+        bytes memory proxyData = abi.encode(deployedContracts["LIDO_ARM_IMPL"], callData);
         console.log("proxy upgradeToAndCall encoded params:");
         console.logBytes(proxyData);
 
