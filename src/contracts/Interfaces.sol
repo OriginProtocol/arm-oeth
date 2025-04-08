@@ -164,6 +164,14 @@ interface IOETHVault {
     function claimDelay() external view returns (uint256);
 }
 
+interface IVault {
+    function availableLiquidity() external view returns (uint256);
+}
+
+interface IStrategy {
+    function checkBalance() external view returns (uint256);
+}
+
 interface IGovernance {
     enum ProposalState {
         Pending,

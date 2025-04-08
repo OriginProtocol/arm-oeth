@@ -1,0 +1,46 @@
+@startuml
+
+' title "ARM Vault Options"
+
+actor "Liquidity\nProviders" as vaultLP
+actor "Liquidity\nProviders" as armLP
+
+rectangle "ARM\nVault" as armVault {
+    rectangle "Shared\nLiquidity" as sharedLiquidity
+}
+
+rectangle "Morpho" as morpho <<Liquid\nStrategy>>
+rectangle "Aave" as aave <<Liquid\nStrategy>>
+rectangle "Silo" as silo <<Liquid\nStrategy>>
+
+' rectangle "OS" as os <<ARM Strategy>>
+' rectangle "Beets" as beet <<ARM Strategy>>
+' rectangle "Angle" as angle <<ARM Strategy>>
+
+rectangle "OS" as os <<ARM>>
+rectangle "Beets" as beet <<ARM>>
+rectangle "Angle" as angle <<ARM>>
+
+vaultLP --> armVault
+armLP --> os
+armLP --> beet
+armLP --> angle
+
+sharedLiquidity <- morpho
+sharedLiquidity <- aave
+sharedLiquidity <- silo
+
+sharedLiquidity ---> os
+sharedLiquidity ---> beet
+sharedLiquidity ---> angle
+
+' armVault <- morpho
+' armVault <- aave
+' armVault <- silo
+
+' armVault ---> os 
+' armVault ---> beet 
+' armVault ---> angle
+
+
+@enduml
