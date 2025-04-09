@@ -102,7 +102,7 @@ const claimLidoWithdrawals = async (options) => {
     );
     const tx = await arm
       .connect(signer)
-      .claimLidoWithdrawals(sortedFinalizedIds, hintIds);
+      .claimLidoWithdrawals(sortedFinalizedIds, hintIds.toArray());
     await logTxDetails(tx, "claim Lido withdraws");
   } else {
     log("No finalized Lido withdrawal requests to claim");
