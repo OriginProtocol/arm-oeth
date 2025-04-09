@@ -16,7 +16,7 @@ contract RegisterLidoWithdrawalsScript is AbstractDeployScript {
     GovProposal public govProposal;
 
     string public constant override DEPLOY_NAME = "005_RegisterLidoWithdrawalsScript";
-    bool public constant override proposalExecuted = false;
+    bool public constant override proposalExecuted = true;
 
     LidoARM lidoARMImpl;
 
