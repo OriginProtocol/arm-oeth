@@ -89,10 +89,20 @@ const claimLidoWithdrawals = async (options) => {
         return 0;
       }
     });
-    log(`About to claim withdrawal request ids: ${sortedFinalizedIds}`);
+
+    const lastIndex = await withdrawalQueue.getLastCheckpointIndex();
+    const hintIds = await withdrawalQueue.findCheckpointHints(
+      sortedFinalizedIds,
+      "1",
+      lastIndex
+    );
+
+    log(
+      `About to claim ${sortedFinalizedIds.length} withdrawal requests with\nids: ${sortedFinalizedIds}\nhints: ${hintIds}`
+    );
     const tx = await arm
       .connect(signer)
-      .claimLidoWithdrawals(sortedFinalizedIds);
+      .claimLidoWithdrawals(sortedFinalizedIds, hintIds);
     await logTxDetails(tx, "claim Lido withdraws");
   } else {
     log("No finalized Lido withdrawal requests to claim");
