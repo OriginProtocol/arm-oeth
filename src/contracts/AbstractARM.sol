@@ -5,7 +5,7 @@ import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 import {OwnableOperable} from "./OwnableOperable.sol";
-import {IERC20, ICapManager} from "./Interfaces.sol";
+import {IERC20, ICapManager, IStrategy} from "./Interfaces.sol";
 
 /**
  * @title Generic Automated Redemption Manager (ARM)
@@ -112,7 +112,12 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @notice The address of the CapManager contract used to manage the ARM's liquidity provider and total assets caps.
     address public capManager;
 
-    uint256[41] private _gap;
+    address public defaultStrategy;
+    mapping(address strategy => bool supported) public strategies;
+    /// @notice Percentage of liquid assets to keep in the ARM. 100% = 1e18.
+    uint256 public armBuffer;
+
+    uint256[39] private _gap;
 
     ////////////////////////////////////////////////////
     ///                 Events
@@ -129,6 +134,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     event FeeUpdated(uint256 fee);
     event FeeCollectorUpdated(address indexed newFeeCollector);
     event CapManagerUpdated(address indexed capManager);
+    event DefaultStrategyUpdated(address indexed strategy);
+    event StrategyAdded(address indexed strategy);
+    event StrategyRemoved(address indexed strategy);
 
     constructor(address _token0, address _token1, address _liquidityAsset, uint256 _claimDelay) {
         require(IERC20(_token0).decimals() == 18);
@@ -184,7 +192,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
         // Initialize the last available assets to the current available assets
         // This ensures no performance fee is accrued when the performance fee is calculated when the fee is set
-        lastAvailableAssets = SafeCast.toInt128(SafeCast.toInt256(_availableAssets()));
+        _setFee(_fee);
+        (uint256 availableAssets,) = _availableAssets();
+        lastAvailableAssets = SafeCast.toInt128(SafeCast.toInt256(availableAssets));
         _setFee(_fee);
         _setFeeCollector(_feeCollector);
 
@@ -562,6 +572,10 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         return withdrawsClaimed + IERC20(liquidityAsset).balanceOf(address(this));
     }
 
+    ////////////////////////////////////////////////////
+    ///         Asset amount functions
+    ////////////////////////////////////////////////////
+
     /// @dev Checks if there is enough liquidity asset (WETH) in the ARM is not reserved for the withdrawal queue.
     // That is, the amount of liquidity assets (WETH) that is available to be swapped or collected as fees.
     // If no outstanding withdrawals, no check will be done of the amount against the balance of the liquidity assets in the ARM.
@@ -583,7 +597,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         );
     }
 
-    /// @notice The total amount of assets in the ARM and external withdrawal queue,
+    /// @notice The total amount of assets in the ARM, default strategy and external withdrawal queue,
     /// less the liquidity assets reserved for the ARM's withdrawal queue and accrued fees.
     function totalAssets() public view virtual returns (uint256) {
         (uint256 fees, uint256 newAvailableAssets) = _feesAccrued();
@@ -598,26 +612,30 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     }
 
     /// @dev Calculate the available assets which is the assets in the ARM, external withdrawal queue,
-    /// less liquidity assets reserved for the ARM's withdrawal queue.
+    /// and default strategy, less liquidity assets reserved for the ARM's withdrawal queue.
     /// This does not exclude any accrued performance fees.
-    function _availableAssets() internal view returns (uint256) {
-        // Liquidity assets, eg WETH, are priced at 1.0
+    function _availableAssets() internal view returns (uint256 availableAssets, uint256 outstandingWithdrawals) {
+        // Liquidity assets, eg WETH, in the ARM and default strategy are priced at 1.0
         // Base assets, eg stETH, in the withdrawal queue are also priced at 1.0
         // Base assets, eg stETH, in the ARM are priced at the cross price which is a discounted price
         uint256 assets = IERC20(liquidityAsset).balanceOf(address(this)) + _externalWithdrawQueue()
             + IERC20(baseAsset).balanceOf(address(this)) * crossPrice / PRICE_SCALE;
 
+        if (defaultStrategy != address(0)) {
+            assets += IStrategy(defaultStrategy).checkBalance(liquidityAsset);
+        }
+
         // The amount of liquidity assets (WETH) that is still to be claimed in the withdrawal queue
-        uint256 outstandingWithdrawals = withdrawsQueued - withdrawsClaimed;
+        outstandingWithdrawals = withdrawsQueued - withdrawsClaimed;
 
         // If the ARM becomes insolvent enough that the available assets in the ARM and external withdrawal queue
         // is less than the outstanding withdrawals and accrued fees.
         if (assets < outstandingWithdrawals) {
-            return 0;
+            return (0, outstandingWithdrawals);
         }
 
         // Need to remove the liquidity assets that have been reserved for the withdrawal queue
-        return assets - outstandingWithdrawals;
+        availableAssets = assets - outstandingWithdrawals;
     }
 
     /// @dev Hook for calculating the amount of assets in an external withdrawal queue like Lido or OETH
@@ -634,14 +652,6 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @dev Total supply can't be zero. The lowest it can be is MIN_TOTAL_SUPPLY
     function convertToAssets(uint256 shares) public view returns (uint256 assets) {
         assets = (shares * totalAssets()) / totalSupply();
-    }
-
-    /// @notice Set the CapManager contract address.
-    /// Set to a zero address to disable the controller.
-    function setCapManager(address _capManager) external onlyOwner {
-        capManager = _capManager;
-
-        emit CapManagerUpdated(_capManager);
     }
 
     ////////////////////////////////////////////////////
@@ -716,7 +726,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     }
 
     function _feesAccrued() internal view returns (uint256 fees, uint256 newAvailableAssets) {
-        newAvailableAssets = _availableAssets();
+        (newAvailableAssets,) = _availableAssets();
 
         // Calculate the increase in assets since the last time fees were calculated
         int256 assetIncrease = SafeCast.toInt256(newAvailableAssets) - lastAvailableAssets;
@@ -725,5 +735,97 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         if (assetIncrease <= 0) return (0, newAvailableAssets);
 
         fees = SafeCast.toUint256(assetIncrease) * fee / FEE_SCALE;
+    }
+
+    ////////////////////////////////////////////////////
+    ///         Strategy Functions
+    ////////////////////////////////////////////////////
+
+    /// @notice Owner adds a supported strategy to the ARM.
+    function addStrategy(address strategy) external onlyOwner {
+        require(strategy != address(0), "ARM: invalid strategy");
+        require(!strategies[strategy], "ARM: already supported");
+
+        strategies[strategy] = true;
+
+        emit StrategyAdded(strategy);
+    }
+
+    /// @notice Owner removes a supported strategy from the ARM.
+    /// This can not be the default strategy.
+    function removeStrategy(address strategy) external onlyOwner {
+        require(strategy != address(0), "ARM: invalid strategy");
+        require(strategies[strategy], "ARM: not supported");
+        require(strategy != defaultStrategy, "ARM: strategy in use");
+
+        strategies[strategy] = false;
+
+        emit StrategyRemoved(strategy);
+    }
+
+    /// @notice set a new default strategy for the ARM.
+    /// This can be set to address(0) to disable the default strategy.
+    function setDefaultStrategy(address strategy) external onlyOperatorOrOwner {
+        require(strategy == address(0) || strategies[strategy], "ARM: not supported");
+        require(defaultStrategy != strategy, "ARM: already default strategy");
+
+        // Withdraw all from the previous default strategy
+        if (defaultStrategy != address(0)) {
+            IStrategy(defaultStrategy).withdrawAll();
+        }
+
+        defaultStrategy = strategy;
+
+        emit DefaultStrategyUpdated(strategy);
+
+        _allocate();
+    }
+
+    function allocate() external {
+        _allocate();
+    }
+
+    function _allocate() internal {
+        require(defaultStrategy != address(0), "ARM: no default strategy");
+
+        (uint256 availableAssets, uint256 outstandingWithdrawals) = _availableAssets();
+        if (availableAssets == 0) return;
+
+        int256 armLiquidity = SafeCast.toInt256(IERC20(liquidityAsset).balanceOf(address(this)))
+            - SafeCast.toInt256(outstandingWithdrawals);
+        uint256 targetArmLiquidity = availableAssets * armBuffer / 1e18;
+
+        int256 liquidityDelta = armLiquidity - SafeCast.toInt256(targetArmLiquidity);
+
+        if (liquidityDelta > 0) {
+            // We have too much liquidity in the ARM, we need to deposit some to the strategy
+
+            uint256 depositAmount = SafeCast.toUint256(liquidityDelta);
+
+            IERC20(liquidityAsset).transfer(defaultStrategy, depositAmount);
+            IStrategy(defaultStrategy).deposit(liquidityAsset, depositAmount);
+        } else if (liquidityDelta < 0) {
+            // We have too little liquidity in the ARM, we need to withdraw some from the strategy
+
+            uint256 availableStrategyAssets = IStrategy(defaultStrategy).checkBalance(liquidityAsset);
+
+            if (availableStrategyAssets < SafeCast.toUint256(-liquidityDelta)) {
+                IStrategy(defaultStrategy).withdrawAll();
+            } else {
+                IStrategy(defaultStrategy).withdraw(address(this), liquidityAsset, SafeCast.toUint256(-liquidityDelta));
+            }
+        }
+    }
+
+    ////////////////////////////////////////////////////
+    ///         Admin Functions
+    ////////////////////////////////////////////////////
+
+    /// @notice Set the CapManager contract address.
+    /// Set to a zero address to disable the controller.
+    function setCapManager(address _capManager) external onlyOwner {
+        capManager = _capManager;
+
+        emit CapManagerUpdated(_capManager);
     }
 }
