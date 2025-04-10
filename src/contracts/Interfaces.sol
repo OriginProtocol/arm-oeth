@@ -130,7 +130,7 @@ interface LegacyAMM {
     function transferToken(address tokenOut, address to, uint256 amount) external;
 }
 
-interface IOETHVault {
+interface IOriginVault {
     function mint(address _asset, uint256 _amount, uint256 _minimumOusdAmount) external;
 
     function redeem(uint256 _amount, uint256 _minimumUnitAmount) external;

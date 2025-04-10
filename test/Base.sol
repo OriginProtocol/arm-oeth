@@ -13,7 +13,7 @@ import {ZapperLidoARM} from "contracts/ZapperLidoARM.sol";
 
 // Interfaces
 import {IERC20} from "contracts/Interfaces.sol";
-import {IOETHVault} from "contracts/Interfaces.sol";
+import {IOriginVault} from "contracts/Interfaces.sol";
 
 // Utils
 import {AddressResolver} from "contracts/utils/Addresses.sol";
@@ -44,7 +44,7 @@ abstract contract Base_Test_ is Test {
     IERC20 public steth;
     IERC20 public wsteth;
     IERC20 public badToken;
-    IOETHVault public vault;
+    IOriginVault public vault;
 
     //////////////////////////////////////////////////////
     /// --- Governance, multisigs and EOAs

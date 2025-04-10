@@ -16,7 +16,7 @@ import {ZapperLidoARM} from "contracts/ZapperLidoARM.sol";
 
 // Interfaces
 import {IERC20} from "contracts/Interfaces.sol";
-import {IOETHVault} from "contracts/Interfaces.sol";
+import {IOriginVault} from "contracts/Interfaces.sol";
 
 // Utils
 import {Mainnet} from "contracts/utils/Addresses.sol";
@@ -100,7 +100,7 @@ abstract contract Fork_Shared_Test_ is Modifiers {
         weth = IERC20(resolver.resolve("WETH"));
         steth = IERC20(resolver.resolve("STETH"));
         wsteth = IERC20(resolver.resolve("WSTETH"));
-        vault = IOETHVault(resolver.resolve("OETH_VAULT"));
+        vault = IOriginVault(resolver.resolve("OETH_VAULT"));
         badToken = IERC20(vm.randomAddress());
     }
 
