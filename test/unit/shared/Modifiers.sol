@@ -6,9 +6,9 @@ import {Base_Test_} from "test/Base.sol";
 contract Modifiers is Base_Test_ {
     modifier setDefaultStrategy() {
         vm.startPrank(governor);
-        originARM.addStrategy(address(strategy));
-        originARM.setDefaultStrategy(address(strategy));
-        originARM.setArmBuffer(1e18);
+        originARM.addMarket(address(market));
+        originARM.setActiveMarket(address(market));
+        originARM.setARMBuffer(1e18);
         vm.stopPrank();
         _;
     }

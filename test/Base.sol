@@ -14,7 +14,7 @@ import {ZapperLidoARM} from "contracts/ZapperLidoARM.sol";
 
 // Interfaces
 import {IERC20} from "contracts/Interfaces.sol";
-import {IStrategy} from "contracts/Interfaces.sol";
+import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IOriginVault} from "contracts/Interfaces.sol";
 
 // Utils
@@ -48,7 +48,7 @@ abstract contract Base_Test_ is Test {
     IERC20 public steth;
     IERC20 public wsteth;
     IERC20 public badToken;
-    IStrategy public strategy;
+    IERC4626 public market;
     IOriginVault public vault;
 
     //////////////////////////////////////////////////////

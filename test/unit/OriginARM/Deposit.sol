@@ -25,7 +25,7 @@ contract Unit_Concrete_OriginARM_Deposit_Test_ is Unit_Shared_Test {
     /// - WETH in the ARM is MIN_TOTAL_SUPPLY
     /// - OETH in the ARM is null
     /// - vaultWithdrawalAmount is null
-    /// - no default strategy
+    /// - no default market
     /// - no outstanding withdrawal requests
     /// - available assets is not null
     /// - assetIncrease is null
@@ -55,7 +55,7 @@ contract Unit_Concrete_OriginARM_Deposit_Test_ is Unit_Shared_Test {
     /// - WETH in the ARM is null
     /// - OETH in the ARM is approx. MIN_TOTAL_SUPPLY
     /// - vaultWithdrawalAmount is null
-    /// - no default strategy
+    /// - no default market
     /// - no outstanding withdrawal requests
     /// - available assets is not null
     /// - assetIncrease is not null
@@ -94,7 +94,7 @@ contract Unit_Concrete_OriginARM_Deposit_Test_ is Unit_Shared_Test {
     /// - WETH in the ARM is MIN_TOTAL_SUPPLY / 2
     /// - OETH in the ARM is approx. MIN_TOTAL_SUPPLY / 2
     /// - vaultWithdrawalAmount is null
-    /// - no default strategy
+    /// - no default market
     /// - no outstanding withdrawal requests
     /// - available assets is not null
     /// - assetIncrease is not null
@@ -133,7 +133,7 @@ contract Unit_Concrete_OriginARM_Deposit_Test_ is Unit_Shared_Test {
     /// - WETH in the ARM is MIN_TOTAL_SUPPLY / 2
     /// - OETH in the ARM is approx. null
     /// - vaultWithdrawalAmount is not null
-    /// - no default strategy
+    /// - no default market
     /// - no outstanding withdrawal requests
     /// - available assets is not null
     /// - assetIncrease is not null
@@ -171,10 +171,10 @@ contract Unit_Concrete_OriginARM_Deposit_Test_ is Unit_Shared_Test {
     }
 
     /// @notice Test under the following assumptions:
-    /// - WETH in the ARM is null (all in strategy)
+    /// - WETH in the ARM is null (all in market)
     /// - OETH in the ARM is null
     /// - vaultWithdrawalAmount is null
-    /// - default strategy is set
+    /// - default market is set
     /// - no outstanding withdrawal requests
     /// - available assets is not null
     /// - assetIncrease is null
@@ -199,6 +199,5 @@ contract Unit_Concrete_OriginARM_Deposit_Test_ is Unit_Shared_Test {
             DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY,
             "Last available assets should be updated"
         );
-        
     }
 }
