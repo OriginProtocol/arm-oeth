@@ -19,6 +19,7 @@ import {MockStrategy} from "test/unit/mocks/MockStrategy.sol";
 
 abstract contract Unit_Shared_Test is Base_Test_ {
     uint256 public constant CLAIM_DELAY = 1 days;
+    uint256 public constant DEFAULT_FEE = 1000; // 10%
 
     //////////////////////////////////////////////////////
     /// --- SETUP
@@ -74,7 +75,7 @@ abstract contract Unit_Shared_Test is Base_Test_ {
             address(originARM),
             governor,
             abi.encodeWithSelector(
-                OriginARM.initialize.selector, "Origin ARM", "OARM", operator, 0, feeCollector, address(0)
+                OriginARM.initialize.selector, "Origin ARM", "OARM", operator, DEFAULT_FEE, feeCollector, address(0)
             )
         );
 
