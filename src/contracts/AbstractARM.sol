@@ -137,6 +137,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     event DefaultStrategyUpdated(address indexed strategy);
     event StrategyAdded(address indexed strategy);
     event StrategyRemoved(address indexed strategy);
+    event ArmBufferUpdated(uint256 armBuffer);
 
     constructor(address _token0, address _token1, address _liquidityAsset, uint256 _claimDelay) {
         require(IERC20(_token0).decimals() == 18);
@@ -827,5 +828,13 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         capManager = _capManager;
 
         emit CapManagerUpdated(_capManager);
+    }
+
+    /// @notice Set the amount of liquidity assets that should remain on the ARM.
+    function setArmBuffer(uint256 _armBuffer) external onlyOwner {
+        require(_armBuffer <= 1e18, "ARM: invalid buffer");
+        armBuffer = _armBuffer;
+
+        emit ArmBufferUpdated(_armBuffer);
     }
 }
