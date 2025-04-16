@@ -2,6 +2,7 @@
 pragma solidity 0.8.23;
 
 import {IERC20} from "contracts/Interfaces.sol";
+import {MockERC20} from "lib/solmate/src/test/utils/mocks/MockERC20.sol";
 
 contract MockVault {
     IERC20 public token;
@@ -13,13 +14,14 @@ contract MockVault {
         token = _token;
     }
 
-    function requestWithdrawal(uint256 _amount) external returns (uint256) {
+    function requestWithdrawal(uint256 _amount) external returns (uint256, uint256) {
+        MockERC20(address(token)).burn(msg.sender, _amount);
         // Increase the request count
         requestCount++;
         // Store the request ID and amount
         requestIds[requestCount] = _amount;
         // Return the request ID
-        return requestCount;
+        return (requestCount, 0);
     }
 
     function claimWithdrawals(uint256[] calldata _requestIds)
