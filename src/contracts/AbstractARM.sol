@@ -5,7 +5,8 @@ import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 import {OwnableOperable} from "./OwnableOperable.sol";
-import {IERC20, ICapManager, IStrategy} from "./Interfaces.sol";
+import {IERC20, ICapManager} from "./Interfaces.sol";
+import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 
 /**
  * @title Generic Automated Redemption Manager (ARM)
@@ -112,8 +113,10 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @notice The address of the CapManager contract used to manage the ARM's liquidity provider and total assets caps.
     address public capManager;
 
-    address public defaultStrategy;
-    mapping(address strategy => bool supported) public strategies;
+    /// @notice The address of the active lending market.
+    address public activeMarket;
+    /// @notice Lending markets that can be used by the ARM.
+    mapping(address market => bool supported) public supportedMarkets;
     /// @notice Percentage of liquid assets to keep in the ARM. 100% = 1e18.
     uint256 public armBuffer;
 
@@ -134,10 +137,10 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     event FeeUpdated(uint256 fee);
     event FeeCollectorUpdated(address indexed newFeeCollector);
     event CapManagerUpdated(address indexed capManager);
-    event DefaultStrategyUpdated(address indexed strategy);
-    event StrategyAdded(address indexed strategy);
-    event StrategyRemoved(address indexed strategy);
-    event ArmBufferUpdated(uint256 armBuffer);
+    event ActiveMarketUpdated(address indexed market);
+    event MarketAdded(address indexed market);
+    event MarketRemoved(address indexed market);
+    event ARMBufferUpdated(uint256 armBuffer);
 
     constructor(address _token0, address _token1, address _liquidityAsset, uint256 _claimDelay) {
         require(IERC20(_token0).decimals() == 18);
@@ -598,7 +601,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         );
     }
 
-    /// @notice The total amount of assets in the ARM, default strategy and external withdrawal queue,
+    /// @notice The total amount of assets in the ARM, active lending market and external withdrawal queue,
     /// less the liquidity assets reserved for the ARM's withdrawal queue and accrued fees.
     function totalAssets() public view virtual returns (uint256) {
         (uint256 fees, uint256 newAvailableAssets) = _feesAccrued();
@@ -613,20 +616,20 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     }
 
     /// @dev Calculate the available assets which is the assets in the ARM, external withdrawal queue,
-    /// and default strategy, less liquidity assets reserved for the ARM's withdrawal queue.
+    /// and active lending market, less liquidity assets reserved for the ARM's withdrawal queue.
     /// This does not exclude any accrued performance fees.
     function _availableAssets() internal view returns (uint256 availableAssets, uint256 outstandingWithdrawals) {
-        // Liquidity assets, eg WETH, in the ARM and default strategy are priced at 1.0
+        // Liquidity assets, eg WETH, in the ARM and lending markets are priced at 1.0
         // Base assets, eg stETH, in the withdrawal queue are also priced at 1.0
         // Base assets, eg stETH, in the ARM are priced at the cross price which is a discounted price
         uint256 assets = IERC20(liquidityAsset).balanceOf(address(this)) + _externalWithdrawQueue()
             + IERC20(baseAsset).balanceOf(address(this)) * crossPrice / PRICE_SCALE;
 
-        if (defaultStrategy != address(0)) {
-            assets += IStrategy(defaultStrategy).checkBalance(liquidityAsset);
+        if (activeMarket != address(0)) {
+            assets += IERC4626(activeMarket).maxWithdraw(address(this));
         }
 
-        // The amount of liquidity assets (WETH) that is still to be claimed in the withdrawal queue
+        // The amount of liquidity assets, eg WETH, that is still to be claimed in the withdrawal queue
         outstandingWithdrawals = withdrawsQueued - withdrawsClaimed;
 
         // If the ARM becomes insolvent enough that the available assets in the ARM and external withdrawal queue
@@ -739,56 +742,64 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     }
 
     ////////////////////////////////////////////////////
-    ///         Strategy Functions
+    ///         Lending Market Functions
     ////////////////////////////////////////////////////
 
-    /// @notice Owner adds a supported strategy to the ARM.
-    function addStrategy(address strategy) external onlyOwner {
-        require(strategy != address(0), "ARM: invalid strategy");
-        require(!strategies[strategy], "ARM: already supported");
+    /// @notice Owner adds a supported lending market to the ARM.
+    function addMarket(address _market) external onlyOwner {
+        require(_market != address(0), "ARM: invalid market");
+        require(!supportedMarkets[_market], "ARM: market already supported");
+        require(IERC4626(_market).asset() == liquidityAsset, "ARM: invalid market asset");
 
-        strategies[strategy] = true;
+        supportedMarkets[_market] = true;
 
-        emit StrategyAdded(strategy);
+        emit MarketAdded(_market);
     }
 
-    /// @notice Owner removes a supported strategy from the ARM.
-    /// This can not be the default strategy.
-    function removeStrategy(address strategy) external onlyOwner {
-        require(strategy != address(0), "ARM: invalid strategy");
-        require(strategies[strategy], "ARM: not supported");
-        require(strategy != defaultStrategy, "ARM: strategy in use");
+    /// @notice Owner removes a supported lending market from the ARM.
+    /// This can not be the active market.
+    /// @param _market The address of the lending market to remove
+    function removeMarket(address _market) external onlyOwner {
+        require(_market != address(0), "ARM: invalid market");
+        require(supportedMarkets[_market], "ARM: market not supported");
+        require(_market != activeMarket, "ARM: market in active");
 
-        strategies[strategy] = false;
+        supportedMarkets[_market] = false;
 
-        emit StrategyRemoved(strategy);
+        emit MarketRemoved(_market);
     }
 
-    /// @notice set a new default strategy for the ARM.
-    /// This can be set to address(0) to disable the default strategy.
-    function setDefaultStrategy(address strategy) external onlyOperatorOrOwner {
-        require(strategy == address(0) || strategies[strategy], "ARM: not supported");
-        require(defaultStrategy != strategy, "ARM: already default strategy");
+    /// @notice set a new active lending market for the ARM.
+    /// This can be set to address(0) to disable the use of a lending market.
+    function setActiveMarket(address _market) external onlyOperatorOrOwner {
+        require(_market == address(0) || supportedMarkets[_market], "ARM: market not supported");
+        // Read once from storage to save gas and make it clear this is the previous active market
+        address previousActiveMarket = activeMarket;
+        require(previousActiveMarket != _market, "ARM: already active market");
 
-        // Withdraw all from the previous default strategy
-        if (defaultStrategy != address(0)) {
-            IStrategy(defaultStrategy).withdrawAll();
+        // Withdraw all from the previous active lending market
+        if (previousActiveMarket != address(0)) {
+            uint256 shares = IERC4626(previousActiveMarket).maxRedeem(address(this));
+            IERC4626(previousActiveMarket).redeem(shares, address(this), address(this));
         }
 
-        defaultStrategy = strategy;
+        activeMarket = _market;
 
-        emit DefaultStrategyUpdated(strategy);
+        emit ActiveMarketUpdated(_market);
+
+        // Exit if no new active market
+        if (_market == address(0)) return;
 
         _allocate();
     }
 
     function allocate() external {
+        require(activeMarket != address(0), "ARM: no active market");
+
         _allocate();
     }
 
     function _allocate() internal {
-        require(defaultStrategy != address(0), "ARM: no default strategy");
-
         (uint256 availableAssets, uint256 outstandingWithdrawals) = _availableAssets();
         if (availableAssets == 0) return;
 
@@ -799,21 +810,25 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         int256 liquidityDelta = armLiquidity - SafeCast.toInt256(targetArmLiquidity);
 
         if (liquidityDelta > 0) {
-            // We have too much liquidity in the ARM, we need to deposit some to the strategy
+            // We have too much liquidity in the ARM, we need to deposit some to the active lending market
 
             uint256 depositAmount = SafeCast.toUint256(liquidityDelta);
 
-            IERC20(liquidityAsset).transfer(defaultStrategy, depositAmount);
-            IStrategy(defaultStrategy).deposit(liquidityAsset, depositAmount);
+            IERC20(liquidityAsset).approve(activeMarket, depositAmount);
+            IERC4626(activeMarket).deposit(depositAmount, address(this));
         } else if (liquidityDelta < 0) {
-            // We have too little liquidity in the ARM, we need to withdraw some from the strategy
+            // We have too little liquidity in the ARM, we need to withdraw some from the active lending market
 
-            uint256 availableStrategyAssets = IStrategy(defaultStrategy).checkBalance(liquidityAsset);
+            uint256 availableMarketAssets = IERC4626(activeMarket).maxWithdraw(liquidityAsset);
+            uint256 desiredWithdrawAmount = SafeCast.toUint256(-liquidityDelta);
 
-            if (availableStrategyAssets < SafeCast.toUint256(-liquidityDelta)) {
-                IStrategy(defaultStrategy).withdrawAll();
+            if (availableMarketAssets < desiredWithdrawAmount) {
+                // Not enough assets in the market so redeem everything
+                // Redeem and not withdrawal is used to avoid leaving a small amount of assets in the market
+                uint256 shares = IERC4626(activeMarket).maxRedeem(address(this));
+                IERC4626(activeMarket).redeem(shares, address(this), address(this));
             } else {
-                IStrategy(defaultStrategy).withdraw(address(this), liquidityAsset, SafeCast.toUint256(-liquidityDelta));
+                IERC4626(activeMarket).withdraw(desiredWithdrawAmount, address(this), address(this));
             }
         }
     }
@@ -830,11 +845,10 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         emit CapManagerUpdated(_capManager);
     }
 
-    /// @notice Set the amount of liquidity assets that should remain on the ARM.
-    function setArmBuffer(uint256 _armBuffer) external onlyOwner {
-        require(_armBuffer <= 1e18, "ARM: invalid buffer");
+    function setARMBuffer(uint256 _armBuffer) external onlyOwner {
+        require(_armBuffer <= 1e18, "ARM: invalid arm buffer");
         armBuffer = _armBuffer;
 
-        emit ArmBufferUpdated(_armBuffer);
+        emit ARMBufferUpdated(_armBuffer);
     }
 }

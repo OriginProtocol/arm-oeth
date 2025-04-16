@@ -54,8 +54,14 @@ coverage-html:
 simulate-s-%:
 	@forge script script/$*.s.sol --fork-url $(PROVIDER_URL) -vvvvv
 
+simulate-sonic-s-%:
+	@forge script script/$*.s.sol --fork-url $(SONIC_URL) -vvvvv
+
 run-s-%:
 	@forge script script/$*.s.sol --rpc-url $(PROVIDER_URL) --private-key ${DEPLOYER_PRIVATE_KEY} --broadcast --slow --verify -vvvvv
+
+run-sonic-s-%:
+	@forge script script/$*.s.sol --rpc-url $(SONIC_URL) --private-key ${DEPLOYER_PRIVATE_KEY} --broadcast --slow --verify -vvvvv
 
 # Deploy scripts
 deploy:
@@ -67,8 +73,14 @@ deploy-testnet:
 deploy-holesky:
 	@forge script script/deploy/DeployManager.sol --rpc-url $(HOLESKY_URL) --private-key ${DEPLOYER_PRIVATE_KEY} --broadcast --slow --verify -vvv
 
+deploy-sonic:
+	@forge script script/deploy/DeployManager.sol --rpc-url $(SONIC_URL) --private-key ${DEPLOYER_PRIVATE_KEY} --broadcast --slow --verify -vvv
+
 simulate-deploys:
 	@forge script script/deploy/DeployManager.sol --fork-url $(PROVIDER_URL) --private-key ${DEPLOYER_PRIVATE_KEY} -vvvv
+
+simulate-sonic-deploys:
+	@forge script script/deploy/DeployManager.sol --fork-url $(SONIC_URL) --private-key ${DEPLOYER_PRIVATE_KEY} -vvvv
 
 # Override default `test` and `coverage` targets
 .PHONY: test coverage
