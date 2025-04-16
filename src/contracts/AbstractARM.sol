@@ -742,7 +742,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     }
 
     ////////////////////////////////////////////////////
-    ///         Market Functions
+    ///         Lending Market Functions
     ////////////////////////////////////////////////////
 
     /// @notice Owner adds a supported lending market to the ARM.
