@@ -3,6 +3,7 @@ pragma solidity 0.8.23;
 
 // Test
 import {Base_Test_} from "test/Base.sol";
+import {Modifiers} from "test/unit/shared/Modifiers.sol";
 
 // Contracts
 import {Proxy} from "contracts/Proxy.sol";
@@ -17,7 +18,7 @@ import {MockERC20} from "@solmate/test/utils/mocks/MockERC20.sol";
 import {MockVault} from "test/unit/mocks/MockVault.sol";
 import {MockStrategy} from "test/unit/mocks/MockStrategy.sol";
 
-abstract contract Unit_Shared_Test is Base_Test_ {
+abstract contract Unit_Shared_Test is Base_Test_, Modifiers {
     uint256 public constant CLAIM_DELAY = 1 days;
     uint256 public constant DEFAULT_FEE = 1000; // 10%
 
@@ -42,7 +43,7 @@ abstract contract Unit_Shared_Test is Base_Test_ {
         oeth = IERC20(address(new MockERC20("Origin ETH", "OETH", 18)));
         weth = IERC20(address(new MockERC20("Wrapped ETH", "WETH", 18)));
         vault = IOriginVault(address(new MockVault(IERC20(oeth))));
-        strategy = IStrategy(address(new MockStrategy(IERC20(oeth))));
+        strategy = IStrategy(address(new MockStrategy(IERC20(weth))));
     }
 
     function _generateAddresses() internal {

@@ -169,4 +169,36 @@ contract Unit_Concrete_OriginARM_Deposit_Test_ is Unit_Shared_Test {
             "Last available assets should be updated"
         );
     }
+
+    /// @notice Test under the following assumptions:
+    /// - WETH in the ARM is null (all in strategy)
+    /// - OETH in the ARM is null
+    /// - vaultWithdrawalAmount is null
+    /// - default strategy is set
+    /// - no outstanding withdrawal requests
+    /// - available assets is not null
+    /// - assetIncrease is null
+    /// - totalAssets is approx MIN_TOTAL_SUPPLY
+    /// - lastAvailableAssets is approx MIN_TOTAL_SUPPLY
+    /// - fees are not null
+    function test_Deposit_When_DefaultStrategyIsSet() public setDefaultStrategy {
+        // Allocated as been call in the modifier
+
+        // Expected values
+        uint256 expectedShares = originARM.convertToShares(DEFAULT_AMOUNT);
+        assertEq(expectedShares, DEFAULT_AMOUNT, "Shares should be eq amount");
+        // Expected event
+        vm.expectEmit(address(originARM));
+        emit AbstractARM.Deposit(alice, DEFAULT_AMOUNT, expectedShares);
+        // Alice deposits 1 WETH
+        vm.prank(alice);
+        originARM.deposit(DEFAULT_AMOUNT);
+        // Assertions
+        assertEq(
+            originARM.lastAvailableAssets().toUint256(),
+            DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY,
+            "Last available assets should be updated"
+        );
+        
+    }
 }
