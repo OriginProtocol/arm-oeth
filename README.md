@@ -190,6 +190,14 @@ In the `.env` file, set `DEPLOYER_PRIVATE_KEY`, `ETHERSCAN_API_KEY` and `PROVIDE
 make deploy
 ```
 
+### Sonic
+
+In the `.env` file, set `DEPLOYER_PRIVATE_KEY` and `SONIC_URL` to the mainnet values.
+
+```bash
+make deploy-sonic
+```
+
 ## Contract Verification
 
 If the verification doesn't work with the deployment, it can be done separately with forge `verify-contract`.
