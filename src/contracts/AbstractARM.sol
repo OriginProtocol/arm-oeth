@@ -749,6 +749,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     function addMarket(address _market) external onlyOwner {
         require(_market != address(0), "ARM: invalid market");
         require(!supportedMarkets[_market], "ARM: market already supported");
+        require(IERC4626(_market).asset() == liquidityAsset, "ARM: invalid market asset");
 
         supportedMarkets[_market] = true;
 
