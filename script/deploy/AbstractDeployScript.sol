@@ -6,7 +6,7 @@ import "forge-std/console.sol";
 import {Script} from "forge-std/Script.sol";
 import {Vm, VmSafe} from "forge-std/Vm.sol";
 
-import {Mainnet} from "contracts/utils/Addresses.sol";
+import {AddressResolver} from "contracts/utils/Addresses.sol";
 import {GovProposal, GovSixHelper} from "contracts/utils/GovSixHelper.sol";
 
 abstract contract AbstractDeployScript is Script {
@@ -47,7 +47,7 @@ abstract contract AbstractDeployScript is Script {
             || vm.isContext(VmSafe.ForgeContext.TestGroup);
     }
 
-    /// @notice Detect if the RPC URL is a tendrly testnet, by trying to call a specific tenderly method on rpc.
+    /// @notice Detect if the RPC URL is a tenderly testnet, by trying to call a specific tenderly method on rpc.
     /// @dev if the call success, it means we are on a tenderly testnet, otherwise we arn't.
     function isTenderlyRpc() public returns (bool) {
         // Try to give ethers to "ARM_MULTISIG"
@@ -71,7 +71,8 @@ abstract contract AbstractDeployScript is Script {
         }
 
         if (this.isForked()) {
-            deployer = Mainnet.INITIAL_DEPLOYER;
+            AddressResolver resolver = new AddressResolver();
+            deployer = resolver.resolve("DEPLOYER");
             if (tenderlyTestnet) {
                 // Give enough ethers to deployer
                 vm.rpc(
