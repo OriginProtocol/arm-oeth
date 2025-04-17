@@ -10,41 +10,32 @@ import {IERC20} from "./Interfaces.sol";
 import {ILiquidityProviderARM} from "./Interfaces.sol";
 
 /**
- * @title Zapper contract for the Origin (OS) Automated Redemption Manager (ARM)
- * Converts S to wS and deposits it to the Origin ARM to receive ARM LP shares.
+ * @title Zapper contract for Automated Redemption Managers (ARMs)
+ * Converts S to wS and deposits it to an ARM to receive ARM LP shares.
  * @author Origin Protocol Inc
  */
-contract ZapperOriginARM is Ownable {
+contract ZapperARM is Ownable {
     IWETH public immutable ws;
-    /// @notice The address of the Lido ARM contract
-    ILiquidityProviderARM public immutable arm;
 
-    event Zap(address indexed sender, uint256 assets, uint256 shares);
+    event Zap(address indexed arm, address indexed sender, uint256 assets, uint256 shares);
 
-    constructor(address _ws, address _arm) {
+    constructor(address _ws) {
         ws = IWETH(_ws);
-        arm = ILiquidityProviderARM(_arm);
-
-        ws.approve(_arm, type(uint256).max);
-    }
-
-    /// @notice Deposit ETH to LidoARM and receive ARM LP shares
-    receive() external payable {
-        deposit();
     }
 
     /// @notice Deposit S to OriginARM and receive ARM shares
     /// @return shares The amount of ARM LP shares sent to the depositor
-    function deposit() public payable returns (uint256 shares) {
+    function deposit(address arm) public payable returns (uint256 shares) {
         // Wrap all S to wS
         uint256 sBalance = address(this).balance;
         ws.deposit{value: sBalance}();
 
         // Deposit all wS to the ARM
-        shares = arm.deposit(sBalance, msg.sender);
+        ws.approve(arm, sBalance);
+        shares = ILiquidityProviderARM(arm).deposit(sBalance, msg.sender);
 
         // Emit event
-        emit Zap(msg.sender, sBalance, shares);
+        emit Zap(arm, msg.sender, sBalance, shares);
     }
 
     /// @notice Rescue ERC20 tokens

@@ -8,7 +8,7 @@ import {Vm} from "forge-std/Vm.sol";
 import {CapManager} from "contracts/CapManager.sol";
 import {OriginARM} from "contracts/OriginARM.sol";
 import {Proxy} from "contracts/Proxy.sol";
-import {ZapperOriginARM} from "contracts/ZapperOriginARM.sol";
+import {ZapperARM} from "contracts/ZapperARM.sol";
 import {Sonic} from "contracts/utils/Addresses.sol";
 import {AbstractDeployScript} from "../AbstractDeployScript.sol";
 
@@ -20,7 +20,7 @@ contract DeployOriginARMScript is AbstractDeployScript {
     CapManager capManager;
     Proxy originARMProxy;
     OriginARM originARMImpl;
-    ZapperOriginARM zapper;
+    ZapperARM zapper;
 
     function _execute() internal override {
         console.log("Deploy:", DEPLOY_NAME);
@@ -55,9 +55,9 @@ contract DeployOriginARMScript is AbstractDeployScript {
         _recordDeploy("ORIGIN_ARM_IMPL", address(originARMImpl));
 
         // 8. Deploy the Zapper
-        zapper = new ZapperOriginARM(Sonic.WS, address(originARMProxy));
+        zapper = new ZapperARM(Sonic.WS);
         zapper.setOwner(Sonic.ADMIN);
-        _recordDeploy("ORIGIN_ARM_ZAPPER", address(zapper));
+        _recordDeploy("ARM_ZAPPER", address(zapper));
 
         console.log("Finished deploying", DEPLOY_NAME);
     }
