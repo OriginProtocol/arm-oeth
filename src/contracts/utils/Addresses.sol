@@ -59,7 +59,7 @@ library Sonic {
     address public constant TIMELOCK = 0x31a91336414d3B955E494E7d485a6B06b55FC8fB;
 
     // Multisig and EOAs
-    address public constant INITIAL_DEPLOYER = address(0x1001);
+    address public constant INITIAL_DEPLOYER = 0x3Ba227D87c2A7aB89EAaCEFbeD9bfa0D15Ad249A;
     // 2/8 multisig
     address public constant STRATEGIST = 0x63cdd3072F25664eeC6FAEFf6dAeB668Ea4de94a;
     // 5/8 multisig
@@ -72,6 +72,11 @@ library Sonic {
 
     // Contracts
     address public constant OS_VAULT = 0xa3c0eCA00D2B76b4d1F170b0AB3FdeA16C180186;
+
+    // Silo lending markets
+    // wOS - S market (bwS-22)
+    address public constant SILO_OS = 0x112380065A2cb73A5A429d9Ba7368cc5e8434595;
+    address public constant SILO_stS = 0x47d8490Be37ADC7Af053322d6d779153689E13C1;
 }
 
 contract AddressResolver {
@@ -107,7 +112,7 @@ contract AddressResolver {
         resolver[MAINNET]["LIDO_ARM"] = Mainnet.LIDO_ARM;
 
         // Test accounts
-        resolver[MAINNET]["INITIAL_DEPLOYER"] = address(0x1001);
+        resolver[MAINNET]["DEPLOYER"] = address(0x1001);
         resolver[MAINNET]["WHALE_OETH"] = 0x8E02247D3eE0E6153495c971FFd45Aa131f4D7cB;
 
         ///// Holesky //////
@@ -124,7 +129,7 @@ contract AddressResolver {
         resolver[HOLESKY]["OETH_ARM"] = Mainnet.OETH_ARM;
 
         // Test accounts
-        resolver[HOLESKY]["INITIAL_DEPLOYER"] = Holesky.INITIAL_DEPLOYER;
+        resolver[HOLESKY]["DEPLOYER"] = Holesky.INITIAL_DEPLOYER;
 
         ///// Sonic //////
         // Governance
@@ -132,14 +137,14 @@ contract AddressResolver {
         resolver[SONIC]["OPERATOR"] = Sonic.RELAYER;
 
         // Tokens
-        resolver[MAINNET]["OS"] = Sonic.OS;
-        resolver[MAINNET]["WS"] = Sonic.WS;
+        resolver[SONIC]["OS"] = Sonic.OS;
+        resolver[SONIC]["WS"] = Sonic.WS;
 
         // Contracts
-        resolver[MAINNET]["OS_VAULT"] = Sonic.OS_VAULT;
+        resolver[SONIC]["OS_VAULT"] = Sonic.OS_VAULT;
 
         // Test accounts
-        resolver[MAINNET]["INITIAL_DEPLOYER"] = Sonic.INITIAL_DEPLOYER;
+        resolver[SONIC]["DEPLOYER"] = Sonic.INITIAL_DEPLOYER;
     }
 
     function resolve(string memory name) public view returns (address resolved) {

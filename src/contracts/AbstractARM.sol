@@ -745,15 +745,19 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     ///         Lending Market Functions
     ////////////////////////////////////////////////////
 
-    /// @notice Owner adds a supported lending market to the ARM.
-    function addMarket(address _market) external onlyOwner {
-        require(_market != address(0), "ARM: invalid market");
-        require(!supportedMarkets[_market], "ARM: market already supported");
-        require(IERC4626(_market).asset() == liquidityAsset, "ARM: invalid market asset");
+    /// @notice Owner adds supported lending market to the ARM.
+    /// @param _markets The addresses of the lending markets to add
+    function addMarkets(address[] calldata _markets) external onlyOwner {
+        for (uint256 i = 0; i < _markets.length; i++) {
+            address market = _markets[i];
+            require(market != address(0), "ARM: invalid market");
+            require(!supportedMarkets[market], "ARM: market already supported");
+            require(IERC4626(market).asset() == liquidityAsset, "ARM: invalid market asset");
 
-        supportedMarkets[_market] = true;
+            supportedMarkets[market] = true;
 
-        emit MarketAdded(_market);
+            emit MarketAdded(market);
+        }
     }
 
     /// @notice Owner removes a supported lending market from the ARM.
@@ -777,9 +781,10 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         address previousActiveMarket = activeMarket;
         require(previousActiveMarket != _market, "ARM: already active market");
 
-        // Withdraw all from the previous active lending market
         if (previousActiveMarket != address(0)) {
+            // Redeem all shares from the previous active lending market
             uint256 shares = IERC4626(previousActiveMarket).maxRedeem(address(this));
+            // This could fail if the market has high utilization
             IERC4626(previousActiveMarket).redeem(shares, address(this), address(this));
         }
 
@@ -826,6 +831,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
                 // Not enough assets in the market so redeem everything
                 // Redeem and not withdrawal is used to avoid leaving a small amount of assets in the market
                 uint256 shares = IERC4626(activeMarket).maxRedeem(address(this));
+                // This could fail if the market has high utilization
                 IERC4626(activeMarket).redeem(shares, address(this), address(this));
             } else {
                 IERC4626(activeMarket).withdraw(desiredWithdrawAmount, address(this), address(this));
