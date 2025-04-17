@@ -14,9 +14,9 @@ import {IERC20} from "contracts/Interfaces.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IOriginVault} from "contracts/Interfaces.sol";
 // Mocks
-import {MockERC20} from "@solmate/test/utils/mocks/MockERC20.sol";
 import {MockVault} from "test/unit/mocks/MockVault.sol";
-import {MockMarket} from "test/unit/mocks/MockMarket.sol";
+import {MockERC20} from "@solmate/test/utils/mocks/MockERC20.sol";
+import {MockERC4626Market} from "test/unit/mocks/MockERC4626Market.sol";
 
 abstract contract Unit_Shared_Test is Base_Test_, Modifiers {
     uint256 public constant CLAIM_DELAY = 1 days;
@@ -43,7 +43,8 @@ abstract contract Unit_Shared_Test is Base_Test_, Modifiers {
         oeth = IERC20(address(new MockERC20("Origin ETH", "OETH", 18)));
         weth = IERC20(address(new MockERC20("Wrapped ETH", "WETH", 18)));
         vault = IOriginVault(address(new MockVault(IERC20(oeth))));
-        market = IERC4626(address(new MockMarket(IERC20(weth))));
+        market = IERC4626(address(new MockERC4626Market(IERC20(weth))));
+        market2 = IERC4626(address(new MockERC4626Market(IERC20(weth))));
     }
 
     function _generateAddresses() internal {
