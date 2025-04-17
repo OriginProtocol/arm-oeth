@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
-import {Base_Test_} from "test/Base.sol";
+import {Helpers} from "test/unit/shared/Helpers.sol";
 
-contract Modifiers is Base_Test_ {
+contract Modifiers is Helpers {
     modifier setDefaultStrategy() {
         vm.startPrank(governor);
         originARM.addMarket(address(market));
@@ -20,5 +20,17 @@ contract Modifiers is Base_Test_ {
         originARM.deposit(amount);
         vm.stopPrank();
         _;
+    }
+
+    modifier asGovernor() {
+        vm.startPrank(governor);
+        _;
+        vm.stopPrank();
+    }
+
+    modifier asNotGovernor() {
+        vm.startPrank(randomAddrDiff(governor));
+        _;
+        vm.stopPrank();
     }
 }
