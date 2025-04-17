@@ -49,6 +49,7 @@ abstract contract Base_Test_ is Test {
     IERC20 public wsteth;
     IERC20 public badToken;
     IERC4626 public market;
+    IERC4626 public market2;
     IOriginVault public vault;
 
     //////////////////////////////////////////////////////
