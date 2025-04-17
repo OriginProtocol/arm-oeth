@@ -85,6 +85,17 @@ contract Modifiers is Helpers {
         _;
     }
 
+    modifier swapAllOETHForWETH() {
+        deal(address(weth), address(alice), 1e18);
+        vm.startPrank(address(alice));
+        weth.approve(address(originARM), 1e18);
+        originARM.swapTokensForExactTokens(
+            weth, oeth, oeth.balanceOf(address(originARM)), type(uint56).max, address(alice)
+        );
+        vm.stopPrank();
+        _;
+    }
+
     modifier requestRedeem(address user, uint256 pct) {
         uint256 shares = originARM.balanceOf(alice);
         vm.prank(alice);
