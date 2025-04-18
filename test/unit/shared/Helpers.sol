@@ -11,4 +11,12 @@ contract Helpers is Base_Test_ {
         }
         return _rand;
     }
+
+    function randomAddrDiff(address _addr1, address _addr2) public returns (address) {
+        address _rand = vm.randomAddress();
+        while (_rand == _addr1 || _rand == _addr2) {
+            _rand = vm.randomAddress();
+        }
+        return _rand;
+    }
 }

@@ -17,8 +17,20 @@ contract Modifiers is Helpers {
         vm.stopPrank();
     }
 
+    modifier asOperator() {
+        vm.startPrank(operator);
+        _;
+        vm.stopPrank();
+    }
+
     modifier asNotGovernor() {
         vm.startPrank(randomAddrDiff(governor));
+        _;
+        vm.stopPrank();
+    }
+
+    modifier asNotOperatorNorGovernor() {
+        vm.startPrank(randomAddrDiff(governor, operator));
         _;
         vm.stopPrank();
     }
