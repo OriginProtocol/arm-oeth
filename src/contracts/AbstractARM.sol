@@ -824,7 +824,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         } else if (liquidityDelta < 0) {
             // We have too little liquidity in the ARM, we need to withdraw some from the active lending market
 
-            uint256 availableMarketAssets = IERC4626(activeMarket).maxWithdraw(liquidityAsset);
+            uint256 availableMarketAssets = IERC4626(activeMarket).maxWithdraw(address(this));
             uint256 desiredWithdrawAmount = SafeCast.toUint256(-liquidityDelta);
 
             if (availableMarketAssets < desiredWithdrawAmount) {
