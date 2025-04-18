@@ -785,7 +785,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
             // Redeem all shares from the previous active lending market
             uint256 shares = IERC4626(previousActiveMarket).maxRedeem(address(this));
             // This could fail if the market has high utilization
-            IERC4626(previousActiveMarket).redeem(shares, address(this), address(this));
+            if (shares > 0) IERC4626(previousActiveMarket).redeem(shares, address(this), address(this));
         }
 
         activeMarket = _market;
@@ -824,7 +824,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         } else if (liquidityDelta < 0) {
             // We have too little liquidity in the ARM, we need to withdraw some from the active lending market
 
-            uint256 availableMarketAssets = IERC4626(activeMarket).maxWithdraw(liquidityAsset);
+            uint256 availableMarketAssets = IERC4626(activeMarket).maxWithdraw(address(this));
             uint256 desiredWithdrawAmount = SafeCast.toUint256(-liquidityDelta);
 
             if (availableMarketAssets < desiredWithdrawAmount) {

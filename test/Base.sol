@@ -9,10 +9,12 @@ import {Proxy} from "contracts/Proxy.sol";
 import {OethARM} from "contracts/OethARM.sol";
 import {LidoARM} from "contracts/LidoARM.sol";
 import {CapManager} from "contracts/CapManager.sol";
+import {OriginARM} from "contracts/OriginARM.sol";
 import {ZapperLidoARM} from "contracts/ZapperLidoARM.sol";
 
 // Interfaces
 import {IERC20} from "contracts/Interfaces.sol";
+import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IOriginVault} from "contracts/Interfaces.sol";
 
 // Utils
@@ -34,8 +36,10 @@ abstract contract Base_Test_ is Test {
     Proxy public proxy;
     Proxy public lpcProxy;
     Proxy public lidoProxy;
+    Proxy public originARMProxy;
     OethARM public oethARM;
     LidoARM public lidoARM;
+    OriginARM public originARM;
     CapManager public capManager;
     ZapperLidoARM public zapperLidoARM;
 
@@ -44,6 +48,8 @@ abstract contract Base_Test_ is Test {
     IERC20 public steth;
     IERC20 public wsteth;
     IERC20 public badToken;
+    IERC4626 public market;
+    IERC4626 public market2;
     IOriginVault public vault;
 
     //////////////////////////////////////////////////////
@@ -87,6 +93,7 @@ abstract contract Base_Test_ is Test {
         _labelNotNull(address(lidoProxy), "LIDO ARM PROXY");
         _labelNotNull(address(oethARM), "OETH ARM");
         _labelNotNull(address(lidoARM), "LIDO ARM");
+        _labelNotNull(address(originARM), "ORIGIN ARM");
         _labelNotNull(address(capManager), "CAP MANAGER");
 
         _labelNotNull(address(oeth), "OETH");
