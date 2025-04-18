@@ -144,8 +144,11 @@ contract Modifiers is Helpers {
     ////////////////////////////////////////////////////
     modifier simulateMarketLoss(address market, uint256 lossPct) {
         uint256 maxWithdraw = IERC4626(market).maxWithdraw(address(originARM));
-        uint256 loss = lossPct == 1e18 ? 0 : (maxWithdraw * lossPct) / 1e18;
-        vm.mockCall(market, abi.encodeWithSelector(IERC4626.maxWithdraw.selector), abi.encode(loss));
+        uint256 maxRedeem = IERC4626(market).maxRedeem(address(originARM));
+        uint256 lossOnWithdraw = lossPct == 1e18 ? 0 : (maxWithdraw * lossPct) / 1e18;
+        uint256 lossOnRedeem = lossPct == 1e18 ? 0 : (maxRedeem * lossPct) / 1e18;
+        vm.mockCall(market, abi.encodeWithSelector(IERC4626.maxWithdraw.selector), abi.encode(lossOnWithdraw));
+        vm.mockCall(market, abi.encodeWithSelector(IERC4626.maxRedeem.selector), abi.encode(lossOnRedeem));
         _;
     }
 }
