@@ -2,7 +2,6 @@
 pragma solidity 0.8.23;
 
 import {Unit_Shared_Test} from "test/unit/shared/Shared.sol";
-import {OriginARM} from "contracts/OriginARM.sol";
 import {AbstractARM} from "contracts/AbstractARM.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
@@ -204,5 +203,46 @@ contract Unit_Concrete_OriginARM_Deposit_Test_ is Unit_Shared_Test {
             DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY,
             "Last available assets should be updated"
         );
+    }
+
+    function test_Deposit_When_CapManagerIsSet() public setCapManager setTotalAssetsCapUnlimited {
+        // Expected values
+        uint256 expectedShares = originARM.convertToShares(DEFAULT_AMOUNT);
+
+        // Expected event
+        vm.expectEmit(address(originARM));
+        emit AbstractARM.Deposit(alice, DEFAULT_AMOUNT, expectedShares);
+
+        // Alice deposits 1 WETH
+        vm.prank(alice);
+        originARM.deposit(DEFAULT_AMOUNT);
+
+        // Assertions
+        assertEq(
+            originARM.lastAvailableAssets().toUint256(),
+            DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY,
+            "Last available assets should be updated"
+        );
+    }
+
+    function test_Deposit_ForSomeoneElse() public {
+        // Expected values
+        uint256 expectedShares = originARM.convertToShares(DEFAULT_AMOUNT);
+
+        // Expected event
+        vm.expectEmit(address(originARM));
+        emit AbstractARM.Deposit(bob, DEFAULT_AMOUNT, expectedShares);
+
+        // Alice deposits 1 WETH
+        vm.prank(alice);
+        originARM.deposit(DEFAULT_AMOUNT, bob);
+
+        // Assertions
+        assertEq(
+            originARM.lastAvailableAssets().toUint256(),
+            DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY,
+            "Last available assets should be updated"
+        );
+        assertEq(originARM.balanceOf(bob), expectedShares, "Bob should have the shares");
     }
 }

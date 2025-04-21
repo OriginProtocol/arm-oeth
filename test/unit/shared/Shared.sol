@@ -8,6 +8,7 @@ import {Modifiers} from "test/unit/shared/Modifiers.sol";
 // Contracts
 import {Proxy} from "contracts/Proxy.sol";
 import {OriginARM} from "contracts/OriginARM.sol";
+import {CapManager} from "contracts/CapManager.sol";
 
 // Interfaces
 import {IERC20} from "contracts/Interfaces.sol";
@@ -50,6 +51,7 @@ abstract contract Unit_Shared_Test is Base_Test_, Modifiers {
     function _generateAddresses() internal {
         // Users and multisigs
         alice = makeAddr("alice");
+        bob = makeAddr("bob");
         deployer = makeAddr("deployer");
         feeCollector = makeAddr("fee collector");
 
@@ -62,9 +64,11 @@ abstract contract Unit_Shared_Test is Base_Test_, Modifiers {
 
         // --- Deploy Proxy
         originARMProxy = new Proxy();
+        Proxy capManagerProxy = new Proxy();
 
         // --- Deploy OriginARM implementation
         originARM = new OriginARM(address(oeth), address(weth), address(vault), CLAIM_DELAY);
+        capManager = new CapManager(address(address(originARMProxy)));
 
         // Initialization requires 1e12 liquid assets to mint to dead address.
         // Deployer approve the proxy to transfer 1e12 liquid assets.
@@ -81,10 +85,16 @@ abstract contract Unit_Shared_Test is Base_Test_, Modifiers {
             )
         );
 
+        // --- Initialize the CapManager proxy
+        capManagerProxy.initialize(
+            address(capManager), governor, abi.encodeWithSelector(CapManager.initialize.selector, operator)
+        );
+
         vm.stopPrank();
 
         // --- Set the proxy as the OriginARM
         originARM = OriginARM(address(originARMProxy));
+        capManager = CapManager(address(capManagerProxy));
 
         // set prices
         vm.prank(governor);

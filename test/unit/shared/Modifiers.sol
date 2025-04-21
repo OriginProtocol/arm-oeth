@@ -3,6 +3,7 @@ pragma solidity 0.8.23;
 
 import {Helpers} from "test/unit/shared/Helpers.sol";
 import {stdStorage, StdStorage} from "forge-std/Test.sol";
+import {IERC20} from "contracts/Interfaces.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 
 contract Modifiers is Helpers {
@@ -41,6 +42,12 @@ contract Modifiers is Helpers {
         vm.stopPrank();
     }
 
+    modifier asNot(address user) {
+        vm.startPrank(randomAddrDiff(user));
+        _;
+        vm.stopPrank();
+    }
+
     ////////////////////////////////////////////////////
     /// --- SETTERS
     ////////////////////////////////////////////////////
@@ -67,6 +74,20 @@ contract Modifiers is Helpers {
         _;
     }
 
+    modifier setCapManager() {
+        vm.startPrank(governor);
+        originARM.setCapManager(address(capManager));
+        vm.stopPrank();
+        _;
+    }
+
+    modifier setTotalAssetsCapUnlimited() {
+        vm.startPrank(governor);
+        capManager.setTotalAssetsCap(type(uint248).max);
+        vm.stopPrank();
+        _;
+    }
+
     ////////////////////////////////////////////////////
     /// --- ACTIONS
     ////////////////////////////////////////////////////
@@ -87,23 +108,21 @@ contract Modifiers is Helpers {
     }
 
     modifier swapAllWETHForOETH() {
-        deal(address(oeth), address(alice), 1e18);
-        vm.startPrank(address(alice));
-        oeth.approve(address(originARM), 1e18);
-        originARM.swapTokensForExactTokens(
-            oeth, weth, weth.balanceOf(address(originARM)), type(uint56).max, address(alice)
-        );
+        address swapper = makeAddr("swapper");
+        deal(address(oeth), swapper, 1_000_000 ether);
+        vm.startPrank(swapper);
+        oeth.approve(address(originARM), type(uint256).max);
+        originARM.swapTokensForExactTokens(oeth, weth, weth.balanceOf(address(originARM)), type(uint256).max, swapper);
         vm.stopPrank();
         _;
     }
 
     modifier swapAllOETHForWETH() {
-        deal(address(weth), address(alice), 1e18);
-        vm.startPrank(address(alice));
-        weth.approve(address(originARM), 1e18);
-        originARM.swapTokensForExactTokens(
-            weth, oeth, oeth.balanceOf(address(originARM)), type(uint56).max, address(alice)
-        );
+        address swapper = makeAddr("swapper");
+        deal(address(weth), swapper, 1_000_000 ether);
+        vm.startPrank(swapper);
+        weth.approve(address(originARM), type(uint256).max);
+        originARM.swapTokensForExactTokens(weth, oeth, oeth.balanceOf(address(originARM)), type(uint256).max, swapper);
         vm.stopPrank();
         _;
     }
@@ -135,6 +154,12 @@ contract Modifiers is Helpers {
         _;
     }
 
+    modifier donate(IERC20 token, address user, uint256 amount) {
+        deal(address(token), address(this), amount);
+        token.transfer(user, amount);
+        _;
+    }
+
     /// @dev Cheat function to force available assets in the ARM to be 0
     /// Send OETH and WETH to address(0x1)
     /// Write directly in the storage of the ARM the vaultWithdrawalAmount to 0
@@ -157,6 +182,11 @@ contract Modifiers is Helpers {
         uint256 lossOnRedeem = lossPct == 1e18 ? 0 : (maxRedeem * lossPct) / 1e18;
         vm.mockCall(market, abi.encodeWithSelector(IERC4626.maxWithdraw.selector), abi.encode(lossOnWithdraw));
         vm.mockCall(market, abi.encodeWithSelector(IERC4626.maxRedeem.selector), abi.encode(lossOnRedeem));
+        _;
+    }
+
+    modifier timejump(uint256 secondsToJump) {
+        vm.warp(block.timestamp + secondsToJump);
         _;
     }
 }
