@@ -4,7 +4,7 @@ pragma solidity 0.8.23;
 import {Unit_Shared_Test} from "test/unit/shared/Shared.sol";
 import {AbstractARM} from "contracts/AbstractARM.sol";
 
-contract Unit_Concrete_OriginARM_Deposit_Test_ is Unit_Shared_Test {
+contract Unit_Concrete_OriginARM_ClaimRedeem_Test_ is Unit_Shared_Test {
     function setUp() public virtual override {
         super.setUp();
 
