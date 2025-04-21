@@ -142,6 +142,7 @@ contract AddressResolver {
 
         // Contracts
         resolver[SONIC]["OS_VAULT"] = Sonic.OS_VAULT;
+        resolver[SONIC]["SILO_WOS_S_MARKET"] = Sonic.SILO_OS;
 
         // Test accounts
         resolver[SONIC]["DEPLOYER"] = Sonic.INITIAL_DEPLOYER;

@@ -43,6 +43,8 @@ abstract contract Base_Test_ is Test {
     CapManager public capManager;
     ZapperLidoARM public zapperLidoARM;
 
+    IERC20 public ws;
+    IERC20 public os;
     IERC20 public oeth;
     IERC20 public weth;
     IERC20 public steth;
@@ -96,6 +98,8 @@ abstract contract Base_Test_ is Test {
         _labelNotNull(address(originARM), "ORIGIN ARM");
         _labelNotNull(address(capManager), "CAP MANAGER");
 
+        _labelNotNull(address(ws), "WS");
+        _labelNotNull(address(os), "OS");
         _labelNotNull(address(oeth), "OETH");
         _labelNotNull(address(weth), "WETH");
         _labelNotNull(address(steth), "STETH");
