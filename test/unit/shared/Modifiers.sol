@@ -127,6 +127,14 @@ contract Modifiers is Helpers {
         _;
     }
 
+    modifier marketLoss(address market, uint256 lossPct) {
+        uint256 balance = weth.balanceOf(market);
+        uint256 amountToThrow = (balance * lossPct) / 1e18;
+        vm.prank(market);
+        weth.transfer(address(0x1), amountToThrow);
+        _;
+    }
+
     /// @dev Cheat function to force available assets in the ARM to be 0
     /// Send OETH and WETH to address(0x1)
     /// Write directly in the storage of the ARM the vaultWithdrawalAmount to 0
