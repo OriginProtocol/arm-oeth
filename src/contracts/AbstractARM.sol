@@ -833,7 +833,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
                 // Redeem and not withdrawal is used to avoid leaving a small amount of assets in the market
                 uint256 shares = IERC4626(activeMarket).maxRedeem(address(this));
                 // This could fail if the market has high utilization
-                if (shares > 0) IERC4626(activeMarket).redeem(shares, address(this), address(this));
+                if (shares == 0) return;
+                IERC4626(activeMarket).redeem(shares, address(this), address(this));
             } else {
                 IERC4626(activeMarket).withdraw(desiredWithdrawAmount, address(this), address(this));
             }
