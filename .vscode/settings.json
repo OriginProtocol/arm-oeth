@@ -1,6 +1,6 @@
 {
   "editor.formatOnSave": true,
-  "plantuml.exportOutDir": "docs",
+  "plantuml.exportOutDir": "docs/plantuml",
   "plantuml.exportFormat": "png",
   "plantuml.exportIncludeFolderHeirarchy": false,
   "plantuml.exportSubFolder": false,
