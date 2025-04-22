@@ -141,6 +141,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     event MarketAdded(address indexed market);
     event MarketRemoved(address indexed market);
     event ARMBufferUpdated(uint256 armBuffer);
+    event Allocated(address indexed market, int256 assets);
 
     constructor(address _token0, address _token1, address _liquidityAsset, uint256 _claimDelay) {
         require(IERC20(_token0).decimals() == 18);
@@ -837,6 +838,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
                 IERC4626(activeMarket).withdraw(desiredWithdrawAmount, address(this), address(this));
             }
         }
+
+        emit Allocated(activeMarket, liquidityDelta);
     }
 
     ////////////////////////////////////////////////////
