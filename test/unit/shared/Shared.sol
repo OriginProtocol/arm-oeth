@@ -9,6 +9,7 @@ import {Modifiers} from "test/unit/shared/Modifiers.sol";
 import {Proxy} from "contracts/Proxy.sol";
 import {OriginARM} from "contracts/OriginARM.sol";
 import {CapManager} from "contracts/CapManager.sol";
+import {SiloMarket} from "contracts/markets/SiloMarket.sol";
 
 // Interfaces
 import {IERC20} from "contracts/Interfaces.sol";
@@ -65,10 +66,22 @@ abstract contract Unit_Shared_Test is Base_Test_, Modifiers {
         // --- Deploy Proxy
         originARMProxy = new Proxy();
         Proxy capManagerProxy = new Proxy();
+        Proxy siloMarketProxy = new Proxy();
 
         // --- Deploy OriginARM implementation
         originARM = new OriginARM(address(oeth), address(weth), address(vault), CLAIM_DELAY);
         capManager = new CapManager(address(address(originARMProxy)));
+
+        // --- Deploy SiloMarket implementation
+        vm.mockCall(
+            address(market), abi.encodeWithSignature("hookReceiver()"), abi.encode(makeAddr("fake hook receiver"))
+        );
+        vm.mockCall(
+            address(makeAddr("fake hook receiver")),
+            abi.encodeWithSignature("configuredGauges(address)"),
+            abi.encode(makeAddr("fake gauge"))
+        );
+        siloMarket = new SiloMarket(address(originARMProxy), address(market));
 
         // Initialization requires 1e12 liquid assets to mint to dead address.
         // Deployer approve the proxy to transfer 1e12 liquid assets.
@@ -90,11 +103,17 @@ abstract contract Unit_Shared_Test is Base_Test_, Modifiers {
             address(capManager), governor, abi.encodeWithSelector(CapManager.initialize.selector, operator)
         );
 
+        // --- Initialize the SiloMarket proxy
+        siloMarketProxy.initialize(
+            address(siloMarket), governor, abi.encodeWithSelector(SiloMarket.initialize.selector, operator)
+        );
+
         vm.stopPrank();
 
         // --- Set the proxy as the OriginARM
         originARM = OriginARM(address(originARMProxy));
         capManager = CapManager(address(capManagerProxy));
+        siloMarket = SiloMarket(address(siloMarketProxy));
 
         // set prices
         vm.prank(governor);
