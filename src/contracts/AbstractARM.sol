@@ -2,11 +2,11 @@
 pragma solidity ^0.8.23;
 
 import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 import {OwnableOperable} from "./OwnableOperable.sol";
 import {IERC20, ICapManager} from "./Interfaces.sol";
-import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 
 /**
  * @title Generic Automated Redemption Manager (ARM)
@@ -545,7 +545,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         emit RedeemRequested(msg.sender, requestId, assets, queued, claimTimestamp);
     }
 
-    /// @notice Claim liquidity assets from a previous withdrawal request after the claim delay has passed
+    /// @notice Claim liquidity assets from a previous withdrawal request after the claim delay has passed.
+    /// This will withdraw from the active lending market if there are not enough liquidity assets in the ARM.
     /// @param requestId The index of the withdrawal request
     /// @return assets The amount of liquidity assets that were transferred to the redeemer
     function claimRedeem(uint256 requestId) external returns (uint256 assets) {
@@ -554,6 +555,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
         require(request.claimTimestamp <= block.timestamp, "Claim delay not met");
         // Is there enough liquidity to claim this request?
+        // This includes liquidity assets in the ARM and the the active lending market
         require(request.queued <= claimable(), "Queue pending liquidity");
         require(request.withdrawer == msg.sender, "Not requester");
         require(request.claimed == false, "Already claimed");
@@ -565,6 +567,14 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         // Store the updated claimed amount
         withdrawsClaimed += SafeCast.toUint128(assets);
 
+        // If there is not enough liquidity assets in the ARM, get from the active market
+        uint256 liquidityInARM = IERC20(liquidityAsset).balanceOf(address(this));
+        if (assets > liquidityInARM) {
+            uint256 liquidityFromMarket = assets - liquidityInARM;
+            // This should work as we have checked earlier the claimable() amount which includes the active market
+            IERC4626(activeMarket).withdraw(liquidityFromMarket, address(this), address(this));
+        }
+
         // transfer the liquidity asset to the withdrawer
         IERC20(liquidityAsset).transfer(msg.sender, assets);
 
@@ -573,8 +583,15 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
     /// @notice Used to work out if an ARM's withdrawal request can be claimed.
     /// If the withdrawal request's `queued` amount is less than the returned `claimable` amount, then it can be claimed.
-    function claimable() public view returns (uint256) {
-        return withdrawsClaimed + IERC20(liquidityAsset).balanceOf(address(this));
+    /// The `claimable` amount is the all the withdrawals already claimed plus the liquidity assets in the ARM
+    /// and active lending market.
+    function claimable() public view returns (uint256 claimableAmount) {
+        claimableAmount = withdrawsClaimed + IERC20(liquidityAsset).balanceOf(address(this));
+
+        // if there is an active lending market, add to the claimable amount
+        if (activeMarket != address(0)) {
+            claimableAmount += IERC4626(activeMarket).maxWithdraw(address(this));
+        }
     }
 
     ////////////////////////////////////////////////////
