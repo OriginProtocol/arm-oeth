@@ -99,7 +99,7 @@ abstract contract Base_Test_ is Test {
         _labelNotNull(address(lidoARM), "LIDO ARM");
         _labelNotNull(address(originARM), "ORIGIN ARM");
         _labelNotNull(address(capManager), "CAP MANAGER");
-        _labelNotNull(address(siloMarket), "SILO MARKET");
+        _labelNotNull(address(siloMarket), "SILO MARKET ADAPTER");
 
         _labelNotNull(address(ws), "WS");
         _labelNotNull(address(os), "OS");
