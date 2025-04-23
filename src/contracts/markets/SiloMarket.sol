@@ -61,6 +61,9 @@ contract SiloMarket is Initializable, Ownable {
     function deposit(uint256 assets, address receiver) external returns (uint256 shares) {
         require(msg.sender == arm && receiver == arm, "Only ARM can deposit");
 
+        // Transfer liquidity from the ARM to this contract
+        IERC20(asset).transferFrom(arm, address(this), assets);
+
         IERC20(asset).approve(market, assets);
         shares = IERC4626(arm).deposit(assets, address(this));
     }
