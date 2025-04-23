@@ -6,7 +6,7 @@ import {Fork_Shared_Test} from "test/fork/OriginARM/shared/Shared.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 
-contract Fork_Concrete_OriginARM_Allocate_Test_ is Fork_Shared_Test {
+contract Fork_Concrete_OriginARM_AllocateWithoutAdapter_Test_ is Fork_Shared_Test {
     using SafeCast for uint256;
     using SafeCast for int256;
 
@@ -152,7 +152,7 @@ contract Fork_Concrete_OriginARM_Allocate_Test_ is Fork_Shared_Test {
         assertEq(marketBalanceBefore, sharesBefore, "shares before");
         assertApproxEqAbs(originARM.totalAssets(), 2 * DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, 1, "totalAssets before");
 
-        uint256 expectedShares = market.maxRedeem(address(originARM)); //market.previewWithdraw(abs(expectedAmount));
+        uint256 expectedShares = market.maxRedeem(address(originARM));
         uint256 expectedAmount = market.convertToAssets(expectedShares);
 
         // Expected event

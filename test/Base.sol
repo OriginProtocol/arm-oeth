@@ -8,8 +8,9 @@ import {Test} from "forge-std/Test.sol";
 import {Proxy} from "contracts/Proxy.sol";
 import {OethARM} from "contracts/OethARM.sol";
 import {LidoARM} from "contracts/LidoARM.sol";
-import {CapManager} from "contracts/CapManager.sol";
 import {OriginARM} from "contracts/OriginARM.sol";
+import {CapManager} from "contracts/CapManager.sol";
+import {SiloMarket} from "contracts/markets/SiloMarket.sol";
 import {ZapperLidoARM} from "contracts/ZapperLidoARM.sol";
 
 // Interfaces
@@ -41,6 +42,7 @@ abstract contract Base_Test_ is Test {
     LidoARM public lidoARM;
     OriginARM public originARM;
     CapManager public capManager;
+    SiloMarket public siloMarket;
     ZapperLidoARM public zapperLidoARM;
 
     IERC20 public ws;
@@ -97,6 +99,7 @@ abstract contract Base_Test_ is Test {
         _labelNotNull(address(lidoARM), "LIDO ARM");
         _labelNotNull(address(originARM), "ORIGIN ARM");
         _labelNotNull(address(capManager), "CAP MANAGER");
+        _labelNotNull(address(siloMarket), "SILO MARKET");
 
         _labelNotNull(address(ws), "WS");
         _labelNotNull(address(os), "OS");
