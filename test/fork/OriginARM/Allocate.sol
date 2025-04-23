@@ -10,6 +10,9 @@ contract Fork_Concrete_OriginARM_Allocate_Test_ is Fork_Shared_Test {
     using SafeCast for uint256;
     using SafeCast for int256;
 
+    // There is a weird behavior from Silo market, where even when we remove all, we still have some shares left.
+    uint256 public constant MIN_BALANCE = 1_000;
+
     uint256 public initialShares;
 
     function setUp() public virtual override {
@@ -97,7 +100,6 @@ contract Fork_Concrete_OriginARM_Allocate_Test_ is Fork_Shared_Test {
         assertApproxEqAbs(originARM.totalAssets(), DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, 1, "totalAssets after");
     }
 
-    // WIP
     function test_Fork_Allocate_When_LiquidityDelta_IsNegative_FullWithdraw()
         public
         setARMBuffer(0)
@@ -129,15 +131,10 @@ contract Fork_Concrete_OriginARM_Allocate_Test_ is Fork_Shared_Test {
         originARM.allocate();
 
         // Assertions after allocation
-        //assertEq(market.balanceOf(address(originARM)), 987, "shares after"); This is weird, it should be 0
+        assertLe(market.balanceOf(address(originARM)), MIN_BALANCE, "shares after");
         assertApproxEqAbs(originARM.totalAssets(), DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, 1, "totalAssets after");
-
-        //deal(address(os), address(originARM), 1 ether);
-        _swapAllWSForOS();
-        originARM.allocate();
     }
 
-    /* WIP
     function test_Fork_Allocate_When_LiquidityDelta_IsNegative_DesiredIsLessThanAvailable()
         public
         setFee(0)
@@ -153,26 +150,52 @@ contract Fork_Concrete_OriginARM_Allocate_Test_ is Fork_Shared_Test {
         uint256 sharesBefore = market.convertToShares(DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY);
         // Assertions before allocation
         assertEq(marketBalanceBefore, sharesBefore, "shares before");
-        assertApproxEqAbs(originARM.totalAssets(), DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, 1, "totalAssets before");
+        assertApproxEqAbs(originARM.totalAssets(), 2 * DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, 1, "totalAssets before");
 
-        int256 expectedAmount = getLiquidityDelta();
-        uint256 expectedShares = market.previewWithdraw(abs(expectedAmount));
+        uint256 expectedShares = market.maxRedeem(address(originARM)); //market.previewWithdraw(abs(expectedAmount));
+        uint256 expectedAmount = market.convertToAssets(expectedShares);
 
         // Expected event
         vm.expectEmit(address(market));
         emit IERC4626.Withdraw(
-            address(originARM), address(originARM), address(originARM), abs(expectedAmount), expectedShares
+            address(originARM), address(originARM), address(originARM), expectedAmount - 1, expectedShares
         );
         vm.expectEmit(address(originARM));
-        emit AbstractARM.Allocated(address(market), expectedAmount);
+        emit AbstractARM.Allocated(address(market), getLiquidityDelta());
         // Main call
         originARM.allocate();
 
         // Assertions after allocation
         assertEq(market.balanceOf(address(originARM)), marketBalanceBefore - expectedShares, "shares after");
-        assertApproxEqAbs(originARM.totalAssets(), DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, 1, "totalAssets after");
+        assertApproxEqAbs(originARM.totalAssets(), 2 * DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, 1, "totalAssets after");
     }
-    */
+
+    function test_Fork_Allocate_When_LiquidityDelta_IsNegative_NoShares()
+        public
+        setFee(0)
+        setARMBuffer(0)
+        addMarket(address(market))
+        setActiveMarket(address(market))
+        deposit(alice, DEFAULT_AMOUNT)
+        allocate
+        setARMBuffer(1 ether)
+        allocate
+        donate(os, address(originARM), DEFAULT_AMOUNT)
+    {
+        uint256 marketBalanceBefore = market.balanceOf(address(originARM));
+        // Assertions before allocation
+        assertLe(marketBalanceBefore, MIN_BALANCE, "shares before");
+        // We ensure we are in the edge case where Silo has rounded issues.
+        assertNotEq(marketBalanceBefore, 0, "shares before");
+        assertApproxEqAbs(originARM.totalAssets(), 2 * DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, 1, "totalAssets before");
+
+        // Main call
+        originARM.allocate();
+
+        // Assertions after allocation
+        assertEq(market.balanceOf(address(originARM)), marketBalanceBefore, "shares after");
+        assertApproxEqAbs(originARM.totalAssets(), 2 * DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, 1, "totalAssets after");
+    }
 
     /// @dev This suppose that there is no fee!
     function getLiquidityDelta() public view returns (int256) {
