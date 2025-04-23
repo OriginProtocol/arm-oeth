@@ -174,7 +174,7 @@ contract Unit_Concrete_OriginARM_ManageMarket_Test_ is Unit_Shared_Test {
         assertEq(originARM.activeMarket(), address(market));
     }
 
-    function test_SetActiveMarket_ToZero() 
+    function test_SetActiveMarket_ToZero()
         public
         forceAvailableAssetsToZero
         addMarket(address(market))

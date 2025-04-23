@@ -87,7 +87,7 @@ contract Unit_Concrete_OriginARM_SiloMarket_Test_ is Unit_Shared_Test {
     ////////////////////////////////////////////////////
     /// --- VIEWS
     ////////////////////////////////////////////////////
-    function test_MaxWithdraw() public view{
+    function test_MaxWithdraw() public view {
         assertEq(siloMarket.maxWithdraw(address(originARM)), 1, "maxWithdraw");
         assertEq(siloMarket.maxWithdraw(address(this)), 0, "maxWithdraw");
     }
