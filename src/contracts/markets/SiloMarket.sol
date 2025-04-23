@@ -84,7 +84,7 @@ contract SiloMarket is Initializable, Ownable {
     function maxRedeem(address owner) external view returns (uint256 maxShares) {
         if (owner != arm) return 0;
 
-        IERC4626(market).maxRedeem(address(this));
+        maxShares = IERC4626(market).maxRedeem(address(this));
     }
 
     function redeem(uint256 shares, address receiver, address owner) external returns (uint256 assets) {
