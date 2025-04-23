@@ -88,6 +88,13 @@ contract Modifiers is Helpers {
         _;
     }
 
+    modifier setFee(uint256 fee) {
+        vm.startPrank(governor);
+        originARM.setFee(fee);
+        vm.stopPrank();
+        _;
+    }
+
     ////////////////////////////////////////////////////
     /// --- ACTIONS
     ////////////////////////////////////////////////////
