@@ -65,7 +65,7 @@ contract SiloMarket is Initializable, Ownable {
         IERC20(asset).transferFrom(arm, address(this), assets);
 
         IERC20(asset).approve(market, assets);
-        shares = IERC4626(arm).deposit(assets, address(this));
+        shares = IERC4626(market).deposit(assets, address(this));
     }
 
     function maxWithdraw(address owner) external view returns (uint256 maxAssets) {
@@ -78,7 +78,7 @@ contract SiloMarket is Initializable, Ownable {
         require(msg.sender == arm && receiver == arm && owner == arm, "Only ARM can withdraw");
 
         // Withdraw assets from the lending market to the ARM
-        shares = IERC4626(arm).withdraw(assets, arm, address(this));
+        shares = IERC4626(market).withdraw(assets, arm, address(this));
     }
 
     function maxRedeem(address owner) external view returns (uint256 maxShares) {
@@ -91,7 +91,7 @@ contract SiloMarket is Initializable, Ownable {
         require(msg.sender == arm && receiver == arm && owner == arm, "Only ARM can redeem");
 
         // Redeem shares for assets from the lending market to the ARM
-        assets = IERC4626(arm).redeem(shares, arm, address(this));
+        assets = IERC4626(market).redeem(shares, arm, address(this));
     }
 
     function collectRewardTokens() external {
