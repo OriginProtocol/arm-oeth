@@ -2,7 +2,6 @@
 pragma solidity 0.8.23;
 
 import {Unit_Shared_Test} from "test/unit/shared/Shared.sol";
-import {OriginARM} from "contracts/OriginARM.sol";
 
 contract Unit_Concrete_OriginARM_TotalAssets_Test_ is Unit_Shared_Test {
     function test_TotalAssets_RightAfterDeployment() public view {
