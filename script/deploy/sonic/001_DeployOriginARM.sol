@@ -9,6 +9,7 @@ import {CapManager} from "contracts/CapManager.sol";
 import {OriginARM} from "contracts/OriginARM.sol";
 import {Proxy} from "contracts/Proxy.sol";
 import {ZapperARM} from "contracts/ZapperARM.sol";
+import {SiloMarket} from "contracts/markets/SiloMarket.sol";
 import {Sonic} from "contracts/utils/Addresses.sol";
 import {IERC20} from "contracts/Interfaces.sol";
 import {AbstractDeployScript} from "../AbstractDeployScript.sol";
@@ -74,16 +75,36 @@ contract DeployOriginARMScript is AbstractDeployScript {
         originARMProxy.initialize(address(originARMImpl), deployer, data);
         originARM = OriginARM(address(originARMProxy));
 
-        // 10. Set the supported lending markets
-        address[] memory markets = new address[](2);
-        markets[0] = Sonic.SILO_OS;
-        markets[1] = Sonic.SILO_stS;
+        // 10. Deploy the Silo market proxies
+        Proxy silo_OS_MarketProxy = new Proxy();
+        Proxy silo_USDC_MarketProxy = new Proxy();
+        _recordDeploy("SILO_OS_MARKET", address(silo_OS_MarketProxy));
+        _recordDeploy("SILO_USDC_MARKET", address(silo_USDC_MarketProxy));
+
+        // 11. Deploy the Silo market implementations
+        SiloMarket silo_OS_MarketImpl = new SiloMarket(address(originARM), Sonic.SILO_OS);
+        SiloMarket silo_USDC_MarketImpl = new SiloMarket(address(originARM), Sonic.SILO_USDC);
+        _recordDeploy("SILO_OS_MARKET_IMPL", address(silo_OS_MarketImpl));
+        _recordDeploy("SILO_USDC_MARKET_IMPL", address(silo_USDC_MarketImpl));
+
+        // 12. Initialize Silo market Proxies, setting governor to Timelock and set Harvester to Relayer for now
+        data = abi.encodeWithSignature("initialize(address)", Sonic.RELAYER);
+        silo_OS_MarketProxy.initialize(address(silo_OS_MarketImpl), Sonic.TIMELOCK, data);
+        silo_USDC_MarketProxy.initialize(address(silo_USDC_MarketImpl), Sonic.TIMELOCK, data);
+
+        // 13. Set the supported lending markets
+        address[] memory markets = new address[](3);
+        // These both have gauges so using a market proxy
+        markets[0] = address(silo_OS_MarketProxy);
+        markets[1] = address(silo_USDC_MarketProxy);
+        // no gauge so integrating directly to the lending market
+        markets[2] = address(Sonic.SILO_stS);
         originARM.addMarkets(markets);
 
-        // 11. Transfer ownership of OriginARM to the Sonic 5/8 Admin multisig
+        // 14. Transfer ownership of OriginARM to the Sonic 5/8 Admin multisig
         originARM.setOwner(Sonic.ADMIN);
 
-        // 12. Deploy the Zapper
+        // 15. Deploy the Zapper
         zapper = new ZapperARM(Sonic.WS);
         zapper.setOwner(Sonic.ADMIN);
         _recordDeploy("ARM_ZAPPER", address(zapper));
