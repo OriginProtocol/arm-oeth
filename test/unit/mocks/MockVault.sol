@@ -2,7 +2,7 @@
 pragma solidity 0.8.23;
 
 import {IERC20} from "contracts/Interfaces.sol";
-import {MockERC20} from "lib/solmate/src/test/utils/mocks/MockERC20.sol";
+import {MockERC20} from "@solmate/test/utils/mocks/MockERC20.sol";
 
 contract MockVault {
     IERC20 public token;
