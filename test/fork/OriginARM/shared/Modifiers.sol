@@ -130,4 +130,23 @@ contract Modifiers is Helpers {
     }
 
     function _swapAllOSForWS() internal swapAllOSForWS {}
+
+    modifier requestRedeem(address user, uint256 pct) {
+        uint256 shares = originARM.balanceOf(alice);
+        vm.prank(alice);
+        originARM.requestRedeem((shares * pct) / 1e18);
+        _;
+    }
+
+    modifier requestRedeemAll(address user) {
+        uint256 shares = originARM.balanceOf(user);
+        vm.prank(user);
+        originARM.requestRedeem(shares);
+        _;
+    }
+
+    modifier timejump(uint256 secondsToJump) {
+        vm.warp(block.timestamp + secondsToJump);
+        _;
+    }
 }
