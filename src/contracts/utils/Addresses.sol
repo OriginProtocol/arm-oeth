@@ -69,6 +69,7 @@ library Sonic {
     // Tokens
     address public constant OS = 0xb1e25689D55734FD3ffFc939c4C3Eb52DFf8A794;
     address public constant WS = 0x039e2fB66102314Ce7b64Ce5Ce3E5183bc94aD38;
+    address public constant SILO = 0x53f753e4b17f4075d6fa2c6909033d224b81e698;
 
     // Contracts
     address public constant OS_VAULT = 0xa3c0eCA00D2B76b4d1F170b0AB3FdeA16C180186;
