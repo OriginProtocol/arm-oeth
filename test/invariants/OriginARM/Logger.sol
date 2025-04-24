@@ -7,7 +7,7 @@ import {Setup} from "./Setup.sol";
 abstract contract Logger is Setup {
     // This format values in logs, however it reduce the speed of the tests.
     bool public constant FORMATED_LOGS = true;
-    uint256 public constant DEFAULT_MAX_DIGITS = 12;
+    uint256 public constant DEFAULT_MAX_DIGITS = 19;
 
     function faa(uint256 amount) public pure returns (string memory) {
         return FORMATED_LOGS ? formatAmountAligned(amount, DEFAULT_MAX_DIGITS) : vm.toString(amount);

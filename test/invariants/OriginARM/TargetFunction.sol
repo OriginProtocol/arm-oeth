@@ -21,7 +21,7 @@ abstract contract TargetFunction is Properties {
     // ╔══════════════════════════════════════════════════════════════════════════════╗
     // ║                       ✦✦✦ PERMISSIONNED FUNCTIONS ✦✦✦                        ║
     // ╚══════════════════════════════════════════════════════════════════════════════╝
-    // [ ] SetPrices
+    // [x] SetPrices
     // [ ] SetCrossPrice
     // [ ] SetFee
     // [ ] CollectFees
@@ -126,5 +126,18 @@ abstract contract TargetFunction is Properties {
         // Main call
         vm.prank(governor);
         originARM.allocate();
+    }
+
+    function handler_setPrices(uint120 buyPrice, uint120 sellPrice) public {
+        uint256 crossPrice = originARM.crossPrice();
+        buyPrice = uint120(_bound(buyPrice, MIN_BUY_PRICE, crossPrice - 1));
+        sellPrice = uint120(_bound(sellPrice, crossPrice, MAX_SELL_PRICE));
+
+        // Console log data
+        console.log("setPrices() \t\t From: Owner | \t Buy   : %36e | \t Sell: %36e", buyPrice, sellPrice);
+
+        // Main call
+        vm.prank(governor);
+        originARM.setPrices(buyPrice, sellPrice);
     }
 }
