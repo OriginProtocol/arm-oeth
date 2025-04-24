@@ -68,7 +68,7 @@ contract Unit_Concrete_OriginARM_SiloMarket_Test_ is Unit_Shared_Test {
 
     function test_RevertWhen_CollectRewardTokens_Because_OnlyHarvester() public asNotOperatorNorGovernor {
         vm.expectRevert("Only harvester can collect");
-        siloMarket.collectRewardTokens();
+        siloMarket.collectRewards();
     }
 
     ////////////////////////////////////////////////////

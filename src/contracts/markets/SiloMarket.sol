@@ -94,7 +94,7 @@ contract SiloMarket is Initializable, Ownable {
         assets = IERC4626(market).redeem(shares, arm, address(this));
     }
 
-    function collectRewardTokens() external {
+    function collectRewards() external {
         require(msg.sender == harvester, "Only harvester can collect");
 
         // Claim and send the rewards to the Harvester
