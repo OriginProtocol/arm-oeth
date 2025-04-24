@@ -256,3 +256,15 @@ interface IStETHWithdrawal {
     function getWithdrawalRequests(address _owner) external view returns (uint256[] memory requestsIds);
     function getLastRequestId() external view returns (uint256);
 }
+
+interface IOracle {
+    function price(address asset) external view returns (uint256 price);
+}
+
+interface IHarvestable {
+    function collectRewards() external returns (address[] memory tokens, uint256[] memory rewards);
+}
+
+interface IMagpieRouter {
+    function swapWithMagpieSignature(bytes calldata) external payable returns (uint256 amountOut);
+}
