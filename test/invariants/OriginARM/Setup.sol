@@ -31,6 +31,7 @@ abstract contract Setup is Base_Test_ {
     address[] public users;
     address[] public lps;
     address[] public swaps;
+    address[] public markets;
 
     // Use name with same length for easier displaying in logs
     address public bobby;

@@ -25,7 +25,7 @@ abstract contract TargetFunction is Properties {
     // [ ] SetCrossPrice
     // [ ] SetFee
     // [ ] CollectFees
-    // [ ] SetActiveMarket
+    // [x] SetActiveMarket
     // [x] SetARMBuffer
     // [ ] RequestOriginWithdrawal
 
@@ -98,10 +98,23 @@ abstract contract TargetFunction is Properties {
         pct = uint64(_bound(pct, 0, 10)) * 1e17;
 
         // Console log data
-        console.log("setARMBuffer() \t From: %s | \t Pct: %16e %", "Gover", pct);
+        console.log("setARMBuffer() \t From: %s | \t Percen: %16e %", "Owner", pct);
 
         // Main call
         vm.prank(governor);
         originARM.setARMBuffer(pct);
+    }
+
+    function handler_setActiveMarket(uint8 seed) public {
+        // Get a random market from the list of markets
+        (address fromM, address toM) = getRandomMarket(seed);
+        vm.assume(fromM != address(0) || toM != address(0));
+
+        // Console log data
+        console.log("setActiveMarket() \t From: %s | \t Market: %s -> %s", "Owner", nameM(fromM), nameM(toM));
+
+        // Main call
+        vm.prank(governor);
+        originARM.setActiveMarket(toM);
     }
 }

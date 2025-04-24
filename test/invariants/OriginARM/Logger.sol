@@ -97,4 +97,11 @@ abstract contract Logger is Setup {
     function name(address addr) public view returns (string memory) {
         return vm.getLabel(addr);
     }
+
+    function nameM(address addr) public view returns (string memory) {
+        if (addr == address(market)) return "SILO_";
+        if (addr == address(siloMarket)) return "ADAPT";
+        if (addr == address(0)) return "ZERO_";
+        return "NaN";
+    }
 }

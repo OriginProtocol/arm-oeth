@@ -8,9 +8,31 @@ import {Logger} from "test/invariants/OriginARM/Logger.sol";
 abstract contract Helpers is Setup, Logger {
     mapping(address => uint256[]) public requests;
 
-    function getRandom(address[] memory users, uint256 seed) public pure returns (address) {
-        // Get a random user from the list of users
-        return users[seed % users.length];
+    function getRandom(address[] memory array, uint256 seed) public pure returns (address) {
+        // Get a random user from the list of array
+        return array[seed % array.length];
+    }
+
+    function getRandomMarket(uint8 seed) public returns (address, address) {
+        address currentMarket = originARM.activeMarket();
+        _emptyAddress = markets;
+        _emptyAddress.push(address(0));
+        while (_emptyAddress.length > 0) {
+            uint256 id = seed % _emptyAddress.length;
+            address market_ = _emptyAddress[id];
+            if (market_ == currentMarket) {
+                // Remove the market from the list
+                if (_emptyAddress.length == 1) {
+                    _emptyAddress.pop();
+                } else {
+                    _emptyAddress[id] = _emptyAddress[_emptyAddress.length - 1];
+                    _emptyAddress.pop();
+                }
+            } else {
+                return (currentMarket, market_);
+            }
+        }
+        return (address(0), address(0));
     }
 
     function getRandomLPs(uint8 seed) public view returns (address) {
@@ -40,6 +62,7 @@ abstract contract Helpers is Setup, Logger {
     }
 
     uint256[] private _empty;
+    address[] private _emptyAddress;
 
     function getRandomLPsWithRequest(uint8 seed, uint16 seed_id) public returns (address, uint256, uint256, uint40) {
         // Get a random user from the list of lps with a request
