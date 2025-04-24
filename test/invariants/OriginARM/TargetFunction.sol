@@ -56,8 +56,6 @@ abstract contract TargetFunction is Properties {
         originARM.deposit(amount);
     }
 
-    mapping(address => uint256[]) public requests;
-
     function handler_requestRedeem(uint8 seed, uint96 amount) public {
         // Get a random user from the list of lps with a balance
         address user = getRandomLPs(seed, true);
@@ -75,5 +73,24 @@ abstract contract TargetFunction is Properties {
         vm.prank(user);
         (uint256 id,) = originARM.requestRedeem(amount);
         requests[user].push(id);
+    }
+
+    function handler_claimRedeem(uint8 seed, uint16 seed_id) public {
+        // Get a random user from the list of lps with a request
+        (address user, uint256 id, uint256 expectedAmount, uint40 ts) = getRandomLPsWithRequest(seed, seed_id);
+        // Ensure a user is selected, otherwise skip
+        vm.assume(user != address(0));
+
+        // Console log data
+        console.log("claimRedeem() \t From: %s | \t Amount: %s | \t ID: %s", name(user), faa(expectedAmount), id);
+
+        // Timejump to the claim delay
+        vm.warp(ts);
+        // Main call
+        vm.prank(user);
+        originARM.claimRedeem(id);
+
+        // Remove the request from the list
+        removeRequest(user, id);
     }
 }

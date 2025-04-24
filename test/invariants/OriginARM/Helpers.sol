@@ -6,6 +6,8 @@ import {Setup} from "./Setup.sol";
 import {Logger} from "test/invariants/OriginARM/Logger.sol";
 
 abstract contract Helpers is Setup, Logger {
+    mapping(address => uint256[]) public requests;
+
     function getRandom(address[] memory users, uint256 seed) public pure returns (address) {
         // Get a random user from the list of users
         return users[seed % users.length];
@@ -35,5 +37,67 @@ abstract contract Helpers is Setup, Logger {
             }
         }
         return address(0);
+    }
+
+    uint256[] private _empty;
+
+    function getRandomLPsWithRequest(uint8 seed, uint16 seed_id) public returns (address, uint256, uint256, uint40) {
+        // Get a random user from the list of lps with a request
+        uint256 len = lps.length;
+
+        // If no liquidity available, no need to look for a user with a request
+        uint256 claimable = originARM.claimable();
+        if (claimable == 0) return (address(0), 0, 0, 0);
+
+        // Find a user with a request
+        for (uint256 i; i < len; i++) {
+            address user_ = lps[(seed + i) % len];
+            // Check if the user has a request
+            if (requests[user_].length > 0) {
+                // Cache the requests for the user
+                _empty = requests[user_];
+
+                // This is another way to get a random value from the list, as it will not take the next one
+                // but a random one from the list at every iteration. In comparison to picking a random user
+                // on the first lps list where the next user is always the next one (not a random one).
+                while (_empty.length > 0) {
+                    uint256 id = _empty[seed_id % _empty.length];
+                    // Check if the request is claimable
+                    (,, uint40 ts, uint256 asset, uint256 queued) = originARM.withdrawalRequests(id);
+
+                    // If claimable, we find the user and the id!
+                    if (queued <= claimable) {
+                        return (user_, id, asset, ts);
+                    }
+                    // Otherwise remove the id from the temporary list
+                    else {
+                        if (_empty.length == 1) {
+                            _empty.pop();
+                        } else {
+                            _empty[seed_id % _empty.length] = _empty[_empty.length - 1];
+                            _empty.pop();
+                        }
+                    }
+                }
+            }
+        }
+        return (address(0), 0, 0, 0);
+    }
+
+    function removeRequest(address user, uint256 id) public {
+        // Remove the request from the list
+        uint256 len = requests[user].length;
+        for (uint256 i; i < len; i++) {
+            if (requests[user][i] == id) {
+                if (len == 1) {
+                    delete requests[user];
+                } else {
+                    requests[user][i] = requests[user][len - 1];
+                    requests[user].pop();
+                }
+                return;
+            }
+        }
+        revert("Request not found");
     }
 }
