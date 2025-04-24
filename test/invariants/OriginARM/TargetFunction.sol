@@ -15,7 +15,7 @@ abstract contract TargetFunction is Properties {
     // [x] ClaimRedeem
     // [ ] SwapExactTokensForTokens
     // [ ] SwapTokensForExactTokens
-    // [ ] Allocate
+    // [x] Allocate
     // [ ] ClaimOriginWithdrawals
 
     // ╔══════════════════════════════════════════════════════════════════════════════╗
@@ -116,5 +116,15 @@ abstract contract TargetFunction is Properties {
         // Main call
         vm.prank(governor);
         originARM.setActiveMarket(toM);
+    }
+
+    function handler_allocate() public {
+        vm.assume(originARM.activeMarket() != address(0));
+        // Console log data
+        console.log("allocate() \t\t From: %s", "Owner");
+
+        // Main call
+        vm.prank(governor);
+        originARM.allocate();
     }
 }
