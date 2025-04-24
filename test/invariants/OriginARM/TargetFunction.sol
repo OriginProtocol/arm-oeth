@@ -15,7 +15,7 @@ abstract contract TargetFunction is Properties {
     // [x] ClaimRedeem
     // [ ] SwapExactTokensForTokens
     // [ ] SwapTokensForExactTokens
-    // [x] Allocate
+    // [ ] Allocate
     // [ ] ClaimOriginWithdrawals
 
     // ╔══════════════════════════════════════════════════════════════════════════════╗
