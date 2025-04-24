@@ -100,4 +100,10 @@ abstract contract Helpers is Setup, Logger {
         }
         revert("Request not found");
     }
+
+    function roundToOneDecimal(uint256 amount) internal pure returns (uint256) {
+        uint256 oneDecimal = 1e16;
+
+        return (amount / oneDecimal) * oneDecimal;
+    }
 }

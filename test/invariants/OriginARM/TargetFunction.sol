@@ -12,10 +12,10 @@ abstract contract TargetFunction is Properties {
     // ╚══════════════════════════════════════════════════════════════════════════════╝
     // [x] Deposit
     // [x] RequestRedeem
-    // [ ] ClaimRedeem
+    // [x] ClaimRedeem
     // [ ] SwapExactTokensForTokens
     // [ ] SwapTokensForExactTokens
-    // [ ] Allocate
+    // [x] Allocate
     // [ ] ClaimOriginWithdrawals
 
     // ╔══════════════════════════════════════════════════════════════════════════════╗
@@ -92,5 +92,17 @@ abstract contract TargetFunction is Properties {
 
         // Remove the request from the list
         removeRequest(user, id);
+    }
+
+    function handler_setARMBuffer(uint64 pct) public {
+        //pct = uint64(roundToOneDecimal(_bound(pct, 0, 1.001 ether)));
+        pct = uint64(_bound(pct, 0, 100)) * 1e16;
+
+        // Console log data
+        console.log("setARMBuffer() \t From: %s | \t Pct: %16e %", "Gover", pct);
+
+        // Main call
+        vm.prank(governor);
+        originARM.setARMBuffer(pct);
     }
 }
