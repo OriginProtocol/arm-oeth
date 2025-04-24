@@ -26,7 +26,7 @@ abstract contract TargetFunction is Properties {
     // [ ] SetFee
     // [ ] CollectFees
     // [ ] SetActiveMarket
-    // [ ] SetARMBuffer
+    // [x] SetARMBuffer
     // [ ] RequestOriginWithdrawal
 
     // ╔══════════════════════════════════════════════════════════════════════════════╗
@@ -95,8 +95,7 @@ abstract contract TargetFunction is Properties {
     }
 
     function handler_setARMBuffer(uint64 pct) public {
-        //pct = uint64(roundToOneDecimal(_bound(pct, 0, 1.001 ether)));
-        pct = uint64(_bound(pct, 0, 100)) * 1e16;
+        pct = uint64(_bound(pct, 0, 10)) * 1e17;
 
         // Console log data
         console.log("setARMBuffer() \t From: %s | \t Pct: %16e %", "Gover", pct);
