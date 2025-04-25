@@ -56,7 +56,7 @@ contract FuzzerFoundry_OriginARM is TargetFunction {
         originARM.setCrossPrice(0.9999 * 1e36);
         // Set prices
         vm.prank(operator);
-        originARM.setPrices(0.9992 * 1e36, 1.0001 * 1e36);
+        originARM.setPrices(MIN_BUY_PRICE, MAX_SELL_PRICE);
 
         // --- Setup Markets ---
         markets = new address[](2);
@@ -70,7 +70,7 @@ contract FuzzerFoundry_OriginARM is TargetFunction {
         targetContract(address(this));
 
         // Add selectors
-        bytes4[] memory selectors = new bytes4[](7);
+        bytes4[] memory selectors = new bytes4[](8);
         selectors[0] = this.handler_deposit.selector;
         selectors[1] = this.handler_requestRedeem.selector;
         selectors[2] = this.handler_claimRedeem.selector;
@@ -78,6 +78,7 @@ contract FuzzerFoundry_OriginARM is TargetFunction {
         selectors[4] = this.handler_setActiveMarket.selector;
         selectors[5] = this.handler_allocate.selector;
         selectors[6] = this.handler_setPrices.selector;
+        selectors[7] = this.handler_setCrossPrice.selector;
 
         // Target selectors
         targetSelector(FuzzSelector({addr: address(this), selectors: selectors}));
@@ -86,5 +87,5 @@ contract FuzzerFoundry_OriginARM is TargetFunction {
     //////////////////////////////////////////////////////
     /// --- INVARIANTS
     //////////////////////////////////////////////////////
-    function invariant_A() public {}
+    function invariant_B() public {}
 }

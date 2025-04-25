@@ -4,6 +4,8 @@ pragma solidity 0.8.23;
 // Test imports
 import {Properties} from "test/invariants/OriginARM/Properties.sol";
 
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+
 import {console} from "forge-std/console.sol";
 
 abstract contract TargetFunction is Properties {
@@ -22,7 +24,7 @@ abstract contract TargetFunction is Properties {
     // ║                       ✦✦✦ PERMISSIONNED FUNCTIONS ✦✦✦                        ║
     // ╚══════════════════════════════════════════════════════════════════════════════╝
     // [x] SetPrices
-    // [ ] SetCrossPrice
+    // [x] SetCrossPrice
     // [ ] SetFee
     // [ ] CollectFees
     // [x] SetActiveMarket
@@ -43,6 +45,8 @@ abstract contract TargetFunction is Properties {
     // [ ] SetFeeCollector
     // [ ] AddMarket
     // [ ] RemoveMarket
+
+    using Math for uint256;
 
     function handler_deposit(uint8 seed, uint80 amount) public {
         // Get a random user from the list of lps
@@ -128,23 +132,51 @@ abstract contract TargetFunction is Properties {
         originARM.allocate();
     }
 
-    function handler_setPrices(uint120 buyPrice, uint120 sellPrice) public {
+    function handler_setPrices(uint256 buyPrice, uint256 sellPrice) public {
         // On the current LidoARM, we can see that sell price almost never changes and is always 0.9999 * 1e36.
         // The buy price is the one that changes more often, but it is always between 0.9990 * 1e36 and 0.9999 * 1e36.
-        // We will try to mimic this behaviour, while trying to reach sometimes price with small decimals.
+        // We will try to mimic this behaviour for buyPrice, while trying to reach sometimes price with small decimals.
         // We will try to have most of the variation close from the first decimals like 0.999043 and reduces the one
         // around the last decimals, like 0.950000000000000000_000000000000000023.
         uint256 crossPrice = originARM.crossPrice();
-        buyPrice = uint120(_bound(buyPrice, MIN_BUY_PRICE / 1e30, (crossPrice - 1) / 1e30)) * 1e30 + buyPrice % 1e30;
-        sellPrice = uint120(_bound(sellPrice, crossPrice / 1e30, MAX_SELL_PRICE / 1e30)) * 1e30 + sellPrice % 1e30;
+        buyPrice = uint256(_bound(buyPrice, MIN_BUY_PRICE / 1e30, (crossPrice - 1) / 1e30)) * 1e30 - buyPrice % 1e30;
+        sellPrice = _bound(sellPrice, crossPrice, MAX_SELL_PRICE);
 
         // Console log data
         console.log(
-            "setPrices() \t\t From: Owner | \t Buy   : %s | \t Sell: %s", faa(buyPrice / 1e18), faa(sellPrice / 1e18, 6)
+            "setPrices() \t\t From: Owner | \t Buy   : %s | \t Sell: %s", faa(buyPrice / 1e18), faa(sellPrice / 1e18)
         );
 
         // Main call
         vm.prank(governor);
         originARM.setPrices(buyPrice, sellPrice);
+    }
+
+    function handler_setCrossPrice(uint120 newCrossPrice) public {
+        uint256 priceScale = 1e36;
+        uint256 maxCrossPriceDeviation = 20e32;
+        uint256 buyPrice = originARM.traderate1();
+        uint256 sellPrice = (priceScale ** 2) / originARM.traderate0();
+
+        // Conditions:
+        // 1.a. crossPrice >= priceScale - maxCrossPriceDeviation
+        // 1.b. crossPrice > buyPrice
+        // 2.a. crossPrice <= priceScale
+        // 2.b. crossPrice <= sellPrice
+        uint256 upperBound = Math.min(priceScale, sellPrice);
+        uint256 lowerBound = Math.max(priceScale - maxCrossPriceDeviation, buyPrice);
+
+        vm.assume(upperBound >= lowerBound);
+
+        newCrossPrice = uint120(_bound(newCrossPrice, lowerBound, upperBound));
+
+        if (originARM.crossPrice() > newCrossPrice) vm.assume(os.balanceOf(address(originARM)) >= MIN_TOTAL_SUPPLY);
+
+        // Console log data
+        console.log("setCrossPrice() \t From: %s | \t CrossP: %s", "Owner", faa(newCrossPrice / 1e18));
+
+        // Main call
+        vm.prank(governor);
+        originARM.setCrossPrice(newCrossPrice);
     }
 }
