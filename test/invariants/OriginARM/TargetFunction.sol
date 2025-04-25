@@ -6,6 +6,7 @@ import {Properties} from "test/invariants/OriginARM/Properties.sol";
 
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
+import {IERC20} from "contracts/Interfaces.sol";
 import {console} from "forge-std/console.sol";
 
 abstract contract TargetFunction is Properties {
@@ -164,13 +165,13 @@ abstract contract TargetFunction is Properties {
         // 2.a. crossPrice <= priceScale
         // 2.b. crossPrice <= sellPrice
         uint256 upperBound = Math.min(priceScale, sellPrice);
-        uint256 lowerBound = Math.max(priceScale - maxCrossPriceDeviation, buyPrice);
+        uint256 lowerBound = Math.max(priceScale - maxCrossPriceDeviation, buyPrice + 1);
 
         vm.assume(upperBound >= lowerBound);
 
         newCrossPrice = uint120(_bound(newCrossPrice, lowerBound, upperBound));
 
-        if (originARM.crossPrice() > newCrossPrice) vm.assume(os.balanceOf(address(originARM)) >= MIN_TOTAL_SUPPLY);
+        if (originARM.crossPrice() > newCrossPrice) vm.assume(os.balanceOf(address(originARM)) <= MIN_TOTAL_SUPPLY);
 
         // Console log data
         console.log("setCrossPrice() \t From: %s | \t CrossP: %s", "Owner", faa(newCrossPrice / 1e18));
@@ -178,5 +179,52 @@ abstract contract TargetFunction is Properties {
         // Main call
         vm.prank(governor);
         originARM.setCrossPrice(newCrossPrice);
+    }
+
+    function handler_swapExactTokensForTokens(uint8 seed, bool OSForWS, uint80 amountIn) public {
+        // token0 is ws and token1 is os
+        address[] memory path = new address[](2);
+        path[0] = OSForWS ? address(os) : address(ws);
+        path[1] = OSForWS ? address(ws) : address(os);
+        // Get a random user with a balance
+        (address user, uint256 balance) = getRandomSwapperWithBalance(seed, 0, IERC20(path[0]));
+        // Ensure a user is selected, otherwise skip
+        vm.assume(user != address(0));
+
+        uint256 price = path[0] == address(ws) ? originARM.traderate0() : originARM.traderate1();
+        uint256 liquidityAvailable = getLiquidityAvailable(path[1]);
+
+        // We reverse the price calculation to get the amountIn based on the amountOut
+        uint256 maxAmountInWithAmountOut = liquidityAvailable * PRICE_SCALE / price;
+        // Bound the amountIn to the balance of the user and the max amountIn
+        amountIn = uint80(_bound(amountIn, 0, Math.min(balance, maxAmountInWithAmountOut)));
+        vm.assume(amountIn > 0);
+
+        // Console log data
+        console.log(
+            "swapExactTokens() \t From: %s | \t Amount: %s | \t Direction: %s",
+            name(user),
+            faa(amountIn),
+            OSForWS ? "OS -> WS" : "WS -> OS"
+        );
+
+        // Main call
+        vm.prank(user);
+        originARM.swapExactTokensForTokens(amountIn, 0, path, user, block.timestamp + 1);
+    }
+
+    function getLiquidityAvailable(address token) public view returns (uint256) {
+        if (token == address(os)) {
+            return os.balanceOf(address(originARM));
+        } else if (token == address(ws)) {
+            uint256 withdrawsQueued = originARM.withdrawsQueued();
+            uint256 withdrawsClaimed = originARM.withdrawsClaimed();
+            uint256 outstandingWithdrawals = withdrawsQueued - withdrawsClaimed;
+            uint256 balance = ws.balanceOf(address(originARM));
+            if (outstandingWithdrawals > balance) return 0;
+
+            return ws.balanceOf(address(originARM)) - outstandingWithdrawals;
+        }
+        return 0;
     }
 }

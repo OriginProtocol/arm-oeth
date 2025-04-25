@@ -4,6 +4,7 @@ pragma solidity 0.8.23;
 // Test imports
 import {Setup} from "./Setup.sol";
 import {Logger} from "test/invariants/OriginARM/Logger.sol";
+import {IERC20} from "contracts/Interfaces.sol";
 
 abstract contract Helpers is Setup, Logger {
     mapping(address => uint256[]) public requests;
@@ -59,6 +60,23 @@ abstract contract Helpers is Setup, Logger {
             }
         }
         return address(0);
+    }
+
+    function getRandomSwapperWithBalance(uint8 seed, uint256 minBalance, IERC20 token)
+        public
+        view
+        returns (address, uint256)
+    {
+        // Get a random user from the list of swaps with a balance
+        uint256 len = swaps.length;
+        for (uint256 i; i < len; i++) {
+            address user_ = swaps[(seed + i) % len];
+            uint256 balance = token.balanceOf(user_);
+            if (balance > minBalance) {
+                return (user_, balance);
+            }
+        }
+        return (address(0), 0);
     }
 
     uint256[] private _empty;
