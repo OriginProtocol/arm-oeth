@@ -129,12 +129,19 @@ abstract contract TargetFunction is Properties {
     }
 
     function handler_setPrices(uint120 buyPrice, uint120 sellPrice) public {
+        // On the current LidoARM, we can see that sell price almost never changes and is always 0.9999 * 1e36.
+        // The buy price is the one that changes more often, but it is always between 0.9990 * 1e36 and 0.9999 * 1e36.
+        // We will try to mimic this behaviour, while trying to reach sometimes price with small decimals.
+        // We will try to have most of the variation close from the first decimals like 0.999043 and reduces the one
+        // around the last decimals, like 0.950000000000000000_000000000000000023.
         uint256 crossPrice = originARM.crossPrice();
-        buyPrice = uint120(_bound(buyPrice, MIN_BUY_PRICE, crossPrice - 1));
-        sellPrice = uint120(_bound(sellPrice, crossPrice, MAX_SELL_PRICE));
+        buyPrice = uint120(_bound(buyPrice, MIN_BUY_PRICE / 1e30, (crossPrice - 1) / 1e30)) * 1e30 + buyPrice % 1e30;
+        sellPrice = uint120(_bound(sellPrice, crossPrice / 1e30, MAX_SELL_PRICE / 1e30)) * 1e30 + sellPrice % 1e30;
 
         // Console log data
-        console.log("setPrices() \t\t From: Owner | \t Buy   : %36e | \t Sell: %36e", buyPrice, sellPrice);
+        console.log(
+            "setPrices() \t\t From: Owner | \t Buy   : %s | \t Sell: %s", faa(buyPrice / 1e18), faa(sellPrice / 1e18, 6)
+        );
 
         // Main call
         vm.prank(governor);

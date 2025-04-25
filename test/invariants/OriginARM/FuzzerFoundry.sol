@@ -51,6 +51,9 @@ contract FuzzerFoundry_OriginARM is TargetFunction {
         }
 
         // --- Setup ARM ---
+        // Set cross price
+        vm.prank(governor);
+        originARM.setCrossPrice(0.9999 * 1e36);
         // Set prices
         vm.prank(operator);
         originARM.setPrices(0.9992 * 1e36, 1.0001 * 1e36);
