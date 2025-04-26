@@ -26,8 +26,8 @@ abstract contract TargetFunction is Properties {
     // ╚══════════════════════════════════════════════════════════════════════════════╝
     // [x] SetPrices
     // [x] SetCrossPrice
-    // [ ] SetFee
-    // [ ] CollectFees
+    // [x] SetFee
+    // [x] CollectFees
     // [x] SetActiveMarket
     // [x] SetARMBuffer
     // [ ] RequestOriginWithdrawal
@@ -248,6 +248,34 @@ abstract contract TargetFunction is Properties {
 
         // Ensure amountIn used is correct
         require(received[0] == expectedAmountIn, "Expected != received");
+    }
+
+    function handler_collectFees() public {
+        // Ensure there is enough liquidity to claim fees
+        uint256 feesAccrued = originARM.feesAccrued();
+        uint256 liquidityAvailable = getLiquidityAvailable(address(ws));
+        vm.assume(feesAccrued <= getLiquidityAvailable(address(ws)));
+
+        // Console log data
+        console.log("collectFees() \t From: Owner | \t Amount: %s ", faa(feesAccrued));
+
+        // Main call
+        vm.prank(governor);
+        originARM.collectFees();
+    }
+
+    function handler_setFee(uint16 feePct) public {
+        // Ensure there is enough liquidity to claim fees
+        uint256 feesAccrued = originARM.feesAccrued();
+        uint256 liquidityAvailable = getLiquidityAvailable(address(ws));
+        vm.assume(feesAccrued <= getLiquidityAvailable(address(ws)));
+
+        feePct = uint16(_bound(feePct, 0, 50)) * 100; // 0% - 50%
+
+        console.log("setFee() \t\t From: Owner | \t Percen: %2e %", feePct);
+
+        vm.prank(governor);
+        originARM.setFee(feePct);
     }
 
     function getLiquidityAvailable(address token) public view returns (uint256) {
