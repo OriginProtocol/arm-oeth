@@ -7,6 +7,7 @@ import {Logger} from "test/invariants/OriginARM/Logger.sol";
 import {IERC20} from "contracts/Interfaces.sol";
 
 abstract contract Helpers is Setup, Logger {
+    uint256[] public originRequests;
     mapping(address => uint256[]) public requests;
 
     function getRandom(address[] memory array, uint256 seed) public pure returns (address) {

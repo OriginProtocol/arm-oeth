@@ -8,6 +8,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 import {IERC20} from "contracts/Interfaces.sol";
 import {console} from "forge-std/console.sol";
+import {MockVault} from "test/unit/mocks/MockVault.sol";
 
 abstract contract TargetFunction is Properties {
     // ╔══════════════════════════════════════════════════════════════════════════════╗
@@ -30,7 +31,7 @@ abstract contract TargetFunction is Properties {
     // [x] CollectFees
     // [x] SetActiveMarket
     // [x] SetARMBuffer
-    // [ ] RequestOriginWithdrawal
+    // [x] RequestOriginWithdrawal
 
     // ╔══════════════════════════════════════════════════════════════════════════════╗
     // ║                    ✦✦✦ REPLICATED BEHAVIOUR FUNCTIONS ✦✦✦                    ║
@@ -276,6 +277,23 @@ abstract contract TargetFunction is Properties {
 
         vm.prank(governor);
         originARM.setFee(feePct);
+    }
+
+    function handler_requestOriginWithdrawal(uint128 amount) public {
+        // Only request amount based on amount held by the ARM.
+        amount = uint128(_bound(amount, 0, os.balanceOf(address(originARM))));
+        uint256 expectedId = MockVault(address(vault)).requestCount() + 1;
+        vm.assume(amount > 0);
+
+        // Console log data
+        console.log("requestOWithdraw() \t From: Owner, \t Amount: %s | \t ID: %s", faa(amount), expectedId);
+
+        // Main call
+        vm.prank(governor);
+        originARM.requestOriginWithdrawal(amount);
+
+        // Add requestId to the list
+        originRequests.push(expectedId);
     }
 
     function getLiquidityAvailable(address token) public view returns (uint256) {
