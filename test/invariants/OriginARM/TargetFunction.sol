@@ -16,8 +16,8 @@ abstract contract TargetFunction is Properties {
     // [x] Deposit
     // [x] RequestRedeem
     // [x] ClaimRedeem
-    // [ ] SwapExactTokensForTokens
-    // [ ] SwapTokensForExactTokens
+    // [x] SwapExactTokensForTokens
+    // [x] SwapTokensForExactTokens
     // [x] Allocate
     // [ ] ClaimOriginWithdrawals
 
@@ -202,7 +202,7 @@ abstract contract TargetFunction is Properties {
 
         // Console log data
         console.log(
-            "swapExactTokens() \t From: %s | \t Amount: %s | \t Direction: %s",
+            "swapExactTokensFor() \t From: %s | \t Amount: %s | \t Direction: %s",
             name(user),
             faa(amountIn),
             OSForWS ? "OS -> WS" : "WS -> OS"
@@ -211,6 +211,43 @@ abstract contract TargetFunction is Properties {
         // Main call
         vm.prank(user);
         originARM.swapExactTokensForTokens(amountIn, 0, path, user, block.timestamp + 1);
+    }
+
+    function handler_swapTokensForExactTokens(uint8 seed, bool OSForWS, uint80 amountOut) public {
+        // token0 is ws and token1 is os
+        address[] memory path = new address[](2);
+        path[0] = OSForWS ? address(os) : address(ws);
+        path[1] = OSForWS ? address(ws) : address(os);
+        // Get a random user with a balance
+        (address user, uint256 balance) = getRandomSwapperWithBalance(seed, 0, IERC20(path[0]));
+        // Ensure a user is selected, otherwise skip
+        vm.assume(user != address(0) && balance >= 3);
+
+        uint256 price = path[0] == address(ws) ? originARM.traderate0() : originARM.traderate1();
+        uint256 liquidityAvailable = getLiquidityAvailable(path[1]);
+
+        // Get the maximum of amountIn based on the maximum of amountOut
+        uint256 maxAmountOutWithAmountIn = ((balance - 3) * price) / PRICE_SCALE;
+        // Bound the amountOut to the available liquidity in ARM and maxAmountOut based on user balance
+        amountOut = uint80(_bound(amountOut, 0, Math.min(liquidityAvailable, maxAmountOutWithAmountIn)));
+        vm.assume(amountOut > 0);
+
+        uint256 expectedAmountIn = ((amountOut * PRICE_SCALE) / price) + 3;
+        // Console log data
+        console.log(
+            "swapTokensForExact() \t From: %s | \t Amount: %s | \t Direction: %s",
+            name(user),
+            faa(expectedAmountIn),
+            OSForWS ? "OS -> WS" : "WS -> OS"
+        );
+
+        uint256[] memory received = new uint256[](2);
+        // Main call
+        vm.prank(user);
+        received = originARM.swapTokensForExactTokens(amountOut, type(uint96).max, path, user, block.timestamp + 1);
+
+        // Ensure amountIn used is correct
+        require(received[0] == expectedAmountIn, "Expected != received");
     }
 
     function getLiquidityAvailable(address token) public view returns (uint256) {

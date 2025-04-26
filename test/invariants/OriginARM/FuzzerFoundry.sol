@@ -70,7 +70,7 @@ contract FuzzerFoundry_OriginARM is TargetFunction {
         targetContract(address(this));
 
         // Add selectors
-        bytes4[] memory selectors = new bytes4[](9);
+        bytes4[] memory selectors = new bytes4[](10);
         selectors[0] = this.handler_deposit.selector;
         selectors[1] = this.handler_requestRedeem.selector;
         selectors[2] = this.handler_claimRedeem.selector;
@@ -80,6 +80,7 @@ contract FuzzerFoundry_OriginARM is TargetFunction {
         selectors[6] = this.handler_setPrices.selector;
         selectors[7] = this.handler_setCrossPrice.selector;
         selectors[8] = this.handler_swapExactTokensForTokens.selector;
+        selectors[9] = this.handler_swapTokensForExactTokens.selector;
 
         // Target selectors
         targetSelector(FuzzSelector({addr: address(this), selectors: selectors}));
