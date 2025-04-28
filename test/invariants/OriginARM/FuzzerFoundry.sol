@@ -68,6 +68,13 @@ contract FuzzerFoundry_OriginARM is TargetFunction {
         vm.prank(governor);
         originARM.addMarkets(markets);
 
+        // Fund the markets
+        deal(address(ws), address(this), 2 * 1 ether);
+        ws.approve(address(market), type(uint256).max);
+        ws.approve(address(market2), type(uint256).max);
+        market.deposit(1 ether, address(this));
+        market2.deposit(1 ether, address(this));
+
         // --- Setup Fuzzer target ---
         // Setup target
         targetContract(address(this));
