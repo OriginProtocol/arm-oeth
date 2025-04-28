@@ -16,73 +16,106 @@ end legend
 title "Sonic Automated Redemption Manager (ARM) Contract Dependencies"
 
 
-' object "Zapper" as zap #$originColor {
-' }
+object "Zapper" as zap #$originColor {
+}
 
-' object "Origin ARM" as originArm <<Proxy>> #$originColor {
-' }
+object "Origin ARM" as originArm <<Proxy>> #$originColor {
+}
 
-' object "Beets ARM" as beetsArm <<Proxy>> #$originColor {
-' }
+object "Beets ARM" as beetsArm <<Proxy>> #$originColor {
+}
 
 ' object "Angles ARM" as anglesArm <<Proxy>> #$originColor {
 ' }
 
-' ' object "CapManager" as capMan <<Proxy>> #$originColor {
-' ' }
-' object "Origin\nCapManager" as osCapMan <<Proxy>> #$originColor {
+' object "CapManager" as capMan <<Proxy>> #$originColor {
 ' }
-' object "Beets\nCapManager" as stCapMan <<Proxy>> #$originColor {
-' }
+object "Origin\nCapManager" as osCapMan <<Proxy>> #$originColor {
+}
+object "Beets\nCapManager" as stCapMan <<Proxy>> #$originColor {
+}
 ' object "Angles\nCapManager" as anCapMan <<Proxy>> #$originColor {
 ' }
 
 
-object "ARM" as arm <<Proxy>> #$originColor {
-}
-object "Strategy" as strat <<Proxy>> #$originColor {
-}
-
-object "Lending\nMarket" as lend #$thirdPartyColor {
-}
-object "Lending\nMarket\nGauge" as gauge #$thirdPartyColor {
-}
-object "Liquid\nStaking\nToken" as lst #$thirdPartyColor {
-}
-
-' object "OS\nVault" as os <<Proxy>> #$originColor {
+' object "ARM" as arm <<Proxy>> #$originColor {
+' }
+' object "Strategy" as strat <<Proxy>> #$originColor {
 ' }
 
-' object "Beets\nVault" as beets #$thirdPartyColor {
+object "Silo\nStrategies" as siloStrategy #$originColor {
+}
+
+object "Silo\nLending\nMarkets" as siloLend #$thirdPartyColor {
+}
+' object "Lending\nMarket\nGauge" as gauge #$thirdPartyColor {
 ' }
+' object "Liquid\nStaking\nToken" as lst #$thirdPartyColor {
+' }
+
+object "OS\nVault" as os <<Proxy>> #$originColor {
+}
+
+object "Beets\nVault" as beets #$thirdPartyColor {
+}
 
 ' object "Angles\nVault" as angles #$thirdPartyColor {
 ' }
 
-arm .> strat : ERC-4626
-strat .> lend : ERC-4626
-strat ..> gauge
-arm ..> lst
+object "Origin\nHarvester" as osHarv #$originColor {
+}
 
-' zap ..> originArm
-' zap ..> beetsArm
+object "Beets\nHarvester" as stHarv #$originColor {
+}
+
+object "Magpie\nRouter" as magpie #$thirdPartyColor {
+}
+
+object "Price\nProvider" as priceProvider #$originColor {
+    Assets: Silo
+}
+
+object "Silo\nOracle" as siloOracle #$thirdPartyColor {
+}
+
+' arm .> strat : ERC-4626
+' strat .> lend : ERC-4626
+' strat ..> gauge
+' arm ..> lst
+
+zap ..> originArm
+zap ..> beetsArm
 ' zap ..> anglesArm
 
-' ' originArm <..> capMan
-' ' beetsArm <..> capMan
-' ' anglesArm <..> capMan
-' originArm <..> osCapMan
-' beetsArm <..> stCapMan
+' originArm <..> capMan
+' beetsArm <..> capMan
+' anglesArm <..> capMan
+originArm <.> osCapMan
+beetsArm <.> stCapMan
 ' anglesArm <..> anCapMan
 
-' originArm ..> lend
-' beetsArm ..> lend
+
+originArm <... osHarv
+beetsArm <... stHarv
+
+osHarv .> siloStrategy
+stHarv .> siloStrategy
+
+originArm ...> siloStrategy
+beetsArm ...> siloStrategy
 ' anglesArm ..> lend
 
-' originArm ...> os
-' beetsArm ...> beets
+originArm ..> os
+beetsArm ..> beets
 ' anglesArm ...> angles
 
+osHarv ..> magpie
+stHarv ..> magpie
 
+osHarv ..> priceProvider
+stHarv ..> priceProvider
+priceProvider ..> siloOracle
+
+siloStrategy ..> siloLend
 
 @enduml
