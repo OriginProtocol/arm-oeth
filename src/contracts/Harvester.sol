@@ -13,7 +13,7 @@ import {IHarvestable, IMagpieRouter, IOracle} from "./Interfaces.sol";
  * @title Collects rewards from strategies and swaps them for ARM liquidity tokens.
  * @author Origin Protocol Inc
  */
-abstract contract Harvester is Initializable, OwnableOperable {
+contract Harvester is Initializable, OwnableOperable {
     using SafeERC20 for IERC20;
 
     enum SwapPlatform {
@@ -202,13 +202,16 @@ abstract contract Harvester is Initializable, OwnableOperable {
     }
 
     ////////////////////////////////////////////////////
-    ///         Admin Functions
+    ///             Admin Functions
     ////////////////////////////////////////////////////
 
+    /// @notice Set the address of the price provider contract providing Oracle prices.
     function setPriceProvider(address _priceProvider) external onlyOwner {
         _setPriceProvider(_priceProvider);
     }
 
+    /// @notice Set the maximum allowed slippage on swaps from the Oracle price.
+    /// @param _allowedSlippageBps denominated in basis points. Example: 300 == 3% slippage
     function setAllowedSlippage(uint256 _allowedSlippageBps) external onlyOwner {
         _setAllowedSlippage(_allowedSlippageBps);
     }
@@ -217,6 +220,15 @@ abstract contract Harvester is Initializable, OwnableOperable {
     /// rewards tokens are swapped.
     function setRewardRecipient(address _rewardRecipient) external onlyOwner {
         _setRewardRecipient(_rewardRecipient);
+    }
+
+    /// @notice Flags a strategy as supported or not supported.
+    /// @param _strategyAddress Address of the strategy contract.
+    /// @param _isSupported Bool marking strategy as supported or not supported
+    function setSupportedStrategy(address _strategyAddress, bool _isSupported) external onlyOwner {
+        supportedStrategies[_strategyAddress] = _isSupported;
+
+        emit SupportedStrategyUpdate(_strategyAddress, _isSupported);
     }
 
     function _setPriceProvider(address _priceProvider) internal {
@@ -239,16 +251,5 @@ abstract contract Harvester is Initializable, OwnableOperable {
         rewardRecipient = _rewardRecipient;
 
         emit RewardRecipientUpdated(_rewardRecipient);
-    }
-
-    /**
-     * @dev Flags a strategy as supported or not supported.
-     * @param _strategyAddress Address of the strategy contract.
-     * @param _isSupported Bool marking strategy as supported or not supported
-     */
-    function setSupportedStrategy(address _strategyAddress, bool _isSupported) external onlyOwner {
-        supportedStrategies[_strategyAddress] = _isSupported;
-
-        emit SupportedStrategyUpdate(_strategyAddress, _isSupported);
     }
 }

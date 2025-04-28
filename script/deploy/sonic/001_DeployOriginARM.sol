@@ -6,6 +6,7 @@ import "forge-std/console.sol";
 import {Vm} from "forge-std/Vm.sol";
 
 import {CapManager} from "contracts/CapManager.sol";
+import {Harvester} from "contracts/Harvester.sol";
 import {OriginARM} from "contracts/OriginARM.sol";
 import {Proxy} from "contracts/Proxy.sol";
 import {ZapperARM} from "contracts/ZapperARM.sol";
@@ -108,6 +109,29 @@ contract DeployOriginARMScript is AbstractDeployScript {
         zapper = new ZapperARM(Sonic.WS);
         zapper.setOwner(Sonic.ADMIN);
         _recordDeploy("ARM_ZAPPER", address(zapper));
+
+        // 15. Deploy the Harvester proxy
+        Proxy harvesterProxy = new Proxy();
+        _recordDeploy("HARVESTER", address(harvesterProxy));
+
+        // 16. Deploy the Harvester implementation
+        Harvester harvesterImpl = new Harvester(Sonic.WS, Sonic.MAGPIE_ROUTER);
+        _recordDeploy("HARVESTER_IMPL", address(harvesterImpl));
+
+        // 17. Initialize Proxy with Harvester implementation and set the owner to the deployer for now
+        // TODO deploy price provider when ready
+        address PriceProvider = address(0x01);
+        data =
+            abi.encodeWithSignature("initialize(address,uint256,address)", PriceProvider, 200, address(originARMProxy));
+        harvesterProxy.initialize(address(harvesterImpl), deployer, data);
+        Harvester harvester = Harvester(address(harvesterProxy));
+
+        // 18. Set the supported Silo market strategies
+        harvester.setSupportedStrategy(address(silo_OS_MarketProxy), true);
+        harvester.setSupportedStrategy(address(silo_USDC_MarketProxy), true);
+
+        // 19. Transfer ownership of Harvester to the Sonic 5/8 Admin multisig
+        harvesterProxy.setOwner(Sonic.ADMIN);
 
         console.log("Finished deploying", DEPLOY_NAME);
     }
