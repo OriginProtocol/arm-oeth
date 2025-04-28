@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {IERC20, IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
@@ -8,42 +9,31 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
 import {OwnableOperable} from "./OwnableOperable.sol";
 import {IHarvestable, IMagpieRouter, IOracle} from "./Interfaces.sol";
 
-abstract contract Harvester is OwnableOperable {
+/**
+ * @title Collects rewards from strategies and swaps them for ARM liquidity tokens.
+ * @author Origin Protocol Inc
+ */
+abstract contract Harvester is Initializable, OwnableOperable {
     using SafeERC20 for IERC20;
 
     enum SwapPlatform {
         Magpie
     }
 
-    /**
-     * @notice All tokens are swapped to this token before it gets transferred to the `rewardRecipient`.
-     * eg WETH on Ethereum and wS on Sonic.
-     */
-    address public immutable baseToken;
+    /// @notice All reward tokens are swapped to the ARM's liquidity asset.
+    address public immutable liquidityAsset;
+    /// @notice The address of the Magpie router that performs swaps
     address public immutable magpieRouter;
 
+    /// @notice Mapping of strategies that rewards can be collected from
     mapping(address => bool) public supportedStrategies;
+    /// @notice Oracle contract used to validate swap prices
+    address public priceProvider;
     /// @notice Maximum allowed slippage denominated in basis points. Example: 300 == 3% slippage
     uint256 public allowedSlippageBps;
-
-    /**
-     * @notice Address receiving rewards proceeds. Initially the Vault contract later will possibly
-     * be replaced by another contract that eases out rewards distribution.
-     *
-     */
+    /// @notice Address receiving rewards proceeds. Initially this will be the ARM contract,
+    /// later this could be a Dripper contract that eases out rewards distribution.
     address public rewardRecipient;
-
-    address public priceProvider;
-
-    constructor(address _baseToken, address _magpieRouter) {
-        require(_baseToken != address(0));
-        require(_magpieRouter != address(0));
-
-        require(IERC20Metadata(_baseToken).decimals() == 18, "not 18 decimals");
-
-        baseToken = _baseToken;
-        magpieRouter = _magpieRouter;
-    }
 
     event SupportedStrategyUpdate(address strategy, bool isSupported);
     event RewardTokenSwapped(
@@ -53,37 +43,51 @@ abstract contract Harvester is OwnableOperable {
         uint256 amountIn,
         uint256 amountOut
     );
-    event rewardRecipientTransferred(address indexed token, uint256 protocolYield);
-    event rewardRecipientChanged(address newProceedsAddress);
+    event RewardsCollected(address[] indexed strategy, address[][] rewardTokens, uint256[][] amounts);
+    event RewardRecipientTransferred(address indexed token, uint256 rewards);
+    event RewardRecipientUpdated(address rewardRecipient);
+    event AllowedSlippageUpdated(uint256 allowedSlippageBps);
+    event PriceProviderUpdated(address priceProvider);
 
     error SlippageError(uint256 actualBalance, uint256 minExpected);
     error BalanceMismatchAfterSwap(uint256 actualBalance, uint256 minExpected);
-
-    error EmptyAddress();
-    error InvalidSlippageBps();
-    error InvalidHarvestRewardBps();
-
     error InvalidSwapPlatform(SwapPlatform swapPlatform);
-
     error UnsupportedStrategy(address strategyAddress);
+    error InvalidSwapRecipient(address recipient);
+    error InvalidFromAsset(address fromAsset);
+    error InvalidToAsset(address toAsset);
+    error EmptyLiquidityAsset();
+    error EmptyMagpieRouter();
+    error EmptyPriceProvider();
+    error EmptyRewardRecipient();
+    error InvalidDecimals();
+    error InvalidAllowedSlippage(uint256 allowedSlippageBps);
 
-    /**
-     * @dev Flags a strategy as supported or not supported one
-     * @param _strategyAddress Address of the strategy
-     * @param _isSupported Bool marking strategy as supported or not supported
-     */
-    function setSupportedStrategy(address _strategyAddress, bool _isSupported) external onlyOwner {
-        supportedStrategies[_strategyAddress] = _isSupported;
+    constructor(address _liquidityAsset, address _magpieRouter) {
+        if (_liquidityAsset == address(0)) revert EmptyLiquidityAsset();
+        if (_magpieRouter == address(0)) revert EmptyMagpieRouter();
+        if (IERC20Metadata(_liquidityAsset).decimals() != 18) revert InvalidDecimals();
 
-        emit SupportedStrategyUpdate(_strategyAddress, _isSupported);
+        liquidityAsset = _liquidityAsset;
+        magpieRouter = _magpieRouter;
+    }
+
+    /// @notice
+    function initialize(address _priceProvider, uint256 _allowedSlippageBps, address _rewardRecipient)
+        external
+        initializer
+    {
+        _setPriceProvider(_priceProvider);
+        _setAllowedSlippage(_allowedSlippageBps);
+        _setRewardRecipient(_rewardRecipient);
     }
 
     /**
      * @notice Collect reward tokens from each strategy into this harvester contract.
      * Can be called by anyone.
-     * @param _strategies Addresses of the strategies to collect rewards from
+     * @param _strategies Addresses of the supported strategies to collect rewards from
      */
-    function harvest(address[] calldata _strategies)
+    function collect(address[] calldata _strategies)
         external
         returns (address[][] memory rewardTokens, uint256[][] memory amounts)
     {
@@ -97,14 +101,14 @@ abstract contract Harvester is OwnableOperable {
             (rewardTokens[i], amounts[i]) = IHarvestable(_strategies[i]).collectRewards();
         }
 
-        // TODO emit harvest event
+        emit RewardsCollected(_strategies, rewardTokens, amounts);
     }
 
     /**
-     * @notice Swaps the reward token to the base token. The base token is then transferred to the `rewardRecipient`.
+     * @notice Swaps the reward token to the ARM's liquidity asset and transfers to the `rewardRecipient`.
      * @param swapPlatform The swap platform to use. Currently only Magpie is supported.
-     * @param fromAsset The token address of the asset being sold.
-     * @param data aggregator specific data. eg Magpie swapWithMagpieSignature data
+     * @param fromAsset The address of the reward token being sold.
+     * @param data aggregator specific data. eg Magpie's swapWithMagpieSignature data
      */
     function swap(SwapPlatform swapPlatform, address fromAsset, bytes calldata data)
         external
@@ -115,13 +119,11 @@ abstract contract Harvester is OwnableOperable {
 
         if (balance == 0) return 0;
 
-        // No need to swap if the reward token is the base token. eg USDT or WETH.
-        // There is also no limit on the transfer. Everything in the harvester will be transferred
-        // to the Dripper regardless of the liquidationLimit config.
-        if (fromAsset == baseToken) {
+        // No need to swap if the reward token is the ARM's liquidity asset. eg WETH or wS.
+        if (fromAsset == liquidityAsset) {
             IERC20(fromAsset).safeTransfer(rewardRecipient, balance);
-            // currently not paying the farmer any rewards as there is no swap
-            emit rewardRecipientTransferred(baseToken, balance);
+
+            emit RewardRecipientTransferred(liquidityAsset, balance);
             return balance;
         }
 
@@ -134,28 +136,29 @@ abstract contract Harvester is OwnableOperable {
             / 1e18; // and oracle price decimals position
 
         // Do the swap
-        uint256 amountReceived = _doSwap(swapPlatform, fromAsset, baseToken, data);
+        uint256 amountReceived = _doSwap(swapPlatform, fromAsset, data);
 
         if (amountReceived < minExpected) {
             revert SlippageError(amountReceived, minExpected);
         }
 
-        emit RewardTokenSwapped(fromAsset, baseToken, swapPlatform, balance, amountReceived);
+        emit RewardTokenSwapped(fromAsset, liquidityAsset, swapPlatform, balance, amountReceived);
 
-        uint256 baseTokenBalance = IERC20(baseToken).balanceOf(address(this));
-        if (baseTokenBalance < amountReceived) {
-            // Note: It's possible to bypass this check by transferring `baseToken`
+        uint256 liquidityAssetBalance = IERC20(liquidityAsset).balanceOf(address(this));
+        if (liquidityAssetBalance < amountReceived) {
+            // Note: It's possible to bypass this check by transferring `liquidityAsset`
             // directly to Harvester before calling the `harvestAndSwap`. However,
             // there's no incentive for an attacker to do that. Doing a balance diff
             // will increase the gas cost significantly
-            revert BalanceMismatchAfterSwap(baseTokenBalance, amountReceived);
+            revert BalanceMismatchAfterSwap(liquidityAssetBalance, amountReceived);
         }
 
-        IERC20(baseToken).safeTransfer(rewardRecipient, amountReceived);
+        IERC20(liquidityAsset).safeTransfer(rewardRecipient, amountReceived);
 
-        emit rewardRecipientTransferred(rewardRecipient, amountReceived);
+        emit RewardRecipientTransferred(rewardRecipient, amountReceived);
     }
 
+    /// @dev Platform specific swap logic
     function _doSwap(SwapPlatform swapPlatform, address fromAsset, bytes memory data)
         internal
         returns (uint256 toAssetAmount)
@@ -186,14 +189,66 @@ abstract contract Harvester is OwnableOperable {
                 // Shift right by 96 bits (32 - 20 bytes) to get only the 20 bytes
                 parsedToAsset := shr(96, parsedToAsset)
             }
-            require(rewardRecipient == parsedRecipient, "Invalid swap recipient");
-            require(fromAsset == parsedFromAsset, "Invalid from asset");
-            require(baseToken == parsedToAsset, "Invalid to asset");
+
+            if (rewardRecipient != parsedRecipient) revert InvalidSwapRecipient(parsedRecipient);
+            if (fromAsset != parsedFromAsset) revert InvalidFromAsset(parsedFromAsset);
+            if (liquidityAsset != parsedToAsset) revert InvalidToAsset(parsedToAsset);
 
             // Call the Magpie router to do the swap
             toAssetAmount = IMagpieRouter(magpieRouter).swapWithMagpieSignature(data);
         } else {
             revert InvalidSwapPlatform(swapPlatform);
         }
+    }
+
+    ////////////////////////////////////////////////////
+    ///         Admin Functions
+    ////////////////////////////////////////////////////
+
+    function setPriceProvider(address _priceProvider) external onlyOwner {
+        _setPriceProvider(_priceProvider);
+    }
+
+    function setAllowedSlippage(uint256 _allowedSlippageBps) external onlyOwner {
+        _setAllowedSlippage(_allowedSlippageBps);
+    }
+
+    /// @notice Set a new reward recipient that receives liquidity assets after
+    /// rewards tokens are swapped.
+    function setRewardRecipient(address _rewardRecipient) external onlyOwner {
+        _setRewardRecipient(_rewardRecipient);
+    }
+
+    function _setPriceProvider(address _priceProvider) internal {
+        if (_priceProvider == address(0)) revert EmptyPriceProvider();
+        priceProvider = _priceProvider;
+
+        emit PriceProviderUpdated(_priceProvider);
+    }
+
+    function _setAllowedSlippage(uint256 _allowedSlippageBps) internal {
+        if (allowedSlippageBps > 1000) revert InvalidAllowedSlippage(_allowedSlippageBps);
+        allowedSlippageBps = _allowedSlippageBps;
+
+        emit AllowedSlippageUpdated(_allowedSlippageBps);
+    }
+
+    function _setRewardRecipient(address _rewardRecipient) internal {
+        if (_rewardRecipient == address(0)) revert EmptyRewardRecipient();
+
+        rewardRecipient = _rewardRecipient;
+
+        emit RewardRecipientUpdated(_rewardRecipient);
+    }
+
+    /**
+     * @dev Flags a strategy as supported or not supported.
+     * @param _strategyAddress Address of the strategy contract.
+     * @param _isSupported Bool marking strategy as supported or not supported
+     */
+    function setSupportedStrategy(address _strategyAddress, bool _isSupported) external onlyOwner {
+        supportedStrategies[_strategyAddress] = _isSupported;
+
+        emit SupportedStrategyUpdate(_strategyAddress, _isSupported);
     }
 }
