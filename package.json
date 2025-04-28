@@ -23,7 +23,7 @@
     "@rollup/plugin-json": "^6.1.0",
     "@rollup/plugin-node-resolve": "^15.2.3",
     "@solidity-parser/parser": "^0.18.0",
-    "axios": "^1.7.5",
+    "axios": "^1.9.0",
     "builtin-modules": "^3.3.0",
     "chai": "^4.3.10",
     "dayjs": "^1.11.12",

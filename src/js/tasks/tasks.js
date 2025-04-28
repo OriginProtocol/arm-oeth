@@ -56,6 +56,7 @@ const {
   redeemAll,
 } = require("./vault");
 const { upgradeProxy } = require("./proxy");
+const { magpieQuote } = require("../utils/magpie");
 
 subtask("snap", "Take a snapshot of the OETH ARM")
   .addOptionalParam(
@@ -821,5 +822,29 @@ subtask(
   .addParam("id", "Identifier of the Defender Actions", undefined, types.string)
   .setAction(setActionVars);
 task("setActionVars").setAction(async (_, __, runSuper) => {
+  return runSuper();
+});
+
+// Magpie
+subtask("magpieQuote", "Get a quote from Magpie for a swap")
+  .addOptionalParam("from", "Token symbol to swap from.", "SILO", types.string)
+  .addOptionalParam("to", "Token symbol to swap to.", "WS", types.string)
+  .addOptionalParam("amount", "Amount of tokens to sell", 1, types.float)
+  .addOptionalParam("slippage", "Max allowed slippage", 0.005, types.float)
+  .addOptionalParam(
+    "swapper",
+    "Account or contract swapping the from tokens",
+    "0x531B8D5eD6db72A56cF1238D4cE478E7cB7f2825",
+    types.string
+  )
+  .addOptionalParam(
+    "recipient",
+    "Where the swapped tokens are sent",
+    "0x531B8D5eD6db72A56cF1238D4cE478E7cB7f2825",
+    types.string
+  )
+
+  .setAction(magpieQuote);
+task("magpieQuote").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
