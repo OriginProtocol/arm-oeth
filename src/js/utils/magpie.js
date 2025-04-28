@@ -73,9 +73,11 @@ const magpieTx = async ({ id }) => {
     });
 
     log("Magpie transaction response: ", response.data);
-    console.log(`Transaction data: ${response.data.data}`);
+    log(`Transaction data: ${response.data.data}`);
+    const swapData = `0x${response.data.data.slice(10)}`;
+    log(`Swap data: ${swapData}`);
 
-    return response.data.data;
+    return swapData;
   } catch (err) {
     if (err.response) {
       console.error("Response data  : ", err.response.data);
