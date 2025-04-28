@@ -56,7 +56,7 @@ const {
   redeemAll,
 } = require("./vault");
 const { upgradeProxy } = require("./proxy");
-const { magpieQuote } = require("../utils/magpie");
+const { magpieQuote, magpieTx } = require("../utils/magpie");
 
 subtask("snap", "Take a snapshot of the OETH ARM")
   .addOptionalParam(
@@ -846,5 +846,18 @@ subtask("magpieQuote", "Get a quote from Magpie for a swap")
 
   .setAction(magpieQuote);
 task("magpieQuote").setAction(async (_, __, runSuper) => {
+  return runSuper();
+});
+
+subtask("magpieTx", "Get a Magpie swap tx based on a previous quote")
+  .addParam(
+    "id",
+    "Identifier returned from a previous quote.",
+    undefined,
+    types.string
+  )
+
+  .setAction(magpieTx);
+task("magpieTx").setAction(async (_, __, runSuper) => {
   return runSuper();
 });

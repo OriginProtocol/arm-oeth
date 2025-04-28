@@ -38,14 +38,18 @@ const magpieQuote = async ({
     });
 
     const toAmount = parseUnits(response.data.amountOut, 18);
-    const sellPrice = (fromAmount * parseUnits("1", 22)) / toAmount;
+    const price = (fromAmount * parseUnits("1", 22)) / toAmount;
 
-    // log("Magpie quote response: ", response.data);
+    log("Magpie quote response: ", response.data);
 
-    console.log(`Quote id : ${response.data.id}`);
-    console.log(`${from}/${to} sell price: ${formatUnits(sellPrice, 4)}`);
+    const id = response.data.id;
+    const minAmountOut = response.data.amountOutMin;
+    console.log(`Quote id : ${id}`);
+    console.log(`${from}/${to} sell price: ${formatUnits(price, 4)}`);
 
-    return sellPrice;
+    const data = await magpieTx({ id });
+
+    return { price, fromAsset, toAsset, minAmountOut, data };
   } catch (err) {
     if (err.response) {
       console.error("Response data  : ", err.response.data);
@@ -55,4 +59,30 @@ const magpieQuote = async ({
   }
 };
 
-module.exports = { magpieQuote };
+const magpieTx = async ({ id }) => {
+  const params = {
+    quoteId: id,
+    estimateGas: false,
+  };
+
+  log(`Magpie transaction params: `, params);
+
+  try {
+    const response = await axios.get(`${MagpieBaseURL}/transaction`, {
+      params,
+    });
+
+    log("Magpie transaction response: ", response.data);
+    console.log(`Transaction data: ${response.data.data}`);
+
+    return response.data.data;
+  } catch (err) {
+    if (err.response) {
+      console.error("Response data  : ", err.response.data);
+      console.error("Response status: ", err.response.status);
+    }
+    throw Error(`Call to Magpie quote API failed: ${err.message}`);
+  }
+};
+
+module.exports = { magpieQuote, magpieTx };
