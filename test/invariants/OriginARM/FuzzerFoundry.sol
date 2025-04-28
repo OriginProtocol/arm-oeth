@@ -98,4 +98,8 @@ contract FuzzerFoundry_OriginARM is TargetFunction {
     /// --- INVARIANTS
     //////////////////////////////////////////////////////
     function invariant_B() public {}
+
+    function afterInvariant() public {
+        handler_afterInvariants();
+    }
 }

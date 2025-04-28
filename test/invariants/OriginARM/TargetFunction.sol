@@ -254,7 +254,6 @@ abstract contract TargetFunction is Properties {
     function handler_collectFees() public {
         // Ensure there is enough liquidity to claim fees
         uint256 feesAccrued = originARM.feesAccrued();
-        uint256 liquidityAvailable = getLiquidityAvailable(address(ws));
         vm.assume(feesAccrued <= getLiquidityAvailable(address(ws)));
 
         // Console log data
@@ -268,7 +267,6 @@ abstract contract TargetFunction is Properties {
     function handler_setFee(uint16 feePct) public {
         // Ensure there is enough liquidity to claim fees
         uint256 feesAccrued = originARM.feesAccrued();
-        uint256 liquidityAvailable = getLiquidityAvailable(address(ws));
         vm.assume(feesAccrued <= getLiquidityAvailable(address(ws)));
 
         feePct = uint16(_bound(feePct, 0, 50)) * 100; // 0% - 50%
@@ -314,7 +312,7 @@ abstract contract TargetFunction is Properties {
     function handler_donateToARM(uint80 amount, bool OSOrWs, uint8 seed) public {
         //We do this to avoid calling this function too often
         vm.assume(seed % 20 == 0 && DONATE);
-        amount = uint80(_bound(amount, 1, amount));
+        amount = uint80(_bound(amount, 1, type(uint80).max));
 
         // Console log data
         console.log("donateToARM() \t From: DONAT | \t Amount: %s | \t Token: %s", faa(amount), OSOrWs ? "OS" : "WS");
@@ -325,6 +323,30 @@ abstract contract TargetFunction is Properties {
         // Mail call
         vm.prank(address(donator));
         (OSOrWs ? os : ws).transfer(address(originARM), amount);
+    }
+
+    function handler_afterInvariants() public {
+        // - Finalize claim all the Origin requests
+        if (originRequests.length > 0) {
+            vm.prank(governor);
+            originARM.claimOriginWithdrawals(originRequests);
+        }
+
+        // - Remove the active market to pull out all deposited funds
+        address activeMarket = originARM.activeMarket();
+        if (activeMarket != address(0)) {
+            vm.prank(governor);
+            originARM.setActiveMarket(address(0));
+        }
+
+        // - Set the prices to 1:1
+        vm.prank(governor);
+        originARM.setPrices(0, PRICE_SCALE);
+
+        // - Swap all the OS on ARM to WS
+        
+        // - Finalize all users claim request
+        // - Claim fees
     }
 
     function getLiquidityAvailable(address token) public view returns (uint256) {
