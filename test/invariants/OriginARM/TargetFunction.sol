@@ -20,7 +20,7 @@ abstract contract TargetFunction is Properties {
     // [x] SwapExactTokensForTokens
     // [x] SwapTokensForExactTokens
     // [x] Allocate
-    // [ ] ClaimOriginWithdrawals
+    // [x] ClaimOriginWithdrawals
 
     // ╔══════════════════════════════════════════════════════════════════════════════╗
     // ║                       ✦✦✦ PERMISSIONNED FUNCTIONS ✦✦✦                        ║
@@ -286,7 +286,7 @@ abstract contract TargetFunction is Properties {
         vm.assume(amount > 0);
 
         // Console log data
-        console.log("requestOWithdraw() \t From: Owner, \t Amount: %s | \t ID: %s", faa(amount), expectedId);
+        console.log("requestOWithdraw() \t From: Owner | \t Amount: %s | \t ID: %s", faa(amount), expectedId);
 
         // Main call
         vm.prank(governor);
@@ -294,6 +294,21 @@ abstract contract TargetFunction is Properties {
 
         // Add requestId to the list
         originRequests.push(expectedId);
+    }
+
+    function handler_claimOriginWithdrawals(uint16 requestCount, uint256 seed) public {
+        vm.assume(originRequests.length > 0);
+        requestCount = uint16(_bound(requestCount, 1, originRequests.length));
+
+        // This will remove the requestId from the list
+        uint256[] memory ids = getRandomOriginRequest(requestCount, seed);
+
+        // Console log data
+        console.log("claimOWithdrawals() \t From: Owner | \t IDs: ", uintArrayToString(ids));
+
+        // Main call
+        vm.prank(governor);
+        originARM.claimOriginWithdrawals(ids);
     }
 
     function getLiquidityAvailable(address token) public view returns (uint256) {

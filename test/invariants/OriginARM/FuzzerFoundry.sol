@@ -50,6 +50,9 @@ contract FuzzerFoundry_OriginARM is TargetFunction {
             vm.stopPrank();
         }
 
+        // Distribute a lot of WS to the vault, this will help for redeeming OS
+        deal(address(os), address(vault), type(uint128).max);
+
         // --- Setup ARM ---
         // Set cross price
         vm.prank(governor);
@@ -70,7 +73,7 @@ contract FuzzerFoundry_OriginARM is TargetFunction {
         targetContract(address(this));
 
         // Add selectors
-        bytes4[] memory selectors = new bytes4[](13);
+        bytes4[] memory selectors = new bytes4[](14);
         selectors[0] = this.handler_deposit.selector;
         selectors[1] = this.handler_requestRedeem.selector;
         selectors[2] = this.handler_claimRedeem.selector;
@@ -84,6 +87,7 @@ contract FuzzerFoundry_OriginARM is TargetFunction {
         selectors[10] = this.handler_collectFees.selector;
         selectors[11] = this.handler_setFee.selector;
         selectors[12] = this.handler_requestOriginWithdrawal.selector;
+        selectors[13] = this.handler_claimOriginWithdrawals.selector;
 
         // Target selectors
         targetSelector(FuzzSelector({addr: address(this), selectors: selectors}));

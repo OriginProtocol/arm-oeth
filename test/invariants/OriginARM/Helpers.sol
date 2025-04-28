@@ -126,6 +126,25 @@ abstract contract Helpers is Setup, Logger {
         return (address(0), 0, 0, 0);
     }
 
+    function getRandomOriginRequest(uint256 count, uint256 seed) public returns (uint256[] memory) {
+        if (count == 0) return new uint256[](0);
+
+        uint256[] memory list = new uint256[](count);
+
+        for (uint256 i; i < count; i++) {
+            list[i] = originRequests[uint256(keccak256(abi.encodePacked(seed, i))) % originRequests.length];
+            // remove id from the list
+            if (originRequests.length == 1) {
+                delete originRequests;
+            } else {
+                originRequests[uint256(keccak256(abi.encodePacked(seed, i))) % originRequests.length] =
+                    originRequests[originRequests.length - 1];
+                originRequests.pop();
+            }
+        }
+        return list;
+    }
+
     function removeRequest(address user, uint256 id) public {
         // Remove the request from the list
         uint256 len = requests[user].length;
@@ -147,5 +166,18 @@ abstract contract Helpers is Setup, Logger {
         uint256 oneDecimal = 1e16;
 
         return (amount / oneDecimal) * oneDecimal;
+    }
+
+    function uintArrayToString(uint256[] memory _array) public pure returns (string memory) {
+        bytes memory result;
+
+        for (uint256 i = 0; i < _array.length; i++) {
+            result = abi.encodePacked(result, vm.toString(_array[i]));
+            if (i < _array.length - 1) {
+                result = abi.encodePacked(result, ", ");
+            }
+        }
+
+        return string(result);
     }
 }
