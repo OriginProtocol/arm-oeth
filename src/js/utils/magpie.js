@@ -44,10 +44,12 @@ const magpieQuote = async ({
 
     const id = response.data.id;
     const minAmountOut = response.data.amountOutMin;
-    console.log(`Quote id : ${id}`);
-    console.log(`${from}/${to} sell price: ${formatUnits(price, 4)}`);
+    log(`Quote id : ${id}`);
+    log(`${from}/${to} sell price: ${formatUnits(price, 4)}`);
 
     const data = await magpieTx({ id });
+
+    console.log(data);
 
     return { price, fromAsset, toAsset, minAmountOut, data };
   } catch (err) {
