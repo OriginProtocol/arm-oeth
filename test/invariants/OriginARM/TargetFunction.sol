@@ -38,15 +38,15 @@ abstract contract TargetFunction is Properties {
     // ╚══════════════════════════════════════════════════════════════════════════════╝
     // [ ] SimulateEarnOnMarket
     // [ ] SimulateLossOnMarket     (not sure)
-    // [ ] Donation to the ARM
+    // [x] Donation to the ARM
 
     // ╔══════════════════════════════════════════════════════════════════════════════╗
     // ║                  ✦✦✦ NON-VIEW FUNCTION NOT IMPLEMENTED ✦✦✦                   ║
     // ╚══════════════════════════════════════════════════════════════════════════════╝
-    // [ ] SetCapManager
-    // [ ] SetFeeCollector
-    // [ ] AddMarket
-    // [ ] RemoveMarket
+    //  ⛒  SetCapManager
+    //  ⛒  SetFeeCollector
+    //  ⛒  AddMarket
+    //  ⛒  RemoveMarket
 
     using Math for uint256;
 
@@ -309,6 +309,22 @@ abstract contract TargetFunction is Properties {
         // Main call
         vm.prank(governor);
         originARM.claimOriginWithdrawals(ids);
+    }
+
+    function handler_donateToARM(uint80 amount, bool OSOrWs, uint8 seed) public {
+        //We do this to avoid calling this function too often
+        vm.assume(seed % 20 == 0 && DONATE);
+        amount = uint80(_bound(amount, 1, amount));
+
+        // Console log data
+        console.log("donateToARM() \t From: DONAT | \t Amount: %s | \t Token: %s", faa(amount), OSOrWs ? "OS" : "WS");
+
+        address donator = makeAddr("donator");
+        deal(OSOrWs ? address(os) : address(ws), donator, amount);
+
+        // Mail call
+        vm.prank(address(donator));
+        (OSOrWs ? os : ws).transfer(address(originARM), amount);
     }
 
     function getLiquidityAvailable(address token) public view returns (uint256) {
