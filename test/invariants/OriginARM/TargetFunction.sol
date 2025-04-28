@@ -91,7 +91,8 @@ abstract contract TargetFunction is Properties {
         console.log("claimRedeem() \t From: %s | \t Amount: %s | \t ID: %s", name(user), faa(expectedAmount), id);
 
         // Timejump to the claim delay
-        vm.warp(ts);
+        if (ts > block.timestamp) vm.warp(ts);
+
         // Main call
         vm.prank(user);
         originARM.claimRedeem(id);
@@ -344,9 +345,28 @@ abstract contract TargetFunction is Properties {
         originARM.setPrices(0, PRICE_SCALE);
 
         // - Swap all the OS on ARM to WS
-        
+        deal(address(ws), makeAddr("swapper"), type(uint120).max);
+        vm.startPrank(makeAddr("swapper"));
+        ws.approve(address(originARM), type(uint120).max);
+        originARM.swapTokensForExactTokens(ws, os, os.balanceOf(address(originARM)), type(uint256).max, address(this));
+        vm.stopPrank();
+
         // - Finalize all users claim request
+        skip(CLAIM_DELAY);
+        for (uint256 i = 0; i < lps.length; i++) {
+            address user = lps[i];
+            uint256[] memory ids = requests[user];
+            if (ids.length > 0) {
+                vm.startPrank(user);
+                for (uint256 j = 0; j < ids.length; j++) {
+                    originARM.claimRedeem(ids[j]);
+                }
+                vm.stopPrank();
+            }
+        }
+
         // - Claim fees
+        originARM.collectFees();
     }
 
     function getLiquidityAvailable(address token) public view returns (uint256) {
