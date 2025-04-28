@@ -7,7 +7,7 @@ import {Fork_Shared_Test} from "test/fork/Harvester/shared/Shared.sol";
 contract Fork_Concrete_Harvester_Swap_Test_ is Fork_Shared_Test {
     address public constant OS_WHALE = 0x9F0dF7799f6FDAd409300080cfF680f5A23df4b1;
 
-    function test_noaoaooaoaaooa() public {
+    function test_do_a_swap_with_magpie() public {
         vm.prank(OS_WHALE);
         os.transfer(address(harvester), 1 ether);
 
