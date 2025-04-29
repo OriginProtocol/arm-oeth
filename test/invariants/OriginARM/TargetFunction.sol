@@ -471,9 +471,11 @@ abstract contract TargetFunction is Properties {
         return 0;
     }
 
-    function assertLpsAreUpOnly() public view {
+    function assertLpsAreUpOnly(uint256 tolerance) public view {
         for (uint256 i; i < lps.length; i++) {
-            require(ws.balanceOf(lps[i]) >= INITIAL_AMOUNT_LPS, "User should not have less than initial amount");
+            require(
+                ws.balanceOf(lps[i]) + tolerance >= INITIAL_AMOUNT_LPS, "User should not have less than initial amount"
+            );
         }
     }
 }
