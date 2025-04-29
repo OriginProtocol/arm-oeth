@@ -4,9 +4,13 @@ pragma solidity 0.8.23;
 // Test imports
 import {Setup} from "./Setup.sol";
 import {Logger} from "test/invariants/OriginARM/Logger.sol";
+
+// Interfaces
 import {IERC20} from "contracts/Interfaces.sol";
 
 abstract contract Helpers is Setup, Logger {
+    uint256[] private _emptyUint256;
+    address[] private _emptyAddress;
     uint256[] public originRequests;
     mapping(address => uint256[]) public requests;
 
@@ -15,26 +19,24 @@ abstract contract Helpers is Setup, Logger {
         return array[seed % array.length];
     }
 
-    function getRandomMarket(uint8 seed) public returns (address, address) {
+    function getRandomMarket(uint256 seed) public view returns (address, address) {
         address currentMarket = originARM.activeMarket();
-        _emptyAddress = markets;
-        _emptyAddress.push(address(0));
-        while (_emptyAddress.length > 0) {
-            uint256 id = seed % _emptyAddress.length;
-            address market_ = _emptyAddress[id];
-            if (market_ == currentMarket) {
-                // Remove the market from the list
-                if (_emptyAddress.length == 1) {
-                    _emptyAddress.pop();
-                } else {
-                    _emptyAddress[id] = _emptyAddress[_emptyAddress.length - 1];
-                    _emptyAddress.pop();
-                }
-            } else {
-                return (currentMarket, market_);
+        // If current market is not set, we can pick any market randomly
+        if (currentMarket == address(0)) return (address(0), getRandom(markets, seed));
+
+        // Create a copy of the markets array
+        address[] memory _markets = markets;
+        // Find the current market in the list and replace it with address(0)
+        for (uint256 i; i < _markets.length; i++) {
+            if (_markets[i] == currentMarket) {
+                _markets[i] = address(0);
+                break;
             }
         }
-        return (address(0), address(0));
+
+        // Now we are sure that the list of market doesn't have the current market
+        // Get a random market from the list
+        return (currentMarket, getRandom(_markets, seed));
     }
 
     function getRandomLPs(uint8 seed) public view returns (address) {
@@ -80,9 +82,6 @@ abstract contract Helpers is Setup, Logger {
         return (address(0), 0);
     }
 
-    uint256[] private _empty;
-    address[] private _emptyAddress;
-
     function getRandomLPsWithRequest(uint8 seed, uint16 seed_id) public returns (address, uint256, uint256, uint40) {
         // Get a random user from the list of lps with a request
         uint256 len = lps.length;
@@ -97,13 +96,13 @@ abstract contract Helpers is Setup, Logger {
             // Check if the user has a request
             if (requests[user_].length > 0) {
                 // Cache the requests for the user
-                _empty = requests[user_];
+                _emptyUint256 = requests[user_];
 
                 // This is another way to get a random value from the list, as it will not take the next one
                 // but a random one from the list at every iteration. In comparison to picking a random user
                 // on the first lps list where the next user is always the next one (not a random one).
-                while (_empty.length > 0) {
-                    uint256 id = _empty[seed_id % _empty.length];
+                while (_emptyUint256.length > 0) {
+                    uint256 id = _emptyUint256[seed_id % _emptyUint256.length];
                     // Check if the request is claimable
                     (,, uint40 ts, uint256 asset, uint256 queued) = originARM.withdrawalRequests(id);
 
@@ -113,11 +112,11 @@ abstract contract Helpers is Setup, Logger {
                     }
                     // Otherwise remove the id from the temporary list
                     else {
-                        if (_empty.length == 1) {
-                            _empty.pop();
+                        if (_emptyUint256.length == 1) {
+                            _emptyUint256.pop();
                         } else {
-                            _empty[seed_id % _empty.length] = _empty[_empty.length - 1];
-                            _empty.pop();
+                            _emptyUint256[seed_id % _emptyUint256.length] = _emptyUint256[_emptyUint256.length - 1];
+                            _emptyUint256.pop();
                         }
                     }
                 }
