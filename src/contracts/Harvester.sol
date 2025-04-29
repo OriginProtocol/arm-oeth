@@ -150,7 +150,7 @@ contract Harvester is Initializable, OwnableOperable {
             address parsedRecipient;
             address parsedFromAsset;
             address parsedToAsset;
-            uint256 fromAssetAmountLength;
+            uint256 fromAssetAmountShift;
             uint256 fromAssetAmountOffset;
             uint256 parsedFromAssetAmount;
 
@@ -175,21 +175,23 @@ contract Harvester is Initializable, OwnableOperable {
                 parsedToAsset := shr(96, parsedToAsset)
 
                 // Load the fromAssetAmount
-                // load the first byte which has the length in bytes of fromAssetAmount
-                fromAssetAmountLength := mload(add(data, 105))
+                // load the first byte which is the number of bytes to shift fromAssetAmount.
+                // ie 32 bytes - fromAssetAmount length in bytes
+                // For example, 1e18 is 8 bytes long so needs to be shifted 32 - 8 = 24 bytes
+                fromAssetAmountShift := mload(add(data, 105))
                 // Shift right by 248 bits (32 - 31 bytes) to get only the 1 byte
-                fromAssetAmountLength := shr(248, fromAssetAmountLength)
+                fromAssetAmountShift := shr(248, fromAssetAmountShift)
 
-                // load the next two bytes which is the offset of the fromAssetAmount
+                // load the next two bytes which is the position of fromAssetAmount in the data
                 fromAssetAmountOffset := mload(add(data, 106))
                 // Shift right by 240 bits (32 - 30 bytes) to get only the 2 bytes
                 fromAssetAmountOffset := shr(240, fromAssetAmountOffset)
-                // Subtract 36 bytes as the offset are different to calldata used by Magpie
+                // Subtract 36 bytes as the position are different to calldata used by Magpie
                 fromAssetAmountOffset := sub(fromAssetAmountOffset, 36)
 
                 // load the amountIn from the offset
                 parsedFromAssetAmount := mload(add(data, fromAssetAmountOffset))
-                parsedFromAssetAmount := shr(fromAssetAmountLength, parsedFromAssetAmount)
+                parsedFromAssetAmount := shr(fromAssetAmountShift, parsedFromAssetAmount)
             }
 
             if (rewardRecipient != parsedRecipient) revert InvalidSwapRecipient(parsedRecipient);
