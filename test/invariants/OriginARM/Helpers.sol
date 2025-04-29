@@ -9,8 +9,6 @@ import {Logger} from "test/invariants/OriginARM/Logger.sol";
 import {IERC20} from "contracts/Interfaces.sol";
 
 abstract contract Helpers is Setup, Logger {
-    uint256[] private _emptyUint256;
-    address[] private _emptyAddress;
     uint256[] public originRequests;
     mapping(address => uint256[]) public requests;
 
@@ -41,27 +39,46 @@ abstract contract Helpers is Setup, Logger {
 
     function getRandomLPs(uint8 seed) public view returns (address) {
         // Get a random user from the list of lps
-        return lps[seed % lps.length];
+        return getRandom(lps, seed);
     }
 
     function getRandomLPs(uint8 seed, bool withBalance) public view returns (address) {
         // Get a random user from the list of lps
-        return withBalance ? getRandomLPsWithBalance(seed) : lps[seed % lps.length];
+        return withBalance ? getRandomLPsWithBalance(seed) : getRandomLPs(seed);
     }
 
     function getRandomLPsWithBalance(uint8 seed) public view returns (address) {
         return getRandomLPsWithBalance(seed, 0);
     }
 
-    function getRandomLPsWithBalance(uint8 seed, uint256 minBalance) public view returns (address) {
-        // Get a random user from the list of lps with a balance
+    function getRandomLPsWithBalance(uint256 seed, uint256 minBalance) public view returns (address) {
+        // Find a random element on the list with a condition, using Fisher-Yates shuffle
         uint256 len = lps.length;
+        uint256[] memory indices = new uint256[](len);
+
+        // 1. Fill the indices array with 0 to n-1
         for (uint256 i; i < len; i++) {
-            address user_ = lps[(seed + i) % len];
-            if (originARM.balanceOf(user_) > minBalance) {
-                return user_;
-            }
+            indices[i] = i;
         }
+
+        // 2. Try up to n different elements without repetition
+        for (uint256 j; j < len; j++) {
+            // Pick a random index i from the remaining untested part
+            uint256 i = j + (seed % (len - j));
+
+            // Swap indices[j] and indices[i] to avoid duplicates
+            (indices[j], indices[i]) = (indices[i], indices[j]);
+
+            // Access the element at the shuffled position
+            address candidate = lps[indices[j]];
+
+            // Return if it satisfies the condition
+            if (originARM.balanceOf(candidate) > minBalance) return candidate;
+
+            // Update the seed to make the next iteration more random
+            seed = uint256(keccak256(abi.encodePacked(seed, candidate, i, j)));
+        }
+        // If no candidate found, return address(0)
         return address(0);
     }
 
@@ -70,59 +87,107 @@ abstract contract Helpers is Setup, Logger {
         view
         returns (address, uint256)
     {
-        // Get a random user from the list of swaps with a balance
+        // Find a random element on the list with a condition, using Fisher-Yates shuffle
         uint256 len = swaps.length;
+        uint256[] memory indices = new uint256[](len);
+
+        // 1. Fill the indices array with 0 to n-1
         for (uint256 i; i < len; i++) {
-            address user_ = swaps[(seed + i) % len];
-            uint256 balance = token.balanceOf(user_);
-            if (balance > minBalance) {
-                return (user_, balance);
-            }
+            indices[i] = i;
+        }
+
+        // 2. Try up to n different elements without repetition
+        for (uint256 j; j < len; j++) {
+            // Pick a random index i from the remaining untested part
+            uint256 i = j + (uint256(seed) % (len - j));
+
+            // Swap indices[j] and indices[i] to avoid duplicates
+            (indices[j], indices[i]) = (indices[i], indices[j]);
+
+            // Access the element at the shuffled position
+            address candidate = swaps[indices[j]];
+            uint256 balance = token.balanceOf(candidate);
+
+            // Return if it satisfies the condition
+            if (balance > minBalance) return (candidate, balance);
+
+            // Update the seed to make the next iteration more random
+            seed = uint8(uint256(keccak256(abi.encodePacked(seed, candidate, i, j))));
         }
         return (address(0), 0);
     }
 
-    function getRandomLPsWithRequest(uint8 seed, uint16 seed_id) public returns (address, uint256, uint256, uint40) {
-        // Get a random user from the list of lps with a request
+    function getRandomLPsWithRequest(uint256 seed, uint16 seed_id)
+        public
+        view
+        returns (address, uint256, uint256, uint40)
+    {
+        // Find a random element on the list with a condition, using Fisher-Yates shuffle
         uint256 len = lps.length;
-
-        // If no liquidity available, no need to look for a user with a request
+        uint256[] memory indices = new uint256[](len);
         uint256 claimable = originARM.claimable();
-        if (claimable == 0) return (address(0), 0, 0, 0);
 
-        // Find a user with a request
+        // 1. Fill the indices array with 0 to n-1
         for (uint256 i; i < len; i++) {
-            address user_ = lps[(seed + i) % len];
-            // Check if the user has a request
-            if (requests[user_].length > 0) {
-                // Cache the requests for the user
-                _emptyUint256 = requests[user_];
-
-                // This is another way to get a random value from the list, as it will not take the next one
-                // but a random one from the list at every iteration. In comparison to picking a random user
-                // on the first lps list where the next user is always the next one (not a random one).
-                while (_emptyUint256.length > 0) {
-                    uint256 id = _emptyUint256[seed_id % _emptyUint256.length];
-                    // Check if the request is claimable
-                    (,, uint40 ts, uint256 asset, uint256 queued) = originARM.withdrawalRequests(id);
-
-                    // If claimable, we find the user and the id!
-                    if (queued <= claimable) {
-                        return (user_, id, asset, ts);
-                    }
-                    // Otherwise remove the id from the temporary list
-                    else {
-                        if (_emptyUint256.length == 1) {
-                            _emptyUint256.pop();
-                        } else {
-                            _emptyUint256[seed_id % _emptyUint256.length] = _emptyUint256[_emptyUint256.length - 1];
-                            _emptyUint256.pop();
-                        }
-                    }
-                }
-            }
+            indices[i] = i;
         }
+
+        // 2. Try up to n different elements without repetition
+        for (uint256 j; j < len; j++) {
+            // Pick a random index i from the remaining untested part
+            uint256 i = j + (seed % (len - j));
+
+            // Swap indices[j] and indices[i] to avoid duplicates
+            (indices[j], indices[i]) = (indices[i], indices[j]);
+
+            // Access the element at the shuffled position
+            address candidate = lps[indices[j]];
+            (uint256 id, uint256 asset, uint40 ts) = getRandomClaimableRequestFromUser(candidate, seed_id, claimable);
+
+            // Return if it satisfies the condition
+            if (ts > 0) return (candidate, id, asset, ts);
+
+            // Update the seed to make the next iteration more random
+            seed = uint256(keccak256(abi.encodePacked(seed, candidate, i, j)));
+        }
+        // If no candidate found, return 0
         return (address(0), 0, 0, 0);
+    }
+
+    function getRandomClaimableRequestFromUser(address user, uint256 seed, uint256 claimable)
+        public
+        view
+        returns (uint256, uint256, uint40)
+    {
+        // Find a random element on the list with a condition, using Fisher-Yates shuffle
+        uint256[] memory requests_ = requests[user];
+        uint256 len = requests_.length;
+        uint256[] memory indices = new uint256[](len);
+
+        // 1. Fill the indices array with 0 to n-1
+        for (uint256 i; i < len; i++) {
+            indices[i] = i;
+        }
+
+        // 2. Try up to n different elements without repetition
+        for (uint256 j; j < len; j++) {
+            // Pick a random index i from the remaining untested part
+            uint256 i = j + (uint256(seed) % (len - j));
+
+            // Swap indices[j] and indices[i] to avoid duplicates
+            (indices[j], indices[i]) = (indices[i], indices[j]);
+
+            // Access the element at the shuffled position
+            uint256 id = requests_[indices[j]];
+            (,, uint40 ts, uint256 asset, uint256 queued) = originARM.withdrawalRequests(id);
+
+            // Return if it satisfies the condition
+            if (queued <= claimable) return (id, asset, ts);
+
+            // Update the seed to make the next iteration more random
+            seed = uint8(uint256(keccak256(abi.encodePacked(seed, asset, i, j))));
+        }
+        return (0, 0, 0);
     }
 
     function getRandomOriginRequest(uint256 count, uint256 seed) public returns (uint256[] memory) {
@@ -131,13 +196,13 @@ abstract contract Helpers is Setup, Logger {
         uint256[] memory list = new uint256[](count);
 
         for (uint256 i; i < count; i++) {
-            list[i] = originRequests[uint256(keccak256(abi.encodePacked(seed, i))) % originRequests.length];
+            uint256 id = uint256(keccak256(abi.encodePacked(seed, i))) % originRequests.length;
+            list[i] = originRequests[id];
             // remove id from the list
             if (originRequests.length == 1) {
                 delete originRequests;
             } else {
-                originRequests[uint256(keccak256(abi.encodePacked(seed, i))) % originRequests.length] =
-                    originRequests[originRequests.length - 1];
+                originRequests[id] = originRequests[originRequests.length - 1];
                 originRequests.pop();
             }
         }
@@ -159,24 +224,5 @@ abstract contract Helpers is Setup, Logger {
             }
         }
         revert("Request not found");
-    }
-
-    function roundToOneDecimal(uint256 amount) internal pure returns (uint256) {
-        uint256 oneDecimal = 1e16;
-
-        return (amount / oneDecimal) * oneDecimal;
-    }
-
-    function uintArrayToString(uint256[] memory _array) public pure returns (string memory) {
-        bytes memory result;
-
-        for (uint256 i = 0; i < _array.length; i++) {
-            result = abi.encodePacked(result, vm.toString(_array[i]));
-            if (i < _array.length - 1) {
-                result = abi.encodePacked(result, ", ");
-            }
-        }
-
-        return string(result);
     }
 }

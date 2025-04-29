@@ -104,4 +104,17 @@ abstract contract Logger is Setup {
         if (addr == address(0)) return "ZERO_";
         return "NaN";
     }
+
+    function uintArrayToString(uint256[] memory _array) public pure returns (string memory) {
+        bytes memory result;
+
+        for (uint256 i = 0; i < _array.length; i++) {
+            result = abi.encodePacked(result, vm.toString(_array[i]));
+            if (i < _array.length - 1) {
+                result = abi.encodePacked(result, ", ");
+            }
+        }
+
+        return string(result);
+    }
 }
