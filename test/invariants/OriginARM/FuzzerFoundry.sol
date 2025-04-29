@@ -7,7 +7,6 @@ import {TargetFunction} from "test/invariants/OriginARM/TargetFunction.sol";
 contract FuzzerFoundry_OriginARM is TargetFunction {
     uint256 private constant NUM_LPS = 4;
     uint256 private constant NUM_SWAPS = 3;
-    uint256 private constant INITIAL_AMOUNT = 1_000_000 ether;
 
     //////////////////////////////////////////////////////
     /// --- SETUP
@@ -26,7 +25,7 @@ contract FuzzerFoundry_OriginARM is TargetFunction {
             lps.push(user);
 
             // Give them a lot of WS
-            deal(address(ws), user, 100 * INITIAL_AMOUNT);
+            deal(address(ws), user, INITIAL_AMOUNT_LPS);
 
             // Approve ARM for WS
             vm.prank(user);
@@ -40,8 +39,8 @@ contract FuzzerFoundry_OriginARM is TargetFunction {
             swaps.push(user);
 
             // Give them a lot of WS and OS
-            deal(address(ws), user, INITIAL_AMOUNT);
-            deal(address(os), user, INITIAL_AMOUNT);
+            deal(address(ws), user, INITIAL_AMOUNT_SWAPS);
+            deal(address(os), user, INITIAL_AMOUNT_SWAPS);
 
             // Approve ARM for WS and OS
             vm.startPrank(user);
@@ -123,5 +122,6 @@ contract FuzzerFoundry_OriginARM is TargetFunction {
 
     function afterInvariant() public {
         handler_afterInvariants();
+        assertLpsAreUpOnly();
     }
 }

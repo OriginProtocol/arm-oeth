@@ -404,6 +404,17 @@ abstract contract TargetFunction is Properties {
         originARM.swapTokensForExactTokens(ws, os, os.balanceOf(address(originARM)), type(uint256).max, address(this));
         vm.stopPrank();
 
+        // - All user request redeem with the remaining shares
+        for (uint256 i = 0; i < lps.length; i++) {
+            address user = lps[i];
+            uint256 shares = originARM.balanceOf(user);
+            if (shares > 0) {
+                vm.prank(user);
+                (uint256 id_,) = originARM.requestRedeem(shares);
+                requests[user].push(id_);
+            }
+        }
+
         // - Finalize all users claim request
         skip(CLAIM_DELAY);
         for (uint256 i = 0; i < lps.length; i++) {
@@ -420,6 +431,29 @@ abstract contract TargetFunction is Properties {
 
         // - Claim fees
         originARM.collectFees();
+
+        address dead = address(0xdEaD);
+        vm.startPrank(dead);
+        (uint256 id,) = originARM.requestRedeem(originARM.balanceOf(dead));
+        skip(CLAIM_DELAY);
+        originARM.claimRedeem(id);
+        vm.stopPrank();
+
+        // - Ensure everything is empty
+        // No more OS in the ARM
+        require(os.balanceOf(address(originARM)) == 0, "ARM should be OS empty");
+        require(ws.balanceOf(address(originARM)) == 0, "ARM should be WS empty");
+        // No unclaimed requests
+        uint256 len = originARM.nextWithdrawalIndex();
+        for (uint256 i; i < len; i++) {
+            (, bool claimed,,,) = originARM.withdrawalRequests(i);
+            require(claimed, "All withdrawals should be claimed");
+        }
+        // No users with shares
+        len = lps.length;
+        for (uint256 i; i < len; i++) {
+            require(originARM.balanceOf(lps[i]) == 0, "User should have no shares anymore");
+        }
     }
 
     function getLiquidityAvailable(address token) public view returns (uint256) {
@@ -435,5 +469,11 @@ abstract contract TargetFunction is Properties {
             return ws.balanceOf(address(originARM)) - outstandingWithdrawals;
         }
         return 0;
+    }
+
+    function assertLpsAreUpOnly() public view {
+        for (uint256 i; i < lps.length; i++) {
+            require(ws.balanceOf(lps[i]) >= INITIAL_AMOUNT_LPS, "User should not have less than initial amount");
+        }
     }
 }
