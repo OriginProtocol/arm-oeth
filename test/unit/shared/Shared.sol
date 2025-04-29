@@ -44,7 +44,7 @@ abstract contract Unit_Shared_Test is Base_Test_, Modifiers {
     function _deployMockContracts() internal {
         oeth = IERC20(address(new MockERC20("Origin ETH", "OETH", 18)));
         weth = IERC20(address(new MockERC20("Wrapped ETH", "WETH", 18)));
-        vault = IOriginVault(address(new MockVault(IERC20(oeth))));
+        vault = IOriginVault(address(new MockVault(oeth, weth)));
         market = IERC4626(address(new MockERC4626Market(IERC20(weth))));
         market2 = IERC4626(address(new MockERC4626Market(IERC20(weth))));
     }

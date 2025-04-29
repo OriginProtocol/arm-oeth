@@ -26,7 +26,7 @@ contract Fork_Concrete_OriginARM_VaultInteractions_Test_ is Fork_Shared_Test {
     function test_ClaimOriginWithdrawals() public asGovernor {
         // Deal OS to the ARM contract and the vault
         deal(address(os), address(originARM), DEFAULT_AMOUNT);
-        deal(address(os), address(vault), DEFAULT_AMOUNT);
+        deal(address(ws), address(vault), DEFAULT_AMOUNT);
 
         // Request an Origin withdrawal
         uint256 requestId = originARM.requestOriginWithdrawal(DEFAULT_AMOUNT);

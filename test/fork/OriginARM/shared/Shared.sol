@@ -60,7 +60,7 @@ abstract contract Fork_Shared_Test is Base_Test_, Modifiers {
     function _deployMockContracts() internal {
         os = IERC20(address(new MockERC20("Origin Sonic", "OS", 18)));
         ws = IERC20(resolver.resolve("WS"));
-        vault = IOriginVault(address(new MockVault(IERC20(os))));
+        vault = IOriginVault(address(new MockVault(os, ws)));
         market = IERC4626(resolver.resolve("SILO_WOS_S_MARKET"));
         vm.label(address(market), "SILO_WOS_S_MARKET");
     }
