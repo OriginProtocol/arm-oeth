@@ -57,32 +57,41 @@ abstract contract TargetFunction is Properties {
         // Console log data
         if (CONSOLE_LOG) console.log("deposit() \t\t From: %s | \t Amount: %s", name(user), faa(amount));
 
+        // Expected amount of shares
+        uint256 previewDeposit = originARM.previewDeposit(amount);
+
         // Main call
         vm.prank(user);
-        originARM.deposit(amount);
+        uint256 shares = originARM.deposit(amount);
 
+        require(shares == previewDeposit, "Deposit: Expected != received");
         sum_ws_deposit += amount;
     }
 
-    function handler_requestRedeem(uint8 seed, uint96 amount) public {
+    function handler_requestRedeem(uint8 seed, uint96 shares) public {
         // Get a random user from the list of lps with a balance
         address user = getRandomLPs(seed, true);
         // Ensure a user is selected, otherwise skip
         vm.assume(user != address(0));
 
-        // Bound amount to the balance of the user
-        amount = uint96(_bound(amount, 0, originARM.balanceOf(user)));
+        // Bound shares to the balance of the user
+        shares = uint96(_bound(shares, 0, originARM.balanceOf(user)));
 
         uint256 expectedId = originARM.nextWithdrawalIndex();
+        uint256 expectedAmount = originARM.previewRedeem(shares);
         // Console log data
         if (CONSOLE_LOG) {
-            console.log("requestRedeem() \t From: %s | \t Amount: %s | \t ID: %s", name(user), faa(amount), expectedId);
+            console.log("requestRedeem() \t From: %s | \t Shares: %s | \t ID: %s", name(user), faa(shares), expectedId);
         }
 
         // Main call
         vm.prank(user);
-        (uint256 id,) = originARM.requestRedeem(amount);
+        (uint256 id, uint256 amount) = originARM.requestRedeem(shares);
         requests[user].push(id);
+
+        require(id == expectedId, "Expected ID != received");
+        require(amount == expectedAmount, "Expected amount != received");
+        sum_ws_redeem += amount;
     }
 
     function handler_claimRedeem(uint8 seed, uint16 seed_id) public {
@@ -105,7 +114,7 @@ abstract contract TargetFunction is Properties {
 
         // Remove the request from the list
         removeRequest(user, id);
-        sum_ws_redeem += expectedAmount;
+        sum_ws_user_claimed += expectedAmount;
     }
 
     function handler_setARMBuffer(uint64 pct) public {
@@ -345,7 +354,7 @@ abstract contract TargetFunction is Properties {
         vm.prank(governor);
         uint256 totalClaimed = originARM.claimOriginWithdrawals(ids);
 
-        sum_ws_claimed += totalClaimed;
+        sum_ws_arm_claimed += totalClaimed;
     }
 
     function handler_donateToARM(uint80 amount, bool OSOrWs, uint8 seed) public {
