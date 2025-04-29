@@ -31,7 +31,7 @@ runs = 256
 depth = 500
 shrink_run_limit = 5_000
 show_metrics = true
-fail_on_revert = false
+fail_on_revert = true
 
 [dependencies]
 "@openzeppelin-contracts" = "5.0.2"
