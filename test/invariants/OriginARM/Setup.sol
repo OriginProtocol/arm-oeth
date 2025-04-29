@@ -29,7 +29,7 @@ abstract contract Setup is Base_Test_ {
     uint256 public constant MAX_SELL_PRICE = 1e36 + 2e30;
 
     bool public constant DONATE = true;
-    bool public constant CONSOLE_LOG = false;
+    bool public constant CONSOLE_LOG = true;
 
     address[] public users;
     address[] public lps;
@@ -106,9 +106,9 @@ abstract contract Setup is Base_Test_ {
     function _deployMocks() private {
         os = IERC20(address(new MockERC20("Origin Sonic", "OS", 18)));
         ws = IERC20(address(new MockERC20("Wrapped Sonic", "WS", 18)));
-        vault = IOriginVault(address(new MockVault(IERC20(os))));
-        market = IERC4626(address(new MockERC4626Market(IERC20(ws))));
-        market2 = IERC4626(address(new MockERC4626Market(IERC20(ws))));
+        vault = IOriginVault(address(new MockVault(os, ws)));
+        market = IERC4626(address(new MockERC4626Market(ws)));
+        market2 = IERC4626(address(new MockERC4626Market(ws)));
 
         // Label mocks
         vm.label(address(os), "OS");

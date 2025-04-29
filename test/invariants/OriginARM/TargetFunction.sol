@@ -60,6 +60,8 @@ abstract contract TargetFunction is Properties {
         // Main call
         vm.prank(user);
         originARM.deposit(amount);
+
+        sum_ws_deposit += amount;
     }
 
     function handler_requestRedeem(uint8 seed, uint96 amount) public {
@@ -103,6 +105,7 @@ abstract contract TargetFunction is Properties {
 
         // Remove the request from the list
         removeRequest(user, id);
+        sum_ws_redeem += expectedAmount;
     }
 
     function handler_setARMBuffer(uint64 pct) public {
@@ -229,6 +232,9 @@ abstract contract TargetFunction is Properties {
         // Ensure amountIn and amountOut are correct
         require(outputs[0] == amountIn, "AmountIn: Expected != sent");
         require(outputs[1] == amountIn * price / PRICE_SCALE, "AmountOut: Expected != received");
+        OSForWS
+            ? (sum_os_swapIn += outputs[0], sum_ws_swapOut += outputs[1])
+            : (sum_ws_swapIn += outputs[0], sum_os_swapOut += outputs[1]);
     }
 
     function handler_swapTokensForExactTokens(uint8 seed, bool OSForWS, uint80 amountOut) public {
@@ -261,13 +267,17 @@ abstract contract TargetFunction is Properties {
             );
         }
 
-        uint256[] memory received = new uint256[](2);
+        uint256[] memory outputs = new uint256[](2);
         // Main call
         vm.prank(user);
-        received = originARM.swapTokensForExactTokens(amountOut, type(uint96).max, path, user, block.timestamp + 1);
+        outputs = originARM.swapTokensForExactTokens(amountOut, type(uint96).max, path, user, block.timestamp + 1);
 
         // Ensure amountIn used is correct
-        require(received[0] == expectedAmountIn, "Expected != received");
+        require(outputs[0] == expectedAmountIn, "Expected != sent");
+        require(outputs[1] == amountOut, "Expected != received");
+        OSForWS
+            ? (sum_os_swapIn += outputs[0], sum_ws_swapOut += outputs[1])
+            : (sum_ws_swapIn += outputs[0], sum_os_swapOut += outputs[1]);
     }
 
     function handler_collectFees() public {
@@ -280,7 +290,9 @@ abstract contract TargetFunction is Properties {
 
         // Main call
         vm.prank(governor);
-        originARM.collectFees();
+        uint256 fees = originARM.collectFees();
+
+        sum_feesCollected += fees;
     }
 
     function handler_setFee(uint16 feePct) public {
@@ -294,6 +306,8 @@ abstract contract TargetFunction is Properties {
 
         vm.prank(governor);
         originARM.setFee(feePct);
+
+        sum_feesCollected += feesAccrued;
     }
 
     function handler_requestOriginWithdrawal(uint128 amount) public {
@@ -313,6 +327,8 @@ abstract contract TargetFunction is Properties {
 
         // Add requestId to the list
         originRequests.push(expectedId);
+
+        sum_os_redeem += amount;
     }
 
     function handler_claimOriginWithdrawals(uint16 requestCount, uint256 seed) public {
@@ -327,7 +343,9 @@ abstract contract TargetFunction is Properties {
 
         // Main call
         vm.prank(governor);
-        originARM.claimOriginWithdrawals(ids);
+        uint256 totalClaimed = originARM.claimOriginWithdrawals(ids);
+
+        sum_ws_claimed += totalClaimed;
     }
 
     function handler_donateToARM(uint80 amount, bool OSOrWs, uint8 seed) public {
@@ -348,6 +366,8 @@ abstract contract TargetFunction is Properties {
         // Mail call
         vm.prank(address(donator));
         (OSOrWs ? os : ws).transfer(address(originARM), amount);
+
+        OSOrWs ? sum_os_donated += amount : sum_ws_donated += amount;
     }
 
     function handler_afterInvariants() public {

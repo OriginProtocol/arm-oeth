@@ -51,7 +51,7 @@ contract FuzzerFoundry_OriginARM is TargetFunction {
         }
 
         // Distribute a lot of WS to the vault, this will help for redeeming OS
-        deal(address(os), address(vault), type(uint128).max);
+        deal(address(ws), address(vault), type(uint128).max);
 
         // --- Setup ARM ---
         // Set cross price
@@ -104,7 +104,10 @@ contract FuzzerFoundry_OriginARM is TargetFunction {
     //////////////////////////////////////////////////////
     /// --- INVARIANTS
     //////////////////////////////////////////////////////
-    function invariant_B() public {}
+    function invariant_swap() public view {
+        assertTrue(property_swap_A(), "INVARIANT A");
+        assertTrue(property_swap_B(), "INVARIANT B");
+    }
 
     function afterInvariant() public {
         handler_afterInvariants();
