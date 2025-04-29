@@ -44,7 +44,6 @@ contract Harvester is Initializable, OwnableOperable {
         uint256 amountOut
     );
     event RewardsCollected(address[] indexed strategy, address[][] rewardTokens, uint256[][] amounts);
-    event RewardRecipientTransferred(address indexed token, uint256 rewards);
     event RewardRecipientUpdated(address rewardRecipient);
     event AllowedSlippageUpdated(uint256 allowedSlippageBps);
     event PriceProviderUpdated(address priceProvider);
@@ -55,6 +54,7 @@ contract Harvester is Initializable, OwnableOperable {
     error UnsupportedStrategy(address strategyAddress);
     error InvalidSwapRecipient(address recipient);
     error InvalidFromAsset(address fromAsset);
+    error InvalidFromAssetAmount(uint256 fromAssetAmount);
     error InvalidToAsset(address toAsset);
     error EmptyLiquidityAsset();
     error EmptyMagpieRouter();
@@ -107,59 +107,42 @@ contract Harvester is Initializable, OwnableOperable {
     /**
      * @notice Swaps the reward token to the ARM's liquidity asset and transfers to the `rewardRecipient`.
      * @param swapPlatform The swap platform to use. Currently only Magpie is supported.
-     * @param fromAsset The address of the reward token being sold.
      * @param data aggregator specific data. eg Magpie's swapWithMagpieSignature data
      */
-    function swap(SwapPlatform swapPlatform, address fromAsset, bytes calldata data)
+    function swap(SwapPlatform swapPlatform, address fromAsset, uint256 fromAssetAmount, bytes calldata data)
         external
         onlyOperatorOrOwner
         returns (uint256 toAssetAmount)
     {
-        uint256 balance = IERC20(fromAsset).balanceOf(address(this));
-
-        if (balance == 0) return 0;
-
-        // No need to swap if the reward token is the ARM's liquidity asset. eg WETH or wS.
-        if (fromAsset == liquidityAsset) {
-            IERC20(fromAsset).safeTransfer(rewardRecipient, balance);
-
-            emit RewardRecipientTransferred(liquidityAsset, balance);
-            return balance;
-        }
+        // Validate the swap data and do the swap
+        toAssetAmount = _doSwap(swapPlatform, fromAsset, fromAssetAmount, data);
 
         // This'll revert if there is no price feed
         uint256 oraclePrice = IOracle(priceProvider).price(fromAsset);
 
         // Calculate the minimum expected amount from the max slippage from the Oracle price
-        uint256 minExpected = (balance * (1e4 - allowedSlippageBps) * oraclePrice) // max allowed slippage
+        uint256 minExpected = (fromAssetAmount * (1e4 - allowedSlippageBps) * oraclePrice) // max allowed slippage
             / 1e4 // fix the max slippage decimal position
             / 1e18; // and oracle price decimals position
 
-        // Do the swap
-        uint256 amountReceived = _doSwap(swapPlatform, fromAsset, data);
-
-        if (amountReceived < minExpected) {
-            revert SlippageError(amountReceived, minExpected);
+        if (toAssetAmount < minExpected) {
+            revert SlippageError(toAssetAmount, minExpected);
         }
 
-        emit RewardTokenSwapped(fromAsset, liquidityAsset, swapPlatform, balance, amountReceived);
+        emit RewardTokenSwapped(fromAsset, liquidityAsset, swapPlatform, fromAssetAmount, toAssetAmount);
 
-        uint256 liquidityAssetBalance = IERC20(liquidityAsset).balanceOf(address(this));
-        if (liquidityAssetBalance < amountReceived) {
+        uint256 liquidityAssetBalance = IERC20(liquidityAsset).balanceOf(rewardRecipient);
+        if (liquidityAssetBalance < toAssetAmount) {
             // Note: It's possible to bypass this check by transferring `liquidityAsset`
             // directly to Harvester before calling the `harvestAndSwap`. However,
             // there's no incentive for an attacker to do that. Doing a balance diff
             // will increase the gas cost significantly
-            revert BalanceMismatchAfterSwap(liquidityAssetBalance, amountReceived);
+            revert BalanceMismatchAfterSwap(liquidityAssetBalance, toAssetAmount);
         }
-
-        IERC20(liquidityAsset).safeTransfer(rewardRecipient, amountReceived);
-
-        emit RewardRecipientTransferred(rewardRecipient, amountReceived);
     }
 
     /// @dev Platform specific swap logic
-    function _doSwap(SwapPlatform swapPlatform, address fromAsset, bytes memory data)
+    function _doSwap(SwapPlatform swapPlatform, address fromAsset, uint256 fromAssetAmount, bytes memory data)
         internal
         returns (uint256 toAssetAmount)
     {
@@ -167,6 +150,9 @@ contract Harvester is Initializable, OwnableOperable {
             address parsedRecipient;
             address parsedFromAsset;
             address parsedToAsset;
+            uint256 fromAssetAmountLength;
+            uint256 fromAssetAmountOffset;
+            uint256 parsedFromAssetAmount;
 
             assembly {
                 // Length: 32 bytes (n padded).
@@ -187,12 +173,32 @@ contract Harvester is Initializable, OwnableOperable {
                 parsedToAsset := mload(add(data, 76))
                 // Shift right by 96 bits (32 - 20 bytes) to get only the 20 bytes
                 parsedToAsset := shr(96, parsedToAsset)
+
+                // Load the fromAssetAmount
+                // load the first byte which has the length in bytes of fromAssetAmount
+                fromAssetAmountLength := mload(add(data, 105))
+                // Shift right by 248 bits (32 - 31 bytes) to get only the 1 byte
+                fromAssetAmountLength := shr(248, fromAssetAmountLength)
+
+                // load the next two bytes which is the offset of the fromAssetAmount
+                fromAssetAmountOffset := mload(add(data, 106))
+                // Shift right by 240 bits (32 - 30 bytes) to get only the 2 bytes
+                fromAssetAmountOffset := shr(240, fromAssetAmountOffset)
+                // Subtract 36 bytes as the offset are different to calldata used by Magpie
+                fromAssetAmountOffset := sub(fromAssetAmountOffset, 36)
+
+                // load the amountIn from the offset
+                parsedFromAssetAmount := mload(add(data, fromAssetAmountOffset))
+                parsedFromAssetAmount := shr(fromAssetAmountLength, parsedFromAssetAmount)
             }
 
             if (rewardRecipient != parsedRecipient) revert InvalidSwapRecipient(parsedRecipient);
             if (fromAsset != parsedFromAsset) revert InvalidFromAsset(parsedFromAsset);
             if (liquidityAsset != parsedToAsset) revert InvalidToAsset(parsedToAsset);
+            if (fromAssetAmount != parsedFromAssetAmount) revert InvalidFromAssetAmount(parsedFromAssetAmount);
 
+            // Approve the Magpie Router to spend the fromAsset
+            IERC20(fromAsset).approve(magpieRouter, fromAssetAmount);
             // Call the Magpie router to do the swap
             toAssetAmount = IMagpieRouter(magpieRouter).swapWithMagpieSignature(data);
         } else {

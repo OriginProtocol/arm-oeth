@@ -24,7 +24,7 @@ contract Fork_Concrete_Harvester_Swap_Test_ is Fork_Shared_Test {
         });
 
         vm.startPrank(harvester.owner());
-        harvester.swap(Harvester.SwapPlatform.Magpie, address(os), data);
+        harvester.swap(Harvester.SwapPlatform.Magpie, address(os), 1e18, data);
         vm.stopPrank();
     }
 
