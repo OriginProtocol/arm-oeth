@@ -177,7 +177,7 @@ contract Harvester is Initializable, OwnableOperable {
                 // Load the fromAssetAmount
                 // load the first byte which is the number of bytes to shift fromAssetAmount.
                 // ie 32 bytes - fromAssetAmount length in bytes
-                // For example, 1e18 is 8 bytes long so needs to be shifted 32 - 8 = 24 bytes
+                // For example, 1e18 is 8 bytes long so needs to be shifted 32 - 8 = 24 bytes = 196 bits
                 fromAssetAmountShift := mload(add(data, 105))
                 // Shift right by 248 bits (32 - 31 bytes) to get only the 1 byte
                 fromAssetAmountShift := shr(248, fromAssetAmountShift)
