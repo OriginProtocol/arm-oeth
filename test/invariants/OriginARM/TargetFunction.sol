@@ -55,7 +55,7 @@ abstract contract TargetFunction is Properties {
         address user = getRandomLPs(seed);
 
         // Console log data
-        console.log("deposit() \t\t From: %s | \t Amount: %s", name(user), faa(amount));
+        if (CONSOLE_LOG) console.log("deposit() \t\t From: %s | \t Amount: %s", name(user), faa(amount));
 
         // Main call
         vm.prank(user);
@@ -73,7 +73,9 @@ abstract contract TargetFunction is Properties {
 
         uint256 expectedId = originARM.nextWithdrawalIndex();
         // Console log data
-        console.log("requestRedeem() \t From: %s | \t Amount: %s | \t ID: %s", name(user), faa(amount), expectedId);
+        if (CONSOLE_LOG) {
+            console.log("requestRedeem() \t From: %s | \t Amount: %s | \t ID: %s", name(user), faa(amount), expectedId);
+        }
 
         // Main call
         vm.prank(user);
@@ -88,7 +90,9 @@ abstract contract TargetFunction is Properties {
         vm.assume(user != address(0));
 
         // Console log data
-        console.log("claimRedeem() \t From: %s | \t Amount: %s | \t ID: %s", name(user), faa(expectedAmount), id);
+        if (CONSOLE_LOG) {
+            console.log("claimRedeem() \t From: %s | \t Amount: %s | \t ID: %s", name(user), faa(expectedAmount), id);
+        }
 
         // Timejump to the claim delay
         if (ts > block.timestamp) vm.warp(ts);
@@ -105,7 +109,7 @@ abstract contract TargetFunction is Properties {
         pct = uint64(_bound(pct, 0, 10)) * 1e17;
 
         // Console log data
-        console.log("setARMBuffer() \t From: %s | \t Percen: %16e %", "Owner", pct);
+        if (CONSOLE_LOG) console.log("setARMBuffer() \t From: %s | \t Percen: %16e %", "Owner", pct);
 
         // Main call
         vm.prank(governor);
@@ -118,7 +122,9 @@ abstract contract TargetFunction is Properties {
         vm.assume(fromM != address(0) || toM != address(0));
 
         // Console log data
-        console.log("setActiveMarket() \t From: %s | \t Market: %s -> %s", "Owner", nameM(fromM), nameM(toM));
+        if (CONSOLE_LOG) {
+            console.log("setActiveMarket() \t From: %s | \t Market: %s -> %s", "Owner", nameM(fromM), nameM(toM));
+        }
 
         // Main call
         vm.prank(governor);
@@ -128,7 +134,7 @@ abstract contract TargetFunction is Properties {
     function handler_allocate() public {
         vm.assume(originARM.activeMarket() != address(0));
         // Console log data
-        console.log("allocate() \t\t From: %s", "Owner");
+        if (CONSOLE_LOG) console.log("allocate() \t\t From: %s", "Owner");
 
         // Main call
         vm.prank(governor);
@@ -146,9 +152,13 @@ abstract contract TargetFunction is Properties {
         sellPrice = _bound(sellPrice, crossPrice, MAX_SELL_PRICE);
 
         // Console log data
-        console.log(
-            "setPrices() \t\t From: Owner | \t Buy   : %s | \t Sell: %s", faa(buyPrice / 1e18), faa(sellPrice / 1e18)
-        );
+        if (CONSOLE_LOG) {
+            console.log(
+                "setPrices() \t\t From: Owner | \t Buy   : %s | \t Sell: %s",
+                faa(buyPrice / 1e18),
+                faa(sellPrice / 1e18)
+            );
+        }
 
         // Main call
         vm.prank(governor);
@@ -176,7 +186,7 @@ abstract contract TargetFunction is Properties {
         if (originARM.crossPrice() > newCrossPrice) vm.assume(os.balanceOf(address(originARM)) <= MIN_TOTAL_SUPPLY);
 
         // Console log data
-        console.log("setCrossPrice() \t From: %s | \t CrossP: %s", "Owner", faa(newCrossPrice / 1e18));
+        if (CONSOLE_LOG) console.log("setCrossPrice() \t From: %s | \t CrossP: %s", "Owner", faa(newCrossPrice / 1e18));
 
         // Main call
         vm.prank(governor);
@@ -203,16 +213,22 @@ abstract contract TargetFunction is Properties {
         vm.assume(amountIn > 0);
 
         // Console log data
-        console.log(
-            "swapExactTokensFor() \t From: %s | \t Amount: %s | \t Direction: %s",
-            name(user),
-            faa(amountIn),
-            OSForWS ? "OS -> WS" : "WS -> OS"
-        );
+        if (CONSOLE_LOG) {
+            console.log(
+                "swapExactTokensFor() \t From: %s | \t Amount: %s | \t Direction: %s",
+                name(user),
+                faa(amountIn),
+                OSForWS ? "OS -> WS" : "WS -> OS"
+            );
+        }
 
         // Main call
         vm.prank(user);
-        originARM.swapExactTokensForTokens(amountIn, 0, path, user, block.timestamp + 1);
+        uint256[] memory outputs = originARM.swapExactTokensForTokens(amountIn, 0, path, user, block.timestamp + 1);
+
+        // Ensure amountIn and amountOut are correct
+        require(outputs[0] == amountIn, "AmountIn: Expected != sent");
+        require(outputs[1] == amountIn * price / PRICE_SCALE, "AmountOut: Expected != received");
     }
 
     function handler_swapTokensForExactTokens(uint8 seed, bool OSForWS, uint80 amountOut) public {
@@ -236,12 +252,14 @@ abstract contract TargetFunction is Properties {
 
         uint256 expectedAmountIn = ((amountOut * PRICE_SCALE) / price) + 3;
         // Console log data
-        console.log(
-            "swapTokensForExact() \t From: %s | \t Amount: %s | \t Direction: %s",
-            name(user),
-            faa(expectedAmountIn),
-            OSForWS ? "OS -> WS" : "WS -> OS"
-        );
+        if (CONSOLE_LOG) {
+            console.log(
+                "swapTokensForExact() \t From: %s | \t Amount: %s | \t Direction: %s",
+                name(user),
+                faa(expectedAmountIn),
+                OSForWS ? "OS -> WS" : "WS -> OS"
+            );
+        }
 
         uint256[] memory received = new uint256[](2);
         // Main call
@@ -258,7 +276,7 @@ abstract contract TargetFunction is Properties {
         vm.assume(feesAccrued <= getLiquidityAvailable(address(ws)));
 
         // Console log data
-        console.log("collectFees() \t From: Owner | \t Amount: %s ", faa(feesAccrued));
+        if (CONSOLE_LOG) console.log("collectFees() \t From: Owner | \t Amount: %s ", faa(feesAccrued));
 
         // Main call
         vm.prank(governor);
@@ -272,7 +290,7 @@ abstract contract TargetFunction is Properties {
 
         feePct = uint16(_bound(feePct, 0, 50)) * 100; // 0% - 50%
 
-        console.log("setFee() \t\t From: Owner | \t Percen: %2e %", feePct);
+        if (CONSOLE_LOG) console.log("setFee() \t\t From: Owner | \t Percen: %2e %", feePct);
 
         vm.prank(governor);
         originARM.setFee(feePct);
@@ -285,7 +303,9 @@ abstract contract TargetFunction is Properties {
         vm.assume(amount > 0);
 
         // Console log data
-        console.log("requestOWithdraw() \t From: Owner | \t Amount: %s | \t ID: %s", faa(amount), expectedId);
+        if (CONSOLE_LOG) {
+            console.log("requestOWithdraw() \t From: Owner | \t Amount: %s | \t ID: %s", faa(amount), expectedId);
+        }
 
         // Main call
         vm.prank(governor);
@@ -303,7 +323,7 @@ abstract contract TargetFunction is Properties {
         uint256[] memory ids = getRandomOriginRequest(requestCount, seed);
 
         // Console log data
-        console.log("claimOWithdrawals() \t From: Owner | \t IDs: ", uintArrayToString(ids));
+        if (CONSOLE_LOG) console.log("claimOWithdrawals() \t From: Owner | \t IDs: ", uintArrayToString(ids));
 
         // Main call
         vm.prank(governor);
@@ -316,7 +336,11 @@ abstract contract TargetFunction is Properties {
         amount = uint80(_bound(amount, 1, type(uint80).max));
 
         // Console log data
-        console.log("donateToARM() \t From: DONAT | \t Amount: %s | \t Token: %s", faa(amount), OSOrWs ? "OS" : "WS");
+        if (CONSOLE_LOG) {
+            console.log(
+                "donateToARM() \t From: DONAT | \t Amount: %s | \t Token: %s", faa(amount), OSOrWs ? "OS" : "WS"
+            );
+        }
 
         address donator = makeAddr("donator");
         deal(OSOrWs ? address(os) : address(ws), donator, amount);

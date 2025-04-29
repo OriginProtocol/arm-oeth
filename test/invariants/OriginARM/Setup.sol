@@ -29,6 +29,7 @@ abstract contract Setup is Base_Test_ {
     uint256 public constant MAX_SELL_PRICE = 1e36 + 2e30;
 
     bool public constant DONATE = true;
+    bool public constant CONSOLE_LOG = false;
 
     address[] public users;
     address[] public lps;
