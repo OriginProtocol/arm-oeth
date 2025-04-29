@@ -169,23 +169,22 @@ contract Harvester is Initializable, OwnableOperable {
             address parsedToAsset;
 
             assembly {
-                // Offset: 32 bytes (0x20 padded).
                 // Length: 32 bytes (n padded).
                 // then there is 4 bytes of unknown data
-                // so the data offset of 32 + 32 + 4 = 68 bytes
+                // so the data offset of 32 + 4 = 36 bytes
 
-                // Load the swap recipient address (20 bytes) starting at offset 68
-                parsedRecipient := mload(add(data, 68))
+                // Load the swap recipient address (20 bytes) starting at offset 36
+                parsedRecipient := mload(add(data, 36))
                 // Shift right by 96 bits (32 - 20 bytes) to get only the 20 bytes
                 parsedRecipient := shr(96, parsedRecipient)
 
-                // Load the swap from asset address (20 bytes) starting at offset 68 + 20
-                parsedFromAsset := mload(add(data, 88))
+                // Load the swap from asset address (20 bytes) starting at offset 36 + 20
+                parsedFromAsset := mload(add(data, 56))
                 // Shift right by 96 bits (32 - 20 bytes) to get only the 20 bytes
                 parsedFromAsset := shr(96, parsedFromAsset)
 
-                // Load the swap from asset address (20 bytes) starting at offset 68 + 20 + 20
-                parsedToAsset := mload(add(data, 108))
+                // Load the swap from asset address (20 bytes) starting at offset 36 + 20 + 20
+                parsedToAsset := mload(add(data, 76))
                 // Shift right by 96 bits (32 - 20 bytes) to get only the 20 bytes
                 parsedToAsset := shr(96, parsedToAsset)
             }
