@@ -119,8 +119,7 @@ contract DeployOriginARMScript is AbstractDeployScript {
         _recordDeploy("HARVESTER_IMPL", address(harvesterImpl));
 
         // 17. Initialize Proxy with Harvester implementation and set the owner to the deployer for now
-        // TODO deploy price provider when ready
-        address PriceProvider = address(0x01);
+        address PriceProvider = address(0);
         data =
             abi.encodeWithSignature("initialize(address,uint256,address)", PriceProvider, 200, address(originARMProxy));
         harvesterProxy.initialize(address(harvesterImpl), deployer, data);
