@@ -9,6 +9,9 @@ import {Fork_Shared_Test} from "test/fork/Harvester/shared/Shared.sol";
 contract Fork_Concrete_Harvester_Swap_Test_ is Fork_Shared_Test {
     address public constant OS_WHALE = 0x9F0dF7799f6FDAd409300080cfF680f5A23df4b1;
 
+    ////////////////////////////////////////////////////
+    /// --- SETUP
+    ////////////////////////////////////////////////////
     function setUp() public virtual override {
         super.setUp();
 
@@ -16,6 +19,9 @@ contract Fork_Concrete_Harvester_Swap_Test_ is Fork_Shared_Test {
         vm.mockCall(oracle, abi.encodeWithSignature("price(address)"), abi.encode(1 ether));
     }
 
+    ////////////////////////////////////////////////////
+    /// --- REVERTS
+    ////////////////////////////////////////////////////
     function test_RevertWhen_Swap_Because_InvalidSwapRecipient() public {
         //bytes memory data = getMagPieQuote({
         //    from: "OS",
@@ -113,7 +119,10 @@ contract Fork_Concrete_Harvester_Swap_Test_ is Fork_Shared_Test {
         harvester.swap(Harvester.SwapPlatform.Magpie, address(os), 1e18, data);
     }
 
-    function test_Swap_WithMagpie() public {
+    ////////////////////////////////////////////////////
+    /// --- TESTS
+    ////////////////////////////////////////////////////
+    function test_Swap_WithMagpie_WithOracle() public {
         vm.prank(OS_WHALE);
         os.transfer(address(harvester), 1 ether);
 
@@ -126,6 +135,37 @@ contract Fork_Concrete_Harvester_Swap_Test_ is Fork_Shared_Test {
             swapper: address(harvester),
             recipient: operator
         });
+
+        uint256 balanceOSBefore = os.balanceOf(address(harvester));
+        uint256 balanceWSBefore = ws.balanceOf(operator);
+        assertGe(balanceOSBefore, 1 ether, "Balance of OS before swap should be >= 1");
+
+        vm.startPrank(governor);
+        harvester.swap(Harvester.SwapPlatform.Magpie, address(os), 1e18, data);
+        vm.stopPrank();
+        uint256 balanceOSAfter = os.balanceOf(address(harvester));
+        uint256 balanceWSAfter = ws.balanceOf(operator);
+
+        assertEq(balanceOSAfter, 0, "Balance of OS after swap should be 0");
+        assertApproxEqRel(balanceWSAfter - balanceWSBefore, 1 ether, 1e16, "Balance of WS after swap should be 1");
+    }
+
+    function test_Swap_WithMagpie_WithoutOracle() public {
+        vm.prank(OS_WHALE);
+        os.transfer(address(harvester), 1 ether);
+
+        // Get the quote from the API
+        bytes memory data = getMagPieQuote({
+            from: "OS",
+            to: "WS",
+            amount: 1,
+            slippage: 0,
+            swapper: address(harvester),
+            recipient: operator
+        });
+
+        vm.prank(governor);
+        harvester.setPriceProvider(address(0));
 
         uint256 balanceOSBefore = os.balanceOf(address(harvester));
         uint256 balanceWSBefore = ws.balanceOf(operator);
