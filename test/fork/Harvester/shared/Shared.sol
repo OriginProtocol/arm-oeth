@@ -3,7 +3,7 @@ pragma solidity 0.8.23;
 
 // Test
 import {Base_Test_} from "test/Base.sol";
-import {Modifiers} from "test/fork/OriginARM/shared/Modifiers.sol";
+import {Helpers} from "test/fork/Harvester/shared/Helpers.sol";
 
 // Contracts
 import {Proxy} from "contracts/Proxy.sol";
@@ -14,7 +14,7 @@ import {IERC20} from "contracts/Interfaces.sol";
 
 import {Sonic} from "contracts/utils/Addresses.sol";
 
-abstract contract Fork_Shared_Test is Base_Test_, Modifiers {
+abstract contract Fork_Shared_Test is Base_Test_, Helpers {
     address public oracle;
 
     //////////////////////////////////////////////////////
