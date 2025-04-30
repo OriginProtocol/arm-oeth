@@ -2,7 +2,7 @@
 pragma solidity 0.8.23;
 
 // Test imports
-import {TargetFunction} from "test/invariants/TargetFunction.sol";
+import {TargetFunction} from "test/invariants/LidoARM/TargetFunction.sol";
 
 contract FuzzerFoundry is TargetFunction {
     uint256 private constant NUM_LPS = 4;

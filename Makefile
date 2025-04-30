@@ -16,7 +16,7 @@ clean:
 	@rm -rf broadcast cache out
 
 clean-all:
-	@rm -rf broadcast cache out dependencies node_modules soldeer.lock
+	@rm -rf broadcast cache out dependencies node_modules soldeer.lock yarn.lock lcov.info lcov.info.pruned
 
 gas:
 	@forge test --gas-report

@@ -5,17 +5,19 @@ import {IERC20} from "contracts/Interfaces.sol";
 import {MockERC20} from "@solmate/test/utils/mocks/MockERC20.sol";
 
 contract MockVault {
-    IERC20 public token;
+    IERC20 public oToken;
+    IERC20 public baseToken;
     uint256 public requestCount;
     mapping(uint256 => uint256) public requestIds;
     mapping(uint256 => bool) public requestStatus;
 
-    constructor(IERC20 _token) {
-        token = _token;
+    constructor(IERC20 _oToken, IERC20 _baseToken) {
+        oToken = _oToken;
+        baseToken = _baseToken;
     }
 
     function requestWithdrawal(uint256 _amount) external returns (uint256, uint256) {
-        MockERC20(address(token)).burn(msg.sender, _amount);
+        MockERC20(address(oToken)).burn(msg.sender, _amount);
         // Increase the request count
         requestCount++;
         // Store the request ID and amount
@@ -49,7 +51,7 @@ contract MockVault {
         }
 
         // Transfer the total amount to the caller
-        token.transfer(msg.sender, totalAmount);
+        baseToken.transfer(msg.sender, totalAmount);
 
         return (amounts, totalAmount);
     }
