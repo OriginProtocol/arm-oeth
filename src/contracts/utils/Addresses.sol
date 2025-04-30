@@ -69,6 +69,7 @@ library Sonic {
     // Tokens
     address public constant OS = 0xb1e25689D55734FD3ffFc939c4C3Eb52DFf8A794;
     address public constant WS = 0x039e2fB66102314Ce7b64Ce5Ce3E5183bc94aD38;
+    address public constant SILO = 0x53f753E4B17F4075D6fa2c6909033d224b81e698;
 
     // Contracts
     address public constant OS_VAULT = 0xa3c0eCA00D2B76b4d1F170b0AB3FdeA16C180186;
@@ -78,6 +79,9 @@ library Sonic {
     address public constant SILO_OS = 0x112380065A2cb73A5A429d9Ba7368cc5e8434595;
     address public constant SILO_stS = 0x47d8490Be37ADC7Af053322d6d779153689E13C1;
     address public constant SILO_USDC = 0xf55902DE87Bd80c6a35614b48d7f8B612a083C12;
+
+    // Magpie aggregator
+    address public constant MAGPIE_ROUTER = 0xba7bAC71a8Ee550d89B827FE6d67bc3dCA07b104;
 }
 
 contract AddressResolver {

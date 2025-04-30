@@ -40,4 +40,9 @@ addresses.mainnet.UniswapV3Quoter =
 addresses.mainnet.UniswapV3stETHWETHPool =
   "0x109830a1AAaD605BbF02a9dFA7B0B92EC2FB7dAa";
 
+// Sonic
+addresses.sonic = {};
+addresses.mainnet.WS = "0x039e2fB66102314Ce7b64Ce5Ce3E5183bc94aD38";
+addresses.mainnet.SILO = "0x53f753E4B17F4075D6fa2c6909033d224b81e698";
+
 module.exports = addresses;

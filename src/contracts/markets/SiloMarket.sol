@@ -84,7 +84,7 @@ contract SiloMarket is Initializable, Ownable {
     function maxRedeem(address owner) external view returns (uint256 maxShares) {
         if (owner != arm) return 0;
 
-        IERC4626(market).maxRedeem(address(this));
+        maxShares = IERC4626(market).maxRedeem(address(this));
     }
 
     function redeem(uint256 shares, address receiver, address owner) external returns (uint256 assets) {
@@ -94,7 +94,7 @@ contract SiloMarket is Initializable, Ownable {
         assets = IERC4626(market).redeem(shares, arm, address(this));
     }
 
-    function collectRewardTokens() external {
+    function collectRewards() external {
         require(msg.sender == harvester, "Only harvester can collect");
 
         // Claim and send the rewards to the Harvester
