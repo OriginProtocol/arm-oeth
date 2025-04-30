@@ -251,7 +251,7 @@ contract Harvester is Initializable, OwnableOperable {
     }
 
     function _setAllowedSlippage(uint256 _allowedSlippageBps) internal {
-        if (allowedSlippageBps > 1000) revert InvalidAllowedSlippage(_allowedSlippageBps);
+        if (_allowedSlippageBps > 1000) revert InvalidAllowedSlippage(_allowedSlippageBps);
         allowedSlippageBps = _allowedSlippageBps;
 
         emit AllowedSlippageUpdated(_allowedSlippageBps);

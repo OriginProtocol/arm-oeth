@@ -94,11 +94,20 @@ contract SiloMarket is Initializable, Ownable {
         assets = IERC4626(market).redeem(shares, arm, address(this));
     }
 
-    function collectRewards() external {
+    function collectRewards() external returns (address[] memory, uint256[] memory) {
         require(msg.sender == harvester, "Only harvester can collect");
 
         // Claim and send the rewards to the Harvester
-        IGauge(gauge).claimRewards(harvester);
+        IGauge.AccruedRewards[] memory data = IGauge(gauge).claimRewards(harvester);
+
+        uint256 length = data.length;
+        address[] memory tokens = new address[](length);
+        uint256[] memory amounts = new uint256[](length);
+        for (uint256 i = 0; i < length; i++) {
+            tokens[i] = data[i].rewardToken;
+            amounts[i] = data[i].amount;
+        }
+        return (tokens, amounts);
     }
 
     ////////////////////////////////////////////////////
