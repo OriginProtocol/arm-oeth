@@ -5,6 +5,7 @@ import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {Ownable} from "../Ownable.sol";
+import {IDistributionManager, SiloIncentivesControllerGaugeLike} from "contracts/Interfaces.sol";
 
 interface ISiloMarket {
     function hookReceiver() external returns (address);
@@ -12,16 +13,6 @@ interface ISiloMarket {
 
 interface IHookReceiver {
     function configuredGauges(address shareToken) external returns (address gauge);
-}
-
-interface IGauge {
-    struct AccruedRewards {
-        uint256 amount;
-        bytes32 programId;
-        address rewardToken;
-    }
-
-    function claimRewards(address _to) external returns (AccruedRewards[] memory accruedRewards);
 }
 
 /**
@@ -98,7 +89,8 @@ contract SiloMarket is Initializable, Ownable {
         require(msg.sender == harvester, "Only harvester can collect");
 
         // Claim and send the rewards to the Harvester
-        IGauge.AccruedRewards[] memory data = IGauge(gauge).claimRewards(harvester);
+        IDistributionManager.AccruedRewards[] memory data =
+            SiloIncentivesControllerGaugeLike(gauge).claimRewards(harvester);
 
         uint256 length = data.length;
         address[] memory tokens = new address[](length);
