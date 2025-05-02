@@ -268,3 +268,42 @@ interface IHarvestable {
 interface IMagpieRouter {
     function swapWithMagpieSignature(bytes calldata) external payable returns (uint256 amountOut);
 }
+
+library DistributionTypes {
+    struct IncentivesProgramCreationInput {
+        string name;
+        address rewardToken;
+        uint104 emissionPerSecond;
+        uint40 distributionEnd;
+    }
+}
+
+library IDistributionManager {
+    struct AccruedRewards {
+        uint256 amount;
+        bytes32 programId;
+        address rewardToken;
+    }
+}
+
+interface SiloIncentivesControllerGaugeLike {
+    function claimRewards(address _to) external returns (IDistributionManager.AccruedRewards[] memory accruedRewards);
+    function createIncentivesProgram(DistributionTypes.IncentivesProgramCreationInput memory _incentivesProgramInput)
+        external;
+    function getAllProgramsNames() external view returns (string[] memory programsNames);
+    function getRewardsBalance(address _user, string memory _programName)
+        external
+        view
+        returns (uint256 unclaimedRewards);
+    function incentivesPrograms(bytes32)
+        external
+        view
+        returns (
+            uint256 index,
+            address rewardToken,
+            uint104 emissionPerSecond,
+            uint40 lastUpdateTimestamp,
+            uint40 distributionEnd
+        );
+    function owner() external view returns (address);
+}

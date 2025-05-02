@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {IERC20, IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/utils/math/Math.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 import {OwnableOperable} from "./OwnableOperable.sol";
 import {IHarvestable, IMagpieRouter, IOracle} from "./Interfaces.sol";
@@ -58,7 +58,6 @@ contract Harvester is Initializable, OwnableOperable {
     error InvalidToAsset(address toAsset);
     error EmptyLiquidityAsset();
     error EmptyMagpieRouter();
-    error EmptyPriceProvider();
     error EmptyRewardRecipient();
     error InvalidDecimals();
     error InvalidAllowedSlippage(uint256 allowedSlippageBps);
@@ -105,8 +104,13 @@ contract Harvester is Initializable, OwnableOperable {
     }
 
     /**
-     * @notice Swaps the reward token to the ARM's liquidity asset and transfers to the `rewardRecipient`.
+     * @notice Swaps the reward token to the ARM's liquidity asset using a DEX aggregator.
+     * @dev The initial implementation only supports the Magpie DEX aggregator.
+     * The fromAsset, fromAssetAmount, toAsset and recipient are validated against the
+     * platform specific swap data.
      * @param swapPlatform The swap platform to use. Currently only Magpie is supported.
+     * @param fromAsset The address of the reward token to swap from.
+     * @param fromAssetAmount The amount of reward tokens to swap from.
      * @param data aggregator specific data. eg Magpie's swapWithMagpieSignature data
      */
     function swap(SwapPlatform swapPlatform, address fromAsset, uint256 fromAssetAmount, bytes calldata data)
@@ -114,10 +118,23 @@ contract Harvester is Initializable, OwnableOperable {
         onlyOperatorOrOwner
         returns (uint256 toAssetAmount)
     {
+        uint256 recipientAssetBefore = IERC20(liquidityAsset).balanceOf(rewardRecipient);
+
         // Validate the swap data and do the swap
         toAssetAmount = _doSwap(swapPlatform, fromAsset, fromAssetAmount, data);
 
-        // This'll revert if there is no price feed
+        // Check the recipient of the swap got the reported amount of liquidity assets
+        uint256 recipientAssets = IERC20(liquidityAsset).balanceOf(rewardRecipient) - recipientAssetBefore;
+        if (recipientAssets < toAssetAmount) {
+            revert BalanceMismatchAfterSwap(recipientAssets, toAssetAmount);
+        }
+
+        emit RewardTokenSwapped(fromAsset, liquidityAsset, swapPlatform, fromAssetAmount, toAssetAmount);
+
+        // If there is no price provider, we exit early
+        if (priceProvider == address(0)) return toAssetAmount;
+
+        // Get the Oracle price from the price provider
         uint256 oraclePrice = IOracle(priceProvider).price(fromAsset);
 
         // Calculate the minimum expected amount from the max slippage from the Oracle price
@@ -127,17 +144,6 @@ contract Harvester is Initializable, OwnableOperable {
 
         if (toAssetAmount < minExpected) {
             revert SlippageError(toAssetAmount, minExpected);
-        }
-
-        emit RewardTokenSwapped(fromAsset, liquidityAsset, swapPlatform, fromAssetAmount, toAssetAmount);
-
-        uint256 liquidityAssetBalance = IERC20(liquidityAsset).balanceOf(rewardRecipient);
-        if (liquidityAssetBalance < toAssetAmount) {
-            // Note: It's possible to bypass this check by transferring `liquidityAsset`
-            // directly to Harvester before calling the `harvestAndSwap`. However,
-            // there's no incentive for an attacker to do that. Doing a balance diff
-            // will increase the gas cost significantly
-            revert BalanceMismatchAfterSwap(liquidityAssetBalance, toAssetAmount);
         }
     }
 
@@ -239,14 +245,13 @@ contract Harvester is Initializable, OwnableOperable {
     }
 
     function _setPriceProvider(address _priceProvider) internal {
-        if (_priceProvider == address(0)) revert EmptyPriceProvider();
         priceProvider = _priceProvider;
 
         emit PriceProviderUpdated(_priceProvider);
     }
 
     function _setAllowedSlippage(uint256 _allowedSlippageBps) internal {
-        if (allowedSlippageBps > 1000) revert InvalidAllowedSlippage(_allowedSlippageBps);
+        if (_allowedSlippageBps > 1000) revert InvalidAllowedSlippage(_allowedSlippageBps);
         allowedSlippageBps = _allowedSlippageBps;
 
         emit AllowedSlippageUpdated(_allowedSlippageBps);
