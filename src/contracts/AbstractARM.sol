@@ -644,7 +644,12 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
             + IERC20(baseAsset).balanceOf(address(this)) * crossPrice / PRICE_SCALE;
 
         if (activeMarket != address(0)) {
-            assets += IERC4626(activeMarket).maxWithdraw(address(this));
+            // Get all the active lending market shares owned by this ARM contract
+            uint256 allShares = IERC4626(activeMarket).balanceOf(address(this));
+            // Add all the assets in the active lending market.
+            // previewRedeem is used instead of maxWithdraw as maxWithdraw will return less if the market
+            // is highly utilized or has a temporary pause.
+            assets += IERC4626(activeMarket).previewRedeem(allShares);
         }
 
         // The amount of liquidity assets, eg WETH, that is still to be claimed in the withdrawal queue
