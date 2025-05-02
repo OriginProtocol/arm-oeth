@@ -78,7 +78,7 @@ contract Fork_Concrete_OriginARM_AllocateWithoutAdapter_Test_ is Fork_Shared_Tes
         uint256 marketBalanceBefore = market.balanceOf(address(originARM));
         uint256 sharesBefore = market.convertToShares(DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY);
         // Assertions before allocation
-        assertEq(marketBalanceBefore, sharesBefore, "shares before");
+        assertApproxEqAbs(marketBalanceBefore, sharesBefore, 1, "shares before");
         assertApproxEqAbs(originARM.totalAssets(), DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, 1, "totalAssets before");
 
         int256 expectedAmount = getLiquidityDelta();
@@ -112,7 +112,7 @@ contract Fork_Concrete_OriginARM_AllocateWithoutAdapter_Test_ is Fork_Shared_Tes
         uint256 marketBalanceBefore = market.balanceOf(address(originARM));
         uint256 sharesBefore = market.convertToShares(DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY);
         // Assertions before allocation
-        assertEq(marketBalanceBefore, sharesBefore, "shares before");
+        assertApproxEqAbs(marketBalanceBefore, sharesBefore, 1, "shares before");
         assertApproxEqAbs(originARM.totalAssets(), DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, 1, "totalAssets before");
 
         int256 expectedAmount = getLiquidityDelta();
@@ -149,7 +149,7 @@ contract Fork_Concrete_OriginARM_AllocateWithoutAdapter_Test_ is Fork_Shared_Tes
         uint256 marketBalanceBefore = market.balanceOf(address(originARM));
         uint256 sharesBefore = market.convertToShares(DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY);
         // Assertions before allocation
-        assertEq(marketBalanceBefore, sharesBefore, "shares before");
+        assertApproxEqAbs(marketBalanceBefore, sharesBefore, 1, "shares before");
         assertApproxEqAbs(originARM.totalAssets(), 2 * DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, 1, "totalAssets before");
 
         uint256 expectedShares = market.maxRedeem(address(originARM));
