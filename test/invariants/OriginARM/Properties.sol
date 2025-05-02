@@ -51,10 +51,12 @@ abstract contract Properties is Setup, Helpers {
     uint256 public sum_feesCollected;
 
     function property_swap_A() public view returns (bool) {
-        IERC4626 activeMarket = IERC4626(originARM.activeMarket());
         uint256 inflow = MIN_TOTAL_SUPPLY + sum_ws_deposit + sum_ws_swapIn + sum_ws_donated + sum_ws_arm_claimed;
         uint256 outflow = sum_ws_swapOut + sum_feesCollected + sum_ws_user_claimed;
-        uint256 wsInMarket = address(activeMarket) == address(0) ? 0 : activeMarket.maxWithdraw(address(originARM));
+        uint256 wsInMarket;
+        for (uint256 i; i < markets.length; i++) {
+            wsInMarket += IERC4626(markets[i]).maxWithdraw(address(originARM));
+        }
         return ws.balanceOf(address(originARM)) + wsInMarket == inflow - outflow;
     }
 
