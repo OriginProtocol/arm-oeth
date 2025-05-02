@@ -197,6 +197,25 @@ contract Fork_Concrete_OriginARM_AllocateWithoutAdapter_Test_ is Fork_Shared_Tes
         assertApproxEqAbs(originARM.totalAssets(), 2 * DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, 1, "totalAssets after");
     }
 
+    function test_Fork_Allocate_When_LiquidityDelta_IsNegative_FullMarketUtilization()
+        public
+        setFee(0)
+        setARMBuffer(0)
+        addMarket(address(market))
+        setActiveMarket(address(market))
+        deposit(alice, DEFAULT_AMOUNT)
+        allocate
+        setARMBuffer(1 ether)
+    {
+        _marketUtilizedAt(1e18);
+        uint256 totalAssetBefore = originARM.totalAssets();
+        // Main call
+        originARM.allocate();
+
+        // Assertions after allocation
+        assertEq(originARM.totalAssets(), totalAssetBefore, "totalAssets after");
+    }
+
     /// @dev This suppose that there is no fee!
     function getLiquidityDelta() public view returns (int256) {
         // Available assets

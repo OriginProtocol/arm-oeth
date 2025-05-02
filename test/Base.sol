@@ -50,6 +50,7 @@ abstract contract Base_Test_ is Test {
 
     IERC20 public ws;
     IERC20 public os;
+    IERC20 public wos;
     IERC20 public oeth;
     IERC20 public weth;
     IERC20 public steth;

@@ -69,6 +69,7 @@ library Sonic {
     // Tokens
     address public constant OS = 0xb1e25689D55734FD3ffFc939c4C3Eb52DFf8A794;
     address public constant WS = 0x039e2fB66102314Ce7b64Ce5Ce3E5183bc94aD38;
+    address public constant WOS = 0x9F0dF7799f6FDAd409300080cfF680f5A23df4b1;
     address public constant SILO = 0x53f753E4B17F4075D6fa2c6909033d224b81e698;
 
     // Contracts
@@ -144,6 +145,7 @@ contract AddressResolver {
         // Tokens
         resolver[SONIC]["OS"] = Sonic.OS;
         resolver[SONIC]["WS"] = Sonic.WS;
+        resolver[SONIC]["WOS"] = Sonic.WOS;
 
         // Contracts
         resolver[SONIC]["OS_VAULT"] = Sonic.OS_VAULT;
