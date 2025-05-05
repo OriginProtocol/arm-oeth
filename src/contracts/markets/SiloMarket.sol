@@ -34,6 +34,10 @@ contract SiloMarket is Initializable, Ownable {
 
     uint256[49] private _gap;
 
+    event Deposit(address indexed sender, address indexed owner, uint256 assets, uint256 shares);
+    event Withdraw(
+        address indexed sender, address indexed receiver, address indexed owner, uint256 assets, uint256 shares
+    );
     event HarvesterUpdated(address harvester);
     event CollectedRewards(address[] tokens, uint256[] amounts);
 
@@ -84,6 +88,8 @@ contract SiloMarket is Initializable, Ownable {
         // Deposit assets to the Silo lending market from this contract
         // and mint shares to this contract
         shares = IERC4626(market).deposit(assets, address(this));
+
+        emit Deposit(arm, arm, assets, shares);
     }
 
     /// @notice Get the max amount of asset tokens that can be withdrawn from the Silo lending market
@@ -107,6 +113,8 @@ contract SiloMarket is Initializable, Ownable {
 
         // Withdraw assets from the lending market to the ARM
         shares = IERC4626(market).withdraw(assets, arm, address(this));
+
+        emit Withdraw(arm, arm, arm, assets, shares);
     }
 
     /// @notice Get the amount of asset tokens that can be received
@@ -140,6 +148,8 @@ contract SiloMarket is Initializable, Ownable {
 
         // Redeem shares for assets from the lending market to the ARM
         assets = IERC4626(market).redeem(shares, arm, address(this));
+
+        emit Withdraw(arm, arm, arm, assets, shares);
     }
 
     /// @notice Claim all reward tokens from the Silo gauge and send them to the Harvester.
