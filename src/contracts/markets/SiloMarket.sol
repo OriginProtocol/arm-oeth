@@ -35,6 +35,7 @@ contract SiloMarket is Initializable, Ownable {
     uint256[49] private _gap;
 
     event HarvesterUpdated(address harvester);
+    event CollectedRewards(address[] tokens, uint256[] amounts);
 
     /// @notice Constructor to set immutable storage variables.
     /// @param _arm The address of the ARM contract.
@@ -156,6 +157,9 @@ contract SiloMarket is Initializable, Ownable {
             tokens[i] = data[i].rewardToken;
             amounts[i] = data[i].amount;
         }
+
+        emit CollectedRewards(tokens, amounts);
+
         return (tokens, amounts);
     }
 
