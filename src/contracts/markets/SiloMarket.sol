@@ -58,7 +58,7 @@ contract SiloMarket is Initializable, Ownable {
     }
 
     /// @notice Get the amount of Silo Market shares owned by this contract.
-    /// @param receiver The owner has to be the address of the ARM contract.
+    /// @param owner The owner has to be the address of the ARM contract.
     /// @return shares The amount of Silo lending market shares owned by this contract.
     function balanceOf(address owner) external view returns (uint256) {
         if (owner != arm) return 0;
