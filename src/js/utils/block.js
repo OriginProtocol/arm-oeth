@@ -8,6 +8,18 @@ const getBlock = async (block) => {
   return blockTag;
 };
 
+const getBlockTimestamp = async (blockTag) => {
+  const block = await await hre.ethers.provider.getBlock(blockTag);
+  const utcDate = new Date(block.timestamp * 1000);
+
+  log(
+    `block ${block.number} has timestamp ${
+      block.timestamp
+    } ${utcDate.toUTCString()}`
+  );
+  return block.timestamp;
+};
+
 const logBlock = async (blockTag) => {
   const block = await getBlock(blockTag);
   const utcDate = new Date(block.timestamp * 1000);
@@ -16,5 +28,6 @@ const logBlock = async (blockTag) => {
 
 module.exports = {
   getBlock,
+  getBlockTimestamp,
   logBlock,
 };

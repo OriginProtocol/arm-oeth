@@ -57,6 +57,7 @@ const {
 } = require("./vault");
 const { upgradeProxy } = require("./proxy");
 const { magpieQuote, magpieTx } = require("../utils/magpie");
+const { snapSiloMarkets } = require("./silo");
 
 subtask("snap", "Take a snapshot of the OETH ARM")
   .addOptionalParam(
@@ -859,5 +860,17 @@ subtask("magpieTx", "Get a Magpie swap tx based on a previous quote")
 
   .setAction(magpieTx);
 task("magpieTx").setAction(async (_, __, runSuper) => {
+  return runSuper();
+});
+
+subtask("snapSilo", "List Silo lending market data")
+  .addOptionalParam(
+    "block",
+    "Block number. (default: latest)",
+    undefined,
+    types.int
+  )
+  .setAction(snapSiloMarkets);
+task("snapSilo").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
