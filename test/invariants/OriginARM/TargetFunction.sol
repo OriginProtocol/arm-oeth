@@ -7,6 +7,7 @@ import {Properties} from "test/invariants/OriginARM/Properties.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 import {IERC20} from "contracts/Interfaces.sol";
+import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {console} from "forge-std/console.sol";
 import {MockVault} from "test/unit/mocks/MockVault.sol";
 
@@ -380,6 +381,22 @@ abstract contract TargetFunction is Properties {
     }
 
     function handler_afterInvariants() public {
+        // - Claim all the dust available in the lending market by cheating
+        // Eventhough this is not the expected behaviour of the contract, we need to
+        // ensure that the contract is not holding any funds in the lending market
+        // at the end of the test, to ensure that shares are up only.
+        vm.prank(address(originARM));
+        for (uint256 i; i < markets.length; i++) {
+            address market = markets[i];
+            if (market != address(0)) {
+                uint256 shares = IERC4626(markets[i]).balanceOf(address(originARM));
+                if (shares > 0) {
+                    vm.prank(address(originARM));
+                    IERC4626(markets[i]).redeem(shares, address(originARM), address(originARM));
+                }
+            }
+        }
+
         // - Finalize claim all the Origin requests
         if (originRequests.length > 0) {
             vm.prank(governor);

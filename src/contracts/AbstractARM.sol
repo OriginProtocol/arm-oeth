@@ -24,6 +24,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     uint256 public constant PRICE_SCALE = 1e36;
     /// @dev The amount of shares that are minted to a dead address on initialization
     uint256 internal constant MIN_TOTAL_SUPPLY = 1e12;
+    /// @dev The minimum amount of shares that can be redeemed from the active market.
+    uint256 public constant MIN_SHARES_TO_REDEEM = 1e4;
     /// @dev The address with no known private key that the initial shares are minted to
     address internal constant DEAD_ACCOUNT = 0x000000000000000000000000000000000000dEaD;
     /// @notice The scale of the performance fee
@@ -810,7 +812,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
             // maxRedeem can return a smaller amount of shares than balanceOf if the market is highly utilized.
             uint256 shares = IERC4626(previousActiveMarket).balanceOf(address(this));
             // This could fail if the market has high utilization
-            if (shares > 0) IERC4626(previousActiveMarket).redeem(shares, address(this), address(this));
+            if (shares > MIN_SHARES_TO_REDEEM) {
+                IERC4626(previousActiveMarket).redeem(shares, address(this), address(this));
+            }
         }
 
         activeMarket = _market;
@@ -858,7 +862,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
                 // redeem of the ARM's balance can fail if the lending market is highly utilized or temporarily paused.
                 // Redeem and not withdrawal is used to avoid leaving a small amount of assets in the market.
                 uint256 shares = IERC4626(activeMarket).maxRedeem(address(this));
-                if (shares <= MIN_TOTAL_SUPPLY) return;
+                if (shares <= MIN_SHARES_TO_REDEEM) return;
                 // This should not fail according to the ERC-4626 spec as maxRedeem was used earlier
                 // but it depends on the 4626 implementation of the lending market.
                 // It may fail if the market is highly utilized and not compliant with 4626.

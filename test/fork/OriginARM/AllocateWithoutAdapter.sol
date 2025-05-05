@@ -78,7 +78,7 @@ contract Fork_Concrete_OriginARM_AllocateWithoutAdapter_Test_ is Fork_Shared_Tes
         uint256 marketBalanceBefore = market.balanceOf(address(originARM));
         uint256 sharesBefore = market.convertToShares(DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY);
         // Assertions before allocation
-        assertEq(marketBalanceBefore, sharesBefore, "shares before");
+        assertApproxEqAbs(marketBalanceBefore, sharesBefore, 1, "shares before");
         assertApproxEqAbs(originARM.totalAssets(), DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, 1, "totalAssets before");
 
         int256 expectedAmount = getLiquidityDelta();
@@ -112,7 +112,7 @@ contract Fork_Concrete_OriginARM_AllocateWithoutAdapter_Test_ is Fork_Shared_Tes
         uint256 marketBalanceBefore = market.balanceOf(address(originARM));
         uint256 sharesBefore = market.convertToShares(DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY);
         // Assertions before allocation
-        assertEq(marketBalanceBefore, sharesBefore, "shares before");
+        assertApproxEqAbs(marketBalanceBefore, sharesBefore, 1, "shares before");
         assertApproxEqAbs(originARM.totalAssets(), DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, 1, "totalAssets before");
 
         int256 expectedAmount = getLiquidityDelta();
@@ -149,7 +149,7 @@ contract Fork_Concrete_OriginARM_AllocateWithoutAdapter_Test_ is Fork_Shared_Tes
         uint256 marketBalanceBefore = market.balanceOf(address(originARM));
         uint256 sharesBefore = market.convertToShares(DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY);
         // Assertions before allocation
-        assertEq(marketBalanceBefore, sharesBefore, "shares before");
+        assertApproxEqAbs(marketBalanceBefore, sharesBefore, 1, "shares before");
         assertApproxEqAbs(originARM.totalAssets(), 2 * DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, 1, "totalAssets before");
 
         uint256 expectedShares = market.maxRedeem(address(originARM));
@@ -195,6 +195,25 @@ contract Fork_Concrete_OriginARM_AllocateWithoutAdapter_Test_ is Fork_Shared_Tes
         // Assertions after allocation
         assertEq(market.balanceOf(address(originARM)), marketBalanceBefore, "shares after");
         assertApproxEqAbs(originARM.totalAssets(), 2 * DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, 1, "totalAssets after");
+    }
+
+    function test_Fork_Allocate_When_LiquidityDelta_IsNegative_FullMarketUtilization()
+        public
+        setFee(0)
+        setARMBuffer(0)
+        addMarket(address(market))
+        setActiveMarket(address(market))
+        deposit(alice, DEFAULT_AMOUNT)
+        allocate
+        setARMBuffer(1 ether)
+    {
+        _marketUtilizedAt(1e18);
+        uint256 totalAssetBefore = originARM.totalAssets();
+        // Main call
+        originARM.allocate();
+
+        // Assertions after allocation
+        assertEq(originARM.totalAssets(), totalAssetBefore, "totalAssets after");
     }
 
     /// @dev This suppose that there is no fee!

@@ -49,6 +49,13 @@ contract SiloMarket is Initializable, Ownable {
         _setHarvester(_harvester);
     }
 
+    function balanceOf(address owner) external view returns (uint256) {
+        if (owner != arm) return 0;
+
+        // Get the balance of shares in the lending market
+        return IERC4626(market).balanceOf(address(this));
+    }
+
     function deposit(uint256 assets, address receiver) external returns (uint256 shares) {
         require(msg.sender == arm && receiver == arm, "Only ARM can deposit");
 
@@ -70,6 +77,13 @@ contract SiloMarket is Initializable, Ownable {
 
         // Withdraw assets from the lending market to the ARM
         shares = IERC4626(market).withdraw(assets, arm, address(this));
+    }
+
+    function previewRedeem(uint256 shares) external view returns (uint256 assets) {
+        if (msg.sender != arm) return 0;
+
+        // Preview the amount of assets that can be redeemed for a given number of shares
+        assets = IERC4626(market).previewRedeem(shares);
     }
 
     function maxRedeem(address owner) external view returns (uint256 maxShares) {

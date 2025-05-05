@@ -3,8 +3,13 @@ pragma solidity 0.8.23;
 
 import {Helpers} from "test/fork/OriginARM/shared/Helpers.sol";
 import {IERC20} from "contracts/Interfaces.sol";
+import {ISilo, Silo} from "test/fork/OriginARM/shared/ISilo.sol";
 
 contract Modifiers is Helpers {
+    Silo public silo;
+    Silo public SILO_OS = Silo(payable(0x1d7E3726aFEc5088e11438258193A199F9D5Ba93));
+    Silo public SILO_WS = Silo(payable(0x112380065A2cb73A5A429d9Ba7368cc5e8434595)); // == market
+
     ////////////////////////////////////////////////////
     /// --- PRANK
     ////////////////////////////////////////////////////
@@ -149,4 +154,22 @@ contract Modifiers is Helpers {
         vm.warp(block.timestamp + secondsToJump);
         _;
     }
+
+    modifier marketUtilizedAt(uint256 utilization) {
+        ISilo.UtilizationData memory utilizationBefore = SILO_WS.utilizationData();
+        uint256 availableLiquidity = utilizationBefore.collateralAssets - utilizationBefore.debtAssets;
+
+        // Deposit WOS in the Silo 0
+        uint256 wosToDeposit = availableLiquidity * 2;
+        deal(address(wos), address(this), wosToDeposit);
+        wos.approve(address(SILO_OS), type(uint256).max);
+        SILO_OS.deposit(wosToDeposit, address(this), ISilo.CollateralType.Protected);
+
+        // Borrow WS in the Silo 1
+        uint256 wsToBorrow = availableLiquidity * utilization / 1e18;
+        SILO_WS.borrow(wsToBorrow, address(this), address(this));
+        _;
+    }
+
+    function _marketUtilizedAt(uint256 utilization) internal marketUtilizedAt(utilization) {}
 }

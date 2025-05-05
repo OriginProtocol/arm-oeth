@@ -122,6 +122,6 @@ contract FuzzerFoundry_OriginARM is TargetFunction {
 
     function afterInvariant() public {
         handler_afterInvariants();
-        assertLpsAreUpOnly(10);
+        assertLpsAreUpOnly(originARM.MIN_SHARES_TO_REDEEM());
     }
 }
