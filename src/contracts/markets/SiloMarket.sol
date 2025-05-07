@@ -44,16 +44,14 @@ contract SiloMarket is Initializable, Ownable {
     /// @notice Constructor to set immutable storage variables.
     /// @param _arm The address of the ARM contract.
     /// @param _market The address of the Silo lending market.
-    constructor(address _arm, address _market) {
+    constructor(address _arm, address _market, address _gauge) {
         arm = _arm;
         market = _market;
 
         asset = IERC4626(_market).asset();
 
-        // Get gauge for the Silo lending market
-        address hookReceiver = ISiloMarket(_market).hookReceiver();
-        gauge = IHookReceiver(hookReceiver).configuredGauges(_market);
-        require(gauge != address(0), "Gauge not configured");
+        require(_gauge != address(0), "Gauge not configured");
+        gauge = _gauge;
     }
 
     /// @notice Initialize the proxy contract with the Harvester address.
