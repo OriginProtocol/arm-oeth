@@ -7,6 +7,7 @@ import {Modifiers} from "test/fork/OriginARM/shared/Modifiers.sol";
 
 // Contracts
 import {Proxy} from "contracts/Proxy.sol";
+import {Sonic} from "contracts/utils/Addresses.sol";
 import {OriginARM} from "contracts/OriginARM.sol";
 
 // Interfaces
@@ -88,7 +89,7 @@ abstract contract Fork_Shared_Test is Base_Test_, Modifiers {
         originARM = new OriginARM(address(os), address(ws), address(vault), CLAIM_DELAY);
 
         // --- Deploy SiloMarket implementation
-        siloMarket = new SiloMarket(address(originARMProxy), address(market));
+        siloMarket = new SiloMarket(address(originARMProxy), Sonic.SILO_VARLAMORE_S_VAULT, Sonic.SILO_VARLAMORE_S_GAUGE);
 
         // Initialization requires 1e12 liquid assets to mint to dead address.
         // Deployer approve the proxy to transfer 1e12 liquid assets.

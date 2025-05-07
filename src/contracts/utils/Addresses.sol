@@ -80,6 +80,8 @@ library Sonic {
     address public constant SILO_OS = 0x112380065A2cb73A5A429d9Ba7368cc5e8434595;
     address public constant SILO_stS = 0x47d8490Be37ADC7Af053322d6d779153689E13C1;
     address public constant SILO_USDC = 0xf55902DE87Bd80c6a35614b48d7f8B612a083C12;
+    address public constant SILO_VARLAMORE_S_VAULT = 0xDED4aC8645619334186f28B8798e07ca354CFa0e;
+    address public constant SILO_VARLAMORE_S_GAUGE = 0x542Ed7D6f2e4c25f84D9c205C139234D6A4d000d;
 
     // Magpie aggregator
     address public constant MAGPIE_ROUTER = 0xba7bAC71a8Ee550d89B827FE6d67bc3dCA07b104;

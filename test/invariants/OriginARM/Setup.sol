@@ -143,16 +143,7 @@ abstract contract Setup is Base_Test_ {
         originARM = new OriginARM(address(os), address(ws), address(vault), CLAIM_DELAY);
 
         // Deploy SiloMarket implementation
-        // We don't need a mock for this, as it will be use only at the deployment, so we can just mockCall.
-        vm.mockCall(
-            address(market2), abi.encodeWithSignature("hookReceiver()"), abi.encode(makeAddr("fake hook receiver"))
-        );
-        vm.mockCall(
-            address(makeAddr("fake hook receiver")),
-            abi.encodeWithSignature("configuredGauges(address)"),
-            abi.encode(makeAddr("fake gauge"))
-        );
-        siloMarket = new SiloMarket(address(originARMProxy), address(market2));
+        siloMarket = new SiloMarket(address(originARMProxy), address(market2), makeAddr("fake gauge"));
 
         /// ---
         /// --- 3. Initialize all proxies. ---
