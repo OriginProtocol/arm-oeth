@@ -51,7 +51,7 @@ abstract contract TargetFunction is Properties {
 
     using Math for uint256;
 
-    function handler_deposit(uint8 seed, uint80 amount) public {
+    function handler_deposit(uint8 seed, uint88 amount) public {
         // Get a random user from the list of lps
         address user = getRandomLPs(seed);
 
@@ -206,7 +206,7 @@ abstract contract TargetFunction is Properties {
         originARM.setCrossPrice(newCrossPrice);
     }
 
-    function handler_swapExactTokensForTokens(uint8 seed, bool OSForWS, uint80 amountIn) public {
+    function handler_swapExactTokensForTokens(uint8 seed, bool OSForWS, uint88 amountIn) public {
         // token0 is ws and token1 is os
         address[] memory path = new address[](2);
         path[0] = OSForWS ? address(os) : address(ws);
@@ -222,7 +222,7 @@ abstract contract TargetFunction is Properties {
         // We reverse the price calculation to get the amountIn based on the amountOut
         uint256 maxAmountInWithAmountOut = liquidityAvailable * PRICE_SCALE / price;
         // Bound the amountIn to the balance of the user and the max amountIn
-        amountIn = uint80(_bound(amountIn, 0, Math.min(balance, maxAmountInWithAmountOut)));
+        amountIn = uint88(_bound(amountIn, 0, Math.min(balance, maxAmountInWithAmountOut)));
         vm.assume(amountIn > 0);
 
         // Console log data
@@ -247,7 +247,7 @@ abstract contract TargetFunction is Properties {
             : (sum_ws_swapIn += outputs[0], sum_os_swapOut += outputs[1]);
     }
 
-    function handler_swapTokensForExactTokens(uint8 seed, bool OSForWS, uint80 amountOut) public {
+    function handler_swapTokensForExactTokens(uint8 seed, bool OSForWS, uint88 amountOut) public {
         // token0 is ws and token1 is os
         address[] memory path = new address[](2);
         path[0] = OSForWS ? address(os) : address(ws);
@@ -263,7 +263,7 @@ abstract contract TargetFunction is Properties {
         // Get the maximum of amountIn based on the maximum of amountOut
         uint256 maxAmountOutWithAmountIn = ((balance - 3) * price) / PRICE_SCALE;
         // Bound the amountOut to the available liquidity in ARM and maxAmountOut based on user balance
-        amountOut = uint80(_bound(amountOut, 0, Math.min(liquidityAvailable, maxAmountOutWithAmountIn)));
+        amountOut = uint88(_bound(amountOut, 0, Math.min(liquidityAvailable, maxAmountOutWithAmountIn)));
         vm.assume(amountOut > 0);
 
         uint256 expectedAmountIn = ((amountOut * PRICE_SCALE) / price) + 3;
@@ -358,10 +358,10 @@ abstract contract TargetFunction is Properties {
         sum_ws_arm_claimed += totalClaimed;
     }
 
-    function handler_donateToARM(uint80 amount, bool OSOrWs, uint8 seed) public {
+    function handler_donateToARM(uint88 amount, bool OSOrWs, uint8 seed) public {
         //We do this to avoid calling this function too often
         vm.assume(seed % 20 == 0 && DONATE);
-        amount = uint80(_bound(amount, 1, type(uint80).max));
+        amount = uint88(_bound(amount, 1, type(uint88).max));
 
         // Console log data
         if (CONSOLE_LOG) {
