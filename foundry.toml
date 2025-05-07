@@ -28,8 +28,8 @@ ffi = true
 runs = 1_000
 
 [invariant]
-runs = 1
-depth = 50
+runs = 256
+depth = 500
 shrink_run_limit = 5_000
 show_metrics = true
 fail_on_revert = true
