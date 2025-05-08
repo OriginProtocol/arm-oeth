@@ -28,9 +28,13 @@ contract OriginARM is Initializable, AbstractARM {
     /// @param _liquidityAsset The address of the liquidity asset. eg WETH or wS
     /// @param _vault The address of the Origin Vault
     /// @param _claimDelay The delay in seconds before a user can claim a redeem from the request
-    constructor(address _otoken, address _liquidityAsset, address _vault, uint256 _claimDelay, uint256 _minSharesToRedeem)
-        AbstractARM(_liquidityAsset, _otoken, _liquidityAsset, _claimDelay, _minSharesToRedeem)
-    {
+    constructor(
+        address _otoken,
+        address _liquidityAsset,
+        address _vault,
+        uint256 _claimDelay,
+        uint256 _minSharesToRedeem
+    ) AbstractARM(_liquidityAsset, _otoken, _liquidityAsset, _claimDelay, _minSharesToRedeem) {
         vault = _vault;
 
         _disableInitializers();

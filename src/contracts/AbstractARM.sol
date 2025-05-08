@@ -144,7 +144,13 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     event ARMBufferUpdated(uint256 armBuffer);
     event Allocated(address indexed market, int256 assets);
 
-    constructor(address _token0, address _token1, address _liquidityAsset, uint256 _claimDelay, uint256 _minSharesToRedeem) {
+    constructor(
+        address _token0,
+        address _token1,
+        address _liquidityAsset,
+        uint256 _claimDelay,
+        uint256 _minSharesToRedeem
+    ) {
         require(IERC20(_token0).decimals() == 18);
         require(IERC20(_token1).decimals() == 18);
 
