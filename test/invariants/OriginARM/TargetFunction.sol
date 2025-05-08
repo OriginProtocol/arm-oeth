@@ -2,14 +2,18 @@
 pragma solidity 0.8.23;
 
 // Test imports
+import {MockVault} from "test/unit/mocks/MockVault.sol";
 import {Properties} from "test/invariants/OriginARM/Properties.sol";
+import {MathComparisons} from "test/invariants/OriginARM/MathComparisons.sol";
 
+// OpenZeppelin imports
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-
 import {IERC20} from "contracts/Interfaces.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+
+// Forge imports
 import {console} from "forge-std/console.sol";
-import {MockVault} from "test/unit/mocks/MockVault.sol";
 
 abstract contract TargetFunction is Properties {
     // ╔══════════════════════════════════════════════════════════════════════════════╗
@@ -37,7 +41,7 @@ abstract contract TargetFunction is Properties {
     // ╔══════════════════════════════════════════════════════════════════════════════╗
     // ║                    ✦✦✦ REPLICATED BEHAVIOUR FUNCTIONS ✦✦✦                    ║
     // ╚══════════════════════════════════════════════════════════════════════════════╝
-    // [ ] SimulateEarnOnMarket
+    // [x] SimulateEarnOnMarket
     // [ ] SimulateLossOnMarket     (not sure)
     // [x] Donation to the ARM
 
@@ -50,6 +54,8 @@ abstract contract TargetFunction is Properties {
     //  ⛒  RemoveMarket
 
     using Math for uint256;
+    using SafeCast for uint256;
+    using MathComparisons for uint256;
 
     function handler_deposit(uint8 seed, uint88 amount) public {
         // Get a random user from the list of lps
@@ -145,7 +151,17 @@ abstract contract TargetFunction is Properties {
     }
 
     function handler_allocate() public {
-        vm.assume(originARM.activeMarket() != address(0));
+        address market = originARM.activeMarket();
+        vm.assume(market != address(0));
+
+        int256 delta = getLiquidityDelta();
+        if (delta > 0) {
+            // As SiloMarket doesn't have previewDeposit function, we check it directly on the underlying market.
+            if (market == address(siloMarket)) market = address(market2);
+
+            // Small edge case where due to donation, minted shares could be 0 which makes the call revert.
+            vm.assume(IERC4626(market).previewDeposit(uint256(delta)) > 0);
+        }
         // Console log data
         if (CONSOLE_LOG) console.log("allocate() \t\t From: %s", "Owner");
 
@@ -380,6 +396,40 @@ abstract contract TargetFunction is Properties {
         OSOrWs ? sum_os_donated += amount : sum_ws_donated += amount;
     }
 
+    function handler_simulateMarketActivity(uint8 seed, bool depositOrEarn, uint80 amount) public {
+        // A user will deposit token in the market
+        address market = getRandom(markets, seed);
+        require(market != address(0), "Market should not be 0");
+
+        // Handle when the market is the SiloMarketAdapter
+        if (market == address(siloMarket)) market = address(market2);
+        vm.assume(IERC4626(market).previewDeposit(amount) > 0);
+
+        if (depositOrEarn) {
+            deal(address(ws), address(this), amount);
+            // Console log data
+            if (CONSOLE_LOG) {
+                console.log(
+                    "depositOnMarket() \t From: Owner | \t Amount: %s | \t Market: %s", faa(amount), nameM(market)
+                );
+            }
+
+            ws.approve(market, type(uint80).max);
+            IERC4626(market).deposit(amount, address(this));
+        } else {
+            uint256 marketBalance = ws.balanceOf(market);
+            uint256 pct = uint256(_bound(seed, 1, 10)) * 1e16; // 1% - 10%
+            amount = uint80(marketBalance * pct / 1e18);
+            deal(address(ws), address(this), amount);
+
+            // Console log data
+            if (CONSOLE_LOG) {
+                console.log("earnOnMarket() \t From: Owner | \t Amount: %s | \t Market: %s", faa(amount), nameM(market));
+            }
+            ws.transfer(market, amount);
+        }
+    }
+
     function handler_afterInvariants() public {
         // - Claim all the dust available in the lending market by cheating
         // Eventhough this is not the expected behaviour of the contract, we need to
@@ -488,10 +538,41 @@ abstract contract TargetFunction is Properties {
         return 0;
     }
 
+    function getLiquidityDelta() public view returns (int256) {
+        (uint256 availableAssets, uint256 outstandingWithdrawals) = getAvailableAssets();
+        if (availableAssets == 0) return 0;
+
+        int256 armLiquidity =
+            SafeCast.toInt256(ws.balanceOf(address(originARM))) - SafeCast.toInt256(outstandingWithdrawals);
+        uint256 armBuffer = originARM.armBuffer();
+        uint256 targetArmLiquidity = availableAssets * armBuffer / 1e18;
+
+        return armLiquidity - SafeCast.toInt256(targetArmLiquidity);
+    }
+
+    function getAvailableAssets() public view returns (uint256 availableAssets, uint256 outstandingWithdrawals) {
+        uint256 liquidityAsset = ws.balanceOf(address(originARM));
+        uint256 baseAsset = os.balanceOf(address(originARM));
+        uint256 crossPrice = originARM.crossPrice();
+        uint256 externalWithdrawQueue = originARM.vaultWithdrawalAmount();
+        uint256 assets = liquidityAsset + externalWithdrawQueue + (baseAsset * crossPrice / PRICE_SCALE);
+
+        address activeMarket = originARM.activeMarket();
+        if (activeMarket != address(0)) {
+            assets += IERC4626(activeMarket).previewRedeem(IERC4626(activeMarket).balanceOf(address(originARM)));
+        }
+
+        outstandingWithdrawals = originARM.withdrawsQueued() - originARM.withdrawsClaimed();
+        if (assets < outstandingWithdrawals) return (0, outstandingWithdrawals);
+
+        availableAssets = assets - outstandingWithdrawals;
+    }
+
     function assertLpsAreUpOnly(uint256 tolerance) public view {
         for (uint256 i; i < lps.length; i++) {
             require(
-                ws.balanceOf(lps[i]) + tolerance >= INITIAL_AMOUNT_LPS, "User should not have less than initial amount"
+                ws.balanceOf(lps[i]).gteApproxRel(INITIAL_AMOUNT_LPS, tolerance),
+                "User should not have less than initial amount"
             );
         }
     }

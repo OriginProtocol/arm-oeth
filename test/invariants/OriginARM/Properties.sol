@@ -8,6 +8,9 @@ import {Helpers} from "./Helpers.sol";
 // Interfaces
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 
+// Libraries
+import {MathComparisons} from "test/invariants/OriginARM/MathComparisons.sol";
+
 abstract contract Properties is Setup, Helpers {
     // ╔══════════════════════════════════════════════════════════════════════════════╗
     // ║                           ✦✦✦ SWAP PROPERTIES ✦✦✦                            ║
@@ -34,6 +37,8 @@ abstract contract Properties is Setup, Helpers {
     // [x] Invariant L: ∑feesCollected == feeCollector.balance
     // * invariants tested directly in the handlers.
 
+    using MathComparisons for uint256;
+
     // --- Inflow
     uint256 public sum_ws_deposit;
     uint256 public sum_ws_swapIn;
@@ -57,7 +62,7 @@ abstract contract Properties is Setup, Helpers {
         for (uint256 i; i < markets.length; i++) {
             wsInMarket += IERC4626(markets[i]).maxWithdraw(address(originARM));
         }
-        return ws.balanceOf(address(originARM)) + wsInMarket == inflow - outflow;
+        return (ws.balanceOf(address(originARM)) + wsInMarket + outflow).gteApproxAbs(inflow, 1e12);
     }
 
     function property_swap_B() public view returns (bool) {
