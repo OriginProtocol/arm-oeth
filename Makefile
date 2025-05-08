@@ -30,7 +30,7 @@ test-std:
 	forge test --summary --fail-fast --show-progress
 
 test:
-	@FOUNDRY_NO_MATCH_CONTRACT=Invariant make test-std
+	@FOUNDRY_NO_MATCH_CONTRACT=Fuzzer make test-std
 
 test-f-%:
 	@FOUNDRY_MATCH_TEST=$* make test-std
