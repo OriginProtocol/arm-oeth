@@ -69,7 +69,7 @@ abstract contract Unit_Shared_Test is Base_Test_, Modifiers {
         Proxy siloMarketProxy = new Proxy();
 
         // --- Deploy OriginARM implementation
-        originARM = new OriginARM(address(oeth), address(weth), address(vault), CLAIM_DELAY);
+        originARM = new OriginARM(address(oeth), address(weth), address(vault), CLAIM_DELAY, 1e7);
         capManager = new CapManager(address(address(originARMProxy)));
 
         // --- Deploy SiloMarket implementation

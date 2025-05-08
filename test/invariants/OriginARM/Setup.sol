@@ -140,7 +140,7 @@ abstract contract Setup is Base_Test_ {
         // ---
         // --- 2. Deploy all implementations. ---
         // Deploy OriginARM implementation
-        originARM = new OriginARM(address(os), address(ws), address(vault), CLAIM_DELAY);
+        originARM = new OriginARM(address(os), address(ws), address(vault), CLAIM_DELAY, 1e7);
 
         // Deploy SiloMarket implementation
         siloMarket = new SiloMarket(address(originARMProxy), address(market2), makeAddr("fake gauge"));
