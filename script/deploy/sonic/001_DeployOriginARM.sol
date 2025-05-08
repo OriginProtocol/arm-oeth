@@ -55,7 +55,7 @@ contract DeployOriginARMScript is AbstractDeployScript {
 
         // 7. Deploy new Origin ARM implementation
         uint256 claimDelay = tenderlyTestnet ? 1 minutes : 10 minutes;
-        originARMImpl = new OriginARM(Sonic.OS, Sonic.WS, Sonic.OS_VAULT, claimDelay);
+        originARMImpl = new OriginARM(Sonic.OS, Sonic.WS, Sonic.OS_VAULT, claimDelay, 1e7);
         _recordDeploy("ORIGIN_ARM_IMPL", address(originARMImpl));
 
         // 8. Approve a little bit of wS to be transferred to the ARM proxy
