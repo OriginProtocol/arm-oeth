@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
+import {Sonic} from "contracts/utils/Addresses.sol";
 import {AbstractARM} from "contracts/AbstractARM.sol";
 import {Fork_Shared_Test} from "test/fork/OriginARM/shared/Shared.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
@@ -11,12 +12,13 @@ contract Fork_Concrete_OriginARM_AllocateWithAdapter_Test_ is Fork_Shared_Test {
     using SafeCast for int256;
 
     // There is a weird behavior from Silo siloMarket, where even when we remove all, we still have some shares left.
-    uint256 public constant MIN_BALANCE = 1_000;
+    uint256 public constant MIN_BALANCE = 1_000_000;
 
     uint256 public initialShares;
 
     function setUp() public virtual override {
         super.setUp();
+        market = IERC4626(address(Sonic.SILO_VARLAMORE_S_VAULT));
         initialShares = market.convertToShares(MIN_TOTAL_SUPPLY);
     }
 
@@ -163,7 +165,7 @@ contract Fork_Concrete_OriginARM_AllocateWithAdapter_Test_ is Fork_Shared_Test {
         // Expected event
         vm.expectEmit(address(market));
         emit IERC4626.Withdraw(
-            address(siloMarket), address(originARM), address(siloMarket), expectedAmount - 1, expectedShares
+            address(siloMarket), address(originARM), address(siloMarket), expectedAmount, expectedShares
         );
         vm.expectEmit(address(originARM));
         emit AbstractARM.Allocated(address(siloMarket), getLiquidityDelta());

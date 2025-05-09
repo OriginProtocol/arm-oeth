@@ -24,8 +24,6 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     uint256 public constant PRICE_SCALE = 1e36;
     /// @dev The amount of shares that are minted to a dead address on initialization
     uint256 internal constant MIN_TOTAL_SUPPLY = 1e12;
-    /// @dev The minimum amount of shares that can be redeemed from the active market.
-    uint256 public constant MIN_SHARES_TO_REDEEM = 1e4;
     /// @dev The address with no known private key that the initial shares are minted to
     address internal constant DEAD_ACCOUNT = 0x000000000000000000000000000000000000dEaD;
     /// @notice The scale of the performance fee
@@ -35,7 +33,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     ////////////////////////////////////////////////////
     ///             Immutable Variables
     ////////////////////////////////////////////////////
-
+    /// @dev The minimum amount of shares that can be redeemed from the active market.
+    uint256 public immutable minSharesToRedeem;
     /// @notice The address of the asset that is used to add and remove liquidity. eg WETH
     /// This is also the quote asset when the prices are set.
     /// eg the stETH/WETH price has a base asset of stETH and quote asset of WETH.
@@ -145,7 +144,13 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     event ARMBufferUpdated(uint256 armBuffer);
     event Allocated(address indexed market, int256 assets);
 
-    constructor(address _token0, address _token1, address _liquidityAsset, uint256 _claimDelay) {
+    constructor(
+        address _token0,
+        address _token1,
+        address _liquidityAsset,
+        uint256 _claimDelay,
+        uint256 _minSharesToRedeem
+    ) {
         require(IERC20(_token0).decimals() == 18);
         require(IERC20(_token1).decimals() == 18);
 
@@ -160,6 +165,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         liquidityAsset = _liquidityAsset;
         // The base asset, eg stETH, is not the liquidity asset, eg WETH
         baseAsset = _liquidityAsset == _token0 ? _token1 : _token0;
+        minSharesToRedeem = _minSharesToRedeem;
     }
 
     /// @notice Initialize the contract.
@@ -812,7 +818,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
             // maxRedeem can return a smaller amount of shares than balanceOf if the market is highly utilized.
             uint256 shares = IERC4626(previousActiveMarket).balanceOf(address(this));
             // This could fail if the market has high utilization
-            if (shares > MIN_SHARES_TO_REDEEM) {
+            if (shares > minSharesToRedeem) {
                 IERC4626(previousActiveMarket).redeem(shares, address(this), address(this));
             }
         }
@@ -862,7 +868,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
                 // redeem of the ARM's balance can fail if the lending market is highly utilized or temporarily paused.
                 // Redeem and not withdrawal is used to avoid leaving a small amount of assets in the market.
                 uint256 shares = IERC4626(activeMarket).maxRedeem(address(this));
-                if (shares <= MIN_SHARES_TO_REDEEM) return;
+                if (shares <= minSharesToRedeem) return;
                 // This should not fail according to the ERC-4626 spec as maxRedeem was used earlier
                 // but it depends on the 4626 implementation of the lending market.
                 // It may fail if the market is highly utilized and not compliant with 4626.

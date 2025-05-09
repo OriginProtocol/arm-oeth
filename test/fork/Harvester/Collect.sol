@@ -134,6 +134,6 @@ contract Fork_Concrete_Harvester_Collect_Test_ is Fork_Shared_Test {
             }
         }
         // Check the balance of the harvester
-        assertEq(ws.balanceOf(address(harvester)), expectedAmounts[0][2], "Invalid amount on harvester");
+        assertEq(ws.balanceOf(address(harvester)), expectedAmounts[0][0], "Invalid amount on harvester");
     }
 }

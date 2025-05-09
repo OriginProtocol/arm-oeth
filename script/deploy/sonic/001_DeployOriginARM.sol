@@ -55,7 +55,7 @@ contract DeployOriginARMScript is AbstractDeployScript {
 
         // 7. Deploy new Origin ARM implementation
         uint256 claimDelay = tenderlyTestnet ? 1 minutes : 10 minutes;
-        originARMImpl = new OriginARM(Sonic.OS, Sonic.WS, Sonic.OS_VAULT, claimDelay);
+        originARMImpl = new OriginARM(Sonic.OS, Sonic.WS, Sonic.OS_VAULT, claimDelay, 1e7);
         _recordDeploy("ORIGIN_ARM_IMPL", address(originARMImpl));
 
         // 8. Approve a little bit of wS to be transferred to the ARM proxy
@@ -77,29 +77,22 @@ contract DeployOriginARMScript is AbstractDeployScript {
         originARM = OriginARM(address(originARMProxy));
 
         // 10. Deploy the Silo market proxies
-        Proxy silo_OS_MarketProxy = new Proxy();
-        Proxy silo_USDC_MarketProxy = new Proxy();
-        _recordDeploy("SILO_OS_MARKET", address(silo_OS_MarketProxy));
-        _recordDeploy("SILO_USDC_MARKET", address(silo_USDC_MarketProxy));
+        Proxy silo_Varlamore_S_MarketProxy = new Proxy();
+        _recordDeploy("SILO_VARLAMORE_S_MARKET", address(silo_Varlamore_S_MarketProxy));
 
         // 11. Deploy the Silo market implementations
-        SiloMarket silo_OS_MarketImpl = new SiloMarket(address(originARM), Sonic.SILO_OS);
-        SiloMarket silo_USDC_MarketImpl = new SiloMarket(address(originARM), Sonic.SILO_USDC);
-        _recordDeploy("SILO_OS_MARKET_IMPL", address(silo_OS_MarketImpl));
-        _recordDeploy("SILO_USDC_MARKET_IMPL", address(silo_USDC_MarketImpl));
+        SiloMarket silo_Varlamore_S_MarketImpl =
+            new SiloMarket(address(originARM), Sonic.SILO_VARLAMORE_S_VAULT, Sonic.SILO_VARLAMORE_S_GAUGE);
+        _recordDeploy("SILO_VARLAMORE_S_MARKET_IMPL", address(silo_Varlamore_S_MarketImpl));
 
         // 12. Initialize Silo market Proxies, setting governor to Timelock and set Harvester to Relayer for now
         data = abi.encodeWithSignature("initialize(address)", Sonic.RELAYER);
-        silo_OS_MarketProxy.initialize(address(silo_OS_MarketImpl), Sonic.TIMELOCK, data);
-        silo_USDC_MarketProxy.initialize(address(silo_USDC_MarketImpl), Sonic.TIMELOCK, data);
+        silo_Varlamore_S_MarketProxy.initialize(address(silo_Varlamore_S_MarketImpl), Sonic.TIMELOCK, data);
 
         // 13. Set the supported lending markets
-        address[] memory markets = new address[](3);
+        address[] memory markets = new address[](1);
         // These both have gauges so using a market proxy
-        markets[0] = address(silo_OS_MarketProxy);
-        markets[1] = address(silo_USDC_MarketProxy);
-        // no gauge so integrating directly to the lending market
-        markets[2] = address(Sonic.SILO_stS);
+        markets[0] = address(silo_Varlamore_S_MarketProxy);
         originARM.addMarkets(markets);
 
         // 14. Transfer ownership of OriginARM to the Sonic 5/8 Admin multisig
@@ -126,8 +119,7 @@ contract DeployOriginARMScript is AbstractDeployScript {
         Harvester harvester = Harvester(address(harvesterProxy));
 
         // 18. Set the supported Silo market strategies
-        harvester.setSupportedStrategy(address(silo_OS_MarketProxy), true);
-        harvester.setSupportedStrategy(address(silo_USDC_MarketProxy), true);
+        harvester.setSupportedStrategy(address(silo_Varlamore_S_MarketProxy), true);
 
         // 19. Transfer ownership of Harvester to the Sonic 5/8 Admin multisig
         harvesterProxy.setOwner(Sonic.ADMIN);

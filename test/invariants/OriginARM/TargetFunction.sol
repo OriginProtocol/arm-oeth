@@ -2,14 +2,18 @@
 pragma solidity 0.8.23;
 
 // Test imports
+import {MockVault} from "test/unit/mocks/MockVault.sol";
 import {Properties} from "test/invariants/OriginARM/Properties.sol";
+import {MathComparisons} from "test/invariants/OriginARM/MathComparisons.sol";
 
+// OpenZeppelin imports
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-
 import {IERC20} from "contracts/Interfaces.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+
+// Forge imports
 import {console} from "forge-std/console.sol";
-import {MockVault} from "test/unit/mocks/MockVault.sol";
 
 abstract contract TargetFunction is Properties {
     // ╔══════════════════════════════════════════════════════════════════════════════╗
@@ -37,7 +41,7 @@ abstract contract TargetFunction is Properties {
     // ╔══════════════════════════════════════════════════════════════════════════════╗
     // ║                    ✦✦✦ REPLICATED BEHAVIOUR FUNCTIONS ✦✦✦                    ║
     // ╚══════════════════════════════════════════════════════════════════════════════╝
-    // [ ] SimulateEarnOnMarket
+    // [x] SimulateEarnOnMarket
     // [ ] SimulateLossOnMarket     (not sure)
     // [x] Donation to the ARM
 
@@ -50,8 +54,10 @@ abstract contract TargetFunction is Properties {
     //  ⛒  RemoveMarket
 
     using Math for uint256;
+    using SafeCast for uint256;
+    using MathComparisons for uint256;
 
-    function handler_deposit(uint8 seed, uint80 amount) public {
+    function handler_deposit(uint8 seed, uint88 amount) public {
         // Get a random user from the list of lps
         address user = getRandomLPs(seed);
 
@@ -145,7 +151,17 @@ abstract contract TargetFunction is Properties {
     }
 
     function handler_allocate() public {
-        vm.assume(originARM.activeMarket() != address(0));
+        address market = originARM.activeMarket();
+        vm.assume(market != address(0));
+
+        int256 delta = getLiquidityDelta();
+        if (delta > 0) {
+            // As SiloMarket doesn't have previewDeposit function, we check it directly on the underlying market.
+            if (market == address(siloMarket)) market = address(market2);
+
+            // Small edge case where due to donation, minted shares could be 0 which makes the call revert.
+            vm.assume(IERC4626(market).previewDeposit(uint256(delta)) > 0);
+        }
         // Console log data
         if (CONSOLE_LOG) console.log("allocate() \t\t From: %s", "Owner");
 
@@ -206,7 +222,7 @@ abstract contract TargetFunction is Properties {
         originARM.setCrossPrice(newCrossPrice);
     }
 
-    function handler_swapExactTokensForTokens(uint8 seed, bool OSForWS, uint80 amountIn) public {
+    function handler_swapExactTokensForTokens(uint8 seed, bool OSForWS, uint88 amountIn) public {
         // token0 is ws and token1 is os
         address[] memory path = new address[](2);
         path[0] = OSForWS ? address(os) : address(ws);
@@ -222,7 +238,7 @@ abstract contract TargetFunction is Properties {
         // We reverse the price calculation to get the amountIn based on the amountOut
         uint256 maxAmountInWithAmountOut = liquidityAvailable * PRICE_SCALE / price;
         // Bound the amountIn to the balance of the user and the max amountIn
-        amountIn = uint80(_bound(amountIn, 0, Math.min(balance, maxAmountInWithAmountOut)));
+        amountIn = uint88(_bound(amountIn, 0, Math.min(balance, maxAmountInWithAmountOut)));
         vm.assume(amountIn > 0);
 
         // Console log data
@@ -247,7 +263,7 @@ abstract contract TargetFunction is Properties {
             : (sum_ws_swapIn += outputs[0], sum_os_swapOut += outputs[1]);
     }
 
-    function handler_swapTokensForExactTokens(uint8 seed, bool OSForWS, uint80 amountOut) public {
+    function handler_swapTokensForExactTokens(uint8 seed, bool OSForWS, uint88 amountOut) public {
         // token0 is ws and token1 is os
         address[] memory path = new address[](2);
         path[0] = OSForWS ? address(os) : address(ws);
@@ -263,7 +279,7 @@ abstract contract TargetFunction is Properties {
         // Get the maximum of amountIn based on the maximum of amountOut
         uint256 maxAmountOutWithAmountIn = ((balance - 3) * price) / PRICE_SCALE;
         // Bound the amountOut to the available liquidity in ARM and maxAmountOut based on user balance
-        amountOut = uint80(_bound(amountOut, 0, Math.min(liquidityAvailable, maxAmountOutWithAmountIn)));
+        amountOut = uint88(_bound(amountOut, 0, Math.min(liquidityAvailable, maxAmountOutWithAmountIn)));
         vm.assume(amountOut > 0);
 
         uint256 expectedAmountIn = ((amountOut * PRICE_SCALE) / price) + 3;
@@ -358,10 +374,10 @@ abstract contract TargetFunction is Properties {
         sum_ws_arm_claimed += totalClaimed;
     }
 
-    function handler_donateToARM(uint80 amount, bool OSOrWs, uint8 seed) public {
+    function handler_donateToARM(uint88 amount, bool OSOrWs, uint8 seed) public {
         //We do this to avoid calling this function too often
         vm.assume(seed % 20 == 0 && DONATE);
-        amount = uint80(_bound(amount, 1, type(uint80).max));
+        amount = uint88(_bound(amount, 1, type(uint88).max));
 
         // Console log data
         if (CONSOLE_LOG) {
@@ -378,6 +394,40 @@ abstract contract TargetFunction is Properties {
         (OSOrWs ? os : ws).transfer(address(originARM), amount);
 
         OSOrWs ? sum_os_donated += amount : sum_ws_donated += amount;
+    }
+
+    function handler_simulateMarketActivity(uint8 seed, bool depositOrEarn, uint80 amount) public {
+        // A user will deposit token in the market
+        address market = getRandom(markets, seed);
+        require(market != address(0), "Market should not be 0");
+
+        // Handle when the market is the SiloMarketAdapter
+        if (market == address(siloMarket)) market = address(market2);
+        vm.assume(IERC4626(market).previewDeposit(amount) > 0);
+
+        if (depositOrEarn) {
+            deal(address(ws), address(this), amount);
+            // Console log data
+            if (CONSOLE_LOG) {
+                console.log(
+                    "depositOnMarket() \t From: Owner | \t Amount: %s | \t Market: %s", faa(amount), nameM(market)
+                );
+            }
+
+            ws.approve(market, type(uint80).max);
+            IERC4626(market).deposit(amount, address(this));
+        } else {
+            uint256 marketBalance = ws.balanceOf(market);
+            uint256 pct = uint256(_bound(seed, 1, 10)) * 1e16; // 1% - 10%
+            amount = uint80(marketBalance * pct / 1e18);
+            deal(address(ws), address(this), amount);
+
+            // Console log data
+            if (CONSOLE_LOG) {
+                console.log("earnOnMarket() \t From: Owner | \t Amount: %s | \t Market: %s", faa(amount), nameM(market));
+            }
+            ws.transfer(market, amount);
+        }
     }
 
     function handler_afterInvariants() public {
@@ -488,10 +538,41 @@ abstract contract TargetFunction is Properties {
         return 0;
     }
 
+    function getLiquidityDelta() public view returns (int256) {
+        (uint256 availableAssets, uint256 outstandingWithdrawals) = getAvailableAssets();
+        if (availableAssets == 0) return 0;
+
+        int256 armLiquidity =
+            SafeCast.toInt256(ws.balanceOf(address(originARM))) - SafeCast.toInt256(outstandingWithdrawals);
+        uint256 armBuffer = originARM.armBuffer();
+        uint256 targetArmLiquidity = availableAssets * armBuffer / 1e18;
+
+        return armLiquidity - SafeCast.toInt256(targetArmLiquidity);
+    }
+
+    function getAvailableAssets() public view returns (uint256 availableAssets, uint256 outstandingWithdrawals) {
+        uint256 liquidityAsset = ws.balanceOf(address(originARM));
+        uint256 baseAsset = os.balanceOf(address(originARM));
+        uint256 crossPrice = originARM.crossPrice();
+        uint256 externalWithdrawQueue = originARM.vaultWithdrawalAmount();
+        uint256 assets = liquidityAsset + externalWithdrawQueue + (baseAsset * crossPrice / PRICE_SCALE);
+
+        address activeMarket = originARM.activeMarket();
+        if (activeMarket != address(0)) {
+            assets += IERC4626(activeMarket).previewRedeem(IERC4626(activeMarket).balanceOf(address(originARM)));
+        }
+
+        outstandingWithdrawals = originARM.withdrawsQueued() - originARM.withdrawsClaimed();
+        if (assets < outstandingWithdrawals) return (0, outstandingWithdrawals);
+
+        availableAssets = assets - outstandingWithdrawals;
+    }
+
     function assertLpsAreUpOnly(uint256 tolerance) public view {
         for (uint256 i; i < lps.length; i++) {
             require(
-                ws.balanceOf(lps[i]) + tolerance >= INITIAL_AMOUNT_LPS, "User should not have less than initial amount"
+                ws.balanceOf(lps[i]).gteApproxRel(INITIAL_AMOUNT_LPS, tolerance),
+                "User should not have less than initial amount"
             );
         }
     }

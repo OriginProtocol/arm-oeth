@@ -69,19 +69,11 @@ abstract contract Unit_Shared_Test is Base_Test_, Modifiers {
         Proxy siloMarketProxy = new Proxy();
 
         // --- Deploy OriginARM implementation
-        originARM = new OriginARM(address(oeth), address(weth), address(vault), CLAIM_DELAY);
+        originARM = new OriginARM(address(oeth), address(weth), address(vault), CLAIM_DELAY, 1e7);
         capManager = new CapManager(address(address(originARMProxy)));
 
         // --- Deploy SiloMarket implementation
-        vm.mockCall(
-            address(market), abi.encodeWithSignature("hookReceiver()"), abi.encode(makeAddr("fake hook receiver"))
-        );
-        vm.mockCall(
-            address(makeAddr("fake hook receiver")),
-            abi.encodeWithSignature("configuredGauges(address)"),
-            abi.encode(makeAddr("fake gauge"))
-        );
-        siloMarket = new SiloMarket(address(originARMProxy), address(market));
+        siloMarket = new SiloMarket(address(originARMProxy), address(market), makeAddr("fake gauge"));
 
         // Initialization requires 1e12 liquid assets to mint to dead address.
         // Deployer approve the proxy to transfer 1e12 liquid assets.
