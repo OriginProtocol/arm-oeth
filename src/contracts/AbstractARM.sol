@@ -590,8 +590,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         claimableAmount = withdrawsClaimed + IERC20(liquidityAsset).balanceOf(address(this));
 
         // if there is an active lending market, add to the claimable amount
-        if (activeMarket != address(0)) {
-            claimableAmount += IERC4626(activeMarket).maxWithdraw(address(this));
+        address activeMarketMem = activeMarket;
+        if (activeMarketMem != address(0)) {
+            claimableAmount += IERC4626(activeMarketMem).maxWithdraw(address(this));
         }
     }
 
@@ -644,13 +645,14 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         uint256 assets = IERC20(liquidityAsset).balanceOf(address(this)) + _externalWithdrawQueue()
             + IERC20(baseAsset).balanceOf(address(this)) * crossPrice / PRICE_SCALE;
 
-        if (activeMarket != address(0)) {
+        address activeMarketMem = activeMarket;
+        if (activeMarketMem != address(0)) {
             // Get all the active lending market shares owned by this ARM contract
-            uint256 allShares = IERC4626(activeMarket).balanceOf(address(this));
+            uint256 allShares = IERC4626(activeMarketMem).balanceOf(address(this));
             // Add all the assets in the active lending market.
             // previewRedeem is used instead of maxWithdraw as maxWithdraw will return less if the market
             // is highly utilized or has a temporary pause.
-            assets += IERC4626(activeMarket).previewRedeem(allShares);
+            assets += IERC4626(activeMarketMem).previewRedeem(allShares);
         }
 
         // The amount of liquidity assets, eg WETH, that is still to be claimed in the withdrawal queue
