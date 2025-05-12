@@ -12,7 +12,7 @@ import {IHarvestable, IMagpieRouter, IOracle} from "./Interfaces.sol";
  * @title Collects rewards from strategies and swaps them for ARM liquidity tokens.
  * @author Origin Protocol Inc
  */
-contract Harvester is Initializable, OwnableOperable {
+contract SonicHarvester is Initializable, OwnableOperable {
     using SafeERC20 for IERC20;
 
     enum SwapPlatform {

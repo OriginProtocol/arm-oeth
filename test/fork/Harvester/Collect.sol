@@ -2,7 +2,7 @@
 pragma solidity 0.8.23;
 
 // Interfaces
-import {Harvester} from "contracts/Harvester.sol";
+import {SonicHarvester} from "contracts/SonicHarvester.sol";
 import {SiloMarket} from "contracts/markets/SiloMarket.sol";
 import {DistributionTypes, SiloIncentivesControllerGaugeLike} from "contracts/Interfaces.sol";
 
@@ -61,7 +61,7 @@ contract Fork_Concrete_Harvester_Collect_Test_ is Fork_Shared_Test {
     function test_RevertWhen_Collect_Because_UnsupportedStrategy() public {
         address[] memory tokens = new address[](1);
         tokens[0] = address(siloMarket);
-        vm.expectRevert(abi.encodeWithSelector(Harvester.UnsupportedStrategy.selector, address(siloMarket)));
+        vm.expectRevert(abi.encodeWithSelector(SonicHarvester.UnsupportedStrategy.selector, address(siloMarket)));
         harvester.collect(tokens);
     }
 
@@ -116,7 +116,7 @@ contract Fork_Concrete_Harvester_Collect_Test_ is Fork_Shared_Test {
 
         // Expect the event
         vm.expectEmit(address(harvester));
-        emit Harvester.RewardsCollected(markets, expectedTokens, expectedAmounts);
+        emit SonicHarvester.RewardsCollected(markets, expectedTokens, expectedAmounts);
         // Main call
         vm.prank(governor);
         (address[][] memory receivedTokens, uint256[][] memory receivedAmounts) = harvester.collect(markets);

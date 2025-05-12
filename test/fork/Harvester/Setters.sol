@@ -1,7 +1,7 @@
 /// SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
-import {Harvester} from "contracts/Harvester.sol";
+import {SonicHarvester} from "contracts/SonicHarvester.sol";
 
 import {Fork_Shared_Test} from "test/fork/Harvester/shared/Shared.sol";
 
@@ -16,7 +16,7 @@ contract Fork_Concrete_Harvester_Setters_Test_ is Fork_Shared_Test {
     }
 
     function test_RevertWhen_SetAllowedSlippage_Because_InvalidAllowedSlippage() public {
-        vm.expectRevert(abi.encodeWithSelector(Harvester.InvalidAllowedSlippage.selector, 1001));
+        vm.expectRevert(abi.encodeWithSelector(SonicHarvester.InvalidAllowedSlippage.selector, 1001));
         vm.prank(governor);
         harvester.setAllowedSlippage(1001);
     }
@@ -34,7 +34,7 @@ contract Fork_Concrete_Harvester_Setters_Test_ is Fork_Shared_Test {
     }
 
     function test_RevertWhen_SetRewardRecipient_Because_EmptyRewardRecipient() public {
-        vm.expectRevert(abi.encodeWithSelector(Harvester.EmptyRewardRecipient.selector));
+        vm.expectRevert(abi.encodeWithSelector(SonicHarvester.EmptyRewardRecipient.selector));
         vm.prank(governor);
         harvester.setRewardRecipient(address(0));
     }
@@ -54,7 +54,7 @@ contract Fork_Concrete_Harvester_Setters_Test_ is Fork_Shared_Test {
         assertNotEq(harvester.allowedSlippageBps(), newSlippage);
 
         vm.expectEmit(address(harvester));
-        emit Harvester.AllowedSlippageUpdated(newSlippage);
+        emit SonicHarvester.AllowedSlippageUpdated(newSlippage);
 
         vm.prank(governor);
         harvester.setAllowedSlippage(newSlippage);
@@ -66,7 +66,7 @@ contract Fork_Concrete_Harvester_Setters_Test_ is Fork_Shared_Test {
 
         // To address 0x1
         vm.expectEmit(address(harvester));
-        emit Harvester.PriceProviderUpdated(address(0x1));
+        emit SonicHarvester.PriceProviderUpdated(address(0x1));
 
         vm.prank(governor);
         harvester.setPriceProvider(address(0x1));
@@ -74,7 +74,7 @@ contract Fork_Concrete_Harvester_Setters_Test_ is Fork_Shared_Test {
 
         // To address null
         vm.expectEmit(address(harvester));
-        emit Harvester.PriceProviderUpdated(address(0));
+        emit SonicHarvester.PriceProviderUpdated(address(0));
 
         vm.prank(governor);
         harvester.setPriceProvider(address(0));
@@ -86,7 +86,7 @@ contract Fork_Concrete_Harvester_Setters_Test_ is Fork_Shared_Test {
         assertNotEq(harvester.rewardRecipient(), newRecipient);
 
         vm.expectEmit(address(harvester));
-        emit Harvester.RewardRecipientUpdated(newRecipient);
+        emit SonicHarvester.RewardRecipientUpdated(newRecipient);
 
         vm.prank(governor);
         harvester.setRewardRecipient(newRecipient);
@@ -98,7 +98,7 @@ contract Fork_Concrete_Harvester_Setters_Test_ is Fork_Shared_Test {
         assertFalse(harvester.supportedStrategies(strategy));
 
         vm.expectEmit(address(harvester));
-        emit Harvester.SupportedStrategyUpdate(strategy, true);
+        emit SonicHarvester.SupportedStrategyUpdate(strategy, true);
 
         vm.prank(governor);
         harvester.setSupportedStrategy(strategy, true);
@@ -115,7 +115,7 @@ contract Fork_Concrete_Harvester_Setters_Test_ is Fork_Shared_Test {
 
         // Now remove the strategy
         vm.expectEmit(address(harvester));
-        emit Harvester.SupportedStrategyUpdate(strategy, false);
+        emit SonicHarvester.SupportedStrategyUpdate(strategy, false);
 
         vm.prank(governor);
         harvester.setSupportedStrategy(strategy, false);

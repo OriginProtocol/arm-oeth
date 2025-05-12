@@ -9,7 +9,7 @@ import {Proxy} from "contracts/Proxy.sol";
 import {OethARM} from "contracts/OethARM.sol";
 import {LidoARM} from "contracts/LidoARM.sol";
 import {OriginARM} from "contracts/OriginARM.sol";
-import {Harvester} from "contracts/Harvester.sol";
+import {SonicHarvester} from "contracts/SonicHarvester.sol";
 import {CapManager} from "contracts/CapManager.sol";
 import {SiloMarket} from "contracts/markets/SiloMarket.sol";
 import {ZapperLidoARM} from "contracts/ZapperLidoARM.sol";
@@ -42,7 +42,7 @@ abstract contract Base_Test_ is Test {
     Proxy public harvesterProxy;
     OethARM public oethARM;
     LidoARM public lidoARM;
-    Harvester public harvester;
+    SonicHarvester public harvester;
     OriginARM public originARM;
     CapManager public capManager;
     SiloMarket public siloMarket;

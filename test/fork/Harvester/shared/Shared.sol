@@ -7,7 +7,7 @@ import {Helpers} from "test/fork/Harvester/shared/Helpers.sol";
 
 // Contracts
 import {Proxy} from "contracts/Proxy.sol";
-import {Harvester} from "contracts/Harvester.sol";
+import {SonicHarvester} from "contracts/SonicHarvester.sol";
 import {OriginARM} from "contracts/OriginARM.sol";
 import {SiloMarket} from "contracts/markets/SiloMarket.sol";
 
@@ -80,12 +80,14 @@ abstract contract Fork_Shared_Test is Base_Test_, Helpers {
         vm.label(address(siloMarketProxy), "SILO MARKET PROXY");
 
         // --- Deploy OriginARM implementation
-        harvester = new Harvester(address(ws), Sonic.MAGPIE_ROUTER);
+        harvester = new SonicHarvester(address(ws), Sonic.MAGPIE_ROUTER);
         siloMarket = new SiloMarket(address(originARM), Sonic.SILO_OS);
 
         // --- Initialize the proxy
         harvesterProxy.initialize(
-            address(harvester), governor, abi.encodeWithSelector(Harvester.initialize.selector, oracle, 1000, operator)
+            address(harvester),
+            governor,
+            abi.encodeWithSelector(SonicHarvester.initialize.selector, oracle, 1000, operator)
         );
 
         siloMarketProxy.initialize(
@@ -94,7 +96,7 @@ abstract contract Fork_Shared_Test is Base_Test_, Helpers {
             abi.encodeWithSelector(SiloMarket.initialize.selector, address(harvesterProxy))
         );
 
-        harvester = Harvester(address(harvesterProxy));
+        harvester = SonicHarvester(address(harvesterProxy));
         siloMarket = SiloMarket(address(siloMarketProxy));
 
         vm.stopPrank();
