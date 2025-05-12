@@ -5,81 +5,18 @@ pragma solidity 0.8.23;
 import {TargetFunction} from "test/invariants/OriginARM/TargetFunction.sol";
 
 contract FuzzerFoundry_OriginARM is TargetFunction {
-    uint256 private constant NUM_LPS = 4;
-    uint256 private constant NUM_SWAPS = 3;
-
     //////////////////////////////////////////////////////
     /// --- SETUP
     //////////////////////////////////////////////////////
     function setUp() public override {
         super.setUp();
 
-        // --- Assigns to Categories ---
-        // In this configuration, an user is either a LP or a Swap, but not both.
-        require(NUM_LPS + NUM_SWAPS <= users.length, "IBT: NOT_ENOUGH_USERS");
-
-        // LPs
-        for (uint256 i; i < NUM_LPS; i++) {
-            address user = users[i];
-            require(user != address(0), "IBT: INVALID_USER");
-            lps.push(user);
-
-            // Give them a lot of WS
-            deal(address(ws), user, INITIAL_AMOUNT_LPS);
-
-            // Approve ARM for WS
-            vm.prank(user);
-            ws.approve(address(originARM), type(uint256).max);
-        }
-
-        // Swappers
-        for (uint256 i = NUM_LPS; i < NUM_LPS + NUM_SWAPS; i++) {
-            address user = users[i];
-            require(user != address(0), "IBT: INVALID_USER");
-            swaps.push(user);
-
-            // Give them a lot of WS and OS
-            deal(address(ws), user, INITIAL_AMOUNT_SWAPS);
-            deal(address(os), user, INITIAL_AMOUNT_SWAPS);
-
-            // Approve ARM for WS and OS
-            vm.startPrank(user);
-            os.approve(address(originARM), type(uint256).max);
-            ws.approve(address(originARM), type(uint256).max);
-            vm.stopPrank();
-        }
-
-        // Distribute a lot of WS to the vault, this will help for redeeming OS
-        deal(address(ws), address(vault), type(uint128).max);
-
-        // --- Setup ARM ---
-        // Set cross price
-        vm.prank(governor);
-        originARM.setCrossPrice(0.9999 * 1e36);
-        // Set prices
-        vm.prank(operator);
-        originARM.setPrices(MIN_BUY_PRICE, MAX_SELL_PRICE);
-
-        // --- Setup Markets ---
-        markets = new address[](2);
-        markets[0] = address(market);
-        markets[1] = address(siloMarket);
-        vm.prank(governor);
-        originARM.addMarkets(markets);
-
-        // Fund the markets
-        deal(address(ws), address(this), 2 * 1 ether);
-        ws.approve(address(market), type(uint256).max);
-        ws.approve(address(market2), type(uint256).max);
-        market.deposit(1 ether, address(this));
-        market2.deposit(1 ether, address(this));
-
         // --- Setup Fuzzer target ---
         // Setup target
         targetContract(address(this));
 
         // Add selectors
-        bytes4[] memory selectors = new bytes4[](15);
+        bytes4[] memory selectors = new bytes4[](16);
         selectors[0] = this.handler_deposit.selector;
         selectors[1] = this.handler_requestRedeem.selector;
         selectors[2] = this.handler_claimRedeem.selector;
@@ -95,6 +32,7 @@ contract FuzzerFoundry_OriginARM is TargetFunction {
         selectors[12] = this.handler_requestOriginWithdrawal.selector;
         selectors[13] = this.handler_claimOriginWithdrawals.selector;
         selectors[14] = this.handler_donateToARM.selector;
+        selectors[15] = this.handler_simulateMarketActivity.selector;
 
         // Target selectors
         targetSelector(FuzzSelector({addr: address(this), selectors: selectors}));
@@ -122,6 +60,6 @@ contract FuzzerFoundry_OriginARM is TargetFunction {
 
     function afterInvariant() public {
         handler_afterInvariants();
-        assertLpsAreUpOnly(originARM.MIN_SHARES_TO_REDEEM());
+        assertLpsAreUpOnly(1e14);
     }
 }

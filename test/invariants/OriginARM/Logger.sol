@@ -99,7 +99,8 @@ abstract contract Logger is Setup {
     }
 
     function nameM(address addr) public view returns (string memory) {
-        if (addr == address(market)) return "SILO_";
+        if (addr == address(market)) return "SILO1";
+        if (addr == address(market2)) return "SILO2";
         if (addr == address(siloMarket)) return "ADAPT";
         if (addr == address(0)) return "ZERO_";
         return "NaN";
