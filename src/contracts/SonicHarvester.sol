@@ -74,6 +74,7 @@ contract SonicHarvester is Initializable, OwnableOperable {
     function initialize(address _priceProvider, uint256 _allowedSlippageBps, address _rewardRecipient)
         external
         initializer
+        onlyOwner
     {
         _setPriceProvider(_priceProvider);
         _setAllowedSlippage(_allowedSlippageBps);
