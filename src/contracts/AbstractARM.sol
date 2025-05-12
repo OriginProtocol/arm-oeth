@@ -199,7 +199,6 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
         // Initialize the last available assets to the current available assets
         // This ensures no performance fee is accrued when the performance fee is calculated when the fee is set
-        _setFee(_fee);
         (uint256 availableAssets,) = _availableAssets();
         lastAvailableAssets = SafeCast.toInt128(SafeCast.toInt256(availableAssets));
         _setFee(_fee);
