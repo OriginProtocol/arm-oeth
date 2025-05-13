@@ -38,7 +38,7 @@ contract LidoARM is Initializable, AbstractARM {
     /// @param _lidoWithdrawalQueue The address of the Lido's withdrawal queue contract
     /// @param _claimDelay The delay in seconds before a user can claim a redeem from the request
     constructor(address _steth, address _weth, address _lidoWithdrawalQueue, uint256 _claimDelay)
-        AbstractARM(_weth, _steth, _weth, _claimDelay, 0)
+        AbstractARM(_weth, _steth, _weth, _claimDelay, 0, 0)
     {
         steth = IERC20(_steth);
         weth = IWETH(_weth);
