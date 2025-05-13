@@ -12,7 +12,8 @@ import {UpdateCrossPriceMainnetScript} from "./mainnet/004_UpdateCrossPriceScrip
 import {RegisterLidoWithdrawalsScript} from "./mainnet/005_RegisterLidoWithdrawalsScript.sol";
 import {DeployCoreHoleskyScript} from "./holesky/001_DeployCoreScript.sol";
 import {UpgradeHoleskyScript} from "./holesky/002_UpgradeScript.sol";
-import {DeployOriginARMScript} from "./sonic/001_DeployOriginARM.sol";
+import {DeployOriginARMProxyScript} from "./sonic/001_DeployOriginARMProxy.sol";
+import {DeployOriginARMScript} from "./sonic/002_DeployOriginARM.sol";
 
 contract DeployManager is Script {
     mapping(string => address) public deployedContracts;
@@ -71,7 +72,8 @@ contract DeployManager is Script {
             _runDeployFile(new UpgradeHoleskyScript(this));
         } else if (block.chainid == 146) {
             // Sonic
-            _runDeployFile(new DeployOriginARMScript());
+            _runDeployFile(new DeployOriginARMProxyScript());
+            _runDeployFile(new DeployOriginARMScript(this));
         } else {
             console.log("Skipping deployment (not mainnet)");
         }

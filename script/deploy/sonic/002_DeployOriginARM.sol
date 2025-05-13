@@ -14,10 +14,17 @@ import {SiloMarket} from "contracts/markets/SiloMarket.sol";
 import {Sonic} from "contracts/utils/Addresses.sol";
 import {IERC20} from "contracts/Interfaces.sol";
 import {AbstractDeployScript} from "../AbstractDeployScript.sol";
+import {DeployManager} from "../DeployManager.sol";
 
 contract DeployOriginARMScript is AbstractDeployScript {
-    string public constant override DEPLOY_NAME = "001_DeployOriginARMScript";
+    string public constant override DEPLOY_NAME = "002_DeployOriginARMScript";
     bool public constant override proposalExecuted = false;
+
+    DeployManager internal deployManager;
+
+    constructor(DeployManager _deployManager) {
+        deployManager = _deployManager;
+    }
 
     Proxy capManProxy;
     CapManager capManager;
@@ -30,9 +37,8 @@ contract DeployOriginARMScript is AbstractDeployScript {
         console.log("Deploy:", DEPLOY_NAME);
         console.log("------------");
 
-        // 1. Deploy proxy for the Origin ARM
-        originARMProxy = new Proxy();
-        _recordDeploy("ORIGIN_ARM", address(originARMProxy));
+        // 1. Get the already deployed proxy for the Origin ARM
+        originARMProxy = Proxy(payable(deployManager.getDeployment("ORIGIN_ARM")));
 
         // 2. Deploy proxy for the CapManager
         capManProxy = new Proxy();
