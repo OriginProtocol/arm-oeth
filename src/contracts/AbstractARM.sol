@@ -778,6 +778,10 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     ////////////////////////////////////////////////////
 
     /// @notice Owner adds supported lending market to the ARM.
+    /// In order to be a safe lending market for the ARM, it must be:
+    ///  1. up only exchange rate
+    ///  2. no slippage
+    ///  3. no fees.
     /// @param _markets The addresses of the lending markets to add
     function addMarkets(address[] calldata _markets) external onlyOwner {
         for (uint256 i = 0; i < _markets.length; i++) {
