@@ -341,5 +341,4 @@ module.exports = {
   submitLido,
   swapLido,
   snapLido,
-  setZapper,
 };
