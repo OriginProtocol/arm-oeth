@@ -15,7 +15,6 @@ contract UpgradeMainnetScript is AbstractDeployScript {
     bool public constant override proposalExecuted = true;
 
     address newImpl;
-    DeployManager internal deployManager;
     Proxy internal proxy;
 
     constructor(address _proxy) {
