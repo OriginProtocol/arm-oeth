@@ -5,6 +5,7 @@
 1. Start a local Anvil node forked from the latest block
 
 ```
+export PROVIDER_URL=
 anvil --fork-url="$PROVIDER_URL"
 ```
 
