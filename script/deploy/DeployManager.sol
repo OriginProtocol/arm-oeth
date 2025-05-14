@@ -72,6 +72,8 @@ contract DeployManager is Script {
             _runDeployFile(new UpgradeHoleskyScript(this));
         } else if (block.chainid == 146) {
             // Sonic
+            console.log("Deploying Origin ARM");
+            console.log("this DeployManager address", address(this));
             _runDeployFile(new DeployOriginARMProxyScript());
             _runDeployFile(new DeployOriginARMScript(this));
         } else {
