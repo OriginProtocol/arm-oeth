@@ -67,6 +67,9 @@ run-sonic-s-%:
 deploy:
 	@forge script script/deploy/DeployManager.sol --rpc-url $(PROVIDER_URL) --private-key ${DEPLOYER_PRIVATE_KEY} --broadcast --slow --verify -vvvv
 
+deploy-local:
+	@forge script script/deploy/DeployManager.sol --rpc-url $(LOCAL_URL) --private-key ${DEPLOYER_PRIVATE_KEY} --broadcast --slow -vvvv
+
 deploy-testnet:
 	@forge script script/deploy/DeployManager.sol --rpc-url $(TESTNET_URL) --broadcast --slow --unlocked -vvvv
 
