@@ -5,7 +5,7 @@ import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {Ownable} from "../Ownable.sol";
-import {IDistributionManager, SiloIncentivesControllerGaugeLike} from "contracts/Interfaces.sol";
+import {IDistributionManager, SiloIncentivesControllerGaugeLike} from "../Interfaces.sol";
 
 interface ISiloMarket {
     function hookReceiver() external returns (address);
