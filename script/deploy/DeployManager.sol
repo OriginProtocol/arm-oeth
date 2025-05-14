@@ -62,20 +62,20 @@ contract DeployManager is Script {
         if (block.chainid == 1 || block.chainid == 31337) {
             // TODO: Use vm.readDir to recursively build this?
             _runDeployFile(new DeployCoreMainnetScript());
-            _runDeployFile(new UpgradeMainnetScript(this));
+            _runDeployFile(new UpgradeMainnetScript(getDeployment("OETH_ARM")));
             _runDeployFile(new UpgradeLidoARMMainnetScript());
             _runDeployFile(new UpdateCrossPriceMainnetScript());
             _runDeployFile(new RegisterLidoWithdrawalsScript());
         } else if (block.chainid == 17000) {
             // Holesky
             _runDeployFile(new DeployCoreHoleskyScript());
-            _runDeployFile(new UpgradeHoleskyScript(this));
+            _runDeployFile(new UpgradeHoleskyScript(getDeployment("OETH_ARM")));
         } else if (block.chainid == 146) {
             // Sonic
             console.log("Deploying Origin ARM");
-            console.log("this DeployManager address", address(this));
+            //console.log("this DeployManager address", address(this));
             _runDeployFile(new DeployOriginARMProxyScript());
-            _runDeployFile(new DeployOriginARMScript(this));
+            _runDeployFile(new DeployOriginARMScript(getDeployment("ORIGIN_ARM")));
         } else {
             console.log("Skipping deployment (not mainnet)");
         }
@@ -167,7 +167,7 @@ contract DeployManager is Script {
         }
     }
 
-    function getDeployment(string calldata contractName) external view returns (address) {
+    function getDeployment(string memory contractName) public view returns (address) {
         return deployedContracts[contractName];
     }
 }

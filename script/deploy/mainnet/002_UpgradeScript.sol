@@ -9,7 +9,6 @@ import {OethARM} from "contracts/OethARM.sol";
 import {Proxy} from "contracts/Proxy.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
 import {AbstractDeployScript} from "../AbstractDeployScript.sol";
-import {DeployManager} from "../DeployManager.sol";
 
 contract UpgradeMainnetScript is AbstractDeployScript {
     string public constant override DEPLOY_NAME = "002_UpgradeMainnet";
@@ -17,9 +16,10 @@ contract UpgradeMainnetScript is AbstractDeployScript {
 
     address newImpl;
     DeployManager internal deployManager;
+    Proxy internal proxy;
 
-    constructor(DeployManager _deployManager) {
-        deployManager = _deployManager;
+    constructor(address _proxy) {
+        proxy = Proxy(payable(_proxy));
     }
 
     function _execute() internal override {
@@ -33,8 +33,6 @@ contract UpgradeMainnetScript is AbstractDeployScript {
 
     function _fork() internal override {
         // Upgrade the proxy
-        Proxy proxy = Proxy(payable(deployManager.getDeployment("OETH_ARM")));
-
         vm.prank(Mainnet.TIMELOCK);
         proxy.upgradeTo(newImpl);
         console.log("OethARM upgraded");
