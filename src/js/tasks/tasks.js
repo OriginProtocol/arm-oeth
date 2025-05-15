@@ -575,6 +575,12 @@ task("setTotalAssetsCap").setAction(async (_, __, runSuper) => {
 
 subtask("setPrices", "Update Lido ARM's swap prices")
   .addOptionalParam(
+    "name",
+    "The name of the ARM. eg Lido or Origin",
+    "Lido",
+    types.string
+  )
+  .addOptionalParam(
     "amount",
     "Swap quantity used for 1Inch pricing",
     100,
@@ -655,8 +661,11 @@ subtask("setPrices", "Update Lido ARM's swap prices")
   .setAction(async (taskArgs) => {
     const signer = await getSigner();
 
-    const lidoArmAddress = await parseDeployedAddress("LIDO_ARM");
-    const arm = await ethers.getContractAt("LidoARM", lidoArmAddress);
+    const armAddress = await parseDeployedAddress(
+      `${taskArgs.name.toUpperCase()}_ARM`
+    );
+    const arm = await ethers.getContractAt("AbstractARM", armAddress);
+
     await setPrices({ ...taskArgs, signer, arm });
   });
 task("setPrices").setAction(async (_, __, runSuper) => {
