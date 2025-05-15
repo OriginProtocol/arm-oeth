@@ -15,6 +15,7 @@ const {
 } = require("./lido");
 const { setPrices } = require("./lidoPrices");
 const { allocate, collectFees } = require("./admin");
+const { collectRewards } = require("./sonicHarvest");
 const { requestLidoWithdrawals, claimLidoWithdrawals } = require("./lidoQueue");
 const {
   autoRequestWithdraw,
@@ -757,7 +758,7 @@ task("lidoWithdrawStatus").setAction(async (_, __, runSuper) => {
 subtask("collectFees", "Collect the performance fees from an ARM")
   .addOptionalParam(
     "name",
-    "The name of the ARM. eg Lido, OETH or Origin",
+    "The name of the ARM. eg Lido or Origin",
     "Lido",
     types.string
   )
@@ -770,6 +771,23 @@ subtask("collectFees", "Collect the performance fees from an ARM")
     await collectFees({ signer, arm });
   });
 task("collectFees").setAction(async (_, __, runSuper) => {
+  return runSuper();
+});
+
+subtask("collectRewards", "Collect Silo rewards").setAction(async () => {
+  const signer = await getSigner();
+
+  const siloMarketAddress = await parseDeployedAddress(
+    "SILO_VARLAMORE_S_MARKET"
+  );
+  const siloMarket = await ethers.getContractAt(
+    "SiloMarket",
+    siloMarketAddress
+  );
+
+  await collectRewards({ signer, siloMarket });
+});
+task("collectRewards").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
 
