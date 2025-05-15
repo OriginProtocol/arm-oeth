@@ -102,7 +102,7 @@ contract DeployOriginARMScript is AbstractDeployScript {
         // 14. Deploy the Zapper
         zapper = new ZapperARM(Sonic.WS);
         zapper.setOwner(Sonic.ADMIN);
-        _recordDeploy("ARM_ZAPPER", address(zapper));
+        _recordDeploy("ORIGIN_ARM_ZAPPER", address(zapper));
 
         // 15. Deploy the SonicHarvester proxy
         Proxy harvesterProxy = new Proxy();
