@@ -3,6 +3,7 @@ pragma solidity 0.8.23;
 
 import "forge-std/Script.sol";
 import {VmSafe} from "forge-std/Vm.sol";
+import {stdJson} from "forge-std/StdJson.sol";
 
 import {AbstractDeployScript} from "./AbstractDeployScript.sol";
 import {DeployCoreMainnetScript} from "./mainnet/001_DeployCoreScript.sol";
@@ -16,6 +17,8 @@ import {DeployOriginARMProxyScript} from "./sonic/001_DeployOriginARMProxy.sol";
 import {DeployOriginARMScript} from "./sonic/002_DeployOriginARM.sol";
 
 contract DeployManager is Script {
+    using stdJson for string;
+
     mapping(string => address) public deployedContracts;
     mapping(string => bool) public scriptsExecuted;
 
@@ -73,9 +76,8 @@ contract DeployManager is Script {
         } else if (block.chainid == 146) {
             // Sonic
             console.log("Deploying Origin ARM");
-            //console.log("this DeployManager address", address(this));
             _runDeployFile(new DeployOriginARMProxyScript());
-            _runDeployFile(new DeployOriginARMScript(getDeployment("ORIGIN_ARM")));
+            _runDeployFile(new DeployOriginARMScript(getDeployedAddressInBuild("ORIGIN_ARM")));
         } else {
             console.log("Skipping deployment (not mainnet)");
         }
@@ -169,5 +171,12 @@ contract DeployManager is Script {
 
     function getDeployment(string memory contractName) public view returns (address) {
         return deployedContracts[contractName];
+    }
+
+    function getDeployedAddressInBuild(string memory contractName) public view returns (address) {
+        string memory json = vm.readFile(getDeploymentFilePath());
+        string memory key = string(abi.encodePacked("$.contracts.", contractName));
+        require(json.keyExists(key), string(abi.encodePacked("Key ", contractName, " does not exist in JSON file")));
+        return json.readAddress(key);
     }
 }
