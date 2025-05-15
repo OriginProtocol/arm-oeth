@@ -43,7 +43,7 @@ contract DeployOriginARMScript is AbstractDeployScript {
         _recordDeploy("ORIGIN_ARM_CAP_IMPL", address(capManagerImpl));
 
         // 3. Initialize Proxy with CapManager implementation and set the owner to the deployer for now
-        bytes memory data = abi.encodeWithSignature("initialize( address)", Sonic.RELAYER);
+        bytes memory data = abi.encodeWithSignature("initialize(address)", Sonic.RELAYER);
         capManProxy.initialize(address(capManagerImpl), deployer, data);
         capManager = CapManager(address(capManProxy));
 
