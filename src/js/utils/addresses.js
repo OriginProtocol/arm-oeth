@@ -42,6 +42,7 @@ addresses.mainnet.UniswapV3stETHWETHPool =
 
 // Sonic
 addresses.sonic = {};
+addresses.sonic.guardian = "0x63cdd3072F25664eeC6FAEFf6dAeB668Ea4de94a"
 addresses.sonic.WS = "0x039e2fB66102314Ce7b64Ce5Ce3E5183bc94aD38";
 addresses.sonic.OriginARM = "0x2F872623d1E1Af5835b08b0E49aAd2d81d649D30";
 addresses.sonic.SILO = "0x53f753E4B17F4075D6fa2c6909033d224b81e698";

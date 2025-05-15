@@ -1,3 +1,4 @@
+const { parseUnits } = require("ethers");
 const { subtask, task, types } = require("hardhat/config");
 
 const { mainnet } = require("../utils/addresses");
@@ -15,7 +16,7 @@ const {
 } = require("./lido");
 const { setPrices } = require("./lidoPrices");
 const { allocate, collectFees } = require("./admin");
-const { collectRewards } = require("./sonicHarvest");
+const { collectRewards, harvestRewards } = require("./sonicHarvest");
 const { requestLidoWithdrawals, claimLidoWithdrawals } = require("./lidoQueue");
 const {
   autoRequestWithdraw,
@@ -774,20 +775,49 @@ task("collectFees").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
 
-subtask("collectRewards", "Collect Silo rewards").setAction(async () => {
-  const signer = await getSigner();
+subtask("collectRewards", "Collect rewards")
+  .addOptionalParam(
+    "name",
+    "The name of the ARM to collect rewards for. eg Lido or Origin",
+    "Origin",
+    types.string
+  )
+  .setAction(async () => {
+    const signer = await getSigner();
 
-  const siloMarketAddress = await parseDeployedAddress(
-    "SILO_VARLAMORE_S_MARKET"
-  );
-  const siloMarket = await ethers.getContractAt(
-    "SiloMarket",
-    siloMarketAddress
-  );
+    const siloMarketAddress = await parseDeployedAddress(
+      "SILO_VARLAMORE_S_MARKET"
+    );
+    const siloMarket = await ethers.getContractAt(
+      "SiloMarket",
+      siloMarketAddress
+    );
 
-  await collectRewards({ signer, siloMarket });
-});
+    await collectRewards({ signer, siloMarket });
+  });
 task("collectRewards").setAction(async (_, __, runSuper) => {
+  return runSuper();
+});
+
+subtask("harvestRewards", "harvest rewards")
+  .addOptionalParam(
+    "name",
+    "The name of the ARM. eg Lido or Origin",
+    "Origin",
+    types.string
+  )
+  .setAction(async () => {
+    const signer = await getSigner();
+
+    const harvesterAddress = await parseDeployedAddress("HARVESTER");
+    const harvester = await ethers.getContractAt(
+      "SonicHarvester",
+      harvesterAddress
+    );
+
+    await harvestRewards({ signer, harvester });
+  });
+task("harvestRewards").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
 
@@ -904,7 +934,11 @@ subtask("magpieQuote", "Get a quote from Magpie for a swap")
     types.string
   )
 
-  .setAction(magpieQuote);
+  .setAction(async (taskArgs) => {
+    const amount = parseUnits(taskArgs.amount.toString(), 18);
+
+    await magpieQuote({ ...taskArgs, amount });
+  });
 task("magpieQuote").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
