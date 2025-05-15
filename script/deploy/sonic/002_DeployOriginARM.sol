@@ -21,6 +21,7 @@ contract DeployOriginARMScript is AbstractDeployScript {
     Proxy public originARMProxy;
 
     constructor(address _originARMProxy) {
+        require(_originARMProxy != address(0), "Invalid proxy address");
         originARMProxy = Proxy(payable(_originARMProxy));
     }
 
@@ -43,7 +44,7 @@ contract DeployOriginARMScript is AbstractDeployScript {
         _recordDeploy("ORIGIN_ARM_CAP_IMPL", address(capManagerImpl));
 
         // 3. Initialize Proxy with CapManager implementation and set the owner to the deployer for now
-        bytes memory data = abi.encodeWithSignature("initialize(address)", Sonic.RELAYER);
+        bytes memory data = abi.encodeWithSelector(CapManager.initialize.selector, Sonic.RELAYER);
         capManProxy.initialize(address(capManagerImpl), deployer, data);
         capManager = CapManager(address(capManProxy));
 
@@ -61,7 +62,6 @@ contract DeployOriginARMScript is AbstractDeployScript {
         // 7. Approve a little bit of wS to be transferred to the ARM proxy
         // This is needed for the initialize function which will mint some ARM LP tokens
         // and send to a dead address
-        console.log("Msg sender", msg.sender);
         IERC20(Sonic.WS).approve(address(originARMProxy), 1e12);
 
         // 8. Initialize Proxy with Origin ARM implementation and set the owner to the deployer for now
