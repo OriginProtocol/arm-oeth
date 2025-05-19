@@ -121,7 +121,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @notice Percentage of liquid assets to keep in the ARM. 100% = 1e18.
     uint256 public armBuffer;
 
-    uint256[39] private _gap;
+    uint256[38] private _gap;
 
     ////////////////////////////////////////////////////
     ///                 Events
