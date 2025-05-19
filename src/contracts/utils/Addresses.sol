@@ -74,6 +74,7 @@ library Sonic {
 
     // Contracts
     address public constant OS_VAULT = 0xa3c0eCA00D2B76b4d1F170b0AB3FdeA16C180186;
+    address public constant ORIGIN_ARM = 0x2F872623d1E1Af5835b08b0E49aAd2d81d649D30;
 
     // Silo lending markets
     // wOS - S market (bwS-22)
@@ -151,6 +152,7 @@ contract AddressResolver {
 
         // Contracts
         resolver[SONIC]["OS_VAULT"] = Sonic.OS_VAULT;
+        resolver[SONIC]["ORIGIN_ARM"] = Sonic.ORIGIN_ARM;
         resolver[SONIC]["SILO_WOS_S_MARKET"] = Sonic.SILO_OS;
 
         // Test accounts

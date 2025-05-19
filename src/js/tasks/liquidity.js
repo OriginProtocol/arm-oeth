@@ -33,48 +33,60 @@ const claimWithdraw = async ({ id, signer, oethARM }) => {
 
 const autoRequestWithdraw = async ({
   signer,
-  oeth,
-  oethARM,
+  asset,
+  arm,
   minAmount,
   confirm,
 }) => {
-  const oethBalance = await oeth.balanceOf(await oethARM.getAddress());
-  log(`${formatUnits(oethBalance)} OETH in ARM`);
+  const symbol = await asset.symbol();
+  const assetBalance = await asset.balanceOf(await arm.getAddress());
+  log(`${formatUnits(assetBalance)} ${symbol} in ARM`);
 
   const minAmountBI = parseUnits(minAmount.toString(), 18);
 
-  if (oethBalance <= minAmountBI) {
+  if (assetBalance <= minAmountBI) {
     console.log(
       `${formatUnits(
-        oethBalance
-      )} OETH is below ${minAmount} so not withdrawing`
+        assetBalance
+      )} ${symbol} is below ${minAmount} so not withdrawing`
     );
     return;
   }
 
-  log(`About to request ${formatUnits(oethBalance)} OETH withdrawal`);
+  log(`About to request ${formatUnits(assetBalance)} ${symbol} withdrawal`);
 
-  const tx = await oethARM.connect(signer).requestWithdrawal(oethBalance);
+  const functionName =
+    symbol == "OS" ? "requestOriginWithdrawal" : "requestWithdrawal";
+  const tx = await arm.connect(signer)[functionName](assetBalance);
   await logTxDetails(tx, "requestWithdrawal", confirm);
 };
 
-const autoClaimWithdraw = async ({ signer, weth, oethARM, vault, confirm }) => {
+const autoClaimWithdraw = async ({
+  signer,
+  liquidityAsset,
+  arm,
+  vault,
+  confirm,
+}) => {
+  const liquiditySymbol = await liquidityAsset.symbol();
   // Get amount of requests that have already been claimed
   const { claimed } = await vault.withdrawalQueueMetadata();
 
-  // Get WETH balance in OETH Vault
-  const wethVaultBalance = await weth.balanceOf(await vault.getAddress());
+  // Get liquidity balance in the Vault
+  const vaultLiquidity = await liquidityAsset.balanceOf(
+    await vault.getAddress()
+  );
 
-  const queuedAmountClaimable = claimed + wethVaultBalance;
+  const queuedAmountClaimable = claimed + vaultLiquidity;
   log(
     `Claimable queued amount is ${formatUnits(claimed)} claimed + ${formatUnits(
-      wethVaultBalance
-    )} WETH in vault = ${formatUnits(queuedAmountClaimable)}`
+      vaultLiquidity
+    )} ${liquiditySymbol} in vault = ${formatUnits(queuedAmountClaimable)}`
   );
 
   // get claimable withdrawal requests
   let requestIds = await claimableRequests({
-    withdrawer: await oethARM.getAddress(),
+    withdrawer: await arm.getAddress(),
     queuedAmountClaimable,
   });
 
@@ -85,7 +97,9 @@ const autoClaimWithdraw = async ({ signer, weth, oethARM, vault, confirm }) => {
 
   log(`About to claim requests: ${requestIds} `);
 
-  const tx = await oethARM.connect(signer).claimWithdrawals(requestIds);
+  const functionName =
+    liquiditySymbol == "wS" ? "claimOriginWithdrawals" : "claimWithdrawals";
+  const tx = await arm.connect(signer)[functionName](requestIds);
   await logTxDetails(tx, "claimWithdrawals", confirm);
 };
 
