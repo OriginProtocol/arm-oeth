@@ -114,8 +114,13 @@ contract DeployOriginARMScript is AbstractDeployScript {
 
         // 17. Initialize Proxy with SonicHarvester implementation and set the owner to the deployer for now
         address PriceProvider = address(0);
-        data =
-            abi.encodeWithSignature("initialize(address,uint256,address,address)", PriceProvider, 200, address(originARMProxy), Sonic.MAGPIE_ROUTER);
+        data = abi.encodeWithSignature(
+            "initialize(address,uint256,address,address)",
+            PriceProvider,
+            200,
+            address(originARMProxy),
+            Sonic.MAGPIE_ROUTER
+        );
         harvesterProxy.initialize(address(harvesterImpl), deployer, data);
         SonicHarvester harvester = SonicHarvester(address(harvesterProxy));
 
