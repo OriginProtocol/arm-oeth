@@ -25,52 +25,57 @@ contract Fork_Concrete_OriginARM_AllocateWithAdapter_Test_ is Fork_Shared_Test {
     function test_Fork_Allocate_When_FirstAllocation()
         public
         setARMBuffer(0)
+        deposit(alice, DEFAULT_AMOUNT)
         addMarket(address(siloMarket))
         asGovernor
     {
         // Assertions before allocation
         assertEq(market.balanceOf(address(siloMarket)), 0, "shares before");
-        assertEq(originARM.totalAssets(), MIN_TOTAL_SUPPLY, "totalAssets before");
-        uint256 expectedShares = market.convertToShares(MIN_TOTAL_SUPPLY);
+        assertEq(originARM.totalAssets(), DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, "totalAssets before");
+        uint256 expectedShares = market.convertToShares(MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT);
 
         // Expected event
         vm.expectEmit(address(market));
-        emit IERC4626.Deposit(address(siloMarket), address(siloMarket), MIN_TOTAL_SUPPLY, expectedShares);
+        emit IERC4626.Deposit(
+            address(siloMarket), address(siloMarket), DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, expectedShares
+        );
         vm.expectEmit(address(originARM));
-        emit AbstractARM.Allocated(address(siloMarket), MIN_TOTAL_SUPPLY.toInt256());
+        emit AbstractARM.Allocated(address(siloMarket), (DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY).toInt256());
 
         // Main call
         originARM.setActiveMarket(address(siloMarket));
 
         // Assertions after allocation
         assertEq(market.balanceOf(address(siloMarket)), expectedShares, "shares after");
-        assertApproxEqAbs(originARM.totalAssets(), MIN_TOTAL_SUPPLY, 1, "totalAssets after");
+        assertApproxEqAbs(originARM.totalAssets(), DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, 1, "totalAssets after");
     }
 
     function test_Fork_Allocate_When_LiquidityDelta_IsPositive()
         public
         setARMBuffer(0)
+        deposit(alice, DEFAULT_AMOUNT)
         addMarket(address(siloMarket))
         setActiveMarket(address(siloMarket))
-        deposit(alice, DEFAULT_AMOUNT)
+        deposit(alice, 2 * DEFAULT_AMOUNT)
     {
         // Assertions before allocation
-        assertEq(market.balanceOf(address(siloMarket)), initialShares, "shares before");
-        assertApproxEqAbs(originARM.totalAssets(), DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, 1, "totalAssets before");
-        uint256 expectedShares = market.convertToShares(DEFAULT_AMOUNT);
+        uint256 initialShares_ = market.convertToShares(DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY);
+        assertEq(market.balanceOf(address(siloMarket)), initialShares_, "shares before");
+        assertApproxEqAbs(originARM.totalAssets(), 3 * DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, 1, "totalAssets before");
+        uint256 expectedShares = market.convertToShares(2 * DEFAULT_AMOUNT);
 
         // Expected event
         vm.expectEmit(address(market));
-        emit IERC4626.Deposit(address(siloMarket), address(siloMarket), DEFAULT_AMOUNT, expectedShares);
+        emit IERC4626.Deposit(address(siloMarket), address(siloMarket), 2 * DEFAULT_AMOUNT, expectedShares);
         vm.expectEmit(address(originARM));
-        emit AbstractARM.Allocated(address(siloMarket), DEFAULT_AMOUNT.toInt256());
+        emit AbstractARM.Allocated(address(siloMarket), (2 * DEFAULT_AMOUNT).toInt256());
 
         // Main call
         originARM.allocate();
 
         // Assertions after allocation
-        assertEq(market.balanceOf(address(siloMarket)), expectedShares + initialShares, "shares after");
-        assertApproxEqAbs(originARM.totalAssets(), DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, 1, "totalAssets after");
+        assertEq(market.balanceOf(address(siloMarket)), expectedShares + initialShares_, "shares after");
+        assertApproxEqAbs(originARM.totalAssets(), 3 * DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, 1, "totalAssets after");
     }
 
     function test_Fork_Allocate_When_LiquiditiDelta_IsNegative_PartialWithdraw()
