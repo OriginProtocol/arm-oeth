@@ -212,7 +212,7 @@ abstract contract TargetFunction is Properties {
 
         newCrossPrice = uint120(_bound(newCrossPrice, lowerBound, upperBound));
 
-        if (originARM.crossPrice() > newCrossPrice) vm.assume(os.balanceOf(address(originARM)) <= MIN_TOTAL_SUPPLY);
+        if (originARM.crossPrice() > newCrossPrice) vm.assume(os.balanceOf(address(originARM)) < MIN_TOTAL_SUPPLY);
 
         // Console log data
         if (CONSOLE_LOG) console.log("setCrossPrice() \t From: %s | \t CrossP: %s", "Owner", faa(newCrossPrice / 1e18));
@@ -571,7 +571,7 @@ abstract contract TargetFunction is Properties {
     function assertLpsAreUpOnly(uint256 tolerance) public view {
         for (uint256 i; i < lps.length; i++) {
             require(
-                ws.balanceOf(lps[i]).gteApproxRel(INITIAL_AMOUNT_LPS, tolerance),
+                ws.balanceOf(lps[i]).gteApproxAbs(INITIAL_AMOUNT_LPS, tolerance),
                 "User should not have less than initial amount"
             );
         }
