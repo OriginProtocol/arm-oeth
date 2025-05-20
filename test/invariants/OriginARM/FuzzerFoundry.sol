@@ -60,6 +60,6 @@ contract FuzzerFoundry_OriginARM is TargetFunction {
 
     function afterInvariant() public {
         handler_afterInvariants();
-        assertLpsAreUpOnly(1e14);
+        assertLpsAreUpOnly(0);
     }
 }
