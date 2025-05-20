@@ -62,24 +62,24 @@ contract SonicHarvester is Initializable, OwnableOperable {
     error InvalidDecimals();
     error InvalidAllowedSlippage(uint256 allowedSlippageBps);
 
-    constructor(address _liquidityAsset, address _magpieRouter) {
+    constructor(address _liquidityAsset) {
         if (_liquidityAsset == address(0)) revert EmptyLiquidityAsset();
-        if (_magpieRouter == address(0)) revert EmptyMagpieRouter();
         if (IERC20Metadata(_liquidityAsset).decimals() != 18) revert InvalidDecimals();
 
         liquidityAsset = _liquidityAsset;
-        _setMagpieRouter(_magpieRouter);
     }
 
     /// @notice
-    function initialize(address _priceProvider, uint256 _allowedSlippageBps, address _rewardRecipient)
-        external
-        initializer
-        onlyOwner
-    {
+    function initialize(
+        address _priceProvider,
+        uint256 _allowedSlippageBps,
+        address _rewardRecipient,
+        address _magpieRouter
+    ) external initializer onlyOwner {
         _setPriceProvider(_priceProvider);
         _setAllowedSlippage(_allowedSlippageBps);
         _setRewardRecipient(_rewardRecipient);
+        _setMagpieRouter(_magpieRouter);
     }
 
     /**

@@ -80,14 +80,14 @@ abstract contract Fork_Shared_Test is Base_Test_, Helpers {
         vm.label(address(siloMarketProxy), "SILO MARKET PROXY");
 
         // --- Deploy OriginARM implementation
-        harvester = new SonicHarvester(address(ws), Sonic.MAGPIE_ROUTER);
+        harvester = new SonicHarvester(address(ws));
         siloMarket = new SiloMarket(address(originARM), Sonic.SILO_VARLAMORE_S_VAULT, Sonic.SILO_VARLAMORE_S_GAUGE);
 
         // --- Initialize the proxy
         harvesterProxy.initialize(
             address(harvester),
             governor,
-            abi.encodeWithSelector(SonicHarvester.initialize.selector, oracle, 1000, operator)
+            abi.encodeWithSelector(SonicHarvester.initialize.selector, oracle, 1000, operator, Sonic.MAGPIE_ROUTER)
         );
 
         siloMarketProxy.initialize(
