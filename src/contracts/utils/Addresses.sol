@@ -122,7 +122,7 @@ contract AddressResolver {
 
         // Test accounts
         resolver[MAINNET]["DEPLOYER"] = address(0x1001);
-        resolver[MAINNET]["WHALE_OETH"] = 0x8E02247D3eE0E6153495c971FFd45Aa131f4D7cB;
+        resolver[MAINNET]["WHALE_OETH"] = 0xA7c82885072BADcF3D0277641d55762e65318654;
 
         ///// Holesky //////
         // Governance
