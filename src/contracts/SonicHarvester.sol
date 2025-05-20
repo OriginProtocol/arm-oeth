@@ -34,6 +34,8 @@ contract SonicHarvester is Initializable, OwnableOperable {
     /// @notice The address of the Magpie router that performs swaps
     address public magpieRouter;
 
+    uint256[45] private _gap;
+
     event SupportedStrategyUpdate(address strategy, bool isSupported);
     event RewardTokenSwapped(
         address indexed rewardToken,
@@ -273,6 +275,8 @@ contract SonicHarvester is Initializable, OwnableOperable {
     }
 
     function _setMagpieRouter(address _router) internal {
+        if (_router == address(0)) revert EmptyMagpieRouter();
+
         magpieRouter = _router;
 
         emit MagpieRouterUpdated(_router);
