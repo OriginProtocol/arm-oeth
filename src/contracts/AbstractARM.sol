@@ -822,8 +822,12 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
             // balanceOf is used instead of maxRedeem to ensure all shares are redeemed.
             // maxRedeem can return a smaller amount of shares than balanceOf if the market is highly utilized.
             uint256 shares = IERC4626(previousActiveMarket).balanceOf(address(this));
-            // This could fail if the market has high utilization
-            if (shares > minSharesToRedeem) {
+
+            if (shares > 0) {
+                // This could fail if the market has high utilization.
+                // It can also fail if the ARM has a dust amount of shares left. eg 100 wei.
+                // If that happens, the Operator can transfer a tiny amount of active market shares
+                // to the ARM so the following redeem will not fail.
                 IERC4626(previousActiveMarket).redeem(shares, address(this), address(this));
             }
         }
