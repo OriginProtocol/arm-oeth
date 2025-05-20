@@ -21,8 +21,6 @@ contract SonicHarvester is Initializable, OwnableOperable {
 
     /// @notice All reward tokens are swapped to the ARM's liquidity asset.
     address public immutable liquidityAsset;
-    /// @notice The address of the Magpie router that performs swaps
-    address public immutable magpieRouter;
 
     /// @notice Mapping of strategies that rewards can be collected from
     mapping(address => bool) public supportedStrategies;
@@ -33,6 +31,8 @@ contract SonicHarvester is Initializable, OwnableOperable {
     /// @notice Address receiving rewards proceeds. Initially this will be the ARM contract,
     /// later this could be a Dripper contract that eases out rewards distribution.
     address public rewardRecipient;
+    /// @notice The address of the Magpie router that performs swaps
+    address public magpieRouter;
 
     event SupportedStrategyUpdate(address strategy, bool isSupported);
     event RewardTokenSwapped(
@@ -46,6 +46,7 @@ contract SonicHarvester is Initializable, OwnableOperable {
     event RewardRecipientUpdated(address rewardRecipient);
     event AllowedSlippageUpdated(uint256 allowedSlippageBps);
     event PriceProviderUpdated(address priceProvider);
+    event MagpieRouterUpdated(address router);
 
     error SlippageError(uint256 actualBalance, uint256 minExpected);
     error BalanceMismatchAfterSwap(uint256 actualBalance, uint256 minExpected);
@@ -67,7 +68,7 @@ contract SonicHarvester is Initializable, OwnableOperable {
         if (IERC20Metadata(_liquidityAsset).decimals() != 18) revert InvalidDecimals();
 
         liquidityAsset = _liquidityAsset;
-        magpieRouter = _magpieRouter;
+        _setMagpieRouter(_magpieRouter);
     }
 
     /// @notice
@@ -244,6 +245,12 @@ contract SonicHarvester is Initializable, OwnableOperable {
         emit SupportedStrategyUpdate(_strategyAddress, _isSupported);
     }
 
+    /// @notice Set the MagpieRouter address
+    /// @param _router New router address
+    function setMagpieRouter(address _router) external onlyOwner {
+        _setMagpieRouter(_router);
+    }
+
     function _setPriceProvider(address _priceProvider) internal {
         priceProvider = _priceProvider;
 
@@ -263,5 +270,11 @@ contract SonicHarvester is Initializable, OwnableOperable {
         rewardRecipient = _rewardRecipient;
 
         emit RewardRecipientUpdated(_rewardRecipient);
+    }
+
+    function _setMagpieRouter(address _router) internal {
+        magpieRouter = _router;
+
+        emit MagpieRouterUpdated(_router);
     }
 }
