@@ -49,7 +49,7 @@ contract DeployOriginARMScript is AbstractDeployScript {
         capManager = CapManager(address(capManProxy));
 
         // 4. Set total wS cap
-        capManager.setTotalAssetsCap(20000 ether);
+        capManager.setTotalAssetsCap(200 ether);
 
         // 5. Transfer ownership of CapManager to the Sonic 5/8 Admin multisig
         capManProxy.setOwner(Sonic.ADMIN);
