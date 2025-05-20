@@ -824,8 +824,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
             uint256 shares = IERC4626(previousActiveMarket).balanceOf(address(this));
 
             if (shares > 0) {
-                // This could fail if the market has high utilization.
-                // It can also fail if the ARM has a dust amount of shares left. eg 100 wei.
+                // This could fail if the market has high utilization. In this case, the Operator needs
+                // to wait until the utilization drops before setting a new active market.
+                // The redeem can also fail if the ARM has a dust amount of shares left. eg 100 wei.
                 // If that happens, the Operator can transfer a tiny amount of active market shares
                 // to the ARM so the following redeem will not fail.
                 IERC4626(previousActiveMarket).redeem(shares, address(this), address(this));

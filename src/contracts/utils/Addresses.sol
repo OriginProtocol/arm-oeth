@@ -85,7 +85,7 @@ library Sonic {
     address public constant SILO_VARLAMORE_S_GAUGE = 0x542Ed7D6f2e4c25f84D9c205C139234D6A4d000d;
 
     // Magpie aggregator
-    address public constant MAGPIE_ROUTER = 0xba7bAC71a8Ee550d89B827FE6d67bc3dCA07b104;
+    address public constant MAGPIE_ROUTER = 0xc325856e5585823aaC0D1Fd46c35c608D95E65A9;
 }
 
 contract AddressResolver {
