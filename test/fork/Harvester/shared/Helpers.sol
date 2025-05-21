@@ -8,7 +8,7 @@ abstract contract Helpers is Base_Test_ {
         string memory from,
         string memory to,
         uint256 amount,
-        uint256 slippage,
+        string memory slippage,
         address swapper,
         address recipient
     ) public returns (bytes memory) {
@@ -26,7 +26,7 @@ abstract contract Helpers is Base_Test_ {
         inputs[9] = "--amount";
         inputs[10] = vm.toString(amount);
         inputs[11] = "--slippage";
-        inputs[12] = vm.toString(slippage);
+        inputs[12] = slippage;
         inputs[13] = "--swapper";
         inputs[14] = vm.toString(swapper);
         inputs[15] = "--recipient";
