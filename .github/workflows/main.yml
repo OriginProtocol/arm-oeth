@@ -46,5 +46,10 @@ jobs:
       - name: Check contract sizes
         run: forge build --sizes
 
-      - name: Run fork tests
-        run: forge test -vvv --summary --detailed
+      - name: Run non-invariant tests
+        run: make test
+
+      - name: Run invariant tests
+        run: |
+          make test-invariant-lido
+          make test-invariant-origin

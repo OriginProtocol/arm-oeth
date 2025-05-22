@@ -41,6 +41,13 @@ test-c-%:
 test-all:
 	@make test-std
 
+test-invariant-lido:
+	@FOUNDRY_INVARIANT_FAIL_ON_REVERT=false FOUNDRY_MATCH_CONTRACT=FuzzerFoundry_OethARM forge test --summary --fail-fast --show-progress
+
+test-invariant-origin:
+	@FOUNDRY_INVARIANT_FAIL_ON_REVERT=true FOUNDRY_MATCH_CONTRACT=FuzzerFoundry_OriginARM forge test --summary --fail-fast --show-progress
+
+
 # Coverage
 coverage:
 	@forge coverage --report lcov
