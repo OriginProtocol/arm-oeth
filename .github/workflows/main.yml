@@ -42,7 +42,7 @@ jobs:
         uses: foundry-rs/foundry-toolchain@v1
 
       - name: Install Dependencies
-        run: forge soldeer install
+        run: make install
 
       - name: Check contract sizes
         run: forge build --sizes
