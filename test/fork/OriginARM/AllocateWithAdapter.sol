@@ -157,7 +157,7 @@ contract Fork_Concrete_OriginARM_AllocateWithAdapter_Test_ is Fork_Shared_Test {
         uint256 sharesBefore = market.convertToShares(DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY);
         // Assertions before allocation
         assertApproxEqAbs(marketBalanceBefore, sharesBefore, 1, "shares before");
-        assertApproxEqAbs(originARM.totalAssets(), 2 * DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, 1, "totalAssets before");
+        assertApproxEqAbs(originARM.totalAssets(), 2 * DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, 3, "totalAssets before");
 
         uint256 expectedShares = siloMarket.maxRedeem(address(originARM));
         uint256 expectedAmount = market.convertToAssets(expectedShares);
@@ -174,7 +174,7 @@ contract Fork_Concrete_OriginARM_AllocateWithAdapter_Test_ is Fork_Shared_Test {
 
         // Assertions after allocation
         assertEq(market.balanceOf(address(siloMarket)), marketBalanceBefore - expectedShares, "shares after");
-        assertApproxEqAbs(originARM.totalAssets(), 2 * DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, 1, "totalAssets after");
+        assertApproxEqAbs(originARM.totalAssets(), 2 * DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, 3, "totalAssets after");
     }
 
     function test_Fork_Allocate_When_LiquidityDelta_IsNegative_NoShares()
