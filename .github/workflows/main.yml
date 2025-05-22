@@ -48,7 +48,7 @@ jobs:
         run: forge build --sizes
 
       - name: Run non-invariant tests
-        run: ls && pwd && make test
+        run: ls && pwd && node -v && npx hardhat --version && ls node_modules/.bin &&make test
 
       - name: Run invariant tests
         run: |
