@@ -28,7 +28,7 @@ jobs:
         run: forge fmt --check
 
   foundry-tests:
-    name: Foundry fork tests
+    name: Foundry tests
     runs-on: ubuntu-latest
     env:
       PROVIDER_URL: ${{ secrets.PROVIDER_URL }}
