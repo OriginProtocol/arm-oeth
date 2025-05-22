@@ -28,8 +28,8 @@ const {
 } = require("./liquidity");
 const {
   depositARM,
-  requestRedeemLido,
-  claimRedeemLido,
+  requestRedeemARM,
+  claimRedeemARM,
   setLiquidityProviderCaps,
   setTotalAssetsCap,
 } = require("./liquidityProvider");
@@ -520,22 +520,24 @@ task("depositARM").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
 
-subtask("requestRedeemLido", "Request redeem from the Lido ARM")
+subtask("requestRedeemARM", "Request redeem from an ARM")
+  .addParam("arm", "Name of the ARM. eg Lido or Origin", "Lido", types.string)
   .addParam(
     "amount",
     "Amount of ARM LP tokens not scaled to 18 decimals",
     undefined,
     types.float
   )
-  .setAction(requestRedeemLido);
-task("requestRedeemLido").setAction(async (_, __, runSuper) => {
+  .setAction(requestRedeemARM);
+task("requestRedeemARM").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
 
-subtask("claimRedeemLido", "Claim WETH from a previously requested redeem")
+subtask("claimRedeemARM", "Claim from a previously requested ARM redeem")
+  .addParam("arm", "Name of the ARM. eg Lido or Origin", "Lido", types.string)
   .addParam("id", "Request identifier", undefined, types.float)
-  .setAction(claimRedeemLido);
-task("claimRedeemLido").setAction(async (_, __, runSuper) => {
+  .setAction(claimRedeemARM);
+task("claimRedeemARM").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
 
