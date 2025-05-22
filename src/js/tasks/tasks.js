@@ -27,7 +27,7 @@ const {
   withdrawRequestStatus,
 } = require("./liquidity");
 const {
-  depositLido,
+  depositARM,
   requestRedeemLido,
   claimRedeemLido,
   setLiquidityProviderCaps,
@@ -501,24 +501,22 @@ task("redeemAll").setAction(async (_, __, runSuper) => {
 
 // Lido ARM Liquidity Provider Functions
 
-subtask(
-  "depositLido",
-  "Deposit WETH into the Lido ARM as receive ARM LP tokens"
-)
+subtask("depositARM", "Deposit to an ARM and receive ARM LP tokens")
+  .addParam("arm", "Name of the ARM. eg Lido or Origin", "Lido", types.string)
   .addParam(
     "amount",
-    "Amount of WETH not scaled to 18 decimals",
+    "Amount of to deposit not scaled to 18 decimals",
     undefined,
     types.float
   )
   .addOptionalParam(
     "asset",
-    "Symbol of the asset to deposit. eg ETH or WETH",
+    "Symbol of the asset to deposit. eg ETH, WETH, S or WS",
     "WETH",
     types.string
   )
-  .setAction(depositLido);
-task("depositLido").setAction(async (_, __, runSuper) => {
+  .setAction(depositARM);
+task("depositARM").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
 

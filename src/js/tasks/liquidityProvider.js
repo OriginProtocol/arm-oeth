@@ -6,17 +6,20 @@ const { logTxDetails } = require("../utils/txLogger");
 
 const log = require("../utils/logger")("task:lpCap");
 
-async function depositLido({ amount, asset }) {
+async function depositARM({ amount, asset, arm }) {
   const signer = await getSigner();
 
   const amountBn = parseUnits(amount.toString());
 
   if (asset == "WETH") {
-    const lidoArmAddress = await parseDeployedAddress("LIDO_ARM");
-    const lidoARM = await ethers.getContractAt("LidoARM", lidoArmAddress);
+    const armAddress = await parseDeployedAddress(`${arm.toUpperCase()}_ARM`);
+    const armContract = await ethers.getContractAt(
+      `${arm.toUpperCase()}ARM`,
+      armAddress
+    );
 
-    log(`About to deposit ${amount} WETH to the Lido ARM`);
-    const tx = await lidoARM.connect(signer).deposit(amountBn);
+    log(`About to deposit ${amount} WETH to the ${arm} ARM`);
+    const tx = await armContract.connect(signer).deposit(amountBn);
     await logTxDetails(tx, "deposit");
   } else if (asset == "ETH") {
     const zapperAddress = await parseDeployedAddress("LIDO_ARM_ZAPPER");
@@ -24,6 +27,28 @@ async function depositLido({ amount, asset }) {
 
     log(`About to deposit ${amount} ETH to the Lido ARM via the Zapper`);
     const tx = await zapper.connect(signer).deposit({ value: amountBn });
+    await logTxDetails(tx, "zap deposit");
+  } else if (asset == "WS") {
+    const armAddress = await parseDeployedAddress(`${arm.toUpperCase()}_ARM`);
+    const armContract = await ethers.getContractAt(
+      `${arm.toUpperCase()}ARM`,
+      armAddress
+    );
+
+    log(`About to deposit ${amount} ${asset} to the ${arm} ARM`);
+    const tx = await armContract.connect(signer).deposit(amountBn);
+    await logTxDetails(tx, "deposit");
+  } else if (asset == "S") {
+    const zapperAddress = await parseDeployedAddress(
+      `${arm.toUpperCase()}_ARM_ZAPPER`
+    );
+    const zapper = await ethers.getContractAt("ZapperARM", zapperAddress);
+    const armAddress = await parseDeployedAddress(`${arm.toUpperCase()}_ARM`);
+
+    log(`About to deposit ${amount} S to the ${arm} ARM via the Zapper`);
+    const tx = await zapper
+      .connect(signer)
+      .deposit(armAddress, { value: amountBn });
     await logTxDetails(tx, "zap deposit");
   }
 }
@@ -85,7 +110,7 @@ async function setTotalAssetsCap({ cap }) {
 }
 
 module.exports = {
-  depositLido,
+  depositARM,
   requestRedeemLido,
   claimRedeemLido,
   setLiquidityProviderCaps,
