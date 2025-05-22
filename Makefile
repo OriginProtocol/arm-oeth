@@ -30,16 +30,26 @@ test-std:
 	forge test --summary --fail-fast --show-progress
 
 test:
-	@FOUNDRY_NO_MATCH_CONTRACT=Fuzzer make test-std
+	@FOUNDRY_NO_MATCH_CONTRACT=Fuzzer $(MAKE) test-std
 
 test-f-%:
-	@FOUNDRY_MATCH_TEST=$* make test-std
+	@FOUNDRY_MATCH_TEST=$* $(MAKE) test-std
 
 test-c-%:
-	@FOUNDRY_MATCH_CONTRACT=$* make test-std
+	@FOUNDRY_MATCH_CONTRACT=$* $(MAKE) test-std
 
 test-all:
-	@make test-std
+	@$(MAKE) test-std
+
+test-invariant-lido:
+	@FOUNDRY_INVARIANT_FAIL_ON_REVERT=false FOUNDRY_MATCH_CONTRACT=FuzzerFoundry_OethARM $(MAKE) test-std
+
+test-invariant-origin:
+	@FOUNDRY_INVARIANT_FAIL_ON_REVERT=true FOUNDRY_MATCH_CONTRACT=FuzzerFoundry_OriginARM $(MAKE) test-std
+
+test-invariants:
+	@$(MAKE) test-invariant-lido && $(MAKE) test-invariant-origin
+
 
 # Coverage
 coverage:
