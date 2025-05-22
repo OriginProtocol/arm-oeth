@@ -2,13 +2,13 @@
 pragma solidity 0.8.23;
 
 import {Test} from "forge-std/Test.sol";
-import {FuzzerFoundry} from "test/invariants/LidoARM/FuzzerFoundry.sol";
+import {FuzzerFoundry_OethARM} from "test/invariants/LidoARM/FuzzerFoundry.sol";
 
 contract Unit is Test {
-    FuzzerFoundry f;
+    FuzzerFoundry_OethARM f;
 
     function setUp() public {
-        f = new FuzzerFoundry();
+        f = new FuzzerFoundry_OethARM();
         f.setUp();
     }
 
