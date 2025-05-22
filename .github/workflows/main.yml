@@ -48,7 +48,7 @@ jobs:
         run: forge build --sizes
 
       - name: Run non-invariant tests
-        run: make test
+        run: ls && pwd && make test
 
       - name: Run invariant tests
         run: |
