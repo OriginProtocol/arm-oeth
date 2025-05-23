@@ -60,16 +60,10 @@ subtask(
   "swap",
   "Swap from one asset to another. Can only specify the from or to asset as that will be the exact amount."
 )
-  .addOptionalParam(
-    "from",
-    "Symbol of the from asset when swapping from an exact amount",
-    "OETH",
-    types.string
-  )
-  .addOptionalParam(
-    "to",
-    "Symbol of the to asset when swapping to an exact amount",
-    undefined,
+  .addParam(
+    "arm",
+    "Name of the ARM. eg Lido, Origin or Oeth",
+    "Lido",
     types.string
   )
   .addParam(
@@ -77,6 +71,18 @@ subtask(
     "Swap quantity in either the from or to asset",
     undefined,
     types.float
+  )
+  .addOptionalParam(
+    "from",
+    "Symbol of the from asset when swapping from an exact amount",
+    undefined,
+    types.string
+  )
+  .addOptionalParam(
+    "to",
+    "Symbol of the to asset when swapping to an exact amount",
+    undefined,
+    types.string
   )
   .setAction(swap);
 task("swap").setAction(async (_, __, runSuper) => {

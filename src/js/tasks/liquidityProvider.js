@@ -13,10 +13,7 @@ async function depositARM({ amount, asset, arm }) {
 
   if (asset == "WETH") {
     const armAddress = await parseDeployedAddress(`${arm.toUpperCase()}_ARM`);
-    const armContract = await ethers.getContractAt(
-      `${arm.toUpperCase()}ARM`,
-      armAddress
-    );
+    const armContract = await ethers.getContractAt(`${arm}ARM`, armAddress);
 
     log(`About to deposit ${amount} WETH to the ${arm} ARM`);
     const tx = await armContract.connect(signer).deposit(amountBn);
@@ -30,10 +27,7 @@ async function depositARM({ amount, asset, arm }) {
     await logTxDetails(tx, "zap deposit");
   } else if (asset == "WS") {
     const armAddress = await parseDeployedAddress(`${arm.toUpperCase()}_ARM`);
-    const armContract = await ethers.getContractAt(
-      `${arm.toUpperCase()}ARM`,
-      armAddress
-    );
+    const armContract = await ethers.getContractAt(`${arm}ARM`, armAddress);
 
     log(`About to deposit ${amount} ${asset} to the ${arm} ARM`);
     const tx = await armContract.connect(signer).deposit(amountBn);
