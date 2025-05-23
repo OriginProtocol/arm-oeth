@@ -11,24 +11,28 @@ const { logTxDetails } = require("../utils/txLogger");
 
 const log = require("../utils/logger")("task:liquidity");
 
-const requestWithdraw = async ({ amount, signer, oethARM }) => {
+const requestWithdraw = async ({ amount, signer, armName, arm }) => {
   const amountBI = parseUnits(amount.toString(), 18);
 
   log(`About to request ${amount} OETH withdrawal`);
 
-  const tx = await oethARM.connect(signer).requestWithdrawal(amountBI);
+  const functionName =
+    armName == "Origin" ? "requestOriginWithdrawal" : "requestWithdrawal";
+  const tx = await arm.connect(signer)[functionName](amountBI);
 
-  await logTxDetails(tx, "requestWithdrawal");
+  await logTxDetails(tx, functionName);
 
   // TODO parse the request id from the WithdrawalRequested event on the OETH Vault
 };
 
-const claimWithdraw = async ({ id, signer, oethARM }) => {
+const claimWithdraw = async ({ id, signer, armName, arm }) => {
   log(`About to claim withdrawal request ${id}`);
 
-  const tx = await oethARM.connect(signer).claimWithdrawal(id);
+  const functionName =
+    armName == "Origin" ? "claimOriginWithdrawal" : "claimWithdrawal";
+  const tx = await arm.connect(signer)[functionName](id);
 
-  await logTxDetails(tx, "claimWithdrawal");
+  await logTxDetails(tx, functionName);
 };
 
 const autoRequestWithdraw = async ({
@@ -103,9 +107,9 @@ const autoClaimWithdraw = async ({
   await logTxDetails(tx, "claimWithdrawals", confirm);
 };
 
-const withdrawRequestStatus = async ({ id, oethARM, vault }) => {
+const withdrawRequestStatus = async ({ id, arm, vault }) => {
   const queue = await vault.withdrawalQueueMetadata();
-  const request = await oethARM.withdrawalRequests(id);
+  const request = await arm.withdrawalRequests(id);
 
   if (request.queued <= queue.claimable) {
     console.log(`Withdrawal request ${id} is claimable.`);
@@ -113,7 +117,7 @@ const withdrawRequestStatus = async ({ id, oethARM, vault }) => {
     console.log(
       `Withdrawal request ${id} is ${formatUnits(
         request.queued - queue.claimable
-      )} WETH short`
+      )} short`
     );
   }
 };
