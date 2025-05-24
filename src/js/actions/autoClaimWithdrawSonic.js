@@ -33,6 +33,9 @@ const handler = async (event) => {
     vault,
     confirm: true,
   });
+
+  // Allocate any excess liquidity to the lending market
+  await arm.allocate();
 };
 
 module.exports = { handler };
