@@ -872,18 +872,18 @@ task("harvestRewards").setAction(async (_, __, runSuper) => {
 
 subtask("allocate", "Allocate to/from the active lending market")
   .addOptionalParam(
-    "name",
+    "arm",
     "The name of the ARM. eg Lido, OETH or Origin",
     "Lido",
     types.string
   )
-  .setAction(async ({ name }) => {
+  .setAction(async ({ arm }) => {
     const signer = await getSigner();
 
-    const armAddress = await parseDeployedAddress(`${name.toUpperCase()}_ARM`);
-    const arm = await ethers.getContractAt(`${name}ARM`, armAddress);
+    const armAddress = await parseDeployedAddress(`${arm.toUpperCase()}_ARM`);
+    const armContract = await ethers.getContractAt(`${arm}ARM`, armAddress);
 
-    await allocate({ signer, arm });
+    await allocate({ signer, arm: armContract });
   });
 task("allocate").setAction(async (_, __, runSuper) => {
   return runSuper();
@@ -891,7 +891,13 @@ task("allocate").setAction(async (_, __, runSuper) => {
 
 // ARM Snapshots
 
-subtask("snap", "Take a snapshot of the OETH ARM")
+subtask("snap", "Take a snapshot of the an ARM")
+  .addOptionalParam(
+    "arm",
+    "The name of the ARM. eg Lido, OETH or Origin",
+    "Lido",
+    types.string
+  )
   .addOptionalParam(
     "block",
     "Block number. (default: latest)",
