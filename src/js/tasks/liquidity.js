@@ -11,24 +11,28 @@ const { logTxDetails } = require("../utils/txLogger");
 
 const log = require("../utils/logger")("task:liquidity");
 
-const requestWithdraw = async ({ amount, signer, oethARM }) => {
+const requestWithdraw = async ({ amount, signer, armName, arm }) => {
   const amountBI = parseUnits(amount.toString(), 18);
 
   log(`About to request ${amount} OETH withdrawal`);
 
-  const tx = await oethARM.connect(signer).requestWithdrawal(amountBI);
+  const functionName =
+    armName == "Origin" ? "requestOriginWithdrawal" : "requestWithdrawal";
+  const tx = await arm.connect(signer)[functionName](amountBI);
 
-  await logTxDetails(tx, "requestWithdrawal");
+  await logTxDetails(tx, functionName);
 
   // TODO parse the request id from the WithdrawalRequested event on the OETH Vault
 };
 
-const claimWithdraw = async ({ id, signer, oethARM }) => {
+const claimWithdraw = async ({ id, signer, armName, arm }) => {
   log(`About to claim withdrawal request ${id}`);
 
-  const tx = await oethARM.connect(signer).claimWithdrawal(id);
+  const functionName =
+    armName == "Origin" ? "claimOriginWithdrawal" : "claimWithdrawal";
+  const tx = await arm.connect(signer)[functionName](id);
 
-  await logTxDetails(tx, "claimWithdrawal");
+  await logTxDetails(tx, functionName);
 };
 
 const autoRequestWithdraw = async ({
@@ -103,9 +107,9 @@ const autoClaimWithdraw = async ({
   await logTxDetails(tx, "claimWithdrawals", confirm);
 };
 
-const withdrawRequestStatus = async ({ id, oethARM, vault }) => {
+const withdrawRequestStatus = async ({ id, arm, vault }) => {
   const queue = await vault.withdrawalQueueMetadata();
-  const request = await oethARM.withdrawalRequests(id);
+  const request = await arm.withdrawalRequests(id);
 
   if (request.queued <= queue.claimable) {
     console.log(`Withdrawal request ${id} is claimable.`);
@@ -113,45 +117,88 @@ const withdrawRequestStatus = async ({ id, oethARM, vault }) => {
     console.log(
       `Withdrawal request ${id} is ${formatUnits(
         request.queued - queue.claimable
-      )} WETH short`
+      )} short`
     );
   }
 };
 
-const logLiquidity = async ({ block }) => {
+const logLiquidity = async ({ block, arm }) => {
   const blockTag = await getBlock(block);
   console.log(`\nLiquidity`);
 
-  const oethArmAddress = await parseAddress("OETH_ARM");
+  const armAddress = await parseAddress(`${arm.toUpperCase()}_ARM`);
 
-  const weth = await resolveAsset("WETH");
-  const liquidityWeth = await weth.balanceOf(oethArmAddress, { blockTag });
-
-  const oeth = await resolveAsset("OETH");
-  const liquidityOeth = await oeth.balanceOf(oethArmAddress, { blockTag });
-  const liquidityOethWithdraws = await outstandingWithdrawalAmount({
-    withdrawer: oethArmAddress,
+  const liquiditySymbol = arm === "Origin" ? "WS" : "WETH";
+  const liquidAsset = await resolveAsset(liquiditySymbol);
+  const liquidityBalance = await liquidAsset.balanceOf(armAddress, {
+    blockTag,
   });
 
-  const total = liquidityWeth + liquidityOeth + liquidityOethWithdraws;
-  const wethPercent = total == 0 ? 0 : (liquidityWeth * 10000n) / total;
-  const oethWithdrawsPercent =
-    total == 0 ? 0 : (liquidityOethWithdraws * 10000n) / total;
-  const oethPercent = total == 0 ? 0 : (liquidityOeth * 10000n) / total;
+  const baseSymbol = arm === "Origin" ? "OS" : "OETH";
+  const baseAsset = await resolveAsset(baseSymbol);
+  const baseBalance = await baseAsset.balanceOf(armAddress, { blockTag });
+  const baseWithdraws = await outstandingWithdrawalAmount({
+    withdrawer: armAddress,
+  });
+
+  let lendingMarketBalance = 0n;
+  if (arm === "Origin") {
+    // Get the lending market from the active SiloMarket
+    const armContract = await ethers.getContractAt(`${arm}ARM`, armAddress);
+    const marketAddress = await armContract.activeMarket({ blockTag });
+    const market = await ethers.getContractAt("SiloMarket", marketAddress);
+    // Get the liquidity assets in the lending market
+    const lendingVaultAddress = await market.market({ blockTag });
+    const lendingVault = await ethers.getContractAt(
+      "IERC4626",
+      lendingVaultAddress
+    );
+    const armShares = await lendingVault.balanceOf(marketAddress, { blockTag });
+    lendingMarketBalance = await lendingVault.convertToAssets(armShares, {
+      blockTag,
+    });
+  }
+
+  const total =
+    liquidityBalance + baseBalance + baseWithdraws + lendingMarketBalance;
+  const liquidityPercent = total == 0 ? 0 : (liquidityBalance * 10000n) / total;
+  const baseWithdrawsPercent =
+    total == 0 ? 0 : (baseWithdraws * 10000n) / total;
+  const basePercent = total == 0 ? 0 : (baseBalance * 10000n) / total;
+  const lendingMarketPercent =
+    total == 0 ? 0 : (lendingMarketBalance * 10000n) / total;
 
   console.log(
-    `${formatUnits(liquidityWeth, 18)} WETH ${formatUnits(wethPercent, 2)}%`
+    `${formatUnits(liquidityBalance, 18)} ${liquiditySymbol} ${formatUnits(
+      liquidityPercent,
+      2
+    )}%`
   );
   console.log(
-    `${formatUnits(liquidityOeth, 18)} OETH ${formatUnits(oethPercent, 2)}%`
+    `${formatUnits(baseBalance, 18)} ${baseSymbol} ${formatUnits(
+      basePercent,
+      2
+    )}%`
   );
   console.log(
     `${formatUnits(
-      liquidityOethWithdraws,
+      baseWithdraws,
       18
-    )} OETH in withdrawal requests ${formatUnits(oethWithdrawsPercent, 2)}%`
+    )} ${baseSymbol} in withdrawal requests ${formatUnits(
+      baseWithdrawsPercent,
+      2
+    )}%`
   );
-  console.log(`${formatUnits(total, 18)} total WETH and OETH`);
+  console.log(
+    `${formatUnits(
+      lendingMarketBalance,
+      18
+    )} ${liquiditySymbol} in active lending market ${formatUnits(
+      lendingMarketPercent,
+      2
+    )}%`
+  );
+  console.log(`${formatUnits(total, 18)} total`);
 };
 
 module.exports = {

@@ -7,14 +7,6 @@ import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Ini
 import {Ownable} from "../Ownable.sol";
 import {IDistributionManager, SiloIncentivesControllerGaugeLike} from "../Interfaces.sol";
 
-interface ISiloMarket {
-    function hookReceiver() external returns (address);
-}
-
-interface IHookReceiver {
-    function configuredGauges(address shareToken) external returns (address gauge);
-}
-
 /**
  * @title Silo lending market wrapper so rewards can be collected.
  * @author Origin Protocol Inc
