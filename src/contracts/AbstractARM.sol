@@ -860,17 +860,19 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
         int256 liquidityDelta = armLiquidity - SafeCast.toInt256(targetArmLiquidity);
 
+        // Load the active lending market address from storage to save gas
+        address activeMarketMem = activeMarket;
         if (liquidityDelta > 0) {
             // We have too much liquidity in the ARM, we need to deposit some to the active lending market
 
             uint256 depositAmount = SafeCast.toUint256(liquidityDelta);
 
-            IERC20(liquidityAsset).approve(activeMarket, depositAmount);
-            IERC4626(activeMarket).deposit(depositAmount, address(this));
+            IERC20(liquidityAsset).approve(activeMarketMem, depositAmount);
+            IERC4626(activeMarketMem).deposit(depositAmount, address(this));
         } else if (liquidityDelta < 0) {
             // We have too little liquidity in the ARM, we need to withdraw some from the active lending market
 
-            uint256 availableMarketAssets = IERC4626(activeMarket).maxWithdraw(address(this));
+            uint256 availableMarketAssets = IERC4626(activeMarketMem).maxWithdraw(address(this));
             uint256 desiredWithdrawAmount = SafeCast.toUint256(-liquidityDelta);
 
             if (availableMarketAssets < desiredWithdrawAmount) {
@@ -878,18 +880,18 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
                 // maxRedeem is used instead of balanceOf as we want to redeem as much as possible without failing.
                 // redeem of the ARM's balance can fail if the lending market is highly utilized or temporarily paused.
                 // Redeem and not withdrawal is used to avoid leaving a small amount of assets in the market.
-                uint256 shares = IERC4626(activeMarket).maxRedeem(address(this));
+                uint256 shares = IERC4626(activeMarketMem).maxRedeem(address(this));
                 if (shares <= minSharesToRedeem) return;
                 // This should not fail according to the ERC-4626 spec as maxRedeem was used earlier
                 // but it depends on the 4626 implementation of the lending market.
                 // It may fail if the market is highly utilized and not compliant with 4626.
-                IERC4626(activeMarket).redeem(shares, address(this), address(this));
+                IERC4626(activeMarketMem).redeem(shares, address(this), address(this));
             } else {
-                IERC4626(activeMarket).withdraw(desiredWithdrawAmount, address(this), address(this));
+                IERC4626(activeMarketMem).withdraw(desiredWithdrawAmount, address(this), address(this));
             }
         }
 
-        emit Allocated(activeMarket, liquidityDelta);
+        emit Allocated(activeMarketMem, liquidityDelta);
     }
 
     ////////////////////////////////////////////////////
