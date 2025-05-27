@@ -153,7 +153,7 @@ contract SiloMarket is Initializable, Ownable {
         uint256 length = data.length;
         address[] memory tokens = new address[](length);
         uint256[] memory amounts = new uint256[](length);
-        for (uint256 i = 0; i < length; i++) {
+        for (uint256 i = 0; i < length; ++i) {
             tokens[i] = data[i].rewardToken;
             amounts[i] = data[i].amount;
         }
