@@ -118,7 +118,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     address public activeMarket;
     /// @notice Lending markets that can be used by the ARM.
     mapping(address market => bool supported) public supportedMarkets;
-    /// @notice Percentage of liquid assets to keep in the ARM. 100% = 1e18.
+    /// @notice Percentage of available liquid assets to keep in the ARM. 100% = 1e18.
     uint256 public armBuffer;
 
     uint256[38] private _gap;
@@ -854,6 +854,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         _allocate();
     }
 
+    /// @notice Deposit or withdraw liquidity assets to/from the active lending market
+    /// to match the ARM's liquidity buffer which is a percentage of the available assets.
+    /// Will revert if there is no active lending market set.
     function allocate() external {
         require(activeMarket != address(0), "ARM: no active market");
 
@@ -917,6 +920,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         emit CapManagerUpdated(_capManager);
     }
 
+    /// @notice Set the ARM buffer which is a percentage of the available assets.
+    /// @param _armBuffer The new ARM buffer scaled to 1e18 (100%).
     function setARMBuffer(uint256 _armBuffer) external onlyOwner {
         require(_armBuffer <= 1e18, "ARM: invalid arm buffer");
         armBuffer = _armBuffer;

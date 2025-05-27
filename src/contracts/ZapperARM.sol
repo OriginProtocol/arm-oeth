@@ -15,6 +15,7 @@ import {ILiquidityProviderARM} from "./Interfaces.sol";
  * @author Origin Protocol Inc
  */
 contract ZapperARM is Ownable {
+    /// @notice The address of the wrapped S token (wS)
     IWETH public immutable ws;
 
     event Zap(address indexed arm, address indexed sender, uint256 assets, uint256 shares);
