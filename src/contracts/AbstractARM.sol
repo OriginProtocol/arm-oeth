@@ -815,7 +815,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         require(_market == address(0) || supportedMarkets[_market], "ARM: market not supported");
         // Read once from storage to save gas and make it clear this is the previous active market
         address previousActiveMarket = activeMarket;
-        require(previousActiveMarket != _market, "ARM: already active market");
+        // Don't revert if the previous active market is the same as the new one
+        if (previousActiveMarket == _market) return;
 
         if (previousActiveMarket != address(0)) {
             // Redeem all shares from the previous active lending market.
