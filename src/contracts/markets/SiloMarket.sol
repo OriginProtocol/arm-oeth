@@ -109,6 +109,7 @@ contract SiloMarket is Initializable, Ownable {
 
     /// @notice Get the amount of asset tokens that can be received
     /// from burning an exact amount of Silo lending market shares.
+    /// @param shares The exact amount of Silo lending market shares to burn.
     /// @return assets The amount of asset tokens that will be received.
     function previewRedeem(uint256 shares) external view returns (uint256 assets) {
         // Preview the amount of assets that can be redeemed for a given number of shares
