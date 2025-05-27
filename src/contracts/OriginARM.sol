@@ -78,7 +78,7 @@ contract OriginARM is Initializable, AbstractARM {
     /**
      * @notice Claim multiple previously requested withdrawals from the Origin Vault.
      * The caller should check the withdrawal has passed the withdrawal delay
-     * and there is enough liquidity in the Vualt.
+     * and there is enough liquidity in the Vault.
      * @param requestIds The request IDs of the withdrawal requests.
      * @param amountClaimed The total amount claimed across all withdrawal requests.
      */
