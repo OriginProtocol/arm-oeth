@@ -62,7 +62,7 @@ contract SiloMarket is Initializable, Ownable {
         return IERC4626(market).balanceOf(address(this));
     }
 
-    /// @notice Deposit a exact amount of asset tokens to the Silo lending market
+    /// @notice Deposit an exact amount of asset tokens to the Silo lending market
     /// and mint a variable amount of Silo lending market shares to this contract.
     /// @param assets The exact amount of asset tokens to deposit.
     /// @param receiver The receiver has to be the address of the ARM contract.
@@ -92,7 +92,7 @@ contract SiloMarket is Initializable, Ownable {
         maxAssets = IERC4626(market).maxWithdraw(address(this));
     }
 
-    /// @notice Withdraw a exact amount of asset tokens from the Silo lending market
+    /// @notice Withdraw an exact amount of asset tokens from the Silo lending market
     /// from the Silo lending market shares owned by this contract.
     /// @param assets The exact amount of asset tokens to withdraw.
     /// @param receiver The receiver has to be the address of the ARM contract.

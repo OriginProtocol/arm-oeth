@@ -71,7 +71,6 @@ contract SonicHarvester is Initializable, OwnableOperable {
         liquidityAsset = _liquidityAsset;
     }
 
-    /// @notice
     function initialize(
         address _priceProvider,
         uint256 _allowedSlippageBps,
