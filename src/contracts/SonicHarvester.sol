@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.23;
 
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {IERC20, IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
@@ -21,8 +21,6 @@ contract SonicHarvester is Initializable, OwnableOperable {
 
     /// @notice All reward tokens are swapped to the ARM's liquidity asset.
     address public immutable liquidityAsset;
-    /// @notice The address of the Magpie router that performs swaps
-    address public immutable magpieRouter;
 
     /// @notice Mapping of strategies that rewards can be collected from
     mapping(address => bool) public supportedStrategies;
@@ -33,6 +31,10 @@ contract SonicHarvester is Initializable, OwnableOperable {
     /// @notice Address receiving rewards proceeds. Initially this will be the ARM contract,
     /// later this could be a Dripper contract that eases out rewards distribution.
     address public rewardRecipient;
+    /// @notice The address of the Magpie router that performs swaps
+    address public magpieRouter;
+
+    uint256[45] private _gap;
 
     event SupportedStrategyUpdate(address strategy, bool isSupported);
     event RewardTokenSwapped(
@@ -46,6 +48,7 @@ contract SonicHarvester is Initializable, OwnableOperable {
     event RewardRecipientUpdated(address rewardRecipient);
     event AllowedSlippageUpdated(uint256 allowedSlippageBps);
     event PriceProviderUpdated(address priceProvider);
+    event MagpieRouterUpdated(address router);
 
     error SlippageError(uint256 actualBalance, uint256 minExpected);
     error BalanceMismatchAfterSwap(uint256 actualBalance, uint256 minExpected);
@@ -61,24 +64,23 @@ contract SonicHarvester is Initializable, OwnableOperable {
     error InvalidDecimals();
     error InvalidAllowedSlippage(uint256 allowedSlippageBps);
 
-    constructor(address _liquidityAsset, address _magpieRouter) {
+    constructor(address _liquidityAsset) {
         if (_liquidityAsset == address(0)) revert EmptyLiquidityAsset();
-        if (_magpieRouter == address(0)) revert EmptyMagpieRouter();
         if (IERC20Metadata(_liquidityAsset).decimals() != 18) revert InvalidDecimals();
 
         liquidityAsset = _liquidityAsset;
-        magpieRouter = _magpieRouter;
     }
 
-    /// @notice
-    function initialize(address _priceProvider, uint256 _allowedSlippageBps, address _rewardRecipient)
-        external
-        initializer
-        onlyOwner
-    {
+    function initialize(
+        address _priceProvider,
+        uint256 _allowedSlippageBps,
+        address _rewardRecipient,
+        address _magpieRouter
+    ) external initializer onlyOwner {
         _setPriceProvider(_priceProvider);
         _setAllowedSlippage(_allowedSlippageBps);
         _setRewardRecipient(_rewardRecipient);
+        _setMagpieRouter(_magpieRouter);
     }
 
     /**
@@ -112,6 +114,7 @@ contract SonicHarvester is Initializable, OwnableOperable {
      * @param fromAsset The address of the reward token to swap from.
      * @param fromAssetAmount The amount of reward tokens to swap from.
      * @param data aggregator specific data. eg Magpie's swapWithMagpieSignature data
+     * @return toAssetAmount The amount of liquidity assets received from the swap.
      */
     function swap(SwapPlatform swapPlatform, address fromAsset, uint256 fromAssetAmount, bytes calldata data)
         external
@@ -219,6 +222,7 @@ contract SonicHarvester is Initializable, OwnableOperable {
     ////////////////////////////////////////////////////
 
     /// @notice Set the address of the price provider contract providing Oracle prices.
+    /// @param _priceProvider Address of the price provider contract
     function setPriceProvider(address _priceProvider) external onlyOwner {
         _setPriceProvider(_priceProvider);
     }
@@ -231,6 +235,7 @@ contract SonicHarvester is Initializable, OwnableOperable {
 
     /// @notice Set a new reward recipient that receives liquidity assets after
     /// rewards tokens are swapped.
+    /// @param _rewardRecipient Address of the new reward recipient
     function setRewardRecipient(address _rewardRecipient) external onlyOwner {
         _setRewardRecipient(_rewardRecipient);
     }
@@ -242,6 +247,12 @@ contract SonicHarvester is Initializable, OwnableOperable {
         supportedStrategies[_strategyAddress] = _isSupported;
 
         emit SupportedStrategyUpdate(_strategyAddress, _isSupported);
+    }
+
+    /// @notice Set the MagpieRouter address
+    /// @param _router New router address
+    function setMagpieRouter(address _router) external onlyOwner {
+        _setMagpieRouter(_router);
     }
 
     function _setPriceProvider(address _priceProvider) internal {
@@ -263,5 +274,13 @@ contract SonicHarvester is Initializable, OwnableOperable {
         rewardRecipient = _rewardRecipient;
 
         emit RewardRecipientUpdated(_rewardRecipient);
+    }
+
+    function _setMagpieRouter(address _router) internal {
+        if (_router == address(0)) revert EmptyMagpieRouter();
+
+        magpieRouter = _router;
+
+        emit MagpieRouterUpdated(_router);
     }
 }

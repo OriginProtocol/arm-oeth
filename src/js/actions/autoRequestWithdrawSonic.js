@@ -1,11 +1,10 @@
 const { Defender } = require("@openzeppelin/defender-sdk");
 const { ethers } = require("ethers");
 
-const { autoClaimWithdraw } = require("../tasks/liquidity");
-const { mainnet } = require("../utils/addresses");
+const { autoRequestWithdraw } = require("../tasks/liquidity");
+const { sonic } = require("../utils/addresses");
 const erc20Abi = require("../../abis/ERC20.json");
 const oethARMAbi = require("../../abis/OethARM.json");
-const vaultAbi = require("../../abis/vault.json");
 
 // Entrypoint for the Autotask
 const handler = async (event) => {
@@ -22,15 +21,14 @@ const handler = async (event) => {
   );
 
   // References to contracts
-  const liquidityAsset = new ethers.Contract(mainnet.WETH, erc20Abi, signer);
-  const vault = new ethers.Contract(mainnet.OETHVaultProxy, vaultAbi, signer);
-  const arm = new ethers.Contract(mainnet.OethARM, oethARMAbi, signer);
+  const asset = new ethers.Contract(sonic.OSonicProxy, erc20Abi, signer);
+  const arm = new ethers.Contract(sonic.OriginARM, oethARMAbi, signer);
 
-  await autoClaimWithdraw({
+  await autoRequestWithdraw({
     signer,
-    liquidityAsset,
+    asset,
     arm,
-    vault,
+    minAmount: 1,
     confirm: true,
   });
 };

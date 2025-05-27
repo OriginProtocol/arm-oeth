@@ -19,19 +19,6 @@ const { resolveAddress, resolveAsset } = require("../utils/assets");
 
 const log = require("../utils/logger")("task:lido");
 
-async function setZapper() {
-  const signer = await getSigner();
-
-  const lidoArmAddress = await parseDeployedAddress("LIDO_ARM");
-  const lidoARM = await ethers.getContractAt("LidoARM", lidoArmAddress);
-
-  const zapperAddress = await parseDeployedAddress("LIDO_ARM_ZAPPER");
-
-  log(`About to set the Zapper contract on the Lido ARM to ${zapperAddress}`);
-  const tx = await lidoARM.connect(signer).setZap(zapperAddress);
-  await logTxDetails(tx, "setZap");
-}
-
 const lidoWithdrawStatus = async ({ block, id }) => {
   const blockTag = await getBlock(block);
   const lidoWithdrawalQueueAddress = await parseAddress("LIDO_WITHDRAWAL");
@@ -354,5 +341,4 @@ module.exports = {
   submitLido,
   swapLido,
   snapLido,
-  setZapper,
 };

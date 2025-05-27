@@ -74,6 +74,7 @@ library Sonic {
 
     // Contracts
     address public constant OS_VAULT = 0xa3c0eCA00D2B76b4d1F170b0AB3FdeA16C180186;
+    address public constant ORIGIN_ARM = 0x2F872623d1E1Af5835b08b0E49aAd2d81d649D30;
 
     // Silo lending markets
     // wOS - S market (bwS-22)
@@ -83,8 +84,8 @@ library Sonic {
     address public constant SILO_VARLAMORE_S_VAULT = 0xDED4aC8645619334186f28B8798e07ca354CFa0e;
     address public constant SILO_VARLAMORE_S_GAUGE = 0x542Ed7D6f2e4c25f84D9c205C139234D6A4d000d;
 
-    // Magpie aggregator
-    address public constant MAGPIE_ROUTER = 0xba7bAC71a8Ee550d89B827FE6d67bc3dCA07b104;
+    // Magpie aggregator - MagpieRouterV3_1
+    address public constant MAGPIE_ROUTER = 0xc325856e5585823aaC0D1Fd46c35c608D95E65A9;
 }
 
 contract AddressResolver {
@@ -121,7 +122,7 @@ contract AddressResolver {
 
         // Test accounts
         resolver[MAINNET]["DEPLOYER"] = address(0x1001);
-        resolver[MAINNET]["WHALE_OETH"] = 0x8E02247D3eE0E6153495c971FFd45Aa131f4D7cB;
+        resolver[MAINNET]["WHALE_OETH"] = 0xA7c82885072BADcF3D0277641d55762e65318654;
 
         ///// Holesky //////
         // Governance
@@ -151,6 +152,7 @@ contract AddressResolver {
 
         // Contracts
         resolver[SONIC]["OS_VAULT"] = Sonic.OS_VAULT;
+        resolver[SONIC]["ORIGIN_ARM"] = Sonic.ORIGIN_ARM;
         resolver[SONIC]["SILO_WOS_S_MARKET"] = Sonic.SILO_OS;
 
         // Test accounts

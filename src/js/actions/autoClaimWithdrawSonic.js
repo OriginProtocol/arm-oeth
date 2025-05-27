@@ -2,7 +2,7 @@ const { Defender } = require("@openzeppelin/defender-sdk");
 const { ethers } = require("ethers");
 
 const { autoClaimWithdraw } = require("../tasks/liquidity");
-const { mainnet } = require("../utils/addresses");
+const { sonic } = require("../utils/addresses");
 const erc20Abi = require("../../abis/ERC20.json");
 const oethARMAbi = require("../../abis/OethARM.json");
 const vaultAbi = require("../../abis/vault.json");
@@ -22,9 +22,9 @@ const handler = async (event) => {
   );
 
   // References to contracts
-  const liquidityAsset = new ethers.Contract(mainnet.WETH, erc20Abi, signer);
-  const vault = new ethers.Contract(mainnet.OETHVaultProxy, vaultAbi, signer);
-  const arm = new ethers.Contract(mainnet.OethARM, oethARMAbi, signer);
+  const liquidityAsset = new ethers.Contract(sonic.WS, erc20Abi, signer);
+  const vault = new ethers.Contract(sonic.OSonicVaultProxy, vaultAbi, signer);
+  const arm = new ethers.Contract(sonic.OriginARM, oethARMAbi, signer);
 
   await autoClaimWithdraw({
     signer,
@@ -33,6 +33,9 @@ const handler = async (event) => {
     vault,
     confirm: true,
   });
+
+  // Allocate any excess liquidity to the lending market
+  await arm.allocate();
 };
 
 module.exports = { handler };

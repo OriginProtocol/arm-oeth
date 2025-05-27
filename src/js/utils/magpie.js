@@ -17,13 +17,11 @@ const magpieQuote = async ({
   const fromAsset = await resolveAddress(from);
   const toAsset = await resolveAddress(to);
 
-  const fromAmount = parseUnits(amount.toString(), 18);
-
   const params = {
     network: "sonic",
     fromTokenAddress: fromAsset,
     toTokenAddress: toAsset,
-    sellAmount: fromAmount.toString(),
+    sellAmount: amount.toString(),
     slippage,
     gasless: false,
     fromAddress: swapper,
@@ -38,7 +36,7 @@ const magpieQuote = async ({
     });
 
     const toAmount = parseUnits(response.data.amountOut, 18);
-    const price = (fromAmount * parseUnits("1", 22)) / toAmount;
+    const price = (amount * parseUnits("1", 22)) / toAmount;
 
     log("Magpie quote response: ", response.data);
 

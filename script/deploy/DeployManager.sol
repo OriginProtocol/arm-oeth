@@ -3,6 +3,7 @@ pragma solidity 0.8.23;
 
 import "forge-std/Script.sol";
 import {VmSafe} from "forge-std/Vm.sol";
+import {stdJson} from "forge-std/StdJson.sol";
 
 import {AbstractDeployScript} from "./AbstractDeployScript.sol";
 import {DeployCoreMainnetScript} from "./mainnet/001_DeployCoreScript.sol";
@@ -12,9 +13,12 @@ import {UpdateCrossPriceMainnetScript} from "./mainnet/004_UpdateCrossPriceScrip
 import {RegisterLidoWithdrawalsScript} from "./mainnet/005_RegisterLidoWithdrawalsScript.sol";
 import {DeployCoreHoleskyScript} from "./holesky/001_DeployCoreScript.sol";
 import {UpgradeHoleskyScript} from "./holesky/002_UpgradeScript.sol";
-import {DeployOriginARMScript} from "./sonic/001_DeployOriginARM.sol";
+import {DeployOriginARMProxyScript} from "./sonic/001_DeployOriginARMProxy.sol";
+import {DeployOriginARMScript} from "./sonic/002_DeployOriginARM.sol";
 
 contract DeployManager is Script {
+    using stdJson for string;
+
     mapping(string => address) public deployedContracts;
     mapping(string => bool) public scriptsExecuted;
 
@@ -61,17 +65,19 @@ contract DeployManager is Script {
         if (block.chainid == 1 || block.chainid == 31337) {
             // TODO: Use vm.readDir to recursively build this?
             _runDeployFile(new DeployCoreMainnetScript());
-            _runDeployFile(new UpgradeMainnetScript(this));
+            _runDeployFile(new UpgradeMainnetScript(getDeployment("OETH_ARM")));
             _runDeployFile(new UpgradeLidoARMMainnetScript());
             _runDeployFile(new UpdateCrossPriceMainnetScript());
             _runDeployFile(new RegisterLidoWithdrawalsScript());
         } else if (block.chainid == 17000) {
             // Holesky
             _runDeployFile(new DeployCoreHoleskyScript());
-            _runDeployFile(new UpgradeHoleskyScript(this));
+            _runDeployFile(new UpgradeHoleskyScript(getDeployment("OETH_ARM")));
         } else if (block.chainid == 146) {
             // Sonic
-            _runDeployFile(new DeployOriginARMScript());
+            console.log("Deploying Origin ARM");
+            _runDeployFile(new DeployOriginARMProxyScript());
+            _runDeployFile(new DeployOriginARMScript(getDeployedAddressInBuild("ORIGIN_ARM")));
         } else {
             console.log("Skipping deployment (not mainnet)");
         }
@@ -163,7 +169,14 @@ contract DeployManager is Script {
         }
     }
 
-    function getDeployment(string calldata contractName) external view returns (address) {
+    function getDeployment(string memory contractName) public view returns (address) {
         return deployedContracts[contractName];
+    }
+
+    function getDeployedAddressInBuild(string memory contractName) public view returns (address) {
+        string memory json = vm.readFile(getDeploymentFilePath());
+        string memory key = string(abi.encodePacked("$.contracts.", contractName));
+        require(json.keyExists(key), string(abi.encodePacked("Key ", contractName, " does not exist in JSON file")));
+        return json.readAddress(key);
     }
 }
