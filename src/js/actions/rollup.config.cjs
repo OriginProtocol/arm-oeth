@@ -49,6 +49,22 @@ module.exports = [
     ...commonConfig,
   },
   {
+    input: "autoRequestWithdrawSonic.js",
+    output: {
+      file: "dist/autoRequestWithdrawSonic/index.js",
+      format: "cjs",
+    },
+    ...commonConfig,
+  },
+  {
+    input: "autoClaimWithdrawSonic.js",
+    output: {
+      file: "dist/autoClaimWithdrawSonic/index.js",
+      format: "cjs",
+    },
+    ...commonConfig,
+  },
+  {
     input: "autoRequestLidoWithdraw.js",
     output: {
       file: "dist/autoRequestLidoWithdraw/index.js",
@@ -68,6 +84,22 @@ module.exports = [
     input: "collectLidoFees.js",
     output: {
       file: "dist/collectLidoFees/index.js",
+      format: "cjs",
+    },
+    ...commonConfig,
+  },
+  {
+    input: "collectFeesSonic.js",
+    output: {
+      file: "dist/collectFeesSonic/index.js",
+      format: "cjs",
+    },
+    ...commonConfig,
+  },
+  {
+    input: "collectRewardsSonic.js",
+    output: {
+      file: "dist/collectRewardsSonic/index.js",
       format: "cjs",
     },
     ...commonConfig,

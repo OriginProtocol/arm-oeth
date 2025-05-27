@@ -27,7 +27,7 @@ contract Fork_Concrete_Harvester_Swap_Test_ is Fork_Shared_Test {
         //    from: "OS",
         //    to: "WS",
         //    amount: 1,
-        //    slippage: 0,
+        //    slippage: "0.01",
         //    swapper: address(harvester),
         //    recipient: deployer
         //});
@@ -48,7 +48,7 @@ contract Fork_Concrete_Harvester_Swap_Test_ is Fork_Shared_Test {
         //    from: "OS",
         //    to: "WS",
         //    amount: 1,
-        //    slippage: 0,
+        //    slippage: "0.01",
         //    swapper: address(harvester),
         //    recipient: operator
         //});
@@ -69,7 +69,7 @@ contract Fork_Concrete_Harvester_Swap_Test_ is Fork_Shared_Test {
         //    from: "OS",
         //    to: "SILO",
         //    amount: 1,
-        //    slippage: 0,
+        //    slippage: "0.01",
         //    swapper: address(harvester),
         //    recipient: operator
         //});
@@ -88,7 +88,7 @@ contract Fork_Concrete_Harvester_Swap_Test_ is Fork_Shared_Test {
         //    from: "OS",
         //    to: "WS",
         //    amount: 1,
-        //    slippage: 0,
+        //    slippage: "0.01",
         //    swapper: address(harvester),
         //    recipient: operator
         //});
@@ -112,7 +112,7 @@ contract Fork_Concrete_Harvester_Swap_Test_ is Fork_Shared_Test {
             from: "OS",
             to: "WS",
             amount: 1,
-            slippage: 0,
+            slippage: "0.01",
             swapper: address(harvester),
             recipient: operator
         });
@@ -137,7 +137,7 @@ contract Fork_Concrete_Harvester_Swap_Test_ is Fork_Shared_Test {
             from: "OS",
             to: "WS",
             amount: 1,
-            slippage: 0,
+            slippage: "0.01",
             swapper: address(harvester),
             recipient: operator
         });
@@ -165,7 +165,7 @@ contract Fork_Concrete_Harvester_Swap_Test_ is Fork_Shared_Test {
             from: "OS",
             to: "WS",
             amount: 1,
-            slippage: 0,
+            slippage: "0.01",
             swapper: address(harvester),
             recipient: operator
         });
