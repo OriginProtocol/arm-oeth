@@ -784,7 +784,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     ///  3. no fees.
     /// @param _markets The addresses of the lending markets to add
     function addMarkets(address[] calldata _markets) external onlyOwner {
-        for (uint256 i = 0; i < _markets.length; i++) {
+        for (uint256 i = 0; i < _markets.length; ++i) {
             address market = _markets[i];
             require(market != address(0), "ARM: invalid market");
             require(!supportedMarkets[market], "ARM: market already supported");
