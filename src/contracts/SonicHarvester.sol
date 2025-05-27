@@ -114,6 +114,7 @@ contract SonicHarvester is Initializable, OwnableOperable {
      * @param fromAsset The address of the reward token to swap from.
      * @param fromAssetAmount The amount of reward tokens to swap from.
      * @param data aggregator specific data. eg Magpie's swapWithMagpieSignature data
+     * @return toAssetAmount The amount of liquidity assets received from the swap.
      */
     function swap(SwapPlatform swapPlatform, address fromAsset, uint256 fromAssetAmount, bytes calldata data)
         external
@@ -221,6 +222,7 @@ contract SonicHarvester is Initializable, OwnableOperable {
     ////////////////////////////////////////////////////
 
     /// @notice Set the address of the price provider contract providing Oracle prices.
+    /// @param _priceProvider Address of the price provider contract
     function setPriceProvider(address _priceProvider) external onlyOwner {
         _setPriceProvider(_priceProvider);
     }
@@ -233,6 +235,7 @@ contract SonicHarvester is Initializable, OwnableOperable {
 
     /// @notice Set a new reward recipient that receives liquidity assets after
     /// rewards tokens are swapped.
+    /// @param _rewardRecipient Address of the new reward recipient
     function setRewardRecipient(address _rewardRecipient) external onlyOwner {
         _setRewardRecipient(_rewardRecipient);
     }
