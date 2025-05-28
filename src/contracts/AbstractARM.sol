@@ -884,6 +884,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
         // Load the active lending market address from storage to save gas
         address activeMarketMem = activeMarket;
+
         // The allocateThreshold prevents the ARM from constantly depositing and withdrawing if there are rounding issues
         if (liquidityDelta > allocateThreshold) {
             // We have too much liquidity in the ARM, we need to deposit some to the active lending market
