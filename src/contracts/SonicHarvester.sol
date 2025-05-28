@@ -121,15 +121,15 @@ contract SonicHarvester is Initializable, OwnableOperable {
         onlyOperatorOrOwner
         returns (uint256 toAssetAmount)
     {
-        uint256 recipientAssetBefore = IERC20(liquidityAsset).balanceOf(rewardRecipient);
+        uint256 liquidityAssetsBefore = IERC20(liquidityAsset).balanceOf(address(this));
 
         // Validate the swap data and do the swap
         toAssetAmount = _doSwap(swapPlatform, fromAsset, fromAssetAmount, data);
 
-        // Check the recipient of the swap got the reported amount of liquidity assets
-        uint256 recipientAssets = IERC20(liquidityAsset).balanceOf(rewardRecipient) - recipientAssetBefore;
-        if (recipientAssets < toAssetAmount) {
-            revert BalanceMismatchAfterSwap(recipientAssets, toAssetAmount);
+        // Check this Harvester got the reported amount of liquidity assets
+        uint256 liquidityAssetsReceived = IERC20(liquidityAsset).balanceOf(address(this)) - liquidityAssetsBefore;
+        if (liquidityAssetsReceived < toAssetAmount) {
+            revert BalanceMismatchAfterSwap(liquidityAssetsReceived, toAssetAmount);
         }
 
         emit RewardTokenSwapped(fromAsset, liquidityAsset, swapPlatform, fromAssetAmount, toAssetAmount);
@@ -148,6 +148,9 @@ contract SonicHarvester is Initializable, OwnableOperable {
         if (toAssetAmount < minExpected) {
             revert SlippageError(toAssetAmount, minExpected);
         }
+
+        // Transfer the liquidity assets to the reward recipient
+        IERC20(liquidityAsset).safeTransfer(rewardRecipient, toAssetAmount);
     }
 
     /// @dev Platform specific swap logic
@@ -203,7 +206,7 @@ contract SonicHarvester is Initializable, OwnableOperable {
                 parsedFromAssetAmount := shr(fromAssetAmountShift, parsedFromAssetAmount)
             }
 
-            if (rewardRecipient != parsedRecipient) revert InvalidSwapRecipient(parsedRecipient);
+            if (address(this) != parsedRecipient) revert InvalidSwapRecipient(parsedRecipient);
             if (fromAsset != parsedFromAsset) revert InvalidFromAsset(parsedFromAsset);
             if (liquidityAsset != parsedToAsset) revert InvalidToAsset(parsedToAsset);
             if (fromAssetAmount != parsedFromAssetAmount) revert InvalidFromAssetAmount(parsedFromAssetAmount);
