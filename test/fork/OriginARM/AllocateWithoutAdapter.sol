@@ -24,19 +24,12 @@ contract Fork_Concrete_OriginARM_AllocateWithoutAdapter_Test_ is Fork_Shared_Tes
         // Assertions before allocation
         assertEq(market.balanceOf(address(originARM)), 0, "shares before");
         assertEq(originARM.totalAssets(), MIN_TOTAL_SUPPLY, "totalAssets before");
-        uint256 expectedShares = market.convertToShares(MIN_TOTAL_SUPPLY);
-
-        // Expected event
-        vm.expectEmit(address(market));
-        emit IERC4626.Deposit(address(originARM), address(originARM), MIN_TOTAL_SUPPLY, expectedShares);
-        vm.expectEmit(address(originARM));
-        emit AbstractARM.Allocated(address(market), MIN_TOTAL_SUPPLY.toInt256());
 
         // Main call
         originARM.setActiveMarket(address(market));
 
         // Assertions after allocation
-        assertEq(market.balanceOf(address(originARM)), expectedShares, "shares after");
+        assertEq(market.balanceOf(address(originARM)), 0, "shares after");
         assertApproxEqAbs(originARM.totalAssets(), MIN_TOTAL_SUPPLY, 1, "totalAssets after");
     }
 
@@ -48,21 +41,21 @@ contract Fork_Concrete_OriginARM_AllocateWithoutAdapter_Test_ is Fork_Shared_Tes
         deposit(alice, DEFAULT_AMOUNT)
     {
         // Assertions before allocation
-        assertEq(market.balanceOf(address(originARM)), initialShares, "shares before");
+        assertEq(market.balanceOf(address(originARM)), 0, "shares before");
         assertApproxEqAbs(originARM.totalAssets(), DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, 1, "totalAssets before");
-        uint256 expectedShares = market.convertToShares(DEFAULT_AMOUNT);
+        uint256 expectedShares = market.convertToShares(DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY);
 
         // Expected event
         vm.expectEmit(address(market));
-        emit IERC4626.Deposit(address(originARM), address(originARM), DEFAULT_AMOUNT, expectedShares);
+        emit IERC4626.Deposit(address(originARM), address(originARM), DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, expectedShares);
         vm.expectEmit(address(originARM));
-        emit AbstractARM.Allocated(address(market), DEFAULT_AMOUNT.toInt256());
+        emit AbstractARM.Allocated(address(market), (DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY).toInt256());
 
         // Main call
         originARM.allocate();
 
         // Assertions after allocation
-        assertEq(market.balanceOf(address(originARM)), expectedShares + initialShares, "shares after");
+        assertEq(market.balanceOf(address(originARM)), expectedShares, "shares after");
         assertApproxEqAbs(originARM.totalAssets(), DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, 1, "totalAssets after");
     }
 

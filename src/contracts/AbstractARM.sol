@@ -22,9 +22,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     uint256 public constant MAX_CROSS_PRICE_DEVIATION = 20e32;
     /// @notice Scale of the prices.
     uint256 public constant PRICE_SCALE = 1e36;
-    /// @dev The amount of shares that are minted to a dead address on initialization
+    /// @notice The amount of shares that are minted to a dead address on initialization
     uint256 internal constant MIN_TOTAL_SUPPLY = 1e12;
-    /// @dev The address with no known private key that the initial shares are minted to
+    /// @notice The address with no known private key that the initial shares are minted to
     address internal constant DEAD_ACCOUNT = 0x000000000000000000000000000000000000dEaD;
     /// @notice The scale of the performance fee
     /// 10,000 = 100% performance fee
@@ -33,8 +33,13 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     ////////////////////////////////////////////////////
     ///             Immutable Variables
     ////////////////////////////////////////////////////
-    /// @dev The minimum amount of shares that can be redeemed from the active market.
+    /// @notice The minimum amount of shares that can be redeemed from the active market.
     uint256 public immutable minSharesToRedeem;
+    /// @notice The minimum amount of liquidity assets in excess of the ARM buffer before
+    /// the ARM can allocate to a active lending market.
+    /// This should be close to zero.
+    /// @dev This prevents allocate flipping between depositing/withdrawing to/from the active market
+    int256 public immutable allocateThreshold;
     /// @notice The address of the asset that is used to add and remove liquidity. eg WETH
     /// This is also the quote asset when the prices are set.
     /// eg the stETH/WETH price has a base asset of stETH and quote asset of WETH.
@@ -149,7 +154,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         address _token1,
         address _liquidityAsset,
         uint256 _claimDelay,
-        uint256 _minSharesToRedeem
+        uint256 _minSharesToRedeem,
+        int256 _allocateThreshold
     ) {
         require(IERC20(_token0).decimals() == 18);
         require(IERC20(_token1).decimals() == 18);
@@ -166,6 +172,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         // The base asset, eg stETH, is not the liquidity asset, eg WETH
         baseAsset = _liquidityAsset == _token0 ? _token1 : _token0;
         minSharesToRedeem = _minSharesToRedeem;
+
+        require(_allocateThreshold >= 0, "invalid allocate threshold");
+        allocateThreshold = _allocateThreshold;
     }
 
     /// @notice Initialize the contract.
@@ -875,7 +884,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
         // Load the active lending market address from storage to save gas
         address activeMarketMem = activeMarket;
-        if (liquidityDelta > 0) {
+
+        // The allocateThreshold prevents the ARM from constantly depositing and withdrawing if there are rounding issues
+        if (liquidityDelta > allocateThreshold) {
             // We have too much liquidity in the ARM, we need to deposit some to the active lending market
 
             uint256 depositAmount = SafeCast.toUint256(liquidityDelta);
