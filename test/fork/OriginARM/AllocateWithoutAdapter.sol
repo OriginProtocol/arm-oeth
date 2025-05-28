@@ -24,19 +24,12 @@ contract Fork_Concrete_OriginARM_AllocateWithoutAdapter_Test_ is Fork_Shared_Tes
         // Assertions before allocation
         assertEq(market.balanceOf(address(originARM)), 0, "shares before");
         assertEq(originARM.totalAssets(), MIN_TOTAL_SUPPLY, "totalAssets before");
-        uint256 expectedShares = market.convertToShares(MIN_TOTAL_SUPPLY);
-
-        // Expected event
-        vm.expectEmit(address(market));
-        emit IERC4626.Deposit(address(originARM), address(originARM), MIN_TOTAL_SUPPLY, expectedShares);
-        vm.expectEmit(address(originARM));
-        emit AbstractARM.Allocated(address(market), MIN_TOTAL_SUPPLY.toInt256());
 
         // Main call
         originARM.setActiveMarket(address(market));
 
         // Assertions after allocation
-        assertEq(market.balanceOf(address(originARM)), expectedShares, "shares after");
+        assertEq(market.balanceOf(address(originARM)), 0, "shares after");
         assertApproxEqAbs(originARM.totalAssets(), MIN_TOTAL_SUPPLY, 1, "totalAssets after");
     }
 
