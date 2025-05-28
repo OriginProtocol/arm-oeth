@@ -16,7 +16,7 @@ import {AbstractDeployScript} from "../AbstractDeployScript.sol";
 
 contract DeployOriginARMScript is AbstractDeployScript {
     string public constant override DEPLOY_NAME = "002_DeployOriginARMScript";
-    bool public constant override proposalExecuted = false;
+    bool public constant override proposalExecuted = true;
 
     Proxy public originARMProxy;
 

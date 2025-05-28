@@ -979,13 +979,13 @@ subtask("magpieQuote", "Get a quote from Magpie for a swap")
   .addOptionalParam(
     "swapper",
     "Account or contract swapping the from tokens",
-    "0x531B8D5eD6db72A56cF1238D4cE478E7cB7f2825",
+    "0x08876C0F5a80c1a43A6396b13A881A26F4b6Adfe",
     types.string
   )
   .addOptionalParam(
     "recipient",
     "Where the swapped tokens are sent",
-    "0x531B8D5eD6db72A56cF1238D4cE478E7cB7f2825",
+    "0x2F872623d1E1Af5835b08b0E49aAd2d81d649D30",
     types.string
   )
 
