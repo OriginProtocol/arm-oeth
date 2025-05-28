@@ -15,7 +15,7 @@ import {DeployCoreHoleskyScript} from "./holesky/001_DeployCoreScript.sol";
 import {UpgradeHoleskyScript} from "./holesky/002_UpgradeScript.sol";
 import {DeployOriginARMProxyScript} from "./sonic/001_DeployOriginARMProxy.sol";
 import {DeployOriginARMScript} from "./sonic/002_DeployOriginARM.sol";
-import {UpgradeSonicHarvesterScript} from "./sonic/003_UpgradeSonicHarvester.sol";
+import {UpgradeOriginARMScript} from "./sonic/003_UpgradeOriginARM.sol";
 
 contract DeployManager is Script {
     using stdJson for string;
@@ -79,7 +79,11 @@ contract DeployManager is Script {
             console.log("Deploying Origin ARM");
             _runDeployFile(new DeployOriginARMProxyScript());
             _runDeployFile(new DeployOriginARMScript(getDeployedAddressInBuild("ORIGIN_ARM")));
-            _runDeployFile(new UpgradeSonicHarvesterScript(getDeployedAddressInBuild("HARVESTER")));
+            _runDeployFile(
+                new UpgradeOriginARMScript(
+                    getDeployedAddressInBuild("HARVESTER"), getDeployedAddressInBuild("ORIGIN_ARM")
+                )
+            );
         } else {
             console.log("Skipping deployment (not mainnet)");
         }
