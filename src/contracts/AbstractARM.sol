@@ -583,12 +583,17 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         // Store the updated claimed amount
         withdrawsClaimed += SafeCast.toUint128(assets);
 
-        // If there is not enough liquidity assets in the ARM, get from the active market
-        uint256 liquidityInARM = IERC20(liquidityAsset).balanceOf(address(this));
-        if (assets > liquidityInARM) {
-            uint256 liquidityFromMarket = assets - liquidityInARM;
-            // This should work as we have checked earlier the claimable() amount which includes the active market
-            IERC4626(activeMarket).withdraw(liquidityFromMarket, address(this), address(this));
+        // If there is not enough liquidity assets in the ARM, get from the active market if one is configured.
+        // Read the active market address from storage once to save gas.
+        address activeMarketMem = activeMarket;
+        if (activeMarketMem != address(0)) {
+            uint256 liquidityInARM = IERC20(liquidityAsset).balanceOf(address(this));
+
+            if (assets > liquidityInARM) {
+                uint256 liquidityFromMarket = assets - liquidityInARM;
+                // This should work as we have checked earlier the claimable() amount which includes the active market
+                IERC4626(activeMarketMem).withdraw(liquidityFromMarket, address(this), address(this));
+            }
         }
 
         // transfer the liquidity asset to the withdrawer
