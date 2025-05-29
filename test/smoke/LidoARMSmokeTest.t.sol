@@ -92,7 +92,7 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
         if (inToken == weth) {
             // Trader is buying stETH and selling WETH
             // the ARM is selling stETH and buying WETH
-            deal(address(weth), address(this), 1000 ether);
+            deal(address(weth), address(this), 1_000_000 ether);
             _dealStETH(address(lidoARM), 1000 ether);
 
             expectedOut = amountIn * 1e36 / price;
@@ -103,7 +103,7 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
             // Trader is selling stETH and buying WETH
             // the ARM is buying stETH and selling WETH
             _dealStETH(address(this), 1000 ether);
-            deal(address(weth), address(lidoARM), 1000 ether);
+            deal(address(weth), address(lidoARM), 1_000_000 ether);
 
             expectedOut = amountIn * price / 1e36;
 
