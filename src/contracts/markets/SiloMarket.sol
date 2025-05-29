@@ -52,16 +52,6 @@ contract SiloMarket is Initializable, Ownable {
         _setHarvester(_harvester);
     }
 
-    /// @notice Get the amount of Silo Market shares owned by this contract.
-    /// @param owner The owner has to be the address of the ARM contract.
-    /// @return shares The amount of Silo lending market shares owned by this contract.
-    function balanceOf(address owner) external view returns (uint256) {
-        if (owner != arm) return 0;
-
-        // Get the balance of shares in the lending market
-        return IERC4626(market).balanceOf(address(this));
-    }
-
     /// @notice Deposit an exact amount of asset tokens to the Silo lending market
     /// and mint a variable amount of Silo lending market shares to this contract.
     /// @param assets The exact amount of asset tokens to deposit.
@@ -162,6 +152,34 @@ contract SiloMarket is Initializable, Ownable {
         emit CollectedRewards(tokens, amounts);
 
         return (tokens, amounts);
+    }
+
+    ////////////////////////////////////////////////////
+    ///         View Functions
+    ////////////////////////////////////////////////////
+
+    /// @notice Get the amount of Silo Market shares owned by this contract.
+    /// @param owner The owner has to be the address of the ARM contract.
+    /// @return shares The amount of Silo lending market shares owned by this contract.
+    function balanceOf(address owner) external view returns (uint256) {
+        if (owner != arm) return 0;
+
+        // Get the balance of shares in the lending market
+        return IERC4626(market).balanceOf(address(this));
+    }
+
+    /// @notice The amount of shares that would exchanged for the amount of assets provided.
+    /// @param assets The amount of asset tokens to convert to shares.
+    /// @return shares The amount of Silo lending market shares that would be received.
+    function convertToShares(uint256 assets) external view returns (uint256 shares) {
+        shares = IERC4626(market).convertToShares(assets);
+    }
+
+    /// @notice The amount of assets that would be exchanged for the amount of shares provided.
+    /// @param shares The amount of Silo lending market shares to convert to assets.
+    /// @return assets The amount of asset tokens that would be received.
+    function convertToAssets(uint256 shares) external view returns (uint256 assets) {
+        assets = IERC4626(market).convertToAssets(shares);
     }
 
     ////////////////////////////////////////////////////

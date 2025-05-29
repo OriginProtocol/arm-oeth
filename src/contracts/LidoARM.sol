@@ -151,8 +151,13 @@ contract LidoARM is Initializable, AbstractARM {
             totalAmountRequested += requestAmount;
         }
 
-        // Store the reduced amount outstanding from the Lido Withdrawal Queue
-        lidoWithdrawalQueueAmount -= totalAmountRequested;
+        // Store the reduced outstanding withdrawals from the Lido Withdrawal Queue
+        if (lidoWithdrawalQueueAmount < totalAmountRequested) {
+            // This can happen if a Lido withdrawal request was transferred to the ARM contract
+            lidoWithdrawalQueueAmount = 0;
+        } else {
+            lidoWithdrawalQueueAmount -= totalAmountRequested;
+        }
 
         // Wrap all the received ETH to WETH.
         weth.deposit{value: address(this).balance}();

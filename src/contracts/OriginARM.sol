@@ -91,7 +91,8 @@ contract OriginARM is Initializable, AbstractARM {
         // Claim the previously requested withdrawals from the Origin Vault.
         (, amountClaimed) = IOriginVault(vault).claimWithdrawals(requestIds);
 
-        // Store the reduced amount outstanding withdrawals from the Origin Vault
+        // Store the reduced outstanding withdrawals from the Origin Vault.
+        // Origin Vault withdrawals are not transferrable so its safe to reduce the amount.
         vaultWithdrawalAmount -= amountClaimed;
 
         emit ClaimOriginWithdrawals(requestIds, amountClaimed);
