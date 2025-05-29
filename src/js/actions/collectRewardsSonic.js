@@ -34,6 +34,8 @@ const handler = async (event) => {
   } catch (error) {
     console.error(error);
   }
+
+  // TODO do Silo, beS and wOS swaps with Magpie
 };
 
 module.exports = { handler };
