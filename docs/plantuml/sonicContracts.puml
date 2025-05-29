@@ -16,14 +16,16 @@ end legend
 title "Sonic Automated Redemption Manager (ARM) Contract Dependencies"
 
 
-object "Zapper" as zap #$originColor {
+object "Sonic Zapper" as zap #$originColor {
+    asset: S
 }
 
 object "Origin ARM" as originArm <<Proxy>> #$originColor {
+    assets: OS, wS
 }
 
-object "Beets ARM" as beetsArm <<Proxy>> #$originColor {
-}
+' object "Beets ARM" as beetsArm <<Proxy>> #$originColor {
+' }
 
 ' object "Angles ARM" as anglesArm <<Proxy>> #$originColor {
 ' }
@@ -32,8 +34,8 @@ object "Beets ARM" as beetsArm <<Proxy>> #$originColor {
 ' }
 object "Origin\nCapManager" as osCapMan <<Proxy>> #$originColor {
 }
-object "Beets\nCapManager" as stCapMan <<Proxy>> #$originColor {
-}
+' object "Beets\nCapManager" as stCapMan <<Proxy>> #$originColor {
+' }
 ' object "Angles\nCapManager" as anCapMan <<Proxy>> #$originColor {
 ' }
 
@@ -43,10 +45,19 @@ object "Beets\nCapManager" as stCapMan <<Proxy>> #$originColor {
 ' object "Strategy" as strat <<Proxy>> #$originColor {
 ' }
 
-object "Silo\nStrategies" as siloStrategy #$originColor {
+object "Silo\nStrategy" as siloStrategy #$originColor {
+    asset: wS
 }
 
-object "Silo\nLending\nMarkets" as siloLend #$thirdPartyColor {
+object "Varlamore\nVault" as siloVault <<Silo>> #$thirdPartyColor {
+    asset: wS
+}
+object "Varlamore\nGauge" as siloGauge <<Silo>> #$thirdPartyColor {
+    asset: wS
+}
+
+object "Lending\nMarkets" as siloLend <<Silo>> #$thirdPartyColor {
+    markets: stS, wOS, wanS, beS
 }
 ' object "Lending\nMarket\nGauge" as gauge #$thirdPartyColor {
 ' }
@@ -54,29 +65,32 @@ object "Silo\nLending\nMarkets" as siloLend #$thirdPartyColor {
 ' }
 
 object "OS\nVault" as os <<Proxy>> #$originColor {
+    asset: wS
 }
 
-object "Beets\nVault" as beets #$thirdPartyColor {
-}
+' object "Beets\nVault" as beets #$thirdPartyColor {
+' }
 
 ' object "Angles\nVault" as angles #$thirdPartyColor {
 ' }
 
 object "Origin\nHarvester" as osHarv #$originColor {
+    reward: SILO
 }
 
-object "Beets\nHarvester" as stHarv #$originColor {
+' object "Beets\nHarvester" as stHarv #$originColor {
+' }
+
+object "Router" as magpie <<Magpie>> #$thirdPartyColor {
+    pair: SILO/wS
 }
 
-object "Magpie\nRouter" as magpie #$thirdPartyColor {
-}
+' object "Price\nProvider" as priceProvider #$originColor {
+'     Assets: Silo
+' }
 
-object "Price\nProvider" as priceProvider #$originColor {
-    Assets: Silo
-}
-
-object "Silo\nOracle" as siloOracle #$thirdPartyColor {
-}
+' object "Silo\nOracle" as siloOracle #$thirdPartyColor {
+' }
 
 ' arm .> strat : ERC-4626
 ' strat .> lend : ERC-4626
@@ -84,38 +98,40 @@ object "Silo\nOracle" as siloOracle #$thirdPartyColor {
 ' arm ..> lst
 
 zap ..> originArm
-zap ..> beetsArm
+' zap ..> beetsArm
 ' zap ..> anglesArm
 
 ' originArm <..> capMan
 ' beetsArm <..> capMan
 ' anglesArm <..> capMan
 originArm <.> osCapMan
-beetsArm <.> stCapMan
+' beetsArm <.> stCapMan
 ' anglesArm <..> anCapMan
 
 
 originArm <... osHarv
-beetsArm <... stHarv
+' beetsArm <... stHarv
 
 osHarv .> siloStrategy
-stHarv .> siloStrategy
+' stHarv .> siloStrategy
 
-originArm ...> siloStrategy
-beetsArm ...> siloStrategy
+originArm ..> siloStrategy
+siloStrategy ..> siloVault
+siloStrategy ..> siloGauge
+siloVault ..> siloLend
+' beetsArm ...> siloStrategy
 ' anglesArm ..> lend
 
 originArm ..> os
-beetsArm ..> beets
+' beetsArm ..> beets
 ' anglesArm ...> angles
 
 osHarv ..> magpie
-stHarv ..> magpie
+' stHarv ..> magpie
 
-osHarv ..> priceProvider
-stHarv ..> priceProvider
-priceProvider ..> siloOracle
+' osHarv ..> priceProvider
+' stHarv ..> priceProvider
+' priceProvider ..> siloOracle
 
-siloStrategy ..> siloLend
 
 @enduml

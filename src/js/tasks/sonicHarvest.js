@@ -1,8 +1,7 @@
-const { formatUnits, parseUnits } = require("ethers");
+const { formatUnits } = require("ethers");
 
 const { resolveAsset } = require("../utils/assets");
 const { logTxDetails } = require("../utils/txLogger");
-const { sonic } = require("../utils/addresses");
 const { magpieQuote } = require("../utils/magpie");
 
 const log = require("../utils/logger")("task:sonic:harvest");
@@ -15,8 +14,7 @@ async function collectRewards({ siloMarket, signer }) {
 
 async function harvestRewards({ harvester, signer }) {
   const silo = await resolveAsset("SILO");
-  //   const siloRewards = await silo.balanceOf(harvester.getAddress());
-  const siloRewards = parseUnits("100");
+  const siloRewards = await silo.balanceOf(harvester.getAddress());
 
   if (siloRewards == 0n) {
     console.log("No Silo rewards to harvest");
@@ -29,7 +27,7 @@ async function harvestRewards({ harvester, signer }) {
     amount: siloRewards,
     slippage: 0.5,
     swapper: await harvester.getAddress(),
-    recipient: sonic.OriginARM,
+    recipient: await harvester.getAddress(),
   });
 
   log(`About to harvest ${formatUnits(siloRewards)} Silo rewards using Magpie`);

@@ -28,7 +28,7 @@ const handler = async (event) => {
     signer,
     asset,
     arm,
-    minAmount: 1,
+    minAmount: 50,
     confirm: true,
   });
 };
