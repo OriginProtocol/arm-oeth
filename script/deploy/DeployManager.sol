@@ -81,7 +81,9 @@ contract DeployManager is Script {
             _runDeployFile(new DeployOriginARMScript(getDeployedAddressInBuild("ORIGIN_ARM")));
             _runDeployFile(
                 new UpgradeOriginARMScript(
-                    getDeployedAddressInBuild("HARVESTER"), getDeployedAddressInBuild("ORIGIN_ARM")
+                    getDeployedAddressInBuild("HARVESTER"),
+                    getDeployedAddressInBuild("ORIGIN_ARM"),
+                    getDeployedAddressInBuild("SILO_VARLAMORE_S_MARKET")
                 )
             );
         } else {
