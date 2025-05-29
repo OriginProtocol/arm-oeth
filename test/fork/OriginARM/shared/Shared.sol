@@ -86,7 +86,7 @@ abstract contract Fork_Shared_Test is Base_Test_, Modifiers {
         Proxy marketAdapterProxy = new Proxy();
 
         // --- Deploy OriginARM implementation
-        originARM = new OriginARM(address(os), address(ws), address(vault), CLAIM_DELAY, 1e7);
+        originARM = new OriginARM(address(os), address(ws), address(vault), CLAIM_DELAY, 1e7, 1e18);
 
         // --- Deploy SiloMarket implementation
         siloMarket = new SiloMarket(address(originARMProxy), Sonic.SILO_VARLAMORE_S_VAULT, Sonic.SILO_VARLAMORE_S_GAUGE);

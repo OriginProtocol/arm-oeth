@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.23;
 
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {IERC20, IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
@@ -71,7 +71,6 @@ contract SonicHarvester is Initializable, OwnableOperable {
         liquidityAsset = _liquidityAsset;
     }
 
-    /// @notice
     function initialize(
         address _priceProvider,
         uint256 _allowedSlippageBps,
@@ -115,21 +114,22 @@ contract SonicHarvester is Initializable, OwnableOperable {
      * @param fromAsset The address of the reward token to swap from.
      * @param fromAssetAmount The amount of reward tokens to swap from.
      * @param data aggregator specific data. eg Magpie's swapWithMagpieSignature data
+     * @return toAssetAmount The amount of liquidity assets received from the swap.
      */
     function swap(SwapPlatform swapPlatform, address fromAsset, uint256 fromAssetAmount, bytes calldata data)
         external
         onlyOperatorOrOwner
         returns (uint256 toAssetAmount)
     {
-        uint256 recipientAssetBefore = IERC20(liquidityAsset).balanceOf(rewardRecipient);
+        uint256 liquidityAssetsBefore = IERC20(liquidityAsset).balanceOf(address(this));
 
         // Validate the swap data and do the swap
         toAssetAmount = _doSwap(swapPlatform, fromAsset, fromAssetAmount, data);
 
-        // Check the recipient of the swap got the reported amount of liquidity assets
-        uint256 recipientAssets = IERC20(liquidityAsset).balanceOf(rewardRecipient) - recipientAssetBefore;
-        if (recipientAssets < toAssetAmount) {
-            revert BalanceMismatchAfterSwap(recipientAssets, toAssetAmount);
+        // Check this Harvester got the reported amount of liquidity assets
+        uint256 liquidityAssetsReceived = IERC20(liquidityAsset).balanceOf(address(this)) - liquidityAssetsBefore;
+        if (liquidityAssetsReceived < toAssetAmount) {
+            revert BalanceMismatchAfterSwap(liquidityAssetsReceived, toAssetAmount);
         }
 
         emit RewardTokenSwapped(fromAsset, liquidityAsset, swapPlatform, fromAssetAmount, toAssetAmount);
@@ -148,6 +148,9 @@ contract SonicHarvester is Initializable, OwnableOperable {
         if (toAssetAmount < minExpected) {
             revert SlippageError(toAssetAmount, minExpected);
         }
+
+        // Transfer the liquidity assets to the reward recipient
+        IERC20(liquidityAsset).safeTransfer(rewardRecipient, toAssetAmount);
     }
 
     /// @dev Platform specific swap logic
@@ -203,7 +206,7 @@ contract SonicHarvester is Initializable, OwnableOperable {
                 parsedFromAssetAmount := shr(fromAssetAmountShift, parsedFromAssetAmount)
             }
 
-            if (rewardRecipient != parsedRecipient) revert InvalidSwapRecipient(parsedRecipient);
+            if (address(this) != parsedRecipient) revert InvalidSwapRecipient(parsedRecipient);
             if (fromAsset != parsedFromAsset) revert InvalidFromAsset(parsedFromAsset);
             if (liquidityAsset != parsedToAsset) revert InvalidToAsset(parsedToAsset);
             if (fromAssetAmount != parsedFromAssetAmount) revert InvalidFromAssetAmount(parsedFromAssetAmount);
@@ -222,6 +225,7 @@ contract SonicHarvester is Initializable, OwnableOperable {
     ////////////////////////////////////////////////////
 
     /// @notice Set the address of the price provider contract providing Oracle prices.
+    /// @param _priceProvider Address of the price provider contract
     function setPriceProvider(address _priceProvider) external onlyOwner {
         _setPriceProvider(_priceProvider);
     }
@@ -234,6 +238,7 @@ contract SonicHarvester is Initializable, OwnableOperable {
 
     /// @notice Set a new reward recipient that receives liquidity assets after
     /// rewards tokens are swapped.
+    /// @param _rewardRecipient Address of the new reward recipient
     function setRewardRecipient(address _rewardRecipient) external onlyOwner {
         _setRewardRecipient(_rewardRecipient);
     }

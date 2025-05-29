@@ -17,7 +17,7 @@ contract OethARM is Initializable, OwnerLP, PeggedARM, OethLiquidityManager {
     /// @param _weth The address of the WETH token that is being swapped out of this contract.
     /// @param _oethVault The address of the OETH Vault proxy.
     constructor(address _oeth, address _weth, address _oethVault)
-        AbstractARM(_oeth, _weth, _weth, 10 minutes, 0)
+        AbstractARM(_oeth, _weth, _weth, 10 minutes, 0, 0)
         PeggedARM(false)
         OethLiquidityManager(_oeth, _oethVault)
     {}

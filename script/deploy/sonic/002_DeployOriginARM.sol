@@ -16,7 +16,7 @@ import {AbstractDeployScript} from "../AbstractDeployScript.sol";
 
 contract DeployOriginARMScript is AbstractDeployScript {
     string public constant override DEPLOY_NAME = "002_DeployOriginARMScript";
-    bool public constant override proposalExecuted = false;
+    bool public constant override proposalExecuted = true;
 
     Proxy public originARMProxy;
 
@@ -56,7 +56,7 @@ contract DeployOriginARMScript is AbstractDeployScript {
 
         // 6. Deploy new Origin ARM implementation
         uint256 claimDelay = tenderlyTestnet ? 1 minutes : 10 minutes;
-        originARMImpl = new OriginARM(Sonic.OS, Sonic.WS, Sonic.OS_VAULT, claimDelay, 1e7);
+        originARMImpl = new OriginARM(Sonic.OS, Sonic.WS, Sonic.OS_VAULT, claimDelay, 1e7, 1e18);
         _recordDeploy("ORIGIN_ARM_IMPL", address(originARMImpl));
 
         // 7. Approve a little bit of wS to be transferred to the ARM proxy

@@ -37,10 +37,10 @@ contract Unit_Concrete_OriginARM_Allocate_Test_ is Unit_Shared_Test {
         setARMBuffer(0)
         asRandomCaller
     {
-        assertEq(market.balanceOf(address(originARM)), MIN_TOTAL_SUPPLY, "Market balance should be MIN_TOTAL_SUPPLY");
+        assertEq(market.balanceOf(address(originARM)), 0, "Market balance should be zero");
 
         // Cheat and increase the available assets on ARM
-        deal(address(weth), address(originARM), DEFAULT_AMOUNT);
+        deal(address(weth), address(originARM), 2 * DEFAULT_AMOUNT);
 
         // Allocate
         originARM.allocate();
@@ -49,12 +49,12 @@ contract Unit_Concrete_OriginARM_Allocate_Test_ is Unit_Shared_Test {
         uint256 feesAccrued = originARM.feesAccrued();
         assertEq(
             market.balanceOf(address(originARM)),
-            MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT,
+            2 * DEFAULT_AMOUNT,
             "Market balance should be increased by DEFAULT_AMOUNT"
         );
         assertEq(
             originARM.totalAssets(),
-            DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY - feesAccrued,
+            2 * DEFAULT_AMOUNT - feesAccrued,
             "Total assets should be DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY"
         );
     }
@@ -68,7 +68,7 @@ contract Unit_Concrete_OriginARM_Allocate_Test_ is Unit_Shared_Test {
         requestRedeem(alice, 0.5 ether) // redeem 50% of shares
         asRandomCaller
     {
-        assertEq(market.balanceOf(address(originARM)), MIN_TOTAL_SUPPLY, "Market balance should be MIN_TOTAL_SUPPLY");
+        assertEq(market.balanceOf(address(originARM)), 0, "Market balance should be zero");
         assertEq(
             originARM.totalAssets(),
             DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY,
@@ -90,33 +90,47 @@ contract Unit_Concrete_OriginARM_Allocate_Test_ is Unit_Shared_Test {
         );
     }
 
-    /// @dev in this situation there is no direct WETH liquidity and armBuffer is set to 100%
+    /// @dev in this situation there is no direct WETH liquidity and armBuffer is set to 0%
     /// This means that the ARM wants to have 50% of his liquidity out of market.
     function test_Allocate_When_LiquidityDelta_IsNegative_PartialWithdraw_EnoughLiquidityOnMarket()
         public
         addMarket(address(market))
         setActiveMarket(address(market))
-        setARMBuffer(0.5 ether) // 50% of the assets in the market
-        deposit(alice, DEFAULT_AMOUNT)
-        requestRedeem(alice, 1 ether) // redeem 100% of shares
+        deposit(alice, 4 * DEFAULT_AMOUNT)
+        allocate
+        setARMBuffer(0.3 ether) // 30% of the assets in the ARM, 70% in the market
+        requestRedeem(alice, 0.25 ether) // redeem 25% of shares leaving 3 * DEFAULT_AMOUNT
         asRandomCaller
     {
-        assertEq(market.balanceOf(address(originARM)), MIN_TOTAL_SUPPLY, "Market balance should be MIN_TOTAL_SUPPLY");
-        assertEq(originARM.totalAssets(), MIN_TOTAL_SUPPLY, "Total assets should be MIN_TOTAL_SUPPLY");
+        assertEq(
+            market.balanceOf(address(originARM)),
+            MIN_TOTAL_SUPPLY + 4 * DEFAULT_AMOUNT,
+            "Market balance should be all assets before redeem request"
+        );
+        assertEq(
+            originARM.totalAssets(),
+            MIN_TOTAL_SUPPLY + 3 * DEFAULT_AMOUNT,
+            "Total assets should be assets after redeem request"
+        );
+        assertEq(weth.balanceOf(address(originARM)), 0, "ARM WETH balance should be zero");
 
         // Allocate
         originARM.allocate();
 
         assertEq(
             market.balanceOf(address(originARM)),
-            MIN_TOTAL_SUPPLY / 2,
-            "Market balance should be decreased by half of the MIN_TOTAL_SUPPLY"
+            (MIN_TOTAL_SUPPLY + 3 * DEFAULT_AMOUNT) * 70 / 100,
+            "Market balance should be 75% of the available liquidity"
         );
-        assertEq(originARM.totalAssets(), MIN_TOTAL_SUPPLY, "Total assets should be MIN_TOTAL_SUPPLY");
+        assertEq(
+            originARM.totalAssets(),
+            MIN_TOTAL_SUPPLY + 3 * DEFAULT_AMOUNT,
+            "Total assets should be assets after redeem request"
+        );
         assertEq(
             weth.balanceOf(address(originARM)),
-            DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY / 2,
-            "WETH balance should be increased"
+            (MIN_TOTAL_SUPPLY + 3 * DEFAULT_AMOUNT) * 30 / 100 + DEFAULT_AMOUNT,
+            "ARM WETH balance should be 30% of the available liquidity plus pending redeem"
         );
     }
 
@@ -129,7 +143,7 @@ contract Unit_Concrete_OriginARM_Allocate_Test_ is Unit_Shared_Test {
         requestRedeem(alice, 1 ether) // redeem 100% of shares
         asRandomCaller
     {
-        assertEq(market.balanceOf(address(originARM)), MIN_TOTAL_SUPPLY, "Market balance should be MIN_TOTAL_SUPPLY");
+        assertEq(market.balanceOf(address(originARM)), 0, "Market balance should be zero");
         assertEq(originARM.totalAssets(), MIN_TOTAL_SUPPLY, "Total assets should be MIN_TOTAL_SUPPLY");
 
         // Allocate
@@ -213,6 +227,7 @@ contract Unit_Concrete_OriginARM_Allocate_Test_ is Unit_Shared_Test {
 
     function test_Allocate_When_LiquidityDelta_IsNull()
         public
+        deposit(alice, 10 * DEFAULT_AMOUNT)
         setARMBuffer(0.2 ether)
         addMarket(address(market))
         setActiveMarket(address(market))
@@ -220,15 +235,33 @@ contract Unit_Concrete_OriginARM_Allocate_Test_ is Unit_Shared_Test {
     {
         assertEq(
             market.balanceOf(address(originARM)),
-            MIN_TOTAL_SUPPLY * 80 / 100,
-            "Market balance should be MIN_TOTAL_SUPPLY"
+            (MIN_TOTAL_SUPPLY + 10 * DEFAULT_AMOUNT) * 80 / 100,
+            "Market balance should be 80% of available liquidity"
         );
-        assertEq(originARM.totalAssets(), MIN_TOTAL_SUPPLY, "Total assets should be MIN_TOTAL_SUPPLY");
+        assertEq(
+            originARM.totalAssets(),
+            MIN_TOTAL_SUPPLY + 10 * DEFAULT_AMOUNT,
+            "Total assets should be MIN_TOTAL_SUPPLY + 10 * DEFAULT_AMOUNT"
+        );
+        assertEq(
+            weth.balanceOf(address(originARM)),
+            (MIN_TOTAL_SUPPLY + 10 * DEFAULT_AMOUNT) * 20 / 100,
+            "ARM WETH balance should be 20% of available liquidity"
+        );
 
         // Allocate
         originARM.allocate();
 
-        assertEq(market.balanceOf(address(originARM)), MIN_TOTAL_SUPPLY * 80 / 100, "Market balance should be the same");
-        assertEq(originARM.totalAssets(), MIN_TOTAL_SUPPLY, "Total assets should be the same");
+        assertEq(
+            market.balanceOf(address(originARM)),
+            (MIN_TOTAL_SUPPLY + 10 * DEFAULT_AMOUNT) * 80 / 100,
+            "Market balance should be the same"
+        );
+        assertEq(originARM.totalAssets(), MIN_TOTAL_SUPPLY + 10 * DEFAULT_AMOUNT, "Total assets should be the same");
+        assertEq(
+            weth.balanceOf(address(originARM)),
+            (MIN_TOTAL_SUPPLY + 10 * DEFAULT_AMOUNT) * 20 / 100,
+            "ARM WETH balance should be the same"
+        );
     }
 }

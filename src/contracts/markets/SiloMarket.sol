@@ -52,17 +52,7 @@ contract SiloMarket is Initializable, Ownable {
         _setHarvester(_harvester);
     }
 
-    /// @notice Get the amount of Silo Market shares owned by this contract.
-    /// @param owner The owner has to be the address of the ARM contract.
-    /// @return shares The amount of Silo lending market shares owned by this contract.
-    function balanceOf(address owner) external view returns (uint256) {
-        if (owner != arm) return 0;
-
-        // Get the balance of shares in the lending market
-        return IERC4626(market).balanceOf(address(this));
-    }
-
-    /// @notice Deposit a exact amount of asset tokens to the Silo lending market
+    /// @notice Deposit an exact amount of asset tokens to the Silo lending market
     /// and mint a variable amount of Silo lending market shares to this contract.
     /// @param assets The exact amount of asset tokens to deposit.
     /// @param receiver The receiver has to be the address of the ARM contract.
@@ -92,7 +82,7 @@ contract SiloMarket is Initializable, Ownable {
         maxAssets = IERC4626(market).maxWithdraw(address(this));
     }
 
-    /// @notice Withdraw a exact amount of asset tokens from the Silo lending market
+    /// @notice Withdraw an exact amount of asset tokens from the Silo lending market
     /// from the Silo lending market shares owned by this contract.
     /// @param assets The exact amount of asset tokens to withdraw.
     /// @param receiver The receiver has to be the address of the ARM contract.
@@ -109,6 +99,7 @@ contract SiloMarket is Initializable, Ownable {
 
     /// @notice Get the amount of asset tokens that can be received
     /// from burning an exact amount of Silo lending market shares.
+    /// @param shares The exact amount of Silo lending market shares to burn.
     /// @return assets The amount of asset tokens that will be received.
     function previewRedeem(uint256 shares) external view returns (uint256 assets) {
         // Preview the amount of assets that can be redeemed for a given number of shares
@@ -153,7 +144,7 @@ contract SiloMarket is Initializable, Ownable {
         uint256 length = data.length;
         address[] memory tokens = new address[](length);
         uint256[] memory amounts = new uint256[](length);
-        for (uint256 i = 0; i < length; i++) {
+        for (uint256 i = 0; i < length; ++i) {
             tokens[i] = data[i].rewardToken;
             amounts[i] = data[i].amount;
         }
@@ -161,6 +152,34 @@ contract SiloMarket is Initializable, Ownable {
         emit CollectedRewards(tokens, amounts);
 
         return (tokens, amounts);
+    }
+
+    ////////////////////////////////////////////////////
+    ///         View Functions
+    ////////////////////////////////////////////////////
+
+    /// @notice Get the amount of Silo Market shares owned by this contract.
+    /// @param owner The owner has to be the address of the ARM contract.
+    /// @return shares The amount of Silo lending market shares owned by this contract.
+    function balanceOf(address owner) external view returns (uint256) {
+        if (owner != arm) return 0;
+
+        // Get the balance of shares in the lending market
+        return IERC4626(market).balanceOf(address(this));
+    }
+
+    /// @notice The amount of shares that would exchanged for the amount of assets provided.
+    /// @param assets The amount of asset tokens to convert to shares.
+    /// @return shares The amount of Silo lending market shares that would be received.
+    function convertToShares(uint256 assets) external view returns (uint256 shares) {
+        shares = IERC4626(market).convertToShares(assets);
+    }
+
+    /// @notice The amount of assets that would be exchanged for the amount of shares provided.
+    /// @param shares The amount of Silo lending market shares to convert to assets.
+    /// @return assets The amount of asset tokens that would be received.
+    function convertToAssets(uint256 shares) external view returns (uint256 assets) {
+        assets = IERC4626(market).convertToAssets(shares);
     }
 
     ////////////////////////////////////////////////////

@@ -28,13 +28,17 @@ contract OriginARM is Initializable, AbstractARM {
     /// @param _liquidityAsset The address of the liquidity asset. eg WETH or wS
     /// @param _vault The address of the Origin Vault
     /// @param _claimDelay The delay in seconds before a user can claim a redeem from the request
+    /// @param _minSharesToRedeem The minimum amount of shares to redeem from the active lending market
+    /// @param _allocateThreshold The minimum amount of liquidity assets in excess of the ARM buffer before
+    /// the ARM can allocate to a active lending market.
     constructor(
         address _otoken,
         address _liquidityAsset,
         address _vault,
         uint256 _claimDelay,
-        uint256 _minSharesToRedeem
-    ) AbstractARM(_liquidityAsset, _otoken, _liquidityAsset, _claimDelay, _minSharesToRedeem) {
+        uint256 _minSharesToRedeem,
+        int256 _allocateThreshold
+    ) AbstractARM(_liquidityAsset, _otoken, _liquidityAsset, _claimDelay, _minSharesToRedeem, _allocateThreshold) {
         vault = _vault;
 
         _disableInitializers();
@@ -78,15 +82,17 @@ contract OriginARM is Initializable, AbstractARM {
     /**
      * @notice Claim multiple previously requested withdrawals from the Origin Vault.
      * The caller should check the withdrawal has passed the withdrawal delay
-     * and there is enough liquidity in the Vualt.
+     * and there is enough liquidity in the Vault.
      * @param requestIds The request IDs of the withdrawal requests.
      * @param amountClaimed The total amount claimed across all withdrawal requests.
+     * @return amountClaimed The total amount of oTokens claimed from the Origin Vault.
      */
     function claimOriginWithdrawals(uint256[] calldata requestIds) external returns (uint256 amountClaimed) {
         // Claim the previously requested withdrawals from the Origin Vault.
         (, amountClaimed) = IOriginVault(vault).claimWithdrawals(requestIds);
 
-        // Store the reduced amount outstanding withdrawals from the Origin Vault
+        // Store the reduced outstanding withdrawals from the Origin Vault.
+        // Origin Vault withdrawals are not transferrable so its safe to reduce the amount.
         vaultWithdrawalAmount -= amountClaimed;
 
         emit ClaimOriginWithdrawals(requestIds, amountClaimed);

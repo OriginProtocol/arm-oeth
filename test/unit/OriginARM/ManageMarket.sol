@@ -90,17 +90,6 @@ contract Unit_Concrete_OriginARM_ManageMarket_Test_ is Unit_Shared_Test {
         originARM.setActiveMarket(address(market));
     }
 
-    function test_RevertWhen_SetActiveMarket_Because_MarketAlreadyActive()
-        public
-        forceAvailableAssetsToZero
-        addMarket(address(market))
-        setActiveMarket(address(market))
-        asGovernor
-    {
-        vm.expectRevert("ARM: already active market");
-        originARM.setActiveMarket(address(market));
-    }
-
     ////////////////////////////////////////////////////
     /// --- TESTS
     ////////////////////////////////////////////////////
@@ -222,5 +211,21 @@ contract Unit_Concrete_OriginARM_ManageMarket_Test_ is Unit_Shared_Test {
 
         // Assertions after
         assertEq(originARM.activeMarket(), address(market2));
+    }
+
+    function test_SetActiveMarket_ToPreviousMarket()
+        public
+        addMarket(address(market))
+        setActiveMarket(address(market))
+        addMarket(address(market2))
+        asGovernor
+    {
+        // Assertions before
+        assertEq(originARM.activeMarket(), address(market));
+
+        originARM.setActiveMarket(address(market));
+
+        // Assertions after
+        assertEq(originARM.activeMarket(), address(market));
     }
 }
