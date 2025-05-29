@@ -96,7 +96,7 @@ const autoClaimWithdraw = async ({
 
   if (requestIds.length === 0) {
     log("No claimable requests");
-    return;
+    return requestIds;
   }
 
   log(`About to claim requests: ${requestIds} `);
@@ -105,6 +105,8 @@ const autoClaimWithdraw = async ({
     liquiditySymbol == "wS" ? "claimOriginWithdrawals" : "claimWithdrawals";
   const tx = await arm.connect(signer)[functionName](requestIds);
   await logTxDetails(tx, "claimWithdrawals", confirm);
+
+  return requestIds;
 };
 
 const withdrawRequestStatus = async ({ id, arm, vault }) => {

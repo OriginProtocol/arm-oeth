@@ -70,7 +70,7 @@ const claimableRequests = async ({ withdrawer, queuedAmountClaimable }) => {
   log(
     `About to get claimable withdrawal requests for withdrawer ${withdrawer} up to ${formatUnits(
       queuedAmountClaimable
-    )} WETH`
+    )}`
   );
 
   const query = gql`
