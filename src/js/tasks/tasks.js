@@ -874,7 +874,7 @@ subtask("allocate", "Allocate to/from the active lending market")
   .addOptionalParam(
     "arm",
     "The name of the ARM. eg Lido, OETH or Origin",
-    "Lido",
+    "Origin",
     types.string
   )
   .setAction(async ({ arm }) => {
