@@ -4,7 +4,7 @@ const log = require("../utils/logger")("task:admin");
 
 async function allocate({ arm, signer }) {
   log(`About to allocate to/from the active lending market`);
-  const tx = await arm.connect(signer).collectFees();
+  const tx = await arm.connect(signer).allocate();
   await logTxDetails(tx, "allocate");
 }
 

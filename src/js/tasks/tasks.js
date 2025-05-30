@@ -826,7 +826,7 @@ task("collectFees").setAction(async (_, __, runSuper) => {
 
 subtask("collectRewards", "Collect rewards")
   .addOptionalParam(
-    "name",
+    "arm",
     "The name of the ARM to collect rewards for. eg Lido or Origin",
     "Origin",
     types.string
@@ -874,7 +874,7 @@ subtask("allocate", "Allocate to/from the active lending market")
   .addOptionalParam(
     "arm",
     "The name of the ARM. eg Lido, OETH or Origin",
-    "Lido",
+    "Origin",
     types.string
   )
   .setAction(async ({ arm }) => {

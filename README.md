@@ -251,6 +251,11 @@ npx hardhat setActionVars --id c010fb76-ea63-409d-9981-69322d27993a
 npx hardhat setActionVars --id 127171fd-7b85-497e-8335-fd7907c08386
 npx hardhat setActionVars --id 84b5f134-8351-4402-8f6a-fb4376034bc4
 npx hardhat setActionVars --id ffcfc580-7b0a-42ed-a4f2-3f0a3add9779
+npx hardhat setActionVars --id 32dbc67b-89f3-4856-8f3d-ad4dc5a09322
+npx hardhat setActionVars --id 7a0cb2c9-11c2-41dd-bcd0-d7c2dbda6af6
+npx hardhat setActionVars --id a9fc4c86-0506-4809-afbc-93b5e558cb68
+npx hardhat setActionVars --id 12977d51-d107-45eb-ac20-45942009ab01
+npx hardhat setActionVars --id 6ec46510-0b8e-48b4-a4c8-de759aad0ba4
 
 # The Defender autotask client uses generic env var names so we'll set them first from the values in the .env file
 export API_KEY=
@@ -263,6 +268,11 @@ npx defender-autotask update-code c010fb76-ea63-409d-9981-69322d27993a ./dist/au
 npx defender-autotask update-code 127171fd-7b85-497e-8335-fd7907c08386 ./dist/autoClaimLidoWithdraw
 npx defender-autotask update-code 84b5f134-8351-4402-8f6a-fb4376034bc4 ./dist/collectLidoFees
 npx defender-autotask update-code ffcfc580-7b0a-42ed-a4f2-3f0a3add9779 ./dist/setPrices
+npx defender-autotask update-code 32dbc67b-89f3-4856-8f3d-ad4dc5a09322 ./dist/collectFeesSonic
+npx defender-autotask update-code 7a0cb2c9-11c2-41dd-bcd0-d7c2dbda6af6 ./dist/allocateSonic
+npx defender-autotask update-code a9fc4c86-0506-4809-afbc-93b5e558cb68 ./dist/collectRewardsSonic
+npx defender-autotask update-code 12977d51-d107-45eb-ac20-45942009ab01 ./dist/autoRequestWithdrawSonic
+npx defender-autotask update-code 6ec46510-0b8e-48b4-a4c8-de759aad0ba4 ./dist/autoClaimWithdrawSonic
 ```
 
 `rollup` and `defender-autotask` can be installed globally to avoid the `npx` prefix.

@@ -148,4 +148,12 @@ contract Fork_Concrete_LidoARM_TotalAssets_Test_ is Fork_Shared_Test_ {
         // vm.expectRevert(stdError.arithmeticError);
         assertEq(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY);
     }
+
+    function test_TotalAssets_FullLossOrARM() public depositInLidoARM(address(this), DEFAULT_AMOUNT) {
+        // Simulate a loss of assets
+        deal(address(weth), address(lidoARM), 0);
+
+        // Assert total assets is equal to the minimum total supply, even if the ARM is empty.
+        assertEq(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY);
+    }
 }

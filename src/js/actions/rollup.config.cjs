@@ -97,6 +97,14 @@ module.exports = [
     ...commonConfig,
   },
   {
+    input: "allocateSonic.js",
+    output: {
+      file: "dist/allocateSonic/index.js",
+      format: "cjs",
+    },
+    ...commonConfig,
+  },
+  {
     input: "collectRewardsSonic.js",
     output: {
       file: "dist/collectRewardsSonic/index.js",
