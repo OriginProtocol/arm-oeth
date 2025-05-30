@@ -870,21 +870,23 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @notice Deposit or withdraw liquidity assets to/from the active lending market
     /// to match the ARM's liquidity buffer which is a percentage of the available assets.
     /// Will revert if there is no active lending market set.
-    function allocate() external {
+    /// @return liquidityDelta The actual liquidity less target liquidity before
+    ///         the deposit/withdrawal to/from the active lending market.
+    function allocate() external returns (int256 liquidityDelta) {
         require(activeMarket != address(0), "ARM: no active market");
 
-        _allocate();
+        liquidityDelta = _allocate();
     }
 
-    function _allocate() internal {
+    function _allocate() internal returns (int256 liquidityDelta) {
         (uint256 availableAssets, uint256 outstandingWithdrawals) = _availableAssets();
-        if (availableAssets == 0) return;
+        if (availableAssets == 0) return 0;
 
         int256 armLiquidity = SafeCast.toInt256(IERC20(liquidityAsset).balanceOf(address(this)))
             - SafeCast.toInt256(outstandingWithdrawals);
         uint256 targetArmLiquidity = availableAssets * armBuffer / 1e18;
 
-        int256 liquidityDelta = armLiquidity - SafeCast.toInt256(targetArmLiquidity);
+        liquidityDelta = armLiquidity - SafeCast.toInt256(targetArmLiquidity);
 
         // Load the active lending market address from storage to save gas
         address activeMarketMem = activeMarket;
@@ -909,7 +911,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
                 // redeem of the ARM's balance can fail if the lending market is highly utilized or temporarily paused.
                 // Redeem and not withdrawal is used to avoid leaving a small amount of assets in the market.
                 uint256 shares = IERC4626(activeMarketMem).maxRedeem(address(this));
-                if (shares <= minSharesToRedeem) return;
+                if (shares <= minSharesToRedeem) return liquidityDelta;
                 // This should not fail according to the ERC-4626 spec as maxRedeem was used earlier
                 // but it depends on the 4626 implementation of the lending market.
                 // It may fail if the market is highly utilized and not compliant with 4626.
