@@ -58,7 +58,7 @@ contract Unit_Concrete_OriginARM_ClaimRedeem_Test_ is Unit_Shared_Test {
         originARM.claimRedeem(0);
     }
 
-    function test_ClaimRedeem() public requestRedeemAll(alice) timejump(CLAIM_DELAY) {
+    function test_ClaimRedeem_WithoutActiveMarket() public requestRedeemAll(alice) timejump(CLAIM_DELAY) {
         uint256 balanceBefore = weth.balanceOf(alice);
         // Alice claims her redeem
         vm.prank(alice);
@@ -71,5 +71,52 @@ contract Unit_Concrete_OriginARM_ClaimRedeem_Test_ is Unit_Shared_Test {
         assertEq(claimed, true, "Claimed should be true");
         assertEq(originARM.withdrawsClaimed(), DEFAULT_AMOUNT, "Claimed amount should be DEFAULT_AMOUNT");
         assertEq(weth.balanceOf(alice), balanceBefore + DEFAULT_AMOUNT, "Alice should receive her WETH");
+        assertEq(originARM.claimable(), DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, "Claimable should be updated");
+    }
+
+    function test_ClaimRedeem_WithActiveMarket_EnoughLiquidity()
+        public
+        setARMBuffer(1e18)
+        addMarket(address(market))
+        setActiveMarket(address(market))
+        requestRedeemAll(alice)
+        timejump(CLAIM_DELAY)
+    {
+        uint256 balanceBefore = weth.balanceOf(alice);
+        // Alice claims her redeem
+        vm.prank(alice);
+        vm.expectEmit(address(originARM));
+        emit AbstractARM.RedeemClaimed(alice, 0, DEFAULT_AMOUNT);
+        originARM.claimRedeem(0);
+
+        (, bool claimed,,,) = originARM.withdrawalRequests(0);
+        // Assertions
+        assertEq(claimed, true, "Claimed should be true");
+        assertEq(originARM.withdrawsClaimed(), DEFAULT_AMOUNT, "Claimed amount should be DEFAULT_AMOUNT");
+        assertEq(weth.balanceOf(alice), balanceBefore + DEFAULT_AMOUNT, "Alice should receive her WETH");
+        assertEq(originARM.claimable(), DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, "Claimable should be updated");
+    }
+
+    function test_ClaimRedeem_WithActiveMarket_NotEnoughLiquidity()
+        public
+        setARMBuffer(0)
+        addMarket(address(market))
+        setActiveMarket(address(market))
+        requestRedeemAll(alice)
+        timejump(CLAIM_DELAY)
+    {
+        uint256 balanceBefore = weth.balanceOf(alice);
+        // Alice claims her redeem
+        vm.prank(alice);
+        vm.expectEmit(address(originARM));
+        emit AbstractARM.RedeemClaimed(alice, 0, DEFAULT_AMOUNT);
+        originARM.claimRedeem(0);
+
+        (, bool claimed,,,) = originARM.withdrawalRequests(0);
+        // Assertions
+        assertEq(claimed, true, "Claimed should be true");
+        assertEq(originARM.withdrawsClaimed(), DEFAULT_AMOUNT, "Claimed amount should be DEFAULT_AMOUNT");
+        assertEq(weth.balanceOf(alice), balanceBefore + DEFAULT_AMOUNT, "Alice should receive her WETH");
+        assertEq(originARM.claimable(), DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, "Claimable should be updated");
     }
 }

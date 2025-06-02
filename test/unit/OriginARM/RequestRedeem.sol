@@ -28,6 +28,8 @@ contract Unit_Concrete_OriginARM_RequestRedeem_Test_ is Unit_Shared_Test {
         uint256 requestIndex = originARM.nextWithdrawalIndex();
         uint128 queued = originARM.withdrawsQueued();
         int128 lastAvailableAssets = originARM.lastAvailableAssets();
+        uint256 previewRedeem = originARM.previewRedeem(DEFAULT_AMOUNT);
+        assertEq(previewRedeem, expectedShares, "Preview redeem should match expected shares");
 
         // Expected event
         vm.expectEmit(address(originARM));
