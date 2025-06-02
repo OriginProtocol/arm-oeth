@@ -1,7 +1,8 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
 import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 import {OwnableOperable} from "./OwnableOperable.sol";
@@ -21,9 +22,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     uint256 public constant MAX_CROSS_PRICE_DEVIATION = 20e32;
     /// @notice Scale of the prices.
     uint256 public constant PRICE_SCALE = 1e36;
-    /// @dev The amount of shares that are minted to a dead address on initialization
+    /// @notice The amount of shares that are minted to a dead address on initialization
     uint256 internal constant MIN_TOTAL_SUPPLY = 1e12;
-    /// @dev The address with no known private key that the initial shares are minted to
+    /// @notice The address with no known private key that the initial shares are minted to
     address internal constant DEAD_ACCOUNT = 0x000000000000000000000000000000000000dEaD;
     /// @notice The scale of the performance fee
     /// 10,000 = 100% performance fee
@@ -32,7 +33,13 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     ////////////////////////////////////////////////////
     ///             Immutable Variables
     ////////////////////////////////////////////////////
-
+    /// @notice The minimum amount of shares that can be redeemed from the active market.
+    uint256 public immutable minSharesToRedeem;
+    /// @notice The minimum amount of liquidity assets in excess of the ARM buffer before
+    /// the ARM can allocate to a active lending market.
+    /// This should be close to zero.
+    /// @dev This prevents allocate flipping between depositing/withdrawing to/from the active market
+    int256 public immutable allocateThreshold;
     /// @notice The address of the asset that is used to add and remove liquidity. eg WETH
     /// This is also the quote asset when the prices are set.
     /// eg the stETH/WETH price has a base asset of stETH and quote asset of WETH.
@@ -112,7 +119,14 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @notice The address of the CapManager contract used to manage the ARM's liquidity provider and total assets caps.
     address public capManager;
 
-    uint256[41] private _gap;
+    /// @notice The address of the active lending market.
+    address public activeMarket;
+    /// @notice Lending markets that can be used by the ARM.
+    mapping(address market => bool supported) public supportedMarkets;
+    /// @notice Percentage of available liquid assets to keep in the ARM. 100% = 1e18.
+    uint256 public armBuffer;
+
+    uint256[38] private _gap;
 
     ////////////////////////////////////////////////////
     ///                 Events
@@ -129,8 +143,20 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     event FeeUpdated(uint256 fee);
     event FeeCollectorUpdated(address indexed newFeeCollector);
     event CapManagerUpdated(address indexed capManager);
+    event ActiveMarketUpdated(address indexed market);
+    event MarketAdded(address indexed market);
+    event MarketRemoved(address indexed market);
+    event ARMBufferUpdated(uint256 armBuffer);
+    event Allocated(address indexed market, int256 assets);
 
-    constructor(address _token0, address _token1, address _liquidityAsset, uint256 _claimDelay) {
+    constructor(
+        address _token0,
+        address _token1,
+        address _liquidityAsset,
+        uint256 _claimDelay,
+        uint256 _minSharesToRedeem,
+        int256 _allocateThreshold
+    ) {
         require(IERC20(_token0).decimals() == 18);
         require(IERC20(_token1).decimals() == 18);
 
@@ -145,6 +171,10 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         liquidityAsset = _liquidityAsset;
         // The base asset, eg stETH, is not the liquidity asset, eg WETH
         baseAsset = _liquidityAsset == _token0 ? _token1 : _token0;
+        minSharesToRedeem = _minSharesToRedeem;
+
+        require(_allocateThreshold >= 0, "invalid allocate threshold");
+        allocateThreshold = _allocateThreshold;
     }
 
     /// @notice Initialize the contract.
@@ -184,7 +214,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
         // Initialize the last available assets to the current available assets
         // This ensures no performance fee is accrued when the performance fee is calculated when the fee is set
-        lastAvailableAssets = SafeCast.toInt128(SafeCast.toInt256(_availableAssets()));
+        (uint256 availableAssets,) = _availableAssets();
+        lastAvailableAssets = SafeCast.toInt128(SafeCast.toInt256(availableAssets));
         _setFee(_fee);
         _setFeeCollector(_feeCollector);
 
@@ -530,7 +561,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         emit RedeemRequested(msg.sender, requestId, assets, queued, claimTimestamp);
     }
 
-    /// @notice Claim liquidity assets from a previous withdrawal request after the claim delay has passed
+    /// @notice Claim liquidity assets from a previous withdrawal request after the claim delay has passed.
+    /// This will withdraw from the active lending market if there are not enough liquidity assets in the ARM.
     /// @param requestId The index of the withdrawal request
     /// @return assets The amount of liquidity assets that were transferred to the redeemer
     function claimRedeem(uint256 requestId) external returns (uint256 assets) {
@@ -539,6 +571,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
         require(request.claimTimestamp <= block.timestamp, "Claim delay not met");
         // Is there enough liquidity to claim this request?
+        // This includes liquidity assets in the ARM and the the active lending market
         require(request.queued <= claimable(), "Queue pending liquidity");
         require(request.withdrawer == msg.sender, "Not requester");
         require(request.claimed == false, "Already claimed");
@@ -550,6 +583,19 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         // Store the updated claimed amount
         withdrawsClaimed += SafeCast.toUint128(assets);
 
+        // If there is not enough liquidity assets in the ARM, get from the active market if one is configured.
+        // Read the active market address from storage once to save gas.
+        address activeMarketMem = activeMarket;
+        if (activeMarketMem != address(0)) {
+            uint256 liquidityInARM = IERC20(liquidityAsset).balanceOf(address(this));
+
+            if (assets > liquidityInARM) {
+                uint256 liquidityFromMarket = assets - liquidityInARM;
+                // This should work as we have checked earlier the claimable() amount which includes the active market
+                IERC4626(activeMarketMem).withdraw(liquidityFromMarket, address(this), address(this));
+            }
+        }
+
         // transfer the liquidity asset to the withdrawer
         IERC20(liquidityAsset).transfer(msg.sender, assets);
 
@@ -558,9 +604,22 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
     /// @notice Used to work out if an ARM's withdrawal request can be claimed.
     /// If the withdrawal request's `queued` amount is less than the returned `claimable` amount, then it can be claimed.
-    function claimable() public view returns (uint256) {
-        return withdrawsClaimed + IERC20(liquidityAsset).balanceOf(address(this));
+    /// The `claimable` amount is the all the withdrawals already claimed plus the liquidity assets in the ARM
+    /// and active lending market.
+    /// @return claimableAmount The amount of liquidity assets that can be claimed
+    function claimable() public view returns (uint256 claimableAmount) {
+        claimableAmount = withdrawsClaimed + IERC20(liquidityAsset).balanceOf(address(this));
+
+        // if there is an active lending market, add to the claimable amount
+        address activeMarketMem = activeMarket;
+        if (activeMarketMem != address(0)) {
+            claimableAmount += IERC4626(activeMarketMem).maxWithdraw(address(this));
+        }
     }
+
+    ////////////////////////////////////////////////////
+    ///         Asset amount functions
+    ////////////////////////////////////////////////////
 
     /// @dev Checks if there is enough liquidity asset (WETH) in the ARM is not reserved for the withdrawal queue.
     // That is, the amount of liquidity assets (WETH) that is available to be swapped or collected as fees.
@@ -583,41 +642,51 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         );
     }
 
-    /// @notice The total amount of assets in the ARM and external withdrawal queue,
+    /// @notice The total amount of assets in the ARM, active lending market and external withdrawal queue,
     /// less the liquidity assets reserved for the ARM's withdrawal queue and accrued fees.
+    /// @return The total amount of assets in the ARM
     function totalAssets() public view virtual returns (uint256) {
         (uint256 fees, uint256 newAvailableAssets) = _feesAccrued();
 
         // total assets should only go up from the initial deposit amount that is burnt
-        // but in case of something unforeseen, return MIN_TOTAL_SUPPLY if fees is
-        // greater than or equal the available assets
-        if (fees >= newAvailableAssets) return MIN_TOTAL_SUPPLY;
+        // but in case of something unforeseen, return at least MIN_TOTAL_SUPPLY.
+        if (fees + MIN_TOTAL_SUPPLY >= newAvailableAssets) return MIN_TOTAL_SUPPLY;
 
         // Remove the performance fee from the available assets
         return newAvailableAssets - fees;
     }
 
     /// @dev Calculate the available assets which is the assets in the ARM, external withdrawal queue,
-    /// less liquidity assets reserved for the ARM's withdrawal queue.
+    /// and active lending market, less liquidity assets reserved for the ARM's withdrawal queue.
     /// This does not exclude any accrued performance fees.
-    function _availableAssets() internal view returns (uint256) {
-        // Liquidity assets, eg WETH, are priced at 1.0
+    function _availableAssets() internal view returns (uint256 availableAssets, uint256 outstandingWithdrawals) {
+        // Liquidity assets, eg WETH, in the ARM and lending markets are priced at 1.0
         // Base assets, eg stETH, in the withdrawal queue are also priced at 1.0
         // Base assets, eg stETH, in the ARM are priced at the cross price which is a discounted price
         uint256 assets = IERC20(liquidityAsset).balanceOf(address(this)) + _externalWithdrawQueue()
             + IERC20(baseAsset).balanceOf(address(this)) * crossPrice / PRICE_SCALE;
 
-        // The amount of liquidity assets (WETH) that is still to be claimed in the withdrawal queue
-        uint256 outstandingWithdrawals = withdrawsQueued - withdrawsClaimed;
+        address activeMarketMem = activeMarket;
+        if (activeMarketMem != address(0)) {
+            // Get all the active lending market shares owned by this ARM contract
+            uint256 allShares = IERC4626(activeMarketMem).balanceOf(address(this));
+            // Add all the assets in the active lending market.
+            // previewRedeem is used instead of maxWithdraw as maxWithdraw will return less if the market
+            // is highly utilized or has a temporary pause.
+            assets += IERC4626(activeMarketMem).previewRedeem(allShares);
+        }
+
+        // The amount of liquidity assets, eg WETH, that is still to be claimed in the withdrawal queue
+        outstandingWithdrawals = withdrawsQueued - withdrawsClaimed;
 
         // If the ARM becomes insolvent enough that the available assets in the ARM and external withdrawal queue
         // is less than the outstanding withdrawals and accrued fees.
         if (assets < outstandingWithdrawals) {
-            return 0;
+            return (0, outstandingWithdrawals);
         }
 
         // Need to remove the liquidity assets that have been reserved for the withdrawal queue
-        return assets - outstandingWithdrawals;
+        availableAssets = assets - outstandingWithdrawals;
     }
 
     /// @dev Hook for calculating the amount of assets in an external withdrawal queue like Lido or OETH
@@ -626,22 +695,18 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
     /// @notice Calculates the amount of shares for a given amount of liquidity assets
     /// @dev Total assets can't be zero. The lowest it can be is MIN_TOTAL_SUPPLY
+    /// @param assets The amount of liquidity assets to convert to shares
+    /// @return shares The amount of shares that would be minted for the given assets
     function convertToShares(uint256 assets) public view returns (uint256 shares) {
         shares = assets * totalSupply() / totalAssets();
     }
 
     /// @notice Calculates the amount of liquidity assets for a given amount of shares
     /// @dev Total supply can't be zero. The lowest it can be is MIN_TOTAL_SUPPLY
+    /// @param shares The amount of shares to convert to assets
+    /// @return assets The amount of liquidity assets that would be received for the given shares
     function convertToAssets(uint256 shares) public view returns (uint256 assets) {
         assets = (shares * totalAssets()) / totalSupply();
-    }
-
-    /// @notice Set the CapManager contract address.
-    /// Set to a zero address to disable the controller.
-    function setCapManager(address _capManager) external onlyOwner {
-        capManager = _capManager;
-
-        emit CapManagerUpdated(_capManager);
     }
 
     ////////////////////////////////////////////////////
@@ -658,6 +723,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     }
 
     /// @notice Owner sets the account/contract that receives the performance fee
+    /// @param _feeCollector The address of the fee collector
     function setFeeCollector(address _feeCollector) external onlyOwner {
         _setFeeCollector(_feeCollector);
     }
@@ -684,6 +750,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @notice Transfer accrued performance fees to the fee collector
     /// This requires enough liquidity assets (WETH) in the ARM that are not reserved
     /// for the withdrawal queue to cover the accrued fees.
+    /// @return fees The amount of performance fees collected
     function collectFees() public returns (uint256 fees) {
         uint256 newAvailableAssets;
         // Accrue any performance fees up to this point
@@ -711,12 +778,13 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     }
 
     /// @notice Calculates the performance fees accrued since the last time fees were collected
+    /// @param fees The amount of performance fees accrued
     function feesAccrued() external view returns (uint256 fees) {
         (fees,) = _feesAccrued();
     }
 
     function _feesAccrued() internal view returns (uint256 fees, uint256 newAvailableAssets) {
-        newAvailableAssets = _availableAssets();
+        (newAvailableAssets,) = _availableAssets();
 
         // Calculate the increase in assets since the last time fees were calculated
         int256 assetIncrease = SafeCast.toInt256(newAvailableAssets) - lastAvailableAssets;
@@ -725,5 +793,156 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         if (assetIncrease <= 0) return (0, newAvailableAssets);
 
         fees = SafeCast.toUint256(assetIncrease) * fee / FEE_SCALE;
+    }
+
+    ////////////////////////////////////////////////////
+    ///         Lending Market Functions
+    ////////////////////////////////////////////////////
+
+    /// @notice Owner adds supported lending market to the ARM.
+    /// In order to be a safe lending market for the ARM, it must be:
+    ///  1. up only exchange rate
+    ///  2. no slippage
+    ///  3. no fees.
+    /// @param _markets The addresses of the lending markets to add
+    function addMarkets(address[] calldata _markets) external onlyOwner {
+        for (uint256 i = 0; i < _markets.length; ++i) {
+            address market = _markets[i];
+            require(market != address(0), "ARM: invalid market");
+            require(!supportedMarkets[market], "ARM: market already supported");
+            require(IERC4626(market).asset() == liquidityAsset, "ARM: invalid market asset");
+
+            supportedMarkets[market] = true;
+
+            emit MarketAdded(market);
+        }
+    }
+
+    /// @notice Owner removes a supported lending market from the ARM.
+    /// This can not be the active market.
+    /// @param _market The address of the lending market to remove
+    function removeMarket(address _market) external onlyOwner {
+        require(_market != address(0), "ARM: invalid market");
+        require(supportedMarkets[_market], "ARM: market not supported");
+        require(_market != activeMarket, "ARM: market in active");
+
+        supportedMarkets[_market] = false;
+
+        emit MarketRemoved(_market);
+    }
+
+    /// @notice set a new active lending market for the ARM.
+    /// This can be set to address(0) to disable the use of a lending market.
+    /// @param _market The address of the lending market to set as active
+    function setActiveMarket(address _market) external onlyOperatorOrOwner {
+        require(_market == address(0) || supportedMarkets[_market], "ARM: market not supported");
+        // Read once from storage to save gas and make it clear this is the previous active market
+        address previousActiveMarket = activeMarket;
+        // Don't revert if the previous active market is the same as the new one
+        if (previousActiveMarket == _market) return;
+
+        if (previousActiveMarket != address(0)) {
+            // Redeem all shares from the previous active lending market.
+            // balanceOf is used instead of maxRedeem to ensure all shares are redeemed.
+            // maxRedeem can return a smaller amount of shares than balanceOf if the market is highly utilized.
+            uint256 shares = IERC4626(previousActiveMarket).balanceOf(address(this));
+
+            if (shares > 0) {
+                // This could fail if the market has high utilization. In this case, the Operator needs
+                // to wait until the utilization drops before setting a new active market.
+                // The redeem can also fail if the ARM has a dust amount of shares left. eg 100 wei.
+                // If that happens, the Operator can transfer a tiny amount of active market shares
+                // to the ARM so the following redeem will not fail.
+                IERC4626(previousActiveMarket).redeem(shares, address(this), address(this));
+            }
+        }
+
+        activeMarket = _market;
+
+        emit ActiveMarketUpdated(_market);
+
+        // Exit if no new active market
+        if (_market == address(0)) return;
+
+        _allocate();
+    }
+
+    /// @notice Deposit or withdraw liquidity assets to/from the active lending market
+    /// to match the ARM's liquidity buffer which is a percentage of the available assets.
+    /// Will revert if there is no active lending market set.
+    /// @return liquidityDelta The actual liquidity less target liquidity before
+    ///         the deposit/withdrawal to/from the active lending market.
+    function allocate() external returns (int256 liquidityDelta) {
+        require(activeMarket != address(0), "ARM: no active market");
+
+        liquidityDelta = _allocate();
+    }
+
+    function _allocate() internal returns (int256 liquidityDelta) {
+        (uint256 availableAssets, uint256 outstandingWithdrawals) = _availableAssets();
+        if (availableAssets == 0) return 0;
+
+        int256 armLiquidity = SafeCast.toInt256(IERC20(liquidityAsset).balanceOf(address(this)))
+            - SafeCast.toInt256(outstandingWithdrawals);
+        uint256 targetArmLiquidity = availableAssets * armBuffer / 1e18;
+
+        liquidityDelta = armLiquidity - SafeCast.toInt256(targetArmLiquidity);
+
+        // Load the active lending market address from storage to save gas
+        address activeMarketMem = activeMarket;
+
+        // The allocateThreshold prevents the ARM from constantly depositing and withdrawing if there are rounding issues
+        if (liquidityDelta > allocateThreshold) {
+            // We have too much liquidity in the ARM, we need to deposit some to the active lending market
+
+            uint256 depositAmount = SafeCast.toUint256(liquidityDelta);
+
+            IERC20(liquidityAsset).approve(activeMarketMem, depositAmount);
+            IERC4626(activeMarketMem).deposit(depositAmount, address(this));
+        } else if (liquidityDelta < 0) {
+            // We have too little liquidity in the ARM, we need to withdraw some from the active lending market
+
+            uint256 availableMarketAssets = IERC4626(activeMarketMem).maxWithdraw(address(this));
+            uint256 desiredWithdrawAmount = SafeCast.toUint256(-liquidityDelta);
+
+            if (availableMarketAssets < desiredWithdrawAmount) {
+                // Not enough assets in the market so redeem as much as possible.
+                // maxRedeem is used instead of balanceOf as we want to redeem as much as possible without failing.
+                // redeem of the ARM's balance can fail if the lending market is highly utilized or temporarily paused.
+                // Redeem and not withdrawal is used to avoid leaving a small amount of assets in the market.
+                uint256 shares = IERC4626(activeMarketMem).maxRedeem(address(this));
+                if (shares <= minSharesToRedeem) return liquidityDelta;
+                // This should not fail according to the ERC-4626 spec as maxRedeem was used earlier
+                // but it depends on the 4626 implementation of the lending market.
+                // It may fail if the market is highly utilized and not compliant with 4626.
+                IERC4626(activeMarketMem).redeem(shares, address(this), address(this));
+            } else {
+                IERC4626(activeMarketMem).withdraw(desiredWithdrawAmount, address(this), address(this));
+            }
+        }
+
+        emit Allocated(activeMarketMem, liquidityDelta);
+    }
+
+    ////////////////////////////////////////////////////
+    ///         Admin Functions
+    ////////////////////////////////////////////////////
+
+    /// @notice Set the CapManager contract address.
+    /// Set to a zero address to disable the controller.
+    /// @param _capManager The address of the CapManager contract
+    function setCapManager(address _capManager) external onlyOwner {
+        capManager = _capManager;
+
+        emit CapManagerUpdated(_capManager);
+    }
+
+    /// @notice Set the ARM buffer which is a percentage of the available assets.
+    /// @param _armBuffer The new ARM buffer scaled to 1e18 (100%).
+    function setARMBuffer(uint256 _armBuffer) external onlyOwner {
+        require(_armBuffer <= 1e18, "ARM: invalid arm buffer");
+        armBuffer = _armBuffer;
+
+        emit ARMBufferUpdated(_armBuffer);
     }
 }

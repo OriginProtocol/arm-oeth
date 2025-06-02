@@ -8,7 +8,6 @@ import {Vm} from "forge-std/Vm.sol";
 import {OethARM} from "contracts/OethARM.sol";
 import {Proxy} from "contracts/Proxy.sol";
 import {Holesky} from "contracts/utils/Addresses.sol";
-import {DeployManager} from "../DeployManager.sol";
 import {AbstractDeployScript} from "../AbstractDeployScript.sol";
 
 contract UpgradeHoleskyScript is AbstractDeployScript {
@@ -16,10 +15,10 @@ contract UpgradeHoleskyScript is AbstractDeployScript {
     bool public constant override proposalExecuted = false;
 
     address newImpl;
-    DeployManager internal deployManager;
+    Proxy internal proxy;
 
-    constructor(DeployManager _deployManager) {
-        deployManager = _deployManager;
+    constructor(address _proxy) {
+        proxy = Proxy(payable(_proxy));
     }
 
     function _execute() internal override {
@@ -33,8 +32,6 @@ contract UpgradeHoleskyScript is AbstractDeployScript {
 
     function _fork() internal override {
         // Upgrade the proxy
-        Proxy proxy = Proxy(payable(deployManager.getDeployment("OETH_ARM")));
-
         vm.prank(Holesky.RELAYER);
         proxy.upgradeTo(newImpl);
     }

@@ -8,12 +8,16 @@ import {Test} from "forge-std/Test.sol";
 import {Proxy} from "contracts/Proxy.sol";
 import {OethARM} from "contracts/OethARM.sol";
 import {LidoARM} from "contracts/LidoARM.sol";
+import {OriginARM} from "contracts/OriginARM.sol";
+import {SonicHarvester} from "contracts/SonicHarvester.sol";
 import {CapManager} from "contracts/CapManager.sol";
+import {SiloMarket} from "contracts/markets/SiloMarket.sol";
 import {ZapperLidoARM} from "contracts/ZapperLidoARM.sol";
 
 // Interfaces
 import {IERC20} from "contracts/Interfaces.sol";
-import {IOETHVault} from "contracts/Interfaces.sol";
+import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
+import {IOriginVault} from "contracts/Interfaces.sol";
 
 // Utils
 import {AddressResolver} from "contracts/utils/Addresses.sol";
@@ -34,17 +38,27 @@ abstract contract Base_Test_ is Test {
     Proxy public proxy;
     Proxy public lpcProxy;
     Proxy public lidoProxy;
+    Proxy public originARMProxy;
+    Proxy public harvesterProxy;
     OethARM public oethARM;
     LidoARM public lidoARM;
+    SonicHarvester public harvester;
+    OriginARM public originARM;
     CapManager public capManager;
+    SiloMarket public siloMarket;
     ZapperLidoARM public zapperLidoARM;
 
+    IERC20 public ws;
+    IERC20 public os;
+    IERC20 public wos;
     IERC20 public oeth;
     IERC20 public weth;
     IERC20 public steth;
     IERC20 public wsteth;
     IERC20 public badToken;
-    IOETHVault public vault;
+    IERC4626 public market;
+    IERC4626 public market2;
+    IOriginVault public vault;
 
     //////////////////////////////////////////////////////
     /// --- Governance, multisigs and EOAs
@@ -87,8 +101,12 @@ abstract contract Base_Test_ is Test {
         _labelNotNull(address(lidoProxy), "LIDO ARM PROXY");
         _labelNotNull(address(oethARM), "OETH ARM");
         _labelNotNull(address(lidoARM), "LIDO ARM");
+        _labelNotNull(address(originARM), "ORIGIN ARM");
         _labelNotNull(address(capManager), "CAP MANAGER");
+        _labelNotNull(address(siloMarket), "SILO MARKET ADAPTER");
 
+        _labelNotNull(address(ws), "WS");
+        _labelNotNull(address(os), "OS");
         _labelNotNull(address(oeth), "OETH");
         _labelNotNull(address(weth), "WETH");
         _labelNotNull(address(steth), "STETH");

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
 // Contracts
@@ -49,6 +49,7 @@ contract ZapperLidoARM is Ownable {
 
     /// @notice Rescue ERC20 tokens
     /// @param token The address of the ERC20 token
+    /// @param amount The amount of the token to rescue
     function rescueERC20(address token, uint256 amount) external onlyOwner {
         IERC20(token).transfer(msg.sender, amount);
     }

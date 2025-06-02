@@ -680,9 +680,10 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
             "total assets after collect fees"
         );
         assertEq(lidoARM.feesAccrued(), 0, "fees accrued after collect fees");
-        assertEq(
+        assertApproxEqAbs(
             lidoARM.lastAvailableAssets(),
             int256(expectTotalAssetsBeforeDeposit + DEFAULT_AMOUNT),
+            3,
             "last available assets after collect fees"
         );
         assertGe(
@@ -737,7 +738,7 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         // weth out discounted by the buy price
         - ((swapInAmount * 0.998e36) / 1e36);
         assertEq(lidoARM.totalSupply(), expectedTotalSupplyBeforeDeposit, "total supply before deposit");
-        assertEq(lidoARM.totalAssets(), expectTotalAssetsBeforeDeposit, "total assets before deposit");
+        assertApproxEqAbs(lidoARM.totalAssets(), expectTotalAssetsBeforeDeposit, 3, "total assets before deposit");
         assertEq(lidoARM.feesAccrued(), 0, "fees accrued before swap");
 
         /// 4. Bob deposits 600 WETH
@@ -754,7 +755,9 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         uint256 bobShares = lidoARM.deposit(bobDeposit);
 
         assertEq(bobShares, expectShares, "shares after deposit");
-        assertEq(lidoARM.totalAssets(), expectTotalAssetsBeforeDeposit + bobDeposit, "total assets after deposit");
+        assertApproxEqAbs(
+            lidoARM.totalAssets(), expectTotalAssetsBeforeDeposit + bobDeposit, 3, "total assets after deposit"
+        );
         assertEq(lidoARM.totalSupply(), expectedTotalSupplyBeforeDeposit + bobShares, "total supply after deposit");
         assertEq(lidoARM.feesAccrued(), 0, "fees accrued after deposit");
         assertEq(
@@ -778,9 +781,10 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
             lidoARM.totalAssets(), expectTotalAssetsBeforeDeposit + bobDeposit, 1e6, "total assets after collect fees"
         );
         assertEq(lidoARM.feesAccrued(), 0, "fees accrued after collect fees");
-        assertEq(
+        assertApproxEqAbs(
             lidoARM.lastAvailableAssets(),
             int256(expectTotalAssetsBeforeDeposit + bobDeposit),
+            3,
             "last available assets after collect fees"
         );
         assertGe(

@@ -130,7 +130,7 @@ interface LegacyAMM {
     function transferToken(address tokenOut, address to, uint256 amount) external;
 }
 
-interface IOETHVault {
+interface IOriginVault {
     function mint(address _asset, uint256 _amount, uint256 _minimumOusdAmount) external;
 
     function redeem(uint256 _amount, uint256 _minimumUnitAmount) external;
@@ -255,4 +255,55 @@ interface IStETHWithdrawal {
         returns (WithdrawalRequestStatus[] memory statuses);
     function getWithdrawalRequests(address _owner) external view returns (uint256[] memory requestsIds);
     function getLastRequestId() external view returns (uint256);
+}
+
+interface IOracle {
+    function price(address asset) external view returns (uint256 price);
+}
+
+interface IHarvestable {
+    function collectRewards() external returns (address[] memory tokens, uint256[] memory rewards);
+}
+
+interface IMagpieRouter {
+    function swapWithMagpieSignature(bytes calldata) external payable returns (uint256 amountOut);
+}
+
+library DistributionTypes {
+    struct IncentivesProgramCreationInput {
+        string name;
+        address rewardToken;
+        uint104 emissionPerSecond;
+        uint40 distributionEnd;
+    }
+}
+
+library IDistributionManager {
+    struct AccruedRewards {
+        uint256 amount;
+        bytes32 programId;
+        address rewardToken;
+    }
+}
+
+interface SiloIncentivesControllerGaugeLike {
+    function claimRewards(address _to) external returns (IDistributionManager.AccruedRewards[] memory accruedRewards);
+    function createIncentivesProgram(DistributionTypes.IncentivesProgramCreationInput memory _incentivesProgramInput)
+        external;
+    function getAllProgramsNames() external view returns (string[] memory programsNames);
+    function getRewardsBalance(address _user, string memory _programName)
+        external
+        view
+        returns (uint256 unclaimedRewards);
+    function incentivesPrograms(bytes32)
+        external
+        view
+        returns (
+            uint256 index,
+            address rewardToken,
+            uint104 emissionPerSecond,
+            uint40 lastUpdateTimestamp,
+            uint40 distributionEnd
+        );
+    function owner() external view returns (address);
 }

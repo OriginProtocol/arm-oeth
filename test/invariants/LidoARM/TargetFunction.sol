@@ -5,7 +5,7 @@ pragma solidity 0.8.23;
 import {IERC20} from "contracts/Interfaces.sol";
 
 // Test imports
-import {Properties} from "test/invariants/Properties.sol";
+import {Properties} from "test/invariants/LidoARM/Properties.sol";
 
 abstract contract TargetFunction is Properties {
     ////////////////////////////////////////////////////

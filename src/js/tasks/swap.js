@@ -7,8 +7,7 @@ const { parseAddress } = require("../utils/addressParser");
 
 const log = require("../utils/logger")("task:swap");
 
-const swap = async (taskArguments) => {
-  const { from, to, amount } = taskArguments;
+const swap = async ({ arm, from, to, amount }) => {
   if (from && to) {
     throw new Error(
       `Cannot specify both from and to asset. It has to be one or the other`
@@ -17,20 +16,20 @@ const swap = async (taskArguments) => {
   const signer = await getSigner();
   const signerAddress = await signer.getAddress();
 
-  const oethArmAddress = await parseAddress("OETH_ARM");
-  const oethARM = await ethers.getContractAt("OethARM", oethArmAddress);
+  const armAddress = await parseAddress(`${arm.toUpperCase()}_ARM`);
+  const armContract = await ethers.getContractAt(`${arm}ARM`, armAddress);
 
   if (from) {
-    const fromAddress = resolveAddress(from);
+    const fromAddress = await resolveAddress(from);
 
-    const to = from === "OETH" ? "WETH" : "OETH";
-    const toAddress = resolveAddress(to);
+    const to = otherSymbol(arm, from);
+    const toAddress = await resolveAddress(to);
 
     const fromAmount = parseUnits(amount.toString(), 18);
 
     log(`About to swap ${amount} ${from} to ${to} for ${signerAddress}`);
 
-    const tx = await oethARM
+    const tx = await armContract
       .connect(signer)
       ["swapExactTokensForTokens(address,address,uint256,uint256,address)"](
         fromAddress,
@@ -42,18 +41,18 @@ const swap = async (taskArguments) => {
 
     await logTxDetails(tx, "swap exact from");
   } else if (to) {
-    const from = to === "OETH" ? "WETH" : "OETH";
-    const fromAddress = resolveAddress(from);
+    const from = otherSymbol(arm, to);
+    const fromAddress = await resolveAddress(from);
 
-    const toAddress = resolveAddress(to);
+    const toAddress = await resolveAddress(to);
 
     const toAmount = parseUnits(amount.toString(), 18);
 
     log(`About to swap ${from} to ${amount} ${to} for ${signerAddress}`);
 
-    const tx = await oethARM
+    const tx = await armContract
       .connect(signer)
-      .swapTokensForExactTokens(
+      ["swapTokensForExactTokens(address,address,uint256,uint256,address)"](
         fromAddress,
         toAddress,
         toAmount,
@@ -65,6 +64,17 @@ const swap = async (taskArguments) => {
   } else {
     throw new Error(`Must specify either from or to asset`);
   }
+};
+
+const otherSymbol = (arm, symbol) => {
+  if (arm === "Oeth") {
+    return symbol === "OETH" ? "WETH" : "OETH";
+  } else if (arm === "Origin") {
+    return symbol === "OS" ? "WS" : "OS";
+  } else if (arm === "Lido") {
+    return symbol === "stETH" ? "WETH" : "stETH";
+  }
+  throw new Error(`Unknown ARM ${arm}. Has to be Oeth, Lido or Origin`);
 };
 
 module.exports = { swap };

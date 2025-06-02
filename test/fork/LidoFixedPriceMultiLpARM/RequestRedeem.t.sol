@@ -207,7 +207,7 @@ contract Fork_Concrete_LidoARM_RequestRedeem_Test_ is Fork_Shared_Test_ {
         ); // 1 wei of error
         assertEq(lidoARM.balanceOf(address(this)), 0, "user LP balance");
         assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY, "total supply");
-        assertEq(lidoARM.totalAssets(), assetsAfterLoss - actualAssetsFromRedeem, "total assets");
+        assertEq(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY, "total assets");
         if (ac) assertEq(capManager.liquidityProviderCaps(address(this)), 0);
         assertEqQueueMetadata(expectedAssetsFromRedeem, 0, 1);
         assertEqUserRequest(

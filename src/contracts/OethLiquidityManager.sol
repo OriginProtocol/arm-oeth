@@ -1,8 +1,8 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
 import {OwnableOperable} from "./OwnableOperable.sol";
-import {IERC20, IOETHVault} from "./Interfaces.sol";
+import {IERC20, IOriginVault} from "./Interfaces.sol";
 
 /**
  * @title Manages OETH liquidity against the OETH Vault.
@@ -39,7 +39,7 @@ contract OethLiquidityManager is OwnableOperable {
         onlyOperatorOrOwner
         returns (uint256 requestId, uint256 queued)
     {
-        return IOETHVault(oethVault).requestWithdrawal(amount);
+        return IOriginVault(oethVault).requestWithdrawal(amount);
     }
 
     /**
@@ -48,7 +48,7 @@ contract OethLiquidityManager is OwnableOperable {
      * @param requestId The ID of the OETH Vault's withdrawal request.
      */
     function claimWithdrawal(uint256 requestId) external onlyOperatorOrOwner {
-        IOETHVault(oethVault).claimWithdrawal(requestId);
+        IOriginVault(oethVault).claimWithdrawal(requestId);
     }
 
     /**
@@ -57,6 +57,6 @@ contract OethLiquidityManager is OwnableOperable {
      * @param requestIds List of request IDs from the OETH Vault's withdrawal requests.
      */
     function claimWithdrawals(uint256[] memory requestIds) external onlyOperatorOrOwner {
-        IOETHVault(oethVault).claimWithdrawals(requestIds);
+        IOriginVault(oethVault).claimWithdrawals(requestIds);
     }
 }

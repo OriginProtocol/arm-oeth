@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
@@ -38,7 +38,7 @@ contract LidoARM is Initializable, AbstractARM {
     /// @param _lidoWithdrawalQueue The address of the Lido's withdrawal queue contract
     /// @param _claimDelay The delay in seconds before a user can claim a redeem from the request
     constructor(address _steth, address _weth, address _lidoWithdrawalQueue, uint256 _claimDelay)
-        AbstractARM(_weth, _steth, _weth, _claimDelay)
+        AbstractARM(_weth, _steth, _weth, _claimDelay, 0, 0)
     {
         steth = IERC20(_steth);
         weth = IWETH(_weth);
@@ -151,8 +151,13 @@ contract LidoARM is Initializable, AbstractARM {
             totalAmountRequested += requestAmount;
         }
 
-        // Store the reduced amount outstanding from the Lido Withdrawal Queue
-        lidoWithdrawalQueueAmount -= totalAmountRequested;
+        // Store the reduced outstanding withdrawals from the Lido Withdrawal Queue
+        if (lidoWithdrawalQueueAmount < totalAmountRequested) {
+            // This can happen if a Lido withdrawal request was transferred to the ARM contract
+            lidoWithdrawalQueueAmount = 0;
+        } else {
+            lidoWithdrawalQueueAmount -= totalAmountRequested;
+        }
 
         // Wrap all the received ETH to WETH.
         weth.deposit{value: address(this).balance}();

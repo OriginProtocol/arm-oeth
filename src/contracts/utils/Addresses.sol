@@ -54,12 +54,47 @@ library Holesky {
     address public constant OETH_ARM = 0x8c7a302e208885ee4658E7422f9E259364cC993b;
 }
 
+library Sonic {
+    // Governance
+    address public constant TIMELOCK = 0x31a91336414d3B955E494E7d485a6B06b55FC8fB;
+
+    // Multisig and EOAs
+    address public constant INITIAL_DEPLOYER = 0x3Ba227D87c2A7aB89EAaCEFbeD9bfa0D15Ad249A;
+    // 2/8 multisig
+    address public constant STRATEGIST = 0x63cdd3072F25664eeC6FAEFf6dAeB668Ea4de94a;
+    // 5/8 multisig
+    address public constant ADMIN = 0xAdDEA7933Db7d83855786EB43a238111C69B00b6;
+    address public constant RELAYER = 0x531B8D5eD6db72A56cF1238D4cE478E7cB7f2825;
+
+    // Tokens
+    address public constant OS = 0xb1e25689D55734FD3ffFc939c4C3Eb52DFf8A794;
+    address public constant WS = 0x039e2fB66102314Ce7b64Ce5Ce3E5183bc94aD38;
+    address public constant WOS = 0x9F0dF7799f6FDAd409300080cfF680f5A23df4b1;
+    address public constant SILO = 0x53f753E4B17F4075D6fa2c6909033d224b81e698;
+
+    // Contracts
+    address public constant OS_VAULT = 0xa3c0eCA00D2B76b4d1F170b0AB3FdeA16C180186;
+    address public constant ORIGIN_ARM = 0x2F872623d1E1Af5835b08b0E49aAd2d81d649D30;
+
+    // Silo lending markets
+    // wOS - S market (bwS-22)
+    address public constant SILO_OS = 0x112380065A2cb73A5A429d9Ba7368cc5e8434595;
+    address public constant SILO_stS = 0x47d8490Be37ADC7Af053322d6d779153689E13C1;
+    address public constant SILO_USDC = 0xf55902DE87Bd80c6a35614b48d7f8B612a083C12;
+    address public constant SILO_VARLAMORE_S_VAULT = 0xDED4aC8645619334186f28B8798e07ca354CFa0e;
+    address public constant SILO_VARLAMORE_S_GAUGE = 0x542Ed7D6f2e4c25f84D9c205C139234D6A4d000d;
+
+    // Magpie aggregator - MagpieRouterV3_1
+    address public constant MAGPIE_ROUTER = 0xc325856e5585823aaC0D1Fd46c35c608D95E65A9;
+}
+
 contract AddressResolver {
     // Chain ids of different networks
     uint256 public constant MAINNET = 1;
     uint256 public constant HOLESKY = 17000;
     uint256 public constant BASE = 8453;
     uint256 public constant ARBITRUM = 42161;
+    uint256 public constant SONIC = 146;
 
     mapping(uint256 => mapping(string => address)) internal resolver;
 
@@ -86,8 +121,8 @@ contract AddressResolver {
         resolver[MAINNET]["LIDO_ARM"] = Mainnet.LIDO_ARM;
 
         // Test accounts
-        resolver[MAINNET]["INITIAL_DEPLOYER"] = address(0x1001);
-        resolver[MAINNET]["WHALE_OETH"] = 0x8E02247D3eE0E6153495c971FFd45Aa131f4D7cB;
+        resolver[MAINNET]["DEPLOYER"] = address(0x1001);
+        resolver[MAINNET]["WHALE_OETH"] = 0xA7c82885072BADcF3D0277641d55762e65318654;
 
         ///// Holesky //////
         // Governance
@@ -103,7 +138,25 @@ contract AddressResolver {
         resolver[HOLESKY]["OETH_ARM"] = Mainnet.OETH_ARM;
 
         // Test accounts
-        resolver[HOLESKY]["INITIAL_DEPLOYER"] = Holesky.INITIAL_DEPLOYER;
+        resolver[HOLESKY]["DEPLOYER"] = Holesky.INITIAL_DEPLOYER;
+
+        ///// Sonic //////
+        // Governance
+        resolver[SONIC]["GOVERNOR"] = Sonic.TIMELOCK;
+        resolver[SONIC]["OPERATOR"] = Sonic.RELAYER;
+
+        // Tokens
+        resolver[SONIC]["OS"] = Sonic.OS;
+        resolver[SONIC]["WS"] = Sonic.WS;
+        resolver[SONIC]["WOS"] = Sonic.WOS;
+
+        // Contracts
+        resolver[SONIC]["OS_VAULT"] = Sonic.OS_VAULT;
+        resolver[SONIC]["ORIGIN_ARM"] = Sonic.ORIGIN_ARM;
+        resolver[SONIC]["SILO_WOS_S_MARKET"] = Sonic.SILO_OS;
+
+        // Test accounts
+        resolver[SONIC]["DEPLOYER"] = Sonic.INITIAL_DEPLOYER;
     }
 
     function resolve(string memory name) public view returns (address resolved) {

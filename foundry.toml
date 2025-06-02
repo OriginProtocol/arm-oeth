@@ -6,7 +6,7 @@ verbosity = 3
 sender = "0x0165C55EF814dEFdd658532A48Bd17B2c8356322"
 tx_origin = "0x0165C55EF814dEFdd658532A48Bd17B2c8356322"
 auto_detect_remappings = false
-gas_reports = ["OethARM", "Proxy", "LidoARM"]
+gas_reports = ["OethARM", "Proxy", "LidoARM", "OriginARM"]
 fs_permissions = [{ access = "read-write", path = "./build" }]
 extra_output_files = ["metadata"]
 ignored_warnings_from = ["src/contracts/Proxy.sol"]
@@ -22,6 +22,7 @@ remappings = [
 ]
 optimizer = true
 optimizer_runs = 200
+ffi = true
 
 [fuzz]
 runs = 1_000
@@ -49,5 +50,6 @@ remappings_location = "config"
 
 [rpc_endpoints]
 mainnet = "${PROVIDER_URL}"
+sonic = "${SONIC_URL}"
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options

@@ -22,14 +22,14 @@ const handler = async (event) => {
   );
 
   // References to contracts
-  const weth = new ethers.Contract(mainnet.WETH, erc20Abi, signer);
+  const liquidityAsset = new ethers.Contract(mainnet.WETH, erc20Abi, signer);
   const vault = new ethers.Contract(mainnet.OETHVaultProxy, vaultAbi, signer);
-  const oethARM = new ethers.Contract(mainnet.OethARM, oethARMAbi, signer);
+  const arm = new ethers.Contract(mainnet.OethARM, oethARMAbi, signer);
 
   await autoClaimWithdraw({
     signer,
-    weth,
-    oethARM,
+    liquidityAsset,
+    arm,
     vault,
     confirm: true,
   });
