@@ -195,8 +195,28 @@ contract Unit_Concrete_OriginARM_ManageMarket_Test_ is Unit_Shared_Test {
         assertEq(originARM.activeMarket(), address(market2));
     }
 
-    function test_SetActiveMarket_WithPreviousMarket_NonEmpty()
+    function test_SetActiveMarket_WithPreviousMarket_NonEmpty_NoShares()
         public
+        addMarket(address(market))
+        setActiveMarket(address(market))
+        addMarket(address(market2))
+        asGovernor
+    {
+        // Assertions before
+        assertEq(originARM.activeMarket(), address(market));
+
+        vm.expectEmit(address(originARM));
+        emit AbstractARM.ActiveMarketUpdated(address(market2));
+        originARM.setActiveMarket(address(market2));
+
+        // Assertions after
+        assertEq(originARM.activeMarket(), address(market2));
+    }
+
+    function test_SetActiveMarket_WithPreviousMarket_NonEmpty_WithShares()
+        public
+        deposit(alice, DEFAULT_AMOUNT)
+        setARMBuffer(0)
         addMarket(address(market))
         setActiveMarket(address(market))
         addMarket(address(market2))

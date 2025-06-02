@@ -54,7 +54,6 @@ test-invariants:
 # Coverage
 coverage:
 	@forge coverage --report lcov
-	@lcov --ignore-errors unused --remove ./lcov.info -o ./lcov.info.pruned "test/*" "script/*"
 
 coverage-html:
 	@make coverage

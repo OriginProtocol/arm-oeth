@@ -34,6 +34,9 @@ contract Unit_Concrete_OriginARM_Deposit_Test_ is Unit_Shared_Test {
         // Expected values
         uint256 expectedShares = originARM.convertToShares(DEFAULT_AMOUNT);
 
+        uint256 previewDeposit = originARM.previewDeposit(DEFAULT_AMOUNT);
+        assertEq(previewDeposit, expectedShares, "Preview deposit should match expected shares");
+
         // Expected event
         vm.expectEmit(address(originARM));
         emit AbstractARM.Deposit(alice, DEFAULT_AMOUNT, expectedShares);

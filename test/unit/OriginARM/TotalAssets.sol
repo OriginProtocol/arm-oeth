@@ -43,4 +43,15 @@ contract Unit_Concrete_OriginARM_TotalAssets_Test_ is Unit_Shared_Test {
     {
         assertEq(originARM.totalAssets(), MIN_TOTAL_SUPPLY, "Wrong total assets");
     }
+
+    function test_TotalAssets_When_AssetIsLessThanOutstandingWithdrawals()
+        public
+        deposit(alice, DEFAULT_AMOUNT)
+        requestRedeemAll(alice)
+    {
+        // Simulate a loss on the ARM
+        deal(address(weth), address(originARM), 0);
+
+        assertEq(originARM.totalAssets(), MIN_TOTAL_SUPPLY, "Wrong total assets");
+    }
 }
