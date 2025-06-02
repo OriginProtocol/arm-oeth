@@ -13,7 +13,7 @@ import {AbstractDeployScript} from "../AbstractDeployScript.sol";
 
 contract UpgradeOriginARMScript is AbstractDeployScript {
     string public constant override DEPLOY_NAME = "003_UpgradeOriginARMScriptScript";
-    bool public constant override proposalExecuted = false;
+    bool public constant override proposalExecuted = true;
 
     Proxy public harvesterProxy;
     SonicHarvester public harvesterImpl;
@@ -69,10 +69,12 @@ contract UpgradeOriginARMScript is AbstractDeployScript {
             // 2. Upgrade OriginARM Proxy to the new implementation
             originARMProxy.upgradeTo(address(originARMImpl));
 
+            vm.stopPrank();
+
+            vm.prank(Sonic.TIMELOCK);
+
             // 3. Upgrade SiloMarket Proxy to the new implementation
             silo_Varlamore_S_MarketProxy.upgradeTo(address(silo_Varlamore_S_MarketImpl));
-
-            vm.stopPrank();
         }
     }
 }
