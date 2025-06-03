@@ -26,6 +26,7 @@ const {
   logLiquidity,
   withdrawRequestStatus,
 } = require("./liquidity");
+const { logArmPrices } = require("./markets");
 const {
   depositARM,
   requestRedeemARM,
@@ -912,7 +913,18 @@ subtask("snap", "Take a snapshot of the an ARM")
     undefined,
     types.int
   )
-  .setAction(logLiquidity);
+  .setAction(async (taskArgs) => {
+    await logLiquidity(taskArgs);
+
+    if (taskArgs.arm.toUpperCase() === "OETH") return;
+
+    const armAddress = await parseAddress(`${taskArgs.arm.toUpperCase()}_ARM`);
+    const armContract = await ethers.getContractAt(
+      `${taskArgs.arm}ARM`,
+      armAddress
+    );
+    await logArmPrices(taskArgs, armContract);
+  });
 task("snap").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
