@@ -877,13 +877,19 @@ subtask("allocate", "Allocate to/from the active lending market")
     "Origin",
     types.string
   )
-  .setAction(async ({ arm }) => {
+  .addOptionalParam(
+    "threshold",
+    "The liquidity delta before threshold before allocate is called",
+    undefined,
+    types.float
+  )
+  .setAction(async ({ arm, threshold }) => {
     const signer = await getSigner();
 
     const armAddress = await parseDeployedAddress(`${arm.toUpperCase()}_ARM`);
     const armContract = await ethers.getContractAt(`${arm}ARM`, armAddress);
 
-    await allocate({ signer, arm: armContract });
+    await allocate({ signer, arm: armContract, threshold });
   });
 task("allocate").setAction(async (_, __, runSuper) => {
   return runSuper();
