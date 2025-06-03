@@ -29,8 +29,16 @@ async function depositARM({ amount, asset, arm }) {
     const armAddress = await parseDeployedAddress(`${arm.toUpperCase()}_ARM`);
     const armContract = await ethers.getContractAt(`${arm}ARM`, armAddress);
 
+    // Add 10% buffer to gas limit
+    let gasLimit = await armContract
+      .connect(signer)
+      ["deposit(uint256)"].estimateGas(amountBn);
+    gasLimit = (gasLimit * 11n) / 10n;
+
     log(`About to deposit ${amount} ${asset} to the ${arm} ARM`);
-    const tx = await armContract.connect(signer).deposit(amountBn);
+    const tx = await armContract
+      .connect(signer)
+      ["deposit(uint256)"](amountBn, { gasLimit });
     await logTxDetails(tx, "deposit");
   } else if (asset == "S") {
     const zapperAddress = await parseDeployedAddress(
@@ -44,6 +52,10 @@ async function depositARM({ amount, asset, arm }) {
       .connect(signer)
       .deposit(armAddress, { value: amountBn });
     await logTxDetails(tx, "zap deposit");
+  } else {
+    throw new Error(
+      `Unsupported asset type: ${asset}. Supported types are WETH, ETH, WS, S.`
+    );
   }
 }
 
