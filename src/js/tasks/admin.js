@@ -19,13 +19,16 @@ async function allocate({ arm, signer, threshold }) {
     return;
   }
 
+  // Add 10% buffer to gas limit
+  let gasLimit = await arm.connect(signer).allocate.estimateGas();
+  gasLimit = (gasLimit * 11n) / 10n;
+
   log(
     `About to allocate ${formatUnits(
       liquidityDelta
     )} to/from the active lending market`
   );
-  // Fixing the gas limit as the tx was a lot of the txs were failing wth out of gas errors
-  const tx = await arm.connect(signer).allocate({ gasLimit: 3000000n });
+  const tx = await arm.connect(signer).allocate({ gasLimit });
   await logTxDetails(tx, "allocate");
 }
 
