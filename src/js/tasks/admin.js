@@ -33,8 +33,12 @@ async function allocate({ arm, signer, threshold }) {
 }
 
 async function collectFees({ arm, signer }) {
+  // Add 10% buffer to gas limit
+  let gasLimit = await arm.connect(signer).collectFees.estimateGas();
+  gasLimit = (gasLimit * 11n) / 10n;
+
   log(`About to collect ARM fees`);
-  const tx = await arm.connect(signer).collectFees();
+  const tx = await arm.connect(signer).collectFees({ gasLimit });
   await logTxDetails(tx, "collectFees");
 }
 
