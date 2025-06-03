@@ -593,6 +593,7 @@ task("claimRedeemARM").setAction(async (_, __, runSuper) => {
 // Capital Management
 
 subtask("setLiquidityProviderCaps", "Set deposit cap for liquidity providers")
+  .addParam("arm", "Name of the ARM. eg Lido or Origin", "Lido", types.string)
   .addParam(
     "cap",
     "Amount of WETH not scaled to 18 decimals",
@@ -611,6 +612,7 @@ task("setLiquidityProviderCaps").setAction(async (_, __, runSuper) => {
 });
 
 subtask("setTotalAssetsCap", "Set total assets cap")
+  .addParam("arm", "Name of the ARM. eg Lido or Origin", "Lido", types.string)
   .addParam(
     "cap",
     "Amount of WETH not scaled to 18 decimals",
