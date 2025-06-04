@@ -3,7 +3,7 @@ const { ethers } = require("ethers");
 
 const { collectRewards } = require("../tasks/sonicHarvest");
 const { sonic } = require("../utils/addresses");
-const siloMarketAbi = require("../../abis/SiloMarket.json");
+const harvesterAbi = require("../../abis/SonicHarvester.json");
 
 // Entrypoint for the Defender Action
 const handler = async (event) => {
@@ -19,17 +19,13 @@ const handler = async (event) => {
     `DEBUG env var in handler before being set: "${process.env.DEBUG}"`
   );
 
-  // There is only one market for now
-  const siloMarket = new ethers.Contract(
-    sonic.siloVarlamoreMarket,
-    siloMarketAbi,
-    signer
-  );
+  const harvester = new ethers.Contract(sonic.harvester, harvesterAbi, signer);
 
   try {
     await collectRewards({
       signer,
-      siloMarket,
+      harvester,
+      strategies: [sonic.siloVarlamoreMarket],
     });
   } catch (error) {
     console.error(error);
