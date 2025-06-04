@@ -50,19 +50,19 @@ contract SonicHarvester is Initializable, OwnableOperable {
     event PriceProviderUpdated(address priceProvider);
     event MagpieRouterUpdated(address router);
 
-    error SlippageError(uint256 actualBalance, uint256 minExpected);
-    error BalanceMismatchAfterSwap(uint256 actualBalance, uint256 minExpected);
-    error InvalidSwapPlatform(SwapPlatform swapPlatform);
-    error UnsupportedStrategy(address strategyAddress);
-    error InvalidSwapRecipient(address recipient);
-    error InvalidFromAsset(address fromAsset);
-    error InvalidFromAssetAmount(uint256 fromAssetAmount);
-    error InvalidToAsset(address toAsset);
-    error EmptyLiquidityAsset();
-    error EmptyMagpieRouter();
-    error EmptyRewardRecipient();
-    error InvalidDecimals();
-    error InvalidAllowedSlippage(uint256 allowedSlippageBps);
+    error SlippageError(uint256 actualBalance, uint256 minExpected); // 0x2d96fff0
+    error BalanceMismatchAfterSwap(uint256 actualBalance, uint256 minExpected); // 0x62baa1be
+    error InvalidSwapPlatform(SwapPlatform swapPlatform); // 0x36cb1d21
+    error UnsupportedStrategy(address strategyAddress); // 0x04228892
+    error InvalidSwapRecipient(address recipient); // 0x1a7c14f3
+    error InvalidFromAsset(address fromAsset); // 0xc3e1c198
+    error InvalidFromAssetAmount(uint256 fromAssetAmount); // 0x51444e84
+    error InvalidToAsset(address toAsset); // 0xdc851a18
+    error EmptyLiquidityAsset(); // 0x0c82ef26
+    error EmptyMagpieRouter(); // 0x24444713
+    error EmptyRewardRecipient(); // 0x0c45e033
+    error InvalidDecimals(); // 0xd25598a0
+    error InvalidAllowedSlippage(uint256 allowedSlippageBps); // 0xfbdd3e50
 
     constructor(address _liquidityAsset) {
         if (_liquidityAsset == address(0)) revert EmptyLiquidityAsset();
