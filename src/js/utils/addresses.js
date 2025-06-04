@@ -42,13 +42,14 @@ addresses.mainnet.UniswapV3stETHWETHPool =
 
 // Sonic
 addresses.sonic = {};
-addresses.sonic.guardian = "0x63cdd3072F25664eeC6FAEFf6dAeB668Ea4de94a"
+addresses.sonic.guardian = "0x63cdd3072F25664eeC6FAEFf6dAeB668Ea4de94a";
 addresses.sonic.WS = "0x039e2fB66102314Ce7b64Ce5Ce3E5183bc94aD38";
 addresses.sonic.OriginARM = "0x2F872623d1E1Af5835b08b0E49aAd2d81d649D30";
-addresses.sonic.SILO = "0x53f753E4B17F4075D6fa2c6909033d224b81e698";
+addresses.sonic.SILO = "0xb098AFC30FCE67f1926e735Db6fDadFE433E61db";
 addresses.sonic.OSonicProxy = "0xb1e25689D55734FD3ffFc939c4C3Eb52DFf8A794";
 addresses.sonic.OSonicVaultProxy = "0xa3c0eCA00D2B76b4d1F170b0AB3FdeA16C180186";
 addresses.sonic.siloVarlamoreMarket =
   "0x248Dbbc31F2D7675775DB4A9308a98444DaBaECf";
+addresses.sonic.harvester = "0x08876C0F5a80c1a43A6396b13A881A26F4b6Adfe";
 
 module.exports = addresses;

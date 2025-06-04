@@ -29,8 +29,16 @@ async function depositARM({ amount, asset, arm }) {
     const armAddress = await parseDeployedAddress(`${arm.toUpperCase()}_ARM`);
     const armContract = await ethers.getContractAt(`${arm}ARM`, armAddress);
 
+    // Add 10% buffer to gas limit
+    let gasLimit = await armContract
+      .connect(signer)
+      ["deposit(uint256)"].estimateGas(amountBn);
+    gasLimit = (gasLimit * 11n) / 10n;
+
     log(`About to deposit ${amount} ${asset} to the ${arm} ARM`);
-    const tx = await armContract.connect(signer).deposit(amountBn);
+    const tx = await armContract
+      .connect(signer)
+      ["deposit(uint256)"](amountBn, { gasLimit });
     await logTxDetails(tx, "deposit");
   } else if (asset == "S") {
     const zapperAddress = await parseDeployedAddress(
@@ -44,6 +52,10 @@ async function depositARM({ amount, asset, arm }) {
       .connect(signer)
       .deposit(armAddress, { value: amountBn });
     await logTxDetails(tx, "zap deposit");
+  } else {
+    throw new Error(
+      `Unsupported asset type: ${asset}. Supported types are WETH, ETH, WS, S.`
+    );
   }
 }
 
@@ -73,18 +85,20 @@ async function claimRedeemARM({ arm, id }) {
   await logTxDetails(tx, "claimRedeem");
 }
 
-async function setLiquidityProviderCaps({ accounts, cap }) {
+async function setLiquidityProviderCaps({ accounts, arm, cap }) {
   const signer = await getSigner();
 
   const capBn = parseUnits(cap.toString());
 
   const liquidityProviders = accounts.split(",");
 
-  const lpcAddress = await parseDeployedAddress("LIDO_ARM_CAP_MAN");
+  const lpcAddress = await parseDeployedAddress(
+    `${arm.toUpperCase()}_ARM_CAP_MAN`
+  );
   const capManager = await ethers.getContractAt("CapManager", lpcAddress);
 
   log(
-    `About to set deposit cap of ${cap} WETH for liquidity providers ${liquidityProviders}`
+    `About to set deposit cap of ${cap} WETH for liquidity providers ${liquidityProviders} for the ${arm} ARM`
   );
   const tx = await capManager
     .connect(signer)
@@ -92,15 +106,17 @@ async function setLiquidityProviderCaps({ accounts, cap }) {
   await logTxDetails(tx, "setLiquidityProviderCaps");
 }
 
-async function setTotalAssetsCap({ cap }) {
+async function setTotalAssetsCap({ arm, cap }) {
   const signer = await getSigner();
 
   const capBn = parseUnits(cap.toString());
 
-  const lpcAddress = await parseDeployedAddress("LIDO_ARM_CAP_MAN");
+  const lpcAddress = await parseDeployedAddress(
+    `${arm.toUpperCase()}_ARM_CAP_MAN`
+  );
   const capManager = await ethers.getContractAt("CapManager", lpcAddress);
 
-  log(`About to set total asset cap of ${cap} WETH`);
+  log(`About to set total asset cap of ${cap} for the ${arm} ARM`);
   const tx = await capManager.connect(signer).setTotalAssetsCap(capBn);
   await logTxDetails(tx, "setTotalAssetsCap");
 }

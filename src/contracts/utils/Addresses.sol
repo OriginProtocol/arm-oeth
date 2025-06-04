@@ -70,7 +70,8 @@ library Sonic {
     address public constant OS = 0xb1e25689D55734FD3ffFc939c4C3Eb52DFf8A794;
     address public constant WS = 0x039e2fB66102314Ce7b64Ce5Ce3E5183bc94aD38;
     address public constant WOS = 0x9F0dF7799f6FDAd409300080cfF680f5A23df4b1;
-    address public constant SILO = 0x53f753E4B17F4075D6fa2c6909033d224b81e698;
+    address public constant BES = 0x871A101Dcf22fE4fE37be7B654098c801CBA1c88;
+    address public constant SILO = 0xb098AFC30FCE67f1926e735Db6fDadFE433E61db;
 
     // Contracts
     address public constant OS_VAULT = 0xa3c0eCA00D2B76b4d1F170b0AB3FdeA16C180186;

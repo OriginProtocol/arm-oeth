@@ -26,6 +26,7 @@ const handler = async (event) => {
     await allocate({
       signer,
       arm,
+      threshold: 20,
     });
   } catch (error) {
     console.error(error);
