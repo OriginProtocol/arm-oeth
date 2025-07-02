@@ -129,6 +129,7 @@ const logLiquidity = async ({ block, arm }) => {
   console.log(`\nLiquidity`);
 
   const armAddress = await parseAddress(`${arm.toUpperCase()}_ARM`);
+  const armContract = await ethers.getContractAt(`${arm}ARM`, armAddress);
 
   const liquiditySymbol = arm === "Origin" ? "WS" : "WETH";
   const liquidAsset = await resolveAsset(liquiditySymbol);
@@ -146,17 +147,10 @@ const logLiquidity = async ({ block, arm }) => {
   let lendingMarketBalance = 0n;
   if (arm === "Origin") {
     // Get the lending market from the active SiloMarket
-    const armContract = await ethers.getContractAt(`${arm}ARM`, armAddress);
     const marketAddress = await armContract.activeMarket({ blockTag });
     const market = await ethers.getContractAt("SiloMarket", marketAddress);
-    // Get the liquidity assets in the lending market
-    const lendingVaultAddress = await market.market({ blockTag });
-    const lendingVault = await ethers.getContractAt(
-      "IERC4626",
-      lendingVaultAddress
-    );
-    const armShares = await lendingVault.balanceOf(marketAddress, { blockTag });
-    lendingMarketBalance = await lendingVault.convertToAssets(armShares, {
+    const armShares = await market.balanceOf(armAddress, { blockTag });
+    lendingMarketBalance = await market.convertToAssets(armShares, {
       blockTag,
     });
   }
@@ -203,10 +197,26 @@ const logLiquidity = async ({ block, arm }) => {
   console.log(`${formatUnits(total, 18)} total`);
 };
 
+
+const logWithdrawalQueue = async (arm, blockTag, liquidityWeth) => {
+  const queue = await arm.withdrawsQueued({
+    blockTag,
+  });
+  const claimed = await arm.withdrawsClaimed({ blockTag });
+  const outstanding = queue - claimed;
+  const shortfall =
+    liquidityWeth < outstanding ? liquidityWeth - outstanding : 0;
+
+  console.log(`\nARM Withdrawal Queue`);
+  console.log(`${formatUnits(outstanding, 18).padEnd(23)} outstanding`);
+  console.log(`${formatUnits(shortfall, 18).padEnd(23)} shortfall`);
+};
+
 module.exports = {
   autoRequestWithdraw,
   autoClaimWithdraw,
   logLiquidity,
+  logWithdrawalQueue,
   requestWithdraw,
   claimWithdraw,
   withdrawRequestStatus,

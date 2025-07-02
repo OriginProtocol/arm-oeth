@@ -16,7 +16,11 @@ const {
 } = require("./lido");
 const { setPrices } = require("./lidoPrices");
 const { allocate, collectFees } = require("./admin");
-const { collectRewards, harvestRewards } = require("./sonicHarvest");
+const {
+  collectRewards,
+  harvestRewards,
+  setHarvester,
+} = require("./sonicHarvest");
 const { requestLidoWithdrawals, claimLidoWithdrawals } = require("./lidoQueue");
 const {
   autoRequestWithdraw,
@@ -26,6 +30,7 @@ const {
   logLiquidity,
   withdrawRequestStatus,
 } = require("./liquidity");
+const { logArmPrices } = require("./markets");
 const {
   depositARM,
   requestRedeemARM,
@@ -55,6 +60,7 @@ const {
 } = require("./vault");
 const { upgradeProxy } = require("./proxy");
 const { magpieQuote, magpieTx } = require("../utils/magpie");
+const { setOperator } = require("./governance");
 
 subtask(
   "swap",
@@ -593,6 +599,7 @@ task("claimRedeemARM").setAction(async (_, __, runSuper) => {
 // Capital Management
 
 subtask("setLiquidityProviderCaps", "Set deposit cap for liquidity providers")
+  .addParam("arm", "Name of the ARM. eg Lido or Origin", "Lido", types.string)
   .addParam(
     "cap",
     "Amount of WETH not scaled to 18 decimals",
@@ -611,6 +618,7 @@ task("setLiquidityProviderCaps").setAction(async (_, __, runSuper) => {
 });
 
 subtask("setTotalAssetsCap", "Set total assets cap")
+  .addParam("arm", "Name of the ARM. eg Lido or Origin", "Lido", types.string)
   .addParam(
     "cap",
     "Amount of WETH not scaled to 18 decimals",
@@ -837,12 +845,17 @@ subtask("collectRewards", "Collect rewards")
     const siloMarketAddress = await parseDeployedAddress(
       "SILO_VARLAMORE_S_MARKET"
     );
-    const siloMarket = await ethers.getContractAt(
-      "SiloMarket",
-      siloMarketAddress
+    const harvesterAddress = await parseDeployedAddress("HARVESTER");
+    const harvester = await ethers.getContractAt(
+      "SonicHarvester",
+      harvesterAddress
     );
 
-    await collectRewards({ signer, siloMarket });
+    await collectRewards({
+      signer,
+      harvester,
+      strategies: [siloMarketAddress],
+    });
   });
 task("collectRewards").setAction(async (_, __, runSuper) => {
   return runSuper();
@@ -855,7 +868,13 @@ subtask("harvestRewards", "harvest rewards")
     "Origin",
     types.string
   )
-  .setAction(async () => {
+  .addOptionalParam(
+    "token",
+    "The symbol of the reward token. eg Silo, beS, OS",
+    "Silo",
+    types.string
+  )
+  .setAction(async ({ token }) => {
     const signer = await getSigner();
 
     const harvesterAddress = await parseDeployedAddress("HARVESTER");
@@ -864,9 +883,35 @@ subtask("harvestRewards", "harvest rewards")
       harvesterAddress
     );
 
-    await harvestRewards({ signer, harvester });
+    await harvestRewards({ signer, harvester, symbol: token });
   });
 task("harvestRewards").setAction(async (_, __, runSuper) => {
+  return runSuper();
+});
+
+subtask("setHarvester", "Set the harvester on a lending market")
+  .addOptionalParam(
+    "name",
+    "The name of the ARM. eg Lido or Origin",
+    "Origin",
+    types.string
+  )
+  .setAction(async () => {
+    const signer = await getSigner();
+
+    const harvester = await parseDeployedAddress("HARVESTER");
+
+    const siloMarketAddress = await parseDeployedAddress(
+      "SILO_VARLAMORE_S_MARKET"
+    );
+    const siloMarket = await ethers.getContractAt(
+      "SiloMarket",
+      siloMarketAddress
+    );
+
+    await setHarvester({ signer, siloMarket, harvester });
+  });
+task("setHarvester").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
 
@@ -877,15 +922,41 @@ subtask("allocate", "Allocate to/from the active lending market")
     "Origin",
     types.string
   )
-  .setAction(async ({ arm }) => {
+  .addOptionalParam(
+    "threshold",
+    "The liquidity delta before threshold before allocate is called",
+    undefined,
+    types.float
+  )
+  .setAction(async ({ arm, threshold }) => {
     const signer = await getSigner();
 
     const armAddress = await parseDeployedAddress(`${arm.toUpperCase()}_ARM`);
     const armContract = await ethers.getContractAt(`${arm}ARM`, armAddress);
 
-    await allocate({ signer, arm: armContract });
+    await allocate({ signer, arm: armContract, threshold });
   });
 task("allocate").setAction(async (_, __, runSuper) => {
+  return runSuper();
+});
+
+// Governance
+
+subtask("setOperator", "Set the operator of a contract")
+  .addParam("contract", "Name of a proxy contract", undefined, types.string)
+  .addParam("operator", "Address of the Operator", undefined, types.string)
+  .setAction(async ({ contract: contractName, operator }) => {
+    const signer = await getSigner();
+
+    const contractAddress = await parseDeployedAddress(contractName);
+    const contract = await ethers.getContractAt(
+      "OwnableOperable",
+      contractAddress
+    );
+
+    await setOperator({ signer, contract, operator });
+  });
+task("setOperator").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
 
@@ -904,7 +975,18 @@ subtask("snap", "Take a snapshot of the an ARM")
     undefined,
     types.int
   )
-  .setAction(logLiquidity);
+  .setAction(async (taskArgs) => {
+    await logLiquidity(taskArgs);
+
+    if (taskArgs.arm.toUpperCase() === "OETH") return;
+
+    const armAddress = await parseAddress(`${taskArgs.arm.toUpperCase()}_ARM`);
+    const armContract = await ethers.getContractAt(
+      `${taskArgs.arm}ARM`,
+      armAddress
+    );
+    await logArmPrices(taskArgs, armContract);
+  });
 task("snap").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
@@ -970,8 +1052,8 @@ task("setActionVars").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
 
-// Magpie
-subtask("magpieQuote", "Get a quote from Magpie for a swap")
+// Magpie (now Fly)
+subtask("magpieQuote", "Get a quote from Magpie (now Fly) for a swap")
   .addOptionalParam("from", "Token symbol to swap from.", "SILO", types.string)
   .addOptionalParam("to", "Token symbol to swap to.", "WS", types.string)
   .addOptionalParam("amount", "Amount of tokens to sell", 1, types.float)
@@ -998,7 +1080,7 @@ task("magpieQuote").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
 
-subtask("magpieTx", "Get a Magpie swap tx based on a previous quote")
+subtask("magpieTx", "Get a Magpie (Fly) swap tx based on a previous quote")
   .addParam(
     "id",
     "Identifier returned from a previous quote.",

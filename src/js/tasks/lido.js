@@ -16,6 +16,7 @@ const {
   parseDeployedAddress,
 } = require("../utils/addressParser");
 const { resolveAddress, resolveAsset } = require("../utils/assets");
+const { logWithdrawalQueue } = require("./liquidity");
 
 const log = require("../utils/logger")("task:lido");
 
@@ -202,25 +203,9 @@ const logUser = async (arm, capManager, blockTag, totalSupply) => {
   console.log(`${formatUnits(userCap, 18)} cap remaining`);
 };
 
-const logWithdrawalQueue = async (arm, blockTag, liquidityWeth) => {
-  const queue = await arm.withdrawsQueued({
-    blockTag,
-  });
-  const claimed = await arm.withdrawsClaimed({ blockTag });
-  const outstanding = queue - claimed;
-  const shortfall =
-    liquidityWeth < outstanding ? liquidityWeth - outstanding : 0;
-
-  console.log(`\nARM Withdrawal Queue`);
-  console.log(`${formatUnits(outstanding, 18).padEnd(23)} outstanding`);
-  console.log(`${formatUnits(shortfall, 18).padEnd(23)} shortfall`);
-};
-
 const logAssets = async (arm, blockTag) => {
-  const armBuybackAddress = await parseAddress("ARM_BUYBACK");
   const weth = await resolveAsset("WETH");
   const liquidityWeth = await weth.balanceOf(arm.getAddress(), { blockTag });
-  const armBuybackWeth = await weth.balanceOf(armBuybackAddress, { blockTag });
 
   const steth = await resolveAsset("STETH");
   const liquiditySteth = await steth.balanceOf(arm.getAddress(), { blockTag });
@@ -272,7 +257,6 @@ const logAssets = async (arm, blockTag) => {
   console.log(
     `${formatUnits(wethInStrategist, 18).padEnd(24)} WETH in Strategist (fees)`
   );
-  console.log(`${formatUnits(armBuybackWeth, 18).padEnd(24)} WETH in Buyback`);
 
   return { totalAssets, totalSupply, liquidityWeth };
 };

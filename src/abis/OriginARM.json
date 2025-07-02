@@ -13,6 +13,11 @@
         "internalType": "uint256",
         "name": "_minSharesToRedeem",
         "type": "uint256"
+      },
+      {
+        "internalType": "int256",
+        "name": "_allocateThreshold",
+        "type": "int256"
       }
     ],
     "stateMutability": "nonpayable",
@@ -515,8 +520,17 @@
   {
     "inputs": [],
     "name": "allocate",
-    "outputs": [],
+    "outputs": [
+      { "internalType": "int256", "name": "liquidityDelta", "type": "int256" }
+    ],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "allocateThreshold",
+    "outputs": [{ "internalType": "int256", "name": "", "type": "int256" }],
+    "stateMutability": "view",
     "type": "function"
   },
   {
