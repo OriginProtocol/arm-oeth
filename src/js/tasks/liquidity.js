@@ -1,4 +1,6 @@
 const { formatUnits, parseUnits } = require("ethers");
+const dayjs = require("dayjs");
+const utc = require("dayjs/plugin/utc");
 
 const { getBlock } = require("../utils/block");
 const { parseAddress } = require("../utils/addressParser");
@@ -10,6 +12,9 @@ const {
 const { logTxDetails } = require("../utils/txLogger");
 
 const log = require("../utils/logger")("task:liquidity");
+
+// Extend Day.js with the UTC plugin
+dayjs.extend(utc);
 
 const requestWithdraw = async ({ amount, signer, armName, arm }) => {
   const amountBI = parseUnits(amount.toString(), 18);
@@ -88,10 +93,19 @@ const autoClaimWithdraw = async ({
     )} ${liquiditySymbol} in vault = ${formatUnits(queuedAmountClaimable)}`
   );
 
+  // Get the Date time of 10 minutes ago
+  const now = dayjs();
+  const claimDelaySeconds = await vault.withdrawalClaimDelay();
+  const claimCutoff = now.subtract(Number(claimDelaySeconds), "seconds");
+  log(
+    `Claim cutoff timestamp: ${claimCutoff.unix()} ${claimCutoff.toISOString()}`
+  );
+
   // get claimable withdrawal requests
   let requestIds = await claimableRequests({
     withdrawer: await arm.getAddress(),
     queuedAmountClaimable,
+    claimCutoff,
   });
 
   if (requestIds.length === 0) {
@@ -196,7 +210,6 @@ const logLiquidity = async ({ block, arm }) => {
   );
   console.log(`${formatUnits(total, 18)} total`);
 };
-
 
 const logWithdrawalQueue = async (arm, blockTag, liquidityWeth) => {
   const queue = await arm.withdrawsQueued({

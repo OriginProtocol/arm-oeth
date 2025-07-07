@@ -1,10 +1,5 @@
 const { ApolloClient, InMemoryCache, gql } = require("@apollo/client/core");
-const dayjs = require("dayjs");
-const utc = require("dayjs/plugin/utc");
 const { formatUnits } = require("ethers");
-
-// Extend Day.js with the UTC plugin
-dayjs.extend(utc);
 
 const log = require("./logger")("utils:queue");
 
@@ -61,7 +56,11 @@ const outstandingWithdrawalAmount = async ({ withdrawer }) => {
   }
 };
 
-const claimableRequests = async ({ withdrawer, queuedAmountClaimable }) => {
+const claimableRequests = async ({
+  withdrawer,
+  queuedAmountClaimable,
+  claimCutoff,
+}) => {
   const client = new ApolloClient({
     uri,
     cache: new InMemoryCache(),
@@ -77,14 +76,14 @@ const claimableRequests = async ({ withdrawer, queuedAmountClaimable }) => {
     query ClaimableRequestsQuery(
       $withdrawer: String!
       $liquidity: BigInt!
-      $tenMinutesAgo: DateTime!
+      $claimCutoff: DateTime!
     ) {
       oTokenWithdrawalRequests(
         where: {
           withdrawer_eq: $withdrawer
           claimed_eq: false
           queued_lte: $liquidity
-          timestamp_lt: $tenMinutesAgo
+          timestamp_lt: $claimCutoff
         }
         limit: 100
       ) {
@@ -100,18 +99,12 @@ const claimableRequests = async ({ withdrawer, queuedAmountClaimable }) => {
   `;
 
   try {
-    // Get the Date time of 10 minutes ago
-    const now = dayjs();
-    const tenMinutesAgo = now.subtract(10, "minute");
-
-    log(`Ten minutes ago: ${tenMinutesAgo}`);
-
     const { data } = await client.query({
       query,
       variables: {
         withdrawer: withdrawer.toLowerCase(),
         liquidity: queuedAmountClaimable.toString(),
-        tenMinutesAgo,
+        claimCutoff: claimCutoff.toISOString(),
       },
     });
 
