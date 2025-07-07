@@ -124,7 +124,7 @@ task("swapLido").setAction(async (_, __, runSuper) => {
 
 // OETH ARM Liquidity management
 
-subtask("autoRequestWithdraw", "Request withdrawal of WETH from the OETH Vault")
+subtask("autoRequestWithdraw", "Request withdrawal of base asset (WETH/OS) from the Origin Vault")
   .addOptionalParam(
     "arm",
     "The name of the ARM. eg Oeth or Origin",
