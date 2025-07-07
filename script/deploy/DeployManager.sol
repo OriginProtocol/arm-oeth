@@ -16,6 +16,7 @@ import {UpgradeHoleskyScript} from "./holesky/002_UpgradeScript.sol";
 import {DeployOriginARMProxyScript} from "./sonic/001_DeployOriginARMProxy.sol";
 import {DeployOriginARMScript} from "./sonic/002_DeployOriginARM.sol";
 import {UpgradeOriginARMScript} from "./sonic/003_UpgradeOriginARM.sol";
+import {SetHarvesterScript} from "./sonic/004_SetHarvester.sol";
 
 contract DeployManager is Script {
     using stdJson for string;
@@ -84,6 +85,11 @@ contract DeployManager is Script {
                     getDeployedAddressInBuild("HARVESTER"),
                     getDeployedAddressInBuild("ORIGIN_ARM"),
                     getDeployedAddressInBuild("SILO_VARLAMORE_S_MARKET")
+                )
+            );
+            _runDeployFile(
+                new SetHarvesterScript(
+                    getDeployedAddressInBuild("HARVESTER"), getDeployedAddressInBuild("SILO_VARLAMORE_S_MARKET")
                 )
             );
         } else {
