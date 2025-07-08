@@ -9,6 +9,7 @@ const {
   claimableRequests,
   outstandingWithdrawalAmount,
 } = require("../utils/armQueue");
+const { logArmPrices } = require("./markets");
 const { logTxDetails } = require("../utils/txLogger");
 
 const log = require("../utils/logger")("task:liquidity");
@@ -138,6 +139,21 @@ const withdrawRequestStatus = async ({ id, arm, vault }) => {
   }
 };
 
+const snap = async ({ arm, block }) => {
+  const armAddress = await parseAddress(`${arm.toUpperCase()}_ARM`);
+  const armContract = await ethers.getContractAt(`${arm}ARM`, armAddress);
+
+  const blockTag = await getBlock(block);
+
+  const { liquidityBalance } = await logLiquidity({ arm, block });
+  
+  if (arm !== "Oeth") {
+    await logWithdrawalQueue(armContract, blockTag, liquidityBalance);
+
+    await logArmPrices({ block }, armContract);
+  }
+};
+
 const logLiquidity = async ({ block, arm }) => {
   const blockTag = await getBlock(block);
   console.log(`\nLiquidity`);
@@ -209,6 +225,8 @@ const logLiquidity = async ({ block, arm }) => {
     )}%`
   );
   console.log(`${formatUnits(total, 18)} total`);
+
+  return { total, liquidityBalance };
 };
 
 const logWithdrawalQueue = async (arm, blockTag, liquidityWeth) => {
@@ -217,17 +235,17 @@ const logWithdrawalQueue = async (arm, blockTag, liquidityWeth) => {
   });
   const claimed = await arm.withdrawsClaimed({ blockTag });
   const outstanding = queue - claimed;
-  const shortfall =
-    liquidityWeth < outstanding ? liquidityWeth - outstanding : 0;
+  const available = liquidityWeth - outstanding;
 
   console.log(`\nARM Withdrawal Queue`);
   console.log(`${formatUnits(outstanding, 18).padEnd(23)} outstanding`);
-  console.log(`${formatUnits(shortfall, 18).padEnd(23)} shortfall`);
+  console.log(`${formatUnits(available, 18).padEnd(23)} available`);
 };
 
 module.exports = {
   autoRequestWithdraw,
   autoClaimWithdraw,
+  snap,
   logLiquidity,
   logWithdrawalQueue,
   requestWithdraw,

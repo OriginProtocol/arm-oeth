@@ -27,10 +27,9 @@ const {
   autoClaimWithdraw,
   requestWithdraw,
   claimWithdraw,
-  logLiquidity,
+  snap,
   withdrawRequestStatus,
 } = require("./liquidity");
-const { logArmPrices } = require("./markets");
 const {
   depositARM,
   requestRedeemARM,
@@ -124,7 +123,10 @@ task("swapLido").setAction(async (_, __, runSuper) => {
 
 // OETH ARM Liquidity management
 
-subtask("autoRequestWithdraw", "Request withdrawal of base asset (WETH/OS) from the Origin Vault")
+subtask(
+  "autoRequestWithdraw",
+  "Request withdrawal of base asset (WETH/OS) from the Origin Vault"
+)
   .addOptionalParam(
     "arm",
     "The name of the ARM. eg Oeth or Origin",
@@ -965,7 +967,7 @@ task("setOperator").setAction(async (_, __, runSuper) => {
 subtask("snap", "Take a snapshot of the an ARM")
   .addOptionalParam(
     "arm",
-    "The name of the ARM. eg Lido, OETH or Origin",
+    "The name of the ARM. eg Lido, Oeth or Origin",
     "Lido",
     types.string
   )
@@ -975,18 +977,7 @@ subtask("snap", "Take a snapshot of the an ARM")
     undefined,
     types.int
   )
-  .setAction(async (taskArgs) => {
-    await logLiquidity(taskArgs);
-
-    if (taskArgs.arm.toUpperCase() === "OETH") return;
-
-    const armAddress = await parseAddress(`${taskArgs.arm.toUpperCase()}_ARM`);
-    const armContract = await ethers.getContractAt(
-      `${taskArgs.arm}ARM`,
-      armAddress
-    );
-    await logArmPrices(taskArgs, armContract);
-  });
+  .setAction(snap);
 task("snap").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
