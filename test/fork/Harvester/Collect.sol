@@ -3,6 +3,7 @@ pragma solidity 0.8.23;
 
 // Interfaces
 import {SonicHarvester} from "contracts/SonicHarvester.sol";
+import {Abstract4626MarketWrapper} from "contracts/markets/Abstract4626MarketWrapper.sol";
 import {SiloMarket} from "contracts/markets/SiloMarket.sol";
 import {DistributionTypes, SiloIncentivesControllerGaugeLike} from "contracts/Interfaces.sol";
 
@@ -84,7 +85,7 @@ contract Fork_Concrete_Harvester_Collect_Test_ is Fork_Shared_Test {
         mockMarketsAmounts[0] = 123 ether;
         vm.mockCall(
             markets[1],
-            abi.encodeWithSelector(SiloMarket.collectRewards.selector),
+            abi.encodeWithSelector(Abstract4626MarketWrapper.collectRewards.selector),
             abi.encode(mockMarketsTokens, mockMarketsAmounts)
         );
 
