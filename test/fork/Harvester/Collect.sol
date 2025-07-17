@@ -74,6 +74,9 @@ contract Fork_Concrete_Harvester_Collect_Test_ is Fork_Shared_Test {
         createCampaign
         timejump(1 weeks)
     {
+        uint256 wsBalanceBefore = ws.balanceOf(address(harvester));
+        uint256 expectedWs = 0;
+
         // Create the market list (one real, one mocked)
         address[] memory markets = new address[](2);
         markets[0] = address(siloMarket);
@@ -103,6 +106,9 @@ contract Fork_Concrete_Harvester_Collect_Test_ is Fork_Shared_Test {
             (, address _token,,,) = gauge.incentivesPrograms(bytes32(abi.encodePacked(names[i])));
             expectedTokens[0][i] = _token;
             expectedAmounts[0][i] = gauge.getRewardsBalance(address(siloMarket), names[i]);
+            if (address(_token) == address(ws)) {
+                expectedWs += expectedAmounts[0][i];
+            }
         }
         // ---
 
@@ -140,6 +146,6 @@ contract Fork_Concrete_Harvester_Collect_Test_ is Fork_Shared_Test {
             }
         }
         // Check the balance of the harvester
-        assertEq(ws.balanceOf(address(harvester)), expectedAmounts[0][3], "Invalid amount on harvester");
+        assertEq(ws.balanceOf(address(harvester)) - wsBalanceBefore, expectedWs, "Invalid amount on harvester");
     }
 }
