@@ -62,6 +62,8 @@ const { upgradeProxy } = require("./proxy");
 const { magpieQuote, magpieTx } = require("../utils/magpie");
 const { setOperator } = require("./governance");
 
+const { setOSSiloPrices } = require("./osSiloPrices");
+
 subtask(
   "swap",
   "Swap from one asset to another. Can only specify the from or to asset as that will be the exact amount."
@@ -1090,5 +1092,17 @@ subtask("magpieTx", "Get a Magpie (Fly) swap tx based on a previous quote")
 
   .setAction(magpieTx);
 task("magpieTx").setAction(async (_, __, runSuper) => {
+  return runSuper();
+});
+
+// OS Silo Prices
+subtask("setOSSiloPrices", "Update Origin ARM's swap prices based on lending APY and market pricing")
+  .addOptionalParam("execute", "Execute the transaction", false, types.boolean)
+  .setAction(async (taskArgs) => {
+    const signer = await getSigner();
+
+    await setOSSiloPrices({ tolerance: taskArgs.tolerance, signer });
+  });
+task("setOSSiloPrices").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
