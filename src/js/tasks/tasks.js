@@ -62,7 +62,7 @@ const { upgradeProxy } = require("./proxy");
 const { magpieQuote, magpieTx } = require("../utils/magpie");
 const { setOperator } = require("./governance");
 
-const { setOSSiloPrices } = require("./osSiloPrices");
+const { setOSSiloPrice } = require("./osSiloPrice");
 
 subtask(
   "swap",
@@ -1096,13 +1096,31 @@ task("magpieTx").setAction(async (_, __, runSuper) => {
 });
 
 // OS Silo Prices
-subtask("setOSSiloPrices", "Update Origin ARM's swap prices based on lending APY and market pricing")
+subtask("setOSSiloPrice", "Update Origin ARM's swap prices based on lending APY and market pricing")
   .addOptionalParam("execute", "Execute the transaction", false, types.boolean)
   .setAction(async (taskArgs) => {
     const signer = await getSigner();
 
-    await setOSSiloPrices({ tolerance: taskArgs.tolerance, signer });
+    const armAddress = "0x2F872623d1E1Af5835b08b0E49aAd2d81d649D30";
+    const arm = await hre.ethers.getContractAt([
+      "function traderate0() external view returns (uint256)",
+      "function traderate1() external view returns (uint256)",
+      "function activeMarket() external view returns (address)",
+    ], armAddress, signer);
+
+    const activeMarket = await arm.activeMarket();
+    if (activeMarket === ethers.ZeroAddress) {
+      log("No active lending market found, using default APY of 0%");
+      return 0n;
+    }
+
+    // Get the SiloMarketWrapper contract
+    const siloMarketWrapper = await hre.ethers.getContractAt([
+      "function market() external view returns (address)",
+    ], activeMarket, signer);
+
+    await setOSSiloPrice({ tolerance: taskArgs.tolerance, signer, arm, siloMarketWrapper });
   });
-task("setOSSiloPrices").setAction(async (_, __, runSuper) => {
+task("setOSSiloPrice").setAction(async (_, __, runSuper) => {
   return runSuper();
 });

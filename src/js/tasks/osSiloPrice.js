@@ -1,31 +1,20 @@
-const { formatUnits, parseUnits, ethers } = require("ethers");
+const { formatUnits, parseUnits } = require("ethers");
 
 const addresses = require("../utils/addresses");
 
-const { abs } = require("../utils/maths");
-const { get1InchPrices } = require("../utils/1Inch");
 const { logTxDetails } = require("../utils/txLogger");
-const { getCurvePrices } = require("../utils/curve");
 
-const {
-    parseAddress,
-    parseDeployedAddress,
-} = require("../utils/addressParser");
+const fetch = require("node-fetch");
 
-const log = require("../utils/logger")("task:osSilo");
+const log = console.log; // require("../utils/logger")("task:osSiloPrice");
 
-const setOSSiloPrices = async (options) => {
+const setOSSiloPrice = async (options) => {
     const {
         signer,
+        arm,
+        siloMarketWrapper,
         execute = false
     } = options;
-
-    const armAddress = await parseDeployedAddress("ORIGIN_ARM");
-    const arm = await hre.ethers.getContractAt([
-        "function traderate0() external view returns (uint256)",
-        "function traderate1() external view returns (uint256)",
-        "function activeMarket() external view returns (address)",
-    ], armAddress);
 
     log("Computing optimal price...");
 
@@ -36,11 +25,12 @@ const setOSSiloPrices = async (options) => {
     log(`Current buy price: ${formatUnits(currentBuyPrice, 36)}`);
 
     // 2. Get current APY from lending markets
-    const currentApyLending = await getLendingMarketAPY(arm);
+    const currentApyLending = await getLendingMarketAPY(siloMarketWrapper);
     log(`Current lending APY: ${Number(formatUnits(100n * BigInt(currentApyLending), 18)).toFixed(4)}%`);
 
     // 3. Get current pricing from aggregators
-    const currentPricing = await getAggregatorPricing(signer);
+    const testAmountIn = parseUnits("1000", 18);
+    const currentPricing = await getFlyTradePrice(testAmountIn, signer);
     log(`Current market pricing: ${Number(formatUnits(currentPricing, 18)).toFixed(4)}`);
 
     // 4. Calculate minBuyingPrice based on APY
@@ -62,26 +52,16 @@ const setOSSiloPrices = async (options) => {
         log("Updating ARM prices...");
         const tx = await arm
             .connect(signer)
-            .setPrices(targetBuyPrice, targetSellPrice);
+            .setPrices(targetBuyPrice.toString(), targetSellPrice.toString());
 
-        await logTxDetails(tx, "setOSSiloPrices", execute);
+        await logTxDetails(tx, "setOSSiloPrice");
     }
 };
 
 /**
  * Get the current APY from the ARM's active lending market
  */
-const getLendingMarketAPY = async (arm, signer) => {
-    const activeMarket = await arm.activeMarket();
-    if (activeMarket === ethers.ZeroAddress) {
-        log("No active lending market found, using default APY of 0%");
-        return 0n;
-    }
-
-    // Get the SiloMarketWrapper contract
-    const siloMarketWrapper = await hre.ethers.getContractAt([
-        "function market() external view returns (address)",
-    ], activeMarket);
+const getLendingMarketAPY = async (siloMarketWrapper) => {
 
     // Get the underlying Silo market address
     const underlyingSiloMarket = await siloMarketWrapper.market();
@@ -102,73 +82,33 @@ const getLendingMarketAPY = async (arm, signer) => {
 };
 
 /**
- * Get current pricing from aggregators (fly.trade and openocean.finance)
- * Returns the lower of the two prices
- */
-const getAggregatorPricing = async (signer) => {
-    const amountIn = parseUnits("1000", 18);
-    const openOceanPrice = await getOpenOceanPrice(amountIn);
-    const flyTradePrice = await getFlyTradePrice(amountIn, signer);
-
-    return flyTradePrice < openOceanPrice ? flyTradePrice : openOceanPrice;
-}
-
-/**
- * Fetch the price from openocean.finance
- */
-const getOpenOceanPrice = async (amountIn) => {
-    log(`Getting price quote from openocean.finance...`)
-
-    const urlQuery = new URLSearchParams({
-        inTokenAddress: addresses.sonic.WS,
-        outTokenAddress: addresses.sonic.OSonicProxy,
-        amountDecimals: amountIn,
-        gasPriceDecimals: "1000000000",
-        slippage: 0.05 // 0.05%
-    })
-
-    const response = await fetch(`https://open-api.openocean.finance/v4/sonic/swap?${urlQuery}`, {
-        method: "GET",
-    })
-
-    if (!response.ok || response.status !== 200) {
-        console.error(response.error)
-        throw new Error(`Failed to get price quote from openocean.finance: ${response.statusText}`);
-    }
-
-    const { data } = await response.json();
-    const amountInScaled = BigInt(amountIn) / BigInt(parseUnits("1", 18))
-    log(`OpenOcean.finance quote for 1wS: ${Number(formatUnits(BigInt(data.outAmount) / BigInt(amountInScaled), 18)).toFixed(4)} OS`)
-    const openOceanPrice = (BigInt(amountIn) * BigInt(parseUnits("1", 18))) / BigInt(data.outAmount)
-    log(`OpenOcean.finance price for 1OS: ${Number(formatUnits(openOceanPrice, 18)).toFixed(4)} wS`)
-
-    return openOceanPrice;
-};
-
-/**
  * Fetches the price from fly.trade
  */
 const getFlyTradePrice = async (amountIn, signer) => {
     log(`Getting price quote from fly.trade...`)
 
-    const urlQuery = new URLSearchParams({
-        network: "sonic",
-        fromTokenAddress: addresses.sonic.WS,
-        toTokenAddress: addresses.sonic.OSonicProxy,
-        sellAmount: amountIn,
-        fromAddress: signer.address,
-        toAddress: signer.address,
-        slippage: 0.005, // 0.05%
-        gasless: false
-    })
+    const urlQuery = [
+        `network=sonic`,
+        `fromTokenAddress=${addresses.sonic.WS}`,
+        `toTokenAddress=${addresses.sonic.OSonicProxy}`,
+        `sellAmount=${amountIn}`,
+        `fromAddress=${signer.address}`,
+        `toAddress=${signer.address}`,
+        `slippage=0.005`, // 0.05%
+        `gasless=false`
+    ].join("&");
 
     const response = await fetch(`https://api.fly.trade/aggregator/quote?${urlQuery}`, {
         method: "GET",
+        headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+        }
     })
 
     if (!response.ok || response.status !== 200) {
+        console.log("Fly.trade response:")
         console.log(response)
-        console.error(response.error)
+        console.log(await response.text())
         throw new Error(`Failed to get price quote from fly.trade: ${response.statusText}`);
     }
 
@@ -219,5 +159,5 @@ const calculateMaxBuyingPrice = (marketPrice, minBuyingPrice) => {
 };
 
 module.exports = {
-    setOSSiloPrices,
+    setOSSiloPrice,
 };
