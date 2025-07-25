@@ -14,7 +14,7 @@ library Mainnet {
     address public constant GOVERNOR_SIX = 0x1D3Fbd4d129Ddd2372EA85c5Fa00b2682081c9EC;
     address public constant STRATEGIST = 0x4FF1b9D9ba8558F5EAfCec096318eA0d8b541971;
     address public constant TREASURY = 0x70fCE97d671E81080CA3ab4cc7A59aAc2E117137;
-    //address public constant BUYBACK_OPERATOR = 0xBB077E716A5f1F1B63ed5244eBFf5214E50fec8c;
+    address public constant BUYBACK_OPERATOR = 0xBB077E716A5f1F1B63ed5244eBFf5214E50fec8c;
 
     // Multisig and EOAs
     address public constant INITIAL_DEPLOYER = address(0x1001);
