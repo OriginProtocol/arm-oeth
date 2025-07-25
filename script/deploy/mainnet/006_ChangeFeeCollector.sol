@@ -26,7 +26,7 @@ contract ChangeFeeCollectorScript is AbstractDeployScript {
         govProposal.setDescription("Change fee collector");
 
         govProposal.action(
-            deployedContracts["LIDO_ARM"], "setFeeCollector(address)", abi.encode(Mainnet.BUYBACK_OPERATOR_ADDR)
+            deployedContracts["LIDO_ARM"], "setFeeCollector(address)", abi.encode(Mainnet.BUYBACK_OPERATOR)
         );
     }
 
