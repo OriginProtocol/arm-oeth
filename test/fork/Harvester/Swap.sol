@@ -41,12 +41,12 @@ contract Fork_Concrete_Harvester_Swap_Test_ is Fork_Shared_Test {
 
     function test_RevertWhen_Swap_Because_InvalidFromAsset() public {
         bytes memory data = getFlyTradeQuote({
-           from: "OS",
-           to: "WS",
-           amount: 1,
-           slippage: "0.01",
-           swapper: address(harvester),
-           recipient: address(harvester)
+            from: "OS",
+            to: "WS",
+            amount: 1,
+            slippage: "0.01",
+            swapper: address(harvester),
+            recipient: address(harvester)
         });
 
         vm.expectRevert(
@@ -73,12 +73,12 @@ contract Fork_Concrete_Harvester_Swap_Test_ is Fork_Shared_Test {
 
     function test_RevertWhen_Swap_Because_InvalidFromAssetAmount() public {
         bytes memory data = getFlyTradeQuote({
-           from: "OS",
-           to: "WS",
-           amount: 1,
-           slippage: "0.01",
-           swapper: address(harvester),
-           recipient: address(harvester)
+            from: "OS",
+            to: "WS",
+            amount: 1,
+            slippage: "0.01",
+            swapper: address(harvester),
+            recipient: address(harvester)
         });
 
         vm.expectRevert(
