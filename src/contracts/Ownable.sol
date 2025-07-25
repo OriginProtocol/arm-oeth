@@ -19,7 +19,7 @@ contract Ownable {
     }
 
     /// @notice The contract owner and proxy admin.
-    function owner() external view returns (address) {
+    function owner() public view returns (address) {
         return _owner();
     }
 

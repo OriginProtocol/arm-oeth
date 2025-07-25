@@ -2,7 +2,7 @@ const { formatUnits } = require("ethers");
 
 const { resolveAsset } = require("../utils/assets");
 const { logTxDetails } = require("../utils/txLogger");
-const { magpieQuote } = require("../utils/magpie");
+const { flyTradeQuote } = require("../utils/magpie");
 
 const log = require("../utils/logger")("task:sonic:harvest");
 
@@ -21,7 +21,7 @@ async function harvestRewards({ harvester, signer, symbol }) {
     return;
   }
 
-  const { data: magpieData } = await magpieQuote({
+  const { data: flyTradeData } = await flyTradeQuote({
     from: symbol.toUpperCase(),
     to: "WS",
     amount: rewards,
@@ -31,11 +31,11 @@ async function harvestRewards({ harvester, signer, symbol }) {
   });
 
   log(
-    `About to harvest ${formatUnits(rewards)} ${symbol} rewards using Magpie`
+    `About to harvest ${formatUnits(rewards)} ${symbol} rewards using FlyTrade`
   );
   const tx = await harvester
     .connect(signer)
-    .swap(0, rewardToken.getAddress(), rewards, magpieData);
+    .swap(0, rewardToken.getAddress(), rewards, flyTradeData);
   await logTxDetails(tx, "swap rewards");
 }
 

@@ -8,6 +8,7 @@ import {Base_Test_} from "test/Base.sol";
 import {Proxy} from "contracts/Proxy.sol";
 import {OriginARM} from "contracts/OriginARM.sol";
 import {SiloMarket} from "contracts/markets/SiloMarket.sol";
+import {Abstract4626MarketWrapper} from "contracts/markets/Abstract4626MarketWrapper.sol";
 
 // Interfaces
 import {IERC20} from "contracts/Interfaces.sol";
@@ -170,7 +171,9 @@ abstract contract Setup is Base_Test_ {
 
         // Initialize the SiloMarket proxy
         siloMarketProxy.initialize(
-            address(siloMarket), governor, abi.encodeWithSelector(SiloMarket.initialize.selector, operator)
+            address(siloMarket),
+            governor,
+            abi.encodeWithSelector(Abstract4626MarketWrapper.initialize.selector, operator)
         );
 
         vm.stopPrank();
