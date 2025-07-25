@@ -22,6 +22,7 @@ library Mainnet {
     address public constant ARM_MULTISIG = 0xC8F2cF4742C86295653f893214725813B16f7410;
     address public constant OETH_RELAYER = 0x4b91827516f79d6F6a1F292eD99671663b09169a;
     address public constant ARM_RELAYER = 0x39878253374355DBcc15C86458F084fb6f2d6DE7;
+    address public constant BUYBACK_OPERATOR = 0xBB077E716A5f1F1B63ed5244eBFf5214E50fec8c;
 
     // Tokens
     address public constant OETH = 0x856c4Efb76C1D1AE02e20CEB03A2A6a08b0b8dC3;

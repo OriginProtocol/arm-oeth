@@ -19,6 +19,7 @@ const commonConfig = {
     ...builtins,
     "axios",
     "chai",
+    "node-fetch",
     /^defender-relay-client(\/.*)?$/,
     "@openzeppelin/defender-relay-client/lib/ethers",
     "@openzeppelin/defender-sdk",
@@ -116,6 +117,14 @@ module.exports = [
     input: "setPrices.js",
     output: {
       file: "dist/setPrices/index.js",
+      format: "cjs",
+    },
+    ...commonConfig,
+  },
+  {
+    input: "setOSSiloPriceAction.js",
+    output: {
+      file: "dist/setOSSiloPriceAction/index.js",
       format: "cjs",
     },
     ...commonConfig,

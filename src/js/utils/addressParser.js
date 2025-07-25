@@ -10,7 +10,7 @@ const parseDeployedAddress = async (name) => {
   const fileName = `./build/deployments-${chainId}.json`;
   log(`Parsing deployed contract ${name} from ${fileName}.`);
   try {
-    const data = await readFileSync(fileName, "utf-8");
+    const data = readFileSync(fileName, "utf-8");
 
     // Parse the JSON data
     const deploymentData = JSON.parse(data);
@@ -59,8 +59,8 @@ const parseAddress = async (name) => {
     network.chainId == 1
       ? "Mainnet"
       : network.chainId == 146
-      ? "Sonic"
-      : "Holesky";
+        ? "Sonic"
+        : "Holesky";
   const library = ast.children.find((node) => node.name === libraryName);
 
   if (!library) {

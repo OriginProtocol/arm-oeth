@@ -256,6 +256,7 @@ npx hardhat setActionVars --id 7a0cb2c9-11c2-41dd-bcd0-d7c2dbda6af6
 npx hardhat setActionVars --id a9fc4c86-0506-4809-afbc-93b5e558cb68
 npx hardhat setActionVars --id 12977d51-d107-45eb-ac20-45942009ab01
 npx hardhat setActionVars --id 6ec46510-0b8e-48b4-a4c8-de759aad0ba4
+npx hardhat setActionVars --id 6d148f26-54a6-4377-92f2-3148d572eea3
 
 # The Defender autotask client uses generic env var names so we'll set them first from the values in the .env file
 export API_KEY=
@@ -273,6 +274,7 @@ npx defender-autotask update-code 7a0cb2c9-11c2-41dd-bcd0-d7c2dbda6af6 ./dist/al
 npx defender-autotask update-code a9fc4c86-0506-4809-afbc-93b5e558cb68 ./dist/collectRewardsSonic
 npx defender-autotask update-code 12977d51-d107-45eb-ac20-45942009ab01 ./dist/autoRequestWithdrawSonic
 npx defender-autotask update-code 6ec46510-0b8e-48b4-a4c8-de759aad0ba4 ./dist/autoClaimWithdrawSonic
+npx defender-autotask update-code 6d148f26-54a6-4377-92f2-3148d572eea3 ./dist/setOSSiloPriceAction
 ```
 
 `rollup` and `defender-autotask` can be installed globally to avoid the `npx` prefix.
