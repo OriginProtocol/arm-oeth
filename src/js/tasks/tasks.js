@@ -59,7 +59,7 @@ const {
   redeemAll,
 } = require("./vault");
 const { upgradeProxy } = require("./proxy");
-const { magpieQuote, magpieTx } = require("../utils/magpie");
+const { flyTradeQuote, flyTradeTx } = require("../utils/magpie");
 const { setOperator } = require("./governance");
 
 subtask(
@@ -1052,8 +1052,8 @@ task("setActionVars").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
 
-// Magpie (now Fly)
-subtask("magpieQuote", "Get a quote from Magpie (now Fly) for a swap")
+// FlyTrade
+subtask("flyTradeQuote", "Get a Fly quote for a swap")
   .addOptionalParam("from", "Token symbol to swap from.", "SILO", types.string)
   .addOptionalParam("to", "Token symbol to swap to.", "WS", types.string)
   .addOptionalParam("amount", "Amount of tokens to sell", 1, types.float)
@@ -1070,25 +1070,25 @@ subtask("magpieQuote", "Get a quote from Magpie (now Fly) for a swap")
     "0x2F872623d1E1Af5835b08b0E49aAd2d81d649D30",
     types.string
   )
-
   .setAction(async (taskArgs) => {
     const amount = parseUnits(taskArgs.amount.toString(), 18);
 
-    await magpieQuote({ ...taskArgs, amount });
+    await flyTradeQuote({ ...taskArgs, amount });
   });
-task("magpieQuote").setAction(async (_, __, runSuper) => {
+task("flyTradeQuote").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
 
-subtask("magpieTx", "Get a Magpie (Fly) swap tx based on a previous quote")
+subtask("flyTradeTx", "Get a Fly swap tx based on a previous quote")
   .addParam(
     "id",
     "Identifier returned from a previous quote.",
     undefined,
     types.string
   )
-
-  .setAction(magpieTx);
-task("magpieTx").setAction(async (_, __, runSuper) => {
+  .setAction(async (taskArgs) => {
+    await flyTradeTx(taskArgs);
+  });
+task("flyTradeTx").setAction(async (_, __, runSuper) => {
   return runSuper();
 });

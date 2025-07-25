@@ -31,7 +31,7 @@ const handler = async (event) => {
     console.error(error);
   }
 
-  // TODO do Silo, beS and wOS swaps with Magpie
+  // TODO do Silo, beS and wOS swaps with FlyTrade
 };
 
 module.exports = { handler };
