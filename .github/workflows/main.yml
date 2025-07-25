@@ -37,15 +37,15 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-      
-      - name: Clean repo
-        run: forge clean
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
 
       - name: Install Dependencies
         run: forge soldeer install && yarn install
+
+      - name: Clean repo
+        run: forge clean
 
       - name: Check contract sizes
         run: forge build --sizes
