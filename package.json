@@ -33,6 +33,7 @@
     "graphql": "^16.9.0",
     "hardhat": "^2.22.9",
     "rollup": "^4.9.1",
-    "rollup-plugin-visualizer": "^5.12.0"
+    "rollup-plugin-visualizer": "^5.12.0",
+    "node-fetch": "^2.6.7"
   }
 }
