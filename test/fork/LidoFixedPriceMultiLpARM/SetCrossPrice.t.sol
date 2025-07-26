@@ -19,12 +19,7 @@ contract Fork_Concrete_LidoARM_SetCrossPrice_Test_ is Fork_Shared_Test_ {
     /// --- REVERTING TESTS
     //////////////////////////////////////////////////////
     function test_RevertWhen_SetCrossPrice_Because_NotOwner() public asRandomAddress {
-        vm.expectRevert("ARM: Only owner can call this function.");
-        lidoARM.setCrossPrice(0.9998e36);
-    }
-
-    function test_RevertWhen_SetCrossPrice_Because_Operator() public asOperator {
-        vm.expectRevert("ARM: Only owner can call this function.");
+        vm.expectRevert("ARM: Only operator or owner can call this function.");
         lidoARM.setCrossPrice(0.9998e36);
     }
 
@@ -91,5 +86,28 @@ contract Fork_Concrete_LidoARM_SetCrossPrice_Test_ is Fork_Shared_Test_ {
 
         // 1 basis points lower than 1.0
         lidoARM.setCrossPrice(0.9999e36);
+    }
+}
+
+contract Fork_Concrete_LidoARM_SetCrossPrice_Operator_Test_ is Fork_Shared_Test_ {
+    //////////////////////////////////////////////////////
+    /// --- SETUP
+    //////////////////////////////////////////////////////
+    function setUp() public override {
+        super.setUp();
+
+        deal(address(steth), address(lidoARM), MIN_TOTAL_SUPPLY - 1);
+    }
+
+    function test_SetCrossPrice_No_StETH_Operator() public asOperator {
+        // at 1.0
+        vm.expectEmit({emitter: address(lidoARM)});
+        emit AbstractARM.CrossPriceUpdated(1e36);
+        lidoARM.setCrossPrice(1e36);
+
+        // 20 basis points lower than 1.0
+        vm.expectEmit({emitter: address(lidoARM)});
+        emit AbstractARM.CrossPriceUpdated(0.998e36);
+        lidoARM.setCrossPrice(0.998e36);
     }
 }
