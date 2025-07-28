@@ -61,16 +61,16 @@ coverage-html:
 
 # Run a script
 simulate-s-%:
-	@forge script script/$*.s.sol --fork-url $(PROVIDER_URL) -vvvvv
+	@forge script script/deploy/$*.sol --fork-url $(PROVIDER_URL) -vvvvv
 
 simulate-sonic-s-%:
-	@forge script script/$*.s.sol --fork-url $(SONIC_URL) -vvvvv
+	@forge script script/deploy/$*.sol --fork-url $(SONIC_URL) -vvvvv
 
 run-s-%:
-	@forge script script/$*.s.sol --rpc-url $(PROVIDER_URL) --private-key ${DEPLOYER_PRIVATE_KEY} --broadcast --slow --verify -vvvvv
+	@forge script script/deploy/$*.sol --rpc-url $(PROVIDER_URL) --private-key ${DEPLOYER_PRIVATE_KEY} --broadcast --slow --verify -vvvvv
 
 run-sonic-s-%:
-	@forge script script/$*.s.sol --rpc-url $(SONIC_URL) --private-key ${DEPLOYER_PRIVATE_KEY} --broadcast --slow --verify -vvvvv
+	@forge script script/deploy/$*.sol --rpc-url $(SONIC_URL) --private-key ${DEPLOYER_PRIVATE_KEY} --broadcast --slow --verify -vvvvv
 
 # Deploy scripts
 deploy:
