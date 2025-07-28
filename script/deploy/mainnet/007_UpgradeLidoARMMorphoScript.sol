@@ -43,7 +43,9 @@ contract UpgradeLidoARMMorphoScript is AbstractDeployScript {
     function _buildGovernanceProposal() internal override {
         govProposal.setDescription("Update Lido ARM to Morpho Market");
 
-        govProposal.action(deployedContracts["LIDO_ARM"], "upgradeTo(address)", abi.encode(deployedContracts["LIDO_ARM_IMPL"]));
+        govProposal.action(
+            deployedContracts["LIDO_ARM"], "upgradeTo(address)", abi.encode(deployedContracts["LIDO_ARM_IMPL"])
+        );
 
         govProposal.simulate();
     }
