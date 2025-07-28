@@ -31,7 +31,7 @@ contract UpgradeLidoARMMorphoScript is AbstractDeployScript {
         // 1. Deploy new Lido implementation
         uint256 claimDelay = tenderlyTestnet ? 1 minutes : 10 minutes;
         lidoARMImpl = new LidoARM(Mainnet.STETH, Mainnet.WETH, Mainnet.LIDO_WITHDRAWAL, claimDelay);
-        _recordDeploy("LIDO_ARM_IMPL_MORPHO_MARKET", address(lidoARMImpl));
+        _recordDeploy("LIDO_ARM_IMPL", address(lidoARMImpl));
 
         // 2. Deploy MorphoMarket
         morphoMarket = new MorphoMarket(Mainnet.LIDO_ARM, Mainnet.MORPHO_MARKET_MEVCAPITAL);
@@ -43,7 +43,7 @@ contract UpgradeLidoARMMorphoScript is AbstractDeployScript {
     function _buildGovernanceProposal() internal override {
         govProposal.setDescription("Update Lido ARM to Morpho Market");
 
-        govProposal.action(deployedContracts["LIDO_ARM"], "upgradeTo(address)", abi.encode(address(lidoARMImpl)));
+        govProposal.action(deployedContracts["LIDO_ARM"], "upgradeTo(address)", abi.encode(deployedContracts["LIDO_ARM_IMPL"]));
 
         govProposal.simulate();
     }
