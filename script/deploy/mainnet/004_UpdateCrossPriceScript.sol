@@ -2,8 +2,6 @@
 
 pragma solidity 0.8.23;
 
-import "forge-std/console.sol";
-
 import {GovProposal, GovSixHelper} from "contracts/utils/GovSixHelper.sol";
 import {AbstractDeployScript} from "../AbstractDeployScript.sol";
 
@@ -13,7 +11,7 @@ contract UpdateCrossPriceMainnetScript is AbstractDeployScript {
     GovProposal public govProposal;
 
     string public constant override DEPLOY_NAME = "004_UpdateCrossPriceScript";
-    bool public constant override proposalExecuted = false;
+    bool public constant override proposalExecuted = true;
 
     function _execute() internal override {}
 
