@@ -2,7 +2,6 @@
 pragma solidity ^0.8.23;
 
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
-import {IDistributionManager, SiloIncentivesControllerGaugeLike} from "../Interfaces.sol";
 import {Abstract4626MarketWrapper} from "./Abstract4626MarketWrapper.sol";
 
 /**
@@ -15,7 +14,7 @@ contract MorphoMarket is Abstract4626MarketWrapper {
 
     /// @notice Constructor to set immutable storage variables.
     /// @param _arm The address of the ARM contract.
-    /// @param _market The address of the Silo lending market.
+    /// @param _market The address of the Morpho lending market.
     constructor(address _arm, address _market) Abstract4626MarketWrapper(_arm, _market) {}
 
     /// @notice Claim all Morpho tokens and send them to the Harvester.
