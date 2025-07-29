@@ -14,7 +14,7 @@ const {
   swapLido,
   lidoWithdrawStatus,
 } = require("./lido");
-const { setPrices } = require("./lidoPrices");
+const { setPrices } = require("./lidoMorphoPrices");
 const { allocate, collectFees } = require("./admin");
 const {
   collectRewards,
@@ -725,9 +725,26 @@ subtask("setPrices", "Update Lido ARM's swap prices")
     const armAddress = await parseDeployedAddress(
       `${taskArgs.arm.toUpperCase()}_ARM`
     );
-    const armContract = await ethers.getContractAt("AbstractARM", armAddress);
+    const arm = await ethers.getContractAt([
+      "function traderate0() external view returns (uint256)",
+      "function traderate1() external view returns (uint256)",
+      "function crossPrice() external view returns (uint256)",
+      "function activeMarket() external view returns (address)",
+      "function setPrices(uint256,uint256) external",
+    ], armAddress);
 
-    await setPrices({ ...taskArgs, signer, arm: armContract });
+    const activeMarket = "0x9a8bC3B04b7f3D87cfC09ba407dCED575f2d61D8"; //await arm.activeMarket();
+    if (activeMarket === ethers.ZeroAddress) {
+      log("No active lending market found, using default APY of 0%");
+      return 0n;
+    }
+
+    // Get the MorphoMarketWrapper contract
+    const market = await hre.ethers.getContractAt([
+      "function market() external view returns (address)",
+    ], activeMarket, signer);
+
+    await setPrices({ ...taskArgs, signer, arm, market });
   });
 task("setPrices").setAction(async (_, __, runSuper) => {
   return runSuper();
