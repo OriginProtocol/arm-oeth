@@ -34,7 +34,6 @@
     "hardhat": "^2.22.9",
     "node-fetch": "^3.3.2",
     "rollup": "^4.9.1",
-    "rollup-plugin-visualizer": "^5.12.0",
-    "node-fetch": "^2.6.7"
+    "rollup-plugin-visualizer": "^5.12.0"
   }
 }
