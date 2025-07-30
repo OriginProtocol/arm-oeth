@@ -57,6 +57,22 @@ contract UpgradeLidoARMMorphoScript is AbstractDeployScript {
             deployedContracts["LIDO_ARM"], "upgradeTo(address)", abi.encode(deployedContracts["LIDO_ARM_IMPL"])
         );
 
+        address[] memory markets = new address[](1);
+        markets[0] = deployedContracts["MORPHO_MARKET_MEVCAPITAL"];
+        govProposal.action(deployedContracts["LIDO_ARM"], "addMarkets(address[])", abi.encode(markets));
+
+        govProposal.action(
+            deployedContracts["LIDO_ARM"],
+            "setActiveMarket(address)",
+            abi.encode(deployedContracts["MORPHO_MARKET_MEVCAPITAL"])
+        );
+
+        govProposal.action(
+            deployedContracts["LIDO_ARM"],
+            "setARMBuffer(uint256)",
+            abi.encode(0.2e18) // 20% buffer
+        );
+
         govProposal.simulate();
     }
 }
