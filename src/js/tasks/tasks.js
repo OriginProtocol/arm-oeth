@@ -142,7 +142,7 @@ subtask(
   .setAction(async (taskArgs) => {
     const arm = taskArgs.arm;
     const signer = await getSigner();
-    const assetSymbol = arm === "OETH" ? "OETH" : "OS";
+    const assetSymbol = arm === "Oeth" ? "OETH" : "OS";
     const asset = await resolveAsset(assetSymbol);
 
     const armAddress = await parseAddress(`${arm.toUpperCase()}_ARM`);

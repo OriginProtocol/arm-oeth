@@ -146,7 +146,7 @@ const snap = async ({ arm, block }) => {
   const blockTag = await getBlock(block);
 
   const { liquidityBalance } = await logLiquidity({ arm, block });
-  
+
   if (arm !== "Oeth") {
     await logWithdrawalQueue(armContract, blockTag, liquidityBalance);
 
@@ -194,6 +194,9 @@ const logLiquidity = async ({ block, arm }) => {
   const lendingMarketPercent =
     total == 0 ? 0 : (lendingMarketBalance * 10000n) / total;
 
+  const totalAssets = await armContract.totalAssets({ blockTag });
+  const accruedFees = await armContract.feesAccrued({ blockTag });
+
   console.log(
     `${formatUnits(liquidityBalance, 18)} ${liquiditySymbol} ${formatUnits(
       liquidityPercent,
@@ -224,7 +227,10 @@ const logLiquidity = async ({ block, arm }) => {
       2
     )}%`
   );
-  console.log(`${formatUnits(total, 18)} total`);
+  console.log(`${formatUnits(total, 18)} raw total assets`);
+
+  console.log(`${formatUnits(accruedFees, 18)} accrued fees`);
+  console.log(`${formatUnits(totalAssets, 18)} total assets`);
 
   return { total, liquidityBalance };
 };
