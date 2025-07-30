@@ -719,6 +719,12 @@ subtask("setPrices", "Update Lido ARM's swap prices")
     undefined,
     types.boolean
   )
+  .addOptionalParam(
+    "priceOffset",
+    "Offset the 1Inch/Curve price by this amount in basis points (above for buy, below for sell, reversed if negative). eg 100 = 1%",
+    0,
+    types.float
+  )
   .setAction(async (taskArgs) => {
     const signer = await getSigner();
 
