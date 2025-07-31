@@ -26,7 +26,7 @@ const setPrices = async (options) => {
     curve,
     inch,
     market,
-    priceOffset
+    applyOffsetToIndividualPrices
   } = options;
 
   // 1. Get current ARM stETH/WETH prices
@@ -59,17 +59,18 @@ const setPrices = async (options) => {
     log(`buy price          : ${referencePrices.buyPrice !== undefined ? formatUnits(referencePrices.buyPrice) : "not defined"}`);
 
     // 2.2 Calculate target prices
-    if (priceOffset) {
+    const offsetBN = parseUnits(offset.toString(), 14);
+    if (applyOffsetToIndividualPrices) {
       // If price offset is provided, adjust the target prices accordingly
-      const priceOffsetBN = parseUnits(priceOffset.toString(), 14);
-      targetSellPrice = ((referencePrices.sellPrice ?? referencePrices.midPrice) - priceOffsetBN) * BigInt(1e18);
-      targetBuyPrice = ((referencePrices.buyPrice ?? referencePrices.midPrice) + priceOffsetBN) * BigInt(1e18);
-      log(`\nCalculating target prices based on price offset of ${priceOffset} basis points :`);
+      log(`\nCalculating target prices based on offset:`);
+      targetSellPrice = ((referencePrices.sellPrice ?? referencePrices.midPrice) - offsetBN) * BigInt(1e18);
+      targetBuyPrice = ((referencePrices.buyPrice ?? referencePrices.midPrice) + offsetBN) * BigInt(1e18);
+      log(`offset             : ${formatUnits(offsetBN, 14)} basis points`);
       log(`target sell price  : ${formatUnits(targetSellPrice, 36)}`);
       log(`target buy price   : ${formatUnits(targetBuyPrice, 36)}`);
     } else {
       // If no price offset, calculate target prices based fee and offset
-      log(`\nCalculating target prices based on fee and offset:`);
+      log(`\nCalculating target prices based on fee:`);
       const FeeScale = BigInt(1e6);
       const feeRate = FeeScale - BigInt(fee * 100);
       log(
@@ -80,7 +81,6 @@ const setPrices = async (options) => {
       );
       log(`fee rate           : ${formatUnits(feeRate, 6)} basis points`);
 
-      const offsetBN = parseUnits(offset.toString(), 14);
       const offsetMidPrice = referencePrices.midPrice - offsetBN;
       log(`offset mid price   : ${formatUnits(offsetMidPrice)}`);
 
@@ -346,10 +346,8 @@ const calculateMaxBuyingPrice = (marketPrice, minBuyingPrice) => {
   // Ensure it doesn't exceed the minimum buying price
   // The max buying price must be below minBuyingPrice to maintain profitability
   log(
-    `max buying price     ${formatUnits(maxPrice, 36)} is ${
-      maxPrice < minBuyingPrice ? "below" : "above or equal to"
-    } min buying price ${formatUnits(minBuyingPrice, 36)} so will use ${
-      maxPrice < minBuyingPrice ? "max buying price" : "min buying price"
+    `max buying price     ${formatUnits(maxPrice, 36)} is ${maxPrice < minBuyingPrice ? "below" : "above or equal to"
+    } min buying price ${formatUnits(minBuyingPrice, 36)} so will use ${maxPrice < minBuyingPrice ? "max buying price" : "min buying price"
     }`
   );
   return maxPrice < minBuyingPrice ? maxPrice : minBuyingPrice;
