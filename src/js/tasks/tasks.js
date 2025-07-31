@@ -720,7 +720,7 @@ subtask("setPrices", "Update Lido ARM's swap prices")
     types.boolean
   )
   .addOptionalParam(
-    "applyOffsetToIndividualPrices",
+    "priceOffset",
     "Offset the 1Inch/Curve buyPrice by `--offset` amount in basis points",
     undefined,
     types.boolean

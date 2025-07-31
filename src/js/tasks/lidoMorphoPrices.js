@@ -26,7 +26,7 @@ const setPrices = async (options) => {
     curve,
     inch,
     market,
-    applyOffsetToIndividualPrices
+    priceOffset
   } = options;
 
   // 1. Get current ARM stETH/WETH prices
@@ -60,7 +60,7 @@ const setPrices = async (options) => {
 
     // 2.2 Calculate target prices
     const offsetBN = parseUnits(offset.toString(), 14);
-    if (applyOffsetToIndividualPrices && referencePrices.buyPrice) {
+    if (priceOffset && referencePrices.buyPrice) {
       // If price offset is provided, adjust the target prices accordingly
       log(`\nCalculating target prices based on offset:`);
       // Target buy price is the reference buy price plus the offset
