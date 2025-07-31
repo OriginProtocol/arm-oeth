@@ -731,13 +731,7 @@ subtask("setPrices", "Update Lido ARM's swap prices")
     const armAddress = await parseDeployedAddress(
       `${taskArgs.arm.toUpperCase()}_ARM`
     );
-    const arm = await ethers.getContractAt([
-      "function traderate0() external view returns (uint256)",
-      "function traderate1() external view returns (uint256)",
-      "function crossPrice() external view returns (uint256)",
-      "function activeMarket() external view returns (address)",
-      "function setPrices(uint256,uint256) external",
-    ], armAddress);
+    const arm = await ethers.getContractAt("AbstractARM", armAddress);
 
     const activeMarket = "0x9a8bC3B04b7f3D87cfC09ba407dCED575f2d61D8"; //await arm.activeMarket();
     if (activeMarket === ethers.ZeroAddress) {
