@@ -4,7 +4,7 @@ const { ethers } = require("ethers");
 const { autoRequestWithdraw } = require("../tasks/liquidity");
 const { sonic } = require("../utils/addresses");
 const erc20Abi = require("../../abis/ERC20.json");
-const oethARMAbi = require("../../abis/OethARM.json");
+const armAbi = require("../../abis/OriginARM.json");
 
 // Entrypoint for the Autotask
 const handler = async (event) => {
@@ -22,7 +22,7 @@ const handler = async (event) => {
 
   // References to contracts
   const asset = new ethers.Contract(sonic.OSonicProxy, erc20Abi, signer);
-  const arm = new ethers.Contract(sonic.OriginARM, oethARMAbi, signer);
+  const arm = new ethers.Contract(sonic.OriginARM, armAbi, signer);
 
   await autoRequestWithdraw({
     signer,

@@ -161,7 +161,7 @@ interface IOriginVault {
         view
         returns (address withdrawer, bool claimed, uint40 timestamp, uint128 amount, uint128 queued);
 
-    function claimDelay() external view returns (uint256);
+    function withdrawalClaimDelay() external view returns (uint256);
 }
 
 interface IGovernance {
