@@ -741,7 +741,7 @@ subtask("setPrices", "Update Lido ARM's swap prices")
 
     const activeMarket = "0x9a8bC3B04b7f3D87cfC09ba407dCED575f2d61D8"; //await arm.activeMarket();
     if (activeMarket === ethers.ZeroAddress) {
-      log("No active lending market found, using default APY of 0%");
+      console.log("No active lending market found, using default APY of 0%");
       return 0n;
     }
 
