@@ -14,6 +14,7 @@ import {OriginARM} from "contracts/OriginARM.sol";
 import {IERC20} from "contracts/Interfaces.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {SiloMarket} from "contracts/markets/SiloMarket.sol";
+import {Abstract4626MarketWrapper} from "contracts/markets/Abstract4626MarketWrapper.sol";
 import {IOriginVault} from "contracts/Interfaces.sol";
 
 // Mocks
@@ -108,7 +109,9 @@ abstract contract Fork_Shared_Test is Base_Test_, Modifiers {
 
         // --- Initialize the SiloMarket proxy
         marketAdapterProxy.initialize(
-            address(siloMarket), governor, abi.encodeWithSelector(SiloMarket.initialize.selector, operator)
+            address(siloMarket),
+            governor,
+            abi.encodeWithSelector(Abstract4626MarketWrapper.initialize.selector, operator)
         );
 
         vm.stopPrank();

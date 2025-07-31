@@ -37,9 +37,17 @@ contract LidoARM is Initializable, AbstractARM {
     /// @param _weth The address of the WETH token
     /// @param _lidoWithdrawalQueue The address of the Lido's withdrawal queue contract
     /// @param _claimDelay The delay in seconds before a user can claim a redeem from the request
-    constructor(address _steth, address _weth, address _lidoWithdrawalQueue, uint256 _claimDelay)
-        AbstractARM(_weth, _steth, _weth, _claimDelay, 0, 0)
-    {
+    /// @param _minSharesToRedeem The minimum amount of shares to redeem from the active lending market
+    /// @param _allocateThreshold The minimum amount of liquidity assets in excess of the ARM buffer before
+    /// the ARM can allocate to a active lending market.
+    constructor(
+        address _steth,
+        address _weth,
+        address _lidoWithdrawalQueue,
+        uint256 _claimDelay,
+        uint256 _minSharesToRedeem,
+        int256 _allocateThreshold
+    ) AbstractARM(_weth, _steth, _weth, _claimDelay, _minSharesToRedeem, _allocateThreshold) {
         steth = IERC20(_steth);
         weth = IWETH(_weth);
         lidoWithdrawalQueue = IStETHWithdrawal(_lidoWithdrawalQueue);

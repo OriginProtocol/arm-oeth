@@ -58,7 +58,7 @@ contract UpgradeLidoARMMainnetScript is AbstractDeployScript {
 
         // 7. Deploy Lido implementation
         uint256 claimDelay = tenderlyTestnet ? 1 minutes : 10 minutes;
-        lidoARMImpl = new LidoARM(Mainnet.STETH, Mainnet.WETH, Mainnet.LIDO_WITHDRAWAL, claimDelay);
+        lidoARMImpl = new LidoARM(Mainnet.STETH, Mainnet.WETH, Mainnet.LIDO_WITHDRAWAL, claimDelay, 0, 0);
         _recordDeploy("LIDO_ARM_IMPL", address(lidoARMImpl));
 
         // 8. Deploy the Zapper

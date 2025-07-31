@@ -10,6 +10,7 @@ import {Proxy} from "contracts/Proxy.sol";
 import {SonicHarvester} from "contracts/SonicHarvester.sol";
 import {OriginARM} from "contracts/OriginARM.sol";
 import {SiloMarket} from "contracts/markets/SiloMarket.sol";
+import {Abstract4626MarketWrapper} from "contracts/markets/Abstract4626MarketWrapper.sol";
 
 // Interfaces
 import {IERC20} from "contracts/Interfaces.sol";
@@ -93,7 +94,7 @@ abstract contract Fork_Shared_Test is Base_Test_, Helpers {
         siloMarketProxy.initialize(
             address(siloMarket),
             governor,
-            abi.encodeWithSelector(SiloMarket.initialize.selector, address(harvesterProxy))
+            abi.encodeWithSelector(Abstract4626MarketWrapper.initialize.selector, address(harvesterProxy))
         );
 
         harvester = SonicHarvester(address(harvesterProxy));

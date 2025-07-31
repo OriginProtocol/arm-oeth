@@ -44,6 +44,9 @@ jobs:
       - name: Install Dependencies
         run: forge soldeer install && yarn install
 
+      - name: Clean repo
+        run: forge clean
+
       - name: Check contract sizes
         run: forge build --sizes
 

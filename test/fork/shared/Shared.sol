@@ -141,7 +141,7 @@ abstract contract Fork_Shared_Test_ is Modifiers {
 
         // --- Deploy LidoARM implementation ---
         // Deploy LidoARM implementation.
-        LidoARM lidoImpl = new LidoARM(address(steth), address(weth), Mainnet.LIDO_WITHDRAWAL, 10 minutes);
+        LidoARM lidoImpl = new LidoARM(address(steth), address(weth), Mainnet.LIDO_WITHDRAWAL, 10 minutes, 0, 0);
 
         // Deployer will need WETH to initialize the ARM.
         deal(address(weth), address(this), 1e12);
