@@ -60,12 +60,15 @@ const setPrices = async (options) => {
 
     // 2.2 Calculate target prices
     const offsetBN = parseUnits(offset.toString(), 14);
-    if (applyOffsetToIndividualPrices) {
+    if (applyOffsetToIndividualPrices && referencePrices.buyPrice) {
       // If price offset is provided, adjust the target prices accordingly
       log(`\nCalculating target prices based on offset:`);
-      targetSellPrice = ((referencePrices.sellPrice ?? referencePrices.midPrice) - offsetBN) * BigInt(1e18);
-      targetBuyPrice = ((referencePrices.buyPrice ?? referencePrices.midPrice) + offsetBN) * BigInt(1e18);
+      // Target buy price is the reference buy price plus the offset
+      targetBuyPrice = ((referencePrices.buyPrice) + offsetBN) * BigInt(1e18);
+      // Target sell price is the target buy price plus 2x fee offset
+      targetSellPrice = targetBuyPrice + parseUnits(fee.toString(), 32) * BigInt(2);
       log(`offset             : ${formatUnits(offsetBN, 14)} basis points`);
+      log(`fee                : ${formatUnits(BigInt(fee * 1000000), 6)} basis points`);
       log(`target sell price  : ${formatUnits(targetSellPrice, 36)}`);
       log(`target buy price   : ${formatUnits(targetBuyPrice, 36)}`);
     } else {
