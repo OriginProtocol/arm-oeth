@@ -97,7 +97,7 @@ const setPrices = async (options) => {
       log(`Current lending APY: ${Number(formatUnits(100n * BigInt(currentApyLending), 18)).toFixed(4)}%`);
 
       if (!minBuyPrice) {
-        minBuyPrice = Number(formatUnits(calculateMinBuyingPrice(currentApyLending), 36));
+        minBuyPrice = formatUnits(calculateMinBuyingPrice(currentApyLending), 36);
         log(`min buying price   : ${minBuyPrice}`);
 
         if (!maxBuyPrice) {
