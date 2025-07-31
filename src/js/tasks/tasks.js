@@ -1036,6 +1036,7 @@ subtask("snapLido", "Take a snapshot of the Lido ARM")
   .addOptionalParam("user", "Include user data", false, types.boolean)
   .addOptionalParam("cap", "Include cap limit data", false, types.boolean)
   .addOptionalParam("gas", "Include gas costs", false, types.boolean)
+  .addOptionalParam("fluid", "Include FluidDex prices", true, types.boolean)
   .setAction(snapLido);
 task("snapLido").setAction(async (_, __, runSuper) => {
   return runSuper();

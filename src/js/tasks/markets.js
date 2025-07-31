@@ -5,6 +5,7 @@ const { get1InchPrices } = require("../utils/1Inch");
 const { getCurvePrices } = require("../utils/curve");
 const { getUniswapV3SpotPrices } = require("../utils/uniswap");
 const { getSigner } = require("../utils/signers");
+const { getFluidSpotPrices } = require("../utils/fluid");
 
 const log = require("../utils/logger")("task:markets");
 
@@ -259,9 +260,40 @@ const logUniswapSpotPrices = async (options, ammPrices) => {
   return uniswap;
 };
 
+const logFluidPrices = async (options, ammPrices) => {
+  const { amount, pair, gas } = options;
+  const fluid = await getFluidSpotPrices(options);
+  const buyRateDiff = fluid.buyPrice - ammPrices.sellPrice;
+  const sellRateDiff = fluid.sellPrice - ammPrices.buyPrice;
+
+  log(`buy  ${formatUnits(fluid.buyToAmount)} stETH for ${amount} WETH`);
+  log(`sell ${amount} stETH for ${formatUnits(fluid.sellToAmount)} WETH`);
+
+  console.log(`\nwstETH/ETH FluidDex spot prices for swap size ${amount}`);
+  const buyGasCosts = gas ? `, ${fluid.buyGas.toLocaleString()} gas` : "";
+  const sellGasCosts = gas ? `, ${fluid.sellGas.toLocaleString()} gas` : "";
+  console.log(
+    `buy    : ${formatUnits(fluid.buyPrice, 18).padEnd(
+      20
+    )} ${pair}, diff ${formatUnits(buyRateDiff, 14)} bps to ARM${buyGasCosts}`
+  );
+  console.log(
+    `mid    : ${formatUnits(fluid.midPrice, 18).padEnd(20)} ${pair}`
+  );
+  console.log(
+    `sell   : ${formatUnits(fluid.sellPrice, 18).padEnd(
+      20
+    )} ${pair}, diff ${formatUnits(sellRateDiff, 14)} bps to ARM${sellGasCosts}`
+  );
+  console.log(`spread : ${formatUnits(fluid.spread, 14)} bps`);
+
+  return fluid;
+}
+
 module.exports = {
   log1InchPrices,
   logArmPrices,
   logCurvePrices,
   logUniswapSpotPrices,
+  logFluidPrices
 };

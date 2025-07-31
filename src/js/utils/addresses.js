@@ -39,6 +39,10 @@ addresses.mainnet.UniswapV3Quoter =
   "0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6";
 addresses.mainnet.UniswapV3stETHWETHPool =
   "0x109830a1AAaD605BbF02a9dFA7B0B92EC2FB7dAa";
+addresses.mainnet.FluidDexResolver = 
+  "0x71783F64719899319B56BdA4F27E1219d9AF9a3d";
+addresses.mainnet.FluidWstEthEthPool =
+  "0x0B1a513ee24972DAEf112bC777a5610d4325C9e7";
 
 // Sonic
 addresses.sonic = {};
