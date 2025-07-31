@@ -14,7 +14,7 @@ const {
   swapLido,
   lidoWithdrawStatus,
 } = require("./lido");
-const { setPrices } = require("./lidoPrices");
+const { setPrices } = require("./lidoMorphoPrices");
 const { allocate, collectFees } = require("./admin");
 const {
   collectRewards,
@@ -719,15 +719,32 @@ subtask("setPrices", "Update Lido ARM's swap prices")
     undefined,
     types.boolean
   )
+  .addOptionalParam(
+    "priceOffset",
+    "Offset the 1Inch/Curve buyPrice by `--offset` amount in basis points",
+    undefined,
+    types.boolean
+  )
   .setAction(async (taskArgs) => {
     const signer = await getSigner();
 
     const armAddress = await parseDeployedAddress(
       `${taskArgs.arm.toUpperCase()}_ARM`
     );
-    const armContract = await ethers.getContractAt("AbstractARM", armAddress);
+    const arm = await ethers.getContractAt("AbstractARM", armAddress);
 
-    await setPrices({ ...taskArgs, signer, arm: armContract });
+    const activeMarket = "0x9a8bC3B04b7f3D87cfC09ba407dCED575f2d61D8"; //await arm.activeMarket();
+    if (activeMarket === ethers.ZeroAddress) {
+      console.log("No active lending market found, using default APY of 0%");
+      return 0n;
+    }
+
+    // Get the MorphoMarketWrapper contract
+    const market = await hre.ethers.getContractAt([
+      "function market() external view returns (address)",
+    ], activeMarket, signer);
+
+    await setPrices({ ...taskArgs, signer, arm, market });
   });
 task("setPrices").setAction(async (_, __, runSuper) => {
   return runSuper();
@@ -1019,6 +1036,7 @@ subtask("snapLido", "Take a snapshot of the Lido ARM")
   .addOptionalParam("user", "Include user data", false, types.boolean)
   .addOptionalParam("cap", "Include cap limit data", false, types.boolean)
   .addOptionalParam("gas", "Include gas costs", false, types.boolean)
+  .addOptionalParam("fluid", "Include FluidDex prices", true, types.boolean)
   .setAction(snapLido);
 task("snapLido").setAction(async (_, __, runSuper) => {
   return runSuper();
