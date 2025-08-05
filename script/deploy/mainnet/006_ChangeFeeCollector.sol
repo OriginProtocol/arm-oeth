@@ -2,9 +2,6 @@
 
 pragma solidity 0.8.23;
 
-import "forge-std/console.sol";
-import {Vm} from "forge-std/Vm.sol";
-
 import {LidoARM} from "contracts/LidoARM.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
 import {GovProposal, GovSixHelper} from "contracts/utils/GovSixHelper.sol";
@@ -16,7 +13,7 @@ contract ChangeFeeCollectorScript is AbstractDeployScript {
     GovProposal public govProposal;
 
     string public constant override DEPLOY_NAME = "006_ChangeFeeCollector";
-    bool public constant override proposalExecuted = false;
+    bool public constant override proposalExecuted = true;
 
     LidoARM lidoARMImpl;
 

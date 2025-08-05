@@ -3,6 +3,7 @@ pragma solidity 0.8.23;
 
 import {Unit_Shared_Test} from "test/unit/shared/Shared.sol";
 import {SiloMarket} from "contracts/markets/SiloMarket.sol";
+import {Abstract4626MarketWrapper} from "contracts/markets/Abstract4626MarketWrapper.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 
 contract Unit_Concrete_OriginARM_SiloMarket_Test_ is Unit_Shared_Test {
@@ -78,7 +79,7 @@ contract Unit_Concrete_OriginARM_SiloMarket_Test_ is Unit_Shared_Test {
         address newHarvester = randomAddrDiff(siloMarket.harvester());
 
         vm.expectEmit(address(siloMarket));
-        emit SiloMarket.HarvesterUpdated(newHarvester);
+        emit Abstract4626MarketWrapper.HarvesterUpdated(newHarvester);
         siloMarket.setHarvester(newHarvester);
 
         assertEq(siloMarket.harvester(), newHarvester, "harvester");

@@ -4,7 +4,7 @@ pragma solidity 0.8.23;
 import {Base_Test_} from "test/Base.sol";
 
 abstract contract Helpers is Base_Test_ {
-    function getMagPieQuote(
+    function getFlyTradeQuote(
         string memory from,
         string memory to,
         uint256 amount,
@@ -12,11 +12,11 @@ abstract contract Helpers is Base_Test_ {
         address swapper,
         address recipient
     ) public returns (bytes memory) {
-        // npx hardhat magpieQuote --network sonic
+        // npx hardhat flyTradeQuote --network sonic
         string[] memory inputs = new string[](17);
         inputs[0] = "npx";
         inputs[1] = "hardhat";
-        inputs[2] = "magpieQuote";
+        inputs[2] = "flyTradeQuote";
         inputs[3] = "--network";
         inputs[4] = "sonic";
         inputs[5] = "--from";
@@ -31,7 +31,8 @@ abstract contract Helpers is Base_Test_ {
         inputs[14] = vm.toString(swapper);
         inputs[15] = "--recipient";
         inputs[16] = vm.toString(recipient);
+        bytes memory response = vm.ffi(inputs);
 
-        return abi.decode(vm.ffi(inputs), (bytes));
+        return abi.decode(response, (bytes));
     }
 }

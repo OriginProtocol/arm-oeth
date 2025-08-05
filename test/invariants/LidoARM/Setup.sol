@@ -131,7 +131,7 @@ abstract contract Setup is Base_Test_ {
 
     function _deployLidoARM() private {
         // Deploy LidoARM implementation.
-        LidoARM lidoImpl = new LidoARM(address(steth), address(weth), lidoWithdraw, 10 minutes);
+        LidoARM lidoImpl = new LidoARM(address(steth), address(weth), lidoWithdraw, 10 minutes, 0, 0);
 
         // Deployer will need WETH to initialize the ARM.
         deal(address(weth), address(deployer), MIN_TOTAL_SUPPLY);

@@ -14,7 +14,7 @@ const {
   swapLido,
   lidoWithdrawStatus,
 } = require("./lido");
-const { setPrices } = require("./lidoPrices");
+const { setPrices } = require("./lidoMorphoPrices");
 const { allocate, collectFees } = require("./admin");
 const {
   collectRewards,
@@ -58,7 +58,7 @@ const {
   redeemAll,
 } = require("./vault");
 const { upgradeProxy } = require("./proxy");
-const { magpieQuote, magpieTx } = require("../utils/magpie");
+const { flyTradeQuote, flyTradeTx } = require("../utils/magpie");
 const { setOperator } = require("./governance");
 
 const { setOSSiloPrice } = require("./osSiloPrice");
@@ -721,15 +721,32 @@ subtask("setPrices", "Update Lido ARM's swap prices")
     undefined,
     types.boolean
   )
+  .addOptionalParam(
+    "priceOffset",
+    "Offset the 1Inch/Curve buyPrice by `--offset` amount in basis points",
+    undefined,
+    types.boolean
+  )
   .setAction(async (taskArgs) => {
     const signer = await getSigner();
 
     const armAddress = await parseDeployedAddress(
       `${taskArgs.arm.toUpperCase()}_ARM`
     );
-    const armContract = await ethers.getContractAt("AbstractARM", armAddress);
+    const arm = await ethers.getContractAt("AbstractARM", armAddress);
 
-    await setPrices({ ...taskArgs, signer, arm: armContract });
+    const activeMarket = "0x9a8bC3B04b7f3D87cfC09ba407dCED575f2d61D8"; //await arm.activeMarket();
+    if (activeMarket === ethers.ZeroAddress) {
+      console.log("No active lending market found, using default APY of 0%");
+      return 0n;
+    }
+
+    // Get the MorphoMarketWrapper contract
+    const market = await hre.ethers.getContractAt([
+      "function market() external view returns (address)",
+    ], activeMarket, signer);
+
+    await setPrices({ ...taskArgs, signer, arm, market });
   });
 task("setPrices").setAction(async (_, __, runSuper) => {
   return runSuper();
@@ -1010,6 +1027,7 @@ subtask("snapLido", "Take a snapshot of the Lido ARM")
   .addOptionalParam("user", "Include user data", false, types.boolean)
   .addOptionalParam("cap", "Include cap limit data", false, types.boolean)
   .addOptionalParam("gas", "Include gas costs", false, types.boolean)
+  .addOptionalParam("fluid", "Include FluidDex prices", true, types.boolean)
   .setAction(snapLido);
 task("snapLido").setAction(async (_, __, runSuper) => {
   return runSuper();
@@ -1045,8 +1063,8 @@ task("setActionVars").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
 
-// Magpie (now Fly)
-subtask("magpieQuote", "Get a quote from Magpie (now Fly) for a swap")
+// FlyTrade
+subtask("flyTradeQuote", "Get a Fly quote for a swap")
   .addOptionalParam("from", "Token symbol to swap from.", "SILO", types.string)
   .addOptionalParam("to", "Token symbol to swap to.", "WS", types.string)
   .addOptionalParam("amount", "Amount of tokens to sell", 1, types.float)
@@ -1063,26 +1081,26 @@ subtask("magpieQuote", "Get a quote from Magpie (now Fly) for a swap")
     "0x2F872623d1E1Af5835b08b0E49aAd2d81d649D30",
     types.string
   )
-
   .setAction(async (taskArgs) => {
     const amount = parseUnits(taskArgs.amount.toString(), 18);
 
-    await magpieQuote({ ...taskArgs, amount });
+    await flyTradeQuote({ ...taskArgs, amount });
   });
-task("magpieQuote").setAction(async (_, __, runSuper) => {
+task("flyTradeQuote").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
 
-subtask("magpieTx", "Get a Magpie (Fly) swap tx based on a previous quote")
+subtask("flyTradeTx", "Get a Fly swap tx based on a previous quote")
   .addParam(
     "id",
     "Identifier returned from a previous quote.",
     undefined,
     types.string
   )
-
-  .setAction(magpieTx);
-task("magpieTx").setAction(async (_, __, runSuper) => {
+  .setAction(async (taskArgs) => {
+    await flyTradeTx(taskArgs);
+  });
+task("flyTradeTx").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
 

@@ -1,51 +1,59 @@
 const axios = require("axios");
+const fetch = require("node-fetch");
 const { formatUnits, parseUnits, Interface } = require("ethers");
 
+/// --- Note: ---
+/// This file is named magpie.js, but it contains functions for interacting with FlyTrade, new name from the original Magpie.
+/// --- 
+
+
 const { resolveAddress } = require("../utils/assets");
-const MagpieBaseURL = "https://api.magpiefi.xyz/aggregator";
+const FlyTradeBaseURL = "https://api.fly.trade/aggregator";
 
 const log = require("../utils/logger")("utils:magpie");
-
-const magpieQuote = async ({
-  from,
-  to,
-  amount,
-  slippage,
-  swapper,
-  recipient,
-}) => {
-  const fromAsset = await resolveAddress(from);
-  const toAsset = await resolveAddress(to);
-
-  const params = {
-    network: "sonic",
-    fromTokenAddress: fromAsset,
-    toTokenAddress: toAsset,
-    sellAmount: amount.toString(),
-    slippage,
-    gasless: false,
-    fromAddress: swapper,
-    toAddress: recipient,
-  };
-
-  log(`Magpie quote params: `, params);
-
+const flyTradeQuote = async ({ from, to, amount, slippage, swapper, recipient }) => {
   try {
-    const response = await axios.get(`${MagpieBaseURL}/quote`, {
-      params,
-    });
+    const fromAsset = await resolveAddress(from);
+    const toAsset = await resolveAddress(to);
+    const urlQuery = [
+      `network=sonic`,
+      `fromTokenAddress=${fromAsset}`,
+      `toTokenAddress=${toAsset}`,
+      `sellAmount=${amount}`,
+      `fromAddress=${swapper}`,
+      `toAddress=${recipient}`,
+      `slippage=${slippage}`,
+      `gasless=false`
+    ].join("&");
 
-    const toAmount = parseUnits(response.data.amountOut, 18);
+    const response = await fetch(`${FlyTradeBaseURL}/quote?${urlQuery}`, {
+      method: "GET",
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+      }
+    })
+
+    if (!response.ok || response.status !== 200) {
+      console.log("Fly.trade response:")
+      console.log(response)
+      console.log(await response.text())
+      throw new Error(`Failed to get price quote from fly.trade: ${response.statusText}`);
+    }
+
+    const responseData = await response.json();
+
+
+    log("FlyTrade quote response: ", responseData);
+    const toAmount = parseUnits(responseData.amountOut, 18);
     const price = (amount * parseUnits("1", 22)) / toAmount;
 
-    // log("Magpie quote response: ", response.data);
 
-    const id = response.data.id;
-    const minAmountOut = response.data.amountOutMin;
+    const id = responseData.id;
+    const minAmountOut = responseData.typedData.messageamountOutMin;
     log(`Quote id : ${id}`);
     log(`${from}/${to} sell price: ${formatUnits(price, 4)}`);
 
-    const data = await magpieTx({ id });
+    const data = await flyTradeTx({ id });
 
     return { price, fromAsset, toAsset, minAmountOut, data };
   } catch (err) {
@@ -53,25 +61,29 @@ const magpieQuote = async ({
       console.error("Response data  : ", err.response.data);
       console.error("Response status: ", err.response.status);
     }
-    throw Error(`Call to Magpie quote API failed: ${err.message}`);
+    throw Error(`Call to FlyTrade quote API failed: ${err.message}`);
   }
 };
 
-const magpieTx = async ({ id }) => {
+const flyTradeTx = async ({ id }) => {
   const params = {
     quoteId: id,
     estimateGas: false,
   };
 
-  log(`Magpie transaction params: `, params);
+  log(`FlyTrade transaction params: `, params);
 
   try {
-    const response = await axios.get(`${MagpieBaseURL}/transaction`, {
+    const response = await axios.get(`${FlyTradeBaseURL}/transaction`, {
       params,
     });
 
-    // log("Magpie transaction response: ", response.data);
-    // log(`Transaction data: ${response.data.data}`);
+    // -------------------------------  ⚠️ ⚠️ ⚠️ ------------------------------- //
+    // NEVER DELETE THE FOLLOWING `CONSOLE.LOG` IT IS USED IN THE TEST, BY FFI !!!
+    // -------------------------------  ⚠️ ⚠️ ⚠️ ------------------------------- //
+    console.log(`0x${response.data.data.slice(10)}`);
+
+    log("FlyTrade transaction response: ", response);
 
     const iface = new Interface([
       "function swapWithMagpieSignature(bytes) view returns (uint256)",
@@ -89,8 +101,8 @@ const magpieTx = async ({ id }) => {
       console.error("Response data  : ", err.response.data);
       console.error("Response status: ", err.response.status);
     }
-    throw Error(`Call to Magpie quote API failed: ${err.message}`);
+    throw Error(`Call to FlyTrade quote API failed: ${err.message}`);
   }
 };
 
-module.exports = { magpieQuote, magpieTx };
+module.exports = { flyTradeQuote, flyTradeTx };

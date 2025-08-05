@@ -26,7 +26,7 @@ contract RegisterLidoWithdrawalsScript is AbstractDeployScript {
 
         // 1. Deploy new Lido ARM implementation
         uint256 claimDelay = tenderlyTestnet ? 1 minutes : 10 minutes;
-        lidoARMImpl = new LidoARM(Mainnet.STETH, Mainnet.WETH, Mainnet.LIDO_WITHDRAWAL, claimDelay);
+        lidoARMImpl = new LidoARM(Mainnet.STETH, Mainnet.WETH, Mainnet.LIDO_WITHDRAWAL, claimDelay, 0, 0);
         _recordDeploy("LIDO_ARM_IMPL", address(lidoARMImpl));
 
         console.log("Finished deploying", DEPLOY_NAME);
