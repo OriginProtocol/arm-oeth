@@ -6,6 +6,7 @@ const {
   log1InchPrices,
   logCurvePrices,
   logUniswapSpotPrices,
+  logFluidPrices
 } = require("./markets");
 const { getBlock } = require("../utils/block");
 const { getLidoQueueData } = require("../utils/lido");
@@ -69,6 +70,7 @@ const snapLido = async ({
   lido,
   user,
   cap,
+  fluid,
 }) => {
   const blockTag = await getBlock(block);
   const signer = await getSigner();
@@ -129,6 +131,10 @@ const snapLido = async ({
 
   if (oneInch) {
     await log1InchPrices(commonOptions, ammPrices);
+  }
+
+  if (fluid) {
+    await logFluidPrices(commonOptions, ammPrices);
   }
 };
 
