@@ -214,16 +214,31 @@ const logAssets = async (arm, blockTag) => {
   const liquidityWeth = await weth.balanceOf(arm.getAddress(), { blockTag });
 
   const steth = await resolveAsset("STETH");
+  let lendingMarketBalance = 0n;
+  // Get the lending market from the active market
+  // Atm we use a hardcoded address, but this should be replaced with a call to the active market once the ARM is upgraded
+  let marketAddress = "0x29c4Bb7B1eBcc53e8CBd16480B5bAe52C69806D3";//await arm.activeMarket({ blockTag });
+  if (marketAddress != addresses.zero) {
+    const marketContract = await ethers.getContractAt("Abstract4626MarketWrapper", marketAddress);
+    const armShares = await marketContract.balanceOf(arm.target, { blockTag });
+    lendingMarketBalance = await marketContract.convertToAssets(armShares, {
+      blockTag,
+    });
+    log("Lending market address:", marketAddress);
+  }
+
   const liquiditySteth = await steth.balanceOf(arm.getAddress(), { blockTag });
   const liquidityLidoWithdraws = await arm.lidoWithdrawalQueueAmount({
     blockTag,
   });
 
-  const total = liquidityWeth + liquiditySteth + liquidityLidoWithdraws;
+  const total = liquidityWeth + liquiditySteth + liquidityLidoWithdraws + lendingMarketBalance;
   const wethPercent = total == 0 ? 0 : (liquidityWeth * 10000n) / total;
   const stethWithdrawsPercent =
     total == 0 ? 0 : (liquidityLidoWithdraws * 10000n) / total;
   const oethPercent = total == 0 ? 0 : (liquiditySteth * 10000n) / total;
+  const lendingMarketPercent =
+    total == 0 ? 0 : (lendingMarketBalance * 10000n) / total;
   const totalAssets = await arm.totalAssets({ blockTag });
   const totalSupply = await arm.totalSupply({ blockTag });
   const assetPerShare = await arm.convertToAssets(parseUnits("1"), {
@@ -252,6 +267,11 @@ const logAssets = async (arm, blockTag) => {
     `${formatUnits(liquidityLidoWithdraws, 18).padEnd(
       24
     )} Lido withdraw ${formatUnits(stethWithdrawsPercent, 2)}%`
+  );
+  console.log(
+    `${formatUnits(lendingMarketBalance, 18).padEnd(
+      24
+    )} WETH in active lending market ${formatUnits(lendingMarketPercent, 2)}%`
   );
   console.log(`${formatUnits(total, 18).padEnd(24)} Total WETH and stETH`);
   console.log(`${formatUnits(totalAssets, 18).padEnd(24)} Total assets`);
