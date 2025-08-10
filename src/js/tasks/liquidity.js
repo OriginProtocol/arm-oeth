@@ -32,12 +32,11 @@ const requestWithdraw = async ({ amount, signer, armName, arm }) => {
 };
 
 const claimWithdraw = async ({ id, signer, armName, arm }) => {
-  log(`About to claim withdrawal request ${id}`);
-
   const functionName =
-    armName == "Origin" ? "claimOriginWithdrawal" : "claimWithdrawal";
-  const tx = await arm.connect(signer)[functionName](id);
+    armName == "Origin" ? "claimOriginWithdrawals" : "claimWithdrawals";
+  const tx = await arm.connect(signer)[functionName]([id]);
 
+  log(`About to claim withdrawal request ${id} calling ${functionName}`);
   await logTxDetails(tx, functionName);
 };
 
@@ -99,7 +98,7 @@ const autoClaimWithdraw = async ({
   const claimDelaySeconds = await vault.withdrawalClaimDelay();
   const claimCutoff = now.subtract(Number(claimDelaySeconds), "seconds");
   log(
-    `Claim cutoff timestamp: ${claimCutoff.unix()} ${claimCutoff.toISOString()}`
+    `${claimDelaySeconds} second claim delay gives claim cutoff timestamp: ${claimCutoff.unix()} ${claimCutoff.toISOString()}`
   );
 
   // get claimable withdrawal requests
