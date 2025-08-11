@@ -23,13 +23,15 @@ const {
 } = require("./sonicHarvest");
 const { requestLidoWithdrawals, claimLidoWithdrawals } = require("./lidoQueue");
 const {
-  autoRequestWithdraw,
-  autoClaimWithdraw,
   requestWithdraw,
   claimWithdraw,
   snap,
   withdrawRequestStatus,
 } = require("./liquidity");
+const {
+  autoRequestWithdraw,
+  autoClaimWithdraw,
+} = require("./liquidityAutomation");
 const {
   depositARM,
   requestRedeemARM,
@@ -742,9 +744,11 @@ subtask("setPrices", "Update Lido ARM's swap prices")
     }
 
     // Get the MorphoMarketWrapper contract
-    const market = await hre.ethers.getContractAt([
-      "function market() external view returns (address)",
-    ], activeMarket, signer);
+    const market = await hre.ethers.getContractAt(
+      ["function market() external view returns (address)"],
+      activeMarket,
+      signer
+    );
 
     await setPrices({ ...taskArgs, signer, arm, market });
   });
@@ -1105,17 +1109,24 @@ task("flyTradeTx").setAction(async (_, __, runSuper) => {
 });
 
 // OS Silo Prices
-subtask("setOSSiloPrice", "Update Origin ARM's swap prices based on lending APY and market pricing")
+subtask(
+  "setOSSiloPrice",
+  "Update Origin ARM's swap prices based on lending APY and market pricing"
+)
   .addOptionalParam("execute", "Execute the transaction", false, types.boolean)
   .setAction(async (taskArgs) => {
     const signer = await getSigner();
 
     const armAddress = "0x2F872623d1E1Af5835b08b0E49aAd2d81d649D30";
-    const arm = await hre.ethers.getContractAt([
-      "function traderate0() external view returns (uint256)",
-      "function traderate1() external view returns (uint256)",
-      "function activeMarket() external view returns (address)",
-    ], armAddress, signer);
+    const arm = await hre.ethers.getContractAt(
+      [
+        "function traderate0() external view returns (uint256)",
+        "function traderate1() external view returns (uint256)",
+        "function activeMarket() external view returns (address)",
+      ],
+      armAddress,
+      signer
+    );
 
     const activeMarket = await arm.activeMarket();
     if (activeMarket === ethers.ZeroAddress) {
@@ -1124,11 +1135,18 @@ subtask("setOSSiloPrice", "Update Origin ARM's swap prices based on lending APY 
     }
 
     // Get the SiloMarketWrapper contract
-    const siloMarketWrapper = await hre.ethers.getContractAt([
-      "function market() external view returns (address)",
-    ], activeMarket, signer);
+    const siloMarketWrapper = await hre.ethers.getContractAt(
+      ["function market() external view returns (address)"],
+      activeMarket,
+      signer
+    );
 
-    await setOSSiloPrice({ tolerance: taskArgs.tolerance, signer, arm, siloMarketWrapper });
+    await setOSSiloPrice({
+      tolerance: taskArgs.tolerance,
+      signer,
+      arm,
+      siloMarketWrapper,
+    });
   });
 task("setOSSiloPrice").setAction(async (_, __, runSuper) => {
   return runSuper();
