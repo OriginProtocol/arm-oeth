@@ -34,9 +34,9 @@ const handler = async (event) => {
       minBuyPrice: 0.9950,
       inch: true,
       amount: 100,
-      tolerance: 0.1,
+      tolerance: 0.2,
       fee: 0.8,
-      offset: 0.2,
+      offset: 0.4,
       blockTag: "latest",
     });
   } catch (error) {
