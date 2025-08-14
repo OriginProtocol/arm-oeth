@@ -30,13 +30,14 @@ const handler = async (event) => {
       // buyPrice: 0.9997,
       maxSellPrice: 0.9999,
       minSellPrice: 0.9998,
-      maxBuyPrice: 0.9980,
-      minBuyPrice: 0.9950,
+      maxBuyPrice: 0.998,
+      minBuyPrice: 0.995,
       inch: true,
       amount: 100,
       tolerance: 0.2,
       fee: 0.8,
       offset: 0.4,
+      priceOffset: true,
       blockTag: "latest",
     });
   } catch (error) {
