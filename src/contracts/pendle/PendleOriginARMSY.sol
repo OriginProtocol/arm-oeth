@@ -1,19 +1,23 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.17;
 
+import "@pendle-sy/interfaces/IERC4626.sol";
 import "@pendle-sy/core/StandardizedYield/SYBase.sol";
-import {IAbstractARM} from "src/contracts/pendle/IAbstractARM.sol";
+
+interface IARM {
+    function liquidityAsset() external view returns (address);
+}
 
 /// @title PendleOriginARMSY
-/// @notice This is exactly the same as PendleERC4626NotRedeemableToAssetSYV2, but uses IAbstractARM instead
-///         of IERC4626 because `asset` variable in ERC4626 is denominated `liquidityAsset`, in AbstractARM.
+/// @notice This is exactly the same as PendleERC4626NotRedeemableToAssetSYV2, but uses IARM on the constructor instead
+///         of IERC4626 because `asset` variable in ERC4626 is denominated `liquidityAsset`, in ARM.
 contract PendleOriginARMSY is SYBase {
     using PMath for uint256;
 
     address public immutable asset;
 
     constructor(string memory _name, string memory _symbol, address _erc4626) SYBase(_name, _symbol, _erc4626) {
-        asset = IAbstractARM(_erc4626).liquidityAsset();
+        asset = IARM(_erc4626).liquidityAsset();
         _safeApproveInf(asset, _erc4626);
     }
 
@@ -26,7 +30,7 @@ contract PendleOriginARMSY is SYBase {
         if (tokenIn == yieldToken) {
             return amountDeposited;
         } else {
-            return IAbstractARM(yieldToken).deposit(amountDeposited, address(this));
+            return IERC4626(yieldToken).deposit(amountDeposited, address(this));
         }
     }
 
@@ -40,7 +44,7 @@ contract PendleOriginARMSY is SYBase {
     }
 
     function exchangeRate() public view virtual override returns (uint256) {
-        return IAbstractARM(yieldToken).convertToAssets(PMath.ONE);
+        return IERC4626(yieldToken).convertToAssets(PMath.ONE);
     }
 
     function _previewDeposit(address tokenIn, uint256 amountTokenToDeposit)
@@ -51,7 +55,7 @@ contract PendleOriginARMSY is SYBase {
         returns (uint256 /*amountSharesOut*/ )
     {
         if (tokenIn == yieldToken) return amountTokenToDeposit;
-        else return IAbstractARM(yieldToken).previewDeposit(amountTokenToDeposit);
+        else return IERC4626(yieldToken).previewDeposit(amountTokenToDeposit);
     }
 
     function _previewRedeem(address, /*tokenOut*/ uint256 amountSharesToRedeem)
