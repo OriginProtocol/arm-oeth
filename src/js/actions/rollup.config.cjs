@@ -129,4 +129,12 @@ module.exports = [
     },
     ...commonConfig,
   },
+    {
+    input: "allocateLido.js",
+    output: {
+      file: "dist/allocateLido/index.js",
+      format: "cjs",
+    },
+    ...commonConfig,
+  },
 ];

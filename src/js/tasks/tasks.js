@@ -737,7 +737,7 @@ subtask("setPrices", "Update Lido ARM's swap prices")
     );
     const arm = await ethers.getContractAt("AbstractARM", armAddress);
 
-    const activeMarket = "0x9a8bC3B04b7f3D87cfC09ba407dCED575f2d61D8"; //await arm.activeMarket();
+    const activeMarket = await arm.activeMarket();
     if (activeMarket === ethers.ZeroAddress) {
       console.log("No active lending market found, using default APY of 0%");
       return 0n;
@@ -1062,6 +1062,12 @@ subtask(
   "Set environment variables on a Defender Actions. eg DEBUG=origin*"
 )
   .addParam("id", "Identifier of the Defender Actions", undefined, types.string)
+  .addOptionalParam(
+    "name",
+    "Name of the environment variable to set. eg HOODI_BEACON_PROVIDER_URL",
+    undefined,
+    types.string
+  )
   .setAction(setActionVars);
 task("setActionVars").setAction(async (_, __, runSuper) => {
   return runSuper();

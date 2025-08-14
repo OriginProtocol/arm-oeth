@@ -1,9 +1,9 @@
 const { Defender } = require("@openzeppelin/defender-sdk");
 const { ethers } = require("ethers");
 
-const { setPrices } = require("../tasks/lidoMorphoPrices");
+const { allocate } = require("../tasks/admin");
 const { mainnet } = require("../utils/addresses");
-const lidoARMAbi = require("../../abis/LidoARM.json");
+const armAbi = require("../../abis/OriginARM.json");
 
 // Entrypoint for the Defender Action
 const handler = async (event) => {
@@ -20,25 +20,13 @@ const handler = async (event) => {
   );
 
   // References to contracts
-  const arm = new ethers.Contract(mainnet.lidoARM, lidoARMAbi, signer);
+  const arm = new ethers.Contract(mainnet.lidoARM, armAbi, signer);
 
   try {
-    await setPrices({
+    await allocate({
       signer,
       arm,
-      // sellPrice: 0.9998,
-      // buyPrice: 0.9997,
-      maxSellPrice: 0.9999,
-      minSellPrice: 0.9998,
-      maxBuyPrice: 0.998,
-      minBuyPrice: 0.995,
-      inch: true,
-      amount: 100,
-      tolerance: 0.2,
-      fee: 0.8,
-      offset: 0.4,
-      priceOffset: true,
-      blockTag: "latest",
+      threshold: 20,
     });
   } catch (error) {
     console.error(error);

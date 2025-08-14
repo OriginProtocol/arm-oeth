@@ -6,7 +6,7 @@ const wstEthAbi = require("../../abis/wstETH.json");
 const addresses = require("./addresses");
 const { getSigner } = require("./signers");
 
-const log = require("../utils/logger")("utils:uniswap");
+const log = require("../utils/logger")("utils:fluid");
 
 const getFluidSpotPrices = async ({ amount, blockTag, gas }) => {
   const signer = await getSigner();
