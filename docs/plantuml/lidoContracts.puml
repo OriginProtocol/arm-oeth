@@ -31,9 +31,23 @@ object "WithdrawalQueueERC721" as lidoQ <<Lido>><<Proxy>> #$thirdPartyColor {
     assets: stETH, WETH
 }
 
+object "Morpho Strategy" as morphoStrategy <<Origin>><<Proxy>> #$originColor {
+    assets: wETH
+}
+
+object "MEV Capital Vault" as metaMorpho <<Morpho>><<MetaMorpho>> #$thirdPartyColor {
+    assets: wETH
+}
+
+object "Morpho Blue" as morphoBlue <<Morpho>> #$thirdPartyColor {
+    assets: wETH
+}
+
 zap <..> arm
 arm <.> capMan
 arm ..> lidoQ
-
+arm ..> morphoStrategy
+morphoStrategy ..> metaMorpho
+metaMorpho ..> morphoBlue
 
 @enduml
