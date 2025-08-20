@@ -18,6 +18,7 @@ import {DeployOriginARMProxyScript} from "./sonic/001_DeployOriginARMProxy.sol";
 import {DeployOriginARMScript} from "./sonic/002_DeployOriginARM.sol";
 import {UpgradeOriginARMScript} from "./sonic/003_UpgradeOriginARM.sol";
 import {UpgradeLidoARMMorphoScript} from "./mainnet/007_UpgradeLidoARMMorphoScript.sol";
+import {UpgradeLidoARMSetBufferScript} from "./mainnet/008_UpgradeLidoARMSetBufferScript.sol";
 
 contract DeployManager is Script {
     using stdJson for string;
@@ -74,6 +75,7 @@ contract DeployManager is Script {
             _runDeployFile(new RegisterLidoWithdrawalsScript());
             _runDeployFile(new ChangeFeeCollectorScript());
             _runDeployFile(new UpgradeLidoARMMorphoScript());
+            _runDeployFile(new UpgradeLidoARMSetBufferScript());
         } else if (block.chainid == 17000) {
             // Holesky
             _runDeployFile(new DeployCoreHoleskyScript());
