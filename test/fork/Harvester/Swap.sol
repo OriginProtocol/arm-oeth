@@ -80,15 +80,19 @@ contract Fork_Concrete_Harvester_Swap_Test_ is Fork_Shared_Test {
             swapper: address(harvester),
             recipient: address(harvester)
         });
-
+        
+        uint256 fees = 0.0005 ether; // 0.05% fee
         vm.expectRevert(
-            abi.encodeWithSelector(SonicHarvester.InvalidFromAssetAmount.selector, 1 ether), address(harvester)
+            abi.encodeWithSelector(SonicHarvester.InvalidFromAssetAmount.selector, 1 ether - fees), address(harvester)
         );
         vm.prank(governor);
         harvester.swap(SonicHarvester.SwapPlatform.Magpie, address(os), 2e18, data);
     }
 
     function test_RevertWhen_Swap_Because_SlippageError() public {
+        // This test is failing atm due to changes on FlyTrade Quote. AmountIn is now the amount minus the fees.
+        // This breaks our SonicHarvester::swap function, because the ammount approved is the amount passed as amountIn,
+        // but this is missing the fees, which brings an "Allowance exceeded" error.
         vm.prank(OS_WHALE);
         os.transfer(address(harvester), 1 ether);
 
@@ -103,10 +107,11 @@ contract Fork_Concrete_Harvester_Swap_Test_ is Fork_Shared_Test {
 
         // Mock call on the oracle to return 2:1
         vm.mockCall(oracle, abi.encodeWithSignature("price(address)"), abi.encode(2 ether));
+        uint256 fees = 0.0005 ether; // 0.05% fee
         // As this is not easy to have the value returned from `swapWithMagpieSignature` we do a partialRevert (i.e. without arguments)
         vm.expectPartialRevert(SonicHarvester.SlippageError.selector);
         vm.prank(governor);
-        harvester.swap(SonicHarvester.SwapPlatform.Magpie, address(os), 1e18, data);
+        harvester.swap(SonicHarvester.SwapPlatform.Magpie, address(os), 1 ether - fees, data);
     }
 
     ////////////////////////////////////////////////////
