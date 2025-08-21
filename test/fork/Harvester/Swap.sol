@@ -80,7 +80,7 @@ contract Fork_Concrete_Harvester_Swap_Test_ is Fork_Shared_Test {
             swapper: address(harvester),
             recipient: address(harvester)
         });
-        
+
         uint256 fees = 0.0005 ether; // 0.05% fee
         vm.expectRevert(
             abi.encodeWithSelector(SonicHarvester.InvalidFromAssetAmount.selector, 1 ether - fees), address(harvester)
