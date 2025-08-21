@@ -19,6 +19,7 @@ import {DeployOriginARMScript} from "./sonic/002_DeployOriginARM.sol";
 import {UpgradeOriginARMScript} from "./sonic/003_UpgradeOriginARM.sol";
 import {UpgradeLidoARMMorphoScript} from "./mainnet/007_UpgradeLidoARMMorphoScript.sol";
 import {UpgradeLidoARMSetBufferScript} from "./mainnet/009_UpgradeLidoARMSetBufferScript.sol";
+import {UpgradeOriginARMSetBufferScript} from "./sonic/005_UpgradeOriginARMSetBufferScript.sol";
 
 contract DeployManager is Script {
     using stdJson for string;
@@ -92,6 +93,7 @@ contract DeployManager is Script {
                     getDeployedAddressInBuild("SILO_VARLAMORE_S_MARKET")
                 )
             );
+            _runDeployFile(new UpgradeOriginARMSetBufferScript(getDeployedAddressInBuild("ORIGIN_ARM")));
         } else {
             console.log("Skipping deployment (not mainnet)");
         }
