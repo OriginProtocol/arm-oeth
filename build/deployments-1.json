@@ -7,7 +7,7 @@
         "005_RegisterLidoWithdrawalsScript": 1743500783,
         "006_ChangeFeeCollector": 1751894483,
         "007_UpgradeLidoARMMorphoScript": 1754407511,
-        "008_UpgradeLidoARMSetBufferScript": 1755692363
+        "009_UpgradeLidoARMSetBufferScript": 1755692363
     },
     "contracts": {
         "LIDO_ARM": "0x85B78AcA6Deae198fBF201c82DAF6Ca21942acc6",

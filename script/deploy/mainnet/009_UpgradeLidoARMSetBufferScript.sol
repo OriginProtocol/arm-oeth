@@ -19,7 +19,7 @@ contract UpgradeLidoARMSetBufferScript is AbstractDeployScript {
 
     GovProposal public govProposal;
 
-    string public constant override DEPLOY_NAME = "008_UpgradeLidoARMSetBufferScript";
+    string public constant override DEPLOY_NAME = "009_UpgradeLidoARMSetBufferScript";
     bool public constant override proposalExecuted = false;
 
     Proxy morphoMarketProxy;
@@ -43,6 +43,10 @@ contract UpgradeLidoARMSetBufferScript is AbstractDeployScript {
 
         govProposal.action(
             deployedContracts["LIDO_ARM"], "upgradeTo(address)", abi.encode(deployedContracts["LIDO_ARM_IMPL"])
+        );
+
+        govProposal.action(
+            deployedContracts["LIDO_ARM"], "setCapManager(address)", abi.encode(address(0))
         );
 
         govProposal.simulate();
