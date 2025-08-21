@@ -2,7 +2,7 @@
 pragma solidity ^0.8.17;
 
 import "@pendle-sy/interfaces/IERC4626.sol";
-import "@pendle-sy/core/StandardizedYield/SYBase.sol";
+import "@pendle-sy/core/StandardizedYield/v2/SYBaseV2.sol";
 
 interface IARM {
     function liquidityAsset() external view returns (address);
@@ -11,12 +11,12 @@ interface IARM {
 /// @title PendleOriginARMSY
 /// @notice This is exactly the same as PendleERC4626NotRedeemableToAssetSYV2, but uses IARM on the constructor instead
 ///         of IERC4626 because `asset` variable in ERC4626 is denominated `liquidityAsset`, in ARM.
-contract PendleOriginARMSY is SYBase {
+contract PendleOriginARMSY is SYBaseV2 {
     using PMath for uint256;
 
     address public immutable asset;
 
-    constructor(string memory _name, string memory _symbol, address _erc4626) SYBase(_name, _symbol, _erc4626) {
+    constructor(string memory _name, string memory _symbol, address _erc4626) SYBaseV2(_name, _symbol, _erc4626) {
         asset = IARM(_erc4626).liquidityAsset();
         _safeApproveInf(asset, _erc4626);
     }
