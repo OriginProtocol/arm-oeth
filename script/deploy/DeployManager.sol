@@ -19,6 +19,7 @@ import {DeployOriginARMScript} from "./sonic/002_DeployOriginARM.sol";
 import {UpgradeOriginARMScript} from "./sonic/003_UpgradeOriginARM.sol";
 import {UpgradeLidoARMMorphoScript} from "./mainnet/007_UpgradeLidoARMMorphoScript.sol";
 import {DeployPendleAdaptor} from "./mainnet/008_DeployPendleAdaptor.sol";
+import {DeployPendleAdaptorSonic} from "./sonic/004_DeployPendleAdaptor.sol";
 
 contract DeployManager is Script {
     using stdJson for string;
@@ -92,6 +93,7 @@ contract DeployManager is Script {
                     getDeployedAddressInBuild("SILO_VARLAMORE_S_MARKET")
                 )
             );
+            _runDeployFile(new DeployPendleAdaptorSonic());
         } else {
             console.log("Skipping deployment (not mainnet)");
         }
