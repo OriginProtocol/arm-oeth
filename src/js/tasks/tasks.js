@@ -23,13 +23,15 @@ const {
 } = require("./sonicHarvest");
 const { requestLidoWithdrawals, claimLidoWithdrawals } = require("./lidoQueue");
 const {
-  autoRequestWithdraw,
-  autoClaimWithdraw,
   requestWithdraw,
   claimWithdraw,
   snap,
   withdrawRequestStatus,
 } = require("./liquidity");
+const {
+  autoRequestWithdraw,
+  autoClaimWithdraw,
+} = require("./liquidityAutomation");
 const {
   depositARM,
   requestRedeemARM,
@@ -735,16 +737,18 @@ subtask("setPrices", "Update Lido ARM's swap prices")
     );
     const arm = await ethers.getContractAt("AbstractARM", armAddress);
 
-    const activeMarket = "0x9a8bC3B04b7f3D87cfC09ba407dCED575f2d61D8"; //await arm.activeMarket();
+    const activeMarket = await arm.activeMarket();
     if (activeMarket === ethers.ZeroAddress) {
       console.log("No active lending market found, using default APY of 0%");
       return 0n;
     }
 
     // Get the MorphoMarketWrapper contract
-    const market = await hre.ethers.getContractAt([
-      "function market() external view returns (address)",
-    ], activeMarket, signer);
+    const market = await hre.ethers.getContractAt(
+      ["function market() external view returns (address)"],
+      activeMarket,
+      signer
+    );
 
     await setPrices({ ...taskArgs, signer, arm, market });
   });
@@ -1058,6 +1062,12 @@ subtask(
   "Set environment variables on a Defender Actions. eg DEBUG=origin*"
 )
   .addParam("id", "Identifier of the Defender Actions", undefined, types.string)
+  .addOptionalParam(
+    "name",
+    "Name of the environment variable to set. eg HOODI_BEACON_PROVIDER_URL",
+    undefined,
+    types.string
+  )
   .setAction(setActionVars);
 task("setActionVars").setAction(async (_, __, runSuper) => {
   return runSuper();
@@ -1105,17 +1115,24 @@ task("flyTradeTx").setAction(async (_, __, runSuper) => {
 });
 
 // OS Silo Prices
-subtask("setOSSiloPrice", "Update Origin ARM's swap prices based on lending APY and market pricing")
+subtask(
+  "setOSSiloPrice",
+  "Update Origin ARM's swap prices based on lending APY and market pricing"
+)
   .addOptionalParam("execute", "Execute the transaction", false, types.boolean)
   .setAction(async (taskArgs) => {
     const signer = await getSigner();
 
     const armAddress = "0x2F872623d1E1Af5835b08b0E49aAd2d81d649D30";
-    const arm = await hre.ethers.getContractAt([
-      "function traderate0() external view returns (uint256)",
-      "function traderate1() external view returns (uint256)",
-      "function activeMarket() external view returns (address)",
-    ], armAddress, signer);
+    const arm = await hre.ethers.getContractAt(
+      [
+        "function traderate0() external view returns (uint256)",
+        "function traderate1() external view returns (uint256)",
+        "function activeMarket() external view returns (address)",
+      ],
+      armAddress,
+      signer
+    );
 
     const activeMarket = await arm.activeMarket();
     if (activeMarket === ethers.ZeroAddress) {
@@ -1124,11 +1141,18 @@ subtask("setOSSiloPrice", "Update Origin ARM's swap prices based on lending APY 
     }
 
     // Get the SiloMarketWrapper contract
-    const siloMarketWrapper = await hre.ethers.getContractAt([
-      "function market() external view returns (address)",
-    ], activeMarket, signer);
+    const siloMarketWrapper = await hre.ethers.getContractAt(
+      ["function market() external view returns (address)"],
+      activeMarket,
+      signer
+    );
 
-    await setOSSiloPrice({ tolerance: taskArgs.tolerance, signer, arm, siloMarketWrapper });
+    await setOSSiloPrice({
+      tolerance: taskArgs.tolerance,
+      signer,
+      arm,
+      siloMarketWrapper,
+    });
   });
 task("setOSSiloPrice").setAction(async (_, __, runSuper) => {
   return runSuper();
