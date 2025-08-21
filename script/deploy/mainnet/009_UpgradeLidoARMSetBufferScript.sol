@@ -45,9 +45,7 @@ contract UpgradeLidoARMSetBufferScript is AbstractDeployScript {
             deployedContracts["LIDO_ARM"], "upgradeTo(address)", abi.encode(deployedContracts["LIDO_ARM_IMPL"])
         );
 
-        govProposal.action(
-            deployedContracts["LIDO_ARM"], "setCapManager(address)", abi.encode(address(0))
-        );
+        govProposal.action(deployedContracts["LIDO_ARM"], "setCapManager(address)", abi.encode(address(0)));
 
         govProposal.simulate();
     }
