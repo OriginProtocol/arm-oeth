@@ -8,6 +8,10 @@ import {Fork_Shared_Test} from "test/fork/Harvester/shared/Shared.sol";
 
 contract Fork_Concrete_Harvester_Swap_Test_ is Fork_Shared_Test {
     address public constant OS_WHALE = 0x9F0dF7799f6FDAd409300080cfF680f5A23df4b1;
+    uint256 public constant FLYTRADE_FEES_PCT = 0.0001 ether; // 0.01% fee
+    uint256 public constant DEFAULT_AMOUNT_FLYTRADE = DEFAULT_AMOUNT / 1e18;
+    uint256 public constant DEFAULT_FEES = DEFAULT_AMOUNT * FLYTRADE_FEES_PCT / 1e18;
+    uint256 public constant DEFAULT_AMOUNT_MINUS_FEES = DEFAULT_AMOUNT - (1e18 * FLYTRADE_FEES_PCT / 1e18);
 
     ////////////////////////////////////////////////////
     /// --- SETUP
@@ -26,67 +30,63 @@ contract Fork_Concrete_Harvester_Swap_Test_ is Fork_Shared_Test {
         bytes memory data = getFlyTradeQuote({
             from: "OS",
             to: "WS",
-            amount: 1,
+            amount: DEFAULT_AMOUNT_FLYTRADE,
             slippage: "0.01",
             swapper: address(harvester),
             recipient: deployer
         });
-
         vm.expectRevert(
             abi.encodeWithSelector(SonicHarvester.InvalidSwapRecipient.selector, deployer), address(harvester)
         );
         vm.prank(governor);
-        harvester.swap(SonicHarvester.SwapPlatform.Magpie, address(os), 1e18, data);
+        harvester.swap(SonicHarvester.SwapPlatform.Magpie, address(os), DEFAULT_AMOUNT_MINUS_FEES, DEFAULT_FEES, data);
     }
 
     function test_RevertWhen_Swap_Because_InvalidFromAsset() public {
         bytes memory data = getFlyTradeQuote({
             from: "OS",
             to: "WS",
-            amount: 1,
+            amount: DEFAULT_AMOUNT_FLYTRADE,
             slippage: "0.01",
             swapper: address(harvester),
             recipient: address(harvester)
         });
-
         vm.expectRevert(
             abi.encodeWithSelector(SonicHarvester.InvalidFromAsset.selector, address(os)), address(harvester)
         );
         vm.prank(governor);
-        harvester.swap(SonicHarvester.SwapPlatform.Magpie, address(ws), 1e18, data);
+        harvester.swap(SonicHarvester.SwapPlatform.Magpie, address(ws), DEFAULT_AMOUNT_MINUS_FEES, DEFAULT_FEES, data);
     }
 
     function test_RevertWhen_Swap_Because_InvalidToAsset() public {
         bytes memory data = getFlyTradeQuote({
             from: "OS",
             to: "SILO",
-            amount: 1,
+            amount: DEFAULT_AMOUNT_FLYTRADE,
             slippage: "0.01",
             swapper: address(harvester),
             recipient: address(harvester)
         });
-
         vm.expectRevert(abi.encodeWithSelector(SonicHarvester.InvalidToAsset.selector, Sonic.SILO), address(harvester));
         vm.prank(governor);
-        harvester.swap(SonicHarvester.SwapPlatform.Magpie, address(os), 1e18, data);
+        harvester.swap(SonicHarvester.SwapPlatform.Magpie, address(os), DEFAULT_AMOUNT_MINUS_FEES, DEFAULT_FEES, data);
     }
 
     function test_RevertWhen_Swap_Because_InvalidFromAssetAmount() public {
         bytes memory data = getFlyTradeQuote({
             from: "OS",
             to: "WS",
-            amount: 1,
+            amount: DEFAULT_AMOUNT_FLYTRADE,
             slippage: "0.01",
             swapper: address(harvester),
             recipient: address(harvester)
         });
-
-        uint256 fees = 0.0005 ether; // 0.05% fee
         vm.expectRevert(
-            abi.encodeWithSelector(SonicHarvester.InvalidFromAssetAmount.selector, 1 ether - fees), address(harvester)
+            abi.encodeWithSelector(SonicHarvester.InvalidFromAssetAmount.selector, DEFAULT_AMOUNT_MINUS_FEES),
+            address(harvester)
         );
         vm.prank(governor);
-        harvester.swap(SonicHarvester.SwapPlatform.Magpie, address(os), 2e18, data);
+        harvester.swap(SonicHarvester.SwapPlatform.Magpie, address(os), 2 * DEFAULT_AMOUNT_FLYTRADE, DEFAULT_FEES, data);
     }
 
     function test_RevertWhen_Swap_Because_SlippageError() public {
@@ -99,19 +99,17 @@ contract Fork_Concrete_Harvester_Swap_Test_ is Fork_Shared_Test {
         bytes memory data = getFlyTradeQuote({
             from: "OS",
             to: "WS",
-            amount: 1,
+            amount: DEFAULT_AMOUNT_FLYTRADE,
             slippage: "0.01",
             swapper: address(harvester),
             recipient: address(harvester)
         });
-
         // Mock call on the oracle to return 2:1
         vm.mockCall(oracle, abi.encodeWithSignature("price(address)"), abi.encode(2 ether));
-        uint256 fees = 0.0005 ether; // 0.05% fee
         // As this is not easy to have the value returned from `swapWithMagpieSignature` we do a partialRevert (i.e. without arguments)
         vm.expectPartialRevert(SonicHarvester.SlippageError.selector);
         vm.prank(governor);
-        harvester.swap(SonicHarvester.SwapPlatform.Magpie, address(os), 1 ether - fees, data);
+        harvester.swap(SonicHarvester.SwapPlatform.Magpie, address(os), DEFAULT_AMOUNT_MINUS_FEES, DEFAULT_FEES, data);
     }
 
     ////////////////////////////////////////////////////
@@ -125,7 +123,7 @@ contract Fork_Concrete_Harvester_Swap_Test_ is Fork_Shared_Test {
         bytes memory data = getFlyTradeQuote({
             from: "OS",
             to: "WS",
-            amount: 1,
+            amount: DEFAULT_AMOUNT_FLYTRADE,
             slippage: "0.01",
             swapper: address(harvester),
             recipient: address(harvester)
@@ -136,7 +134,7 @@ contract Fork_Concrete_Harvester_Swap_Test_ is Fork_Shared_Test {
         assertGe(balanceOSBefore, 1 ether, "Balance of OS before swap should be >= 1");
 
         vm.startPrank(governor);
-        harvester.swap(SonicHarvester.SwapPlatform.Magpie, address(os), 1e18, data);
+        harvester.swap(SonicHarvester.SwapPlatform.Magpie, address(os), DEFAULT_AMOUNT_MINUS_FEES, DEFAULT_FEES, data);
         vm.stopPrank();
         uint256 balanceOSAfter = os.balanceOf(address(harvester));
         uint256 balanceWSAfter = ws.balanceOf(operator);
@@ -153,7 +151,7 @@ contract Fork_Concrete_Harvester_Swap_Test_ is Fork_Shared_Test {
         bytes memory data = getFlyTradeQuote({
             from: "OS",
             to: "WS",
-            amount: 1,
+            amount: DEFAULT_AMOUNT_FLYTRADE,
             slippage: "0.01",
             swapper: address(harvester),
             recipient: address(harvester)
@@ -167,7 +165,7 @@ contract Fork_Concrete_Harvester_Swap_Test_ is Fork_Shared_Test {
         assertGe(balanceOSBefore, 1 ether, "Balance of OS before swap should be >= 1");
 
         vm.startPrank(governor);
-        harvester.swap(SonicHarvester.SwapPlatform.Magpie, address(os), 1e18, data);
+        harvester.swap(SonicHarvester.SwapPlatform.Magpie, address(os), DEFAULT_AMOUNT_MINUS_FEES, DEFAULT_FEES, data);
         vm.stopPrank();
         uint256 balanceOSAfter = os.balanceOf(address(harvester));
         uint256 balanceWSAfter = ws.balanceOf(address(harvester));
