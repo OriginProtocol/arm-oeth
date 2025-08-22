@@ -78,11 +78,8 @@ contract DeployManager is Script {
             _runDeployFile(new RegisterLidoWithdrawalsScript());
             _runDeployFile(new ChangeFeeCollectorScript());
             _runDeployFile(new UpgradeLidoARMMorphoScript());
-<<<<<<< HEAD
             _runDeployFile(new UpgradeLidoARMSetBufferScript());
-=======
             _runDeployFile(new DeployPendleAdaptor());
->>>>>>> main
         } else if (block.chainid == 17000) {
             // Holesky
             _runDeployFile(new DeployCoreHoleskyScript());
@@ -99,11 +96,8 @@ contract DeployManager is Script {
                     getDeployedAddressInBuild("SILO_VARLAMORE_S_MARKET")
                 )
             );
-<<<<<<< HEAD
             _runDeployFile(new UpgradeOriginARMSetBufferScript(getDeployedAddressInBuild("ORIGIN_ARM")));
-=======
             _runDeployFile(new DeployPendleAdaptorSonic());
->>>>>>> main
         } else {
             console.log("Skipping deployment (not mainnet)");
         }
