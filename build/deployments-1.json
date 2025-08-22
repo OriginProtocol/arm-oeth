@@ -7,6 +7,7 @@
         "005_RegisterLidoWithdrawalsScript": 1743500783,
         "006_ChangeFeeCollector": 1751894483,
         "007_UpgradeLidoARMMorphoScript": 1754407511,
+        "008_DeployPendleAdaptor": 1755770279,
         "009_UpgradeLidoARMSetBufferScript": 1755692363
     },
     "contracts": {
@@ -18,6 +19,7 @@
         "MORPHO_MARKET_MEVCAPITAL": "0x29c4Bb7B1eBcc53e8CBd16480B5bAe52C69806D3",
         "MORPHO_MARKET_MEVCAPITAL_IMP": "0x37888DD21456635af4Cc0AdABD610f57Fa77173a",
         "OETH_ARM": "0x6bac785889A4127dB0e0CeFEE88E0a9F1Aaf3cC7",
-        "OETH_ARM_IMPL": "0x187FfF686a5f42ACaaF56469FcCF8e6Feca18248"
+        "OETH_ARM_IMPL": "0x187FfF686a5f42ACaaF56469FcCF8e6Feca18248",
+        "PENDLE_ORIGIN_ARM_SY": "0xbcae2Eb1cc47F137D8B2D351B0E0ea8DdA4C6184"
     }
 }
