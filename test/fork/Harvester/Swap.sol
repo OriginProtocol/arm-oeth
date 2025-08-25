@@ -8,7 +8,7 @@ import {Fork_Shared_Test} from "test/fork/Harvester/shared/Shared.sol";
 
 contract Fork_Concrete_Harvester_Swap_Test_ is Fork_Shared_Test {
     address public constant OS_WHALE = 0x9F0dF7799f6FDAd409300080cfF680f5A23df4b1;
-    uint256 public constant FLYTRADE_FEES_PCT = 0.0001 ether; // 0.01% fee
+    uint256 public constant FLYTRADE_FEES_PCT = 0.0001 ether; // 0.01% fee 
     uint256 public constant DEFAULT_AMOUNT_FLYTRADE = DEFAULT_AMOUNT / 1e18;
     uint256 public constant DEFAULT_FEES = DEFAULT_AMOUNT * FLYTRADE_FEES_PCT / 1e18;
     uint256 public constant DEFAULT_AMOUNT_MINUS_FEES = DEFAULT_AMOUNT - (1e18 * FLYTRADE_FEES_PCT / 1e18);
@@ -26,6 +26,13 @@ contract Fork_Concrete_Harvester_Swap_Test_ is Fork_Shared_Test {
     ////////////////////////////////////////////////////
     /// --- REVERTS
     ////////////////////////////////////////////////////
+    function test_RevertWhen_Swap_Because_FeesTooHigh() public {
+        uint256 fakeFees = DEFAULT_AMOUNT * FLYTRADE_FEES_PCT * 200 / 1e18; // 2% fees - x200 default flytrade fees 
+        vm.expectRevert(abi.encodeWithSelector(SonicHarvester.FeesTooHigh.selector, fakeFees), address(harvester));
+        vm.prank(governor);
+        harvester.swap(SonicHarvester.SwapPlatform.Magpie, address(os), DEFAULT_AMOUNT - fakeFees, fakeFees, hex"");
+    }
+
     function test_RevertWhen_Swap_Because_InvalidSwapRecipient() public {
         bytes memory data = getFlyTradeQuote({
             from: "OS",
@@ -86,7 +93,7 @@ contract Fork_Concrete_Harvester_Swap_Test_ is Fork_Shared_Test {
             address(harvester)
         );
         vm.prank(governor);
-        harvester.swap(SonicHarvester.SwapPlatform.Magpie, address(os), 2 * DEFAULT_AMOUNT_FLYTRADE, DEFAULT_FEES, data);
+        harvester.swap(SonicHarvester.SwapPlatform.Magpie, address(os), 2 * DEFAULT_AMOUNT_FLYTRADE, 0, data);
     }
 
     function test_RevertWhen_Swap_Because_SlippageError() public {

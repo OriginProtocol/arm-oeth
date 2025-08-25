@@ -63,6 +63,7 @@ contract SonicHarvester is Initializable, OwnableOperable {
     error EmptyRewardRecipient(); // 0x0c45e033
     error InvalidDecimals(); // 0xd25598a0
     error InvalidAllowedSlippage(uint256 allowedSlippageBps); // 0xfbdd3e50
+    error FeesTooHigh(uint256 fees); // 0xa964a96d
 
     constructor(address _liquidityAsset) {
         if (_liquidityAsset == address(0)) revert EmptyLiquidityAsset();
@@ -164,6 +165,8 @@ contract SonicHarvester is Initializable, OwnableOperable {
         uint256 fees,
         bytes memory data
     ) internal returns (uint256 toAssetAmount) {
+        // Ensure fees are less than 1%
+        if (fees * 1 ether / (fees + fromAssetAmount) > 0.01 ether) revert FeesTooHigh(fees);
         if (swapPlatform == SwapPlatform.Magpie) {
             address parsedRecipient;
             address parsedFromAsset;
