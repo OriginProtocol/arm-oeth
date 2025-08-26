@@ -42,7 +42,23 @@ async function collectFees({ arm, signer }) {
   await logTxDetails(tx, "collectFees");
 }
 
+async function setARMBuffer({ arm, signer, buffer }) {
+  if (buffer >= 1) {
+    throw new Error("Buffer value cannot be greater than 1");
+  }
+  const bufferBN = parseUnits((buffer || "0").toString(), 18);
+
+  // Add 10% buffer to gas limit
+  let gasLimit = await arm.connect(signer).setARMBuffer.estimateGas(bufferBN);
+  gasLimit = (gasLimit * 11n) / 10n;
+
+  log(`About to set ARM buffer to ${formatUnits(bufferBN)}`);
+  const tx = await arm.connect(signer).setARMBuffer(bufferBN, { gasLimit });
+  await logTxDetails(tx, "setARMBuffer");
+}
+
 module.exports = {
   allocate,
   collectFees,
+  setARMBuffer,
 };

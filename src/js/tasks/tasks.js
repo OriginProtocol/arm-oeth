@@ -15,7 +15,7 @@ const {
   lidoWithdrawStatus,
 } = require("./lido");
 const { setPrices } = require("./lidoMorphoPrices");
-const { allocate, collectFees } = require("./admin");
+const { allocate, collectFees, setARMBuffer } = require("./admin");
 const {
   collectRewards,
   harvestRewards,
@@ -962,6 +962,26 @@ subtask("allocate", "Allocate to/from the active lending market")
     await allocate({ signer, arm: armContract, threshold });
   });
 task("allocate").setAction(async (_, __, runSuper) => {
+  return runSuper();
+});
+
+subtask("setARMBuffer", "Set the ARM buffer percentage")
+  .addOptionalParam(
+    "arm",
+    "The name of the ARM. eg Lido, OETH or Origin",
+    "Origin",
+    types.string
+  )
+  .addOptionalParam("buffer", "The new buffer value (eg 0.1 -> 10%)", undefined, types.float)
+  .setAction(async ({ arm, buffer }) => {
+    const signer = await getSigner();
+
+    const armAddress = await parseDeployedAddress(`${arm.toUpperCase()}_ARM`);
+    const armContract = await ethers.getContractAt(`${arm}ARM`, armAddress);
+
+    await setARMBuffer({ signer, arm: armContract, buffer });
+  });
+task("setARMBuffer").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
 
