@@ -20,6 +20,8 @@ import {UpgradeOriginARMScript} from "./sonic/003_UpgradeOriginARM.sol";
 import {UpgradeLidoARMMorphoScript} from "./mainnet/007_UpgradeLidoARMMorphoScript.sol";
 import {DeployPendleAdaptor} from "./mainnet/008_DeployPendleAdaptor.sol";
 import {DeployPendleAdaptorSonic} from "./sonic/004_DeployPendleAdaptor.sol";
+import {UpgradeLidoARMSetBufferScript} from "./mainnet/009_UpgradeLidoARMSetBufferScript.sol";
+import {UpgradeOriginARMSetBufferScript} from "./sonic/005_UpgradeOriginARMSetBufferScript.sol";
 
 contract DeployManager is Script {
     using stdJson for string;
@@ -76,6 +78,7 @@ contract DeployManager is Script {
             _runDeployFile(new RegisterLidoWithdrawalsScript());
             _runDeployFile(new ChangeFeeCollectorScript());
             _runDeployFile(new UpgradeLidoARMMorphoScript());
+            _runDeployFile(new UpgradeLidoARMSetBufferScript());
             _runDeployFile(new DeployPendleAdaptor());
         } else if (block.chainid == 17000) {
             // Holesky
@@ -93,6 +96,7 @@ contract DeployManager is Script {
                     getDeployedAddressInBuild("SILO_VARLAMORE_S_MARKET")
                 )
             );
+            _runDeployFile(new UpgradeOriginARMSetBufferScript(getDeployedAddressInBuild("ORIGIN_ARM")));
             _runDeployFile(new DeployPendleAdaptorSonic());
         } else {
             console.log("Skipping deployment (not mainnet)");

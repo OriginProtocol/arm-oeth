@@ -3,7 +3,8 @@
         "001_DeployOriginARMProxyScript": 1747110973,
         "002_DeployOriginARMScript": 1747907433,
         "003_UpgradeOriginARMScriptScript": 1748603225,
-        "004_DeployPendleAdaptor": 1755780926
+        "004_DeployPendleAdaptor": 1755780926,
+        "005_UpgradeOriginARMSetBufferScript": 1755782543
     },
     "contracts": {
         "HARVESTER": "0x08876C0F5a80c1a43A6396b13A881A26F4b6Adfe",

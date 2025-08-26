@@ -939,7 +939,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
     /// @notice Set the ARM buffer which is a percentage of the available assets.
     /// @param _armBuffer The new ARM buffer scaled to 1e18 (100%).
-    function setARMBuffer(uint256 _armBuffer) external onlyOwner {
+    function setARMBuffer(uint256 _armBuffer) external onlyOperatorOrOwner {
         require(_armBuffer <= 1e18, "ARM: invalid arm buffer");
         armBuffer = _armBuffer;
 

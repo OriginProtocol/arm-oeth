@@ -34,8 +34,8 @@ contract Unit_Concrete_OriginARM_Setters_Test_ is Unit_Shared_Test {
         originARM.setCapManager(address(0));
     }
 
-    function test_RevertWhen_SetARMBuffer_Because_NotGovernor() public asNotGovernor {
-        vm.expectRevert("ARM: Only owner can call this function.");
+    function test_RevertWhen_SetARMBuffer_Because_NotGovernorNorOperator() public asRandomCaller {
+        vm.expectRevert("ARM: Only operator or owner can call this function.");
         originARM.setARMBuffer(0);
     }
 
