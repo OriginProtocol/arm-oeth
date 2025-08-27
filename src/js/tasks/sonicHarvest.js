@@ -21,7 +21,7 @@ async function harvestRewards({ harvester, signer, symbol }) {
     return;
   }
 
-  const { data: flyTradeData } = await flyTradeQuote({
+  const { data: flyTradeData, fees: flyTradeFees } = await flyTradeQuote({
     from: symbol.toUpperCase(),
     to: "WS",
     amount: rewards,
@@ -33,9 +33,11 @@ async function harvestRewards({ harvester, signer, symbol }) {
   log(
     `About to harvest ${formatUnits(rewards)} ${symbol} rewards using FlyTrade`
   );
+  // At the moment the harvester fix has not been deployed yet on sonic. 
+  // When it will be done, uncomment the flyTradeFees on the swap function just below.
   const tx = await harvester
     .connect(signer)
-    .swap(0, rewardToken.getAddress(), rewards, flyTradeData);
+    .swap(0, await rewardToken.getAddress(), rewards/*, flyTradeFees*/, flyTradeData);
   await logTxDetails(tx, "swap rewards");
 }
 

@@ -63,6 +63,7 @@ contract SonicHarvester is Initializable, OwnableOperable {
     error EmptyRewardRecipient(); // 0x0c45e033
     error InvalidDecimals(); // 0xd25598a0
     error InvalidAllowedSlippage(uint256 allowedSlippageBps); // 0xfbdd3e50
+    error FeesTooHigh(uint256 fees); // 0xa964a96d
 
     constructor(address _liquidityAsset) {
         if (_liquidityAsset == address(0)) revert EmptyLiquidityAsset();
@@ -113,18 +114,21 @@ contract SonicHarvester is Initializable, OwnableOperable {
      * @param swapPlatform The swap platform to use. Currently only Magpie is supported.
      * @param fromAsset The address of the reward token to swap from.
      * @param fromAssetAmount The amount of reward tokens to swap from.
+     * @param fees The fees to add to the approval for the swap. This is needed for Magpie swaps.
      * @param data aggregator specific data. eg Magpie's swapWithMagpieSignature data
      * @return toAssetAmount The amount of liquidity assets received from the swap.
      */
-    function swap(SwapPlatform swapPlatform, address fromAsset, uint256 fromAssetAmount, bytes calldata data)
-        external
-        onlyOperatorOrOwner
-        returns (uint256 toAssetAmount)
-    {
+    function swap(
+        SwapPlatform swapPlatform,
+        address fromAsset,
+        uint256 fromAssetAmount,
+        uint256 fees,
+        bytes calldata data
+    ) external onlyOperatorOrOwner returns (uint256 toAssetAmount) {
         uint256 liquidityAssetsBefore = IERC20(liquidityAsset).balanceOf(address(this));
 
         // Validate the swap data and do the swap
-        toAssetAmount = _doSwap(swapPlatform, fromAsset, fromAssetAmount, data);
+        toAssetAmount = _doSwap(swapPlatform, fromAsset, fromAssetAmount, fees, data);
 
         // Check this Harvester got the reported amount of liquidity assets
         uint256 liquidityAssetsReceived = IERC20(liquidityAsset).balanceOf(address(this)) - liquidityAssetsBefore;
@@ -154,10 +158,15 @@ contract SonicHarvester is Initializable, OwnableOperable {
     }
 
     /// @dev Platform specific swap logic
-    function _doSwap(SwapPlatform swapPlatform, address fromAsset, uint256 fromAssetAmount, bytes memory data)
-        internal
-        returns (uint256 toAssetAmount)
-    {
+    function _doSwap(
+        SwapPlatform swapPlatform,
+        address fromAsset,
+        uint256 fromAssetAmount,
+        uint256 fees,
+        bytes memory data
+    ) internal returns (uint256 toAssetAmount) {
+        // Ensure fees are less than 1%
+        if (fees * 1 ether / (fees + fromAssetAmount) > 0.01 ether) revert FeesTooHigh(fees);
         if (swapPlatform == SwapPlatform.Magpie) {
             address parsedRecipient;
             address parsedFromAsset;
@@ -212,7 +221,7 @@ contract SonicHarvester is Initializable, OwnableOperable {
             if (fromAssetAmount != parsedFromAssetAmount) revert InvalidFromAssetAmount(parsedFromAssetAmount);
 
             // Approve the Magpie Router to spend the fromAsset
-            IERC20(fromAsset).approve(magpieRouter, fromAssetAmount);
+            IERC20(fromAsset).approve(magpieRouter, fromAssetAmount + fees);
             // Call the Magpie router to do the swap
             toAssetAmount = IMagpieRouter(magpieRouter).swapWithMagpieSignature(data);
         } else {
