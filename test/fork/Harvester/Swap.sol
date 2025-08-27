@@ -118,7 +118,6 @@ contract Fork_Concrete_Harvester_Swap_Test_ is Fork_Shared_Test {
         });
         // Mock call on the oracle to return 2:1
         vm.mockCall(oracle, abi.encodeWithSignature("price(address)"), abi.encode(2 ether));
-        uint256 fees = 0.0005 ether; // 0.05% fee
         // As this is not easy to have the value returned from `swapWithMagpieSignature` we do a partialRevert (i.e. without arguments)
         vm.expectPartialRevert(SonicHarvester.SlippageError.selector);
         vm.prank(governor);
