@@ -47,7 +47,7 @@ const flyTradeQuote = async ({ from, to, amount, slippage, swapper, recipient })
     const toAmount = parseUnits(responseData.amountOut, 18);
     const price = (amount * parseUnits("1", 22)) / toAmount;
 
-
+    const fees = responseData.typedData.message.swapFee;
     const id = responseData.id;
     const minAmountOut = responseData.typedData.messageamountOutMin;
     log(`Quote id : ${id}`);
@@ -55,7 +55,7 @@ const flyTradeQuote = async ({ from, to, amount, slippage, swapper, recipient })
 
     const data = await flyTradeTx({ id });
 
-    return { price, fromAsset, toAsset, minAmountOut, data };
+    return { price, fromAsset, toAsset, minAmountOut, data, fees };
   } catch (err) {
     if (err.response) {
       console.error("Response data  : ", err.response.data);
