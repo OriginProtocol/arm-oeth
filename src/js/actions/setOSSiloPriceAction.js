@@ -31,16 +31,12 @@ const handler = async (credentials) => {
     "function market() external view returns (address)",
   ], signer);
 
-  try {
     await setOSSiloPrice({
       signer,
       arm,
       siloMarketWrapper,
       execute: true,
     });
-  } catch (error) {
-    console.error(error);
-  }
 };
 
 module.exports = { handler };

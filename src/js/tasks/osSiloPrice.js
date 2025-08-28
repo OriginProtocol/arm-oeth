@@ -33,13 +33,13 @@ const setOSSiloPrice = async (options) => {
     const currentPricing = await getFlyTradePrice(testAmountIn, signer);
     log(`Current market pricing: ${Number(formatUnits(currentPricing, 18)).toFixed(4)}`);
 
-    // 4. Calculate minBuyingPrice based on APY
+    // 4. Calculate highest buy price, we should always target a price lower than this to maintain the APY
     const minBuyingPrice = calculateMinBuyingPrice(currentApyLending);
-    log(`Calculated min buying price: ${Number(formatUnits(minBuyingPrice, 36)).toFixed(4)}`);
+    log(`Calculated highest buying price to maintain APY: ${Number(formatUnits(minBuyingPrice, 36)).toFixed(4)}`);
 
-    // 5. Calculate maxBuyingPrice
+    // 5. Calculate maxBuyingPrice, market price with an added premium
     const maxBuyingPrice = calculateMaxBuyingPrice(currentPricing, minBuyingPrice);
-    log(`Calculated max buying price: ${Number(formatUnits(maxBuyingPrice, 36)).toFixed(4)}`);
+    log(`Calculated max buying price (market price + premium): ${Number(formatUnits(maxBuyingPrice, 36)).toFixed(4)}`);
 
     // 6. Set the prices on the ARM contract
     const targetBuyPrice = maxBuyingPrice;
