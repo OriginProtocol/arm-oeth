@@ -34,7 +34,8 @@ const setOSSiloPrice = async (options) => {
     log(`Current market pricing: ${Number(formatUnits(currentPricing, 18)).toFixed(4)}`);
 
     // 4. Calculate highest buy price, we should always target a price lower than this to maintain the APY
-    const minBuyingPrice = calculateMinBuyingPrice(currentApyLending);
+    const duration = await calculateAveragePeriod(arm);
+    const minBuyingPrice = calculateMinBuyingPrice(currentApyLending, duration);
     log(`Calculated highest buying price to maintain APY: ${Number(formatUnits(minBuyingPrice, 36)).toFixed(4)}`);
 
     // 5. Calculate maxBuyingPrice, market price with an added premium
@@ -127,11 +128,11 @@ const getFlyTradePrice = async (amountIn, signer) => {
  *  Formula: 1/(1+apy) ^ (1 / (365 / 15))
  *  Where 15 is the number of days in the holding period
  */
-const calculateMinBuyingPrice = (lendingAPY) => {
+const calculateMinBuyingPrice = (lendingAPY, duration) => {
     // Scale BN to decimal to make calculations easier
     const apyNumber = Number(formatUnits(lendingAPY, 18))
 
-    const daysPeriod = 15;
+    const daysPeriod = Number(duration) / 86400;
     const exponent = daysPeriod / 365;
 
     // 1/(1+apy) ^ (1 / (365 / 15))
@@ -143,6 +144,64 @@ const calculateMinBuyingPrice = (lendingAPY) => {
     // Ensure we don't go below a reasonable minimum (0.99)
     const minAllowed = parseUnits("0.99", 36);
     return minPriceScaled > minAllowed ? minPriceScaled : minAllowed;
+};
+
+const calculateAveragePeriod = async (arm) => {
+    // Get OS Vault
+    const vaultAddress = await arm.vault();
+    const vault = await hre.ethers.getContractAt(
+        [
+            "function withdrawalQueueMetadata() external view returns (uint128,uint128,uint128,uint128)",
+            "function withdrawalRequests(uint256) external view returns (address,bool,uint40,uint128,uint128)"
+        ],
+        vaultAddress
+    );
+
+    // Get total withdrawal count
+    const totalWithdrawalsCount = await vault.withdrawalQueueMetadata();
+    log(`Total request withdrawals: ${totalWithdrawalsCount[3]}`);
+
+    // Fetch last x withdrawal requests
+    const numberOfRecentRequests = 50;
+    const recentWithdrawalRequests = await Promise.all(
+        Array.from({ length: numberOfRecentRequests }, (_, i) =>
+            vault.withdrawalRequests(totalWithdrawalsCount[3].toString() - 1 - i)
+        )
+    );
+
+    // Filter recentWithdrawalRequests to keep only those where [1] is false (not claimed) and < 14 days old
+    const currentTimestamp = BigInt(Math.floor(Date.now() / 1000));
+    const fourteenDaysInSeconds = BigInt(14 * 24 * 60 * 60);
+    const filteredWithdrawalRequests = recentWithdrawalRequests.filter(request =>
+        !request[1] && ((currentTimestamp - request[2]) <= fourteenDaysInSeconds)
+    );
+    log("Filtered withdrawal requests count:", filteredWithdrawalRequests.length);
+
+    // Calculate the weighted average period
+    let totalWeightedTime = BigInt(0);
+    let totalAmount = BigInt(0);
+    for (const request of filteredWithdrawalRequests) {
+        const timeRemaining = fourteenDaysInSeconds - (currentTimestamp - request[2]);
+        const amount = BigInt(request[3]);
+
+        totalWeightedTime += timeRemaining * amount;
+        totalAmount += amount;
+    }
+
+    const weightedAveragePeriod = totalAmount > 0 ? totalWeightedTime / totalAmount : BigInt(0);
+    log(
+        "Total amount (in ether):",
+        (totalAmount / parseUnits("1", 18)).toString()
+    );
+    log(
+        "Weighted average period:",
+        (weightedAveragePeriod / BigInt(86400)).toString(),
+        "days",
+        (weightedAveragePeriod % BigInt(86400) / BigInt(3600)).toString(),
+        "hours"
+    );
+
+    return weightedAveragePeriod;
 };
 
 const calculateMaxBuyingPrice = (marketPrice, minBuyingPrice) => {

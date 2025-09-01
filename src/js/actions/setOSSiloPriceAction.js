@@ -18,6 +18,7 @@ const handler = async (credentials) => {
     "function traderate1() external view returns (uint256)",
     "function activeMarket() external view returns (address)",
     "function setPrices(uint256, uint256) external",
+    "function vault() external view returns (address)"
   ], signer);
 
   const activeMarket = await arm.activeMarket();

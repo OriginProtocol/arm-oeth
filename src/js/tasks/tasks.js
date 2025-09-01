@@ -1149,6 +1149,7 @@ subtask(
         "function traderate0() external view returns (uint256)",
         "function traderate1() external view returns (uint256)",
         "function activeMarket() external view returns (address)",
+        "function vault() external view returns (address)"
       ],
       armAddress,
       signer
