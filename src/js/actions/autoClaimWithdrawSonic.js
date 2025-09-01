@@ -39,8 +39,12 @@ const handler = async (event) => {
 
   // If any requests were claimed
   if (requestIds?.length > 0) {
+    // Add 10% buffer to gas limit
+    let gasLimit = await arm.connect(signer).allocate.estimateGas();
+    gasLimit = (gasLimit * 12n) / 10n;
+    
     // Allocate any excess liquidity to the lending market
-    const tx = await arm.allocate();
+    const tx = await arm.allocate({ gasLimit });
     await logTxDetails(tx, "allocate");
   }
 };
