@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
-import {IERC20} from "contracts/Interfaces.sol";
 import {Unit_Shared_Test} from "test/unit/shared/Shared.sol";
 
 contract Unit_Concrete_OriginARM_AvailableLiquidity_Test_ is Unit_Shared_Test {
@@ -17,13 +16,15 @@ contract Unit_Concrete_OriginARM_AvailableLiquidity_Test_ is Unit_Shared_Test {
     }
 
     function test_AvailableLiquidity_AfterDeposit() public deposit(alice, DEFAULT_AMOUNT) {
-        assertEq(originARM.availableLiquidity(weth), DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY);
-        assertEq(originARM.availableLiquidity(oeth), 0);
+        (uint256 balance0, uint256 balance1) = originARM.getReserves();
+        assertEq(balance0, DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY);
+        assertEq(balance1, 0);
     }
 
     function test_AvailableLiquidity_AfterDepositAndSwap() public deposit(alice, DEFAULT_AMOUNT) swapAllWETHForOETH {
-        assertEq(originARM.availableLiquidity(weth), 0);
-        assertApproxEqRel(originARM.availableLiquidity(oeth), DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, 1e16);
+        (uint256 balance0, uint256 balance1) = originARM.getReserves();
+        assertEq(balance0, 0);
+        assertApproxEqRel(balance1, DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, 1e16);
     }
 
     function test_AvailableLiquidity_AfterDepositSwapRequest()
@@ -32,12 +33,9 @@ contract Unit_Concrete_OriginARM_AvailableLiquidity_Test_ is Unit_Shared_Test {
         swapWETHForOETH(DEFAULT_AMOUNT / 2)
         requestRedeemAll(alice)
     {
+        (uint256 balance0, uint256 balance1) = originARM.getReserves();
         assertApproxEqRel(weth.balanceOf(address(originARM)), DEFAULT_AMOUNT / 2, 1e16);
-        assertApproxEqRel(originARM.availableLiquidity(oeth), DEFAULT_AMOUNT / 2, 1e16); //
-        assertEq(originARM.availableLiquidity(weth), 0); // Because outstanding withdraw are 1 ether
-    }
-
-    function test_AvailableLiquidity_WrongToken() public view {
-        assertEq(originARM.availableLiquidity(IERC20(address(0))), 0);
+        assertApproxEqRel(balance1, DEFAULT_AMOUNT / 2, 1e16); //
+        assertEq(balance0, 0); // Because outstanding withdraw are 1 ether
     }
 }

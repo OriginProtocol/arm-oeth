@@ -414,20 +414,15 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     }
 
     /// @notice Get the available liquidity for a specific asset
-    /// @param asset The address of the asset to check
-    function availableLiquidity(IERC20 asset) external view returns (uint256) {
-        if (address(asset) == liquidityAsset) {
-            // The amount of liquidity assets (WETH) that is still to be claimed in the withdrawal queue
-            uint256 outstandingWithdrawals = withdrawsQueued - withdrawsClaimed;
-            uint256 balance = IERC20(liquidityAsset).balanceOf(address(this));
-            if (outstandingWithdrawals > balance) return 0;
+    /// @return reserve0 The available liquidity for token0
+    /// @return reserve1 The available liquidity for token1
+    function getReserves() external view returns (uint256 reserve0, uint256 reserve1) {
+        // The amount of liquidity assets (WETH) that is still to be claimed in the withdrawal queue
+        uint256 outstandingWithdrawals = withdrawsQueued - withdrawsClaimed;
 
-            return balance - outstandingWithdrawals;
-        } else if (address(asset) == baseAsset) {
-            return IERC20(baseAsset).balanceOf(address(this));
-        } else {
-            return 0;
-        }
+        uint256 balance0 = IERC20(liquidityAsset).balanceOf(address(this));
+        uint256 balance1 = IERC20(baseAsset).balanceOf(address(this));
+        return (outstandingWithdrawals > balance0 ? 0 : balance0 - outstandingWithdrawals, balance1);
     }
 
     /**
