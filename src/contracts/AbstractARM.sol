@@ -413,6 +413,23 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         _transferAsset(address(outToken), to, amountOut);
     }
 
+    /// @notice Get the available liquidity for a specific asset
+    /// @param asset The address of the asset to check
+    function availableLiquidity(IERC20 asset) external view returns (uint256) {
+        if (address(asset) == liquidityAsset) {
+            // The amount of liquidity assets (WETH) that is still to be claimed in the withdrawal queue
+            uint256 outstandingWithdrawals = withdrawsQueued - withdrawsClaimed;
+            uint256 balance = IERC20(liquidityAsset).balanceOf(address(this));
+            if (outstandingWithdrawals > balance) return 0;
+
+            return balance - outstandingWithdrawals;
+        } else if (address(asset) == baseAsset) {
+            return IERC20(baseAsset).balanceOf(address(this));
+        } else {
+            return 0;
+        }
+    }
+
     /**
      * @notice Set exchange rates from an operator account from the ARM's perspective.
      * If token 0 is WETH and token 1 is stETH, then both prices will be set using the stETH/WETH price.
