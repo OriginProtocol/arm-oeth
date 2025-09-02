@@ -34,8 +34,9 @@ const setOSSiloPrice = async (options) => {
     log(`Current market pricing: ${Number(formatUnits(currentPricing, 18)).toFixed(4)}`);
 
     // 4. Calculate highest buy price, we should always target a price lower than this to maintain the APY
-    const duration = await calculateAveragePeriod(arm);
-    const minBuyingPrice = calculateMinBuyingPrice(currentApyLending, duration);
+    await estimateAverageWithdrawTime(arm);
+    //const duration = await calculateAveragePeriod(arm);
+    const minBuyingPrice = calculateMinBuyingPrice(currentApyLending, 86400n);
     log(`Calculated highest buying price to maintain APY: ${Number(formatUnits(minBuyingPrice, 36)).toFixed(4)}`);
 
     // 5. Calculate maxBuyingPrice, market price with an added premium
@@ -145,6 +146,170 @@ const calculateMinBuyingPrice = (lendingAPY, duration) => {
     const minAllowed = parseUnits("0.99", 36);
     return minPriceScaled > minAllowed ? minPriceScaled : minAllowed;
 };
+
+/**
+ * @notice Estimates the average withdrawal time for a given ARM contract.
+ * @dev This function calculates the estimated withdrawal time based on the availability of tokens
+ *      in the OS Vault and ARM contract, as well as the status of withdrawal requests.
+ * 
+ * Scenarios:
+ * 1. If there is more wS available in the OS Vault than oS in the ARM contract, the withdrawal time
+ *    is estimated to be close to 1 day.
+ * 2. If there are enough unclaimed withdrawal requests older than 13 days to cover the required amount,
+ *    the withdrawal time is estimated to be close to 1 day.
+ * 3. If there are not enough unclaimed withdrawal requests (both older and younger than 13 days) to cover
+ *    the required amount, the withdrawal time is estimated to be the maximum of 14 days.
+ * 4. If there are enough unclaimed withdrawal requests (including recent ones) to cover the required amount,
+ *    the withdrawal time is calculated using a weighted average based on the age of the requests.
+ */
+const estimateAverageWithdrawTime = async (arm) => {
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    /// --- Fetching wS holding from OS Vault
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    log("\nFetching WS data from OS Vault ...");
+    let wSAvailable = 0n;
+    const wSAddress = await arm.token0();
+    const wS = await hre.ethers.getContractAt(
+        ["function balanceOf(address owner) external view returns (uint256)"],
+        wSAddress
+    );
+    wSAvailable += await wS.balanceOf(await arm.vault());
+    log(`ws balanceOf OSVault    : ${wSAvailable / parseUnits("1", 18)}`);
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    /// --- Fetching data from OS Vault
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    const vaultAddress = await arm.vault();
+    const vault = await hre.ethers.getContractAt(
+        [
+            "function withdrawalQueueMetadata() external view returns (uint128,uint128,uint128,uint128)",
+            "function withdrawalRequests(uint256) external view returns (address,bool,uint40,uint128,uint128)"
+        ],
+        vaultAddress
+    );
+    const vaultQueuedWithdrawals = await vault.withdrawalQueueMetadata();
+    wSAvailable += vaultQueuedWithdrawals[2] - vaultQueuedWithdrawals[0]; // += claimed amount - queued amount
+    log(`Vault Queued amount     : ${vaultQueuedWithdrawals[0] / parseUnits("1", 18)}`);
+    log(`Vault Claimed amount    : ${vaultQueuedWithdrawals[2] / parseUnits("1", 18)}`);
+    log(`Vault Outstanding amount: ${(vaultQueuedWithdrawals[0] - vaultQueuedWithdrawals[2]) / parseUnits("1", 18)}`);
+    log(`Available wS in Vault   : ${wSAvailable / parseUnits("1", 18)}`);
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    /// --- Fetching oS holding from ARM
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    log("\nFetching OS data from ARM ...");
+    const oSAddress = await arm.token1();
+    const oS = await hre.ethers.getContractAt(
+        ["function balanceOf(address owner) external view returns (uint256)"],
+        oSAddress
+    );
+
+    let oSBalanceInARM = await oS.balanceOf(arm.target);
+    log(`os balanceOf ARM        : ${oSBalanceInARM / parseUnits("1", 18)}`);
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    /// --- Fetching data from ARM
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    // This can be replaced with `getReserves()` once the function is added to the ARM contract
+    const armWithdrawsQueued = await arm.withdrawsQueued();
+    const armWithdrawsClaimed = await arm.withdrawsClaimed();
+    const armOutstandingWithdrawals = armWithdrawsQueued - armWithdrawsClaimed;
+    const oSAvailable = armOutstandingWithdrawals > oSBalanceInARM ? 0n : oSBalanceInARM - armOutstandingWithdrawals;
+    log(`ARM Withdraws queued    : ${armWithdrawsQueued / parseUnits("1", 18)}`);
+    log(`ARM Withdraws claimed   : ${armWithdrawsClaimed / parseUnits("1", 18)}`);
+    log(`ARM Outstanding Withdraw: ${armOutstandingWithdrawals / parseUnits("1", 18)}`);
+    log(`Available OS in ARM     : ${oSAvailable / parseUnits("1", 18)}\n`);
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    /// --- 1. There is more wS in Vault are available than OS in ARM
+    /// --- Withdrawal time estimated to be close from: 1 day
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    if (wSAvailable >= oSAvailable) {
+        log("More wS available in Vault than OS in ARM, withdrawal time estimated to be close from: 1 day\n");
+        return 86400n;
+    }
+
+    // If wSAvailable < oSAvailable, we need to fetch from undelegating requests
+    const amount = oSAvailable - wSAvailable;
+    log(`Amount to fetch from undelegating requests: ${amount}`);
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    /// --- Fetching latests withdrawRequests from OS Vault
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    const numberOfRecentRequests = 50;
+    const recentWithdrawalRequests = await Promise.all(
+        Array.from({ length: numberOfRecentRequests }, (_, i) =>
+            vault.withdrawalRequests(totalWithdrawalsCount[3].toString() - 1 - i)
+        )
+    );
+
+    // Filter request that have been already claimed
+    const unclaimedRequests = recentWithdrawalRequests.filter(req => !req[1]);
+    log("Unclaimed request count:", unclaimedRequests.length);
+
+    // Filter request that are older than 13 days
+    const oldRequests = unclaimedRequests.filter(req => (Date.now() / 1000 - req[2]) >= 13 * 86400);
+    log("Unclaimed request older than 13 days count:", oldRequests.length);
+    // Sum the amount of all request that are 13 days older or more
+    let sumOfOldRequest = 0n;
+    for (const req of oldRequests) {
+        sumOfOldRequest += req[3];
+    }
+    log("Total amount of old requests:", sumOfOldRequest / parseUnits("1", 18));
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    /// --- 2. There is enough old requests to cover the amount needed
+    /// --- Withdrawal time estimated to be close from: 1 day
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    if (sumOfOldRequest > amount) return 86400n;
+
+    // Reduce amount by the sum of old requests
+    amount -= sumOfOldRequest;
+    log("Amount remaining after old requests:", amount / parseUnits("1", 18));
+
+    // Filter request that are younger than 13 days (and not claimed)
+    const recentRequests = unclaimedRequests.filter(req => (Date.now() / 1000 - req[2]) < 13 * 86400);
+    log("Unclaimed request younger than 13 days count:", recentRequests.length);
+    let totalWeightedTime = 0n;
+    let totalAmount = 0n;
+    // Calculate the total weighted time and amount for recent requests
+    for (const req of recentRequests) {
+        const weight = (13 * 86400 - (Date.now() / 1000 - req[2]));
+        totalWeightedTime += weight * req[3];
+        totalAmount += req[3];
+        amount -= req[3];
+        if (amount <= 0) break;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    /// --- 3. There is not enough recent requests to cover the amount needed
+    /// --- Withdrawal time estimated to be close from: 14 days (maximal)
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    if (amount > 0) return 14n * 86400n; // We didn't find enough recent requests to cover the amount
+
+    // If we reach this point, it means we found enough recent requests to use average weighted time
+    log("Total weighted time (only < 13 days):", totalWeightedTime);
+    log("Total amount (only < 13 days):", totalAmount / parseUnits("1", 18));
+
+    totalWeightedTime += sumOfOldRequest * 86400n;
+    totalAmount += sumOfOldRequest;
+
+    log("Total weighted time (including old requests):", totalWeightedTime);
+    log("Total amount (including old requests):", totalAmount / parseUnits("1", 18));
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    /// --- 4. There is enough recent requests to cover the amount needed
+    /// --- Withdrawal time calculated using average weighted time: between 1 day and 14 days
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    log(
+        "Estimated withdrawal time in days and hours:",
+        (totalWeightedTime / totalAmount) / BigInt(86400),
+        "days",
+        (totalWeightedTime / totalAmount) % BigInt(86400) / BigInt(3600),
+        "hours"
+    );
+    return totalWeightedTime / totalAmount;
+}
 
 const calculateAveragePeriod = async (arm) => {
     // Get OS Vault
