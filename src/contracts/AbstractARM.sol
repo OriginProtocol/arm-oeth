@@ -422,7 +422,11 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
         uint256 balance0 = IERC20(liquidityAsset).balanceOf(address(this));
         uint256 balance1 = IERC20(baseAsset).balanceOf(address(this));
-        return (outstandingWithdrawals > balance0 ? 0 : balance0 - outstandingWithdrawals, balance1);
+        reserve0 = outstandingWithdrawals > balance0 ? 0 : balance0 - outstandingWithdrawals;
+        reserve1 = balance1;
+
+        // token0 should be the liquidity asset, swap reserves if necessary
+        if (address(token0) == baseAsset) (reserve0, reserve1) = (reserve1, reserve0);
     }
 
     /**
