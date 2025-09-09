@@ -175,18 +175,18 @@ const estimateAverageWithdrawTime = async (arm, block) => {
     ////////////////////////////////////////////////////////////////////////////////////////////////////
     log(`\nFetching WS data from OS Vault ...`);
     let wSAvailable = 0n;
-    const wSAddress = await arm.token0({ blockTag });
+    const wSAddress = await arm.token0();
     const wS = await hre.ethers.getContractAt(
         [`function balanceOf(address owner) external view returns (uint256)`],
         wSAddress
     );
-    wSAvailable += await wS.balanceOf(await arm.vault({ blockTag }), { blockTag });
+    wSAvailable += await wS.balanceOf(await arm.vault(), { blockTag });
     log(`ws balanceOf OSVault    : ${formatUnits(wSAvailable, 18)}`);
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////
     /// --- Fetching data from OS Vault
     ////////////////////////////////////////////////////////////////////////////////////////////////////
-    const vaultAddress = await arm.vault({ blockTag });
+    const vaultAddress = await arm.vault();
     const vault = await hre.ethers.getContractAt(
         [
             `function withdrawalQueueMetadata() external view returns (uint128,uint128,uint128,uint128)`,
@@ -205,7 +205,7 @@ const estimateAverageWithdrawTime = async (arm, block) => {
     /// --- Fetching oS holding from ARM
     ////////////////////////////////////////////////////////////////////////////////////////////////////
     log(`\nFetching OS data from ARM ...`);
-    const oSAddress = await arm.token1({ blockTag });
+    const oSAddress = await arm.token1();
     const oS = await hre.ethers.getContractAt(
         [`function balanceOf(address owner) external view returns (uint256)`],
         oSAddress
