@@ -170,6 +170,12 @@ const estimateAverageWithdrawTime = async (arm, block) => {
     const timestamp = await hre.ethers.provider.getBlock(blockTag).then(b => b.timestamp);
     log(`Using block number: ${blockTag} at timestamp: ${timestamp}`);
 
+    // Check if arm contract exist at this block
+    const code = await hre.ethers.provider.getCode(arm.target, blockTag);
+    if (code === "0x") {
+        throw new Error(`ARM contract does not exist at block ${blockTag}`);
+    }
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////
     /// --- Fetching wS holding from OS Vault
     ////////////////////////////////////////////////////////////////////////////////////////////////////
