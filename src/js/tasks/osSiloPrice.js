@@ -267,20 +267,20 @@ const estimateAverageWithdrawTime = async (arm, block) => {
     const oldRequests = unclaimedRequests.filter(req => (BigInt(timestamp) - req[2]) >= 13 * 86400);
     log(`Unclaimed request > 13 days old            : ${oldRequests.length.toString()}`);
     // Sum the amount of all request that are 13 days older or more
-    let sumOfOldRequest = 0n;
+    let sumOfOldRequestAmount = 0n;
     for (const req of oldRequests) {
-        sumOfOldRequest += req[3];
+        sumOfOldRequestAmount += req[3];
     }
-    log(`Total amount from request > 13 days old    : ${formatUnits(sumOfOldRequest, 18)}`);
+    log(`Total amount from request > 13 days old    : ${formatUnits(sumOfOldRequestAmount, 18)}`);
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////
     /// --- 2. Sufficient withdrawal requests are nearing maturity to cover the required amount
     /// --- Withdrawal time estimated to be close from: 1 day
     ////////////////////////////////////////////////////////////////////////////////////////////////////
-    if (sumOfOldRequest > amount) return 86400n;
+    if (sumOfOldRequestAmount > amount) return 86400n;
 
     // Reduce amount by the sum of old requests
-    amount -= sumOfOldRequest;
+    amount -= sumOfOldRequestAmount;
     log(`Amount remaining minus > 13 days old reques: ${formatUnits(amount, 18)}`);
 
     // Filter request that are younger than 13 days (and not claimed)
@@ -312,8 +312,8 @@ const estimateAverageWithdrawTime = async (arm, block) => {
     }
 
     // If we reach this point, it means we found enough recent requests to use average weighted time
-    totalWeightedTime += sumOfOldRequest * 86400n;
-    totalAmount += sumOfOldRequest;
+    totalWeightedTime += sumOfOldRequestAmount * 86400n;
+    totalAmount += sumOfOldRequestAmount;
 
     log(`Total Amount (include all requests)        : ${formatUnits(totalAmount, 18)}\n`);
 
