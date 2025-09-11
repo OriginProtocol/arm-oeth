@@ -255,7 +255,7 @@ const estimateAverageWithdrawTime = async (arm, block) => {
     const numberOfRecentRequests = 50;
     const recentWithdrawalRequests = await Promise.all(
         Array.from({ length: Math.min(numberOfRecentRequests, Number(totalWithdrawalsCount[3])) }, (_, i) =>
-            vault.withdrawalRequests(totalWithdrawalsCount[3].toString() - 1 - i, { blockTag })
+            vault.withdrawalRequests(Number(totalWithdrawalsCount[3]) - 1 - i, { blockTag })
         )
     );
 
