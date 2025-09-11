@@ -53,6 +53,10 @@ const setOSSiloPrice = async (options) => {
     log(`New buy price: ${formatUnits(targetBuyPrice, 36)}`);
     log(`New sell price: ${formatUnits(targetSellPrice, 36)}`);
 
+    if (block !== undefined) {
+        throw new Error("Cannot execute price update on historical block");
+    }
+
     if (execute) {
         log("Updating ARM prices...");
         const tx = await arm
