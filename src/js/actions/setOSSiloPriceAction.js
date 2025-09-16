@@ -36,11 +36,33 @@ const handler = async (credentials) => {
     "function market() external view returns (address)",
   ], signer);
 
+  // Get the WS and OS token contracts
+  const wSAddress = await arm.token0();
+  const wS = new ethers.Contract(wSAddress, [
+    "function balanceOf(address) external view returns (uint256)"
+  ], signer);
+
+  const oSAddress = await arm.token1();
+  const oS = new ethers.Contract(oSAddress, [
+    "function balanceOf(address) external view returns (uint256)"
+  ], signer);
+
+  // Get the OS Vault contract
+  const vaultAddress = await arm.vault();
+  const vault = new ethers.Contract(vaultAddress, [
+    "function withdrawalQueueMetadata() external view returns (uint128,uint128,uint128,uint128)",
+    "function withdrawalRequests(uint256) external view returns (address,bool,uint40,uint128,uint128)"
+  ], signer);
+
   await setOSSiloPrice({
     signer,
     arm,
     siloMarketWrapper,
     execute: true,
+    wS,
+    oS,
+    vault,
+    blockTag: "latest",
   });
 };
 

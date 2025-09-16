@@ -16,7 +16,10 @@ const setOSSiloPrice = async (options) => {
         arm,
         siloMarketWrapper,
         execute = false,
-        block
+        wS,
+        oS,
+        vault,
+        blockTag
     } = options;
 
     log("Computing optimal price...");
@@ -37,7 +40,7 @@ const setOSSiloPrice = async (options) => {
     log(`Current market pricing: ${Number(formatUnits(currentPricing, 18)).toFixed(4)}`);
 
     // 4. Calculate highest buy price, we should always target a price lower than this to maintain the APY
-    const duration = await estimateAverageWithdrawTime(arm, block);
+    const duration = await estimateAverageWithdrawTime(arm, blockTag, signer, wS, oS, vault);
     //const duration = await calculateAveragePeriod(arm);
     const minBuyingPrice = calculateMinBuyingPrice(currentApyLending, duration);
     log(`Calculated highest buying price to maintain APY: ${Number(formatUnits(minBuyingPrice, 36)).toFixed(4)}`);
@@ -53,7 +56,7 @@ const setOSSiloPrice = async (options) => {
     log(`New buy price: ${formatUnits(targetBuyPrice, 36)}`);
     log(`New sell price: ${formatUnits(targetSellPrice, 36)}`);
 
-    if (block !== undefined) {
+    if (blockTag !== "latest") {
         throw new Error("Cannot execute price update on historical block");
     }
 
@@ -169,13 +172,12 @@ const calculateMinBuyingPrice = (lendingAPY, duration) => {
  * 4. If there are enough unclaimed withdrawal requests (including recent ones) to cover the required amount,
  *    the withdrawal time is calculated using a weighted average based on the age of the requests.
  */
-const estimateAverageWithdrawTime = async (arm, block) => {
-    const blockTag = await getBlock(block);
-    const timestamp = await hre.ethers.provider.getBlock(blockTag).then(b => b.timestamp);
+const estimateAverageWithdrawTime = async (arm, blockTag, signer, wS, oS, vault) => {
+    const timestamp = await signer.provider.getBlock(blockTag).then(b => b.timestamp);
     log(`Using block number: ${blockTag} at timestamp: ${timestamp}`);
 
     // Check if arm contract exist at this block
-    const code = await hre.ethers.provider.getCode(arm.target, blockTag);
+    const code = await signer.provider.getCode(arm.target, blockTag);
     if (code === "0x") {
         throw new Error(`ARM contract does not exist at block ${blockTag}`);
     }
@@ -185,25 +187,12 @@ const estimateAverageWithdrawTime = async (arm, block) => {
     ////////////////////////////////////////////////////////////////////////////////////////////////////
     log(`\nFetching WS data from OS Vault ...`);
     let wSAvailable = 0n;
-    const wSAddress = await arm.token0();
-    const wS = await hre.ethers.getContractAt(
-        [`function balanceOf(address owner) external view returns (uint256)`],
-        wSAddress
-    );
-    wSAvailable += await wS.balanceOf(await arm.vault(), { blockTag });
+    wSAvailable += await wS.balanceOf(vault.target, { blockTag });
     log(`ws balanceOf OSVault    : ${formatUnits(wSAvailable, 18)}`);
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////
     /// --- Fetching data from OS Vault
     ////////////////////////////////////////////////////////////////////////////////////////////////////
-    const vaultAddress = await arm.vault();
-    const vault = await hre.ethers.getContractAt(
-        [
-            `function withdrawalQueueMetadata() external view returns (uint128,uint128,uint128,uint128)`,
-            `function withdrawalRequests(uint256) external view returns (address,bool,uint40,uint128,uint128)`
-        ],
-        vaultAddress
-    );
     const vaultQueuedWithdrawals = await vault.withdrawalQueueMetadata({ blockTag });
     wSAvailable += vaultQueuedWithdrawals[2] - vaultQueuedWithdrawals[0]; // += claimed amount - queued amount
     log(`Vault Queued amount     : ${formatUnits(vaultQueuedWithdrawals[0], 18)}`);
@@ -215,12 +204,6 @@ const estimateAverageWithdrawTime = async (arm, block) => {
     /// --- Fetching oS holding from ARM
     ////////////////////////////////////////////////////////////////////////////////////////////////////
     log(`\nFetching OS data from ARM ...`);
-    const oSAddress = await arm.token1();
-    const oS = await hre.ethers.getContractAt(
-        [`function balanceOf(address owner) external view returns (uint256)`],
-        oSAddress
-    );
-
     let oSBalanceInARM = await oS.balanceOf(arm.target, { blockTag });
     log(`os balanceOf ARM        : ${formatUnits(oSBalanceInARM, 18)}`);
 
