@@ -1173,12 +1173,38 @@ subtask(
       signer
     );
 
+    // Get the WS and OS token contracts
+    const wSAddress = await arm.token0();
+    const wS = await hre.ethers.getContractAt(
+      [`function balanceOf(address owner) external view returns (uint256)`],
+      wSAddress
+    );
+
+    const oSAddress = await arm.token1();
+    const oS = await hre.ethers.getContractAt(
+      [`function balanceOf(address owner) external view returns (uint256)`],
+      oSAddress
+    );
+
+    // Get the Vault contract
+    const vaultAddress = await arm.vault();
+    const vault = await hre.ethers.getContractAt(
+      [
+        `function withdrawalQueueMetadata() external view returns (uint128,uint128,uint128,uint128)`,
+        `function withdrawalRequests(uint256) external view returns (address,bool,uint40,uint128,uint128)`
+      ],
+      vaultAddress
+    );
+
     await setOSSiloPrice({
       tolerance: taskArgs.tolerance,
       signer,
       arm,
       siloMarketWrapper,
-      block: taskArgs.block,
+      wS,
+      oS,
+      vault,
+      blockTag: taskArgs.block,
     });
   });
 task("setOSSiloPrice").setAction(async (_, __, runSuper) => {
