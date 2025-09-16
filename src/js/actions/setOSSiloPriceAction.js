@@ -18,6 +18,11 @@ const handler = async (credentials) => {
     "function traderate1() external view returns (uint256)",
     "function activeMarket() external view returns (address)",
     "function setPrices(uint256, uint256) external",
+    "function vault() external view returns (address)",
+    "function token0() external view returns (address)",
+    "function token1() external view returns (address)",
+    "function withdrawsQueued() external view returns (uint256)",
+    "function withdrawsClaimed() external view returns (uint256)"
   ], signer);
 
   const activeMarket = await arm.activeMarket();
@@ -31,12 +36,12 @@ const handler = async (credentials) => {
     "function market() external view returns (address)",
   ], signer);
 
-    await setOSSiloPrice({
-      signer,
-      arm,
-      siloMarketWrapper,
-      execute: true,
-    });
+  await setOSSiloPrice({
+    signer,
+    arm,
+    siloMarketWrapper,
+    execute: true,
+  });
 };
 
 module.exports = { handler };

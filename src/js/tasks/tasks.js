@@ -1140,6 +1140,7 @@ subtask(
   "Update Origin ARM's swap prices based on lending APY and market pricing"
 )
   .addOptionalParam("execute", "Execute the transaction", false, types.boolean)
+  .addOptionalParam("block", "Block number. (default: latest)", undefined, types.int)
   .setAction(async (taskArgs) => {
     const signer = await getSigner();
 
@@ -1149,6 +1150,11 @@ subtask(
         "function traderate0() external view returns (uint256)",
         "function traderate1() external view returns (uint256)",
         "function activeMarket() external view returns (address)",
+        "function vault() external view returns (address)",
+        "function token0() external view returns (address)",
+        "function token1() external view returns (address)",
+        "function withdrawsQueued() external view returns (uint256)",
+        "function withdrawsClaimed() external view returns (uint256)"
       ],
       armAddress,
       signer
@@ -1172,6 +1178,7 @@ subtask(
       signer,
       arm,
       siloMarketWrapper,
+      block: taskArgs.block,
     });
   });
 task("setOSSiloPrice").setAction(async (_, __, runSuper) => {
