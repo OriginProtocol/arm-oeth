@@ -133,7 +133,7 @@ const getFlyTradePrice = async (amountIn, signer) => {
 
 /**
  * Calculate minimum buying price based on APY
- *  Formula: 1/(1+apy) ^ (1 / (365 / 15))
+ *  Formula: 1/(1+apy) ^ (daysPeriod / 365)
  *  Where 15 is the number of days in the holding period
  */
 const calculateMinBuyingPrice = (lendingAPY, duration) => {
@@ -143,7 +143,7 @@ const calculateMinBuyingPrice = (lendingAPY, duration) => {
     const daysPeriod = Number(duration) / 86400;
     const exponent = daysPeriod / 365;
 
-    // 1/(1+apy) ^ (1 / (365 / 15))
+    // 1/(1+apy) ^ (daysPeriod / 365)
     const minPrice = 1 / Math.pow(1 + apyNumber, exponent);
 
     // Convert back to 36 decimals for ARM pricing
