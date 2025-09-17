@@ -134,6 +134,26 @@ contract Modifiers is Helpers {
         _;
     }
 
+    modifier swapWETHForOETH(uint256 amount) {
+        address swapper = makeAddr("swapper");
+        deal(address(oeth), swapper, amount * 2);
+        vm.startPrank(swapper);
+        oeth.approve(address(originARM), type(uint256).max);
+        originARM.swapTokensForExactTokens(oeth, weth, amount, type(uint256).max, swapper);
+        vm.stopPrank();
+        _;
+    }
+
+    modifier swapOETHForWETH(uint256 amount) {
+        address swapper = makeAddr("swapper");
+        deal(address(weth), swapper, amount * 2);
+        vm.startPrank(swapper);
+        weth.approve(address(originARM), type(uint256).max);
+        originARM.swapTokensForExactTokens(weth, oeth, amount, type(uint256).max, swapper);
+        vm.stopPrank();
+        _;
+    }
+
     modifier requestRedeem(address user, uint256 pct) {
         uint256 shares = originARM.balanceOf(alice);
         vm.prank(alice);
