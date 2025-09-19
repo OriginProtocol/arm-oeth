@@ -90,6 +90,10 @@ const setOSSiloPrice = async (options) => {
  * Get the current APY from the ARM's active lending market
  */
 const getLendingMarketAPY = async (siloMarketWrapper) => {
+  if (!siloMarketWrapper) {
+    log("No active lending market found, using default APY of 0%");
+    return 0n;
+  }
   // Get the underlying Silo market address
   const underlyingSiloMarket = await siloMarketWrapper.market();
 

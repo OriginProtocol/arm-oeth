@@ -1146,72 +1146,57 @@ subtask(
   "setOSSiloPrice",
   "Update Origin ARM's swap prices based on lending APY and market pricing",
 )
-  .addOptionalParam("execute", "Execute the transaction", false, types.boolean)
   .addOptionalParam(
-    "block",
-    "Block number. (default: latest)",
-    undefined,
-    types.int,
+    "arm",
+    "Name of the ARM. eg Lido, Origin or Oeth",
+    "Origin",
+    types.string,
   )
+  .addOptionalParam("execute", "Execute the transaction", false, types.boolean)
+  .addOptionalParam("block", "Block number or latest", "latest", types.string)
   .setAction(async (taskArgs) => {
     const signer = await getSigner();
 
-    const armAddress = "0x2F872623d1E1Af5835b08b0E49aAd2d81d649D30";
-    const arm = await hre.ethers.getContractAt(
-      [
-        "function traderate0() external view returns (uint256)",
-        "function traderate1() external view returns (uint256)",
-        "function activeMarket() external view returns (address)",
-        "function vault() external view returns (address)",
-        "function token0() external view returns (address)",
-        "function token1() external view returns (address)",
-        "function withdrawsQueued() external view returns (uint256)",
-        "function withdrawsClaimed() external view returns (uint256)",
-      ],
-      armAddress,
-      signer,
+    const armAddress = await parseDeployedAddress(
+      `${taskArgs.arm.toUpperCase()}_ARM`,
     );
-
-    const activeMarket = await arm.activeMarket();
-    if (activeMarket === ethers.ZeroAddress) {
-      log("No active lending market found, using default APY of 0%");
-      return 0n;
-    }
+    const armContract = await ethers.getContractAt(
+      `${taskArgs.arm}ARM`,
+      armAddress,
+    );
 
     // Get the SiloMarketWrapper contract
-    const siloMarketWrapper = await hre.ethers.getContractAt(
-      ["function market() external view returns (address)"],
-      activeMarket,
-      signer,
-    );
+    const activeMarket = await armContract.activeMarket();
+    const siloMarketWrapper =
+      activeMarket === ethers.ZeroAddress
+        ? undefined
+        : await hre.ethers.getContractAt(
+            ["function market() external view returns (address)"],
+            activeMarket,
+            signer,
+          );
 
     // Get the WS and OS token contracts
-    const wSAddress = await arm.token0();
+    const wSAddress = await armContract.token0();
     const wS = await hre.ethers.getContractAt(
       [`function balanceOf(address owner) external view returns (uint256)`],
       wSAddress,
     );
 
-    const oSAddress = await arm.token1();
+    const oSAddress = await armContract.token1();
     const oS = await hre.ethers.getContractAt(
       [`function balanceOf(address owner) external view returns (uint256)`],
       oSAddress,
     );
 
     // Get the Vault contract
-    const vaultAddress = await arm.vault();
-    const vault = await hre.ethers.getContractAt(
-      [
-        `function withdrawalQueueMetadata() external view returns (uint128,uint128,uint128,uint128)`,
-        `function withdrawalRequests(uint256) external view returns (address,bool,uint40,uint128,uint128)`,
-      ],
-      vaultAddress,
-    );
+    const vaultAddress = await armContract.vault();
+    const vault = await ethers.getContractAt("IOriginVault", vaultAddress);
 
     await setOSSiloPrice({
       tolerance: taskArgs.tolerance,
       signer,
-      arm,
+      arm: armContract,
       siloMarketWrapper,
       wS,
       oS,
