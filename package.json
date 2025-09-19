@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "description": "Automated Redemption Manager (ARM) for Origin ETH (OETH)",
   "scripts": {
+    "lint": "eslint \"src/**/*.js\"",
     "test": "forge test --fork-url=$PROVIDER_URL --gas-report",
     "snap": "npx hardhat snap --network mainnet --amount 100"
   },

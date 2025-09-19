@@ -3,7 +3,6 @@ const { formatUnits, parseUnits } = require("ethers");
 const addresses = require("../utils/addresses");
 
 const { logTxDetails } = require("../utils/txLogger");
-const { getBlock } = require("../utils/block");
 
 
 const fetch = require("node-fetch");
