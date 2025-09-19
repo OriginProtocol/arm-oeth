@@ -69,31 +69,31 @@ const log = require("../utils/logger")("task");
 
 subtask(
   "swap",
-  "Swap from one asset to another. Can only specify the from or to asset as that will be the exact amount."
+  "Swap from one asset to another. Can only specify the from or to asset as that will be the exact amount.",
 )
   .addParam(
     "arm",
     "Name of the ARM. eg Lido, Origin or Oeth",
     "Lido",
-    types.string
+    types.string,
   )
   .addParam(
     "amount",
     "Swap quantity in either the from or to asset",
     undefined,
-    types.float
+    types.float,
   )
   .addOptionalParam(
     "from",
     "Symbol of the from asset when swapping from an exact amount",
     undefined,
-    types.string
+    types.string,
   )
   .addOptionalParam(
     "to",
     "Symbol of the to asset when swapping to an exact amount",
     undefined,
-    types.string
+    types.string,
   )
   .setAction(swap);
 task("swap").setAction(async (_, __, runSuper) => {
@@ -102,25 +102,25 @@ task("swap").setAction(async (_, __, runSuper) => {
 
 subtask(
   "swapLido",
-  "Swap from one asset to another. Can only specify the from or to asset as that will be the exact amount."
+  "Swap from one asset to another. Can only specify the from or to asset as that will be the exact amount.",
 )
   .addOptionalParam(
     "from",
     "Symbol of the from asset when swapping from an exact amount",
     undefined,
-    types.string
+    types.string,
   )
   .addOptionalParam(
     "to",
     "Symbol of the to asset when swapping to an exact amount",
     undefined,
-    types.string
+    types.string,
   )
   .addParam(
     "amount",
     "Swap quantity in either the from or to asset",
     undefined,
-    types.float
+    types.float,
   )
   .setAction(swapLido);
 task("swapLido").setAction(async (_, __, runSuper) => {
@@ -131,19 +131,19 @@ task("swapLido").setAction(async (_, __, runSuper) => {
 
 subtask(
   "autoRequestWithdraw",
-  "Request withdrawal of base asset (WETH/OS) from the Origin Vault"
+  "Request withdrawal of base asset (WETH/OS) from the Origin Vault",
 )
   .addOptionalParam(
     "arm",
     "The name of the ARM. eg Oeth or Origin",
     "Oeth",
-    types.string
+    types.string,
   )
   .addOptionalParam(
     "minAmount",
     "Minimum amount of OETH that will be withdrawn",
     2,
-    types.float
+    types.float,
   )
   .setAction(async (taskArgs) => {
     const arm = taskArgs.arm;
@@ -170,7 +170,7 @@ subtask("autoClaimWithdraw", "Claim withdrawal requests from the OETH Vault")
     "arm",
     "The name of the ARM. eg Oeth or Origin",
     "Oeth",
-    types.string
+    types.string,
   )
   .setAction(async (taskArgs) => {
     const arm = taskArgs.arm;
@@ -199,13 +199,13 @@ task("autoClaimWithdraw").setAction(async (_, __, runSuper) => {
 
 subtask(
   "requestWithdraw",
-  "Request a specific amount of oTokens to withdraw from the Vault"
+  "Request a specific amount of oTokens to withdraw from the Vault",
 )
   .addOptionalParam(
     "arm",
     "The name of the ARM. eg Oeth or Origin",
     "Oeth",
-    types.string
+    types.string,
   )
   .addParam("amount", "OETH withdraw amount", 50, types.float)
   .setAction(async (taskArgs) => {
@@ -214,7 +214,7 @@ subtask(
     const armAddress = await parseAddress(`${taskArgs.arm.toUpperCase()}_ARM`);
     const armContract = await ethers.getContractAt(
       `${taskArgs.arm}ARM`,
-      armAddress
+      armAddress,
     );
 
     await requestWithdraw({
@@ -233,7 +233,7 @@ subtask("claimWithdraw", "Claim a requested oToken withdrawal from the Vault")
     "arm",
     "The name of the ARM. eg Oeth or Origin",
     "Oeth",
-    types.string
+    types.string,
   )
   .addParam("id", "Request identifier", undefined, types.string)
   .setAction(async (taskArgs) => {
@@ -242,7 +242,7 @@ subtask("claimWithdraw", "Claim a requested oToken withdrawal from the Vault")
     const armAddress = await parseAddress(`${taskArgs.arm.toUpperCase()}_ARM`);
     const armContract = await ethers.getContractAt(
       `${taskArgs.arm}ARM`,
-      armAddress
+      armAddress,
     );
 
     await claimWithdraw({
@@ -261,7 +261,7 @@ subtask("withdrawStatus", "Get the status of a OETH withdrawal request")
     "arm",
     "The name of the ARM. eg Oeth or Origin",
     "Oeth",
-    types.string
+    types.string,
   )
   .addParam("id", "Request number", undefined, types.string)
   .setAction(async (taskArgs) => {
@@ -270,7 +270,7 @@ subtask("withdrawStatus", "Get the status of a OETH withdrawal request")
     const armAddress = await parseAddress(`${taskArgs.arm.toUpperCase()}_ARM`);
     const armContract = await ethers.getContractAt(
       `${taskArgs.arm}ARM`,
-      armAddress
+      armAddress,
     );
     const vaultName = taskArgs.arm === "Oeth" ? "OETH_VAULT" : "OS_VAULT";
     const vaultAddress = await parseAddress(vaultName);
@@ -290,13 +290,13 @@ task("withdrawStatus").setAction(async (_, __, runSuper) => {
 // Defender
 subtask(
   "setAutotaskVars",
-  "Set environment variables on Defender Autotasks. eg DEBUG=origin*"
+  "Set environment variables on Defender Autotasks. eg DEBUG=origin*",
 )
   .addOptionalParam(
     "id",
     "Identifier of the Defender Autotask",
     "ffcfc580-7b0a-42ed-a4f2-3f0a3add9779",
-    types.string
+    types.string,
   )
   .setAction(setAutotaskVars);
 task("setAutotaskVars").setAction(async (_, __, runSuper) => {
@@ -309,21 +309,21 @@ subtask("allowance", "Get the token allowance an owner has given to a spender")
     "symbol",
     "Symbol of the token. eg OETH, WETH, USDT or OGV",
     undefined,
-    types.string
+    types.string,
   )
   .addParam(
     "spender",
-    "The address of the account or contract that can spend the tokens"
+    "The address of the account or contract that can spend the tokens",
   )
   .addOptionalParam(
     "owner",
-    "The address of the account or contract allowing the spending. Default to the signer"
+    "The address of the account or contract allowing the spending. Default to the signer",
   )
   .addOptionalParam(
     "block",
     "Block number. (default: latest)",
     undefined,
-    types.int
+    types.int,
   )
   .setAction(tokenAllowance);
 task("allowance").setAction(async (_, __, runSuper) => {
@@ -335,17 +335,17 @@ subtask("balance", "Get the token balance of an account or contract")
     "symbol",
     "Symbol of the token. eg OETH, WETH, USDT or OGV",
     undefined,
-    types.string
+    types.string,
   )
   .addOptionalParam(
     "account",
-    "The address of the account or contract. Default to the signer"
+    "The address of the account or contract. Default to the signer",
   )
   .addOptionalParam(
     "block",
     "Block number. (default: latest)",
     undefined,
-    types.int
+    types.int,
   )
   .setAction(tokenBalance);
 task("balance").setAction(async (_, __, runSuper) => {
@@ -357,19 +357,19 @@ subtask("approve", "Approve an account or contract to spend tokens")
     "symbol",
     "Symbol of the token. eg OETH, WETH, USDT or OGV",
     undefined,
-    types.string
+    types.string,
   )
   .addParam(
     "amount",
     "Amount of tokens that can be spent",
     undefined,
-    types.float
+    types.float,
   )
   .addParam(
     "spender",
     "Address of the account or contract that can spend the tokens",
     undefined,
-    types.string
+    types.string,
   )
   .setAction(tokenApprove);
 task("approve").setAction(async (_, __, runSuper) => {
@@ -381,7 +381,7 @@ subtask("transfer", "Transfer tokens to an account or contract")
     "symbol",
     "Symbol of the token. eg OETH, WETH, USDT or OGV",
     undefined,
-    types.string
+    types.string,
   )
   .addParam("amount", "Amount of tokens to transfer", undefined, types.float)
   .addParam("to", "Destination address", undefined, types.string)
@@ -395,7 +395,7 @@ subtask("transferFrom", "Transfer tokens from an account or contract")
     "symbol",
     "Symbol of the token. eg OETH, WETH, USDT or OGV",
     undefined,
-    types.string
+    types.string,
   )
   .addParam("amount", "Amount of tokens to transfer", undefined, types.float)
   .addParam("from", "Source address", undefined, types.string)
@@ -403,7 +403,7 @@ subtask("transferFrom", "Transfer tokens from an account or contract")
     "to",
     "Destination address. Default to signer",
     undefined,
-    types.string
+    types.string,
   )
   .setAction(tokenTransferFrom);
 task("transferFrom").setAction(async (_, __, runSuper) => {
@@ -452,7 +452,7 @@ task("submitLido").setAction(async (_, __, runSuper) => {
 
 task(
   "queueLiquidity",
-  "Call addWithdrawalQueueLiquidity() on the Vault to add WETH to the withdrawal queue"
+  "Call addWithdrawalQueueLiquidity() on the Vault to add WETH to the withdrawal queue",
 ).setAction(addWithdrawalQueueLiquidity);
 task("queueLiquidity").setAction(async (_, __, runSuper) => {
   return runSuper();
@@ -463,7 +463,7 @@ task("allocateVault", "Call allocate() on the Vault")
     "symbol",
     "Symbol of the OToken. eg OETH or OUSD",
     "OETH",
-    types.string
+    types.string,
   )
   .setAction(allocateVault);
 task("allocateVault").setAction(async (_, __, runSuper) => {
@@ -475,13 +475,13 @@ task("capital", "Set the Vault's pauseCapital flag")
     "symbol",
     "Symbol of the OToken. eg OETH or OUSD",
     "OETH",
-    types.string
+    types.string,
   )
   .addParam(
     "pause",
     "Whether to pause or unpause the capital allocation",
     "true",
-    types.boolean
+    types.boolean,
   )
   .setAction(capital);
 task("capital").setAction(async (_, __, runSuper) => {
@@ -493,7 +493,7 @@ task("rebase", "Call rebase() on the Vault")
     "symbol",
     "Symbol of the OToken. eg OETH or OUSD",
     "OETH",
-    types.string
+    types.string,
   )
   .setAction(rebase);
 task("rebase").setAction(async (_, __, runSuper) => {
@@ -505,20 +505,20 @@ subtask("mint", "Mint OTokens from the Vault using collateral assets")
     "asset",
     "Symbol of the collateral asset to deposit. eg WETH, USDT, DAI",
     "WETH",
-    types.string
+    types.string,
   )
   .addParam(
     "amount",
     "Amount of collateral assets to deposit",
     undefined,
-    types.float
+    types.float,
   )
   .addOptionalParam("min", "Minimum amount of OETH to mint", 0, types.float)
   .addOptionalParam(
     "approve",
     "Approve the asset to the OETH Vault before the mint",
     true,
-    types.boolean
+    types.boolean,
   )
   .setAction(mint);
 task("mint").setAction(async (_, __, runSuper) => {
@@ -531,13 +531,13 @@ subtask("redeem", "Redeem OTokens for collateral assets from the Vault")
     "symbol",
     "Symbol of the OToken. eg OETH or OUSD",
     "OETH",
-    types.string
+    types.string,
   )
   .addOptionalParam(
     "min",
     "Minimum amount of collateral to receive",
     0,
-    types.float
+    types.float,
   )
   .setAction(redeem);
 task("redeem").setAction(async (_, __, runSuper) => {
@@ -549,13 +549,13 @@ subtask("redeemAll", "Redeem all OTokens for collateral assets from the Vault")
     "symbol",
     "Symbol of the OToken. eg OETH or OUSD",
     "OETH",
-    types.string
+    types.string,
   )
   .addOptionalParam(
     "min",
     "Minimum amount of collateral to receive",
     0,
-    types.float
+    types.float,
   )
   .setAction(redeemAll);
 task("redeemAll").setAction(async (_, __, runSuper) => {
@@ -570,13 +570,13 @@ subtask("depositARM", "Deposit to an ARM and receive ARM LP tokens")
     "amount",
     "Amount of to deposit not scaled to 18 decimals",
     undefined,
-    types.float
+    types.float,
   )
   .addOptionalParam(
     "asset",
     "Symbol of the asset to deposit. eg ETH, WETH, S or WS",
     "WETH",
-    types.string
+    types.string,
   )
   .setAction(depositARM);
 task("depositARM").setAction(async (_, __, runSuper) => {
@@ -589,7 +589,7 @@ subtask("requestRedeemARM", "Request redeem from an ARM")
     "amount",
     "Amount of ARM LP tokens not scaled to 18 decimals",
     undefined,
-    types.float
+    types.float,
   )
   .setAction(requestRedeemARM);
 task("requestRedeemARM").setAction(async (_, __, runSuper) => {
@@ -612,13 +612,13 @@ subtask("setLiquidityProviderCaps", "Set deposit cap for liquidity providers")
     "cap",
     "Amount of WETH not scaled to 18 decimals",
     undefined,
-    types.float
+    types.float,
   )
   .addParam(
     "accounts",
     "Comma separated list of addresses",
     undefined,
-    types.string
+    types.string,
   )
   .setAction(setLiquidityProviderCaps);
 task("setLiquidityProviderCaps").setAction(async (_, __, runSuper) => {
@@ -631,7 +631,7 @@ subtask("setTotalAssetsCap", "Set total assets cap")
     "cap",
     "Amount of WETH not scaled to 18 decimals",
     undefined,
-    types.float
+    types.float,
   )
   .setAction(setTotalAssetsCap);
 task("setTotalAssetsCap").setAction(async (_, __, runSuper) => {
@@ -645,97 +645,97 @@ subtask("setPrices", "Update Lido ARM's swap prices")
     "arm",
     "The name of the ARM. eg Lido or Origin",
     "Lido",
-    types.string
+    types.string,
   )
   .addOptionalParam(
     "amount",
     "Swap quantity used for 1Inch pricing",
     100,
-    types.int
+    types.int,
   )
   .addOptionalParam(
     "buyPrice",
     "The buy price if not using the midPrice.",
     undefined,
-    types.float
+    types.float,
   )
   .addOptionalParam(
     "midPrice",
     "The middle of the buy and sell prices.",
     undefined,
-    types.float
+    types.float,
   )
   .addOptionalParam(
     "minSellPrice",
     "The min sell price when pricing off market. eg 1Inch or Curve",
     undefined,
-    types.float
+    types.float,
   )
   .addOptionalParam(
     "maxSellPrice",
     "The max sell price when pricing off market. eg 1Inch or Curve",
     undefined,
-    types.float
+    types.float,
   )
   .addOptionalParam(
     "maxBuyPrice",
     "The max buy price when pricing off market. eg 1Inch or Curve",
     undefined,
-    types.float
+    types.float,
   )
   .addOptionalParam(
     "minBuyPrice",
     "The min buy price when pricing off market. eg 1Inch or Curve",
     undefined,
-    types.float
+    types.float,
   )
   .addOptionalParam(
     "sellPrice",
     "The sell price if not using the midPrice.",
     undefined,
-    types.float
+    types.float,
   )
   .addOptionalParam(
     "fee",
     "ARM swap fee in basis points if using mid price",
     1,
-    types.float
+    types.float,
   )
   .addOptionalParam(
     "offset",
     "Adds extra basis points to the discount if using the mid price. A positive number will lower the prices. A negative number will increase the prices.",
     0,
-    types.float
+    types.float,
   )
   .addOptionalParam(
     "tolerance",
     "Allowed difference in basis points. eg 1 = 0.0001%",
     0.1,
-    types.float
+    types.float,
   )
   .addOptionalParam(
     "curve",
     "Set prices off the current Curve mid price.",
     undefined,
-    types.boolean
+    types.boolean,
   )
   .addOptionalParam(
     "inch",
     "Set prices off the current 1Inch mid price.",
     undefined,
-    types.boolean
+    types.boolean,
   )
   .addOptionalParam(
     "priceOffset",
     "Offset the 1Inch/Curve buyPrice by `--offset` amount in basis points",
     undefined,
-    types.boolean
+    types.boolean,
   )
   .setAction(async (taskArgs) => {
     const signer = await getSigner();
 
     const armAddress = await parseDeployedAddress(
-      `${taskArgs.arm.toUpperCase()}_ARM`
+      `${taskArgs.arm.toUpperCase()}_ARM`,
     );
     const arm = await ethers.getContractAt("AbstractARM", armAddress);
 
@@ -749,7 +749,7 @@ subtask("setPrices", "Update Lido ARM's swap prices")
         : await hre.ethers.getContractAt(
             ["function market() external view returns (address)"],
             activeMarketAddress,
-            signer
+            signer,
           );
 
     await setPrices({ ...taskArgs, signer, arm, market });
@@ -760,25 +760,25 @@ task("setPrices").setAction(async (_, __, runSuper) => {
 
 subtask(
   "requestLidoWithdraws",
-  "Request withdrawals from the Lido withdrawal queue"
+  "Request withdrawals from the Lido withdrawal queue",
 )
   .addOptionalParam(
     "amount",
     "Exact amount of stETH to withdraw. (default: all)",
     undefined,
-    types.float
+    types.float,
   )
   .addOptionalParam(
     "minAmount",
     "Minimum amount of stETH to withdraw.",
     1,
-    types.float
+    types.float,
   )
   .addOptionalParam(
     "maxAmount",
     "Maximum amount of stETH to withdraw in each request.",
     300,
-    types.float
+    types.float,
   )
   .setAction(async (taskArgs) => {
     const signer = await getSigner();
@@ -803,7 +803,7 @@ subtask("claimLidoWithdraws", "Claim requested withdrawals from Lido (stETH)")
     "id",
     "Request identifier. (default: all)",
     undefined,
-    types.string
+    types.string,
   )
   .setAction(async (taskArgs) => {
     const signer = await getSigner();
@@ -813,7 +813,7 @@ subtask("claimLidoWithdraws", "Claim requested withdrawals from Lido (stETH)")
 
     const withdrawalQueue = await hre.ethers.getContractAt(
       "IStETHWithdrawal",
-      mainnet.lidoWithdrawalQueue
+      mainnet.lidoWithdrawalQueue,
     );
 
     await claimLidoWithdrawals({
@@ -833,7 +833,7 @@ subtask("lidoWithdrawStatus", "Get the status of a Lido withdrawal request")
     "block",
     "Block number. (default: latest)",
     undefined,
-    types.int
+    types.int,
   )
   .setAction(lidoWithdrawStatus);
 task("lidoWithdrawStatus").setAction(async (_, __, runSuper) => {
@@ -845,7 +845,7 @@ subtask("collectFees", "Collect the performance fees from an ARM")
     "name",
     "The name of the ARM. eg Lido or Origin",
     "Lido",
-    types.string
+    types.string,
   )
   .setAction(async ({ name }) => {
     const signer = await getSigner();
@@ -864,18 +864,18 @@ subtask("collectRewards", "Collect rewards")
     "arm",
     "The name of the ARM to collect rewards for. eg Lido or Origin",
     "Origin",
-    types.string
+    types.string,
   )
   .setAction(async () => {
     const signer = await getSigner();
 
     const siloMarketAddress = await parseDeployedAddress(
-      "SILO_VARLAMORE_S_MARKET"
+      "SILO_VARLAMORE_S_MARKET",
     );
     const harvesterAddress = await parseDeployedAddress("HARVESTER");
     const harvester = await ethers.getContractAt(
       "SonicHarvester",
-      harvesterAddress
+      harvesterAddress,
     );
 
     await collectRewards({
@@ -893,13 +893,13 @@ subtask("harvestRewards", "harvest rewards")
     "name",
     "The name of the ARM. eg Lido or Origin",
     "Origin",
-    types.string
+    types.string,
   )
   .addOptionalParam(
     "token",
     "The symbol of the reward token. eg Silo, beS, OS",
     "Silo",
-    types.string
+    types.string,
   )
   .setAction(async ({ token }) => {
     const signer = await getSigner();
@@ -907,7 +907,7 @@ subtask("harvestRewards", "harvest rewards")
     const harvesterAddress = await parseDeployedAddress("HARVESTER");
     const harvester = await ethers.getContractAt(
       "SonicHarvester",
-      harvesterAddress
+      harvesterAddress,
     );
 
     await harvestRewards({ signer, harvester, symbol: token });
@@ -921,7 +921,7 @@ subtask("setHarvester", "Set the harvester on a lending market")
     "name",
     "The name of the ARM. eg Lido or Origin",
     "Origin",
-    types.string
+    types.string,
   )
   .setAction(async () => {
     const signer = await getSigner();
@@ -929,11 +929,11 @@ subtask("setHarvester", "Set the harvester on a lending market")
     const harvester = await parseDeployedAddress("HARVESTER");
 
     const siloMarketAddress = await parseDeployedAddress(
-      "SILO_VARLAMORE_S_MARKET"
+      "SILO_VARLAMORE_S_MARKET",
     );
     const siloMarket = await ethers.getContractAt(
       "SiloMarket",
-      siloMarketAddress
+      siloMarketAddress,
     );
 
     await setHarvester({ signer, siloMarket, harvester });
@@ -947,13 +947,13 @@ subtask("allocate", "Allocate to/from the active lending market")
     "arm",
     "The name of the ARM. eg Lido, OETH or Origin",
     "Origin",
-    types.string
+    types.string,
   )
   .addOptionalParam(
     "threshold",
     "The liquidity delta before threshold before allocate is called",
     undefined,
-    types.float
+    types.float,
   )
   .setAction(async ({ arm, threshold }) => {
     const signer = await getSigner();
@@ -972,13 +972,13 @@ subtask("setARMBuffer", "Set the ARM buffer percentage")
     "arm",
     "The name of the ARM. eg Lido, OETH or Origin",
     "Origin",
-    types.string
+    types.string,
   )
   .addOptionalParam(
     "buffer",
     "The new buffer value (eg 0.1 -> 10%)",
     undefined,
-    types.float
+    types.float,
   )
   .setAction(async ({ arm, buffer }) => {
     const signer = await getSigner();
@@ -1003,7 +1003,7 @@ subtask("setOperator", "Set the operator of a contract")
     const contractAddress = await parseDeployedAddress(contractName);
     const contract = await ethers.getContractAt(
       "OwnableOperable",
-      contractAddress
+      contractAddress,
     );
 
     await setOperator({ signer, contract, operator });
@@ -1019,13 +1019,13 @@ subtask("snap", "Take a snapshot of the an ARM")
     "arm",
     "The name of the ARM. eg Lido, Oeth or Origin",
     "Lido",
-    types.string
+    types.string,
   )
   .addOptionalParam(
     "block",
     "Block number. (default: latest)",
     undefined,
-    types.int
+    types.int,
   )
   .setAction(snap);
 task("snap").setAction(async (_, __, runSuper) => {
@@ -1037,7 +1037,7 @@ subtask("snapLido", "Take a snapshot of the Lido ARM")
     "block",
     "Block number. (default: latest)",
     undefined,
-    types.int
+    types.int,
   )
   .addOptionalParam("amount", "Swap quantity", 100, types.int)
   .addOptionalParam("oneInch", "Include 1Inch prices", true, types.boolean)
@@ -1047,13 +1047,13 @@ subtask("snapLido", "Take a snapshot of the Lido ARM")
     "queue",
     "Include ARM withdrawal queue data",
     true,
-    types.boolean
+    types.boolean,
   )
   .addOptionalParam(
     "lido",
     "Include Lido withdrawal queue data",
     true,
-    types.boolean
+    types.boolean,
   )
   .addOptionalParam("user", "Include user data", false, types.boolean)
   .addOptionalParam("cap", "Include cap limit data", false, types.boolean)
@@ -1072,7 +1072,7 @@ subtask("upgradeProxy", "Upgrade a proxy contract to a new implementation")
     "impl",
     "Address of the implementation contract",
     undefined,
-    types.string
+    types.string,
   )
   .setAction(async (taskArgs) => {
     const signer = await getSigner();
@@ -1086,14 +1086,14 @@ task("upgradeProxy").setAction(async (_, __, runSuper) => {
 // Defender
 subtask(
   "setActionVars",
-  "Set environment variables on a Defender Actions. eg DEBUG=origin*"
+  "Set environment variables on a Defender Actions. eg DEBUG=origin*",
 )
   .addParam("id", "Identifier of the Defender Actions", undefined, types.string)
   .addOptionalParam(
     "name",
     "Name of the environment variable to set. eg HOODI_BEACON_PROVIDER_URL",
     undefined,
-    types.string
+    types.string,
   )
   .setAction(setActionVars);
 task("setActionVars").setAction(async (_, __, runSuper) => {
@@ -1110,13 +1110,13 @@ subtask("flyTradeQuote", "Get a Fly quote for a swap")
     "swapper",
     "Account or contract swapping the from tokens",
     "0x08876C0F5a80c1a43A6396b13A881A26F4b6Adfe",
-    types.string
+    types.string,
   )
   .addOptionalParam(
     "recipient",
     "Where the swapped tokens are sent",
     "0x2F872623d1E1Af5835b08b0E49aAd2d81d649D30",
-    types.string
+    types.string,
   )
   .setAction(async (taskArgs) => {
     const amount = parseUnits(taskArgs.amount.toString(), 18);
@@ -1132,7 +1132,7 @@ subtask("flyTradeTx", "Get a Fly swap tx based on a previous quote")
     "id",
     "Identifier returned from a previous quote.",
     undefined,
-    types.string
+    types.string,
   )
   .setAction(async (taskArgs) => {
     await flyTradeTx(taskArgs);
@@ -1144,14 +1144,14 @@ task("flyTradeTx").setAction(async (_, __, runSuper) => {
 // OS Silo Prices
 subtask(
   "setOSSiloPrice",
-  "Update Origin ARM's swap prices based on lending APY and market pricing"
+  "Update Origin ARM's swap prices based on lending APY and market pricing",
 )
   .addOptionalParam("execute", "Execute the transaction", false, types.boolean)
   .addOptionalParam(
     "block",
     "Block number. (default: latest)",
     undefined,
-    types.int
+    types.int,
   )
   .setAction(async (taskArgs) => {
     const signer = await getSigner();
@@ -1169,7 +1169,7 @@ subtask(
         "function withdrawsClaimed() external view returns (uint256)",
       ],
       armAddress,
-      signer
+      signer,
     );
 
     const activeMarket = await arm.activeMarket();
@@ -1182,20 +1182,20 @@ subtask(
     const siloMarketWrapper = await hre.ethers.getContractAt(
       ["function market() external view returns (address)"],
       activeMarket,
-      signer
+      signer,
     );
 
     // Get the WS and OS token contracts
     const wSAddress = await arm.token0();
     const wS = await hre.ethers.getContractAt(
       [`function balanceOf(address owner) external view returns (uint256)`],
-      wSAddress
+      wSAddress,
     );
 
     const oSAddress = await arm.token1();
     const oS = await hre.ethers.getContractAt(
       [`function balanceOf(address owner) external view returns (uint256)`],
-      oSAddress
+      oSAddress,
     );
 
     // Get the Vault contract
@@ -1205,7 +1205,7 @@ subtask(
         `function withdrawalQueueMetadata() external view returns (uint128,uint128,uint128,uint128)`,
         `function withdrawalRequests(uint256) external view returns (address,bool,uint40,uint128,uint128)`,
       ],
-      vaultAddress
+      vaultAddress,
     );
 
     await setOSSiloPrice({

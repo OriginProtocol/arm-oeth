@@ -4,14 +4,20 @@ const { formatUnits, parseUnits, Interface } = require("ethers");
 
 /// --- Note: ---
 /// This file is named magpie.js, but it contains functions for interacting with FlyTrade, new name from the original Magpie.
-/// --- 
-
+/// ---
 
 const { resolveAddress } = require("../utils/assets");
 const FlyTradeBaseURL = "https://api.fly.trade/aggregator";
 
 const log = require("../utils/logger")("utils:magpie");
-const flyTradeQuote = async ({ from, to, amount, slippage, swapper, recipient }) => {
+const flyTradeQuote = async ({
+  from,
+  to,
+  amount,
+  slippage,
+  swapper,
+  recipient,
+}) => {
   try {
     const fromAsset = await resolveAddress(from);
     const toAsset = await resolveAddress(to);
@@ -23,25 +29,27 @@ const flyTradeQuote = async ({ from, to, amount, slippage, swapper, recipient })
       `fromAddress=${swapper}`,
       `toAddress=${recipient}`,
       `slippage=${slippage}`,
-      `gasless=false`
+      `gasless=false`,
     ].join("&");
 
     const response = await fetch(`${FlyTradeBaseURL}/quote?${urlQuery}`, {
       method: "GET",
       headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
-      }
-    })
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
+      },
+    });
 
     if (!response.ok || response.status !== 200) {
-      console.log("Fly.trade response:")
-      console.log(response)
-      console.log(await response.text())
-      throw new Error(`Failed to get price quote from fly.trade: ${response.statusText}`);
+      console.log("Fly.trade response:");
+      console.log(response);
+      console.log(await response.text());
+      throw new Error(
+        `Failed to get price quote from fly.trade: ${response.statusText}`,
+      );
     }
 
     const responseData = await response.json();
-
 
     log("FlyTrade quote response: ", responseData);
     const toAmount = parseUnits(responseData.amountOut, 18);
@@ -91,7 +99,7 @@ const flyTradeTx = async ({ id }) => {
 
     const decodedData = iface.decodeFunctionData(
       "swapWithMagpieSignature",
-      response.data.data
+      response.data.data,
     );
     log(`Decoded swap data: ${decodedData}`);
 

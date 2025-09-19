@@ -26,7 +26,7 @@ const handler = async (credentials) => {
       "function withdrawsQueued() external view returns (uint256)",
       "function withdrawsClaimed() external view returns (uint256)",
     ],
-    signer
+    signer,
   );
 
   // Get the SiloMarketWrapper contract
@@ -37,7 +37,7 @@ const handler = async (credentials) => {
       : new ethers.Contract(
           activeMarket,
           ["function market() external view returns (address)"],
-          signer
+          signer,
         );
 
   // Get the WS and OS token contracts
@@ -45,14 +45,14 @@ const handler = async (credentials) => {
   const wS = new ethers.Contract(
     wSAddress,
     ["function balanceOf(address) external view returns (uint256)"],
-    signer
+    signer,
   );
 
   const oSAddress = await arm.token1();
   const oS = new ethers.Contract(
     oSAddress,
     ["function balanceOf(address) external view returns (uint256)"],
-    signer
+    signer,
   );
 
   // Get the OS Vault contract
@@ -63,7 +63,7 @@ const handler = async (credentials) => {
       "function withdrawalQueueMetadata() external view returns (uint128,uint128,uint128,uint128)",
       "function withdrawalRequests(uint256) external view returns (address,bool,uint40,uint128,uint128)",
     ],
-    signer
+    signer,
   );
 
   await setOSSiloPrice({

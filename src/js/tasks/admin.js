@@ -11,10 +11,10 @@ async function allocate({ arm, signer, threshold }) {
   if (liquidityDelta < thresholdBN && liquidityDelta > -thresholdBN) {
     log(
       `Only ${formatUnits(
-        liquidityDelta
+        liquidityDelta,
       )} liquidity delta, skipping allocation as threshold is ${formatUnits(
-        thresholdBN
-      )}`
+        thresholdBN,
+      )}`,
     );
     return;
   }
@@ -25,8 +25,8 @@ async function allocate({ arm, signer, threshold }) {
 
   log(
     `About to allocate ${formatUnits(
-      liquidityDelta
-    )} to/from the active lending market`
+      liquidityDelta,
+    )} to/from the active lending market`,
   );
   const tx = await arm.connect(signer).allocate({ gasLimit });
   await logTxDetails(tx, "allocate");

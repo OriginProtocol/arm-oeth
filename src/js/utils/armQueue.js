@@ -16,10 +16,7 @@ const outstandingWithdrawalAmount = async ({ withdrawer }) => {
   const query = gql`
     query OutstandingRequestsQuery($withdrawer: String!) {
       oTokenWithdrawalRequests(
-        where: {
-          withdrawer_eq: $withdrawer
-          claimed_eq: false
-        }
+        where: { withdrawer_eq: $withdrawer, claimed_eq: false }
         limit: 100
       ) {
         id
@@ -40,12 +37,12 @@ const outstandingWithdrawalAmount = async ({ withdrawer }) => {
     });
 
     log(
-      `Found ${data.oTokenWithdrawalRequests.length} outstanding withdrawal requests`
+      `Found ${data.oTokenWithdrawalRequests.length} outstanding withdrawal requests`,
     );
 
     const amount = data.oTokenWithdrawalRequests.reduce(
       (acc, request) => acc + BigInt(request.amount),
-      0n
+      0n,
     );
 
     return amount;
@@ -68,8 +65,8 @@ const claimableRequests = async ({
 
   log(
     `About to get claimable withdrawal requests for withdrawer ${withdrawer} up to ${formatUnits(
-      queuedAmountClaimable
-    )}`
+      queuedAmountClaimable,
+    )}`,
   );
 
   const query = gql`
@@ -109,7 +106,7 @@ const claimableRequests = async ({
     });
 
     log(
-      `Found ${data.oTokenWithdrawalRequests.length} claimable withdrawal requests`
+      `Found ${data.oTokenWithdrawalRequests.length} claimable withdrawal requests`,
     );
 
     return data.oTokenWithdrawalRequests.map((request) => request.requestId);
