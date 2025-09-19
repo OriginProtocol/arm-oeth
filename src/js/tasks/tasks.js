@@ -65,6 +65,8 @@ const { setOperator } = require("./governance");
 
 const { setOSSiloPrice } = require("./osSiloPrice");
 
+const log = require("../utils/logger")("task");
+
 subtask(
   "swap",
   "Swap from one asset to another. Can only specify the from or to asset as that will be the exact amount."
@@ -737,18 +739,18 @@ subtask("setPrices", "Update Lido ARM's swap prices")
     );
     const arm = await ethers.getContractAt("AbstractARM", armAddress);
 
-    const activeMarket = await arm.activeMarket();
-    if (activeMarket === ethers.ZeroAddress) {
-      console.log("No active lending market found, using default APY of 0%");
-      return 0n;
-    }
+    const activeMarketAddress = await arm.activeMarket();
+    log(`Active lending market: ${activeMarketAddress}`);
 
     // Get the MorphoMarketWrapper contract
-    const market = await hre.ethers.getContractAt(
-      ["function market() external view returns (address)"],
-      activeMarket,
-      signer
-    );
+    const market =
+      activeMarketAddress === ethers.ZeroAddress
+        ? undefined
+        : await hre.ethers.getContractAt(
+            ["function market() external view returns (address)"],
+            activeMarketAddress,
+            signer
+          );
 
     await setPrices({ ...taskArgs, signer, arm, market });
   });
@@ -972,7 +974,12 @@ subtask("setARMBuffer", "Set the ARM buffer percentage")
     "Origin",
     types.string
   )
-  .addOptionalParam("buffer", "The new buffer value (eg 0.1 -> 10%)", undefined, types.float)
+  .addOptionalParam(
+    "buffer",
+    "The new buffer value (eg 0.1 -> 10%)",
+    undefined,
+    types.float
+  )
   .setAction(async ({ arm, buffer }) => {
     const signer = await getSigner();
 
@@ -1140,7 +1147,12 @@ subtask(
   "Update Origin ARM's swap prices based on lending APY and market pricing"
 )
   .addOptionalParam("execute", "Execute the transaction", false, types.boolean)
-  .addOptionalParam("block", "Block number. (default: latest)", undefined, types.int)
+  .addOptionalParam(
+    "block",
+    "Block number. (default: latest)",
+    undefined,
+    types.int
+  )
   .setAction(async (taskArgs) => {
     const signer = await getSigner();
 
@@ -1154,7 +1166,7 @@ subtask(
         "function token0() external view returns (address)",
         "function token1() external view returns (address)",
         "function withdrawsQueued() external view returns (uint256)",
-        "function withdrawsClaimed() external view returns (uint256)"
+        "function withdrawsClaimed() external view returns (uint256)",
       ],
       armAddress,
       signer
@@ -1191,7 +1203,7 @@ subtask(
     const vault = await hre.ethers.getContractAt(
       [
         `function withdrawalQueueMetadata() external view returns (uint128,uint128,uint128,uint128)`,
-        `function withdrawalRequests(uint256) external view returns (address,bool,uint40,uint128,uint128)`
+        `function withdrawalRequests(uint256) external view returns (address,bool,uint40,uint128,uint128)`,
       ],
       vaultAddress
     );
