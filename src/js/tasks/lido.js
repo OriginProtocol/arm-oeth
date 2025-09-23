@@ -73,6 +73,7 @@ const snapLido = async ({
   fluid,
 }) => {
   const blockTag = await getBlock(block);
+  console.log(`\nSnapshot at block ${blockTag}\n`);
   const signer = await getSigner();
   const commonOptions = { amount, blockTag, pair: "stETH/ETH", gas, signer };
 
