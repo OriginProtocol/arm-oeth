@@ -9,7 +9,7 @@ const { formatUnits, parseUnits, Interface } = require("ethers");
 const { resolveAddress } = require("./assets");
 const FlyTradeBaseURL = "https://api.fly.trade/aggregator";
 
-const log = require("./logger")("utils:magpie");
+const log = require("./logger")("utils:fly");
 
 const flyTradeQuote = async ({
   from,
@@ -55,7 +55,7 @@ const flyTradeQuote = async ({
 
     // log("FlyTrade quote response: ", responseData);
     const toAmount = parseUnits(responseData.amountOut, 18);
-    const price = (amount * parseUnits("1", 22)) / toAmount;
+    const price = (amount * parseUnits("1", 36)) / toAmount;
 
     const fees = responseData.typedData.message.swapFee;
     const id = responseData.id;

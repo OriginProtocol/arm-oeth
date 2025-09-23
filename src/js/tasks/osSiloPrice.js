@@ -1,6 +1,5 @@
 const { formatUnits, parseUnits } = require("ethers");
 const { getLendingMarketAPY } = require("../utils/silo");
-
 const {
   outstandingValidatorWithdrawalRequests,
 } = require("../utils/osStaking");
@@ -27,19 +26,23 @@ const setOSSiloPrice = async (options) => {
   // 1. Get current ARM sell price
   const currentSellPrice = parseUnits("1", 72) / (await arm.traderate0());
   const currentBuyPrice = await arm.traderate1();
-  log(`Current sell price: ${formatUnits(currentSellPrice, 36)}`);
-  log(`Current buy price: ${formatUnits(currentBuyPrice, 36)}`);
+  log(
+    `Current sell price  : ${Number(formatUnits(currentSellPrice, 36)).toFixed(5)}`,
+  );
+  log(
+    `Current buy price   : ${Number(formatUnits(currentBuyPrice, 36)).toFixed(5)}`,
+  );
 
   // 2. Get current APY from lending markets
   const currentApyLending = await getLendingMarketAPY(siloMarketWrapper);
   log(
-    `Current lending APY: ${Number(formatUnits(100n * BigInt(currentApyLending), 18)).toFixed(4)}%`,
+    `Current lending APY : ${Number(formatUnits(100n * BigInt(currentApyLending), 18)).toFixed(4)}%`,
   );
 
   // 3. Get current pricing from aggregators
   const testAmountIn = parseUnits("1000", 18);
 
-  const { price: currentPricing4Decimals } = await flyTradeQuote({
+  const { price: currentPricing } = await flyTradeQuote({
     from: addresses.sonic.WS,
     to: addresses.sonic.OSonicProxy,
     amount: testAmountIn,
@@ -48,10 +51,8 @@ const setOSSiloPrice = async (options) => {
     recipient: await signer.getAddress(),
     getData: false,
   });
-  const currentPricing = parseUnits(currentPricing4Decimals.toString(), 14);
-  // log(`Current market pricing: ${Number(currentPricing).toFixed(4)}`);
   log(
-    `Current market pricing: ${Number(formatUnits(currentPricing, 18)).toFixed(4)}`,
+    `Current market pricing: ${Number(formatUnits(currentPricing, 18)).toFixed(5)}`,
   );
 
   // 4. Calculate highest buy price, we should always target a price lower than this to maintain the APY
