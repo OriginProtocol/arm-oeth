@@ -6,10 +6,11 @@ const { formatUnits, parseUnits, Interface } = require("ethers");
 /// This file is named magpie.js, but it contains functions for interacting with FlyTrade, new name from the original Magpie.
 /// ---
 
-const { resolveAddress } = require("../utils/assets");
+const { resolveAddress } = require("./assets");
 const FlyTradeBaseURL = "https://api.fly.trade/aggregator";
 
-const log = require("../utils/logger")("utils:magpie");
+const log = require("./logger")("utils:magpie");
+
 const flyTradeQuote = async ({
   from,
   to,
@@ -17,21 +18,22 @@ const flyTradeQuote = async ({
   slippage,
   swapper,
   recipient,
+  getData = true,
 }) => {
-  try {
-    const fromAsset = await resolveAddress(from);
-    const toAsset = await resolveAddress(to);
-    const urlQuery = [
-      `network=sonic`,
-      `fromTokenAddress=${fromAsset}`,
-      `toTokenAddress=${toAsset}`,
-      `sellAmount=${amount}`,
-      `fromAddress=${swapper}`,
-      `toAddress=${recipient}`,
-      `slippage=${slippage}`,
-      `gasless=false`,
-    ].join("&");
+  const fromAsset = await resolveAddress(from);
+  const toAsset = await resolveAddress(to);
+  const urlQuery = [
+    `network=sonic`,
+    `fromTokenAddress=${fromAsset}`,
+    `toTokenAddress=${toAsset}`,
+    `sellAmount=${amount}`,
+    `fromAddress=${swapper}`,
+    `toAddress=${recipient}`,
+    `slippage=${slippage}`,
+    `gasless=false`,
+  ].join("&");
 
+  try {
     const response = await fetch(`${FlyTradeBaseURL}/quote?${urlQuery}`, {
       method: "GET",
       headers: {
@@ -51,7 +53,7 @@ const flyTradeQuote = async ({
 
     const responseData = await response.json();
 
-    log("FlyTrade quote response: ", responseData);
+    // log("FlyTrade quote response: ", responseData);
     const toAmount = parseUnits(responseData.amountOut, 18);
     const price = (amount * parseUnits("1", 22)) / toAmount;
 
@@ -61,7 +63,7 @@ const flyTradeQuote = async ({
     log(`Quote id : ${id}`);
     log(`${from}/${to} sell price: ${formatUnits(price, 4)}`);
 
-    const data = await flyTradeTx({ id });
+    const data = getData ? await flyTradeTx({ id }) : undefined;
 
     return { price, fromAsset, toAsset, minAmountOut, data, fees };
   } catch (err) {

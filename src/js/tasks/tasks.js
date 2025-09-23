@@ -60,7 +60,7 @@ const {
   redeemAll,
 } = require("./vault");
 const { upgradeProxy } = require("./proxy");
-const { flyTradeQuote, flyTradeTx } = require("../utils/magpie");
+const { flyTradeQuote, flyTradeTx } = require("../utils/fly");
 const { setOperator } = require("./governance");
 
 const { setOSSiloPrice } = require("./osSiloPrice");

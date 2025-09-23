@@ -2,7 +2,7 @@ const { formatUnits } = require("ethers");
 
 const { resolveAsset } = require("../utils/assets");
 const { logTxDetails } = require("../utils/txLogger");
-const { flyTradeQuote } = require("../utils/magpie");
+const { flyTradeQuote } = require("../utils/fly");
 
 const log = require("../utils/logger")("task:sonic:harvest");
 

@@ -5,6 +5,7 @@ const {
   outstandingValidatorWithdrawalRequests,
 } = require("../utils/osStaking");
 const addresses = require("../utils/addresses");
+const { flyTradeQuote } = require("../utils/fly");
 const { logTxDetails } = require("../utils/txLogger");
 
 const log = require("../utils/logger")("task:osSiloPrice");
@@ -37,7 +38,18 @@ const setOSSiloPrice = async (options) => {
 
   // 3. Get current pricing from aggregators
   const testAmountIn = parseUnits("1000", 18);
-  const currentPricing = await getFlyTradePrice(testAmountIn, signer);
+
+  const { price: currentPricing4Decimals } = await flyTradeQuote({
+    from: addresses.sonic.WS,
+    to: addresses.sonic.OSonicProxy,
+    amount: testAmountIn,
+    slippage: 0.005, // 0.5%
+    swapper: await signer.getAddress(),
+    recipient: await signer.getAddress(),
+    getData: false,
+  });
+  const currentPricing = parseUnits(currentPricing4Decimals.toString(), 14);
+  // log(`Current market pricing: ${Number(currentPricing).toFixed(4)}`);
   log(
     `Current market pricing: ${Number(formatUnits(currentPricing, 18)).toFixed(4)}`,
   );
@@ -118,58 +130,6 @@ const getLendingMarketAPY = async (siloMarketWrapper) => {
 };
 
 /**
- * Fetches the price from fly.trade
- */
-const getFlyTradePrice = async (amountIn, signer) => {
-  log(`Getting price quote from fly.trade...`);
-
-  const urlQuery = [
-    `network=sonic`,
-    `fromTokenAddress=${addresses.sonic.WS}`,
-    `toTokenAddress=${addresses.sonic.OSonicProxy}`,
-    `sellAmount=${amountIn}`,
-    `fromAddress=${signer.address}`,
-    `toAddress=${signer.address}`,
-    `slippage=0.005`, // 0.05%
-    `gasless=false`,
-  ].join("&");
-
-  const response = await fetch(
-    `https://api.fly.trade/aggregator/quote?${urlQuery}`,
-    {
-      method: "GET",
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
-      },
-    },
-  );
-
-  if (!response.ok || response.status !== 200) {
-    console.log("Fly.trade response:");
-    console.log(response);
-    console.log(await response.text());
-    throw new Error(
-      `Failed to get price quote from fly.trade: ${response.statusText}`,
-    );
-  }
-
-  const data = await response.json();
-  const amountOut = BigInt(data.amountOut);
-  const amountOutScaled = (BigInt(parseUnits("1", 18)) * amountOut) / amountIn;
-  log(
-    `Fly.trade quote for ${formatUnits(amountIn, 18)} wS: ${Number(formatUnits(amountOutScaled, 18)).toFixed(4)} OS`,
-  );
-  const flyTradePrice =
-    (BigInt(amountIn) * BigInt(parseUnits("1", 18))) / amountOut;
-  log(
-    `Fly.trade price for 1OS: ${Number(formatUnits(flyTradePrice, 18)).toFixed(4)} wS`,
-  );
-
-  return flyTradePrice;
-};
-
-/**
  * Calculate minimum buying price based on APY
  *  Formula: 1/(1+apy) ^ (daysPeriod / 365)
  *  Where 15 is the number of days in the holding period
@@ -228,10 +188,9 @@ const estimateAverageWithdrawTime = async (
   oS,
   vault,
 ) => {
-  const timestamp = await signer.provider
-    .getBlock(blockTag)
-    .then((b) => b.timestamp);
-  log(`Using block number: ${blockTag} at timestamp: ${timestamp}`);
+  const { timestamp, number: blockNumber } =
+    await signer.provider.getBlock(blockTag);
+  log(`Using block number ${blockNumber} at timestamp ${timestamp}`);
 
   // Check if the ARM contract exist at this block
   const code = await signer.provider.getCode(arm.target, blockTag);
