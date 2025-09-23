@@ -75,6 +75,7 @@ const handler = async (credentials) => {
     oS,
     vault,
     blockTag: "latest",
+    premium: 1, // 1 basis point
   });
 };
 

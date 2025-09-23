@@ -1152,6 +1152,12 @@ subtask(
     "Origin",
     types.string,
   )
+  .addOptionalParam(
+    "premium",
+    "Basis points to add to the market buy price. eg 0.3 = 0.003%",
+    0.3,
+    types.float,
+  )
   .addOptionalParam("execute", "Execute the transaction", false, types.boolean)
   .addOptionalParam("block", "Block number or latest", "latest", types.string)
   .setAction(async (taskArgs) => {
@@ -1194,7 +1200,7 @@ subtask(
     const vault = await ethers.getContractAt("IOriginVault", vaultAddress);
 
     await setOSSiloPrice({
-      tolerance: taskArgs.tolerance,
+      ...taskArgs,
       signer,
       arm: armContract,
       siloMarketWrapper,

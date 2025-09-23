@@ -18,6 +18,7 @@ const setOSSiloPrice = async (options) => {
     wS,
     oS,
     vault,
+    premium: premiumInBasisPoints = 0.3, // 0.003%
     blockTag,
   } = options;
 
@@ -39,10 +40,29 @@ const setOSSiloPrice = async (options) => {
     `Current lending APY : ${Number(formatUnits(100n * BigInt(currentApyLending), 18)).toFixed(4)}%`,
   );
 
-  // 3. Get current pricing from aggregators
+  // 3. Calculate the max OS buy price that maintains the current lending market APY
+
+  // Estimate the average withdrawal time from the OS Vault in seconds
+  const withdrawalTimeInSeconds = await estimateAverageWithdrawTime(
+    arm,
+    blockTag,
+    signer,
+    wS,
+    oS,
+    vault,
+  );
+  const buyPriceFromLendingRate = calculateBuyPriceFromLendingRate(
+    currentApyLending,
+    withdrawalTimeInSeconds,
+  );
+  log(
+    `buy price to maintain lending market APY      : ${Number(formatUnits(buyPriceFromLendingRate, 36)).toFixed(5)}`,
+  );
+
+  // 4. Get current pricing from aggregators
   const testAmountIn = parseUnits("1000", 18);
 
-  const { price: currentPricing } = await flyTradeQuote({
+  const { price: marketBuyPrice } = await flyTradeQuote({
     from: addresses.sonic.WS,
     to: addresses.sonic.OSonicProxy,
     amount: testAmountIn,
@@ -52,38 +72,30 @@ const setOSSiloPrice = async (options) => {
     getData: false,
   });
   log(
-    `Current market pricing: ${Number(formatUnits(currentPricing, 18)).toFixed(5)}`,
+    `Current Fly market buy price                  : ${Number(formatUnits(marketBuyPrice, 18)).toFixed(5)}`,
   );
 
-  // 4. Calculate highest buy price, we should always target a price lower than this to maintain the APY
-  const duration = await estimateAverageWithdrawTime(
-    arm,
-    blockTag,
-    signer,
-    wS,
-    oS,
-    vault,
-  );
-  //const duration = await calculateAveragePeriod(arm);
-  const minBuyingPrice = calculateMinBuyingPrice(currentApyLending, duration);
+  // Add the premium to market price
+  const marketPriceScaled = marketBuyPrice * parseUnits("1", 18);
+  const marketPriceWithPremium =
+    marketPriceScaled + parseUnits(premiumInBasisPoints.toString(), 36 - 4);
   log(
-    `Calculated highest buying price to maintain APY: ${Number(formatUnits(minBuyingPrice, 36)).toFixed(4)}`,
+    `Market buy price with ${premiumInBasisPoints} basis point premium : ${Number(formatUnits(marketPriceWithPremium, 36)).toFixed(5)}`,
   );
 
-  // 5. Calculate maxBuyingPrice, market price with an added premium
-  const maxBuyingPrice = calculateMaxBuyingPrice(
-    currentPricing,
-    minBuyingPrice,
+  // 5. Calculate targetBuyPrice, which is the smaller of the market buy price with added premium or buy price from lending rate
+  const targetBuyPrice = calculateMinBuyingPrice(
+    marketPriceWithPremium,
+    buyPriceFromLendingRate,
   );
   log(
-    `Calculated max buying price (market price + premium): ${Number(formatUnits(maxBuyingPrice, 36)).toFixed(4)}`,
+    `Calculated buy price                          : ${Number(formatUnits(targetBuyPrice, 36)).toFixed(5)}`,
   );
 
   // 6. Set the prices on the ARM contract
-  const targetBuyPrice = maxBuyingPrice;
   const targetSellPrice = parseUnits("1", 36); // Keep current sell price for now
 
-  log(`New buy price: ${formatUnits(targetBuyPrice, 36)}`);
+  log(`New buy price : ${formatUnits(targetBuyPrice, 36)}`);
   log(`New sell price: ${formatUnits(targetSellPrice, 36)}`);
 
   if (blockTag !== "latest") {
@@ -101,39 +113,38 @@ const setOSSiloPrice = async (options) => {
 };
 
 /**
- * Calculate minimum buying price based on APY
+ * Calculate buying price based on APY
  *  Formula: 1/(1+apy) ^ (daysPeriod / 365)
  *  Where 15 is the number of days in the holding period
  */
-const calculateMinBuyingPrice = (lendingAPY, duration) => {
+const calculateBuyPriceFromLendingRate = (
+  lendingAPY,
+  withdrawalTimeInSeconds,
+) => {
   // Scale BN to decimal to make calculations easier
   const apyNumber = Number(formatUnits(lendingAPY, 18));
 
-  const daysPeriod = Number(duration) / 86400;
+  const daysPeriod = Number(withdrawalTimeInSeconds) / 86400;
   const exponent = daysPeriod / 365;
 
   // 1/(1+apy) ^ (daysPeriod / 365)
-  const minPrice = 1 / Math.pow(1 + apyNumber, exponent);
+  const price = 1 / Math.pow(1 + apyNumber, exponent);
 
   // Convert back to 36 decimals for ARM pricing
-  const minPriceScaled = parseUnits(minPrice.toString(), 36);
+  const priceScaled = parseUnits(price.toString(), 36);
 
   // Ensure we don't go below a reasonable minimum (0.99)
-  const minAllowed = parseUnits("0.99", 36);
-  return minPriceScaled > minAllowed ? minPriceScaled : minAllowed;
+  // 1% over 14 days is roughly 26 APY
+  const floorBuyPrice = parseUnits("0.99", 36);
+
+  return priceScaled > floorBuyPrice ? priceScaled : floorBuyPrice;
 };
 
-const calculateMaxBuyingPrice = (marketPrice, minBuyingPrice) => {
-  // Scale market price to 36 decimals for ARM pricing
-  const marketPriceScaled = marketPrice * parseUnits("1", 18);
-
-  // Add a small premium to market price (0.1 basis points = 0.001%)
-  const premium = (marketPriceScaled * 1n) / 100000n; // 0.001%
-  const maxPrice = marketPriceScaled + premium;
-
-  // Ensure it doesn't exceed the minimum buying price
-  // The max buying price must be below minBuyingPrice to maintain profitability
-  return maxPrice < minBuyingPrice ? maxPrice : minBuyingPrice;
+const calculateMinBuyingPrice = (marketPrice, buyPriceFromLendingRate) => {
+  // The buy price from the market price must be below the buy price from the lending market to maintain profitability
+  return marketPrice < buyPriceFromLendingRate
+    ? marketPrice
+    : buyPriceFromLendingRate;
 };
 
 /**
@@ -334,7 +345,7 @@ const estimateAverageWithdrawTime = async (
     `Amount weighted average time : ${amountWeightedAverageDays.toFixed(2)} days\n`,
   );
 
-  return amountWeightedAverageDays;
+  return amountWeightedAverageSeconds;
 };
 
 module.exports = {
