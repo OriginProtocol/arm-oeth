@@ -1,4 +1,5 @@
 const { formatUnits, parseUnits } = require("ethers");
+const { ethers } = require("ethers");
 const erc20Abi = require("../../abis/ERC20.json");
 
 const { logTxDetails } = require("../utils/txLogger");
