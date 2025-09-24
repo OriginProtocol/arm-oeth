@@ -22,15 +22,11 @@ const handler = async (event) => {
   // References to contracts
   const arm = new ethers.Contract(mainnet.lidoARM, armAbi, signer);
 
-  try {
-    await allocate({
-      signer,
-      arm,
-      threshold: 20,
-    });
-  } catch (error) {
-    console.error(error);
-  }
+  await allocate({
+    signer,
+    arm,
+    threshold: 20,
+  });
 };
 
 module.exports = { handler };

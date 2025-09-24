@@ -22,14 +22,10 @@ const handler = async (event) => {
   // References to contracts
   const arm = new ethers.Contract(mainnet.lidoARM, lidoARMAbi, signer);
 
-  try {
-    await collectFees({
-      signer,
-      arm,
-    });
-  } catch (error) {
-    console.error(error);
-  }
+  await collectFees({
+    signer,
+    arm,
+  });
 };
 
 module.exports = { handler };

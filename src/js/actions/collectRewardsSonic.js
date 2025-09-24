@@ -21,15 +21,11 @@ const handler = async (event) => {
 
   const harvester = new ethers.Contract(sonic.harvester, harvesterAbi, signer);
 
-  try {
-    await collectRewards({
-      signer,
-      harvester,
-      strategies: [sonic.siloVarlamoreMarket],
-    });
-  } catch (error) {
-    console.error(error);
-  }
+  await collectRewards({
+    signer,
+    harvester,
+    strategies: [sonic.siloVarlamoreMarket],
+  });
 
   // TODO do Silo, beS and wOS swaps with FlyTrade
 };
