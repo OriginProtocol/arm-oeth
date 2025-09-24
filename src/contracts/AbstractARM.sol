@@ -413,19 +413,22 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         _transferAsset(address(outToken), to, amountOut);
     }
 
-    /// @notice Get the available liquidity for a specific asset
+    /// @notice Get the available liquidity for a each token in the ARM.
     /// @return reserve0 The available liquidity for token0
     /// @return reserve1 The available liquidity for token1
     function getReserves() external view returns (uint256 reserve0, uint256 reserve1) {
         // The amount of liquidity assets (WETH) that is still to be claimed in the withdrawal queue
         uint256 outstandingWithdrawals = withdrawsQueued - withdrawsClaimed;
 
-        uint256 balance0 = IERC20(liquidityAsset).balanceOf(address(this));
-        uint256 balance1 = IERC20(baseAsset).balanceOf(address(this));
-        reserve0 = outstandingWithdrawals > balance0 ? 0 : balance0 - outstandingWithdrawals;
-        reserve1 = balance1;
+        uint256 liquidityAssetBalance = IERC20(liquidityAsset).balanceOf(address(this));
+        uint256 baseAssetBalance = IERC20(baseAsset).balanceOf(address(this));
 
-        // token0 should be the liquidity asset, swap reserves if necessary
+        // Ensure there is no negative reserves when there are more outstanding withdrawals than liquidity assets in the ARM
+        reserve0 = outstandingWithdrawals > liquidityAssetBalance ? 0 : liquidityAssetBalance - outstandingWithdrawals;
+        reserve1 = baseAssetBalance;
+
+        // The previous assignment assumed token0 is be the liquidity asset.
+        // If not, swap the reserves
         if (address(token0) == baseAsset) (reserve0, reserve1) = (reserve1, reserve0);
     }
 
