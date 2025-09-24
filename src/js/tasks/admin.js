@@ -21,6 +21,37 @@ async function allocate({ arm, signer, threshold }) {
     return;
   }
 
+  // if the liquidity delta is negative, check if there is any liquidity in the lending market
+  if (liquidityDelta < 0) {
+    // Get the active market wrapper contract
+    const activeMarketAddress = await arm.activeMarket();
+    if (activeMarketAddress !== ethers.ZeroAddress) {
+      const activeMarket = new ethers.Contract(
+        activeMarketAddress,
+        ["function market() external view returns (address)"],
+        signer,
+      );
+
+      // Get the underlying ERC-4626 vault. eg Silo or Morpho Vault
+      const underlyingVaultAddress = await activeMarket.market();
+      const underlyingVault = new ethers.Contract(
+        underlyingVaultAddress,
+        ["function maxWithdraw(address) external view returns (uint256)"],
+        signer,
+      );
+
+      // Check there is liquidity available to withdraw from the lending market
+      const availableAssets =
+        await underlyingVault.maxWithdraw(activeMarketAddress);
+      if (availableAssets < parseUnits("0.01", 18)) {
+        log(
+          `Only ${formatUnits(availableAssets)} liquidity available in the active lending market, skipping allocation`,
+        );
+        return;
+      }
+    }
+  }
+
   // Add 10% buffer to gas limit
   let gasLimit = await arm.connect(signer).allocate.estimateGas();
   gasLimit = (gasLimit * 11n) / 10n;
