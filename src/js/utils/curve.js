@@ -21,7 +21,7 @@ const getCurvePrices = async ({
     0,
     1,
     amountBI,
-    { blockTag }
+    { blockTag },
   );
   // stETH/ETH rate = ETH amount / stETH amount
   const buyPrice = (amountBI * BigInt(1e18)) / buyToAmount;
@@ -32,7 +32,7 @@ const getCurvePrices = async ({
     1,
     0,
     amountBI,
-    { blockTag }
+    { blockTag },
   );
   // stETH/WETH rate = WETH amount / stETH amount
   const sellPrice = (sellToAmount * BigInt(1e18)) / amountBI;
@@ -56,13 +56,13 @@ const getCurvePrices = async ({
     0,
     1,
     amountBI,
-    { blockTag }
+    { blockTag },
   );
   const sellGas = await pool["get_dy(int128,int128,uint256)"].estimateGas(
     1,
     0,
     amountBI,
-    { blockTag }
+    { blockTag },
   );
 
   return {

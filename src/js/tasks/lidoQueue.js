@@ -18,8 +18,8 @@ const requestLidoWithdrawals = async (options) => {
   if (!amount && withdrawAmount <= minAmountBI) {
     console.log(
       `withdraw amount of ${formatUnits(
-        withdrawAmount
-      )} stETH is below ${minAmount} so not withdrawing`
+        withdrawAmount,
+      )} stETH is below ${minAmount} so not withdrawing`,
     );
     return;
   }
@@ -33,8 +33,8 @@ const requestLidoWithdrawals = async (options) => {
     remainingAmount -= requestAmount;
     log(
       `About to request ${formatUnits(
-        requestAmount
-      )} stETH withdrawal from Lido`
+        requestAmount,
+      )} stETH withdrawal from Lido`,
     );
   }
 
@@ -53,7 +53,7 @@ const claimLidoWithdrawals = async (options) => {
   } else {
     // Get the outstanding withdrawal requests for the AMM
     const requestIds = await withdrawalQueue.getWithdrawalRequests(
-      arm.getAddress()
+      arm.getAddress(),
     );
     log(`Found ${requestIds.length} withdrawal requests`);
 
@@ -68,7 +68,7 @@ const claimLidoWithdrawals = async (options) => {
     for (const [index, status] of statuses.entries()) {
       const id = requestIds[index];
       log(
-        `Withdrawal request ${id} finalized ${status.isFinalized}, claimed ${status.isClaimed}`
+        `Withdrawal request ${id} finalized ${status.isFinalized}, claimed ${status.isClaimed}`,
       );
 
       // If finalized but not yet claimed
@@ -94,11 +94,11 @@ const claimLidoWithdrawals = async (options) => {
     const hintIds = await withdrawalQueue.findCheckpointHints(
       sortedFinalizedIds,
       "1",
-      lastIndex
+      lastIndex,
     );
 
     log(
-      `About to claim ${sortedFinalizedIds.length} withdrawal requests with\nids: ${sortedFinalizedIds}\nhints: ${hintIds}`
+      `About to claim ${sortedFinalizedIds.length} withdrawal requests with\nids: ${sortedFinalizedIds}\nhints: ${hintIds}`,
     );
     const tx = await arm
       .connect(signer)

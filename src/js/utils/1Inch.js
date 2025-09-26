@@ -24,7 +24,7 @@ const get1InchSwapQuote = async ({
   const apiKey = process.env.ONEINCH_API_KEY;
   if (!apiKey) {
     throw Error(
-      "ONEINCH_API_KEY environment variable not set. Visit the 1Inch Dev Portal https://portal.1inch.dev/"
+      "ONEINCH_API_KEY environment variable not set. Visit the 1Inch Dev Portal https://portal.1inch.dev/",
     );
   }
 
@@ -69,7 +69,7 @@ const get1InchSwapQuote = async ({
       if (err.response?.status == 429) {
         retries = retries - 1;
         console.error(
-          `Failed to get a 1Inch quote. Will try again in 2 seconds with ${retries} retries left`
+          `Failed to get a 1Inch quote. Will try again in 2 seconds with ${retries} retries left`,
         );
         // Wait for 2s before next try
         await new Promise((r) => setTimeout(r, 2000));

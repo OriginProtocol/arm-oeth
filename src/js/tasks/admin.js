@@ -1,4 +1,6 @@
 const { formatUnits, parseUnits } = require("ethers");
+const { ethers } = require("ethers");
+const erc20Abi = require("../../abis/ERC20.json");
 
 const { logTxDetails } = require("../utils/txLogger");
 
@@ -11,12 +13,43 @@ async function allocate({ arm, signer, threshold }) {
   if (liquidityDelta < thresholdBN && liquidityDelta > -thresholdBN) {
     log(
       `Only ${formatUnits(
-        liquidityDelta
+        liquidityDelta,
       )} liquidity delta, skipping allocation as threshold is ${formatUnits(
-        thresholdBN
-      )}`
+        thresholdBN,
+      )}`,
     );
     return;
+  }
+
+  // if the liquidity delta is negative, check if there is any liquidity in the lending market
+  if (liquidityDelta < 0) {
+    // Get the active market wrapper contract
+    const activeMarketAddress = await arm.activeMarket();
+    if (activeMarketAddress !== ethers.ZeroAddress) {
+      const activeMarket = new ethers.Contract(
+        activeMarketAddress,
+        ["function market() external view returns (address)"],
+        signer,
+      );
+
+      // Get the underlying ERC-4626 vault. eg Silo or Morpho Vault
+      const underlyingVaultAddress = await activeMarket.market();
+      const underlyingVault = new ethers.Contract(
+        underlyingVaultAddress,
+        ["function maxWithdraw(address) external view returns (uint256)"],
+        signer,
+      );
+
+      // Check there is liquidity available to withdraw from the lending market
+      const availableAssets =
+        await underlyingVault.maxWithdraw(activeMarketAddress);
+      if (availableAssets < parseUnits("0.01", 18)) {
+        log(
+          `Only ${formatUnits(availableAssets)} liquidity available in the active lending market, skipping allocation`,
+        );
+        return;
+      }
+    }
   }
 
   // Add 10% buffer to gas limit
@@ -25,19 +58,44 @@ async function allocate({ arm, signer, threshold }) {
 
   log(
     `About to allocate ${formatUnits(
-      liquidityDelta
-    )} to/from the active lending market`
+      liquidityDelta,
+    )} to/from the active lending market`,
   );
   const tx = await arm.connect(signer).allocate({ gasLimit });
   await logTxDetails(tx, "allocate");
 }
 
 async function collectFees({ arm, signer }) {
+  // Get the amount of fees to be collected
+  const fees = await arm.feesAccrued();
+  const queued = await arm.withdrawsQueued();
+  const claimed = await arm.withdrawsClaimed();
+
+  // Check there is enough liquidity to collect fees
+  const liquidityAssetAddress = await arm.liquidityAsset();
+  const liquidityAsset = new ethers.Contract(
+    liquidityAssetAddress,
+    erc20Abi,
+    signer,
+  );
+  const liquidityBalance = await liquidityAsset.balanceOf(
+    await arm.getAddress(),
+  );
+  const liquidityAvailable = liquidityBalance + claimed - queued;
+  log(`Liquidity available in ARM: ${formatUnits(liquidityAvailable)}`);
+
+  if (fees > liquidityAvailable) {
+    console.log(
+      `Not enough liquidity to collect ${formatUnits(fees)} in fees. The ARM only has ${formatUnits(liquidityAvailable)} available.`,
+    );
+    return;
+  }
+
   // Add 10% buffer to gas limit
   let gasLimit = await arm.connect(signer).collectFees.estimateGas();
   gasLimit = (gasLimit * 11n) / 10n;
 
-  log(`About to collect ARM fees`);
+  log(`About to collect ${formatUnits(fees)} ARM fees`);
   const tx = await arm.connect(signer).collectFees({ gasLimit });
   await logTxDetails(tx, "collectFees");
 }

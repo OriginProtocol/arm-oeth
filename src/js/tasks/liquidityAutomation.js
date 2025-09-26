@@ -26,8 +26,8 @@ const autoRequestWithdraw = async ({
   if (assetBalance <= minAmountBI) {
     console.log(
       `${formatUnits(
-        assetBalance
-      )} ${symbol} is below ${minAmount} so not withdrawing`
+        assetBalance,
+      )} ${symbol} is below ${minAmount} so not withdrawing`,
     );
     return;
   }
@@ -53,14 +53,14 @@ const autoClaimWithdraw = async ({
 
   // Get liquidity balance in the Vault
   const vaultLiquidity = await liquidityAsset.balanceOf(
-    await vault.getAddress()
+    await vault.getAddress(),
   );
 
   const queuedAmountClaimable = claimed + vaultLiquidity;
   log(
     `Claimable queued amount is ${formatUnits(claimed)} claimed + ${formatUnits(
-      vaultLiquidity
-    )} ${liquiditySymbol} in vault = ${formatUnits(queuedAmountClaimable)}`
+      vaultLiquidity,
+    )} ${liquiditySymbol} in vault = ${formatUnits(queuedAmountClaimable)}`,
   );
 
   // Get the Date time of 10 minutes ago
@@ -68,7 +68,7 @@ const autoClaimWithdraw = async ({
   const claimDelaySeconds = await vault.withdrawalClaimDelay();
   const claimCutoff = now.subtract(Number(claimDelaySeconds), "seconds");
   log(
-    `${claimDelaySeconds} second claim delay gives claim cutoff timestamp: ${claimCutoff.unix()} ${claimCutoff.toISOString()}`
+    `${claimDelaySeconds} second claim delay gives claim cutoff timestamp: ${claimCutoff.unix()} ${claimCutoff.toISOString()}`,
   );
 
   // get claimable withdrawal requests

@@ -138,7 +138,7 @@ async function claimWithdrawal({ requestId, symbol }) {
   const vault = await ethers.getContractAt("IOETHVault", vaultAddress);
 
   log(
-    `About to claim withdrawal from the ${symbol} vault for request ${requestId}`
+    `About to claim withdrawal from the ${symbol} vault for request ${requestId}`,
   );
   const tx = await vault.connect(signer).claimWithdrawal(requestId);
   await logTxDetails(tx, "claimWithdrawal");

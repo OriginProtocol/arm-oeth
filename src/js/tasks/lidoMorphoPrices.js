@@ -26,7 +26,7 @@ const setPrices = async (options) => {
     curve,
     inch,
     market,
-    priceOffset
+    priceOffset,
   } = options;
 
   // 1. Get current ARM stETH/WETH prices
@@ -43,20 +43,42 @@ const setPrices = async (options) => {
     // 2.1 Get latest 1inch prices if no midPrice is provided
     const referencePrices =
       // 2.1.a If midPrice is provided, use it directly
-      midPrice ?
-        {
-          midPrice: parseUnits(midPrice.toString(), 18),
-        } : // 2.1.b Otherwise, get prices from 1Inch
-        inch ?
-          await get1InchPrices(options.amount) : // 2.1.c Or from Curve if specified
-          await getCurvePrices({
-            ...options,
-            poolAddress: addresses.mainnet.CurveStEthPool,
-          });
-    log(`\nReference prices from ${midPrice ? "midPrice" : inch ? "1Inch" : curve ? "Curve" : "unknown source"}:`);
+      midPrice
+        ? {
+            midPrice: parseUnits(midPrice.toString(), 18),
+          } // 2.1.b Otherwise, get prices from 1Inch
+        : inch
+          ? await get1InchPrices(options.amount) // 2.1.c Or from Curve if specified
+          : await getCurvePrices({
+              ...options,
+              poolAddress: addresses.mainnet.CurveStEthPool,
+            });
+    log(
+      `\nReference prices from ${
+        midPrice
+          ? "midPrice"
+          : inch
+            ? "1Inch"
+            : curve
+              ? "Curve"
+              : "unknown source"
+      }:`,
+    );
     log(`mid price          : ${formatUnits(referencePrices.midPrice)}`);
-    log(`sell price         : ${referencePrices.sellPrice !== undefined ? formatUnits(referencePrices.sellPrice) : "not defined"}`);
-    log(`buy price          : ${referencePrices.buyPrice !== undefined ? formatUnits(referencePrices.buyPrice) : "not defined"}`);
+    log(
+      `sell price         : ${
+        referencePrices.sellPrice !== undefined
+          ? formatUnits(referencePrices.sellPrice)
+          : "not defined"
+      }`,
+    );
+    log(
+      `buy price          : ${
+        referencePrices.buyPrice !== undefined
+          ? formatUnits(referencePrices.buyPrice)
+          : "not defined"
+      }`,
+    );
 
     // 2.2 Calculate target prices
     const offsetBN = parseUnits(offset.toString(), 14);
@@ -64,11 +86,17 @@ const setPrices = async (options) => {
       // If price offset is provided, adjust the target prices accordingly
       log(`\nCalculating target prices based on offset:`);
       // Target buy price is the reference sell price plus the offset
-      targetBuyPrice = ((referencePrices.sellPrice) + offsetBN) * BigInt(1e18);
+      targetBuyPrice = (referencePrices.sellPrice + offsetBN) * BigInt(1e18);
       // Target sell price is the target buy price plus 2x fee offset
-      targetSellPrice = targetBuyPrice + parseUnits(fee.toString(), 32) * BigInt(2);
+      targetSellPrice =
+        targetBuyPrice + parseUnits(fee.toString(), 32) * BigInt(2);
       log(`offset             : ${formatUnits(offsetBN, 14)} basis points`);
-      log(`fee                : ${formatUnits(BigInt(fee * 1000000), 6)} basis points`);
+      log(
+        `fee                : ${formatUnits(
+          BigInt(fee * 1000000),
+          6,
+        )} basis points`,
+      );
       log(`target sell price  : ${formatUnits(targetSellPrice, 36)}`);
       log(`target buy price   : ${formatUnits(targetBuyPrice, 36)}`);
     } else {
@@ -79,8 +107,8 @@ const setPrices = async (options) => {
       log(
         `fee                : ${formatUnits(
           BigInt(fee * 1000000),
-          6
-        )} basis points`
+          6,
+        )} basis points`,
       );
       log(`fee rate           : ${formatUnits(feeRate, 6)} basis points`);
 
@@ -95,16 +123,30 @@ const setPrices = async (options) => {
 
     // 2.3 If no min/max prices are provided, calculate them based on the current lending market APY
     if (!minBuyPrice || !maxBuyPrice) {
-      log(`\nCalculating min/max buying prices based on current lending market APY:`);
+      log(
+        `\nCalculating min/max buying prices based on current lending market APY:`,
+      );
       const currentApyLending = await getLendingMarketAPY(market);
-      log(`Current lending APY: ${Number(formatUnits(100n * BigInt(currentApyLending), 18)).toFixed(4)}%`);
+      log(
+        `Current lending APY: ${Number(
+          formatUnits(100n * BigInt(currentApyLending), 18),
+        ).toFixed(4)}%`,
+      );
 
       if (!minBuyPrice) {
-        minBuyPrice = formatUnits(calculateMinBuyingPrice(currentApyLending), 36);
+        minBuyPrice = formatUnits(
+          calculateMinBuyingPrice(currentApyLending),
+          36,
+        );
         log(`min buying price   : ${minBuyPrice}`);
 
         if (!maxBuyPrice) {
-          maxBuyPrice = Number(formatUnits(calculateMaxBuyingPrice(referencePrices.midPrice, minBuyPrice), 36));
+          maxBuyPrice = Number(
+            formatUnits(
+              calculateMaxBuyingPrice(referencePrices.midPrice, minBuyPrice),
+              36,
+            ),
+          );
           log(`max buying price   : ${maxBuyPrice}`);
         }
       }
@@ -118,8 +160,8 @@ const setPrices = async (options) => {
         log(
           `target sell price ${formatUnits(
             targetSellPrice,
-            36
-          )} is above max sell price ${maxSellPrice} so will use max`
+            36,
+          )} is above max sell price ${maxSellPrice} so will use max`,
         );
         targetSellPrice = maxSellPriceBN;
       }
@@ -130,8 +172,8 @@ const setPrices = async (options) => {
         log(
           `target sell price ${formatUnits(
             targetSellPrice,
-            36
-          )} is below min sell price ${minSellPrice} so will use min`
+            36,
+          )} is below min sell price ${minSellPrice} so will use min`,
         );
         targetSellPrice = minSellPriceBN;
       }
@@ -142,8 +184,8 @@ const setPrices = async (options) => {
         log(
           `target buy price  ${formatUnits(
             targetBuyPrice,
-            36
-          )} is above max buy price  ${maxBuyPrice} so will use max`
+            36,
+          )} is above max buy price  ${maxBuyPrice} so will use max`,
         );
         targetBuyPrice = maxBuyPriceBN;
       }
@@ -154,8 +196,8 @@ const setPrices = async (options) => {
         log(
           `target buy price  ${formatUnits(
             targetBuyPrice,
-            36
-          )} is below min buy price  ${minBuyPrice} so will use min`
+            36,
+          )} is below min buy price  ${minBuyPrice} so will use min`,
         );
         targetBuyPrice = minBuyPriceBN;
       }
@@ -169,11 +211,11 @@ const setPrices = async (options) => {
       log(
         `target sell price ${formatUnits(
           targetSellPrice,
-          36
+          36,
         )} is below cross price ${formatUnits(
           crossPrice,
-          36
-        )} so will use cross price`
+          36,
+        )} so will use cross price`,
       );
       targetSellPrice = crossPrice;
     }
@@ -181,11 +223,11 @@ const setPrices = async (options) => {
       log(
         `target buy price  ${formatUnits(
           targetBuyPrice,
-          36
+          36,
         )} is above cross price ${formatUnits(
           crossPrice,
-          36
-        )} so will use cross price`
+          36,
+        )} so will use cross price`,
       );
       targetBuyPrice = crossPrice - 1n;
     }
@@ -194,7 +236,7 @@ const setPrices = async (options) => {
     targetBuyPrice = parseUnits(buyPrice.toString(), 18) * BigInt(1e18);
   } else {
     throw new Error(
-      `Either both buy and sell prices should be provided or midPrice`
+      `Either both buy and sell prices should be provided or midPrice`,
     );
   }
   log(`\nTarget prices have been calculated:`);
@@ -225,11 +267,11 @@ const setPrices = async (options) => {
     console.log(
       `No price update as price diff of buy ${formatUnits(
         diffBuyPrice,
-        32
+        32,
       )} and sell ${formatUnits(diffSellPrice, 32)} < tolerance ${formatUnits(
         toleranceScaled,
-        32
-      )} basis points`
+        32,
+      )} basis points`,
     );
   }
 };
@@ -238,10 +280,9 @@ const setPrices = async (options) => {
  * Get the current APY from the ARM's active lending market
  */
 const getLendingMarketAPY = async (market) => {
-
+  if (!market) return 0n;
   // Get the underlying Morpho market address
-  //const underlyingMorphoMarket = await market.market();
-  const underlyingMorphoMarket = "0x9a8bC3B04b7f3D87cfC09ba407dCED575f2d61D8"; // Hardcoded for Morpho market, waiting for deployment
+  const underlyingMorphoMarket = await market.market();
 
   const query = `query {
     vaultByAddress(
@@ -298,14 +339,22 @@ const getLendingMarketAPY = async (market) => {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      query
+      query,
     }),
   });
   const data = await response.json();
 
   // APR scaled to 1e6
-  const apr = Number((1000000n * BigInt(Math.floor(data.data.vaultByAddress.state.weeklyNetApy * 1e18))) / BigInt(1e18));
-  log(`Current lending APR: ${Number(formatUnits(100n * BigInt(apr), 6)).toFixed(4)}%`);
+  const apr = Number(
+    (1000000n *
+      BigInt(Math.floor(data.data.vaultByAddress.state.weeklyNetApy * 1e18))) /
+      BigInt(1e18),
+  );
+  log(
+    `Current lending APR: ${Number(formatUnits(100n * BigInt(apr), 6)).toFixed(
+      4,
+    )}%`,
+  );
 
   const dailyRate = apr / 365 / 1000000;
   const apy = Math.pow(1 + dailyRate, 365) - 1;
@@ -321,7 +370,7 @@ const getLendingMarketAPY = async (market) => {
  */
 const calculateMinBuyingPrice = (lendingAPY) => {
   // Scale BN to decimal to make calculations easier
-  const apyNumber = Number(formatUnits(lendingAPY, 18))
+  const apyNumber = Number(formatUnits(lendingAPY, 18));
 
   const daysPeriod = 15;
   const exponent = daysPeriod / 365;
@@ -342,20 +391,21 @@ const calculateMaxBuyingPrice = (marketPrice, minBuyingPrice) => {
   const marketPriceScaled = marketPrice * parseUnits("1", 18);
 
   // Add a small premium to market price (0.1 basis points = 0.001%)
-  const premium = marketPriceScaled * 1n / 100000n; // 0.001%
+  const premium = (marketPriceScaled * 1n) / 100000n; // 0.001%
   const maxPrice = marketPriceScaled + premium;
 
   minBuyingPrice = parseUnits(minBuyingPrice.toString(), 36);
   // Ensure it doesn't exceed the minimum buying price
   // The max buying price must be below minBuyingPrice to maintain profitability
   log(
-    `max buying price     ${formatUnits(maxPrice, 36)} is ${maxPrice < minBuyingPrice ? "below" : "above or equal to"
-    } min buying price ${formatUnits(minBuyingPrice, 36)} so will use ${maxPrice < minBuyingPrice ? "max buying price" : "min buying price"
-    }`
+    `max buying price     ${formatUnits(maxPrice, 36)} is ${
+      maxPrice < minBuyingPrice ? "below" : "above or equal to"
+    } min buying price ${formatUnits(minBuyingPrice, 36)} so will use ${
+      maxPrice < minBuyingPrice ? "max buying price" : "min buying price"
+    }`,
   );
   return maxPrice < minBuyingPrice ? maxPrice : minBuyingPrice;
 };
-
 
 module.exports = {
   setPrices,

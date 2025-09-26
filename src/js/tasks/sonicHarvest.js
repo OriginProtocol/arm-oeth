@@ -2,7 +2,7 @@ const { formatUnits } = require("ethers");
 
 const { resolveAsset } = require("../utils/assets");
 const { logTxDetails } = require("../utils/txLogger");
-const { flyTradeQuote } = require("../utils/magpie");
+const { flyTradeQuote } = require("../utils/fly");
 
 const log = require("../utils/logger")("task:sonic:harvest");
 
@@ -31,13 +31,18 @@ async function harvestRewards({ harvester, signer, symbol }) {
   });
 
   log(
-    `About to harvest ${formatUnits(rewards)} ${symbol} rewards using FlyTrade`
+    `About to harvest ${formatUnits(rewards)} ${symbol} rewards using FlyTrade`,
   );
-  // At the moment the harvester fix has not been deployed yet on sonic. 
+  // At the moment the harvester fix has not been deployed yet on sonic.
   // When it will be done, uncomment the flyTradeFees on the swap function just below.
   const tx = await harvester
     .connect(signer)
-    .swap(0, await rewardToken.getAddress(), rewards/*, flyTradeFees*/, flyTradeData);
+    .swap(
+      0,
+      await rewardToken.getAddress(),
+      rewards /*, flyTradeFees*/,
+      flyTradeData,
+    );
   await logTxDetails(tx, "swap rewards");
 }
 

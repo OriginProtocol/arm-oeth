@@ -46,8 +46,8 @@ const withdrawRequestStatus = async ({ id, arm, vault }) => {
   } else {
     console.log(
       `Withdrawal request ${id} is ${formatUnits(
-        request.queued - queue.claimable
-      )} short`
+        request.queued - queue.claimable,
+      )} short`,
     );
   }
 };
@@ -113,32 +113,32 @@ const logLiquidity = async ({ block, arm }) => {
   console.log(
     `${formatUnits(liquidityBalance, 18)} ${liquiditySymbol} ${formatUnits(
       liquidityPercent,
-      2
-    )}%`
+      2,
+    )}%`,
   );
   console.log(
     `${formatUnits(baseBalance, 18)} ${baseSymbol} ${formatUnits(
       basePercent,
-      2
-    )}%`
+      2,
+    )}%`,
   );
   console.log(
     `${formatUnits(
       baseWithdraws,
-      18
+      18,
     )} ${baseSymbol} in withdrawal requests ${formatUnits(
       baseWithdrawsPercent,
-      2
-    )}%`
+      2,
+    )}%`,
   );
   console.log(
     `${formatUnits(
       lendingMarketBalance,
-      18
+      18,
     )} ${liquiditySymbol} in active lending market ${formatUnits(
       lendingMarketPercent,
-      2
-    )}%`
+      2,
+    )}%`,
   );
   console.log(`${formatUnits(total, 18)} raw total assets`);
 

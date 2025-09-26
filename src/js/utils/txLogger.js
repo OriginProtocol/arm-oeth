@@ -10,7 +10,7 @@ const log = require("./logger")("utils:txLogger");
  */
 async function logTxDetails(tx, method, confirm = true) {
   log(
-    `Sent ${method} transaction with hash ${tx.hash} from ${tx.from} with nonce ${tx.nonce} and gas price ${tx.gasPrice}`
+    `Sent ${method} transaction with hash ${tx.hash} from ${tx.from} with nonce ${tx.nonce} and gas price ${tx.gasPrice}`,
   );
 
   if (!confirm) return;
@@ -23,7 +23,7 @@ async function logTxDetails(tx, method, confirm = true) {
       receipt.gasUsed
     } gas, gas price ${
       BigInt(tx.gasPrice ?? 0n) / BigInt(1e9)
-    } GWei, costing ${formatUnits(txCost)} ETH`
+    } GWei, costing ${formatUnits(txCost)} ETH`,
   );
 
   return receipt;

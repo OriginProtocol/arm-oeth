@@ -10,7 +10,7 @@ const log = require("../utils/logger")("task:swap");
 const swap = async ({ arm, from, to, amount }) => {
   if (from && to) {
     throw new Error(
-      `Cannot specify both from and to asset. It has to be one or the other`
+      `Cannot specify both from and to asset. It has to be one or the other`,
     );
   }
   const signer = await getSigner();
@@ -31,13 +31,9 @@ const swap = async ({ arm, from, to, amount }) => {
 
     const tx = await armContract
       .connect(signer)
-      ["swapExactTokensForTokens(address,address,uint256,uint256,address)"](
-        fromAddress,
-        toAddress,
-        fromAmount,
-        0,
-        signerAddress
-      );
+      [
+        "swapExactTokensForTokens(address,address,uint256,uint256,address)"
+      ](fromAddress, toAddress, fromAmount, 0, signerAddress);
 
     await logTxDetails(tx, "swap exact from");
   } else if (to) {
@@ -52,13 +48,9 @@ const swap = async ({ arm, from, to, amount }) => {
 
     const tx = await armContract
       .connect(signer)
-      ["swapTokensForExactTokens(address,address,uint256,uint256,address)"](
-        fromAddress,
-        toAddress,
-        toAmount,
-        MaxInt256,
-        signerAddress
-      );
+      [
+        "swapTokensForExactTokens(address,address,uint256,uint256,address)"
+      ](fromAddress, toAddress, toAmount, MaxInt256, signerAddress);
 
     await logTxDetails(tx, "swap exact to");
   } else {

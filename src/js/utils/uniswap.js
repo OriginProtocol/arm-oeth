@@ -13,13 +13,13 @@ const getUniswapV3SpotPrices = async ({ amount, blockTag, gas }) => {
   const quoter = new ethers.Contract(
     addresses.mainnet.UniswapV3Quoter,
     quoterAbi,
-    signer
+    signer,
   );
 
   const wstEth = new ethers.Contract(
     addresses.mainnet.wstETH,
     wstEthAbi,
-    signer
+    signer,
   );
 
   const amountBI = parseUnits(amount.toString(), 18);
@@ -33,7 +33,7 @@ const getUniswapV3SpotPrices = async ({ amount, blockTag, gas }) => {
       100,
       amountBI,
       0,
-      { blockTag }
+      { blockTag },
     );
   const buyToAmount = await wstEth.getStETHByWstETH(wstEthAmount);
   log(`buyToAmount: ${buyToAmount}`);
@@ -53,7 +53,7 @@ const getUniswapV3SpotPrices = async ({ amount, blockTag, gas }) => {
       100,
       wstETHAmount,
       0,
-      { blockTag }
+      { blockTag },
     );
   // stETH/WETH rate = WETH amount / stETH amount
   const sellPrice = (sellToAmount * BigInt(1e18)) / amountBI;
@@ -80,7 +80,7 @@ const getUniswapV3SpotPrices = async ({ amount, blockTag, gas }) => {
       100,
       amountBI,
       0,
-      { blockTag }
+      { blockTag },
     );
   const sellGas = await quoter
     .connect(signer)
@@ -90,7 +90,7 @@ const getUniswapV3SpotPrices = async ({ amount, blockTag, gas }) => {
       100,
       amountBI,
       0,
-      { blockTag }
+      { blockTag },
     );
 
   return {

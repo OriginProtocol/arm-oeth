@@ -15,5 +15,8 @@ module.exports = {
     hre: "readable",
     ethers: "readable",
   },
-  rules: {},
+  rules: {
+    "no-unexpected-multiline": "off",
+  },
+  ignorePatterns: ["dist/", "cache_hardhat/", "coverage/"],
 };

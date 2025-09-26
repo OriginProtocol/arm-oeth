@@ -17,7 +17,7 @@ const handler = async (event) => {
   });
 
   console.log(
-    `DEBUG env var in handler before being set: "${process.env.DEBUG}"`
+    `DEBUG env var in handler before being set: "${process.env.DEBUG}"`,
   );
 
   // References to contracts
@@ -28,7 +28,7 @@ const handler = async (event) => {
     signer,
     asset,
     arm,
-    minAmount: 50,
+    minAmount: 5000,
     confirm: true,
   });
 };

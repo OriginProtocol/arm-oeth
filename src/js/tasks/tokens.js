@@ -42,8 +42,8 @@ async function tokenAllowance(taskArguments) {
   console.log(
     `${ownerAddr} has allowed ${spender} to spend ${formatUnits(
       balance,
-      decimals
-    )} ${symbol}`
+      decimals,
+    )} ${symbol}`,
   );
 }
 

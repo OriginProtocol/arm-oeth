@@ -37,16 +37,9 @@ const logArmPrices = async ({ blockTag, gas }, arm) => {
         .connect(signer)
         [
           "swapExactTokensForTokens(address,address,uint256,uint256,address)"
-        ].estimateGas(
-          addresses.mainnet.WETH,
-          addresses.mainnet.stETH,
-          amountBI,
-          0,
-          addresses.dead,
-          {
-            blockTag,
-          }
-        );
+        ].estimateGas(addresses.mainnet.WETH, addresses.mainnet.stETH, amountBI, 0, addresses.dead, {
+          blockTag,
+        });
       buyGasCosts = `, ${buyGas.toLocaleString()} gas`;
     } catch (e) {
       log(`Failed to estimate buy gas for swap: ${e.message}`);
@@ -56,16 +49,9 @@ const logArmPrices = async ({ blockTag, gas }, arm) => {
         .connect(signer)
         [
           "swapExactTokensForTokens(address,address,uint256,uint256,address)"
-        ].estimateGas(
-          addresses.mainnet.stETH,
-          addresses.mainnet.WETH,
-          amountBI,
-          0,
-          addresses.dead,
-          {
-            blockTag,
-          }
-        );
+        ].estimateGas(addresses.mainnet.stETH, addresses.mainnet.WETH, amountBI, 0, addresses.dead, {
+          blockTag,
+        });
       sellGasCosts = `, ${sellGas.toLocaleString()} gas`;
     } catch (e) {
       log(`Failed to estimate sell gas for swap: ${e.message}`);
@@ -74,22 +60,22 @@ const logArmPrices = async ({ blockTag, gas }, arm) => {
 
   console.log(
     `sell   : ${formatUnits(sellPrice, 18).padEnd(
-      20
-    )} stETH/WETH${sellGasCosts}`
+      20,
+    )} stETH/WETH${sellGasCosts}`,
   );
   if (crossPrice > sellPrice) {
     console.log(
-      `cross  : ${formatUnits(crossPrice, 36).padEnd(20)} stETH/WETH`
+      `cross  : ${formatUnits(crossPrice, 36).padEnd(20)} stETH/WETH`,
     );
     console.log(`mid    : ${formatUnits(midPrice, 18).padEnd(20)} stETH/WETH`);
   } else {
     console.log(`mid    : ${formatUnits(midPrice, 18).padEnd(20)} stETH/WETH`);
     console.log(
-      `cross  : ${formatUnits(crossPrice, 18).padEnd(20)} stETH/WETH`
+      `cross  : ${formatUnits(crossPrice, 18).padEnd(20)} stETH/WETH`,
     );
   }
   console.log(
-    `buy    : ${formatUnits(buyPrice, 18).padEnd(20)} stETH/WETH${buyGasCosts}`
+    `buy    : ${formatUnits(buyPrice, 18).padEnd(20)} stETH/WETH${buyGasCosts}`,
   );
 
   const spread = BigInt(sellPrice) - BigInt(buyPrice);
@@ -103,23 +89,23 @@ const logArmPrices = async ({ blockTag, gas }, arm) => {
   console.log(
     `\nYield on ${formatUnits(
       buyDiscount * 10000n,
-      18
-    )} bps buy discount after fee`
+      18,
+    )} bps buy discount after fee`,
   );
   console.log(
     `1 day ${formatUnits(
       buyDiscountPostFee * 36500n,
-      18
+      18,
     )}%, 2 days ${formatUnits(
       (buyDiscountPostFee * 36500n) / 2n,
-      18
+      18,
     )}%, 3 days ${formatUnits(
       (buyDiscountPostFee * 36500n) / 3n,
-      18
+      18,
     )}%, 4 days ${formatUnits(
       (buyDiscountPostFee * 36500n) / 4n,
-      18
-    )}%, 5 days ${formatUnits((buyDiscountPostFee * 36500n) / 5n, 18)}% APY`
+      18,
+    )}%, 5 days ${formatUnits((buyDiscountPostFee * 36500n) / 5n, 18)}% APY`,
   );
 
   return {
@@ -147,34 +133,34 @@ const log1InchPrices = async ({ amount, gas }, ammPrices) => {
   const buyGasCosts = gas ? `, ${oneInch.buyGas.toLocaleString()} gas` : "";
   console.log(
     `buy    : ${formatUnits(oneInch.buyPrice, 18).padEnd(
-      20
+      20,
     )} stETH/WETH, diff ${formatUnits(buyRateDiff, 14).padEnd(
-      17
-    )} bps to ARM${buyGasCosts}`
+      17,
+    )} bps to ARM${buyGasCosts}`,
   );
 
   console.log(
-    `mid    : ${formatUnits(oneInch.midPrice, 18).padEnd(20)} stETH/WETH`
+    `mid    : ${formatUnits(oneInch.midPrice, 18).padEnd(20)} stETH/WETH`,
   );
 
   const sellRateDiff = oneInch.sellPrice - ammPrices.buyPrice;
   const sellGasCosts = gas ? `, ${oneInch.sellGas.toLocaleString()} gas` : "";
   console.log(
     `sell   : ${formatUnits(oneInch.sellPrice, 18).padEnd(
-      20
+      20,
     )} stETH/WETH, diff ${formatUnits(sellRateDiff, 14).padEnd(
-      17
-    )} bps to ARM${sellGasCosts}`
+      17,
+    )} bps to ARM${sellGasCosts}`,
   );
   console.log(`spread : ${formatUnits(oneInch.spread, 14)} bps`);
 
   console.log(
     `\nBest buy : ${
       ammPrices.sellPrice < oneInch.buyPrice ? "Origin" : "1Inch"
-    }`
+    }`,
   );
   console.log(
-    `Best sell: ${ammPrices.buyPrice > oneInch.sellPrice ? "Origin" : "1Inch"}`
+    `Best sell: ${ammPrices.buyPrice > oneInch.sellPrice ? "Origin" : "1Inch"}`,
   );
 
   return oneInch;
@@ -188,7 +174,7 @@ const log1InchProtocols = (sellQuote) => {
         console.log(
           `${p3.part.toString().padEnd(3)}% ${p3.name.padEnd(12)} ${
             p3.fromTokenAddress
-          } -> ${p3.toTokenAddress}`
+          } -> ${p3.toTokenAddress}`,
         );
       });
     });
@@ -210,18 +196,18 @@ const logCurvePrices = async (options, ammPrices) => {
   const sellGasCosts = gas ? `, ${curve.sellGas.toLocaleString()} gas` : "";
   console.log(
     `buy    : ${formatUnits(curve.buyPrice, 18).padEnd(
-      20
+      20,
     )} ${pair}, diff ${formatUnits(buyRateDiff, 14).padEnd(
-      17
-    )} bps to ARM${buyGasCosts}`
+      17,
+    )} bps to ARM${buyGasCosts}`,
   );
   console.log(`mid    : ${formatUnits(curve.midPrice, 18).padEnd(20)} ${pair}`);
   console.log(
     `sell   : ${formatUnits(curve.sellPrice, 18).padEnd(
-      20
+      20,
     )} ${pair}, diff ${formatUnits(sellRateDiff, 14).padEnd(
-      17
-    )} bps to ARM${sellGasCosts}`
+      17,
+    )} bps to ARM${sellGasCosts}`,
   );
   console.log(`spread : ${formatUnits(curve.spread, 14)} bps`);
 
@@ -238,22 +224,22 @@ const logUniswapSpotPrices = async (options, ammPrices) => {
   log(`sell ${amount} stETH for ${formatUnits(uniswap.sellToAmount)} WETH`);
 
   console.log(
-    `\nwstETH/ETH 0.01% Uniswap V3 spot prices for swap size ${amount}`
+    `\nwstETH/ETH 0.01% Uniswap V3 spot prices for swap size ${amount}`,
   );
   const buyGasCosts = gas ? `, ${uniswap.buyGas.toLocaleString()} gas` : "";
   const sellGasCosts = gas ? `, ${uniswap.sellGas.toLocaleString()} gas` : "";
   console.log(
     `buy    : ${formatUnits(uniswap.buyPrice, 18).padEnd(
-      20
-    )} ${pair}, diff ${formatUnits(buyRateDiff, 14)} bps to ARM${buyGasCosts}`
+      20,
+    )} ${pair}, diff ${formatUnits(buyRateDiff, 14)} bps to ARM${buyGasCosts}`,
   );
   console.log(
-    `mid    : ${formatUnits(uniswap.midPrice, 18).padEnd(20)} ${pair}`
+    `mid    : ${formatUnits(uniswap.midPrice, 18).padEnd(20)} ${pair}`,
   );
   console.log(
     `sell   : ${formatUnits(uniswap.sellPrice, 18).padEnd(
-      20
-    )} ${pair}, diff ${formatUnits(sellRateDiff, 14)} bps to ARM${sellGasCosts}`
+      20,
+    )} ${pair}, diff ${formatUnits(sellRateDiff, 14)} bps to ARM${sellGasCosts}`,
   );
   console.log(`spread : ${formatUnits(uniswap.spread, 14)} bps`);
 
@@ -274,26 +260,24 @@ const logFluidPrices = async (options, ammPrices) => {
   const sellGasCosts = gas ? `, ${fluid.sellGas.toLocaleString()} gas` : "";
   console.log(
     `buy    : ${formatUnits(fluid.buyPrice, 18).padEnd(
-      20
-    )} ${pair}, diff ${formatUnits(buyRateDiff, 14)} bps to ARM${buyGasCosts}`
+      20,
+    )} ${pair}, diff ${formatUnits(buyRateDiff, 14)} bps to ARM${buyGasCosts}`,
   );
-  console.log(
-    `mid    : ${formatUnits(fluid.midPrice, 18).padEnd(20)} ${pair}`
-  );
+  console.log(`mid    : ${formatUnits(fluid.midPrice, 18).padEnd(20)} ${pair}`);
   console.log(
     `sell   : ${formatUnits(fluid.sellPrice, 18).padEnd(
-      20
-    )} ${pair}, diff ${formatUnits(sellRateDiff, 14)} bps to ARM${sellGasCosts}`
+      20,
+    )} ${pair}, diff ${formatUnits(sellRateDiff, 14)} bps to ARM${sellGasCosts}`,
   );
   console.log(`spread : ${formatUnits(fluid.spread, 14)} bps`);
 
   return fluid;
-}
+};
 
 module.exports = {
   log1InchPrices,
   logArmPrices,
   logCurvePrices,
   logUniswapSpotPrices,
-  logFluidPrices
+  logFluidPrices,
 };

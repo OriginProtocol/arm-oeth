@@ -1,3 +1,4 @@
+const { ethereumAddress } = require("./regex");
 const { parseAddress } = require("./addressParser");
 // Commented out as Hardhat will load a version of ethers with helper function getContractAt
 // which comes from the @nomicfoundation/hardhat-ethers package.
@@ -11,6 +12,8 @@ const log = require("../utils/logger")("utils:assets");
  * @param {string} symbol token symbol of the asset. eg OUSD, USDT, stETH, CRV...
  */
 const resolveAddress = async (symbol) => {
+  if (symbol.match(ethereumAddress)) return symbol;
+
   const assetAddr = await parseAddress(symbol);
   if (!assetAddr) {
     throw Error(`Failed to resolve symbol "${symbol}" to an address`);
