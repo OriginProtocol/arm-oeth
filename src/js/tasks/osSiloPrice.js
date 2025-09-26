@@ -18,7 +18,8 @@ const setOSSiloPrice = async (options) => {
     wS,
     oS,
     vault,
-    premium: premiumInBasisPoints = 0.3, // 0.003%
+    marketPremium: marketPremiumBP = 0.3, // 0.003%
+    lendPremium: lendPremiumBP = 0.3, // 0.003%
     blockTag,
   } = options;
 
@@ -53,7 +54,11 @@ const setOSSiloPrice = async (options) => {
   );
   const buyPriceFromLendingRate = calculateBuyPriceFromLendingRate(
     currentApyLending,
+    lendPremiumBP,
     withdrawalTimeInSeconds,
+  );
+  log(
+    `premium on lending market APY                 : ${lendPremiumBP} basis points`,
   );
   log(
     `buy price to maintain lending market APY      : ${Number(formatUnits(buyPriceFromLendingRate, 36)).toFixed(5)}`,
@@ -78,9 +83,9 @@ const setOSSiloPrice = async (options) => {
   // Add the premium to market price
   const marketPriceScaled = marketBuyPrice * parseUnits("1", 18);
   const marketPriceWithPremium =
-    marketPriceScaled + parseUnits(premiumInBasisPoints.toString(), 36 - 4);
+    marketPriceScaled + parseUnits(marketPremiumBP.toString(), 36 - 4);
   log(
-    `Market buy price with ${premiumInBasisPoints} basis point premium : ${Number(formatUnits(marketPriceWithPremium, 36)).toFixed(5)}`,
+    `Market buy price with ${marketPremiumBP} basis point premium : ${Number(formatUnits(marketPriceWithPremium, 36)).toFixed(5)}`,
   );
 
   // 5. Calculate targetBuyPrice, which is the smaller of the market buy price with added premium or buy price from lending rate
@@ -116,9 +121,14 @@ const setOSSiloPrice = async (options) => {
  * Calculate buying price based on APY
  *  Formula: 1/(1+apy) ^ (daysPeriod / 365)
  *  Where 15 is the number of days in the holding period
+ * @param {BigInt} lendingAPY - The current APY from the lending market (in 18 decimals)
+ * @param {number} lendPremiumBP - Basis points to add to the lending rate. eg 0.3 = 0.003%
+ * @param {BigInt} withdrawalTimeInSeconds - Estimated average withdrawal time in seconds
+ * @returns {BigInt} - The calculated buy price (in 36 decimals)
  */
 const calculateBuyPriceFromLendingRate = (
   lendingAPY,
+  lendPremiumBP,
   withdrawalTimeInSeconds,
 ) => {
   // Scale BN to decimal to make calculations easier
@@ -133,11 +143,14 @@ const calculateBuyPriceFromLendingRate = (
   // Convert back to 36 decimals for ARM pricing
   const priceScaled = parseUnits(price.toString(), 36);
 
+  const priceWithPremium =
+    priceScaled + parseUnits(lendPremiumBP.toString(), 36 - 4);
+
   // Ensure we don't go below a reasonable minimum (0.99)
   // 1% over 14 days is roughly 26 APY
   const floorBuyPrice = parseUnits("0.99", 36);
 
-  return priceScaled > floorBuyPrice ? priceScaled : floorBuyPrice;
+  return priceWithPremium > floorBuyPrice ? priceWithPremium : floorBuyPrice;
 };
 
 const calculateMinBuyingPrice = (marketPrice, buyPriceFromLendingRate) => {

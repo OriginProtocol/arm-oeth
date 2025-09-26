@@ -1153,8 +1153,14 @@ subtask(
     types.string,
   )
   .addOptionalParam(
-    "premium",
+    "marketPremium",
     "Basis points to add to the market buy price. eg 0.3 = 0.003%",
+    0.3,
+    types.float,
+  )
+  .addOptionalParam(
+    "lendPremium",
+    "Basis points to add to the lending rate. eg 0.3 = 0.003%",
     0.3,
     types.float,
   )
