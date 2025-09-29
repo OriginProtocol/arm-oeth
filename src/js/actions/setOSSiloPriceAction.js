@@ -1,6 +1,7 @@
 const { Defender } = require("@openzeppelin/defender-sdk");
-const { setOSSiloPrice } = require("../tasks/osSiloPrice");
 const { ethers } = require("ethers");
+
+const { setOSSiloPrice } = require("../tasks/osSiloPrice");
 
 // Entrypoint for the Defender Action
 const handler = async (credentials) => {
@@ -75,7 +76,9 @@ const handler = async (credentials) => {
     oS,
     vault,
     blockTag: "latest",
-    premium: 1, // 1 basis point
+    marketPremium: 0.5, // 0.5 basis points
+    lendPremium: 0.5, // 0.5 basis points
+    tolerance: 0.3, // 0.3 basis points
   });
 };
 

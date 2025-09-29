@@ -1,4 +1,6 @@
 const { formatUnits, parseUnits } = require("ethers");
+
+const { abs } = require("../utils/maths");
 const { getLendingMarketAPY } = require("../utils/silo");
 const {
   outstandingValidatorWithdrawalRequests,
@@ -20,6 +22,7 @@ const setOSSiloPrice = async (options) => {
     vault,
     marketPremium: marketPremiumBP = 0.3, // 0.003%
     lendPremium: lendPremiumBP = 0.3, // 0.003%
+    tolerance = 0.1, // 0.0001%
     blockTag,
   } = options;
 
@@ -61,7 +64,7 @@ const setOSSiloPrice = async (options) => {
     `premium on lending market APY                 : ${lendPremiumBP} basis points`,
   );
   log(
-    `buy price to maintain lending market APY      : ${Number(formatUnits(buyPriceFromLendingRate, 36)).toFixed(5)}`,
+    `buy price from lending market with premium    : ${Number(formatUnits(buyPriceFromLendingRate, 36)).toFixed(5)}`,
   );
 
   // 4. Get current pricing from aggregators
@@ -100,14 +103,30 @@ const setOSSiloPrice = async (options) => {
   // 6. Set the prices on the ARM contract
   const targetSellPrice = parseUnits("1", 36); // Keep current sell price for now
 
-  log(`New buy price : ${formatUnits(targetBuyPrice, 36)}`);
-  log(`New sell price: ${formatUnits(targetSellPrice, 36)}`);
+  // 7. Check the price difference is above the tolerance level
+  const diffBuyPrice = abs(targetBuyPrice - currentBuyPrice);
+  log(`buy price diff     : ${formatUnits(diffBuyPrice, 32)} basis points`);
 
-  if (blockTag !== "latest") {
-    throw new Error("Cannot execute price update on historical block");
+  // tolerance option is in basis points
+  const toleranceScaled = parseUnits(tolerance.toString(), 36 - 4);
+  log(`tolerance          : ${formatUnits(toleranceScaled, 32)} basis points`);
+
+  // decide if rates need to be updated
+  if (diffBuyPrice < toleranceScaled) {
+    console.log(
+      `No price update as price diff of buy ${formatUnits(
+        diffBuyPrice,
+        32,
+      )} < tolerance ${formatUnits(toleranceScaled, 32)} basis points`,
+    );
+    return;
   }
 
   if (execute) {
+    if (blockTag !== "latest") {
+      throw new Error("Cannot execute price update on historical block");
+    }
+
     log("Updating ARM prices...");
     const tx = await arm
       .connect(signer)
@@ -142,6 +161,9 @@ const calculateBuyPriceFromLendingRate = (
 
   // Convert back to 36 decimals for ARM pricing
   const priceScaled = parseUnits(price.toString(), 36);
+  log(
+    `buy price from lending market                 : ${Number(formatUnits(priceScaled, 36)).toFixed(5)}`,
+  );
 
   const priceWithPremium =
     priceScaled + parseUnits(lendPremiumBP.toString(), 36 - 4);

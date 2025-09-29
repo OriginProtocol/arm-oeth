@@ -1164,6 +1164,12 @@ subtask(
     0.3,
     types.float,
   )
+  .addOptionalParam(
+    "tolerance",
+    "Allowed difference in basis points. eg 1 = 0.0001%",
+    0.1,
+    types.float,
+  )
   .addOptionalParam("execute", "Execute the transaction", false, types.boolean)
   .addOptionalParam("block", "Block number or latest", "latest", types.string)
   .setAction(async (taskArgs) => {
