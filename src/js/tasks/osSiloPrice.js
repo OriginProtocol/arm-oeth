@@ -139,9 +139,8 @@ const setOSSiloPrice = async (options) => {
 /**
  * Calculate buying price based on APY
  *  Formula: 1/(1+apy) ^ (daysPeriod / 365)
- *  Where 15 is the number of days in the holding period
  * @param {BigInt} lendingAPY - The current APY from the lending market (in 18 decimals)
- * @param {number} lendPremiumBP - Basis points to add to the lending rate. eg 0.3 = 0.003%
+ * @param {number} lendPremiumBP - Basis points to take off the buy price using the lending rate. That is, increase the buying discount. eg 0.3 = 0.003%
  * @param {BigInt} withdrawalTimeInSeconds - Estimated average withdrawal time in seconds
  * @returns {BigInt} - The calculated buy price (in 36 decimals)
  */
@@ -166,7 +165,7 @@ const calculateBuyPriceFromLendingRate = (
   );
 
   const priceWithPremium =
-    priceScaled + parseUnits(lendPremiumBP.toString(), 36 - 4);
+    priceScaled - parseUnits(lendPremiumBP.toString(), 36 - 4);
 
   // Ensure we don't go below a reasonable minimum (0.99)
   // 1% over 14 days is roughly 26 APY
