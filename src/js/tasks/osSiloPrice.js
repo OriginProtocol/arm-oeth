@@ -58,12 +58,13 @@ const setOSSiloPrice = async (options) => {
   );
 
   // 4. Get current pricing from aggregators
-  const testAmountIn = parseUnits("1000", 18);
+
+  const { available: swapAmount } = await armLiquidity(arm, wS, blockTag);
 
   const { price: marketBuyPrice } = await flyTradeQuote({
     from: addresses.sonic.WS,
     to: addresses.sonic.OSonicProxy,
-    amount: testAmountIn,
+    amount: swapAmount,
     slippage: 0.005, // 0.5%
     swapper: await signer.getAddress(),
     recipient: await signer.getAddress(),
@@ -184,6 +185,30 @@ const calculateMinBuyingPrice = (marketPrice, buyPriceFromLendingRate) => {
     : buyPriceFromLendingRate;
 };
 
+const armLiquidity = async (arm, liquidityAsset, blockTag) => {
+  // This can be replaced with `getReserves()` once the function is added to the ARM contract
+
+  let liquidityBalance = await liquidityAsset.balanceOf(arm.target, {
+    blockTag,
+  });
+  log(`wS balanceOf ARM         : ${formatUnits(liquidityBalance, 18)}`);
+
+  // This can be replaced with `getReserves()` once the function is added to the ARM contract
+  const armWithdrawsQueued = await arm.withdrawsQueued({ blockTag });
+  const armWithdrawsClaimed = await arm.withdrawsClaimed({ blockTag });
+  const armOutstandingWithdrawals = armWithdrawsQueued - armWithdrawsClaimed;
+  const liquidityAvailable = liquidityBalance - armOutstandingWithdrawals;
+
+  log(`ARM Withdraws queued     : ${formatUnits(armWithdrawsQueued, 18)}`);
+  log(`ARM Withdraws claimed    : ${formatUnits(armWithdrawsClaimed, 18)}`);
+  log(
+    `ARM Outstanding Withdraw : ${formatUnits(armOutstandingWithdrawals, 18)}`,
+  );
+  log(`wS Available in ARM      : ${formatUnits(liquidityAvailable, 18)}`);
+
+  return { available: liquidityAvailable, balance: liquidityBalance };
+};
+
 /**
  * @notice Estimates the average withdrawal time for a given ARM contract.
  * @dev This function calculates the estimated withdrawal time based on the availability of tokens
@@ -244,28 +269,16 @@ const estimateAverageWithdrawTime = async (
   log(`Vault wS available       : ${formatUnits(wSAvailableInVault, 18)}`);
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////
-  /// --- Fetching OS and wS holdings from ARM
-  ////////////////////////////////////////////////////////////////////////////////////////////////////
-  log(`\nFetching wS and OS balances from ARM ...`);
-  let wSBalanceInARM = await wS.balanceOf(arm.target, { blockTag });
-  log(`wS balanceOf ARM         : ${formatUnits(wSBalanceInARM, 18)}`);
-  let oSBalanceInARM = await oS.balanceOf(arm.target, { blockTag });
-  log(`OS balanceOf ARM         : ${formatUnits(oSBalanceInARM, 18)}`);
-
-  ////////////////////////////////////////////////////////////////////////////////////////////////////
   /// --- Fetching data from ARM
   ////////////////////////////////////////////////////////////////////////////////////////////////////
-  // This can be replaced with `getReserves()` once the function is added to the ARM contract
-  const armWithdrawsQueued = await arm.withdrawsQueued({ blockTag });
-  const armWithdrawsClaimed = await arm.withdrawsClaimed({ blockTag });
-  const armOutstandingWithdrawals = armWithdrawsQueued - armWithdrawsClaimed;
-  const wSAvailableInARM = wSBalanceInARM - armOutstandingWithdrawals;
-  log(`ARM Withdraws queued     : ${formatUnits(armWithdrawsQueued, 18)}`);
-  log(`ARM Withdraws claimed    : ${formatUnits(armWithdrawsClaimed, 18)}`);
-  log(
-    `ARM Outstanding Withdraw : ${formatUnits(armOutstandingWithdrawals, 18)}`,
-  );
-  log(`wS Available in ARM      : ${formatUnits(wSAvailableInARM, 18)}`);
+
+  log(`\nFetching wS and OS balances from ARM ...`);
+
+  const { available: wSAvailableInARM, balance: wSBalanceInARM } =
+    await armLiquidity(arm, wS, blockTag);
+
+  const oSBalanceInARM = await oS.balanceOf(arm.target, { blockTag });
+  log(`OS balanceOf ARM         : ${formatUnits(oSBalanceInARM, 18)}`);
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////
   /// --- 1. There is more wS available in the Vault than wS and OS in the ARM,

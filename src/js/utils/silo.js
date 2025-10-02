@@ -40,7 +40,7 @@ const getLendingMarketRate = async (siloMarketWrapper, lendPremiumBP) => {
       .toString()
       .padStart(
         4,
-      )} bps premium  : ${Number(formatUnits(100n * BigInt(annualRateWithPremium), 6)).toFixed(4)}%`,
+      )} bps premium   : ${Number(formatUnits(100n * BigInt(annualRateWithPremium), 6)).toFixed(4)}%`,
   );
 
   // Daily rate
