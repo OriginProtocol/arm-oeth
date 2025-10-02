@@ -6,7 +6,7 @@ const { sleep } = require("../utils/time");
 
 const log = require("./logger")("utils:1inch");
 
-const ONEINCH_API_ENDPOINT = "https://api.1inch.dev/swap/v6.0/1/quote";
+const ONEINCH_API_ENDPOINT = "https://api.1inch.dev/swap/v6.1/1/quote";
 
 /**
  * Gets a swap quote from 1Inch's V5.2 swap API
@@ -32,8 +32,6 @@ const get1InchSwapQuote = async ({
     src: fromAsset,
     dst: toAsset,
     amount: fromAmount.toString(),
-    allowPartialFill: true,
-    disableEstimate: true,
     includeProtocols: true,
     includeGas: true,
     includeTokensInfo: false,

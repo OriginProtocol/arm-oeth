@@ -54,7 +54,7 @@ const setOSSiloPrice = async (options) => {
     withdrawalTimeInSeconds,
   );
   log(
-    `buy price from lending market                 : ${Number(formatUnits(buyPriceFromLendingRate, 36)).toFixed(5)}`,
+    `buy price from lending market          : ${Number(formatUnits(buyPriceFromLendingRate, 36)).toFixed(5)}`,
   );
 
   // 4. Get current pricing from aggregators
