@@ -1,7 +1,7 @@
 const { formatUnits, parseUnits } = require("ethers");
 
 const { abs } = require("../utils/maths");
-const { getLendingMarketAPY } = require("../utils/silo");
+const { getLendingMarketRate } = require("../utils/silo");
 const {
   outstandingValidatorWithdrawalRequests,
 } = require("../utils/osStaking");
@@ -28,25 +28,16 @@ const setOSSiloPrice = async (options) => {
 
   log("Computing optimal price...");
 
-  // 1. Get current ARM sell price
-  const currentSellPrice = parseUnits("1", 72) / (await arm.traderate0());
-  const currentBuyPrice = await arm.traderate1();
-  log(
-    `Current sell price  : ${Number(formatUnits(currentSellPrice, 36)).toFixed(5)}`,
+  // 1. Get annual rate scaled to 1e18 from lending markets with added premium
+  const currentAnnualLendingRate = await getLendingMarketRate(
+    siloMarketWrapper,
+    lendPremiumBP,
   );
   log(
-    `Current buy price   : ${Number(formatUnits(currentBuyPrice, 36)).toFixed(5)}`,
+    `Compounding lending rate with premium : ${Number(formatUnits(100n * BigInt(currentAnnualLendingRate), 18)).toFixed(4)}%`,
   );
 
-  // 2. Get current APY from lending markets
-  const currentApyLending = await getLendingMarketAPY(siloMarketWrapper);
-  log(
-    `Current lending APY : ${Number(formatUnits(100n * BigInt(currentApyLending), 18)).toFixed(4)}%`,
-  );
-
-  // 3. Calculate the max OS buy price that maintains the current lending market APY
-
-  // Estimate the average withdrawal time from the OS Vault in seconds
+  // 2. Estimate the average withdrawal time from the OS Vault in seconds
   const withdrawalTimeInSeconds = await estimateAverageWithdrawTime(
     arm,
     blockTag,
@@ -55,16 +46,15 @@ const setOSSiloPrice = async (options) => {
     oS,
     vault,
   );
+
+  // 3. Calculate the max OS buy price that maintains the lending market rate
+
   const buyPriceFromLendingRate = calculateBuyPriceFromLendingRate(
-    currentApyLending,
-    lendPremiumBP,
+    currentAnnualLendingRate,
     withdrawalTimeInSeconds,
   );
   log(
-    `premium on lending market APY                 : ${lendPremiumBP} basis points`,
-  );
-  log(
-    `buy price from lending market with premium    : ${Number(formatUnits(buyPriceFromLendingRate, 36)).toFixed(5)}`,
+    `buy price from lending market                 : ${Number(formatUnits(buyPriceFromLendingRate, 36)).toFixed(5)}`,
   );
 
   // 4. Get current pricing from aggregators
@@ -80,38 +70,57 @@ const setOSSiloPrice = async (options) => {
     getData: false,
   });
   log(
-    `Current Fly market buy price                  : ${Number(formatUnits(marketBuyPrice, 18)).toFixed(5)}`,
+    `Current Fly market buy price           : ${Number(formatUnits(marketBuyPrice, 18)).toFixed(5)}`,
   );
 
-  // Add the premium to market price
+  // 5. Add the premium to market price
+
   const marketPriceScaled = marketBuyPrice * parseUnits("1", 18);
   const marketPriceWithPremium =
     marketPriceScaled + parseUnits(marketPremiumBP.toString(), 36 - 4);
   log(
-    `Market buy price with ${marketPremiumBP} basis point premium : ${Number(formatUnits(marketPriceWithPremium, 36)).toFixed(5)}`,
+    `Market buy price with ${marketPremiumBP.toString().padStart(4)} bps premium : ${Number(formatUnits(marketPriceWithPremium, 36)).toFixed(5)}`,
   );
 
-  // 5. Calculate targetBuyPrice, which is the smaller of the market buy price with added premium or buy price from lending rate
+  // 6. Calculate targetBuyPrice, which is the smaller of the market buy price with added premium or buy price from lending rate
+
   const targetBuyPrice = calculateMinBuyingPrice(
     marketPriceWithPremium,
     buyPriceFromLendingRate,
   );
   log(
-    `Calculated buy price                          : ${Number(formatUnits(targetBuyPrice, 36)).toFixed(5)}`,
+    `Calculated buy price                   : ${Number(formatUnits(targetBuyPrice, 36)).toFixed(5)}`,
   );
 
-  // 6. Set the prices on the ARM contract
+  // 7. Get current ARM sell price
+
+  const currentSellPrice = parseUnits("1", 72) / (await arm.traderate0());
+  const currentBuyPrice = await arm.traderate1();
+  log(
+    `Current sell price                     : ${Number(formatUnits(currentSellPrice, 36)).toFixed(5)}`,
+  );
+  log(
+    `Current buy price                      : ${Number(formatUnits(currentBuyPrice, 36)).toFixed(5)}`,
+  );
+
+  // 8. Set the prices on the ARM contract
   const targetSellPrice = parseUnits("1", 36); // Keep current sell price for now
 
-  // 7. Check the price difference is above the tolerance level
+  // 9. Check the price difference is above the tolerance level
+
   const diffBuyPrice = abs(targetBuyPrice - currentBuyPrice);
-  log(`buy price diff     : ${formatUnits(diffBuyPrice, 32)} basis points`);
+  log(
+    `buy price diff                         : ${formatUnits(diffBuyPrice, 32)} basis points`,
+  );
 
   // tolerance option is in basis points
   const toleranceScaled = parseUnits(tolerance.toString(), 36 - 4);
-  log(`tolerance          : ${formatUnits(toleranceScaled, 32)} basis points`);
+  log(
+    `tolerance                              : ${formatUnits(toleranceScaled, 32)} basis points`,
+  );
 
   // decide if rates need to be updated
+
   if (diffBuyPrice < toleranceScaled) {
     console.log(
       `No price update as price diff of buy ${formatUnits(
@@ -121,6 +130,8 @@ const setOSSiloPrice = async (options) => {
     );
     return;
   }
+
+  // 10. Set the new price
 
   if (execute) {
     if (blockTag !== "latest") {
@@ -140,13 +151,11 @@ const setOSSiloPrice = async (options) => {
  * Calculate buying price based on APY
  *  Formula: 1/(1+apy) ^ (daysPeriod / 365)
  * @param {BigInt} lendingAPY - The current APY from the lending market (in 18 decimals)
- * @param {number} lendPremiumBP - Basis points to take off the buy price using the lending rate. That is, increase the buying discount. eg 0.3 = 0.003%
  * @param {BigInt} withdrawalTimeInSeconds - Estimated average withdrawal time in seconds
  * @returns {BigInt} - The calculated buy price (in 36 decimals)
  */
 const calculateBuyPriceFromLendingRate = (
   lendingAPY,
-  lendPremiumBP,
   withdrawalTimeInSeconds,
 ) => {
   // Scale BN to decimal to make calculations easier
@@ -160,18 +169,12 @@ const calculateBuyPriceFromLendingRate = (
 
   // Convert back to 36 decimals for ARM pricing
   const priceScaled = parseUnits(price.toString(), 36);
-  log(
-    `buy price from lending market                 : ${Number(formatUnits(priceScaled, 36)).toFixed(5)}`,
-  );
-
-  const priceWithPremium =
-    priceScaled - parseUnits(lendPremiumBP.toString(), 36 - 4);
 
   // Ensure we don't go below a reasonable minimum (0.99)
   // 1% over 14 days is roughly 26 APY
   const floorBuyPrice = parseUnits("0.99", 36);
 
-  return priceWithPremium > floorBuyPrice ? priceWithPremium : floorBuyPrice;
+  return priceScaled > floorBuyPrice ? priceScaled : floorBuyPrice;
 };
 
 const calculateMinBuyingPrice = (marketPrice, buyPriceFromLendingRate) => {

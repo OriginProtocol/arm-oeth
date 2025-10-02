@@ -4,9 +4,12 @@ const fetch = require("node-fetch");
 const log = require("../utils/logger")("utils:silo");
 
 /**
- * Get the current APY from the ARM's active lending market
+ * Get the current lending rate from the ARM's active lending market and add a premium
+ * @param {Object} siloMarketWrapper - The SiloMarketWrapper contract instance
+ * @param {number} lendPremiumBP - Basis points to add to the annual rate. eg 0.3 = 0.003%
+ * @return {BigInt} The annual lending rate scaled to 18 decimals
  */
-const getLendingMarketAPY = async (siloMarketWrapper) => {
+const getLendingMarketRate = async (siloMarketWrapper, lendPremiumBP) => {
   if (!siloMarketWrapper) {
     log("No active lending market found, using default APY of 0%");
     return 0n;
@@ -20,19 +23,38 @@ const getLendingMarketAPY = async (siloMarketWrapper) => {
   );
   const data = await response.json();
 
-  // APR scaled to 1e6
-  const apr = Number((1000000n * BigInt(data.supplyApr)) / BigInt(1e18));
+  // Annual rate scaled to 1e6
+  // This is a rate and not a percentage so 5% = 0.05 = 50000
+  const annualRate = Number(
+    (BigInt(1e6) * BigInt(data.supplyApr)) / BigInt(1e18),
+  );
   log(
-    `Current lending APR: ${Number(formatUnits(100n * BigInt(apr), 6)).toFixed(4)}%`,
+    `Current annual lending rate                 : ${Number(formatUnits(100n * BigInt(annualRate), 6)).toFixed(4)}%`,
   );
 
-  const dailyRate = apr / 365 / 1000000;
-  const apy = Math.pow(1 + dailyRate, 365) - 1;
+  // Annual rate with premium
+  // Scale the premium from basis points (1e4) to 1e6
+  const annualRateWithPremium = annualRate + lendPremiumBP * 100;
+  log(
+    `Annual lending rate with ${lendPremiumBP
+      .toString()
+      .padStart(
+        4,
+      )} bps premium  : ${Number(formatUnits(100n * BigInt(annualRateWithPremium), 6)).toFixed(4)}%`,
+  );
+
+  // Daily rate
+  const dailyRate = annualRateWithPremium / 365 / 1000000;
+  log(
+    `Daily lending rate with premium             : ${Number(dailyRate * 10000).toFixed(4)} basis points`,
+  );
+  // Compounding annual rate
+  const compoundingAnnualRate = Math.pow(1 + dailyRate, 365) - 1;
 
   // Scale back to 18 decimals
-  return parseUnits(apy.toString(), 18);
+  return parseUnits(compoundingAnnualRate.toString(), 18);
 };
 
 module.exports = {
-  getLendingMarketAPY,
+  getLendingMarketRate,
 };

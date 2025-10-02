@@ -122,12 +122,6 @@ const log1InchPrices = async ({ amount, gas }, ammPrices) => {
   log(`buy  ${formatUnits(oneInch.buyToAmount)} stETH for ${amount} WETH`);
   log(`sell ${amount} stETH for ${formatUnits(oneInch.sellToAmount)} WETH`);
 
-  console.log(`\n1Inch buy path for stETH/WETH`);
-  log1InchProtocols(oneInch.buyQuote);
-
-  console.log(`\n1Inch sell path for stETH/WETH`);
-  log1InchProtocols(oneInch.sellQuote);
-
   console.log(`\n1Inch prices for swap size ${amount}`);
   const buyRateDiff = oneInch.buyPrice - ammPrices.sellPrice;
   const buyGasCosts = gas ? `, ${oneInch.buyGas.toLocaleString()} gas` : "";
@@ -164,21 +158,6 @@ const log1InchPrices = async ({ amount, gas }, ammPrices) => {
   );
 
   return oneInch;
-};
-
-const log1InchProtocols = (sellQuote) => {
-  // TODO need to better handle
-  sellQuote.protocols.forEach((p1) => {
-    p1.forEach((p2) => {
-      p2.forEach((p3) => {
-        console.log(
-          `${p3.part.toString().padEnd(3)}% ${p3.name.padEnd(12)} ${
-            p3.fromTokenAddress
-          } -> ${p3.toTokenAddress}`,
-        );
-      });
-    });
-  });
 };
 
 const logCurvePrices = async (options, ammPrices) => {
