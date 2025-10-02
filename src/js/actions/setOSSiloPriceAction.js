@@ -76,8 +76,8 @@ const handler = async (credentials) => {
     oS,
     vault,
     blockTag: "latest",
-    marketPremium: 0.5, // 0.5 basis points
-    lendPremium: 0.5, // 0.5 basis points
+    marketPremium: -0.5, // 0.5 basis points
+    lendPremium: 100, // 100 basis points (1%)
     tolerance: 0.3, // 0.3 basis points
   });
 };
