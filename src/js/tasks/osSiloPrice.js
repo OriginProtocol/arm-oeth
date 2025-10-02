@@ -310,6 +310,7 @@ const estimateAverageWithdrawTime = async (
   // Iterate through requests starting from the oldest to the newest
   let totalValidatorWithdrawalAmount = 0n;
   let totalArmWithdrawalAmount = 0n;
+  let armWithdrawalAmount;
   let totalArmWithdrawalAmountPrevious = 0n;
   let totalAmountAndRemainingTime = 0n;
   for (const req of validatorWithdrawalRequests) {
@@ -326,11 +327,12 @@ const estimateAverageWithdrawTime = async (
       continue;
     } else if (totalArmWithdrawalAmount === 0n) {
       log(`    Cleared outstanding OS Vault withdrawals and OS in ARM. `);
-      totalArmWithdrawalAmount +=
+      armWithdrawalAmount =
         totalValidatorWithdrawalAmount - (oSBalanceInARM - wSAvailableInVault);
     } else {
-      totalArmWithdrawalAmount += BigInt(req.amount);
+      armWithdrawalAmount = BigInt(req.amount);
     }
+    totalArmWithdrawalAmount += armWithdrawalAmount;
     log(
       `    Total ARM withdrawal amount: ${formatUnits(totalArmWithdrawalAmount, 18)}`,
     );
@@ -363,6 +365,9 @@ const estimateAverageWithdrawTime = async (
       );
       totalAmountAndRemainingTime +=
         remainingAmount * BigInt(secondsToClaimable);
+      log(
+        `    Total weighted amount: ${formatUnits(totalAmountAndRemainingTime, 18)}`,
+      );
 
       // No need to loop further
       break;
@@ -370,7 +375,7 @@ const estimateAverageWithdrawTime = async (
 
     // Add to the weighted average calculation
     totalAmountAndRemainingTime +=
-      BigInt(req.amount) * BigInt(secondsToClaimable);
+      armWithdrawalAmount * BigInt(secondsToClaimable);
     log(
       `    Total weighted amount: ${formatUnits(totalAmountAndRemainingTime, 18)}`,
     );
