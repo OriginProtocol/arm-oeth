@@ -5,7 +5,7 @@ import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Ini
 import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 
 import {AbstractARM} from "./AbstractARM.sol";
-import {IERC20, IWETH, IEETHWithdrawal, IEETHWithdrawalNFT} from "./Interfaces.sol";
+import {IERC20, IWETH, IEETHWithdrawal, IEETHWithdrawalNFT, IEETHRedemptionManager} from "./Interfaces.sol";
 
 /**
  * @title EtherFi (eETH) Automated Redemption Manager (ARM)
@@ -24,6 +24,8 @@ contract EtherFiARM is Initializable, AbstractARM, IERC721Receiver {
     IEETHWithdrawal public immutable etherfiWithdrawalQueue;
     /// @notice The address of the EtherFi Withdrawal NFT contract
     IEETHWithdrawalNFT public immutable etherfiWithdrawalNFT;
+    /// @notice The address of the EtherFi Redemption Manager contract
+    IEETHRedemptionManager public immutable etherfiRedemptionManager;
 
     /// @notice The amount of eETH in the EtherFi Withdrawal Queue
     uint256 public etherfiWithdrawalQueueAmount;
@@ -49,12 +51,14 @@ contract EtherFiARM is Initializable, AbstractARM, IERC721Receiver {
         uint256 _claimDelay,
         uint256 _minSharesToRedeem,
         int256 _allocateThreshold,
-        address _etherfiWithdrawalNFT
+        address _etherfiWithdrawalNFT,
+        address _etherfiRedemptionManager
     ) AbstractARM(_weth, _eeth, _weth, _claimDelay, _minSharesToRedeem, _allocateThreshold) {
         eeth = IERC20(_eeth);
         weth = IWETH(_weth);
         etherfiWithdrawalQueue = IEETHWithdrawal(_etherfiWithdrawalQueue);
         etherfiWithdrawalNFT = IEETHWithdrawalNFT(_etherfiWithdrawalNFT);
+        etherfiRedemptionManager = IEETHRedemptionManager(_etherfiRedemptionManager);
 
         _disableInitializers();
     }
@@ -138,6 +142,23 @@ contract EtherFiARM is Initializable, AbstractARM, IERC721Receiver {
         weth.deposit{value: address(this).balance}();
 
         emit ClaimEtherFiWithdrawals(requestIds);
+    }
+
+    /**
+     * @notice Redeem instantly eETH for ETH via the EtherFi Redemption Manager.
+     * This method can only be called by the operator or the owner.
+     * 0.3% of fees are charged by the EtherFi Redemption Manager.
+     * @param amount The amount of eETH to redeem for ETH.
+     */
+    function redeemEETH(uint256 amount) external onlyOperatorOrOwner {
+        // Approve the EtherFi Redemption Manager to spend eETH
+        eeth.approve(address(etherfiRedemptionManager), amount);
+
+        // Redeem eETH for ETH via the EtherFi Redemption Manager
+        etherfiRedemptionManager.redeemEEth(amount, address(this));
+
+        // Wrap all the received ETH to WETH.
+        weth.deposit{value: address(this).balance}();
     }
 
     /**

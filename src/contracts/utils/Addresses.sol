@@ -44,7 +44,9 @@ library Mainnet {
 
     // EtherFi
     address public constant ETHERFI_WITHDRAWAL = 0x308861A430be4cce5502d0A12724771Fc6DaF216;
+    address public constant ETHERFI_LIQUIDITY_POOL = 0x308861A430be4cce5502d0A12724771Fc6DaF216;
     address public constant ETHERFI_WITHDRAWAL_NFT = 0x7d5706f6ef3F89B3951E23e557CDFBC3239D4E2c;
+    address public constant ETHERFI_REDEMPTION_MANAGER = 0xDadEf1fFBFeaAB4f68A9fD181395F68b4e4E7Ae0;
 
     // Morpho Market
     address public constant MORPHO_MARKET_MEVCAPITAL = 0x9a8bC3B04b7f3D87cfC09ba407dCED575f2d61D8;

@@ -317,3 +317,9 @@ interface IEETHWithdrawalNFT {
     function claimWithdraw(uint256 requestId) external;
     function batchClaimWithdraw(uint256[] calldata requestIds) external;
 }
+
+interface IEETHRedemptionManager {
+    function redeemEEth(uint256 amount, address receiver) external;
+    function redeemWeEth(uint256 amount, address receiver) external;
+    function canRedeem(uint256 amount) external view returns (bool);
+}
