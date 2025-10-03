@@ -26,6 +26,8 @@ library Mainnet {
     // Tokens
     address public constant OETH = 0x856c4Efb76C1D1AE02e20CEB03A2A6a08b0b8dC3;
     address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    address public constant EETH = 0x35fA164735182de50811E8e2E824cFb9B6118ac2;
+    address public constant WEETH = 0xCd5fE23C85820F7B72D0926FC9b05b43E359b7ee;
     address public constant STETH = 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84;
     address public constant WSTETH = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
 
@@ -39,6 +41,10 @@ library Mainnet {
     address public constant LIDO_WITHDRAWAL = 0x889edC2eDab5f40e902b864aD4d7AdE8E412F9B1;
     address public constant LIDO_EL_VAULT = 0x388C818CA8B9251b393131C08a736A67ccB19297;
     address public constant LIDO_WITHDRAWAL_MANAGER = 0xB9D7934878B5FB9610B3fE8A5e441e8fad7E293f;
+
+    // EtherFi
+    address public constant ETHERFI_WITHDRAWAL = 0x308861A430be4cce5502d0A12724771Fc6DaF216;
+    address public constant ETHERFI_WITHDRAWAL_NFT = 0x7d5706f6ef3F89B3951E23e557CDFBC3239D4E2c;
 
     // Morpho Market
     address public constant MORPHO_MARKET_MEVCAPITAL = 0x9a8bC3B04b7f3D87cfC09ba407dCED575f2d61D8;
@@ -117,6 +123,8 @@ contract AddressResolver {
         // Tokens
         resolver[MAINNET]["OETH"] = Mainnet.OETH;
         resolver[MAINNET]["WETH"] = Mainnet.WETH;
+        resolver[MAINNET]["EETH"] = Mainnet.EETH;
+        resolver[MAINNET]["WEETH"] = Mainnet.WEETH;
         resolver[MAINNET]["STETH"] = Mainnet.STETH;
         resolver[MAINNET]["WSTETH"] = Mainnet.WSTETH;
 
