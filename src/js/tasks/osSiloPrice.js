@@ -23,6 +23,7 @@ const setOSSiloPrice = async (options) => {
     marketPremium: marketPremiumBP = 0.3, // 0.003%
     lendPremium: lendPremiumBP = 0.3, // 0.003%
     tolerance = 0.1, // 0.0001%
+    minSwapAmount = parseUnits("10", 18), // 10 wS
     blockTag,
   } = options;
 
@@ -59,7 +60,8 @@ const setOSSiloPrice = async (options) => {
 
   // 4. Get current pricing from aggregators
 
-  const { available: swapAmount } = await armLiquidity(arm, wS, blockTag);
+  const { available: wsAvailable } = await armLiquidity(arm, wS, blockTag);
+  const swapAmount = wsAvailable < minSwapAmount ? minSwapAmount : wsAvailable;
 
   const { price: marketBuyPrice } = await flyTradeQuote({
     from: addresses.sonic.WS,

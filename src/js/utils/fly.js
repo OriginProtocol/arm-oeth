@@ -113,11 +113,11 @@ const flyTradeQuote = async ({
     });
 
     if (!response.ok || response.status !== 200) {
-      console.log("Fly.trade response:");
+      console.log("Fly.quote response:");
       console.log(response);
       console.log(await response.text());
       throw new Error(
-        `Failed to get price quote from fly.trade: ${response.statusText}`,
+        `Failed to get price quote from fly.quote: ${response.statusText}`,
       );
     }
 
