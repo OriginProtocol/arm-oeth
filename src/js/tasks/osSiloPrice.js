@@ -6,6 +6,7 @@ const {
   outstandingValidatorWithdrawalRequests,
 } = require("../utils/osStaking");
 const addresses = require("../utils/addresses");
+const { get1InchSwapQuote } = require("../utils/1Inch");
 const { flyTradeQuote } = require("../utils/fly");
 const { logTxDetails } = require("../utils/txLogger");
 
@@ -24,6 +25,7 @@ const setOSSiloPrice = async (options) => {
     lendPremium: lendPremiumBP = 0.3, // 0.003%
     tolerance = 0.1, // 0.0001%
     minSwapAmount = parseUnits("10", 18), // 10 wS
+    market = "1inch", // "1inch" or "fly"
     blockTag,
   } = options;
 
@@ -63,15 +65,37 @@ const setOSSiloPrice = async (options) => {
   const { available: wsAvailable } = await armLiquidity(arm, wS, blockTag);
   const swapAmount = wsAvailable < minSwapAmount ? minSwapAmount : wsAvailable;
 
-  const { price: marketBuyPrice } = await flyTradeQuote({
-    from: addresses.sonic.WS,
-    to: addresses.sonic.OSonicProxy,
-    amount: swapAmount,
-    slippage: 0.005, // 0.5%
-    swapper: await signer.getAddress(),
-    recipient: await signer.getAddress(),
-    getData: false,
-  });
+  let marketBuyPrice;
+
+  if (market === "1inch") {
+    const { dstAmount } = await get1InchSwapQuote({
+      fromAsset: addresses.sonic.WS,
+      toAsset: addresses.sonic.OSonicProxy,
+      fromAmount: swapAmount,
+      excludedProtocols: "ORIGIN",
+      chainId: 146,
+    });
+    // adjust buy amount by 1Inch's 0.1% infrastructure fee
+    // https://portal.1inch.dev/documentation/faq/infrastructure-fee
+    const buyToAmount = (BigInt(dstAmount) * 1001n) / 1000n;
+    marketBuyPrice = (swapAmount * BigInt(1e18)) / BigInt(buyToAmount);
+  } else if (market === "fly") {
+    const { price } = await flyTradeQuote({
+      from: addresses.sonic.WS,
+      to: addresses.sonic.OSonicProxy,
+      amount: swapAmount,
+      slippage: 0.005, // 0.5%
+      swapper: await signer.getAddress(),
+      recipient: await signer.getAddress(),
+      getData: false,
+    });
+    marketBuyPrice = price;
+  } else {
+    throw new Error(`Unsupported market: "${market}". Use "1inch" or "fly".`);
+  }
+  // use the following to fix the price without a market aggregator
+  // const marketBuyPrice = parseUnits("0.9945", 18); // Temporary fix until Fly is back up
+
   log(
     `Current Fly market buy price           : ${Number(formatUnits(marketBuyPrice, 18)).toFixed(5)}`,
   );

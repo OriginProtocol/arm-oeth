@@ -1172,6 +1172,12 @@ subtask(
   )
   .addOptionalParam("execute", "Execute the transaction", false, types.boolean)
   .addOptionalParam("block", "Block number or latest", "latest", types.string)
+  .addOptionalParam(
+    "market",
+    "Aggregator to get market pricing",
+    "1inch",
+    types.string,
+  )
   .setAction(async (taskArgs) => {
     const signer = await getSigner();
 

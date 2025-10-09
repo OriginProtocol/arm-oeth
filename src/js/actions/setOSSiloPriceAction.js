@@ -76,9 +76,10 @@ const handler = async (credentials) => {
     oS,
     vault,
     blockTag: "latest",
-    marketPremium: -0.5, // 0.5 basis points
-    lendPremium: 100, // 100 basis points (1%)
-    tolerance: 0.3, // 0.3 basis points
+    marketPremium: -0.5, // basis points. Negative value reduces the price
+    lendPremium: 100, // basis points added to lending APY (100 = 1%)
+    tolerance: 0.3, // basis points
+    market: "1inch",
   });
 };
 

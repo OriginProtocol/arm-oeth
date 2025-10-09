@@ -6,10 +6,10 @@ const { sleep } = require("../utils/time");
 
 const log = require("./logger")("utils:1inch");
 
-const ONEINCH_API_ENDPOINT = "https://api.1inch.dev/swap/v6.1/1/quote";
+const ONEINCH_API_ENDPOINT = "https://api.1inch.dev/swap/v6.1";
 
 /**
- * Gets a swap quote from 1Inch's V5.2 swap API
+ * Gets a swap quote from 1Inch's swap API
  * @param fromAsset The address of the asset to swap from.
  * @param toAsset The address of the asset to swap to.
  * @param fromAmount The unit amount of fromAsset to swap. eg 1.1 WETH = 1.1e18
@@ -20,6 +20,7 @@ const get1InchSwapQuote = async ({
   toAsset,
   fromAmount,
   excludedProtocols,
+  chainId = 1,
 }) => {
   const apiKey = process.env.ONEINCH_API_KEY;
   if (!apiKey) {
@@ -42,8 +43,9 @@ const get1InchSwapQuote = async ({
   let retries = 3;
 
   while (retries > 0) {
+    const quoteUrl = `${ONEINCH_API_ENDPOINT}/${chainId}/quote`;
     try {
-      const response = await axios.get(ONEINCH_API_ENDPOINT, {
+      const response = await axios.get(quoteUrl, {
         params,
         headers: {
           Authorization: `Bearer ${apiKey}`,
@@ -55,7 +57,7 @@ const get1InchSwapQuote = async ({
         throw Error("response is missing dstAmount");
       }
 
-      log("swap API response data: %j", response.data);
+      // log("swap API response data: %j", response.data);
 
       return response.data;
     } catch (err) {
