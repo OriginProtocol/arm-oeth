@@ -1,5 +1,5 @@
 const { Defender } = require("@openzeppelin/defender-sdk");
-const { ethers } = require("ethers");
+const { ethers, parseUnits } = require("ethers");
 
 const { setOSSiloPrice } = require("../tasks/osSiloPrice");
 
@@ -76,10 +76,11 @@ const handler = async (credentials) => {
     oS,
     vault,
     blockTag: "latest",
-    marketPremium: -0.5, // basis points. Negative value reduces the price
-    lendPremium: 100, // basis points added to lending APY (100 = 1%)
+    marketPremium: 0.2, // basis points. Negative value reduces the price
+    lendPremium: 200, // basis points added to lending APY (100 = 1%)
     tolerance: 0.3, // basis points
     market: "1inch",
+    minSwapAmount: parseUnits("1000", 18),
   });
 };
 

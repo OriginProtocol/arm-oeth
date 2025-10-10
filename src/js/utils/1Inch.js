@@ -34,7 +34,7 @@ const get1InchSwapQuote = async ({
     dst: toAsset,
     amount: fromAmount.toString(),
     includeProtocols: true,
-    includeGas: true,
+    includeGas: false,
     includeTokensInfo: false,
     excludedProtocols: excludedProtocols || [],
   };
@@ -57,7 +57,7 @@ const get1InchSwapQuote = async ({
         throw Error("response is missing dstAmount");
       }
 
-      // log("swap API response data: %j", response.data);
+      log("swap API response data: %j", response.data);
 
       return response.data;
     } catch (err) {

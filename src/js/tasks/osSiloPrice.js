@@ -24,7 +24,7 @@ const setOSSiloPrice = async (options) => {
     marketPremium: marketPremiumBP = 0.3, // 0.003%
     lendPremium: lendPremiumBP = 0.3, // 0.003%
     tolerance = 0.1, // 0.0001%
-    minSwapAmount = parseUnits("10", 18), // 10 wS
+    minSwapAmount = parseUnits("1000", 18), // 1000 wS
     market = "1inch", // "1inch" or "fly"
     blockTag,
   } = options;
@@ -69,22 +69,22 @@ const setOSSiloPrice = async (options) => {
 
   if (market === "1inch") {
     const { dstAmount } = await get1InchSwapQuote({
-      fromAsset: addresses.sonic.WS,
-      toAsset: addresses.sonic.OSonicProxy,
+      fromAsset: addresses.sonic.OSonicProxy,
+      toAsset: addresses.sonic.WS,
       fromAmount: swapAmount,
       excludedProtocols: "ORIGIN",
       chainId: 146,
     });
-    // adjust buy amount by 1Inch's 0.1% infrastructure fee
+    // adjust buy amount by 1Inch's 0.3% infrastructure fee for non-stable coin swaps
     // https://portal.1inch.dev/documentation/faq/infrastructure-fee
-    const buyToAmount = (BigInt(dstAmount) * 1001n) / 1000n;
-    marketBuyPrice = (swapAmount * BigInt(1e18)) / BigInt(buyToAmount);
+    const buyToAmount = (BigInt(dstAmount) * 1003n) / 1000n;
+    marketBuyPrice = (buyToAmount * BigInt(1e18)) / BigInt(swapAmount);
   } else if (market === "fly") {
     const { price } = await flyTradeQuote({
-      from: addresses.sonic.WS,
-      to: addresses.sonic.OSonicProxy,
+      from: addresses.sonic.OSonicProxy,
+      to: addresses.sonic.WS,
       amount: swapAmount,
-      slippage: 0.005, // 0.5%
+      slippage: 0.0001, // 0.01%
       swapper: await signer.getAddress(),
       recipient: await signer.getAddress(),
       getData: false,
@@ -97,7 +97,7 @@ const setOSSiloPrice = async (options) => {
   // const marketBuyPrice = parseUnits("0.9945", 18); // Temporary fix until Fly is back up
 
   log(
-    `Current Fly market buy price           : ${Number(formatUnits(marketBuyPrice, 18)).toFixed(5)}`,
+    `Current market buy price               : ${Number(formatUnits(marketBuyPrice, 18)).toFixed(5)}`,
   );
 
   // 5. Add the premium to market price
