@@ -16,20 +16,16 @@ const handler = async (event) => {
   });
 
   console.log(
-    `DEBUG env var in handler before being set: "${process.env.DEBUG}"`
+    `DEBUG env var in handler before being set: "${process.env.DEBUG}"`,
   );
 
   // References to contracts
   const arm = new ethers.Contract(sonic.OriginARM, lidoARMAbi, signer);
 
-  try {
-    await collectFees({
-      signer,
-      arm,
-    });
-  } catch (error) {
-    console.error(error);
-  }
+  await collectFees({
+    signer,
+    arm,
+  });
 };
 
 module.exports = { handler };

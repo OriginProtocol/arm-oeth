@@ -13,13 +13,13 @@ const getFluidSpotPrices = async ({ amount, blockTag, gas }) => {
   const quoter = new ethers.Contract(
     addresses.mainnet.FluidDexResolver,
     quoterAbi,
-    signer
+    signer,
   );
 
   const wstEth = new ethers.Contract(
     addresses.mainnet.wstETH,
     wstEthAbi,
-    signer
+    signer,
   );
 
   const amountBI = parseUnits(amount.toString(), 18);
@@ -32,7 +32,7 @@ const getFluidSpotPrices = async ({ amount, blockTag, gas }) => {
       false,
       amountBI,
       0,
-      { blockTag }
+      { blockTag },
     );
 
   const buyToAmount = await wstEth.getStETHByWstETH(wstEthAmount);
@@ -52,7 +52,7 @@ const getFluidSpotPrices = async ({ amount, blockTag, gas }) => {
       true,
       wstETHAmount,
       0,
-      { blockTag }
+      { blockTag },
     );
 
   // stETH/WETH rate = WETH amount / stETH amount
@@ -79,7 +79,7 @@ const getFluidSpotPrices = async ({ amount, blockTag, gas }) => {
       false,
       amountBI,
       0,
-      { blockTag }
+      { blockTag },
     );
   const sellGas = await quoter
     .connect(signer)
@@ -88,7 +88,7 @@ const getFluidSpotPrices = async ({ amount, blockTag, gas }) => {
       true,
       amountBI,
       0,
-      { blockTag }
+      { blockTag },
     );
 
   return {

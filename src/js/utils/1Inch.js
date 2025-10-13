@@ -6,10 +6,10 @@ const { sleep } = require("../utils/time");
 
 const log = require("./logger")("utils:1inch");
 
-const ONEINCH_API_ENDPOINT = "https://api.1inch.dev/swap/v6.0/1/quote";
+const ONEINCH_API_ENDPOINT = "https://api.1inch.dev/swap/v6.1";
 
 /**
- * Gets a swap quote from 1Inch's V5.2 swap API
+ * Gets a swap quote from 1Inch's swap API
  * @param fromAsset The address of the asset to swap from.
  * @param toAsset The address of the asset to swap to.
  * @param fromAmount The unit amount of fromAsset to swap. eg 1.1 WETH = 1.1e18
@@ -20,11 +20,12 @@ const get1InchSwapQuote = async ({
   toAsset,
   fromAmount,
   excludedProtocols,
+  chainId = 1,
 }) => {
   const apiKey = process.env.ONEINCH_API_KEY;
   if (!apiKey) {
     throw Error(
-      "ONEINCH_API_KEY environment variable not set. Visit the 1Inch Dev Portal https://portal.1inch.dev/"
+      "ONEINCH_API_KEY environment variable not set. Visit the 1Inch Dev Portal https://portal.1inch.dev/",
     );
   }
 
@@ -32,10 +33,8 @@ const get1InchSwapQuote = async ({
     src: fromAsset,
     dst: toAsset,
     amount: fromAmount.toString(),
-    allowPartialFill: true,
-    disableEstimate: true,
     includeProtocols: true,
-    includeGas: true,
+    includeGas: false,
     includeTokensInfo: false,
     excludedProtocols: excludedProtocols || [],
   };
@@ -44,8 +43,9 @@ const get1InchSwapQuote = async ({
   let retries = 3;
 
   while (retries > 0) {
+    const quoteUrl = `${ONEINCH_API_ENDPOINT}/${chainId}/quote`;
     try {
-      const response = await axios.get(ONEINCH_API_ENDPOINT, {
+      const response = await axios.get(quoteUrl, {
         params,
         headers: {
           Authorization: `Bearer ${apiKey}`,
@@ -69,7 +69,7 @@ const get1InchSwapQuote = async ({
       if (err.response?.status == 429) {
         retries = retries - 1;
         console.error(
-          `Failed to get a 1Inch quote. Will try again in 2 seconds with ${retries} retries left`
+          `Failed to get a 1Inch quote. Will try again in 2 seconds with ${retries} retries left`,
         );
         // Wait for 2s before next try
         await new Promise((r) => setTimeout(r, 2000));

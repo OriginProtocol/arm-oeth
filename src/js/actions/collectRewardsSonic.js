@@ -16,20 +16,16 @@ const handler = async (event) => {
   });
 
   console.log(
-    `DEBUG env var in handler before being set: "${process.env.DEBUG}"`
+    `DEBUG env var in handler before being set: "${process.env.DEBUG}"`,
   );
 
   const harvester = new ethers.Contract(sonic.harvester, harvesterAbi, signer);
 
-  try {
-    await collectRewards({
-      signer,
-      harvester,
-      strategies: [sonic.siloVarlamoreMarket],
-    });
-  } catch (error) {
-    console.error(error);
-  }
+  await collectRewards({
+    signer,
+    harvester,
+    strategies: [sonic.siloVarlamoreMarket],
+  });
 
   // TODO do Silo, beS and wOS swaps with FlyTrade
 };

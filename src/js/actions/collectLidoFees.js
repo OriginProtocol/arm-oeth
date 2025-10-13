@@ -1,7 +1,7 @@
 const { Defender } = require("@openzeppelin/defender-sdk");
 const { ethers } = require("ethers");
 
-const { collectFees } = require("../tasks/lidoQueue");
+const { collectFees } = require("../tasks/admin");
 const { mainnet } = require("../utils/addresses");
 const lidoARMAbi = require("../../abis/LidoARM.json");
 
@@ -16,20 +16,16 @@ const handler = async (event) => {
   });
 
   console.log(
-    `DEBUG env var in handler before being set: "${process.env.DEBUG}"`
+    `DEBUG env var in handler before being set: "${process.env.DEBUG}"`,
   );
 
   // References to contracts
   const arm = new ethers.Contract(mainnet.lidoARM, lidoARMAbi, signer);
 
-  try {
-    await collectFees({
-      signer,
-      arm,
-    });
-  } catch (error) {
-    console.error(error);
-  }
+  await collectFees({
+    signer,
+    arm,
+  });
 };
 
 module.exports = { handler };

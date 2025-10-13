@@ -42,7 +42,7 @@ async function depositARM({ amount, asset, arm }) {
     await logTxDetails(tx, "deposit");
   } else if (asset == "S") {
     const zapperAddress = await parseDeployedAddress(
-      `${arm.toUpperCase()}_ARM_ZAPPER`
+      `${arm.toUpperCase()}_ARM_ZAPPER`,
     );
     const zapper = await ethers.getContractAt("ZapperARM", zapperAddress);
     const armAddress = await parseDeployedAddress(`${arm.toUpperCase()}_ARM`);
@@ -54,7 +54,7 @@ async function depositARM({ amount, asset, arm }) {
     await logTxDetails(tx, "zap deposit");
   } else {
     throw new Error(
-      `Unsupported asset type: ${asset}. Supported types are WETH, ETH, WS, S.`
+      `Unsupported asset type: ${asset}. Supported types are WETH, ETH, WS, S.`,
     );
   }
 }
@@ -68,7 +68,7 @@ async function requestRedeemARM({ arm, amount }) {
   const armContract = await ethers.getContractAt(`${arm}ARM`, armAddress);
 
   log(
-    `About to request a redeem of ${amount} of LP tokens from the ${arm} ARM`
+    `About to request a redeem of ${amount} of LP tokens from the ${arm} ARM`,
   );
   const tx = await armContract.connect(signer).requestRedeem(amountBn);
   await logTxDetails(tx, "requestRedeem");
@@ -93,12 +93,12 @@ async function setLiquidityProviderCaps({ accounts, arm, cap }) {
   const liquidityProviders = accounts.split(",");
 
   const lpcAddress = await parseDeployedAddress(
-    `${arm.toUpperCase()}_ARM_CAP_MAN`
+    `${arm.toUpperCase()}_ARM_CAP_MAN`,
   );
   const capManager = await ethers.getContractAt("CapManager", lpcAddress);
 
   log(
-    `About to set deposit cap of ${cap} WETH for liquidity providers ${liquidityProviders} for the ${arm} ARM`
+    `About to set deposit cap of ${cap} WETH for liquidity providers ${liquidityProviders} for the ${arm} ARM`,
   );
   const tx = await capManager
     .connect(signer)
@@ -112,7 +112,7 @@ async function setTotalAssetsCap({ arm, cap }) {
   const capBn = parseUnits(cap.toString());
 
   const lpcAddress = await parseDeployedAddress(
-    `${arm.toUpperCase()}_ARM_CAP_MAN`
+    `${arm.toUpperCase()}_ARM_CAP_MAN`,
   );
   const capManager = await ethers.getContractAt("CapManager", lpcAddress);
 

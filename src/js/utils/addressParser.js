@@ -25,7 +25,7 @@ const parseDeployedAddress = async (name) => {
       `Failed to parse deployed contract "${name}" from "${fileName}".`,
       {
         cause: err,
-      }
+      },
     );
   }
 };
@@ -65,23 +65,23 @@ const parseAddress = async (name) => {
 
   if (!library) {
     throw new Error(
-      `Failed to find library "${libraryName}" in file "${fileName}".`
+      `Failed to find library "${libraryName}" in file "${fileName}".`,
     );
   }
 
   // Find the variable in the library
   const variable = library.subNodes.find(
-    (node) => node.variables[0].name === name
+    (node) => node.variables[0].name === name,
   );
 
   if (!variable) {
     throw new Error(
-      `Failed to find address variable ${name} in ${libraryName}.`
+      `Failed to find address variable ${name} in ${libraryName}.`,
     );
   }
 
   log(
-    `Found address ${variable.initialValue.number} for variable ${name} in ${libraryName}.`
+    `Found address ${variable.initialValue.number} for variable ${name} in ${libraryName}.`,
   );
 
   return variable.initialValue.number;

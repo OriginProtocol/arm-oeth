@@ -17,7 +17,7 @@ const handler = async (event) => {
   });
 
   console.log(
-    `DEBUG env var in handler before being set: "${process.env.DEBUG}"`
+    `DEBUG env var in handler before being set: "${process.env.DEBUG}"`,
   );
 
   // References to contracts
@@ -25,7 +25,7 @@ const handler = async (event) => {
   const withdrawalQueue = new ethers.Contract(
     mainnet.lidoWithdrawalQueue,
     lidoWithdrawalQueueAbi,
-    signer
+    signer,
   );
 
   await claimLidoWithdrawals({
