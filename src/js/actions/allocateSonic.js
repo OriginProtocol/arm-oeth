@@ -26,6 +26,7 @@ const handler = async (event) => {
     signer,
     arm,
     threshold: 20,
+    maxGasPrice: 500,
   });
 };
 

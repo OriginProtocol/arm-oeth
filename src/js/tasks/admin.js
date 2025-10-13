@@ -6,7 +6,36 @@ const { logTxDetails } = require("../utils/txLogger");
 
 const log = require("../utils/logger")("task:admin");
 
-async function allocate({ arm, signer, threshold }) {
+async function limitGasPrice(signer, maxGasPriceGwei) {
+  const { gasPrice } = await signer.provider.getFeeData();
+  const maxGasPrice = parseUnits(maxGasPriceGwei.toString(), "gwei");
+
+  if (gasPrice > maxGasPrice) {
+    log(
+      `Gas price ${formatUnits(gasPrice, "gwei")} gwei exceeds max of ${formatUnits(
+        maxGasPrice,
+        "gwei",
+      )} gwei`,
+    );
+    return true;
+  }
+
+  log(`Current gas price: ${formatUnits(gasPrice, "gwei")} gwei`);
+  return false;
+}
+
+async function allocate({
+  arm,
+  signer,
+  threshold,
+  execute = true,
+  maxGasPrice: maxGasPriceGwei = 10,
+}) {
+  if (await limitGasPrice(signer, maxGasPriceGwei)) {
+    log("Skipping allocation due to high gas price");
+    return;
+  }
+
   const liquidityDelta = await arm.allocate.staticCall();
 
   const thresholdBN = parseUnits((threshold || "10").toString(), 18);
@@ -61,8 +90,10 @@ async function allocate({ arm, signer, threshold }) {
       liquidityDelta,
     )} to/from the active lending market`,
   );
-  const tx = await arm.connect(signer).allocate({ gasLimit });
-  await logTxDetails(tx, "allocate");
+  if (execute) {
+    const tx = await arm.connect(signer).allocate({ gasLimit });
+    await logTxDetails(tx, "allocate");
+  }
 }
 
 async function collectFees({ arm, signer }) {

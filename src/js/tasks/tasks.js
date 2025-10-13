@@ -955,13 +955,26 @@ subtask("allocate", "Allocate to/from the active lending market")
     undefined,
     types.float,
   )
-  .setAction(async ({ arm, threshold }) => {
+  .addOptionalParam(
+    "maxGasPrice",
+    "The maximum gas price in gwei to allow execution.",
+    10,
+    types.float,
+  )
+  .addOptionalParam("execute", "Execute the transaction", true, types.boolean)
+  .setAction(async ({ arm, threshold, execute, maxGasPrice }) => {
     const signer = await getSigner();
 
     const armAddress = await parseDeployedAddress(`${arm.toUpperCase()}_ARM`);
     const armContract = await ethers.getContractAt(`${arm}ARM`, armAddress);
 
-    await allocate({ signer, arm: armContract, threshold });
+    await allocate({
+      signer,
+      arm: armContract,
+      threshold,
+      maxGasPrice,
+      execute,
+    });
   });
 task("allocate").setAction(async (_, __, runSuper) => {
   return runSuper();
