@@ -675,6 +675,13 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         return newAvailableAssets - fees;
     }
 
+    /// @notice The liquidity asset used for deposits and redeems. eg WETH or wS
+    /// Used for compatibility with ERC-4626
+    /// @return The address of the liquidity asset
+    function asset() public view returns (address) {
+        return liquidityAsset;
+    }
+
     /// @dev Calculate the available assets which is the assets in the ARM, external withdrawal queue,
     /// and active lending market, less liquidity assets reserved for the ARM's withdrawal queue.
     /// This does not exclude any accrued performance fees.
