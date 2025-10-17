@@ -215,7 +215,9 @@ abstract contract TargetFunction is Properties {
         if (originARM.crossPrice() > newCrossPrice) vm.assume(os.balanceOf(address(originARM)) <= MIN_TOTAL_SUPPLY);
 
         // Console log data
-        if (CONSOLE_LOG) console.log("setCrossPrice() \t From: %s | \t CrossP: %s", "Owner", faa(newCrossPrice / 1e18));
+        if (CONSOLE_LOG) {
+            console.log("setCrossPrice() \t From: %s | \t CrossP: %s", "Owner", faa(newCrossPrice / 1e18));
+        }
 
         // Main call
         vm.prank(governor);
