@@ -1,6 +1,14 @@
-# Automated Redemption Manager (ARM) for Origin ETH (OETH)
+# Automated Redemption Manager (ARM)
 
-Swap OETH for WETH at 1:1 ratio.
+There are currently three ARM contracts:
+
+1. [Lido ARM](https://docs.originprotocol.com/arm/steth-arm) with stETH as the base asset and WETH as the liquidity asset.
+2. [Sonic ARM](https://docs.originprotocol.com/os-arm) with OS as the base asset and wS as the liquidity asset.
+3. OETH ARM with OETH as the base asset and WETH as the liquidity asset.
+
+## Deployed Contracts
+
+See the [ARM Registry](https://docs.originprotocol.com/registry/contracts/arm-registry) for the deployed contracts.
 
 ## Swap Interface
 
@@ -147,10 +155,6 @@ function convertToAssets(uint256 shares) public view returns (uint256 assets);
 /// @return The total amount of assets in the ARM
 function totalAssets() public view virtual returns (uint256);
 ```
-
-## Deployed Contracts
-
-See the [ARM Registry](https://docs.originprotocol.com/registry/contracts/arm-registry) for the deployed contracts.
 
 ## Development
 
