@@ -678,7 +678,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @notice The liquidity asset used for deposits and redeems. eg WETH or wS
     /// Used for compatibility with ERC-4626
     /// @return The address of the liquidity asset
-    function asset() public view returns (address) {
+    function asset() external view virtual returns (address) {
         return liquidityAsset;
     }
 
