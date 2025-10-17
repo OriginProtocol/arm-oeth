@@ -145,7 +145,7 @@ function convertToAssets(uint256 shares) public view returns (uint256 assets);
 /// @notice The total amount of assets in the ARM, active lending market and external withdrawal queue,
 /// less the liquidity assets reserved for the ARM's withdrawal queue and accrued fees.
 /// @return The total amount of assets in the ARM
-function totalAssets() public view virtual returns (uint256)=
+function totalAssets() public view virtual returns (uint256);
 ```
 
 ## Deployed Contracts
