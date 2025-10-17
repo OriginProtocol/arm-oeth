@@ -37,11 +37,7 @@ contract Fork_Concrete_LidoARM_RequestLidoWithdrawals_Test_ is Fork_Shared_Test_
     //////////////////////////////////////////////////////
     /// --- PASSING TESTS
     //////////////////////////////////////////////////////
-    function test_ClaimLidoWithdrawals_EmptyList()
-        public
-        asOperator
-        requestLidoWithdrawalsOnLidoARM(new uint256[](0))
-    {
+    function test_ClaimLidoWithdrawals_EmptyList() public asOperator requestLidoWithdrawalsOnLidoARM(new uint256[](0)) {
         assertEq(address(lidoARM).balance, 0);
         assertEq(lidoARM.lidoWithdrawalQueueAmount(), 0);
 

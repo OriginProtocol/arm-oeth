@@ -25,7 +25,9 @@ contract PendleOriginARMSY is SYBaseV2 {
         internal
         virtual
         override
-        returns (uint256 /*amountSharesOut*/ )
+        returns (
+            uint256 /*amountSharesOut*/
+        )
     {
         if (tokenIn == yieldToken) {
             return amountDeposited;
@@ -34,7 +36,12 @@ contract PendleOriginARMSY is SYBaseV2 {
         }
     }
 
-    function _redeem(address receiver, address, /*tokenOut*/ uint256 amountSharesToRedeem)
+    function _redeem(
+        address receiver,
+        address,
+        /*tokenOut*/
+        uint256 amountSharesToRedeem
+    )
         internal
         override
         returns (uint256)
@@ -52,17 +59,25 @@ contract PendleOriginARMSY is SYBaseV2 {
         view
         virtual
         override
-        returns (uint256 /*amountSharesOut*/ )
+        returns (
+            uint256 /*amountSharesOut*/
+        )
     {
         if (tokenIn == yieldToken) return amountTokenToDeposit;
         else return IERC4626(yieldToken).previewDeposit(amountTokenToDeposit);
     }
 
-    function _previewRedeem(address, /*tokenOut*/ uint256 amountSharesToRedeem)
+    function _previewRedeem(
+        address,
+        /*tokenOut*/
+        uint256 amountSharesToRedeem
+    )
         internal
         pure
         override
-        returns (uint256 /*amountTokenOut*/ )
+        returns (
+            uint256 /*amountTokenOut*/
+        )
     {
         return amountSharesToRedeem;
     }
