@@ -51,7 +51,7 @@ const setPrices = async (options) => {
           ? await get1InchPrices(options.amount) // 2.1.c Or from Curve if specified
           : await getCurvePrices({
               ...options,
-              poolAddress: addresses.mainnet.CurveStEthPool,
+              poolAddress: addresses.mainnet.CurveNgStEthPool,
             });
     log(
       `\nReference prices from ${
