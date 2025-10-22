@@ -22,6 +22,7 @@ import {DeployPendleAdaptor} from "./mainnet/008_DeployPendleAdaptor.sol";
 import {DeployPendleAdaptorSonic} from "./sonic/004_DeployPendleAdaptor.sol";
 import {UpgradeLidoARMSetBufferScript} from "./mainnet/009_UpgradeLidoARMSetBufferScript.sol";
 import {UpgradeOriginARMSetBufferScript} from "./sonic/005_UpgradeOriginARMSetBufferScript.sol";
+import {UpgradeLidoARMAssetScript} from "./mainnet/010_UpgradeLidoARMAssetScript.sol";
 
 contract DeployManager is Script {
     using stdJson for string;
@@ -80,6 +81,7 @@ contract DeployManager is Script {
             _runDeployFile(new UpgradeLidoARMMorphoScript());
             _runDeployFile(new UpgradeLidoARMSetBufferScript());
             _runDeployFile(new DeployPendleAdaptor());
+            _runDeployFile(new UpgradeLidoARMAssetScript());
         } else if (block.chainid == 17000) {
             // Holesky
             _runDeployFile(new DeployCoreHoleskyScript());
