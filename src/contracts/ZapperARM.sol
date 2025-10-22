@@ -11,33 +11,33 @@ import {ILiquidityProviderARM} from "./Interfaces.sol";
 
 /**
  * @title Zapper contract for Automated Redemption Managers (ARMs)
- * Converts S to wS and deposits it to an ARM to receive ARM LP shares.
+ * Converts native currency to wrapped currency, deposits it to an ARM and receives ARM LP shares.
  * @author Origin Protocol Inc
  */
 contract ZapperARM is Ownable {
-    /// @notice The address of the wrapped S token (wS)
-    IWETH public immutable ws;
+    /// @notice The address of the wrapped token. eg WETH or wS
+    IWETH public immutable wrappedCurrency;
 
     event Zap(address indexed arm, address indexed sender, uint256 assets, uint256 shares);
 
-    constructor(address _ws) {
-        ws = IWETH(_ws);
+    constructor(address _wrappedCurrency) {
+        wrappedCurrency = IWETH(_wrappedCurrency);
     }
 
-    /// @notice Deposit S to OriginARM and receive ARM shares
+    /// @notice Convert native currency to wrapped currency, deposit it to an ARM and receive ARM shares
     /// @param arm The address of the ARM contract to deposit to
     /// @return shares The amount of ARM LP shares sent to the depositor
     function deposit(address arm) public payable returns (uint256 shares) {
-        // Wrap all S to wS
-        uint256 sBalance = address(this).balance;
-        ws.deposit{value: sBalance}();
+        // Wrap all native currency sent
+        uint256 balance = address(this).balance;
+        wrappedCurrency.deposit{value: balance}();
 
-        // Deposit all wS to the ARM
-        ws.approve(arm, sBalance);
-        shares = ILiquidityProviderARM(arm).deposit(sBalance, msg.sender);
+        // Deposit all wrapped currency to the ARM
+        wrappedCurrency.approve(arm, balance);
+        shares = ILiquidityProviderARM(arm).deposit(balance, msg.sender);
 
         // Emit event
-        emit Zap(arm, msg.sender, sBalance, shares);
+        emit Zap(arm, msg.sender, balance, shares);
     }
 
     /// @notice Rescue ERC20 tokens
