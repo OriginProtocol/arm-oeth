@@ -42,11 +42,11 @@ const setPrices = async (options) => {
           midPrice: parseUnits(midPrice.toString(), 18),
         }
       : inch
-      ? await get1InchPrices(options.amount)
-      : await getCurvePrices({
-          ...options,
-          poolAddress: addresses.mainnet.CurveStEthPool,
-        });
+        ? await get1InchPrices(options.amount)
+        : await getCurvePrices({
+            ...options,
+            poolAddress: addresses.mainnet.CurveStEthPool,
+          });
     log(`mid price          : ${formatUnits(referencePrices.midPrice)}`);
 
     const offsetBN = parseUnits(offset.toString(), 14);
@@ -58,8 +58,8 @@ const setPrices = async (options) => {
     log(
       `fee                : ${formatUnits(
         BigInt(fee * 1000000),
-        6
-      )} basis points`
+        6,
+      )} basis points`,
     );
     log(`fee rate           : ${formatUnits(feeRate, 6)} basis points`);
 
@@ -72,8 +72,8 @@ const setPrices = async (options) => {
         log(
           `target sell price ${formatUnits(
             targetSellPrice,
-            36
-          )} is above max sell price ${maxSellPrice} so will use max`
+            36,
+          )} is above max sell price ${maxSellPrice} so will use max`,
         );
         targetSellPrice = maxSellPriceBN;
       }
@@ -84,8 +84,8 @@ const setPrices = async (options) => {
         log(
           `target sell price ${formatUnits(
             targetSellPrice,
-            36
-          )} is below min sell price ${minSellPrice} so will use min`
+            36,
+          )} is below min sell price ${minSellPrice} so will use min`,
         );
         targetSellPrice = minSellPriceBN;
       }
@@ -96,8 +96,8 @@ const setPrices = async (options) => {
         log(
           `target buy price ${formatUnits(
             targetBuyPrice,
-            36
-          )} is above max buy price ${maxBuyPrice} so will use max`
+            36,
+          )} is above max buy price ${maxBuyPrice} so will use max`,
         );
         targetBuyPrice = maxBuyPriceBN;
       }
@@ -108,8 +108,8 @@ const setPrices = async (options) => {
         log(
           `target buy price ${formatUnits(
             targetBuyPrice,
-            36
-          )} is below min buy price ${minBuyPrice} so will use min`
+            36,
+          )} is below min buy price ${minBuyPrice} so will use min`,
         );
         targetBuyPrice = minBuyPriceBN;
       }
@@ -120,11 +120,11 @@ const setPrices = async (options) => {
       log(
         `target sell price ${formatUnits(
           targetSellPrice,
-          36
+          36,
         )} is below cross price ${formatUnits(
           crossPrice,
-          36
-        )} so will use cross price`
+          36,
+        )} so will use cross price`,
       );
       targetSellPrice = crossPrice;
     }
@@ -132,11 +132,11 @@ const setPrices = async (options) => {
       log(
         `target buy price ${formatUnits(
           targetBuyPrice,
-          36
+          36,
         )} is above cross price ${formatUnits(
           crossPrice,
-          36
-        )} so will use cross price`
+          36,
+        )} so will use cross price`,
       );
       targetBuyPrice = crossPrice - 1n;
     }
@@ -145,7 +145,7 @@ const setPrices = async (options) => {
     targetBuyPrice = parseUnits(buyPrice.toString(), 18) * BigInt(1e18);
   } else {
     throw new Error(
-      `Either both buy and sell prices should be provided or midPrice`
+      `Either both buy and sell prices should be provided or midPrice`,
     );
   }
 
@@ -176,11 +176,11 @@ const setPrices = async (options) => {
     console.log(
       `No price update as price diff of buy ${formatUnits(
         diffBuyPrice,
-        32
+        32,
       )} and sell ${formatUnits(diffSellPrice, 32)} < tolerance ${formatUnits(
         toleranceScaled,
-        32
-      )} basis points`
+        32,
+      )} basis points`,
     );
   }
 };

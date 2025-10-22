@@ -3,6 +3,9 @@
   "version": "0.0.1",
   "description": "Automated Redemption Manager (ARM) for Origin ETH (OETH)",
   "scripts": {
+    "lint": "eslint \"src/**/*.js\"",
+    "prettier": "prettier --write \"*.js\" \"src/js/**/*.js\"",
+    "prettier:check": "prettier -c \"src/js/**/*.js\"",
     "test": "forge test --fork-url=$PROVIDER_URL --gas-report",
     "snap": "npx hardhat snap --network mainnet --amount 100"
   },
@@ -33,6 +36,7 @@
     "graphql": "^16.9.0",
     "hardhat": "^2.22.9",
     "node-fetch": "^2.6.7",
+    "prettier": "^3.6.2",
     "rollup": "^4.9.1",
     "rollup-plugin-visualizer": "^5.12.0"
   }

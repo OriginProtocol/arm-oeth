@@ -19,7 +19,7 @@ const handler = async (event) => {
   });
 
   console.log(
-    `DEBUG env var in handler before being set: "${process.env.DEBUG}"`
+    `DEBUG env var in handler before being set: "${process.env.DEBUG}"`,
   );
 
   // References to contracts
@@ -42,7 +42,7 @@ const handler = async (event) => {
     // Add 10% buffer to gas limit
     let gasLimit = await arm.connect(signer).allocate.estimateGas();
     gasLimit = (gasLimit * 12n) / 10n;
-    
+
     // Allocate any excess liquidity to the lending market
     const tx = await arm.allocate({ gasLimit });
     await logTxDetails(tx, "allocate");

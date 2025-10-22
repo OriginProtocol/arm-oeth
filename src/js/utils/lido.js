@@ -14,19 +14,19 @@ const getLidoQueueData = async (signer, blockTag) => {
   // Get Lido deposits
   const deposits = await signer.provider.getBalance(
     stETH.getAddress(),
-    blockTag
+    blockTag,
   );
 
   // Get execution rewards
   const elRewards = await signer.provider.getBalance(
     mainnet.lidoExecutionLayerVault,
-    blockTag
+    blockTag,
   );
 
   // Get ETH swept from exited validators
   const ethFromValidators = await signer.provider.getBalance(
     mainnet.lidoWithdrawalManager,
-    blockTag
+    blockTag,
   );
 
   const finalization = deposits + elRewards + ethFromValidators;
