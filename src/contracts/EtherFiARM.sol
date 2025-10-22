@@ -174,6 +174,7 @@ contract EtherFiARM is Initializable, AbstractARM, IERC721Receiver {
     /// @notice To be able to receive the NFTs from the EtherFi withdrawal queue contract.
     function onERC721Received(address operator, address from, uint256 tokenId, bytes calldata data)
         external
+        pure
         override
         returns (bytes4)
     {
