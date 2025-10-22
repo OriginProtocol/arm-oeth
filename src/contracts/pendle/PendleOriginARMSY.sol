@@ -34,11 +34,12 @@ contract PendleOriginARMSY is SYBaseV2 {
         }
     }
 
-    function _redeem(address receiver, address, /*tokenOut*/ uint256 amountSharesToRedeem)
-        internal
-        override
-        returns (uint256)
-    {
+    function _redeem(
+        address receiver,
+        address,
+        /*tokenOut*/
+        uint256 amountSharesToRedeem
+    ) internal override returns (uint256) {
         _transferOut(yieldToken, receiver, amountSharesToRedeem);
         return amountSharesToRedeem;
     }
@@ -58,12 +59,11 @@ contract PendleOriginARMSY is SYBaseV2 {
         else return IERC4626(yieldToken).previewDeposit(amountTokenToDeposit);
     }
 
-    function _previewRedeem(address, /*tokenOut*/ uint256 amountSharesToRedeem)
-        internal
-        pure
-        override
-        returns (uint256 /*amountTokenOut*/ )
-    {
+    function _previewRedeem(
+        address,
+        /*tokenOut*/
+        uint256 amountSharesToRedeem
+    ) internal pure override returns (uint256 /*amountTokenOut*/ ) {
         return amountSharesToRedeem;
     }
 

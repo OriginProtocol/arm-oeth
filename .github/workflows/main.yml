@@ -23,6 +23,11 @@ jobs:
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.3.6
+
+      - name: Show Forge version
+        run: forge --version
 
       - name: Run Linter
         run: forge fmt --check
@@ -40,6 +45,11 @@ jobs:
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.3.6
+
+      - name: Show Forge version
+        run: forge --version
 
       - name: Install Dependencies
         run: forge soldeer install && yarn install

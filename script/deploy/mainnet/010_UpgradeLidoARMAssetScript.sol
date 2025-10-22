@@ -14,13 +14,13 @@ import {MorphoMarket} from "contracts/markets/MorphoMarket.sol";
 import {GovProposal, GovSixHelper} from "contracts/utils/GovSixHelper.sol";
 import {AbstractDeployScript} from "../AbstractDeployScript.sol";
 
-contract UpgradeLidoARMSetBufferScript is AbstractDeployScript {
+contract UpgradeLidoARMAssetScript is AbstractDeployScript {
     using GovSixHelper for GovProposal;
 
     GovProposal public govProposal;
 
-    string public constant override DEPLOY_NAME = "009_UpgradeLidoARMSetBufferScript";
-    bool public constant override proposalExecuted = true;
+    string public constant override DEPLOY_NAME = "010_UpgradeLidoARMAssetScript";
+    bool public constant override proposalExecuted = false;
 
     Proxy morphoMarketProxy;
     LidoARM lidoARMImpl;
@@ -39,13 +39,11 @@ contract UpgradeLidoARMSetBufferScript is AbstractDeployScript {
     }
 
     function _buildGovernanceProposal() internal override {
-        govProposal.setDescription("Update Lido ARM to allow operator to setBuffer()");
+        govProposal.setDescription("Update Lido ARM to add asset() view function");
 
         govProposal.action(
             deployedContracts["LIDO_ARM"], "upgradeTo(address)", abi.encode(deployedContracts["LIDO_ARM_IMPL"])
         );
-
-        govProposal.action(deployedContracts["LIDO_ARM"], "setCapManager(address)", abi.encode(address(0)));
 
         govProposal.simulate();
     }
