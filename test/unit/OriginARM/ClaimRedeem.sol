@@ -43,7 +43,11 @@ contract Unit_Concrete_OriginARM_ClaimRedeem_Test_ is Unit_Shared_Test {
         originARM.claimRedeem(0);
     }
 
-    function test_RevertWhen_ClaimRedeem_Because_AlreadyClaimed() public requestRedeemAll(alice) timejump(CLAIM_DELAY) {
+    function test_RevertWhen_ClaimRedeem_Because_AlreadyClaimed()
+        public
+        requestRedeemAll(alice)
+        timejump(CLAIM_DELAY)
+    {
         // Alice claims her redeem
         vm.prank(alice);
         originARM.claimRedeem(0);

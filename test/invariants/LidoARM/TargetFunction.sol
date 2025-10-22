@@ -25,7 +25,11 @@ abstract contract TargetFunction is Properties {
         // Prank the user
         vm.prank(user);
         uint256[] memory amounts = lidoARM.swapExactTokensForTokens({
-            amountIn: amount, amountOutMin: 0, path: path, to: address(user), deadline: block.timestamp
+            amountIn: amount,
+            amountOutMin: 0,
+            path: path,
+            to: address(user),
+            deadline: block.timestamp
         });
 
         // Update ghost
@@ -49,7 +53,11 @@ abstract contract TargetFunction is Properties {
         // Prank the user
         vm.prank(user);
         uint256[] memory amounts = lidoARM.swapTokensForExactTokens({
-            amountOut: amount, amountInMax: type(uint256).max, path: path, to: address(user), deadline: block.timestamp
+            amountOut: amount,
+            amountInMax: type(uint256).max,
+            path: path,
+            to: address(user),
+            deadline: block.timestamp
         });
 
         // Update ghost
@@ -247,9 +255,8 @@ abstract contract TargetFunction is Properties {
         // Bound new cross price
         uint256 sell = priceScale ** 2 / lidoARM.traderate0();
         uint256 buy = lidoARM.traderate1();
-        newCrossPrice = _bound(
-            newCrossPrice, max(priceScale - lidoARM.MAX_CROSS_PRICE_DEVIATION(), buy) + 1, min(priceScale, sell)
-        );
+        newCrossPrice =
+            _bound(newCrossPrice, max(priceScale - lidoARM.MAX_CROSS_PRICE_DEVIATION(), buy) + 1, min(priceScale, sell));
 
         // Prank owner
         vm.prank(lidoARM.owner());

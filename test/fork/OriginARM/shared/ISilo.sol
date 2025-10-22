@@ -172,11 +172,17 @@ interface Silo {
     function maxDeposit(address) external pure returns (uint256 maxAssets);
     function maxFlashLoan(address _token) external view returns (uint256 maxLoan);
     function maxMint(address) external view returns (uint256 maxShares);
-    function maxRedeem(address _owner, ISilo.CollateralType _collateralType) external view returns (uint256 maxShares);
+    function maxRedeem(address _owner, ISilo.CollateralType _collateralType)
+        external
+        view
+        returns (uint256 maxShares);
     function maxRedeem(address _owner) external view returns (uint256 maxShares);
     function maxRepay(address _borrower) external view returns (uint256 assets);
     function maxRepayShares(address _borrower) external view returns (uint256 shares);
-    function maxWithdraw(address _owner, ISilo.CollateralType _collateralType) external view returns (uint256 maxAssets);
+    function maxWithdraw(address _owner, ISilo.CollateralType _collateralType)
+        external
+        view
+        returns (uint256 maxAssets);
     function maxWithdraw(address _owner) external view returns (uint256 maxAssets);
     function mint(uint256 _shares, address _receiver) external returns (uint256 assets);
     function mint(uint256 _shares, address _receiver, ISilo.CollateralType _collateralType)
@@ -194,10 +200,16 @@ interface Silo {
         view
         returns (uint256 shares);
     function previewDeposit(uint256 _assets) external view returns (uint256 shares);
-    function previewMint(uint256 _shares, ISilo.CollateralType _collateralType) external view returns (uint256 assets);
+    function previewMint(uint256 _shares, ISilo.CollateralType _collateralType)
+        external
+        view
+        returns (uint256 assets);
     function previewMint(uint256 _shares) external view returns (uint256 assets);
     function previewRedeem(uint256 _shares) external view returns (uint256 assets);
-    function previewRedeem(uint256 _shares, ISilo.CollateralType _collateralType) external view returns (uint256 assets);
+    function previewRedeem(uint256 _shares, ISilo.CollateralType _collateralType)
+        external
+        view
+        returns (uint256 assets);
     function previewRepay(uint256 _assets) external view returns (uint256 shares);
     function previewRepayShares(uint256 _shares) external view returns (uint256 assets);
     function previewWithdraw(uint256 _assets) external view returns (uint256 shares);
