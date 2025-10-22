@@ -1,5 +1,4 @@
 const axios = require("axios");
-const fetch = require("node-fetch");
 const { formatUnits, parseUnits, Interface } = require("ethers");
 
 /// --- Note: ---
@@ -7,7 +6,7 @@ const { formatUnits, parseUnits, Interface } = require("ethers");
 /// ---
 
 const { resolveAddress } = require("./assets");
-const FlyTradeBaseURL = "https://api.fly.trade/aggregator";
+const FlyTradeBaseURL = "https://api.magpiefi.xyz/aggregator";
 
 const log = require("./logger")("utils:fly");
 
@@ -91,45 +90,43 @@ const flyTradeQuote = async ({
 }) => {
   const fromAsset = await resolveAddress(from);
   const toAsset = await resolveAddress(to);
-  const urlQuery = [
-    `network=sonic`,
-    `fromTokenAddress=${fromAsset}`,
-    `toTokenAddress=${toAsset}`,
-    `sellAmount=${amount}`,
-    `fromAddress=${swapper}`,
-    `toAddress=${recipient}`,
-    `slippage=${slippage}`,
-    `liquiditySources=${liquiditySources}`,
-    `gasless=false`,
-  ].join("&");
+  const params = {
+    network: "sonic",
+    fromTokenAddress: fromAsset,
+    toTokenAddress: toAsset,
+    sellAmount: amount,
+    fromAddress: swapper,
+    toAddress: recipient,
+    slippage,
+    liquiditySources,
+    gasless: false,
+  };
+
+  if (!process.env.FLY_API_KEY) {
+    throw new Error(
+      "The FLY_API_KEY environment variable must be set to call the Fly API",
+    );
+  }
 
   try {
-    const response = await fetch(`${FlyTradeBaseURL}/quote?${urlQuery}`, {
-      method: "GET",
+    const response = await axios.get(`${FlyTradeBaseURL}/quote`, {
+      params,
       headers: {
+        apikey: process.env.FLY_API_KEY,
         "User-Agent":
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
       },
     });
 
-    if (!response.ok || response.status !== 200) {
-      console.log("Fly.quote response:");
-      console.log(response);
-      console.log(await response.text());
-      throw new Error(
-        `Failed to get price quote from fly.quote: ${response.statusText}`,
-      );
-    }
+    const responseData = await response.data;
 
-    const responseData = await response.json();
-
-    // log("FlyTrade quote response: ", responseData);
+    log("FlyTrade quote response data: ", responseData);
     const toAmount = parseUnits(responseData.amountOut, 18);
     const price = (amount * parseUnits("1", 36)) / toAmount;
 
     const fees = responseData.typedData.message.swapFee;
     const id = responseData.id;
-    const minAmountOut = responseData.typedData.messageamountOutMin;
+    const minAmountOut = responseData.typedData.message.amountOutMin;
     log(`Quote id : ${id}`);
     log(`${from}/${to} sell price: ${formatUnits(price, 4)}`);
 
@@ -138,10 +135,12 @@ const flyTradeQuote = async ({
     return { price, fromAsset, toAsset, minAmountOut, data, fees };
   } catch (err) {
     if (err.response) {
-      console.error("Response data  : ", err.response.data);
-      console.error("Response status: ", err.response.status);
+      console.error("Response data  : ", err.response?.data);
+      console.error("Response status: ", err.response?.status);
     }
-    throw Error(`Call to FlyTrade quote API failed: ${err.message}`);
+    throw Error(`Call to FlyTrade quote API failed`, {
+      cause: err,
+    });
   }
 };
 
@@ -156,6 +155,11 @@ const flyTradeTx = async ({ id }) => {
   try {
     const response = await axios.get(`${FlyTradeBaseURL}/transaction`, {
       params,
+      headers: {
+        apikey: process.env.FLY_API_KEY,
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
+      },
     });
 
     // -------------------------------  ⚠️ ⚠️ ⚠️ ------------------------------- //
@@ -163,7 +167,7 @@ const flyTradeTx = async ({ id }) => {
     // -------------------------------  ⚠️ ⚠️ ⚠️ ------------------------------- //
     console.log(`0x${response.data.data.slice(10)}`);
 
-    log("FlyTrade transaction response: ", response);
+    log("FlyTrade transaction response data: ", response.data);
 
     const iface = new Interface([
       "function swapWithMagpieSignature(bytes) view returns (uint256)",
@@ -181,7 +185,7 @@ const flyTradeTx = async ({ id }) => {
       console.error("Response data  : ", err.response.data);
       console.error("Response status: ", err.response.status);
     }
-    throw Error(`Call to FlyTrade quote API failed: ${err.message}`);
+    throw Error(`Call to FlyTrade quote API failed`, { cause: err });
   }
 };
 
