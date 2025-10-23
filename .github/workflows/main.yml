@@ -35,6 +35,7 @@ jobs:
     env:
       PROVIDER_URL: ${{ secrets.PROVIDER_URL }}
       SONIC_URL: ${{ secrets.SONIC_URL }}
+      FLY_API_KEY: ${{ secrets.FLY_API_KEY }}
     steps:
       - uses: actions/checkout@v4
         with:
