@@ -26,7 +26,6 @@ contract Fork_Concrete_Harvester_Swap_Test_ is Fork_Shared_Test {
 
     modifier ensureKeyEnvVarExists() {
         assertTrue(vm.envExists("FLY_API_KEY"), "FLY_API_KEY is not set"); // Ensure the FLY_API_KEY is set for this test
-        console.log(vm.envString("FLY_API_KEY")); // Load the env variable to avoid "unused variable" warning
         _;
     }
 
