@@ -55,7 +55,7 @@ contract DeployEtherFiARMScript is AbstractDeployScript {
         capManager.setAccountCapEnabled(true);
         address[] memory lpAccounts = new address[](1);
         // TODO need to confirm which wallet Treasury will use
-        lpAccounts[0] = Mainnet.TREASURY;
+        lpAccounts[0] = Mainnet.TREASURY_LP;
         capManager.setLiquidityProviderCaps(lpAccounts, 250 ether);
 
         // 5. Transfer ownership of CapManager to the mainnet 5/8 multisig
