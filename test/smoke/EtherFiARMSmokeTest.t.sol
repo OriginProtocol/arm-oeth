@@ -208,5 +208,29 @@ contract Fork_EtherFiARM_Smoke_Test is AbstractSmokeTest {
         etherFiARM.setOperator(operator);
     }
 
-    error InvalidInitialization();
+    function test_request_etherfi_withdrawal_operator() external {
+        // trader sells eETH and buys WETH, the ARM buys eETH as a 4 bps discount
+        _swapExactTokensForTokens(eeth, weth, 0.9996e36, 100 ether);
+
+        // Expected events
+        vm.expectEmit(true, false, false, false, address(etherFiARM));
+        emit EtherFiARM.RequestEtherFiWithdrawal(10 ether, 0);
+
+        // Operator requests an Ether.fi withdrawal
+        vm.prank(Mainnet.ARM_RELAYER);
+        etherFiARM.requestEtherFiWithdrawal(10 ether);
+    }
+
+    function test_request_etherfi_withdrawal_owner() external {
+        // trader sells eETH and buys WETH, the ARM buys eETH as a 4 bps discount
+        _swapExactTokensForTokens(eeth, weth, 0.9996e36, 100 ether);
+
+        // Expected events
+        vm.expectEmit(true, false, false, false, address(etherFiARM));
+        emit EtherFiARM.RequestEtherFiWithdrawal(10 ether, 0);
+
+        // Owner requests an Ether.fi withdrawal
+        vm.prank(Mainnet.TIMELOCK);
+        etherFiARM.requestEtherFiWithdrawal(10 ether);
+    }
 }
