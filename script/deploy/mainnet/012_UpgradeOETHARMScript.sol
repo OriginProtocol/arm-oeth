@@ -25,7 +25,6 @@ contract UpgradeOETHARMScript is AbstractDeployScript {
     OriginARM originARMImpl;
     OriginARM oethARM;
 
-
     function _execute() internal override {
         console.log("Deploy:", DEPLOY_NAME);
         console.log("------------");
@@ -39,25 +38,37 @@ contract UpgradeOETHARMScript is AbstractDeployScript {
     }
 
     function _buildGovernanceProposal() internal override {
+        // This is a cheat to remove.
+        // To upgrade the OETH ARM, the Timelock needs to have WETH and approve the ARM contract to pull WETH,
+        // to mint shares during initialization. So we simulate that by transferring WETH to the Timelock here.
+        // This can be removed once the Timelock has a WETH balance.
+        vm.prank(Mainnet.STRATEGIST);
+        (bool success,) =
+            Mainnet.WETH.call(abi.encodeWithSignature("transfer(address,uint256)", Mainnet.TIMELOCK, 1e12));
+        require(success, "WETH transfer failed");
+
         govProposal.setDescription("Update OETH ARM to use Origin ARM contract");
 
+        // 1. Timelock needs to approve the OETH ARM to pull WETH for initialization.
+        govProposal.action(Mainnet.WETH, "approve(address,uint256)", abi.encode(deployedContracts["OETH_ARM"], 1e12));
+
+        // 2. Upgrade the OETH ARM implementation, and initialize.
+        bytes memory initializeData = abi.encodeWithSelector(
+            OriginARM.initialize.selector,
+            "Origin ARM",
+            "ARM-WETH-OETH",
+            Mainnet.ARM_RELAYER,
+            2000, // 20% performance fee
+            Mainnet.ARM_BUYBACK,
+            address(0)
+        );
+
         govProposal.action(
-            deployedContracts["OETH_ARM"], "upgradeTo(address)", abi.encode(deployedContracts["OETH_ARM_IMPL"])
+            deployedContracts["OETH_ARM"],
+            "upgradeToAndCall(address,bytes)",
+            abi.encode(deployedContracts["OETH_ARM_IMPL"], initializeData)
         );
 
         govProposal.simulate();
-    }
-
-    function _fork() internal override {
-        oethARM = OriginARM(deployedContracts["OETH_ARM"]);
-
-        vm.prank(Mainnet.TIMELOCK);
-        oethARM.setOperator(Mainnet.STRATEGIST);
-
-        vm.prank(Mainnet.STRATEGIST);
-        oethARM.setPrices(0.99975e36, 0.9999e36);
-
-        vm.prank(Mainnet.TIMELOCK);
-        oethARM.setCrossPrice(1e36);
     }
 }
