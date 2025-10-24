@@ -30,6 +30,7 @@ library Mainnet {
     address public constant EETH = 0x35fA164735182de50811E8e2E824cFb9B6118ac2;
     address public constant WEETH = 0xCd5fE23C85820F7B72D0926FC9b05b43E359b7ee;
     address public constant STETH = 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84;
+    address public constant WOETH = 0xDcEe70654261AF21C44c093C300eD3Bb97b78192;
     address public constant WSTETH = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
 
     // Contracts
