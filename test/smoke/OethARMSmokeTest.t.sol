@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import {Test, console2} from "forge-std/Test.sol";
+import {Test, console} from "forge-std/Test.sol";
 
 import {AbstractSmokeTest} from "./AbstractSmokeTest.sol";
 
@@ -206,6 +206,45 @@ contract Fork_OriginARM_Smoke_Test is AbstractSmokeTest {
         assertApproxEqAbs(outToken.balanceOf(address(this)), startOut + amountOut, 3, "Out actual");
     }
 
+    function test_wrongInTokenExactIn() external {
+        vm.expectRevert("ARM: Invalid in token");
+        oethARM.swapExactTokensForTokens(BAD_TOKEN, oeth, 10 ether, 0, address(this));
+        vm.expectRevert("ARM: Invalid in token");
+        oethARM.swapExactTokensForTokens(BAD_TOKEN, weth, 10 ether, 0, address(this));
+    }
+
+    function test_wrongOutTokenExactIn() external {
+        vm.expectRevert("ARM: Invalid out token");
+        oethARM.swapTokensForExactTokens(weth, BAD_TOKEN, 10 ether, 10 ether, address(this));
+        vm.expectRevert("ARM: Invalid out token");
+        oethARM.swapTokensForExactTokens(oeth, BAD_TOKEN, 10 ether, 10 ether, address(this));
+        vm.expectRevert("ARM: Invalid out token");
+        oethARM.swapTokensForExactTokens(weth, weth, 10 ether, 10 ether, address(this));
+        vm.expectRevert("ARM: Invalid out token");
+        oethARM.swapTokensForExactTokens(oeth, oeth, 10 ether, 10 ether, address(this));
+    }
+
+    function test_wrongInTokenExactOut() external {
+        vm.expectRevert("ARM: Invalid in token");
+        oethARM.swapTokensForExactTokens(BAD_TOKEN, oeth, 10 ether, 10 ether, address(this));
+        vm.expectRevert("ARM: Invalid in token");
+        oethARM.swapTokensForExactTokens(BAD_TOKEN, weth, 10 ether, 10 ether, address(this));
+    }
+
+    function test_wrongOutTokenExactOut() external {
+        vm.expectRevert("ARM: Invalid out token");
+        oethARM.swapTokensForExactTokens(weth, BAD_TOKEN, 10 ether, 10 ether, address(this));
+        vm.expectRevert("ARM: Invalid out token");
+        oethARM.swapTokensForExactTokens(oeth, BAD_TOKEN, 10 ether, 10 ether, address(this));
+        vm.expectRevert("ARM: Invalid out token");
+        oethARM.swapTokensForExactTokens(weth, weth, 10 ether, 10 ether, address(this));
+        vm.expectRevert("ARM: Invalid out token");
+        oethARM.swapTokensForExactTokens(oeth, oeth, 10 ether, 10 ether, address(this));
+    }
+
+    ////////////////////////////////////////////////////
+    /// --- AUTHORIZATION
+    ////////////////////////////////////////////////////
     function test_unauthorizedAccess() external {
         address RANDOM_ADDRESS = vm.randomAddress();
         vm.startPrank(RANDOM_ADDRESS);
@@ -226,78 +265,16 @@ contract Fork_OriginARM_Smoke_Test is AbstractSmokeTest {
         // Implementation's restricted methods.
         vm.expectRevert("ARM: Only owner can call this function.");
         oethARM.setOwner(RANDOM_ADDRESS);
-    }
-
-    function test_wrongInTokenExactIn() external {
-        vm.expectRevert("ARM: Invalid swap");
-        oethARM.swapExactTokensForTokens(BAD_TOKEN, oeth, 10 ether, 0, address(this));
-        vm.expectRevert("ARM: Invalid swap");
-        oethARM.swapExactTokensForTokens(BAD_TOKEN, weth, 10 ether, 0, address(this));
-        vm.expectRevert("ARM: Invalid swap");
-        oethARM.swapExactTokensForTokens(weth, weth, 10 ether, 0, address(this));
-        vm.expectRevert("ARM: Invalid swap");
-        oethARM.swapExactTokensForTokens(oeth, oeth, 10 ether, 0, address(this));
-    }
-
-    function test_wrongOutTokenExactIn() external {
-        vm.expectRevert("ARM: Invalid swap");
-        oethARM.swapTokensForExactTokens(weth, BAD_TOKEN, 10 ether, 10 ether, address(this));
-        vm.expectRevert("ARM: Invalid swap");
-        oethARM.swapTokensForExactTokens(oeth, BAD_TOKEN, 10 ether, 10 ether, address(this));
-        vm.expectRevert("ARM: Invalid swap");
-        oethARM.swapTokensForExactTokens(weth, weth, 10 ether, 10 ether, address(this));
-        vm.expectRevert("ARM: Invalid swap");
-        oethARM.swapTokensForExactTokens(oeth, oeth, 10 ether, 10 ether, address(this));
-    }
-
-    function test_wrongInTokenExactOut() external {
-        vm.expectRevert("ARM: Invalid swap");
-        oethARM.swapTokensForExactTokens(BAD_TOKEN, oeth, 10 ether, 10 ether, address(this));
-        vm.expectRevert("ARM: Invalid swap");
-        oethARM.swapTokensForExactTokens(BAD_TOKEN, weth, 10 ether, 10 ether, address(this));
-        vm.expectRevert("ARM: Invalid swap");
-        oethARM.swapTokensForExactTokens(weth, weth, 10 ether, 10 ether, address(this));
-        vm.expectRevert("ARM: Invalid swap");
-        oethARM.swapTokensForExactTokens(oeth, oeth, 10 ether, 10 ether, address(this));
-    }
-
-    function test_wrongOutTokenExactOut() external {
-        vm.expectRevert("ARM: Invalid swap");
-        oethARM.swapTokensForExactTokens(weth, BAD_TOKEN, 10 ether, 10 ether, address(this));
-        vm.expectRevert("ARM: Invalid swap");
-        oethARM.swapTokensForExactTokens(oeth, BAD_TOKEN, 10 ether, 10 ether, address(this));
-        vm.expectRevert("ARM: Invalid swap");
-        oethARM.swapTokensForExactTokens(weth, weth, 10 ether, 10 ether, address(this));
-        vm.expectRevert("ARM: Invalid swap");
-        oethARM.swapTokensForExactTokens(oeth, oeth, 10 ether, 10 ether, address(this));
-    }
-
-    /*function test_collectTokens() external {
-        vm.startPrank(Mainnet.TIMELOCK);
-
-        oethARM.transferToken(address(weth), address(this), weth.balanceOf(address(oethARM)));
-        assertGt(weth.balanceOf(address(this)), 50 ether);
-        assertEq(weth.balanceOf(address(oethARM)), 0);
-
-        oethARM.transferToken(address(oeth), address(this), oeth.balanceOf(address(oethARM)));
-        assertGt(oeth.balanceOf(address(this)), 50 ether);
-        assertLt(oeth.balanceOf(address(oethARM)), 3);
-
         vm.stopPrank();
-    }
-    */
 
-    /* Operator Tests */
+        vm.expectRevert("ARM: Only owner can call this function.");
+        vm.prank(operator);
+        oethARM.setOperator(operator);
+    }
 
     function test_setOperator() external {
         vm.prank(Mainnet.TIMELOCK);
         oethARM.setOperator(address(this));
         assertEq(oethARM.operator(), address(this));
-    }
-
-    function test_nonOwnerCannotSetOperator() external {
-        vm.expectRevert("ARM: Only owner can call this function.");
-        vm.prank(operator);
-        oethARM.setOperator(operator);
     }
 }
