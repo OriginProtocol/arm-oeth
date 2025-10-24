@@ -38,15 +38,6 @@ contract UpgradeOETHARMScript is AbstractDeployScript {
     }
 
     function _buildGovernanceProposal() internal override {
-        // This is a cheat to remove.
-        // To upgrade the OETH ARM, the Timelock needs to have WETH and approve the ARM contract to pull WETH,
-        // to mint shares during initialization. So we simulate that by transferring WETH to the Timelock here.
-        // This can be removed once the Timelock has a WETH balance.
-        vm.prank(Mainnet.STRATEGIST);
-        (bool success,) =
-            Mainnet.WETH.call(abi.encodeWithSignature("transfer(address,uint256)", Mainnet.TIMELOCK, 1e12));
-        require(success, "WETH transfer failed");
-
         govProposal.setDescription("Update OETH ARM to use Origin ARM contract");
 
         // 1. Timelock needs to approve the OETH ARM to pull WETH for initialization.
