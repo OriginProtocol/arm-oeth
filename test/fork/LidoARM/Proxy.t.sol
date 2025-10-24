@@ -13,6 +13,14 @@ import {Mainnet} from "contracts/utils/Addresses.sol";
 /// @notice The purpose of this contract is to test the `Proxy` contract.
 contract Fork_Concrete_LidoARM_Proxy_Test_ is Fork_Shared_Test_ {
     //////////////////////////////////////////////////////
+    /// --- SETUP
+    //////////////////////////////////////////////////////
+    function setUp() public virtual override {
+        super.setUp();
+        lidoProxy.setOwner(Mainnet.TIMELOCK);
+    }
+
+    //////////////////////////////////////////////////////
     /// --- REVERTING TESTS
     //////////////////////////////////////////////////////
     function test_RevertWhen_UnauthorizedAccess() public {

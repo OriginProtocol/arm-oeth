@@ -151,8 +151,6 @@ abstract contract Fork_Shared_Test_ is Modifiers {
         // set prices
         lidoARM.setPrices(992 * 1e33, 1001 * 1e33);
 
-        lidoProxy.setOwner(Mainnet.TIMELOCK);
-
         // --- Deploy ZapperLidoARM ---
         zapperLidoARM = new ZapperLidoARM(address(weth), address(lidoProxy));
     }
