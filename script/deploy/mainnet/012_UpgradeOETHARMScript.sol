@@ -8,6 +8,7 @@ import {console} from "forge-std/console.sol";
 import {Proxy} from "contracts/Proxy.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
 import {OriginARM} from "contracts/OriginARM.sol";
+import {IERC20} from "contracts/Interfaces.sol";
 
 // Deployment imports
 import {GovProposal, GovSixHelper} from "contracts/utils/GovSixHelper.sol";
@@ -40,10 +41,27 @@ contract UpgradeOETHARMScript is AbstractDeployScript {
     function _buildGovernanceProposal() internal override {
         govProposal.setDescription("Update OETH ARM to use Origin ARM contract");
 
-        // 1. Timelock needs to approve the OETH ARM to pull WETH for initialization.
+
+        // 1. Transfer OETH out of the existing OETH ARM, to have a clean assets per share ratio.
+        uint256 balanceOETH = IERC20(Mainnet.OETH).balanceOf(deployedContracts["OETH_ARM"]);
+        govProposal.action(
+            deployedContracts["OETH_ARM"],
+            "transferToken(address,address,uint256)",
+            abi.encode(Mainnet.OETH, Mainnet.TREASURY_LP, balanceOETH)
+        );
+
+        // 2. Transfer WETH out of the existing OETH ARM, to have a clean assets per share ratio.
+        uint256 balanceWETH = IERC20(Mainnet.WETH).balanceOf(deployedContracts["OETH_ARM"]);
+        govProposal.action(
+            deployedContracts["OETH_ARM"],
+            "transferToken(address,address,uint256)",
+            abi.encode(Mainnet.WETH, Mainnet.TREASURY_LP, balanceWETH)
+        );
+
+        // 3. Timelock needs to approve the OETH ARM to pull WETH for initialization.
         govProposal.action(Mainnet.WETH, "approve(address,uint256)", abi.encode(deployedContracts["OETH_ARM"], 1e12));
 
-        // 2. Upgrade the OETH ARM implementation, and initialize.
+        // 4. Upgrade the OETH ARM implementation, and initialize.
         bytes memory initializeData = abi.encodeWithSelector(
             OriginARM.initialize.selector,
             "Origin ARM",
