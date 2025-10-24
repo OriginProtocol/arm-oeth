@@ -41,7 +41,6 @@ contract UpgradeOETHARMScript is AbstractDeployScript {
     function _buildGovernanceProposal() internal override {
         govProposal.setDescription("Update OETH ARM to use Origin ARM contract");
 
-
         // 1. Transfer OETH out of the existing OETH ARM, to have a clean assets per share ratio.
         uint256 balanceOETH = IERC20(Mainnet.OETH).balanceOf(deployedContracts["OETH_ARM"]);
         govProposal.action(
