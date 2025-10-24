@@ -4,7 +4,7 @@ pragma solidity 0.8.23;
 // Test imports
 import {TargetFunction} from "test/invariants/LidoARM/TargetFunction.sol";
 
-contract FuzzerFoundry_OethARM is TargetFunction {
+contract FuzzerFoundry_LidoARM is TargetFunction {
     uint256 private constant NUM_LPS = 4;
     uint256 private constant NUM_SWAPS = 3;
     uint256 private constant MAX_WETH_PER_USERS = 1_000_000 ether;

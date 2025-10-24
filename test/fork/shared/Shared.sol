@@ -9,7 +9,6 @@ import {Modifiers} from "test/fork/utils/Modifiers.sol";
 
 // Contracts
 import {Proxy} from "contracts/Proxy.sol";
-import {OethARM} from "contracts/OethARM.sol";
 import {LidoARM} from "contracts/LidoARM.sol";
 import {CapManager} from "contracts/CapManager.sol";
 import {ZapperLidoARM} from "contracts/ZapperLidoARM.sol";
@@ -20,7 +19,6 @@ import {IOriginVault} from "contracts/Interfaces.sol";
 
 // Utils
 import {Mainnet} from "contracts/utils/Addresses.sol";
-import {AddressResolver} from "contracts/utils/Addresses.sol";
 
 /// @notice This contract should inherit (directly or indirectly) from `Base_Test_`.
 ///         It should be used to setup the FORK test ONLY!
@@ -106,27 +104,14 @@ abstract contract Fork_Shared_Test_ is Modifiers {
 
     function _deployContracts() internal {
         // --- Deploy all proxies ---
-        proxy = new Proxy();
         lpcProxy = new Proxy();
         lidoProxy = new Proxy();
-
-        // --- Deploy OethARM implementation ---
-        // Deploy OethARM implementation.
-        address implementation = address(new OethARM(address(oeth), address(weth), address(vault)));
-        vm.label(implementation, "OETH ARM IMPLEMENTATION");
-
-        // Initialize Proxy with OethARM implementation.
-        bytes memory data = abi.encodeWithSignature("initialize(address)", operator);
-        proxy.initialize(implementation, governor, data);
-
-        // Set the Proxy as the OethARM.
-        oethARM = OethARM(address(proxy));
-
         // --- Deploy CapManager implementation ---
         // Deploy CapManager implementation.
         CapManager capManagerImpl = new CapManager(address(lidoProxy));
 
         // Initialize Proxy with CapManager implementation.
+        bytes memory data = abi.encodeWithSignature("initialize(address)", operator);
         lpcProxy.initialize(address(capManagerImpl), address(this), data);
 
         // Set the Proxy as the CapManager.
@@ -166,6 +151,8 @@ abstract contract Fork_Shared_Test_ is Modifiers {
         // set prices
         lidoARM.setPrices(992 * 1e33, 1001 * 1e33);
 
+        lidoProxy.setOwner(Mainnet.TIMELOCK);
+
         // --- Deploy ZapperLidoARM ---
         zapperLidoARM = new ZapperLidoARM(address(weth), address(lidoProxy));
     }
@@ -176,8 +163,6 @@ abstract contract Fork_Shared_Test_ is Modifiers {
         vm.label(address(steth), "stETH");
         vm.label(address(badToken), "BAD TOKEN");
         vm.label(address(vault), "OETH VAULT");
-        vm.label(address(oethARM), "OETH ARM");
-        vm.label(address(proxy), "OETH ARM PROXY");
         vm.label(address(lidoARM), "LIDO ARM");
         vm.label(address(lidoProxy), "LIDO ARM PROXY");
         vm.label(address(capManager), "LIQUIDITY PROVIDER CONTROLLER");

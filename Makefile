@@ -42,7 +42,7 @@ test-all:
 	@$(MAKE) test-std
 
 test-invariant-lido:
-	@FOUNDRY_INVARIANT_FAIL_ON_REVERT=false FOUNDRY_MATCH_CONTRACT=FuzzerFoundry_OethARM $(MAKE) test-std
+	@FOUNDRY_INVARIANT_FAIL_ON_REVERT=false FOUNDRY_MATCH_CONTRACT=FuzzerFoundry_LidoARM $(MAKE) test-std
 
 test-invariant-origin:
 	@FOUNDRY_INVARIANT_FAIL_ON_REVERT=true FOUNDRY_MATCH_CONTRACT=FuzzerFoundry_OriginARM $(MAKE) test-std

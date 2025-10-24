@@ -2,7 +2,7 @@
 pragma solidity 0.8.23;
 
 // Contracts
-import {OethARM} from "contracts/OethARM.sol";
+import {LidoARM} from "contracts/LidoARM.sol";
 
 // Test imports
 import {Fork_Shared_Test_} from "test/fork/shared/Shared.sol";
@@ -16,54 +16,56 @@ contract Fork_Concrete_OethARM_Proxy_Test_ is Fork_Shared_Test_ {
     /// --- REVERTING TESTS
     //////////////////////////////////////////////////////
     function test_RevertWhen_UnauthorizedAccess() public {
+        vm.startPrank(address(0x123));
         vm.expectRevert("ARM: Only owner can call this function.");
-        proxy.setOwner(deployer);
+        lidoProxy.setOwner(deployer);
 
         vm.expectRevert("ARM: Only owner can call this function.");
-        proxy.initialize(address(this), address(this), "");
+        lidoProxy.initialize(address(this), address(this), "");
 
         vm.expectRevert("ARM: Only owner can call this function.");
-        proxy.upgradeTo(address(this));
+        lidoProxy.upgradeTo(address(this));
 
         vm.expectRevert("ARM: Only owner can call this function.");
-        proxy.upgradeToAndCall(address(this), "");
+        lidoProxy.upgradeToAndCall(address(this), "");
+        vm.stopPrank();
     }
 
     //////////////////////////////////////////////////////
     /// --- PASSING TESTS
     //////////////////////////////////////////////////////
-    function test_Upgrade() public asOwner {
+    function test_Upgrade() public asLidoARMOwner {
         address owner = Mainnet.TIMELOCK;
 
         // Deploy new implementation
-        OethARM newImplementation = new OethARM(Mainnet.OETH, Mainnet.WETH, Mainnet.OETH_VAULT);
-        proxy.upgradeTo(address(newImplementation));
-        assertEq(proxy.implementation(), address(newImplementation));
+        LidoARM newImplementation = new LidoARM(Mainnet.STETH, Mainnet.WETH, Mainnet.OETH_VAULT, 10 minutes, 0, 0);
+        lidoProxy.upgradeTo(address(newImplementation));
+        assertEq(lidoProxy.implementation(), address(newImplementation));
 
         // Ensure ownership was preserved.
-        assertEq(proxy.owner(), owner);
-        assertEq(oethARM.owner(), owner);
+        assertEq(lidoProxy.owner(), owner);
+        assertEq(lidoARM.owner(), owner);
 
         // Ensure the storage was preserved through the upgrade.
-        assertEq(address(oethARM.token0()), Mainnet.OETH);
-        assertEq(address(oethARM.token1()), Mainnet.WETH);
+        assertEq(address(lidoARM.token0()), Mainnet.WETH);
+        assertEq(address(lidoARM.token1()), Mainnet.STETH);
     }
 
-    function test_UpgradeAndCall() public asOwner {
+    function test_UpgradeAndCall() public asLidoARMOwner {
         address owner = Mainnet.TIMELOCK;
 
         // Deploy new implementation
-        OethARM newImplementation = new OethARM(Mainnet.OETH, Mainnet.WETH, Mainnet.OETH_VAULT);
+        LidoARM newImplementation = new LidoARM(Mainnet.STETH, Mainnet.WETH, Mainnet.OETH_VAULT, 10 minutes, 0, 0);
         bytes memory data = abi.encodeWithSignature("setOperator(address)", address(0x123));
 
-        proxy.upgradeToAndCall(address(newImplementation), data);
-        assertEq(proxy.implementation(), address(newImplementation));
+        lidoProxy.upgradeToAndCall(address(newImplementation), data);
+        assertEq(lidoProxy.implementation(), address(newImplementation));
 
         // Ensure ownership was preserved.
-        assertEq(proxy.owner(), owner);
-        assertEq(oethARM.owner(), owner);
+        assertEq(lidoProxy.owner(), owner);
+        assertEq(lidoARM.owner(), owner);
 
         // Ensure the post upgrade code was run
-        assertEq(oethARM.operator(), address(0x123));
+        assertEq(lidoARM.operator(), address(0x123));
     }
 }
