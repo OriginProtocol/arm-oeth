@@ -11,7 +11,7 @@ import {Fork_Shared_Test_} from "test/fork/shared/Shared.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
 
 /// @notice The purpose of this contract is to test the `Proxy` contract.
-contract Fork_Concrete_OethARM_Proxy_Test_ is Fork_Shared_Test_ {
+contract Fork_Concrete_LidoARM_Proxy_Test_ is Fork_Shared_Test_ {
     //////////////////////////////////////////////////////
     /// --- REVERTING TESTS
     //////////////////////////////////////////////////////
