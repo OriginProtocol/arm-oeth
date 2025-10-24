@@ -239,9 +239,10 @@ If the verification doesn't work with the deployment, it can be done separately 
 For example
 
 ```
-# Verify OethARM
-forge verify-contract 0xd8fF298eAed581f74ab845Af62C48aCF85B2f05e OethARM  \
-  --constructor-args $(cast abi-encode "constructor(address,address,address)" 0x856c4Efb76C1D1AE02e20CEB03A2A6a08b0b8dC3 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2 0x39254033945AA2E4809Cc2977E7087BEE48bd7Ab )
+# Verify LidoARM
+forge verify-contract 0xeC6FdCc3904F8dD6a9cbbBCC41B741df5963B42E LidoARM  \
+    --constructor-args $(cast abi-encode "constructor(address,address,address,uint256,uint256,int256)" 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2 0x889edC2eDab5f40e902b864aD4d7AdE8E412F9B1 600 0 0 )
+
 
 # Verify Proxy
 forge verify-contract 0x6bac785889A4127dB0e0CeFEE88E0a9F1Aaf3cC7 Proxy
