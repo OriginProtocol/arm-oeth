@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import {Test, console} from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 
 import {AbstractSmokeTest} from "./AbstractSmokeTest.sol";
 
@@ -276,5 +276,46 @@ contract Fork_OriginARM_Smoke_Test is AbstractSmokeTest {
         vm.prank(Mainnet.TIMELOCK);
         oethARM.setOperator(address(this));
         assertEq(oethARM.operator(), address(this));
+    }
+
+    ////////////////////////////////////////////////////
+    /// --- VAULT WITHDRAWALS
+    ////////////////////////////////////////////////////
+    function test_request_origin_withdrawal() external {
+        _dealOETH(address(oethARM), 10 ether);
+        vm.prank(Mainnet.ARM_RELAYER);
+        uint256 requestId = oethARM.requestOriginWithdrawal(10 ether);
+        assertNotEq(requestId, 0);
+    }
+
+    function test_claim_origin_withdrawal() external {
+        // Cheat section
+        // Deal OETH to the ARM, in order to have some asset to withdraw
+        _dealOETH(address(oethARM), 10 ether);
+        // Deal WETH to this test account to mint OETH in the Vault, directly increasing
+        // the Vault's liquidity doesn't work because of the "Backing supply liquidity error" check
+        _dealWETH(address(this), 10_000 ether);
+        (bool success,) =
+            Mainnet.WETH.call(abi.encodeWithSignature("approve(address,uint256)", Mainnet.OETH_VAULT, 10_000 ether));
+        require(success, "Approve failed");
+        (success,) = Mainnet.OETH_VAULT.call(
+            abi.encodeWithSignature("mint(address,uint256,uint256)", Mainnet.WETH, 10_000 ether, 0)
+        );
+        require(success, "Mint failed");
+        // End cheat section
+
+        // Request a withdrawal
+        vm.prank(Mainnet.ARM_RELAYER);
+        uint256 requestId = oethARM.requestOriginWithdrawal(10 ether);
+
+        // Fast forward time by 1 day to pass the claim delay
+        vm.warp(block.timestamp + 1 days);
+
+        // Claim the withdrawal
+        uint256[] memory requestIds = new uint256[](1);
+        requestIds[0] = requestId;
+
+        uint256 amountClaimed = oethARM.claimOriginWithdrawals(requestIds);
+        assertEq(amountClaimed, 10 ether);
     }
 }
