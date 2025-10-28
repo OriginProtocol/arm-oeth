@@ -19,8 +19,8 @@ contract DeployPendleAdaptorSonic is AbstractDeployScript {
         console.log("------------");
 
         // 1. Deploy PendleOriginARMSY
-        PendleOriginARMSY sy = new PendleOriginARMSY("SY ORIGIN ARM", "SY-ARM-WS-OS", deployedContracts["ORIGIN_ARM"]);
-        _recordDeploy("PENDLE_ORIGIN_ARM_SY", address(sy));
+        //PendleOriginARMSY sy = new PendleOriginARMSY("SY ORIGIN ARM", "SY-ARM-WS-OS", deployedContracts["ORIGIN_ARM"]);
+        //_recordDeploy("PENDLE_ORIGIN_ARM_SY", address(sy));
 
         console.log("Finished deploying", DEPLOY_NAME);
     }

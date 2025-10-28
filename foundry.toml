@@ -19,7 +19,7 @@ ffi = true
 # - dependencies remappings (like "dependencies/@pendle-sy"), need to stay amongs first remappings.
 remappings = [
   # Manage dependencies remappings inside dependencies folder (has to be first)
-  "dependencies/@pendle-sy-1.0.0-1.0.0/:@openzeppelin/contracts/=dependencies/@openzeppelin-contracts-4.9.3-4.9.3/contracts/",
+  #"dependencies/@pendle-sy-1.0.0-1.0.0/:@openzeppelin/contracts/=dependencies/@openzeppelin-contracts-4.9.3-4.9.3/contracts/",
   # Manage root folders remappings
   "contracts/=./src/contracts",
   "script/=./script",
@@ -46,7 +46,7 @@ fail_on_revert = false
 [dependencies]
 solmate = "6.7.0"
 forge-std = "1.9.7"
-"@pendle-sy-1.0.0" = { version = "1.0.0", git = "https://github.com/pendle-finance/Pendle-SY-Public.git", rev = "3256e7728d1656a8e16e2e70aa885f69fc66088d" }
+#"@pendle-sy-1.0.0" = { version = "1.0.0", git = "https://github.com/pendle-finance/Pendle-SY-Public.git", rev = "3256e7728d1656a8e16e2e70aa885f69fc66088d" }
 "@openzeppelin-contracts-4.9.3" = { version = "4.9.3", git = "https://github.com/OpenZeppelin/openzeppelin-contracts.git", rev = "fd81a96f01cc42ef1c9a5399364968d0e07e9e90" }
 "@openzeppelin-contracts-5.0.2" = { version = "5.0.2", git = "https://github.com/OpenZeppelin/openzeppelin-contracts.git", rev = "dbb6104ce834628e473d2173bbc9d47f81a9eec3" }
 "@openzeppelin-contracts-upgradeable-4.9.3" = { version = "4.9.3", git = "https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable.git", rev = "3d4c0d5741b131c231e558d7a6213392ab3672a5" }
