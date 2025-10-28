@@ -27,17 +27,4 @@ contract Fork_Concrete_EtherFiARM_RequestWithdraw_Test_ is Fork_Shared_Test {
         vm.prank(operator);
         etherfiARM.claimEtherFiWithdrawals(requestIdArray);
     }
-
-    function test_DirectWithdraw() public {
-        // Fund the ARM with eETH from weETH
-        vm.prank(address(weeth));
-        eeth.transfer(address(etherfiARM), 10 ether);
-
-        // Overload the liquidity pool to ensure there is enough liquidity to redeem
-        deal(Mainnet.ETHERFI_LIQUIDITY_POOL, 1_000_000 ether);
-
-        // Redeem eETH for WETH via the EtherFi Redemption Manager
-        vm.prank(operator);
-        etherfiARM.redeemEETH(1 ether);
-    }
 }

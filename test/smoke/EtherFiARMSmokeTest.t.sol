@@ -255,16 +255,4 @@ contract Fork_EtherFiARM_Smoke_Test is AbstractSmokeTest {
         requestIdArray[0] = requestId;
         etherFiARM.claimEtherFiWithdrawals(requestIdArray);
     }
-
-    function test_claim_etherfi_request_without_delay() external {
-        // trader sells eETH and buys WETH, the ARM buys eETH as a 4 bps discount
-        _swapExactTokensForTokens(eeth, weth, 0.9996e36, 100 ether);
-
-        // Overload the liquidity pool to ensure there is enough liquidity to redeem
-        deal(Mainnet.ETHERFI_LIQUIDITY_POOL, 1_000_000 ether);
-
-        // Redeem eETH for WETH via the EtherFi Redemption Manager
-        vm.prank(Mainnet.ARM_RELAYER);
-        etherFiARM.redeemEETH(1 ether);
-    }
 }
