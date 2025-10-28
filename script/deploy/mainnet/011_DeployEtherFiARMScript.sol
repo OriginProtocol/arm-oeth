@@ -59,8 +59,7 @@ contract DeployEtherFiARMScript is AbstractDeployScript {
         capManager.setLiquidityProviderCaps(lpAccounts, 250 ether);
 
         // 5. Transfer ownership of CapManager to the mainnet 5/8 multisig
-        // Skipped, the deployer will transfer it later
-        //capManProxy.setOwner(Mainnet.GOV_MULTISIG);
+        capManProxy.setOwner(Mainnet.GOV_MULTISIG);
 
         // 6. Deploy new Ether.Fi implementation
         uint256 claimDelay = tenderlyTestnet ? 1 minutes : 10 minutes;
