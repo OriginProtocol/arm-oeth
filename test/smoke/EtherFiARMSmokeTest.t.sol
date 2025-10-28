@@ -37,8 +37,8 @@ contract Fork_EtherFiARM_Smoke_Test is AbstractSmokeTest {
         capManager = CapManager(deployManager.getDeployment("ETHER_FI_ARM_CAP_MAN"));
         etherfiWithdrawalNFT = IEETHWithdrawalNFT(Mainnet.ETHERFI_WITHDRAWAL_NFT);
 
-        // Only fuzz from this address. Big speedup on fork.
-        targetSender(address(this));
+        vm.prank(etherFiARM.owner());
+        etherFiARM.setOwner(Mainnet.TIMELOCK);
     }
 
     function test_initialConfig() external view {

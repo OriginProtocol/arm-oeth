@@ -59,7 +59,8 @@ contract DeployEtherFiARMScript is AbstractDeployScript {
         capManager.setLiquidityProviderCaps(lpAccounts, 250 ether);
 
         // 5. Transfer ownership of CapManager to the mainnet 5/8 multisig
-        capManProxy.setOwner(Mainnet.GOV_MULTISIG);
+        // Skipped, the deployer will transfer it later
+        //capManProxy.setOwner(Mainnet.GOV_MULTISIG);
 
         // 6. Deploy new Ether.Fi implementation
         uint256 claimDelay = tenderlyTestnet ? 1 minutes : 10 minutes;
@@ -80,7 +81,7 @@ contract DeployEtherFiARMScript is AbstractDeployScript {
         IWETH(Mainnet.WETH).deposit{value: 1e13}();
         IWETH(Mainnet.WETH).approve(address(armProxy), 1e13);
 
-        // 8. Initialize proxy, set the owner to TIMELOCK, set the operator to the ARM Relayer
+        // 8. Initialize proxy, set the owner to deployer, set the operator to the ARM Relayer
         bytes memory armData = abi.encodeWithSignature(
             "initialize(string,string,address,uint256,address,address)",
             "Ether.fi ARM", // name
@@ -90,7 +91,7 @@ contract DeployEtherFiARMScript is AbstractDeployScript {
             Mainnet.BUYBACK_OPERATOR, // Fee collector
             address(capManager)
         );
-        armProxy.initialize(address(etherFiARMImpl), Mainnet.TIMELOCK, armData);
+        armProxy.initialize(address(etherFiARMImpl), deployer, armData);
 
         console.log("Initialized Ether.Fi ARM");
 
@@ -107,44 +108,25 @@ contract DeployEtherFiARMScript is AbstractDeployScript {
         morphoMarket = new MorphoMarket(address(armProxy), Mainnet.MORPHO_MARKET_ETHERFI);
         _recordDeploy("MORPHO_MARKET_ETHERFI_IMPL", address(morphoMarket));
 
-        // 12. Initialize MorphoMarket proxy with the implementation
+        // 12. Initialize MorphoMarket proxy with the implementation, Timelock as owner
         bytes memory data = abi.encodeWithSignature("initialize(address)", Mainnet.STRATEGIST);
         morphoMarketProxy.initialize(address(morphoMarket), Mainnet.TIMELOCK, data);
 
-        console.log("Finished deploying", DEPLOY_NAME);
-    }
-
-    function _buildGovernanceProposal() internal override {
-        govProposal.setDescription("Deploy the Ether.Fi ARM with a CapManager");
-
-        // 1. Upgrade proxy to the new EtherFiARM implementation
-        govProposal.action(
-            deployedContracts["ETHER_FI_ARM"], "upgradeTo(address)", abi.encode(deployedContracts["ETHER_FI_ARM_IMPL"])
-        );
-
-        // 2. Set cross price to 0.9998 ETH
+        // 13. Set crossPrice to 0.9998 ETH
         uint256 crossPrice = 0.9998 * 1e36;
-        govProposal.action(deployedContracts["ETHER_FI_ARM"], "setCrossPrice(uint256)", abi.encode(crossPrice));
+        EtherFiARM(payable(address(armProxy))).setCrossPrice(crossPrice);
 
-        // 3. Add Morpho Market as an active market
+        // 14. Add Morpho Market as an active market
         address[] memory markets = new address[](1);
-        markets[0] = deployedContracts["MORPHO_MARKET_ETHERFI"];
-        govProposal.action(deployedContracts["ETHER_FI_ARM"], "addMarkets(address[])", abi.encode(markets));
+        markets[0] = address(morphoMarketProxy);
+        EtherFiARM(payable(address(armProxy))).addMarkets(markets);
 
-        // 4. Set Morpho Market as the active market
-        govProposal.action(
-            deployedContracts["ETHER_FI_ARM"],
-            "setActiveMarket(address)",
-            abi.encode(deployedContracts["MORPHO_MARKET_ETHERFI"])
-        );
+        // 15. Set Morpho Market as the active market
+        EtherFiARM(payable(address(armProxy))).setActiveMarket(address(morphoMarketProxy));
 
-        // 5. Set ARM buffer to 20%
-        govProposal.action(
-            deployedContracts["ETHER_FI_ARM"],
-            "setARMBuffer(uint256)",
-            abi.encode(0.2e18) // 20% buffer
-        );
+        // 16. Set ARM buffer to 20%
+        EtherFiARM(payable(address(armProxy))).setARMBuffer(0.2e18); // 20% buffer
 
-        govProposal.simulate();
+        console.log("Finished deploying", DEPLOY_NAME);
     }
 }
