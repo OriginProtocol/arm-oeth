@@ -99,18 +99,51 @@ contract DeployEtherFiARMScript is AbstractDeployScript {
         zapper.setOwner(Mainnet.STRATEGIST);
         _recordDeploy("ARM_ZAPPER", address(zapper));
 
+        // 10. Deploy MorphoMarket proxy
+        morphoMarketProxy = new Proxy();
+        _recordDeploy("MORPHO_MARKET_ETHERFI", address(morphoMarketProxy));
+
+        // 11. Deploy MorphoMarket
+        morphoMarket = new MorphoMarket(address(armProxy), Mainnet.MORPHO_MARKET_ETHERFI);
+        _recordDeploy("MORPHO_MARKET_ETHERFI_IMPL", address(morphoMarket));
+
+        // 12. Initialize MorphoMarket proxy with the implementation
+        bytes memory data = abi.encodeWithSignature("initialize(address)", Mainnet.STRATEGIST);
+        morphoMarketProxy.initialize(address(morphoMarket), Mainnet.TIMELOCK, data);
+
         console.log("Finished deploying", DEPLOY_NAME);
     }
 
     function _buildGovernanceProposal() internal override {
         govProposal.setDescription("Deploy the Ether.Fi ARM with a CapManager");
 
+        // 1. Upgrade proxy to the new EtherFiARM implementation
         govProposal.action(
             deployedContracts["ETHER_FI_ARM"], "upgradeTo(address)", abi.encode(deployedContracts["ETHER_FI_ARM_IMPL"])
         );
 
+        // 2. Set cross price to 0.9998 ETH
         uint256 crossPrice = 0.9998 * 1e36;
         govProposal.action(deployedContracts["ETHER_FI_ARM"], "setCrossPrice(uint256)", abi.encode(crossPrice));
+
+        // 3. Add Morpho Market as an active market
+        address[] memory markets = new address[](1);
+        markets[0] = deployedContracts["MORPHO_MARKET_ETHERFI"];
+        govProposal.action(deployedContracts["ETHER_FI_ARM"], "addMarkets(address[])", abi.encode(markets));
+
+        // 4. Set Morpho Market as the active market
+        govProposal.action(
+            deployedContracts["ETHER_FI_ARM"],
+            "setActiveMarket(address)",
+            abi.encode(deployedContracts["MORPHO_MARKET_ETHERFI"])
+        );
+
+        // 5. Set ARM buffer to 20%
+        govProposal.action(
+            deployedContracts["ETHER_FI_ARM"],
+            "setARMBuffer(uint256)",
+            abi.encode(0.2e18) // 20% buffer
+        );
 
         govProposal.simulate();
     }
