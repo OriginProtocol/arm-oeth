@@ -127,6 +127,9 @@ contract DeployEtherFiARMScript is AbstractDeployScript {
         // 16. Set ARM buffer to 20%
         EtherFiARM(payable(address(armProxy))).setARMBuffer(0.2e18); // 20% buffer
 
+        // 17. Transfer ownership of ARM to the 5/8 multisig
+        armProxy.setOwner(Mainnet.GOV_MULTISIG);
+
         console.log("Finished deploying", DEPLOY_NAME);
     }
 }
