@@ -22,6 +22,7 @@ const {
   setHarvester,
 } = require("./sonicHarvest");
 const { requestLidoWithdrawals, claimLidoWithdrawals } = require("./lidoQueue");
+const { requestEtherFiWithdrawals, claimEtherFiWithdrawals } = require("./etherFiQueue");
 const {
   requestWithdraw,
   claimWithdraw,
@@ -747,10 +748,10 @@ subtask("setPrices", "Update Lido ARM's swap prices")
       activeMarketAddress === ethers.ZeroAddress
         ? undefined
         : await hre.ethers.getContractAt(
-            ["function market() external view returns (address)"],
-            activeMarketAddress,
-            signer,
-          );
+          ["function market() external view returns (address)"],
+          activeMarketAddress,
+          signer,
+        );
 
     await setPrices({ ...taskArgs, signer, arm, market });
   });
@@ -1005,6 +1006,71 @@ task("setARMBuffer").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
 
+// EtherFi
+
+subtask(
+  "requestEtherFiWithdrawals",
+  "Request withdrawals from the EtherFi withdrawal queue",
+)
+  .addOptionalParam(
+    "amount",
+    "Exact amount of eETH to withdraw. (default: all)",
+    undefined,
+    types.float,
+  )
+  .addOptionalParam(
+    "minAmount",
+    "Minimum amount of eETH to withdraw. (default: 1 ETH)",
+    1,
+    types.float,
+  )
+  .setAction(async (taskArgs) => {
+    const signer = await getSigner();
+    const eeth = await resolveAsset("EETH");
+
+    const etherFiArmAddress = await parseDeployedAddress("ETHERFI_ARM");
+    const arm = await ethers.getContractAt("EtherFiARM", etherFiArmAddress);
+
+    await requestEtherFiWithdrawals({
+      ...taskArgs,
+      signer,
+      eeth,
+      arm,
+    });
+  });
+task("requestEtherFiWithdrawals").setAction(async (_, __, runSuper) => {
+  return runSuper();
+});
+
+subtask("claimEtherFiWithdrawals", "Claim requested withdrawals from EtherFi")
+  .addOptionalParam(
+    "id",
+    "Request identifier. (default: all)",
+    undefined,
+    types.string,
+  )
+  .setAction(async (taskArgs) => {
+    const signer = await getSigner();
+
+    const etherFiArmAddress = await parseDeployedAddress("ETHERFI_ARM");
+    const arm = await ethers.getContractAt("EtherFiARM", etherFiArmAddress);
+
+    const withdrawalQueue = await hre.ethers.getContractAt(
+      "IEETHWithdrawalNFT",
+      mainnet.etherFiWithdrawalQueue,
+    );
+
+    await claimEtherFiWithdrawals({
+      ...taskArgs,
+      signer,
+      arm,
+      withdrawalQueue,
+    });
+  });
+task("claimEtherFiWithdrawals").setAction(async (_, __, runSuper) => {
+  return runSuper();
+});
+
 // Governance
 
 subtask("setOperator", "Set the operator of a contract")
@@ -1208,10 +1274,10 @@ subtask(
       activeMarket === ethers.ZeroAddress
         ? undefined
         : await hre.ethers.getContractAt(
-            ["function market() external view returns (address)"],
-            activeMarket,
-            signer,
-          );
+          ["function market() external view returns (address)"],
+          activeMarket,
+          signer,
+        );
 
     // Get the WS and OS token contracts
     const wSAddress = await armContract.token0();

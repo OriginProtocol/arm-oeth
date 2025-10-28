@@ -313,6 +313,14 @@ interface IEETHWithdrawal {
 }
 
 interface IEETHWithdrawalNFT {
+    struct WithdrawRequest {
+        uint96 amountOfEEth;
+        uint96 shareOfEEth;
+        bool isValid;
+        uint32 feeGwei;
+    }
+
+    function getRequest(uint256 requestId) external view returns (WithdrawRequest memory);
     function finalizeRequests(uint256 requestId) external;
     function claimWithdraw(uint256 requestId) external;
     function batchClaimWithdraw(uint256[] calldata requestIds) external;
