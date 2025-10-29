@@ -100,7 +100,7 @@ abstract contract Unit_Shared_Test is Base_Test_, Modifiers {
         siloMarketProxy.initialize(
             address(siloMarket),
             governor,
-            abi.encodeWithSelector(Abstract4626MarketWrapper.initialize.selector, operator)
+            abi.encodeWithSelector(Abstract4626MarketWrapper.initialize.selector, operator, address(0x1))
         );
 
         vm.stopPrank();

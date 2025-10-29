@@ -12,6 +12,7 @@ import {CapManager} from "contracts/CapManager.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
 import {MorphoMarket} from "contracts/markets/MorphoMarket.sol";
 import {ZapperARM} from "contracts/ZapperARM.sol";
+import {Abstract4626MarketWrapper} from "contracts/markets/Abstract4626MarketWrapper.sol";
 
 // Deployment imports
 import {GovProposal, GovSixHelper} from "contracts/utils/GovSixHelper.sol";
@@ -107,7 +108,9 @@ contract DeployEtherFiARMScript is AbstractDeployScript {
         _recordDeploy("MORPHO_MARKET_ETHERFI_IMPL", address(morphoMarket));
 
         // 12. Initialize MorphoMarket proxy with the implementation, Timelock as owner
-        bytes memory data = abi.encodeWithSignature("initialize(address)", Mainnet.STRATEGIST);
+        bytes memory data = abi.encodeWithSelector(
+            Abstract4626MarketWrapper.initialize.selector, Mainnet.STRATEGIST, Mainnet.MERKLE_DISTRIBUTOR
+        );
         morphoMarketProxy.initialize(address(morphoMarket), Mainnet.TIMELOCK, data);
 
         // 13. Set crossPrice to 0.9998 ETH
