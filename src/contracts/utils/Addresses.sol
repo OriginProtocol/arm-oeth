@@ -14,6 +14,7 @@ library Mainnet {
     address public constant GOVERNOR_SIX = 0x1D3Fbd4d129Ddd2372EA85c5Fa00b2682081c9EC;
     address public constant STRATEGIST = 0x4FF1b9D9ba8558F5EAfCec096318eA0d8b541971;
     address public constant TREASURY = 0x70fCE97d671E81080CA3ab4cc7A59aAc2E117137;
+    address public constant TREASURY_LP = 0x6E3fddab68Bf1EBaf9daCF9F7907c7Bc0951D1dc;
 
     // Multisig and EOAs
     address public constant INITIAL_DEPLOYER = address(0x1001);
@@ -26,8 +27,11 @@ library Mainnet {
     // Tokens
     address public constant OETH = 0x856c4Efb76C1D1AE02e20CEB03A2A6a08b0b8dC3;
     address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    address public constant EETH = 0x35fA164735182de50811E8e2E824cFb9B6118ac2;
+    address public constant WEETH = 0xCd5fE23C85820F7B72D0926FC9b05b43E359b7ee;
     address public constant STETH = 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84;
     address public constant WSTETH = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
+    address public constant MORPHO = 0x58D97B57BB95320F9a05dC918Aef65434969c2B2;
 
     // Contracts
     address public constant OETH_VAULT = 0x39254033945AA2E4809Cc2977E7087BEE48bd7Ab;
@@ -40,8 +44,18 @@ library Mainnet {
     address public constant LIDO_EL_VAULT = 0x388C818CA8B9251b393131C08a736A67ccB19297;
     address public constant LIDO_WITHDRAWAL_MANAGER = 0xB9D7934878B5FB9610B3fE8A5e441e8fad7E293f;
 
+    // EtherFi
+    address public constant ETHERFI_WITHDRAWAL = 0x308861A430be4cce5502d0A12724771Fc6DaF216;
+    address public constant ETHERFI_LIQUIDITY_POOL = 0x308861A430be4cce5502d0A12724771Fc6DaF216;
+    address public constant ETHERFI_WITHDRAWAL_NFT = 0x7d5706f6ef3F89B3951E23e557CDFBC3239D4E2c;
+    address public constant ETHERFI_REDEMPTION_MANAGER = 0xDadEf1fFBFeaAB4f68A9fD181395F68b4e4E7Ae0;
+
     // Morpho Market
     address public constant MORPHO_MARKET_MEVCAPITAL = 0x9a8bC3B04b7f3D87cfC09ba407dCED575f2d61D8;
+    address public constant MORPHO_MARKET_ETHERFI = 0x4881Ef0BF6d2365D3dd6499ccd7532bcdBCE0658;
+
+    // Merkle Distributor
+    address public constant MERKLE_DISTRIBUTOR = 0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae;
 }
 
 library Holesky {
@@ -117,6 +131,8 @@ contract AddressResolver {
         // Tokens
         resolver[MAINNET]["OETH"] = Mainnet.OETH;
         resolver[MAINNET]["WETH"] = Mainnet.WETH;
+        resolver[MAINNET]["EETH"] = Mainnet.EETH;
+        resolver[MAINNET]["WEETH"] = Mainnet.WEETH;
         resolver[MAINNET]["STETH"] = Mainnet.STETH;
         resolver[MAINNET]["WSTETH"] = Mainnet.WSTETH;
 

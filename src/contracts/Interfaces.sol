@@ -307,3 +307,27 @@ interface SiloIncentivesControllerGaugeLike {
         );
     function owner() external view returns (address);
 }
+
+interface IEETHWithdrawal {
+    function requestWithdraw(address receipient, uint256 amount) external returns (uint256 requestId);
+}
+
+interface IEETHWithdrawalNFT {
+    function finalizeRequests(uint256 requestId) external;
+    function claimWithdraw(uint256 requestId) external;
+    function batchClaimWithdraw(uint256[] calldata requestIds) external;
+}
+
+interface IEETHRedemptionManager {
+    function redeemWeEth(uint256 amount, address receiver) external;
+    function canRedeem(uint256 amount) external view returns (bool);
+}
+
+interface IDistributor {
+    function claim(
+        address[] calldata users,
+        address[] calldata tokens,
+        uint256[] calldata amounts,
+        bytes32[][] calldata proofs
+    ) external;
+}

@@ -8,11 +8,13 @@ import {Test} from "forge-std/Test.sol";
 import {Proxy} from "contracts/Proxy.sol";
 import {OethARM} from "contracts/OethARM.sol";
 import {LidoARM} from "contracts/LidoARM.sol";
+import {EtherFiARM} from "contracts/EtherFiARM.sol";
 import {OriginARM} from "contracts/OriginARM.sol";
 import {SonicHarvester} from "contracts/SonicHarvester.sol";
 import {CapManager} from "contracts/CapManager.sol";
 import {SiloMarket} from "contracts/markets/SiloMarket.sol";
 import {ZapperLidoARM} from "contracts/ZapperLidoARM.sol";
+import {MorphoMarket} from "contracts/markets/MorphoMarket.sol";
 
 // Interfaces
 import {IERC20} from "contracts/Interfaces.sol";
@@ -38,14 +40,18 @@ abstract contract Base_Test_ is Test {
     Proxy public proxy;
     Proxy public lpcProxy;
     Proxy public lidoProxy;
+    Proxy public etherfiProxy;
     Proxy public originARMProxy;
     Proxy public harvesterProxy;
+    Proxy public morphoMarketProxy;
     OethARM public oethARM;
     LidoARM public lidoARM;
+    EtherFiARM public etherfiARM;
     SonicHarvester public harvester;
     OriginARM public originARM;
     CapManager public capManager;
     SiloMarket public siloMarket;
+    MorphoMarket public morphoMarket;
     ZapperLidoARM public zapperLidoARM;
 
     IERC20 public ws;
@@ -53,8 +59,11 @@ abstract contract Base_Test_ is Test {
     IERC20 public wos;
     IERC20 public oeth;
     IERC20 public weth;
+    IERC20 public eeth;
+    IERC20 public weeth;
     IERC20 public steth;
     IERC20 public wsteth;
+    IERC20 public morpho;
     IERC20 public badToken;
     IERC4626 public market;
     IERC4626 public market2;
@@ -99,16 +108,21 @@ abstract contract Base_Test_ is Test {
         _labelNotNull(address(proxy), "DEFAULT PROXY");
         _labelNotNull(address(lpcProxy), "LPC PROXY");
         _labelNotNull(address(lidoProxy), "LIDO ARM PROXY");
+        _labelNotNull(address(etherfiProxy), "ETHERFI ARM PROXY");
         _labelNotNull(address(oethARM), "OETH ARM");
         _labelNotNull(address(lidoARM), "LIDO ARM");
         _labelNotNull(address(originARM), "ORIGIN ARM");
         _labelNotNull(address(capManager), "CAP MANAGER");
         _labelNotNull(address(siloMarket), "SILO MARKET ADAPTER");
+        _labelNotNull(address(morphoMarket), "MORPHO MARKET ADAPTER");
 
         _labelNotNull(address(ws), "WS");
         _labelNotNull(address(os), "OS");
         _labelNotNull(address(oeth), "OETH");
         _labelNotNull(address(weth), "WETH");
+        _labelNotNull(address(eeth), "EETH");
+        _labelNotNull(address(morpho), "MORPHO");
+        _labelNotNull(address(weeth), "WEETH");
         _labelNotNull(address(steth), "STETH");
         _labelNotNull(address(wsteth), " WRAPPED STETH");
         _labelNotNull(address(badToken), "BAD TOKEN");
