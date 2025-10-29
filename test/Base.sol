@@ -6,7 +6,6 @@ import {Test} from "forge-std/Test.sol";
 
 // Contracts
 import {Proxy} from "contracts/Proxy.sol";
-import {OethARM} from "contracts/OethARM.sol";
 import {LidoARM} from "contracts/LidoARM.sol";
 import {EtherFiARM} from "contracts/EtherFiARM.sol";
 import {OriginARM} from "contracts/OriginARM.sol";
@@ -36,13 +35,11 @@ abstract contract Base_Test_ is Test {
     //////////////////////////////////////////////////////
     /// --- CONTRACTS
     //////////////////////////////////////////////////////
-    Proxy public proxy;
     Proxy public lpcProxy;
     Proxy public lidoProxy;
     Proxy public etherfiProxy;
     Proxy public originARMProxy;
     Proxy public harvesterProxy;
-    OethARM public oethARM;
     LidoARM public lidoARM;
     EtherFiARM public etherfiARM;
     SonicHarvester public harvester;
@@ -101,11 +98,9 @@ abstract contract Base_Test_ is Test {
     /// @notice Better if called once all contract have been depoyed.
     function labelAll() public virtual {
         // Contracts
-        _labelNotNull(address(proxy), "DEFAULT PROXY");
         _labelNotNull(address(lpcProxy), "LPC PROXY");
         _labelNotNull(address(lidoProxy), "LIDO ARM PROXY");
         _labelNotNull(address(etherfiProxy), "ETHERFI ARM PROXY");
-        _labelNotNull(address(oethARM), "OETH ARM");
         _labelNotNull(address(lidoARM), "LIDO ARM");
         _labelNotNull(address(originARM), "ORIGIN ARM");
         _labelNotNull(address(capManager), "CAP MANAGER");
