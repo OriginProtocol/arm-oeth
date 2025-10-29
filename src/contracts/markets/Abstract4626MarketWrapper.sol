@@ -214,6 +214,7 @@ contract Abstract4626MarketWrapper is Initializable, Ownable {
     }
 
     function _setMerkleDistributor(address _merkleDistributor) internal {
+        require(_merkleDistributor != address(0), "Invalid MerkleDistributor addr");
         merkleDistributor = IDistributor(_merkleDistributor);
 
         emit MerkleDistributorUpdated(_merkleDistributor);
