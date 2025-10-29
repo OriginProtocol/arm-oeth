@@ -45,7 +45,7 @@ jobs:
         run: forge --version
 
       - name: Install Dependencies
-        run: make install
+        run: 	forge soldeer install && yarn install
 
   foundry-tests:
     name: Foundry tests
@@ -68,7 +68,7 @@ jobs:
         run: forge --version
 
       - name: Install Dependencies
-        run: make install
+        run: 	forge soldeer install && yarn install
 
       - name: Clean repo
         run: make clean
@@ -94,7 +94,7 @@ jobs:
         run: forge --version
 
       - name: Install Dependencies
-        run: make install
+        run: 	forge soldeer install && yarn install
 
       - name: Run invariant tests
         run: make test-invariants
