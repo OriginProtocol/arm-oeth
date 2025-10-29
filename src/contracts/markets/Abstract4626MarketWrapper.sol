@@ -165,7 +165,7 @@ contract Abstract4626MarketWrapper is Initializable, Ownable {
 
         bytes32[][] memory proofs = new bytes32[][](1);
         proofs[0] = proof;
-        
+
         merkleDistributor.claim(users, tokens, amounts, proofs);
     }
 
