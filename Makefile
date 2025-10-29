@@ -8,7 +8,7 @@ default:
 
 # Always keep Forge up to date
 install:
-	foundryup -v 1.3.6
+	foundryup
 	forge soldeer install
 	yarn install
 
