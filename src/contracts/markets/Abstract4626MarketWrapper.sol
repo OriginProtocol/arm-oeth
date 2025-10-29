@@ -153,8 +153,6 @@ contract Abstract4626MarketWrapper is Initializable, Ownable {
     /// @param amounts The amounts of the tokens to claim.
     /// @param proofs The Merkle proofs for the claims.
     function merkleClaim(address[] calldata tokens, uint256[] calldata amounts, bytes32[][] calldata proofs) external {
-        require(msg.sender == harvester, "Only harvester can collect");
-
         address[] memory users = new address[](1);
         users[0] = address(this);
 
