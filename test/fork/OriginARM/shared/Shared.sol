@@ -111,7 +111,7 @@ abstract contract Fork_Shared_Test is Base_Test_, Modifiers {
         marketAdapterProxy.initialize(
             address(siloMarket),
             governor,
-            abi.encodeWithSelector(Abstract4626MarketWrapper.initialize.selector, operator)
+            abi.encodeWithSelector(Abstract4626MarketWrapper.initialize.selector, operator, address(0x1))
         );
 
         vm.stopPrank();
