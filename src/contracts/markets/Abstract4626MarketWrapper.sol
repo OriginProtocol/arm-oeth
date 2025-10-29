@@ -46,8 +46,9 @@ contract Abstract4626MarketWrapper is Initializable, Ownable {
 
     /// @notice Initialize the proxy contract with the Harvester address.
     /// @param _harvester The address of the Harvester contract.
-    function initialize(address _harvester) external initializer onlyOwner {
+    function initialize(address _harvester, address _merkleDistributor) external initializer onlyOwner {
         _setHarvester(_harvester);
+        _setMerkleDistributor(_merkleDistributor);
     }
 
     /// @notice Deposit an exact amount of asset tokens to the lending market

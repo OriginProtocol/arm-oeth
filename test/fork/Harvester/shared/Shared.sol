@@ -94,7 +94,7 @@ abstract contract Fork_Shared_Test is Base_Test_, Helpers {
         siloMarketProxy.initialize(
             address(siloMarket),
             governor,
-            abi.encodeWithSelector(Abstract4626MarketWrapper.initialize.selector, address(harvesterProxy))
+            abi.encodeWithSelector(Abstract4626MarketWrapper.initialize.selector, address(harvesterProxy), address(0x1))
         );
 
         harvester = SonicHarvester(address(harvesterProxy));
