@@ -32,6 +32,7 @@ contract Abstract4626MarketWrapper is Initializable, Ownable {
         address indexed sender, address indexed receiver, address indexed owner, uint256 assets, uint256 shares
     );
     event HarvesterUpdated(address harvester);
+    event MerkleDistributorUpdated(address merkleDistributor);
     event CollectedRewards(address[] tokens, uint256[] amounts);
 
     /// @notice Constructor to set immutable storage variables.
@@ -213,8 +214,9 @@ contract Abstract4626MarketWrapper is Initializable, Ownable {
     }
 
     function _setMerkleDistributor(address _merkleDistributor) internal {
-        require(_merkleDistributor != address(0), "MerkleDistributor cannot be zero address");
         merkleDistributor = IDistributor(_merkleDistributor);
+
+        emit MerkleDistributorUpdated(_merkleDistributor);
     }
 
     /**
