@@ -54,13 +54,11 @@ contract DeployEtherFiARMScript is AbstractDeployScript {
         capManager.setTotalAssetsCap(250 ether);
         capManager.setAccountCapEnabled(true);
         address[] memory lpAccounts = new address[](1);
-        // TODO need to confirm which wallet Treasury will use
         lpAccounts[0] = Mainnet.TREASURY_LP;
         capManager.setLiquidityProviderCaps(lpAccounts, 250 ether);
 
         // 5. Transfer ownership of CapManager to the mainnet 5/8 multisig
-        // Skipped, the deployer will transfer it later
-        //capManProxy.setOwner(Mainnet.GOV_MULTISIG);
+        capManProxy.setOwner(Mainnet.GOV_MULTISIG);
 
         // 6. Deploy new Ether.Fi implementation
         uint256 claimDelay = tenderlyTestnet ? 1 minutes : 10 minutes;
@@ -126,6 +124,9 @@ contract DeployEtherFiARMScript is AbstractDeployScript {
 
         // 16. Set ARM buffer to 20%
         EtherFiARM(payable(address(armProxy))).setARMBuffer(0.2e18); // 20% buffer
+
+        // 17. Transfer ownership of ARM to the 5/8 multisig
+        armProxy.setOwner(Mainnet.GOV_MULTISIG);
 
         console.log("Finished deploying", DEPLOY_NAME);
     }
