@@ -78,7 +78,7 @@ jobs:
         uses: foundry-rs/foundry-toolchain@v1
 
       - name: Install Dependencies
-        run: 	forge soldeer install
+        run: 	forge soldeer install && yarn install
 
       - name: Run non-invariant tests
         run: make test
