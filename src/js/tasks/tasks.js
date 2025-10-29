@@ -22,7 +22,10 @@ const {
   setHarvester,
 } = require("./sonicHarvest");
 const { requestLidoWithdrawals, claimLidoWithdrawals } = require("./lidoQueue");
-const { requestEtherFiWithdrawals, claimEtherFiWithdrawals } = require("./etherFiQueue");
+const {
+  requestEtherFiWithdrawals,
+  claimEtherFiWithdrawals,
+} = require("./etherFiQueue");
 const {
   requestWithdraw,
   claimWithdraw,
@@ -748,10 +751,10 @@ subtask("setPrices", "Update Lido ARM's swap prices")
       activeMarketAddress === ethers.ZeroAddress
         ? undefined
         : await hre.ethers.getContractAt(
-          ["function market() external view returns (address)"],
-          activeMarketAddress,
-          signer,
-        );
+            ["function market() external view returns (address)"],
+            activeMarketAddress,
+            signer,
+          );
 
     await setPrices({ ...taskArgs, signer, arm, market });
   });
@@ -1274,10 +1277,10 @@ subtask(
       activeMarket === ethers.ZeroAddress
         ? undefined
         : await hre.ethers.getContractAt(
-          ["function market() external view returns (address)"],
-          activeMarket,
-          signer,
-        );
+            ["function market() external view returns (address)"],
+            activeMarket,
+            signer,
+          );
 
     // Get the WS and OS token contracts
     const wSAddress = await armContract.token0();

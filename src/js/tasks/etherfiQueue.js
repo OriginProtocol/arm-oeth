@@ -55,7 +55,8 @@ const claimEtherFiWithdrawals = async (options) => {
 
       // Check if the request is finalized
       // Returns (uint96 amountOfEEth, uint96 shareOfEEth, bool isValid, uint32 feeGwei)
-      const [amountOfEEth, shareOfEEth, isValid, feeGwei] = await withdrawalQueue.getRequest(requestId);
+      const [amountOfEEth, shareOfEEth, isValid, feeGwei] =
+        await withdrawalQueue.getRequest(requestId);
       const isFinalized = requestId <= lastFinalized;
 
       if (isValid && isFinalized) {
