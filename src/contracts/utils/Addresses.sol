@@ -55,7 +55,7 @@ library Mainnet {
     address public constant MORPHO_MARKET_ETHERFI = 0x4881Ef0BF6d2365D3dd6499ccd7532bcdBCE0658;
 
     // Merkle Distributor
-    address public constant MORPHO_MERKLE_DISTRIBUTOR = 0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae;
+    address public constant MERKLE_DISTRIBUTOR = 0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae;
 }
 
 library Holesky {

@@ -109,7 +109,7 @@ contract DeployEtherFiARMScript is AbstractDeployScript {
 
         // 12. Initialize MorphoMarket proxy with the implementation, Timelock as owner
         bytes memory data = abi.encodeWithSelector(
-            Abstract4626MarketWrapper.initialize.selector, Mainnet.STRATEGIST, Mainnet.MORPHO_MERKLE_DISTRIBUTOR
+            Abstract4626MarketWrapper.initialize.selector, Mainnet.STRATEGIST, Mainnet.MERKLE_DISTRIBUTOR
         );
         morphoMarketProxy.initialize(address(morphoMarket), Mainnet.TIMELOCK, data);
 

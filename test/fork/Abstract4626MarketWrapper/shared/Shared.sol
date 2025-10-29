@@ -69,6 +69,6 @@ abstract contract Fork_Shared_Test is Base_Test_ {
 
         // Set harvester and merkle distributor
         morphoMarket.setHarvester(address(this));
-        morphoMarket.setMerkleDistributor(Mainnet.MORPHO_MERKLE_DISTRIBUTOR);
+        morphoMarket.setMerkleDistributor(Mainnet.MERKLE_DISTRIBUTOR);
     }
 }
