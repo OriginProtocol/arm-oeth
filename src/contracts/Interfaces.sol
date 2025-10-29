@@ -322,3 +322,12 @@ interface IEETHRedemptionManager {
     function redeemWeEth(uint256 amount, address receiver) external;
     function canRedeem(uint256 amount) external view returns (bool);
 }
+
+interface IDistributor {
+    function claim(
+        address[] calldata users,
+        address[] calldata tokens,
+        uint256[] calldata amounts,
+        bytes32[][] calldata proofs
+    ) external;
+}

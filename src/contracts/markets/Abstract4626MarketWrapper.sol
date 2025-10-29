@@ -5,6 +5,7 @@ import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {Ownable} from "../Ownable.sol";
+import {IDistributor} from "../Interfaces.sol";
 /**
  * @title Abstract 4626 lending market wrapper
  * @author Origin Protocol Inc
@@ -21,7 +22,10 @@ contract Abstract4626MarketWrapper is Initializable, Ownable {
     /// @notice The address of the Harvester contract that collects token rewards.
     address public harvester;
 
-    uint256[49] private _gap;
+    /// @notice The address of the Merkle Distributor contract.
+    IDistributor public merkleDistributor;
+
+    uint256[48] private _gap;
 
     event Deposit(address indexed sender, address indexed owner, uint256 assets, uint256 shares);
     event Withdraw(
@@ -143,6 +147,19 @@ contract Abstract4626MarketWrapper is Initializable, Ownable {
         revert("Not implemented");
     }
 
+    /// @notice Claim tokens from the Merkle Distributor
+    /// @param tokens The addresses of the tokens to claim.
+    /// @param amounts The amounts of the tokens to claim.
+    /// @param proofs The Merkle proofs for the claims.
+    function merkleClaim(address[] calldata tokens, uint256[] calldata amounts, bytes32[][] calldata proofs) external {
+        require(msg.sender == harvester, "Only harvester can collect");
+
+        address[] memory users = new address[](1);
+        users[0] = address(this);
+
+        merkleDistributor.claim(users, tokens, amounts, proofs);
+    }
+
     ////////////////////////////////////////////////////
     ///         View Functions
     ////////////////////////////////////////////////////
@@ -188,6 +205,17 @@ contract Abstract4626MarketWrapper is Initializable, Ownable {
         harvester = _harvester;
 
         emit HarvesterUpdated(_harvester);
+    }
+
+    /// @notice The contract owner sets the address of the Merkle Distributor contract.
+    /// @param _merkleDistributor The address of the Merkle Distributor contract.
+    function setMerkleDistributor(address _merkleDistributor) external onlyOwner {
+        _setMerkleDistributor(_merkleDistributor);
+    }
+
+    function _setMerkleDistributor(address _merkleDistributor) internal {
+        require(_merkleDistributor != address(0), "MerkleDistributor cannot be zero address");
+        merkleDistributor = IDistributor(_merkleDistributor);
     }
 
     /**
