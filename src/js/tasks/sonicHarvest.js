@@ -21,7 +21,7 @@ async function harvestRewards({ harvester, signer, symbol }) {
     return;
   }
 
-  const { data: flyTradeData, fees: flyTradeFees } = await flyTradeQuote({
+  const { data: flyTradeData /*, fees: flyTradeFees */ } = await flyTradeQuote({
     from: symbol.toUpperCase(),
     to: "WS",
     amount: rewards,
