@@ -13,15 +13,15 @@ const logArmPrices = async ({ blockTag, gas }, arm) => {
   console.log(`\nARM Prices`);
   // The rate of 1 WETH for stETH to 36 decimals from the perspective of the AMM. ie WETH/stETH
   // from the trader's perspective, this is the stETH/WETH buy price
-  const OWethStEthRate = await arm.traderate0({ blockTag });
+  const rate0 = await arm.traderate0({ blockTag });
 
   // convert from WETH/stETH rate with 36 decimals to stETH/WETH rate with 18 decimals
-  const sellPrice = BigInt(1e54) / BigInt(OWethStEthRate);
+  const sellPrice = BigInt(1e54) / BigInt(rate0);
 
   // The rate of 1 stETH for WETH to 36 decimals. ie stETH/WETH
-  const OStEthWethRate = await arm.traderate1({ blockTag });
+  const rate1 = await arm.traderate1({ blockTag });
   // Convert back to 18 decimals
-  const buyPrice = BigInt(OStEthWethRate) / BigInt(1e18);
+  const buyPrice = BigInt(rate1) / BigInt(1e18);
 
   const midPrice = (sellPrice + buyPrice) / 2n;
 
@@ -32,12 +32,14 @@ const logArmPrices = async ({ blockTag, gas }, arm) => {
   if (gas) {
     const signer = await getSigner();
     const amountBI = parseUnits("0.01", 18);
+    const baseToken = await arm.baseAsset();
+    const liquidityToken = await arm.liquidityAsset();
     try {
       const buyGas = await arm
         .connect(signer)
         [
           "swapExactTokensForTokens(address,address,uint256,uint256,address)"
-        ].estimateGas(addresses.mainnet.WETH, addresses.mainnet.stETH, amountBI, 0, addresses.dead, {
+        ].estimateGas(liquidityToken, baseToken, amountBI, 0, addresses.dead, {
           blockTag,
         });
       buyGasCosts = `, ${buyGas.toLocaleString()} gas`;
@@ -49,7 +51,7 @@ const logArmPrices = async ({ blockTag, gas }, arm) => {
         .connect(signer)
         [
           "swapExactTokensForTokens(address,address,uint256,uint256,address)"
-        ].estimateGas(addresses.mainnet.stETH, addresses.mainnet.WETH, amountBI, 0, addresses.dead, {
+        ].estimateGas(baseToken, liquidityToken, amountBI, 0, addresses.dead, {
           blockTag,
         });
       sellGasCosts = `, ${sellGas.toLocaleString()} gas`;
@@ -59,23 +61,17 @@ const logArmPrices = async ({ blockTag, gas }, arm) => {
   }
 
   console.log(
-    `sell   : ${formatUnits(sellPrice, 18).padEnd(
-      20,
-    )} stETH/WETH${sellGasCosts}`,
+    `sell   : ${formatUnits(sellPrice, 18).padEnd(20)} ${sellGasCosts}`,
   );
   if (crossPrice > sellPrice) {
-    console.log(
-      `cross  : ${formatUnits(crossPrice, 36).padEnd(20)} stETH/WETH`,
-    );
-    console.log(`mid    : ${formatUnits(midPrice, 18).padEnd(20)} stETH/WETH`);
+    console.log(`cross  : ${formatUnits(crossPrice, 36).padEnd(20)}`);
+    console.log(`mid    : ${formatUnits(midPrice, 18).padEnd(20)}`);
   } else {
-    console.log(`mid    : ${formatUnits(midPrice, 18).padEnd(20)} stETH/WETH`);
-    console.log(
-      `cross  : ${formatUnits(crossPrice, 18).padEnd(20)} stETH/WETH`,
-    );
+    console.log(`mid    : ${formatUnits(midPrice, 18).padEnd(20)}`);
+    console.log(`cross  : ${formatUnits(crossPrice, 18).padEnd(20)}`);
   }
   console.log(
-    `buy    : ${formatUnits(buyPrice, 18).padEnd(20)} stETH/WETH${buyGasCosts}`,
+    `buy    : ${formatUnits(buyPrice, 18).padEnd(20)} ${buyGasCosts}`,
   );
 
   const spread = BigInt(sellPrice) - BigInt(buyPrice);

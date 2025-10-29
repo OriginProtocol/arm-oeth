@@ -52,7 +52,7 @@ const withdrawRequestStatus = async ({ id, arm, vault }) => {
   }
 };
 
-const snap = async ({ arm, block }) => {
+const snap = async ({ arm, block, gas }) => {
   const armAddress = await parseAddress(`${arm.toUpperCase()}_ARM`);
   const armContract = await ethers.getContractAt(`${arm}ARM`, armAddress);
 
@@ -63,7 +63,7 @@ const snap = async ({ arm, block }) => {
   if (arm !== "Oeth") {
     await logWithdrawalQueue(armContract, blockTag, liquidityBalance);
 
-    await logArmPrices({ block }, armContract);
+    await logArmPrices({ block, gas }, armContract);
   }
 };
 
@@ -74,14 +74,19 @@ const logLiquidity = async ({ block, arm }) => {
   const armAddress = await parseAddress(`${arm.toUpperCase()}_ARM`);
   const armContract = await ethers.getContractAt(`${arm}ARM`, armAddress);
 
-  const liquiditySymbol = arm === "Origin" ? "WS" : "WETH";
-  const liquidAsset = await resolveAsset(liquiditySymbol);
+  const liquidityAddress = await armContract.liquidityAsset();
+  const liquidAsset = await ethers.getContractAt(
+    "IERC20Metadata",
+    liquidityAddress,
+  );
+  const liquiditySymbol = await liquidAsset.symbol();
   const liquidityBalance = await liquidAsset.balanceOf(armAddress, {
     blockTag,
   });
 
-  const baseSymbol = arm === "Origin" ? "OS" : "OETH";
-  const baseAsset = await resolveAsset(baseSymbol);
+  const baseAddress = await armContract.baseAsset();
+  const baseAsset = await ethers.getContractAt("IERC20Metadata", baseAddress);
+  const baseSymbol = await baseAsset.symbol();
   const baseBalance = await baseAsset.balanceOf(armAddress, { blockTag });
   const baseWithdraws = await outstandingWithdrawalAmount({
     withdrawer: armAddress,

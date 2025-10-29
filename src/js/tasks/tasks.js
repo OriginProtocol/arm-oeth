@@ -1099,10 +1099,11 @@ task("setOperator").setAction(async (_, __, runSuper) => {
 subtask("snap", "Take a snapshot of the an ARM")
   .addOptionalParam(
     "arm",
-    "The name of the ARM. eg Lido, Oeth or Origin",
+    "The name of the ARM. eg Lido, Oeth, Origin or EtherFi",
     "Lido",
     types.string,
   )
+  .addOptionalParam("gas", "Include gas costs", false, types.boolean)
   .addOptionalParam(
     "block",
     "Block number. (default: latest)",
