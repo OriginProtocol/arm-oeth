@@ -733,10 +733,10 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
 
         uint256 expectedTotalSupplyBeforeDeposit = expectTotalAssetsBeforeSwap;
         uint256 expectTotalAssetsBeforeDeposit = expectTotalAssetsBeforeSwap - 1
-        // steth in discounted to the cross price
-        + ((swapInAmount * 0.999e36) / 1e36)
-        // weth out discounted by the buy price
-        - ((swapInAmount * 0.998e36) / 1e36);
+            // steth in discounted to the cross price
+            + ((swapInAmount * 0.999e36) / 1e36)
+            // weth out discounted by the buy price
+            - ((swapInAmount * 0.998e36) / 1e36);
         assertEq(lidoARM.totalSupply(), expectedTotalSupplyBeforeDeposit, "total supply before deposit");
         assertApproxEqAbs(lidoARM.totalAssets(), expectTotalAssetsBeforeDeposit, 3, "total assets before deposit");
         assertEq(lidoARM.feesAccrued(), 0, "fees accrued before swap");

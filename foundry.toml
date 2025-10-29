@@ -33,6 +33,22 @@ remappings = [
   "@openzeppelin/contracts-upgradeable/=dependencies/@openzeppelin-contracts-upgradeable-5.0.2-5.0.2/contracts/",
 ]
 
+#[fmt]
+#ignore = []
+#tab_width = 4
+#int_types = "long"
+#line_length = 120
+#quote_style = "double"
+#sort_imports = false
+#wrap_comments = false
+#hex_underscore = "preserve"
+#bracket_spacing = false
+#override_spacing = true
+#contract_new_lines = false
+#number_underscore = "preserve"
+#multiline_func_header = "attributes_first"
+#single_line_statement_blocks = "single"
+
 [lint]
 lint_on_build = false
 
