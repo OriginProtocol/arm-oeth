@@ -150,13 +150,22 @@ contract Abstract4626MarketWrapper is Initializable, Ownable {
     }
 
     /// @notice Claim tokens from the Merkle Distributor
-    /// @param tokens The addresses of the tokens to claim.
-    /// @param amounts The amounts of the tokens to claim.
-    /// @param proofs The Merkle proofs for the claims.
-    function merkleClaim(address[] calldata tokens, uint256[] calldata amounts, bytes32[][] calldata proofs) external {
+    /// @param token The address of the token to claim.
+    /// @param amount The amount of tokens to claim.
+    /// @param proof The Merkle proof to validate the claim.
+    function merkleClaim(address token, uint256 amount, bytes32[] calldata proof) external {
         address[] memory users = new address[](1);
         users[0] = address(this);
 
+        address[] memory tokens = new address[](1);
+        tokens[0] = token;
+
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = amount;
+
+        bytes32[][] memory proofs = new bytes32[][](1);
+        proofs[0] = proof;
+        
         merkleDistributor.claim(users, tokens, amounts, proofs);
     }
 
