@@ -33,6 +33,9 @@ remappings = [
   "@openzeppelin/contracts-upgradeable/=dependencies/@openzeppelin-contracts-upgradeable-5.0.2-5.0.2/contracts/",
 ]
 
+[lint]
+lint_on_build = false
+
 [fuzz]
 runs = 1_000
 
