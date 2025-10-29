@@ -47,6 +47,12 @@ jobs:
       - name: Install Dependencies
         run: 	forge soldeer install && yarn install
 
+      - name: Compile contracts with Forge
+        run: forge build
+
+      - name: Compile contracts with Hardhat
+        run: npx hardhat compile
+
   foundry-tests:
     name: Foundry tests
     runs-on: ubuntu-latest
