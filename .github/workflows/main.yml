@@ -13,6 +13,9 @@ env:
   NODE_OPTIONS: --max_old_space_size=4096
 
 jobs:
+  ####################################################
+  ### LINTER
+  ####################################################
   lint:
     name: Contracts Linter
     runs-on: ubuntu-latest
@@ -30,8 +33,11 @@ jobs:
       - name: Run Linter
         run: forge fmt --check
 
+  ####################################################
+  ### BUILD
+  ####################################################
   build: 
-    name: Compile contracts
+    name: Contracts Build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -48,13 +54,16 @@ jobs:
         run: 	forge soldeer install && yarn install
 
       - name: Compile contracts with Forge
-        run: forge build
+        run: forge build --sizes
 
       - name: Compile contracts with Hardhat
         run: npx hardhat compile
 
-  foundry-tests:
-    name: Foundry tests
+  ####################################################
+  ### TESTS
+  ####################################################
+  foundry-tests-non-invariants:
+    name: Foundry Non-Invariants Tests
     runs-on: ubuntu-latest
     env:
       PROVIDER_URL: ${{ secrets.PROVIDER_URL }}
@@ -67,26 +76,15 @@ jobs:
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: v1.3.6
-
-      - name: Show Forge version
-        run: forge --version
 
       - name: Install Dependencies
-        run: 	forge soldeer install && yarn install
-
-      - name: Clean repo
-        run: make clean
-
-      - name: Check contract sizes
-        run: forge build --sizes
+        run: 	forge soldeer install
 
       - name: Run non-invariant tests
         run: make test
 
-  foundry-invariants:
-    name: Foundry Invariants
+  foundry-tests-invariants:
+    name: Foundry Invariants Tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -96,11 +94,8 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
 
-      - name: Show Forge version
-        run: forge --version
-
       - name: Install Dependencies
-        run: 	forge soldeer install && yarn install
+        run: 	forge soldeer install
 
       - name: Run invariant tests
         run: make test-invariants
