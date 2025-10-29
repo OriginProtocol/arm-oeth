@@ -22,7 +22,7 @@ jobs:
           submodules: recursive
 
       - name: Install Foundry
-        run: foundryup
+        uses: foundry-rs/foundry-toolchain@v1
 
       - name: Run Linter
         run: forge fmt --check
