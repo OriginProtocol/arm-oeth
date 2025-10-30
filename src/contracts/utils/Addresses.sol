@@ -31,6 +31,7 @@ library Mainnet {
     address public constant WEETH = 0xCd5fE23C85820F7B72D0926FC9b05b43E359b7ee;
     address public constant STETH = 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84;
     address public constant WSTETH = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
+    address public constant MORPHO = 0x58D97B57BB95320F9a05dC918Aef65434969c2B2;
 
     // Contracts
     address public constant OETH_VAULT = 0x39254033945AA2E4809Cc2977E7087BEE48bd7Ab;
@@ -52,6 +53,9 @@ library Mainnet {
     // Morpho Market
     address public constant MORPHO_MARKET_MEVCAPITAL = 0x9a8bC3B04b7f3D87cfC09ba407dCED575f2d61D8;
     address public constant MORPHO_MARKET_ETHERFI = 0x4881Ef0BF6d2365D3dd6499ccd7532bcdBCE0658;
+
+    // Merkle Distributor
+    address public constant MERKLE_DISTRIBUTOR = 0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae;
 }
 
 library Holesky {

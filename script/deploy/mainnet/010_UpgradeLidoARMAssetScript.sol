@@ -35,14 +35,33 @@ contract UpgradeLidoARMAssetScript is AbstractDeployScript {
         lidoARMImpl = new LidoARM(Mainnet.STETH, Mainnet.WETH, Mainnet.LIDO_WITHDRAWAL, claimDelay, 1e7, 1e18);
         _recordDeploy("LIDO_ARM_IMPL", address(lidoARMImpl));
 
+        // 2. Deploy new MorphoMarket implementation
+        morphoMarket = new MorphoMarket(Mainnet.LIDO_ARM, Mainnet.MORPHO_MARKET_MEVCAPITAL);
+        _recordDeploy("MORPHO_MARKET_MEVCAPITAL_IMP", address(morphoMarket));
+
         console.log("Finished deploying", DEPLOY_NAME);
     }
 
     function _buildGovernanceProposal() internal override {
         govProposal.setDescription("Update Lido ARM to add asset() view function");
 
+        // 1. Upgrade LidoARM to new implementation
         govProposal.action(
             deployedContracts["LIDO_ARM"], "upgradeTo(address)", abi.encode(deployedContracts["LIDO_ARM_IMPL"])
+        );
+
+        // 2. Upgrade MorphoMarket to new implementation
+        govProposal.action(
+            deployedContracts["MORPHO_MARKET_MEVCAPITAL"],
+            "upgradeTo(address)",
+            abi.encode(deployedContracts["MORPHO_MARKET_MEVCAPITAL_IMP"])
+        );
+
+        // 3. Set the MerkleDistributor address in the MorphoMarket
+        govProposal.action(
+            deployedContracts["MORPHO_MARKET_MEVCAPITAL"],
+            "setMerkleDistributor(address)",
+            abi.encode(Mainnet.MERKLE_DISTRIBUTOR)
         );
 
         govProposal.simulate();

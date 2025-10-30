@@ -19,7 +19,7 @@ ffi = true
 # - dependencies remappings (like "dependencies/@pendle-sy"), need to stay amongs first remappings.
 remappings = [
   # Manage dependencies remappings inside dependencies folder (has to be first)
-  #"dependencies/@pendle-sy-1.0.0-1.0.0/:@openzeppelin/contracts/=dependencies/@openzeppelin-contracts-4.9.3-4.9.3/contracts/",
+  "dependencies/@pendle-sy-1.0.0-1.0.0/:@openzeppelin/contracts/=dependencies/@openzeppelin-contracts-4.9.3-4.9.3/contracts/",
   # Manage root folders remappings
   "contracts/=./src/contracts",
   "script/=./script",
@@ -32,6 +32,25 @@ remappings = [
   "@openzeppelin/contracts/=dependencies/@openzeppelin-contracts-5.0.2-5.0.2/contracts/",
   "@openzeppelin/contracts-upgradeable/=dependencies/@openzeppelin-contracts-upgradeable-5.0.2-5.0.2/contracts/",
 ]
+
+#[fmt]
+#ignore = []
+#tab_width = 4
+#int_types = "long"
+#line_length = 120
+#quote_style = "double"
+#sort_imports = false
+#wrap_comments = false
+#hex_underscore = "preserve"
+#bracket_spacing = false
+#override_spacing = true
+#contract_new_lines = false
+#number_underscore = "preserve"
+#multiline_func_header = "attributes_first"
+#single_line_statement_blocks = "single"
+
+[lint]
+lint_on_build = false
 
 [fuzz]
 runs = 1_000
