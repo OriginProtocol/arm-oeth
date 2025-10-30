@@ -67,32 +67,32 @@ simulate-sonic-s-%:
 	@forge script script/deploy/$*.sol --fork-url $(SONIC_URL) -vvvvv
 
 run-s-%:
-	@forge script script/deploy/$*.sol --rpc-url $(PROVIDER_URL) --private-key ${DEPLOYER_PRIVATE_KEY} --broadcast --slow --verify -vvvvv
+	@forge script script/deploy/$*.sol --rpc-url $(PROVIDER_URL) --account deployerKey --sender $(DEPLOYER_ADDRESS) --broadcast --slow --verify -vvvvv
 
 run-sonic-s-%:
-	@forge script script/deploy/$*.sol --rpc-url $(SONIC_URL) --private-key ${DEPLOYER_PRIVATE_KEY} --broadcast --slow --verify -vvvvv
+	@forge script script/deploy/$*.sol --rpc-url $(SONIC_URL) --account deployerKey --sender $(DEPLOYER_ADDRESS) --broadcast --slow --verify -vvvvv
 
 # Deploy scripts
 deploy:
-	@forge script script/deploy/DeployManager.sol --rpc-url $(PROVIDER_URL) --private-key ${DEPLOYER_PRIVATE_KEY} --broadcast --slow --verify -vvvv
+	@forge script script/deploy/DeployManager.sol --rpc-url $(PROVIDER_URL) --account deployerKey --sender $(DEPLOYER_ADDRESS) --broadcast --slow --verify -vvvv
 
 deploy-local:
-	@forge script script/deploy/DeployManager.sol --rpc-url $(LOCAL_URL) --private-key ${DEPLOYER_PRIVATE_KEY} --broadcast --slow -vvvv
+	@forge script script/deploy/DeployManager.sol --rpc-url $(LOCAL_URL) --account deployerKey --sender $(DEPLOYER_ADDRESS) --broadcast --slow -vvvv
 
 deploy-testnet:
 	@forge script script/deploy/DeployManager.sol --rpc-url $(TESTNET_URL) --broadcast --slow --unlocked -vvvv
 
 deploy-holesky:
-	@forge script script/deploy/DeployManager.sol --rpc-url $(HOLESKY_URL) --private-key ${DEPLOYER_PRIVATE_KEY} --broadcast --slow --verify -vvv
+	@forge script script/deploy/DeployManager.sol --rpc-url $(HOLESKY_URL) --account deployerKey --sender $(DEPLOYER_ADDRESS) --broadcast --slow --verify -vvv
 
 deploy-sonic:
-	@forge script script/deploy/DeployManager.sol --rpc-url $(SONIC_URL) --private-key ${DEPLOYER_PRIVATE_KEY} --broadcast --slow --verify -vvv
+	@forge script script/deploy/DeployManager.sol --rpc-url $(SONIC_URL) --account deployerKey --sender $(DEPLOYER_ADDRESS) --broadcast --slow --verify -vvv
 
 simulate-deploys:
-	@forge script script/deploy/DeployManager.sol --fork-url $(PROVIDER_URL) --private-key ${DEPLOYER_PRIVATE_KEY} -vvvv
+	@forge script script/deploy/DeployManager.sol --fork-url $(PROVIDER_URL) --account deployerKey --sender $(DEPLOYER_ADDRESS) -vvvv
 
 simulate-sonic-deploys:
-	@forge script script/deploy/DeployManager.sol --fork-url $(SONIC_URL) --private-key ${DEPLOYER_PRIVATE_KEY} -vvvv
+	@forge script script/deploy/DeployManager.sol --fork-url $(SONIC_URL) --account deployerKey --sender $(DEPLOYER_ADDRESS) -vvvv
 
 # Override default `test` and `coverage` targets
 .PHONY: test coverage
