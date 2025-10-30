@@ -38,9 +38,11 @@ const claimEtherFiWithdrawals = async (options) => {
   } else {
     // Get the outstanding withdrawal requests for the AMM
     // This section doesn't work at the moment, because there is nothing that returns the request IDs owned by an address.
-    const requestIds = await withdrawalQueue.getWithdrawalRequests(
-      arm.getAddress(),
+    // This is not the good function.
+    throw new Error(
+      "Ids must be defined at the moment to claim EtherFi withdrawals",
     );
+
     log(`Found ${requestIds.length} withdrawal requests`);
 
     if (requestIds.length === 0) {
@@ -55,6 +57,7 @@ const claimEtherFiWithdrawals = async (options) => {
 
       // Check if the request is finalized
       // Returns (uint96 amountOfEEth, uint96 shareOfEEth, bool isValid, uint32 feeGwei)
+      // Not really sure this works
       const [, , isValid] = await withdrawalQueue.getRequest(requestId);
       const isFinalized = requestId <= lastFinalized;
 

@@ -23,7 +23,7 @@ addresses.mainnet.eETH = "0x35fA164735182de50811E8e2E824cFb9B6118ac2";
 
 addresses.mainnet.OethARM = "0x6bac785889A4127dB0e0CeFEE88E0a9F1Aaf3cC7";
 addresses.mainnet.lidoARM = "0x85B78AcA6Deae198fBF201c82DAF6Ca21942acc6";
-addresses.mainnet.etherfiARM = "0x0000000000000000000000000000000000000111"; // To be replaced with actual address
+addresses.mainnet.etherfiARM = "0xfB0A3CF9B019BFd8827443d131b235B3E0FC58d2";
 
 // Lido
 addresses.mainnet.lidoWithdrawalQueue =

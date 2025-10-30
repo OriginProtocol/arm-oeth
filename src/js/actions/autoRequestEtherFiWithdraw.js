@@ -1,7 +1,7 @@
 const { Defender } = require("@openzeppelin/defender-sdk");
 const { ethers } = require("ethers");
 
-const { requestEtherFiWithdrawals } = require("../tasks/etherFiQueue");
+const { requestEtherFiWithdrawals } = require("../tasks/etherfiQueue");
 const { mainnet } = require("../utils/addresses");
 const erc20Abi = require("../../abis/ERC20.json");
 const etherFiARMAbi = require("../../abis/EtherFiARM.json");
