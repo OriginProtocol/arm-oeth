@@ -85,8 +85,8 @@ abstract contract AbstractDeployScript is Script {
                 vm.startPrank(deployer);
             }
         } else {
-            uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
-            deployer = vm.rememberKey(deployerPrivateKey);
+            require(vm.envExists("DEPLOYER_ADDRESS"), "DEPLOYER_ADDRESS env var not set");
+            deployer = vm.envAddress("DEPLOYER_ADDRESS");
             vm.startBroadcast(deployer);
             console.log("Deploying on mainnet with deployer: %s", deployer);
         }
