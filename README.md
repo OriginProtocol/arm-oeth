@@ -208,9 +208,15 @@ make gas
 
 ## Deployment
 
+### Store your deployer private key
+We use ERC-2335 to encode private key. To be sure to never reveal it, we use the cast wallet PK management.
+```bash
+cast wallet import deployerKey --interactive
+```
+
 ### Testnet
 
-In the `.env` file, set `DEPLOYER_PRIVATE_KEY` to an account that has funds on the Tenderly Testnet.
+In the `.env` file, set `DEPLOYER_ADDRESS` (should match the privateKey you registered wit `cast wallet import deployerKey`) to an account that has funds on the Tenderly Testnet.
 Set `TESTNET_URL` to the Tenderly Testnet RPC endpoint.
 
 ```bash
@@ -219,7 +225,7 @@ make deploy-testnet
 
 ### Mainnet
 
-In the `.env` file, set `DEPLOYER_PRIVATE_KEY`, `ETHERSCAN_API_KEY` and `PROVIDER_URL` to the mainnet values.
+In the `.env` file, set `DEPLOYER_ADDRESS` (should match the privateKey you registered wit `cast wallet import deployerKey`), `ETHERSCAN_API_KEY` and `PROVIDER_URL` to the mainnet values.
 
 ```bash
 make deploy
@@ -227,7 +233,7 @@ make deploy
 
 ### Sonic
 
-In the `.env` file, set `DEPLOYER_PRIVATE_KEY` and `SONIC_URL` to the mainnet values.
+In the `.env` file, set `DEPLOYER_ADDRESS` (should match the privateKey you registered wit `cast wallet import deployerKey`) and `SONIC_URL` to the mainnet values.
 
 ```bash
 make deploy-sonic

@@ -1,0 +1,51 @@
+@startuml
+
+!$originColor = DeepSkyBlue
+' !$originColor = WhiteSmoke
+!$newColor = LightGreen
+!$changedColor = Orange
+!$thirdPartyColor = WhiteSmoke
+
+' legend
+' blue - Origin
+' ' green - new
+' ' orange - changed
+' white - 3rd Party
+' end legend
+
+title "Ether.fi\nAutomated Redemption Manager (ARM)\nContract Dependencies"
+
+
+object "ZapperARM" as zap <<Origin>> #$originColor {
+}
+
+object "EtherFiARM" as arm <<Origin>><<Proxy>> #$originColor {
+    shares: ARM-eETH-WETH
+    assets: eETH, WETH
+}
+
+object "CapManager" as capMan <<Origin>><<Proxy>> #$originColor {
+}
+
+object "Redemption\nManager" as rm <<EtherFi>><<Proxy>> #$thirdPartyColor {
+}
+
+object "Withdrawal\nQueue" as wq <<EtherFi>><<Proxy>> #$thirdPartyColor {
+}
+
+object "Morpho Market" as morphoMarket <<Origin>><<Proxy>> #$originColor {
+    assets: WETH
+}
+
+object "Gauntlet WETH Core" as metaMorpho <<Morpho>> #$thirdPartyColor {
+    assets: WETH
+}
+
+zap <..> arm
+arm <.> capMan
+arm ...> rm
+arm ...> wq
+arm ..> morphoMarket
+morphoMarket ..> metaMorpho
+
+@enduml
