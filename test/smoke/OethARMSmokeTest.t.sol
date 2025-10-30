@@ -298,9 +298,8 @@ contract Fork_OriginARM_Smoke_Test is AbstractSmokeTest {
         (bool success,) =
             Mainnet.WETH.call(abi.encodeWithSignature("approve(address,uint256)", Mainnet.OETH_VAULT, 10_000 ether));
         require(success, "Approve failed");
-        (success,) = Mainnet.OETH_VAULT.call(
-            abi.encodeWithSignature("mint(address,uint256,uint256)", Mainnet.WETH, 10_000 ether, 0)
-        );
+        (success,) = Mainnet.OETH_VAULT
+            .call(abi.encodeWithSignature("mint(address,uint256,uint256)", Mainnet.WETH, 10_000 ether, 0));
         require(success, "Mint failed");
         // End cheat section
 
