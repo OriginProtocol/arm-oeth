@@ -2,7 +2,7 @@
 src = "src"
 out = "out"
 libs = ["dependencies"]
-verbosity = 3
+verbosity = 5
 sender = "0x0165C55EF814dEFdd658532A48Bd17B2c8356322"
 tx_origin = "0x0165C55EF814dEFdd658532A48Bd17B2c8356322"
 auto_detect_remappings = false
