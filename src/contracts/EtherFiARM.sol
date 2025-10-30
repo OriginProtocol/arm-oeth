@@ -145,23 +145,6 @@ contract EtherFiARM is Initializable, AbstractARM, IERC721Receiver {
     }
 
     /**
-     * @notice Redeem instantly eETH for ETH via the EtherFi Redemption Manager.
-     * This method can only be called by the operator or the owner.
-     * 0.3% of fees are charged by the EtherFi Redemption Manager.
-     * @param amount The amount of eETH to redeem for ETH.
-     */
-    function redeemEETH(uint256 amount) external onlyOperatorOrOwner {
-        // Approve the EtherFi Redemption Manager to spend eETH
-        eeth.approve(address(etherfiRedemptionManager), amount);
-
-        // Redeem eETH for ETH via the EtherFi Redemption Manager
-        etherfiRedemptionManager.redeemEEth(amount, address(this));
-
-        // Wrap all the received ETH to WETH.
-        weth.deposit{value: address(this).balance}();
-    }
-
-    /**
      * @dev Calculates the amount of eETH in the EtherFi Withdrawal Queue.
      */
     function _externalWithdrawQueue() internal view override returns (uint256) {

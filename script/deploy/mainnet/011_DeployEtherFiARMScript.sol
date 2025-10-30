@@ -12,6 +12,7 @@ import {CapManager} from "contracts/CapManager.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
 import {MorphoMarket} from "contracts/markets/MorphoMarket.sol";
 import {ZapperARM} from "contracts/ZapperARM.sol";
+import {Abstract4626MarketWrapper} from "contracts/markets/Abstract4626MarketWrapper.sol";
 
 // Deployment imports
 import {GovProposal, GovSixHelper} from "contracts/utils/GovSixHelper.sol";
@@ -54,7 +55,6 @@ contract DeployEtherFiARMScript is AbstractDeployScript {
         capManager.setTotalAssetsCap(250 ether);
         capManager.setAccountCapEnabled(true);
         address[] memory lpAccounts = new address[](1);
-        // TODO need to confirm which wallet Treasury will use
         lpAccounts[0] = Mainnet.TREASURY_LP;
         capManager.setLiquidityProviderCaps(lpAccounts, 250 ether);
 
@@ -80,7 +80,7 @@ contract DeployEtherFiARMScript is AbstractDeployScript {
         IWETH(Mainnet.WETH).deposit{value: 1e13}();
         IWETH(Mainnet.WETH).approve(address(armProxy), 1e13);
 
-        // 8. Initialize proxy, set the owner to TIMELOCK, set the operator to the ARM Relayer
+        // 8. Initialize proxy, set the owner to deployer, set the operator to the ARM Relayer
         bytes memory armData = abi.encodeWithSignature(
             "initialize(string,string,address,uint256,address,address)",
             "Ether.fi ARM", // name
@@ -90,7 +90,7 @@ contract DeployEtherFiARMScript is AbstractDeployScript {
             Mainnet.BUYBACK_OPERATOR, // Fee collector
             address(capManager)
         );
-        armProxy.initialize(address(etherFiARMImpl), Mainnet.TIMELOCK, armData);
+        armProxy.initialize(address(etherFiARMImpl), deployer, armData);
 
         console.log("Initialized Ether.Fi ARM");
 
@@ -99,19 +99,38 @@ contract DeployEtherFiARMScript is AbstractDeployScript {
         zapper.setOwner(Mainnet.STRATEGIST);
         _recordDeploy("ARM_ZAPPER", address(zapper));
 
-        console.log("Finished deploying", DEPLOY_NAME);
-    }
+        // 10. Deploy MorphoMarket proxy
+        morphoMarketProxy = new Proxy();
+        _recordDeploy("MORPHO_MARKET_ETHERFI", address(morphoMarketProxy));
 
-    function _buildGovernanceProposal() internal override {
-        govProposal.setDescription("Deploy the Ether.Fi ARM with a CapManager");
+        // 11. Deploy MorphoMarket
+        morphoMarket = new MorphoMarket(address(armProxy), Mainnet.MORPHO_MARKET_ETHERFI);
+        _recordDeploy("MORPHO_MARKET_ETHERFI_IMPL", address(morphoMarket));
 
-        govProposal.action(
-            deployedContracts["ETHER_FI_ARM"], "upgradeTo(address)", abi.encode(deployedContracts["ETHER_FI_ARM_IMPL"])
+        // 12. Initialize MorphoMarket proxy with the implementation, Timelock as owner
+        bytes memory data = abi.encodeWithSelector(
+            Abstract4626MarketWrapper.initialize.selector, Mainnet.STRATEGIST, Mainnet.MERKLE_DISTRIBUTOR
         );
+        morphoMarketProxy.initialize(address(morphoMarket), Mainnet.TIMELOCK, data);
 
+        // 13. Set crossPrice to 0.9998 ETH
         uint256 crossPrice = 0.9998 * 1e36;
-        govProposal.action(deployedContracts["ETHER_FI_ARM"], "setCrossPrice(uint256)", abi.encode(crossPrice));
+        EtherFiARM(payable(address(armProxy))).setCrossPrice(crossPrice);
 
-        govProposal.simulate();
+        // 14. Add Morpho Market as an active market
+        address[] memory markets = new address[](1);
+        markets[0] = address(morphoMarketProxy);
+        EtherFiARM(payable(address(armProxy))).addMarkets(markets);
+
+        // 15. Set Morpho Market as the active market
+        EtherFiARM(payable(address(armProxy))).setActiveMarket(address(morphoMarketProxy));
+
+        // 16. Set ARM buffer to 20%
+        EtherFiARM(payable(address(armProxy))).setARMBuffer(0.2e18); // 20% buffer
+
+        // 17. Transfer ownership of ARM to the 5/8 multisig
+        armProxy.setOwner(Mainnet.GOV_MULTISIG);
+
+        console.log("Finished deploying", DEPLOY_NAME);
     }
 }
