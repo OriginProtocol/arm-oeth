@@ -27,7 +27,7 @@ snapshot:
 
 # Tests
 test-std:
-	forge test --summary --fail-fast --show-progress
+	forge test --summary --fail-fast --show-progress -vvv
 
 test:
 	@FOUNDRY_NO_MATCH_CONTRACT=Fuzzer $(MAKE) test-std
