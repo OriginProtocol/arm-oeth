@@ -1,11 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import {Test, console2} from "forge-std/Test.sol";
-
 import {AbstractSmokeTest} from "./AbstractSmokeTest.sol";
 
-import {IERC20, IEETHWithdrawal, IEETHWithdrawalNFT} from "contracts/Interfaces.sol";
+import {IERC20, IEETHWithdrawalNFT} from "contracts/Interfaces.sol";
 import {EtherFiARM} from "contracts/EtherFiARM.sol";
 import {CapManager} from "contracts/CapManager.sol";
 import {Proxy} from "contracts/Proxy.sol";

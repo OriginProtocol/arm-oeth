@@ -6,14 +6,10 @@ import {VmSafe} from "forge-std/Vm.sol";
 import {stdJson} from "forge-std/StdJson.sol";
 
 import {AbstractDeployScript} from "./AbstractDeployScript.sol";
-import {DeployCoreMainnetScript} from "./mainnet/001_DeployCoreScript.sol";
-import {UpgradeMainnetScript} from "./mainnet/002_UpgradeScript.sol";
 import {UpgradeLidoARMMainnetScript} from "./mainnet/003_UpgradeLidoARMScript.sol";
 import {UpdateCrossPriceMainnetScript} from "./mainnet/004_UpdateCrossPriceScript.sol";
 import {RegisterLidoWithdrawalsScript} from "./mainnet/005_RegisterLidoWithdrawalsScript.sol";
 import {ChangeFeeCollectorScript} from "./mainnet/006_ChangeFeeCollector.sol";
-import {DeployCoreHoleskyScript} from "./holesky/001_DeployCoreScript.sol";
-import {UpgradeHoleskyScript} from "./holesky/002_UpgradeScript.sol";
 import {DeployOriginARMProxyScript} from "./sonic/001_DeployOriginARMProxy.sol";
 import {DeployOriginARMScript} from "./sonic/002_DeployOriginARM.sol";
 import {UpgradeOriginARMScript} from "./sonic/003_UpgradeOriginARM.sol";
@@ -24,6 +20,7 @@ import {UpgradeLidoARMSetBufferScript} from "./mainnet/009_UpgradeLidoARMSetBuff
 import {UpgradeOriginARMSetBufferScript} from "./sonic/005_UpgradeOriginARMSetBufferScript.sol";
 import {UpgradeLidoARMAssetScript} from "./mainnet/010_UpgradeLidoARMAssetScript.sol";
 import {DeployEtherFiARMScript} from "./mainnet/011_DeployEtherFiARMScript.sol";
+import {UpgradeOETHARMScript} from "./mainnet/012_UpgradeOETHARMScript.sol";
 
 contract DeployManager is Script {
     using stdJson for string;
@@ -73,8 +70,6 @@ contract DeployManager is Script {
     function run() external {
         if (block.chainid == 1 || block.chainid == 31337) {
             // TODO: Use vm.readDir to recursively build this?
-            _runDeployFile(new DeployCoreMainnetScript());
-            _runDeployFile(new UpgradeMainnetScript(getDeployment("OETH_ARM")));
             _runDeployFile(new UpgradeLidoARMMainnetScript());
             _runDeployFile(new UpdateCrossPriceMainnetScript());
             _runDeployFile(new RegisterLidoWithdrawalsScript());
@@ -84,10 +79,9 @@ contract DeployManager is Script {
             _runDeployFile(new DeployPendleAdaptor());
             _runDeployFile(new UpgradeLidoARMAssetScript());
             _runDeployFile(new DeployEtherFiARMScript());
+            _runDeployFile(new UpgradeOETHARMScript());
         } else if (block.chainid == 17000) {
             // Holesky
-            _runDeployFile(new DeployCoreHoleskyScript());
-            _runDeployFile(new UpgradeHoleskyScript(getDeployment("OETH_ARM")));
         } else if (block.chainid == 146) {
             // Sonic
             console.log("Deploying Origin ARM");
