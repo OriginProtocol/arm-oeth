@@ -634,7 +634,7 @@ task("setTotalAssetsCap").setAction(async (_, __, runSuper) => {
 subtask("setPrices", "Update Lido ARM's swap prices")
   .addOptionalParam(
     "arm",
-    "The name of the ARM. eg Lido or Origin",
+    "The name of the ARM. eg Lido, Origin or EtherFi",
     "Lido",
     types.string,
   )
@@ -725,12 +725,9 @@ subtask("setPrices", "Update Lido ARM's swap prices")
   .setAction(async (taskArgs) => {
     const signer = await getSigner();
 
-    const armAddress = await parseDeployedAddress(
-      `${taskArgs.arm.toUpperCase()}_ARM`,
-    );
-    const arm = await ethers.getContractAt("AbstractARM", armAddress);
+    const armContract = await resolveArmContract(taskArgs.arm);
 
-    const activeMarketAddress = await arm.activeMarket();
+    const activeMarketAddress = await armContract.activeMarket();
     log(`Active lending market: ${activeMarketAddress}`);
 
     // Get the MorphoMarketWrapper contract
@@ -743,7 +740,7 @@ subtask("setPrices", "Update Lido ARM's swap prices")
             signer,
           );
 
-    await setPrices({ ...taskArgs, signer, arm, market });
+    await setPrices({ ...taskArgs, signer, arm: armContract, market });
   });
 task("setPrices").setAction(async (_, __, runSuper) => {
   return runSuper();
