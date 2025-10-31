@@ -3,8 +3,7 @@ const dayjs = require("dayjs");
 const utc = require("dayjs/plugin/utc");
 
 const { getBlock } = require("../utils/block");
-const { parseAddress } = require("../utils/addressParser");
-const { resolveAsset } = require("../utils/assets");
+const { resolveArmContract } = require("../utils/addressParser");
 const { outstandingWithdrawalAmount } = require("../utils/armQueue");
 const { logArmPrices } = require("./markets");
 const { logTxDetails } = require("../utils/txLogger");
@@ -53,8 +52,7 @@ const withdrawRequestStatus = async ({ id, arm, vault }) => {
 };
 
 const snap = async ({ arm, block, gas }) => {
-  const armAddress = await parseAddress(`${arm.toUpperCase()}_ARM`);
-  const armContract = await ethers.getContractAt(`${arm}ARM`, armAddress);
+  const armContract = await resolveArmContract(arm);
 
   const blockTag = await getBlock(block);
 
@@ -71,8 +69,8 @@ const logLiquidity = async ({ block, arm }) => {
   const blockTag = await getBlock(block);
   console.log(`\nLiquidity`);
 
-  const armAddress = await parseAddress(`${arm.toUpperCase()}_ARM`);
-  const armContract = await ethers.getContractAt(`${arm}ARM`, armAddress);
+  const armContract = await resolveArmContract(arm);
+  const armAddress = await armContract.getAddress();
 
   const liquidityAddress = await armContract.liquidityAsset();
   const liquidAsset = await ethers.getContractAt(
@@ -93,10 +91,14 @@ const logLiquidity = async ({ block, arm }) => {
   });
 
   let lendingMarketBalance = 0n;
-  if (arm === "Origin") {
+  // TODO this can be removed after OETH is upgraded
+  if (arm !== "Oeth") {
     // Get the lending market from the active SiloMarket
     const marketAddress = await armContract.activeMarket({ blockTag });
-    const market = await ethers.getContractAt("SiloMarket", marketAddress);
+    const market = await ethers.getContractAt(
+      "Abstract4626MarketWrapper",
+      marketAddress,
+    );
     const armShares = await market.balanceOf(armAddress, { blockTag });
     lendingMarketBalance = await market.convertToAssets(armShares, {
       blockTag,
@@ -114,6 +116,8 @@ const logLiquidity = async ({ block, arm }) => {
 
   const totalAssets = await armContract.totalAssets({ blockTag });
   const accruedFees = await armContract.feesAccrued({ blockTag });
+  const buffer = await armContract.armBuffer({ blockTag });
+  const bufferPercent = (buffer * 10000n) / parseUnits("1");
 
   console.log(
     `${formatUnits(liquidityBalance, 18)} ${liquiditySymbol} ${formatUnits(
@@ -149,6 +153,7 @@ const logLiquidity = async ({ block, arm }) => {
 
   console.log(`${formatUnits(accruedFees, 18)} accrued fees`);
   console.log(`${formatUnits(totalAssets, 18)} total assets`);
+  console.log(`liquidity buffer ${formatUnits(bufferPercent, 2)}%`);
 
   return { total, liquidityBalance };
 };
