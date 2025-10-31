@@ -18,7 +18,7 @@ import {IERC20} from "contracts/Interfaces.sol";
 import {MockERC20} from "@solmate/test/utils/mocks/MockERC20.sol";
 import {MockWrapper} from "test/unit/Router/shared/mocks/MockWrapper.sol";
 
-abstract contract Unit_ARMRouter_Shared_Test is Base_Test_ {
+abstract contract Unit_Shared_ARMRouter_Test is Base_Test_ {
     //////////////////////////////////////////////////////
     /// --- SETUP
     //////////////////////////////////////////////////////
@@ -28,6 +28,9 @@ abstract contract Unit_ARMRouter_Shared_Test is Base_Test_ {
 
         // Deploy contracts
         _deployContracts();
+
+        // Fund wrappers with tokens
+        _fundWrappers();
 
         // Label contracts
         labelAll();
@@ -52,8 +55,8 @@ abstract contract Unit_ARMRouter_Shared_Test is Base_Test_ {
         // Deal x2 1e12 eth to this contract, wrap them in WETH and approve ARMs
         deal(address(this), 2e12);
         WETH(payable(address(weth))).deposit{value: 2e12}();
-        weth.approve(address(lidoARM), type(uint256).max);
-        weth.approve(address(etherfiARM), type(uint256).max);
+        weth.approve(address(lidoProxy), type(uint256).max);
+        weth.approve(address(etherfiProxy), type(uint256).max);
 
         // Initialize proxies
         // Lido ARM
@@ -86,5 +89,15 @@ abstract contract Unit_ARMRouter_Shared_Test is Base_Test_ {
         router.registerConfig(address(wsteth), address(steth), MockWrapper.unwrap.selector, address(wsteth));
         router.registerConfig(address(eeth), address(weeth), MockWrapper.wrap.selector, address(weeth));
         router.registerConfig(address(weeth), address(eeth), MockWrapper.unwrap.selector, address(weeth));
+    }
+
+    function _fundWrappers() internal {
+        // Fund wrappers with tokens
+        MockERC20(address(steth)).mint(address(wsteth), 1_000 ether);
+        MockERC20(address(eeth)).mint(address(weeth), 1_000 ether);
+
+        // Approve wrappers
+        steth.approve(address(wsteth), type(uint256).max);
+        eeth.approve(address(weeth), type(uint256).max);
     }
 }
