@@ -78,7 +78,7 @@ subtask(
 )
   .addParam(
     "arm",
-    "Name of the ARM. eg Lido, Origin or Oeth",
+    "Name of the ARM. eg Lido, Origin, Oeth or Ether.Fi",
     "Lido",
     types.string,
   )
@@ -556,7 +556,12 @@ task("redeemAll").setAction(async (_, __, runSuper) => {
 // Lido ARM Liquidity Provider Functions
 
 subtask("depositARM", "Deposit to an ARM and receive ARM LP tokens")
-  .addParam("arm", "Name of the ARM. eg Lido or Origin", "Lido", types.string)
+  .addParam(
+    "arm",
+    "Name of the ARM. eg Lido, Origin or Ether.Fi",
+    "Lido",
+    types.string,
+  )
   .addParam(
     "amount",
     "Amount of to deposit not scaled to 18 decimals",
@@ -575,7 +580,12 @@ task("depositARM").setAction(async (_, __, runSuper) => {
 });
 
 subtask("requestRedeemARM", "Request redeem from an ARM")
-  .addParam("arm", "Name of the ARM. eg Lido or Origin", "Lido", types.string)
+  .addParam(
+    "arm",
+    "Name of the ARM. eg Lido, Origin or EtherFi",
+    "Lido",
+    types.string,
+  )
   .addParam(
     "amount",
     "Amount of ARM LP tokens not scaled to 18 decimals",
@@ -588,7 +598,12 @@ task("requestRedeemARM").setAction(async (_, __, runSuper) => {
 });
 
 subtask("claimRedeemARM", "Claim from a previously requested ARM redeem")
-  .addParam("arm", "Name of the ARM. eg Lido or Origin", "Lido", types.string)
+  .addParam(
+    "arm",
+    "Name of the ARM. eg Lido, Origin or EtherFi",
+    "Lido",
+    types.string,
+  )
   .addParam("id", "Request identifier", undefined, types.float)
   .setAction(claimRedeemARM);
 task("claimRedeemARM").setAction(async (_, __, runSuper) => {
