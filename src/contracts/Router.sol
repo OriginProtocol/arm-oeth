@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
+import {IWETH} from "src/contracts/Interfaces.sol";
 import {IERC20} from "src/contracts/Interfaces.sol";
 import {AbstractARM} from "contracts/AbstractARM.sol";
 
@@ -8,16 +9,29 @@ contract ARMRouter {
     ////////////////////////////////////////////////////
     ///                 Constants and Immutables
     ////////////////////////////////////////////////////
+    /// @notice Address of the WETH token contract.
+    IWETH public immutable WETH;
+    /// @notice Price scale used for traderate calculations.
     uint256 public constant PRICE_SCALE = 1e36;
 
     ////////////////////////////////////////////////////
     ///                 State Variables
     ////////////////////////////////////////////////////
+    /// @notice Mapping to store ARM addresses for token pairs.
     mapping(address => mapping(address => address)) internal arms;
+
+    ////////////////////////////////////////////////////
+    ///                 Constructor
+    ////////////////////////////////////////////////////
+    constructor(address _weth) {
+        WETH = IWETH(_weth);
+    }
 
     ////////////////////////////////////////////////////
     ///                 Modifiers
     ////////////////////////////////////////////////////
+    /// @notice Ensures that the transaction is executed before the specified deadline.
+    /// @param deadline The timestamp by which the transaction must be completed.
     modifier ensure(uint256 deadline) {
         require(deadline >= block.timestamp, "UniswapV2Router: EXPIRED");
         _;
@@ -46,6 +60,40 @@ contract ARMRouter {
 
         // Transfer the input tokens from the sender to this contract
         IERC20(path[0]).transferFrom(msg.sender, address(this), amounts[0]);
+
+        // Perform the swaps along the path
+        uint256 len = path.length;
+        for (uint256 i; i < len - 1; i++) {
+            (address input, address output) = (path[i], path[i + 1]);
+            address arm = getArmFor(input, output);
+
+            AbstractARM(arm)
+                .swapExactTokensForTokens(
+                    IERC20(input), IERC20(output), amounts[i], amounts[i + 1], i < len - 2 ? address(this) : to
+                );
+        }
+    }
+
+    /// @notice Swaps an exact amount of ETH for as many output tokens as possible, along the route determined by the path.
+    /// @param amountOutMin The minimum amount of output tokens that must be received for the transaction not to revert.
+    /// @param path An array of token addresses representing the swap path.
+    /// @param to The address that will receive the output tokens.
+    /// @param deadline The timestamp by which the transaction must be completed.
+    /// @return amounts An array of token amounts for each step in the swap path.
+    function swapExactETHForTokens(uint256 amountOutMin, address[] calldata path, address to, uint256 deadline)
+        external
+        payable
+        ensure(deadline)
+        returns (uint256[] memory amounts)
+    {
+        require(path[0] == address(WETH), "ARMRouter: INVALID_PATH");
+
+        // Get output amounts for the swap
+        amounts = getAmountsOut(msg.value, path);
+        require(amounts[amounts.length - 1] >= amountOutMin, "ARMRouter: INSUFFICIENT_OUTPUT_AMOUNT");
+
+        // Wrap ETH to WETH
+        WETH.deposit{value: amounts[0]}();
 
         // Perform the swaps along the path
         uint256 len = path.length;
