@@ -1098,6 +1098,8 @@ subtask("snap", "Take a snapshot of the an ARM")
     undefined,
     types.int,
   )
+  .addOptionalParam("amount", "Swap quantity", 100, types.int)
+  .addOptionalParam("oneInch", "Include 1Inch prices", true, types.boolean)
   .setAction(snap);
 task("snap").setAction(async (_, __, runSuper) => {
   return runSuper();

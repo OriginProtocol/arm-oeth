@@ -107,7 +107,8 @@ const snapLido = async ({
   const ammPrices = await logArmPrices(commonOptions, lidoARM);
 
   if (uniswap) {
-    await logUniswapSpotPrices(commonOptions, ammPrices);
+    const poolName = "wstETH/ETH 0.01%";
+    await logUniswapSpotPrices(commonOptions, ammPrices, poolName);
   }
 
   if (curve) {
@@ -130,12 +131,13 @@ const snapLido = async ({
     );
   }
 
-  if (oneInch) {
-    await log1InchPrices(commonOptions, ammPrices);
+  if (fluid) {
+    const poolName = "wstETH/ETH";
+    await logFluidPrices(commonOptions, ammPrices, poolName);
   }
 
-  if (fluid) {
-    await logFluidPrices(commonOptions, ammPrices);
+  if (oneInch) {
+    await log1InchPrices(commonOptions, ammPrices);
   }
 };
 

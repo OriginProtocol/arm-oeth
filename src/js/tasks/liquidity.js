@@ -5,7 +5,7 @@ const utc = require("dayjs/plugin/utc");
 const { getBlock } = require("../utils/block");
 const { resolveArmContract } = require("../utils/addressParser");
 const { outstandingWithdrawalAmount } = require("../utils/armQueue");
-const { logArmPrices } = require("./markets");
+const { logArmPrices, log1InchPrices } = require("./markets");
 const { logTxDetails } = require("../utils/txLogger");
 
 const log = require("../utils/logger")("task:liquidity");
@@ -51,17 +51,35 @@ const withdrawRequestStatus = async ({ id, arm, vault }) => {
   }
 };
 
-const snap = async ({ arm, block, gas }) => {
+const snap = async ({ arm, block, gas, amount, oneInch }) => {
   const armContract = await resolveArmContract(arm);
 
   const blockTag = await getBlock(block);
 
   const { liquidityBalance } = await logLiquidity({ arm, block });
 
+  // This can be removed after OETH is upgraded
   if (arm !== "Oeth") {
     await logWithdrawalQueue(armContract, blockTag, liquidityBalance);
 
-    await logArmPrices({ block, gas }, armContract);
+    const armPrices = await logArmPrices({ block, gas }, armContract);
+
+    if (oneInch) {
+      const assets = {
+        liquid: await armContract.liquidityAsset(),
+        base: await armContract.baseAsset(),
+      };
+      const fee = arm === "Lido" ? 10n : 30n;
+      const pair =
+        arm === "Lido"
+          ? "stETH/WETH"
+          : arm === "EtherFi"
+            ? "eETH/WETH"
+            : arm == "Origin"
+              ? "OS/wS"
+              : "Unknown";
+      await log1InchPrices({ amount, assets, fee, pair }, armPrices);
+    }
   }
 };
 
