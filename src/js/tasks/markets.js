@@ -113,10 +113,10 @@ const logArmPrices = async ({ blockTag, gas }, arm) => {
 };
 
 const log1InchPrices = async (
-  { amount, gas, assets, pair, fee },
+  { amount, gas, assets, pair, fee, chainId },
   armPrices,
 ) => {
-  const oneInch = await get1InchPrices(amount, assets, fee);
+  const oneInch = await get1InchPrices(amount, assets, fee, chainId);
 
   log(
     `buy  ${formatUnits(oneInch.buyToAmount)} base assets for ${amount} liquidity assets`,

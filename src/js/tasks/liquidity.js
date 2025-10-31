@@ -78,7 +78,8 @@ const snap = async ({ arm, block, gas, amount, oneInch }) => {
             : arm == "Origin"
               ? "OS/wS"
               : "Unknown";
-      await log1InchPrices({ amount, assets, fee, pair }, armPrices);
+      const chainId = await (await ethers.provider.getNetwork()).chainId;
+      await log1InchPrices({ amount, assets, fee, pair, chainId }, armPrices);
     }
   }
 };

@@ -98,6 +98,7 @@ const get1InchPrices = async (
     base: addresses.mainnet.stETH,
   },
   fee = 10n,
+  chainId = 1,
 ) => {
   const amountBI = parseUnits(amount.toString(), 18);
 
@@ -106,6 +107,7 @@ const get1InchPrices = async (
     toAsset: assets.base,
     fromAmount: amountBI, // liquid amount
     excludedProtocols: "ORIGIN",
+    chainId,
   });
   // base buy amount adjusted by 1Inch's infrastructure fee
   const buyToAmount = (BigInt(buyQuote.dstAmount) * (10000n + fee)) / 10000n;
@@ -119,6 +121,7 @@ const get1InchPrices = async (
     toAsset: assets.liquid,
     fromAmount: amountBI, // base amount
     excludedProtocols: "ORIGIN",
+    chainId,
   });
   // liquid sell amount adjusted by 1Inch's infrastructure fee
   const sellToAmount = (BigInt(sellQuote.dstAmount) * (10000n + fee)) / 10000n;
