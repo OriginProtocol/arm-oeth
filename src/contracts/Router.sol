@@ -74,6 +74,39 @@ contract ARMRouter {
         }
     }
 
+    /// @notice Swaps an exact amount of input tokens for as many output tokens as possible, along the route determined by the path.
+    /// @dev This is a simplified version that handles swaps in a loop without fetching amounts beforehand.
+    /// @param amountIn The exact amount of input tokens to swap.
+    /// @param amountOutMin The minimum amount of output tokens that must be received for the transaction not to revert.
+    /// @param path An array of token addresses representing the swap path.
+    /// @param to The address that will receive the output tokens.
+    /// @param deadline The timestamp by which the transaction must be completed.
+    function swapExactTokensForTokensSimple(
+        uint256 amountIn,
+        uint256 amountOutMin,
+        address[] calldata path,
+        address to,
+        uint256 deadline
+    ) external ensure(deadline) returns (uint256[] memory amounts) {
+        // Transfer the input tokens from the sender to this contract
+        IERC20(path[0]).transferFrom(msg.sender, address(this), amountIn);
+
+        // Perform the swaps along the path
+        uint256 len = path.length;
+        for (uint256 i; i < len - 1; i++) {
+            address[] memory intermediate = new address[](2);
+            intermediate[0] = path[i];
+            intermediate[1] = path[i + 1];
+
+            address arm = getArmFor(intermediate);
+            uint256[] memory obtained = AbstractARM(arm)
+                .swapExactTokensForTokens(amounts[i], 0, intermediate, i < len - 2 ? address(this) : to, deadline);
+
+            amounts[i + 1] = obtained[1];
+        }
+        require(amounts[amounts.length - 1] >= amountOutMin, "ARMRouter: INSUFFICIENT_OUTPUT_AMOUNT");
+    }
+
     /// @notice Swaps an exact amount of ETH for as many output tokens as possible, along the route determined by the path.
     /// @param amountOutMin The minimum amount of output tokens that must be received for the transaction not to revert.
     /// @param path An array of token addresses representing the swap path.
@@ -148,5 +181,9 @@ contract ARMRouter {
     function getArmFor(address tokenA, address tokenB) internal view returns (address arm) {
         arm = arms[tokenA][tokenB];
         require(arm != address(0), "ARMRouter: ARM_NOT_FOUND");
+    }
+
+    function getArmFor(address[] memory tokenPair) internal view returns (address arm) {
+        arm = getArmFor(tokenPair[0], tokenPair[1]);
     }
 }
