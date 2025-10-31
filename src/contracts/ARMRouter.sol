@@ -5,7 +5,19 @@ import {IWETH} from "src/contracts/Interfaces.sol";
 import {IERC20} from "src/contracts/Interfaces.sol";
 import {AbstractARM} from "contracts/AbstractARM.sol";
 
+interface Wrapper {
+    function wrap(uint256 amount) external returns (uint256);
+    function unwrap(uint256 amount) external returns (uint256);
+}
+
 contract ARMRouter {
+    ////////////////////////////////////////////////////
+    ///                 Structs and Enums
+    ////////////////////////////////////////////////////
+    struct Config {
+        bytes4 sig; // Used for wrap or unwrap differentiation
+        address addr;
+    }
     ////////////////////////////////////////////////////
     ///                 Constants and Immutables
     ////////////////////////////////////////////////////
@@ -18,7 +30,7 @@ contract ARMRouter {
     ///                 State Variables
     ////////////////////////////////////////////////////
     /// @notice Mapping to store ARM addresses for token pairs.
-    mapping(address => mapping(address => address)) internal arms;
+    mapping(address => mapping(address => Config)) internal configs;
 
     ////////////////////////////////////////////////////
     ///                 Constructor
@@ -65,9 +77,9 @@ contract ARMRouter {
         uint256 len = path.length;
         for (uint256 i; i < len - 1; i++) {
             (address input, address output) = (path[i], path[i + 1]);
-            address arm = getArmFor(input, output);
+            Config memory config = getConfigFor(input, output);
 
-            AbstractARM(arm)
+            AbstractARM(config.addr)
                 .swapExactTokensForTokens(
                     IERC20(input), IERC20(output), amounts[i], amounts[i + 1], i < len - 2 ? address(this) : to
                 );
@@ -98,11 +110,19 @@ contract ARMRouter {
             intermediate[0] = path[i];
             intermediate[1] = path[i + 1];
 
-            address arm = getArmFor(intermediate);
-            uint256[] memory obtained = AbstractARM(arm)
-                .swapExactTokensForTokens(amounts[i], 0, intermediate, i < len - 2 ? address(this) : to, deadline);
+            Config memory config = getConfigFor(intermediate);
+            if (config.sig == bytes4(0)) {
+                uint256[] memory obtained = AbstractARM(config.addr)
+                    .swapExactTokensForTokens(amounts[i], 0, intermediate, i < len - 2 ? address(this) : to, deadline);
+                amounts[i + 1] = obtained[1];
+            } else {
+                (bool success, bytes memory data) = config.addr.call(abi.encodeWithSelector(config.sig, amounts[i]));
+                require(success, "ARMRouter: SWAP_FAILED");
+                amounts[i + 1] = abi.decode(data, (uint256));
 
-            amounts[i + 1] = obtained[1];
+                // If this is the last swap, transfer to the recipient
+                if (i == len - 2) IERC20(path[i + 1]).transfer(to, amounts[i + 1]);
+            }
         }
         require(amounts[amounts.length - 1] >= amountOutMin, "ARMRouter: INSUFFICIENT_OUTPUT_AMOUNT");
     }
@@ -132,9 +152,9 @@ contract ARMRouter {
         uint256 len = path.length;
         for (uint256 i; i < len - 1; i++) {
             (address input, address output) = (path[i], path[i + 1]);
-            address arm = getArmFor(input, output);
+            Config memory config = getConfigFor(input, output);
 
-            AbstractARM(arm)
+            AbstractARM(config.addr)
                 .swapExactTokensForTokens(
                     IERC20(input), IERC20(output), amounts[i], amounts[i + 1], i < len - 2 ? address(this) : to
                 );
@@ -169,21 +189,32 @@ contract ARMRouter {
     /// @param tokenB The address of the second token i.e. the output token.
     /// @return traderate The current traderate for the swap.
     function getTraderate(address tokenA, address tokenB) internal view returns (uint256 traderate) {
-        address arm = getArmFor(tokenA, tokenB);
-        address token0 = address(AbstractARM(arm).token0());
-        traderate = tokenA == address(token0) ? AbstractARM(arm).traderate0() : AbstractARM(arm).traderate1();
+        Config memory config = getConfigFor(tokenA, tokenB);
+        address token0 = address(AbstractARM(config.addr).token0());
+        traderate =
+            tokenA == address(token0) ? AbstractARM(config.addr).traderate0() : AbstractARM(config.addr).traderate1();
     }
 
     /// @notice Given a pair of tokens, returns the address of the associated ARM.
     /// @param tokenA The address of the first token.
     /// @param tokenB The address of the second token.
     /// @return arm The address of the associated ARM.
-    function getArmFor(address tokenA, address tokenB) internal view returns (address arm) {
-        arm = arms[tokenA][tokenB];
-        require(arm != address(0), "ARMRouter: ARM_NOT_FOUND");
+    function getConfigFor(address tokenA, address tokenB) internal view returns (Config memory arm) {
+        arm = configs[tokenA][tokenB];
+        require(arm.addr != address(0), "ARMRouter: ARM_NOT_FOUND");
     }
 
-    function getArmFor(address[] memory tokenPair) internal view returns (address arm) {
-        arm = getArmFor(tokenPair[0], tokenPair[1]);
+    /// @notice Given a pair of tokens, returns the address of the associated ARM.
+    /// @param tokenPair An array containing the addresses of the two tokens.
+    /// @return arm The address of the associated ARM.
+    function getConfigFor(address[] memory tokenPair) internal view returns (Config memory arm) {
+        arm = getConfigFor(tokenPair[0], tokenPair[1]);
+    }
+
+    ////////////////////////////////////////////////////
+    ///                 Owner Functions
+    ////////////////////////////////////////////////////
+    function registerConfig(address tokenA, address tokenB, bytes4 sig, address armAddress) external {
+        configs[tokenA][tokenB] = Config({sig: sig, addr: armAddress});
     }
 }
