@@ -94,6 +94,11 @@ function swapTokensForExactTokens(
     address to,
     uint256 deadline
 ) external returns (uint256[] memory amounts);
+
+/// @notice Get the available liquidity for a each token in the ARM.
+/// @return reserve0 The available liquidity for token0
+/// @return reserve1 The available liquidity for token1
+function getReserves() external view returns (uint256 reserve0, uint256 reserve1);
 ```
 
 ## Liquidity Provider Interface
