@@ -46,9 +46,9 @@ async function harvestRewards({ harvester, signer, symbol }) {
   await logTxDetails(tx, "swap rewards");
 }
 
-async function setHarvester({ siloMarket, harvester, signer }) {
+async function setHarvester({ lendingMarketWrapper, harvester, signer }) {
   log(`About to set the harvester to ${harvester}`);
-  const tx = await siloMarket.connect(signer).setHarvester(harvester);
+  const tx = await lendingMarketWrapper.connect(signer).setHarvester(harvester);
   await logTxDetails(tx, "setHarvester");
 }
 

@@ -3,6 +3,7 @@ const { subtask, task, types } = require("hardhat/config");
 
 const { mainnet } = require("../utils/addresses");
 const {
+  resolveArmContract,
   parseAddress,
   parseDeployedAddress,
 } = require("../utils/addressParser");
@@ -155,8 +156,7 @@ subtask(
     const assetSymbol = arm === "Oeth" ? "OETH" : "OS";
     const asset = await resolveAsset(assetSymbol);
 
-    const armAddress = await parseAddress(`${arm.toUpperCase()}_ARM`);
-    const armContract = await ethers.getContractAt(`${arm}ARM`, armAddress);
+    const armContract = await resolveArmContract(arm);
 
     await autoRequestWithdraw({
       ...taskArgs,
@@ -182,8 +182,7 @@ subtask("autoClaimWithdraw", "Claim withdrawal requests from the OETH Vault")
     const liquiditySymbol = arm === "Oeth" ? "WETH" : "WS";
     const liquidityAsset = await resolveAsset(liquiditySymbol);
 
-    const armAddress = await parseAddress(`${arm.toUpperCase()}_ARM`);
-    const armContract = await ethers.getContractAt(`${arm}ARM`, armAddress);
+    const armContract = await resolveArmContract(arm);
 
     const vaultName = arm === "Oeth" ? "OETH" : "OS";
     const vaultAddress = await parseAddress(`${vaultName}_VAULT`);
@@ -215,11 +214,7 @@ subtask(
   .setAction(async (taskArgs) => {
     const signer = await getSigner();
 
-    const armAddress = await parseAddress(`${taskArgs.arm.toUpperCase()}_ARM`);
-    const armContract = await ethers.getContractAt(
-      `${taskArgs.arm}ARM`,
-      armAddress,
-    );
+    const armContract = await resolveArmContract(taskArgs.arm);
 
     await requestWithdraw({
       ...taskArgs,
@@ -243,11 +238,7 @@ subtask("claimWithdraw", "Claim a requested oToken withdrawal from the Vault")
   .setAction(async (taskArgs) => {
     const signer = await getSigner();
 
-    const armAddress = await parseAddress(`${taskArgs.arm.toUpperCase()}_ARM`);
-    const armContract = await ethers.getContractAt(
-      `${taskArgs.arm}ARM`,
-      armAddress,
-    );
+    const armContract = await resolveArmContract(taskArgs.arm);
 
     await claimWithdraw({
       ...taskArgs,
@@ -271,11 +262,7 @@ subtask("withdrawStatus", "Get the status of a OETH withdrawal request")
   .setAction(async (taskArgs) => {
     const signer = await getSigner();
 
-    const armAddress = await parseAddress(`${taskArgs.arm.toUpperCase()}_ARM`);
-    const armContract = await ethers.getContractAt(
-      `${taskArgs.arm}ARM`,
-      armAddress,
-    );
+    const armContract = await resolveArmContract(taskArgs.arm);
     const vaultName = taskArgs.arm === "Oeth" ? "OETH_VAULT" : "OS_VAULT";
     const vaultAddress = await parseAddress(vaultName);
     const vault = await ethers.getContractAt("IOriginVault", vaultAddress);
@@ -846,18 +833,17 @@ task("lidoWithdrawStatus").setAction(async (_, __, runSuper) => {
 
 subtask("collectFees", "Collect the performance fees from an ARM")
   .addOptionalParam(
-    "name",
+    "arm",
     "The name of the ARM. eg Lido, Origin or EtherFi",
     "Lido",
     types.string,
   )
-  .setAction(async ({ name }) => {
+  .setAction(async ({ arm }) => {
     const signer = await getSigner();
 
-    const armAddress = await parseDeployedAddress(`${name.toUpperCase()}_ARM`);
-    const arm = await ethers.getContractAt(`${name}ARM`, armAddress);
+    const armContract = await resolveArmContract(arm);
 
-    await collectFees({ signer, arm });
+    await collectFees({ signer, arm: armContract });
   });
 task("collectFees").setAction(async (_, __, runSuper) => {
   return runSuper();
@@ -894,7 +880,7 @@ task("collectRewards").setAction(async (_, __, runSuper) => {
 
 subtask("harvestRewards", "harvest rewards")
   .addOptionalParam(
-    "name",
+    "arm",
     "The name of the ARM. eg Lido or Origin",
     "Origin",
     types.string,
@@ -922,25 +908,29 @@ task("harvestRewards").setAction(async (_, __, runSuper) => {
 
 subtask("setHarvester", "Set the harvester on a lending market")
   .addOptionalParam(
-    "name",
-    "The name of the ARM. eg Lido or Origin",
+    "arm",
+    "The name of the ARM. eg Lido, Origin or EtherFi",
     "Origin",
     types.string,
   )
-  .setAction(async () => {
+  .addParam("harvester", "Address of the harvester.", undefined, types.string)
+  .setAction(async ({ arm, harvester }) => {
     const signer = await getSigner();
 
-    const harvester = await parseDeployedAddress("HARVESTER");
-
-    const siloMarketAddress = await parseDeployedAddress(
-      "SILO_VARLAMORE_S_MARKET",
-    );
-    const siloMarket = await ethers.getContractAt(
+    const lendingMarketName =
+      arm === "Origin"
+        ? "SILO_VARLAMORE_S_MARKET"
+        : arm === "Lido"
+          ? "MORPHO_MARKET_MEVCAPITAL"
+          : `MORPHO_MARKET_${arm.toUpperCase()}`;
+    const lendingMarketWrapperAddress =
+      await parseDeployedAddress(lendingMarketName);
+    const lendingMarketWrapper = await ethers.getContractAt(
       "SiloMarket",
-      siloMarketAddress,
+      lendingMarketWrapperAddress,
     );
 
-    await setHarvester({ signer, siloMarket, harvester });
+    await setHarvester({ signer, lendingMarketWrapper, harvester });
   });
 task("setHarvester").setAction(async (_, __, runSuper) => {
   return runSuper();
@@ -969,8 +959,7 @@ subtask("allocate", "Allocate to/from the active lending market")
   .setAction(async ({ arm, threshold, execute, maxGasPrice }) => {
     const signer = await getSigner();
 
-    const armAddress = await parseDeployedAddress(`${arm.toUpperCase()}_ARM`);
-    const armContract = await ethers.getContractAt(`${arm}ARM`, armAddress);
+    const armContract = await resolveArmContract(arm);
 
     await allocate({
       signer,
@@ -987,7 +976,7 @@ task("allocate").setAction(async (_, __, runSuper) => {
 subtask("setARMBuffer", "Set the ARM buffer percentage")
   .addOptionalParam(
     "arm",
-    "The name of the ARM. eg Lido, OETH or Origin",
+    "The name of the ARM. eg Lido, OETH, Origin or EtherFi",
     "Origin",
     types.string,
   )
@@ -1000,8 +989,7 @@ subtask("setARMBuffer", "Set the ARM buffer percentage")
   .setAction(async ({ arm, buffer }) => {
     const signer = await getSigner();
 
-    const armAddress = await parseDeployedAddress(`${arm.toUpperCase()}_ARM`);
-    const armContract = await ethers.getContractAt(`${arm}ARM`, armAddress);
+    const armContract = await resolveArmContract(arm);
 
     await setARMBuffer({ signer, arm: armContract, buffer });
   });
@@ -1264,13 +1252,7 @@ subtask(
   .setAction(async (taskArgs) => {
     const signer = await getSigner();
 
-    const armAddress = await parseDeployedAddress(
-      `${taskArgs.arm.toUpperCase()}_ARM`,
-    );
-    const armContract = await ethers.getContractAt(
-      `${taskArgs.arm}ARM`,
-      armAddress,
-    );
+    const armContract = await resolveArmContract(taskArgs.arm);
 
     // Get the SiloMarketWrapper contract
     const activeMarket = await armContract.activeMarket();
