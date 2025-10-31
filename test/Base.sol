@@ -8,6 +8,7 @@ import {Test} from "forge-std/Test.sol";
 import {Proxy} from "contracts/Proxy.sol";
 import {OethARM} from "contracts/OethARM.sol";
 import {LidoARM} from "contracts/LidoARM.sol";
+import {ARMRouter} from "contracts/ARMRouter.sol";
 import {EtherFiARM} from "contracts/EtherFiARM.sol";
 import {OriginARM} from "contracts/OriginARM.sol";
 import {SonicHarvester} from "contracts/SonicHarvester.sol";
@@ -46,6 +47,7 @@ abstract contract Base_Test_ is Test {
     Proxy public morphoMarketProxy;
     OethARM public oethARM;
     LidoARM public lidoARM;
+    ARMRouter public router;
     EtherFiARM public etherfiARM;
     SonicHarvester public harvester;
     OriginARM public originARM;
@@ -106,6 +108,7 @@ abstract contract Base_Test_ is Test {
     function labelAll() public virtual {
         // Contracts
         _labelNotNull(address(proxy), "DEFAULT PROXY");
+        _labelNotNull(address(router), "ARM ROUTER");
         _labelNotNull(address(lpcProxy), "LPC PROXY");
         _labelNotNull(address(lidoProxy), "LIDO ARM PROXY");
         _labelNotNull(address(etherfiProxy), "ETHERFI ARM PROXY");
