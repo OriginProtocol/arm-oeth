@@ -29,8 +29,8 @@ const setPrices = async (options) => {
     priceOffset,
   } = options;
 
-  // 1. Get current ARM stETH/WETH prices
-  log(`Getting current ARM stETH/WETH prices:`);
+  // 1. Get current ARM prices
+  log(`Getting current ARM prices:`);
   const currentSellPrice = parseUnits("1", 72) / (await arm.traderate0());
   const currentBuyPrice = await arm.traderate1();
   log(`current sell price : ${formatUnits(currentSellPrice, 36)}`);
@@ -40,16 +40,25 @@ const setPrices = async (options) => {
   let targetSellPrice;
   // 2. If no buy/sell prices are provided, calculate them using midPrice/1Inch/Curve
   if (!buyPrice && !sellPrice && (midPrice || curve || inch)) {
+    // Set 1Inch options
+    const assets = {
+      liquid: await arm.liquidityAsset(),
+      base: await arm.baseAsset(),
+    };
+    const inchFee = assets.base === addresses.mainnet.stETH ? 10n : 30n;
+
     // 2.1 Get latest 1inch prices if no midPrice is provided
     const referencePrices =
       // 2.1.a If midPrice is provided, use it directly
       midPrice
         ? {
             midPrice: parseUnits(midPrice.toString(), 18),
-          } // 2.1.b Otherwise, get prices from 1Inch
+          }
         : inch
-          ? await get1InchPrices(options.amount) // 2.1.c Or from Curve if specified
-          : await getCurvePrices({
+          ? // 2.1.b Otherwise, get prices from 1Inch
+            await get1InchPrices(options.amount, assets, inchFee)
+          : // 2.1.c Or from Curve if specified
+            await getCurvePrices({
               ...options,
               poolAddress: addresses.mainnet.CurveNgStEthPool,
             });

@@ -3,6 +3,15 @@ const { readFileSync } = require("fs");
 
 const log = require("./logger")("utils:addressParser");
 
+const resolveArmContract = async (arm) => {
+  const deployName =
+    arm === "EtherFi" ? "ETHER_FI_ARM" : `${arm.toUpperCase()}_ARM`;
+  const armAddress = await parseDeployedAddress(deployName);
+  const armContract = await ethers.getContractAt(`${arm}ARM`, armAddress);
+
+  return armContract;
+};
+
 const parseDeployedAddress = async (name) => {
   const network = await ethers.provider.getNetwork();
   const chainId = network.chainId;
@@ -88,6 +97,7 @@ const parseAddress = async (name) => {
 };
 
 module.exports = {
+  resolveArmContract,
   parseAddress,
   parseDeployedAddress,
 };
