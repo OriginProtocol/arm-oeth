@@ -64,8 +64,12 @@ const otherSymbol = (arm, symbol) => {
     return symbol === "OS" ? "WS" : "OS";
   } else if (arm === "Lido") {
     return symbol === "stETH" ? "WETH" : "stETH";
+  } else if (arm === "EtherFi") {
+    return symbol === "EETH" ? "WETH" : "EETH";
   }
-  throw new Error(`Unknown ARM ${arm}. Has to be Oeth, Lido or Origin`);
+  throw new Error(
+    `Unknown ARM ${arm}. Has to be Oeth, Lido, Origin or EtherFi`,
+  );
 };
 
 module.exports = { swap };
