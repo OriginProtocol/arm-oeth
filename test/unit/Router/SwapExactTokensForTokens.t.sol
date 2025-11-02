@@ -84,4 +84,15 @@ contract Unit_Concrete_ARMRouter_Swap_Test is Unit_Shared_ARMRouter_Test {
 
         router.swapExactTokensForTokens(amountIn, 0, path, address(this), block.timestamp + 1);
     }
+
+    function test_Swap_ExactETHForTokens_EETH() public {
+        // Swap eth to eeth
+        uint256 amountIn = 10 ether;
+        address[] memory path = new address[](2);
+        path[0] = address(weth);
+        path[1] = address(eeth);
+
+        deal(address(this), amountIn);
+        router.swapExactETHForTokens{value: amountIn}(0, path, address(this), block.timestamp + 1);
+    }
 }
