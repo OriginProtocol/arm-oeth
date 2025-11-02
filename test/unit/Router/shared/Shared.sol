@@ -78,17 +78,58 @@ abstract contract Unit_Shared_ARMRouter_Test is Base_Test_ {
         // Deploy Router
         router = new ARMRouter(address(weth));
 
+        bytes4 getWstETHByStETH = bytes4(keccak256("getWstETHByStETH(uint256)"));
+        bytes4 getStETHByWstETH = bytes4(keccak256("getStETHByWstETH(uint256)"));
+        bytes4 getWeETHByeETH = bytes4(keccak256("getWeETHByeETH(uint256)"));
+        bytes4 getEETHByWeETH = bytes4(keccak256("getEETHByWeETH(uint256)"));
+
         // Register ARMs in the Router
-        router.registerConfig(address(steth), address(weth), bytes4(0), address(lidoARM));
-        router.registerConfig(address(weth), address(steth), bytes4(0), address(lidoARM));
-        router.registerConfig(address(eeth), address(weth), bytes4(0), address(etherfiARM));
-        router.registerConfig(address(weth), address(eeth), bytes4(0), address(etherfiARM));
+        router.registerConfig(
+            address(steth), address(weth), ARMRouter.SwapType.ARM, address(lidoARM), bytes4(0), bytes4(0)
+        );
+        router.registerConfig(
+            address(weth), address(steth), ARMRouter.SwapType.ARM, address(lidoARM), bytes4(0), bytes4(0)
+        );
+        router.registerConfig(
+            address(eeth), address(weth), ARMRouter.SwapType.ARM, address(etherfiARM), bytes4(0), bytes4(0)
+        );
+        router.registerConfig(
+            address(weth), address(eeth), ARMRouter.SwapType.ARM, address(etherfiARM), bytes4(0), bytes4(0)
+        );
 
         // Register wrappers in the Router
-        router.registerConfig(address(steth), address(wsteth), MockWrapper.wrap.selector, address(wsteth));
-        router.registerConfig(address(wsteth), address(steth), MockWrapper.unwrap.selector, address(wsteth));
-        router.registerConfig(address(eeth), address(weeth), MockWrapper.wrap.selector, address(weeth));
-        router.registerConfig(address(weeth), address(eeth), MockWrapper.unwrap.selector, address(weeth));
+        router.registerConfig(
+            address(steth),
+            address(wsteth),
+            ARMRouter.SwapType.WRAPPER,
+            address(wsteth),
+            MockWrapper.wrap.selector,
+            getWstETHByStETH
+        );
+        router.registerConfig(
+            address(wsteth),
+            address(steth),
+            ARMRouter.SwapType.WRAPPER,
+            address(wsteth),
+            MockWrapper.unwrap.selector,
+            getStETHByWstETH
+        );
+        router.registerConfig(
+            address(eeth),
+            address(weeth),
+            ARMRouter.SwapType.WRAPPER,
+            address(weeth),
+            MockWrapper.wrap.selector,
+            getWeETHByeETH
+        );
+        router.registerConfig(
+            address(weeth),
+            address(eeth),
+            ARMRouter.SwapType.WRAPPER,
+            address(weeth),
+            MockWrapper.unwrap.selector,
+            getEETHByWeETH
+        );
     }
 
     function _fundWrappers() internal {

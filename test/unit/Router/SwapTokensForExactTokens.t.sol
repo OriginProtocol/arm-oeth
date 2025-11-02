@@ -7,7 +7,7 @@ import {WETH} from "@solmate/tokens/WETH.sol";
 import {MockERC20} from "@solmate/test/utils/mocks/MockERC20.sol";
 import {MockWrapper} from "test/unit/Router/shared/mocks/MockWrapper.sol";
 
-contract Unit_Concrete_ARMRouter_SwapExactTokensForTokens_Test is Unit_Shared_ARMRouter_Test {
+contract Unit_Concrete_ARMRouter_SwapTokensForExactTokens_Test is Unit_Shared_ARMRouter_Test {
     //////////////////////////////////////////////////////
     /// --- SETUP
     //////////////////////////////////////////////////////
@@ -40,41 +40,34 @@ contract Unit_Concrete_ARMRouter_SwapExactTokensForTokens_Test is Unit_Shared_AR
         weth.approve(address(lidoARM), type(uint256).max);
     }
 
-    function test_Swap_ExactTokensForTokens_EETH_WETH() public {
+    function test_Swap_TokensForExactTokens_EETH_WETH() public {
         // Swap eeth to weth
-        uint256 amountIn = 10 ether;
+        uint256 amountOut = 10 ether;
         address[] memory path = new address[](2);
         path[0] = address(eeth);
         path[1] = address(weth);
 
-        router.swapExactTokensForTokens(amountIn, 0, path, address(this), block.timestamp + 1);
+        router.swapTokensForExactTokens(amountOut, type(uint256).max, path, address(this), block.timestamp + 1);
     }
 
-    function test_Swap_ByPassRouter() public {
-        uint256 amountIn = 10 ether;
-        address[] memory path = new address[](2);
-        path[0] = address(eeth);
-        path[1] = address(weth);
+    function test_Swap_TokensForExactTokens_WEETH_WETH() public {
+        uint256 amountOut = 10 ether;
 
-        etherfiARM.swapExactTokensForTokens(amountIn, 0, path, address(this), block.timestamp + 1);
-    }
-
-    function test_Swap_ExactTokensForTokens_WEETH_WETH() public {
-        MockWrapper(address(weeth)).wrap(10 ether);
         // Swap weeth to weth
-        uint256 amountIn = 10 ether;
+        MockWrapper(address(weeth)).wrap(amountOut + 1 ether);
         address[] memory path = new address[](3);
         path[0] = address(weeth);
         path[1] = address(eeth);
         path[2] = address(weth);
 
-        router.swapExactTokensForTokens(amountIn, 0, path, address(this), block.timestamp + 1);
+        router.swapTokensForExactTokens(amountOut, type(uint256).max, path, address(this), block.timestamp + 1);
     }
 
-    function test_Swap_ExactTokensForTokens_WEETH_WSTETH() public {
-        MockWrapper(address(weeth)).wrap(10 ether);
+    function test_Swap_TokensForExactTokens_WEETH_WSTETH() public {
+        uint256 amountOut = 10 ether;
+
         // Swap weeth to wsteth
-        uint256 amountIn = 10 ether;
+        MockWrapper(address(weeth)).wrap(amountOut + 1 ether);
         address[] memory path = new address[](5);
         path[0] = address(weeth);
         path[1] = address(eeth);
@@ -82,17 +75,6 @@ contract Unit_Concrete_ARMRouter_SwapExactTokensForTokens_Test is Unit_Shared_AR
         path[3] = address(steth);
         path[4] = address(wsteth);
 
-        router.swapExactTokensForTokens(amountIn, 0, path, address(this), block.timestamp + 1);
-    }
-
-    function test_Swap_ExactETHForTokens_EETH() public {
-        // Swap eth to eeth
-        uint256 amountIn = 10 ether;
-        address[] memory path = new address[](2);
-        path[0] = address(weth);
-        path[1] = address(eeth);
-
-        deal(address(this), amountIn);
-        router.swapExactETHForTokens{value: amountIn}(0, path, address(this), block.timestamp + 1);
+        router.swapTokensForExactTokens(amountOut, type(uint256).max, path, address(this), block.timestamp + 1);
     }
 }

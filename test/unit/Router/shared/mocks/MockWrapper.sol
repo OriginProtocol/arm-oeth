@@ -27,4 +27,20 @@ contract MockWrapper is ERC20 {
         underlying.transfer(msg.sender, amount);
         return amount;
     }
+
+    function getWstETHByStETH(uint256 amount) external pure returns (uint256) {
+        return amount;
+    }
+
+    function getStETHByWstETH(uint256 amount) external pure returns (uint256) {
+        return amount;
+    }
+
+    function getWeETHByeETH(uint256 amount) external pure returns (uint256) {
+        return amount;
+    }
+
+    function getEETHByWeETH(uint256 amount) external pure returns (uint256) {
+        return amount;
+    }
 }
