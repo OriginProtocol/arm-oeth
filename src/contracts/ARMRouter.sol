@@ -363,7 +363,8 @@ contract ARMRouter {
             require(success, "ARMRouter: GET_TRADERATE_FAIL");
 
             // Decode the returned data to get the required input amount
-            amountIn = abi.decode(data, (uint256));
+            // Add 1 to account for rounding errors
+            amountIn = abi.decode(data, (uint256)) + 1;
         }
     }
 
