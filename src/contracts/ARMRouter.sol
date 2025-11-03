@@ -57,7 +57,7 @@ contract ARMRouter {
     /// @notice Ensures that the transaction is executed before the specified deadline.
     /// @param deadline The timestamp by which the transaction must be completed.
     modifier ensure(uint256 deadline) {
-        require(deadline >= block.timestamp, "UniswapV2Router: EXPIRED");
+        require(deadline >= block.timestamp, "ARMRouter: EXPIRED");
         _;
     }
 
@@ -85,7 +85,7 @@ contract ARMRouter {
         amounts = _swapExactTokenFor(amountIn, path, to);
 
         // Ensure the output amount meets the minimum requirement
-        require(amounts[amounts.length - 1] >= amountOutMin, "ARMRouter: INSUFFICIENT_OUTPUT_AMOUNT");
+        require(amounts[amounts.length - 1] >= amountOutMin, "ARMRouter: INSUFFICIENT_OUTPUT");
     }
 
     /// @notice Swaps as few input tokens as possible to receive an exact amount of output tokens, along the route determined by the path.
@@ -105,7 +105,7 @@ contract ARMRouter {
         amounts = _getAmountsIn(amountOut, path);
 
         // Ensure the required input does not exceed the maximum allowed
-        require(amounts[0] <= amountInMax, "ARMRouter: EXCESSIVE_INPUT_AMOUNT");
+        require(amounts[0] <= amountInMax, "ARMRouter: EXCESSIVE_INPUT");
 
         // Transfer the input tokens from the sender to this contract
         IERC20(path[0]).transferFrom(msg.sender, address(this), amounts[0]);
@@ -136,7 +136,7 @@ contract ARMRouter {
         amounts = _swapExactTokenFor(msg.value, path, to);
 
         // Ensure the output amount meets the minimum requirement
-        require(amounts[amounts.length - 1] >= amountOutMin, "ARMRouter: INSUFFICIENT_OUTPUT_AMOUNT");
+        require(amounts[amounts.length - 1] >= amountOutMin, "ARMRouter: INSUFFICIENT_OUTPUT");
     }
 
     /// @notice Swaps an exact amount of input tokens for as much ETH as possible, along the route determined by the path.
@@ -163,7 +163,7 @@ contract ARMRouter {
         amounts = _swapExactTokenFor(amountIn, path, address(this));
 
         // Ensure the output amount meets the minimum requirement
-        require(amounts[amounts.length - 1] >= amountOutMin, "ARMRouter: INSUFFICIENT_OUTPUT_AMOUNT");
+        require(amounts[amounts.length - 1] >= amountOutMin, "ARMRouter: INSUFFICIENT_OUTPUT");
 
         // Unwrap WETH to ETH and transfer to the recipient
         WETH.withdraw(amounts[amounts.length - 1]);
@@ -189,7 +189,7 @@ contract ARMRouter {
         amounts = _getAmountsIn(amountOut, path);
 
         // Ensure the required input does not exceed the sent ETH
-        require(amounts[0] <= msg.value, "ARMRouter: EXCESSIVE_INPUT_AMOUNT");
+        require(amounts[0] <= msg.value, "ARMRouter: EXCESSIVE_INPUT");
 
         // Wrap ETH to WETH
         WETH.deposit{value: amounts[0]}();
@@ -222,7 +222,7 @@ contract ARMRouter {
         amounts = _getAmountsIn(amountOut, path);
 
         // Ensure the required input does not exceed the maximum allowed
-        require(amounts[0] <= amountInMax, "ARMRouter: EXCESSIVE_INPUT_AMOUNT");
+        require(amounts[0] <= amountInMax, "ARMRouter: EXCESSIVE_INPUT");
 
         // Transfer the input tokens from the sender to this contract
         IERC20(path[0]).transferFrom(msg.sender, address(this), amounts[0]);
@@ -360,7 +360,7 @@ contract ARMRouter {
         } else {
             // Call the Wrapper contract's price query function
             (bool success, bytes memory data) = config.addr.call(abi.encodeWithSelector(config.priceSig, amountOut));
-            require(success, "ARMRouter: GET_TRADERATE_FAILED");
+            require(success, "ARMRouter: GET_TRADERATE_FAIL");
 
             // Decode the returned data to get the required input amount
             amountIn = abi.decode(data, (uint256));
