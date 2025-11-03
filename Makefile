@@ -13,7 +13,7 @@ install:
 	yarn install
 
 clean:
-	@rm -rf broadcast cache out
+	@rm -rf broadcast cache out snapshots
 
 clean-all:
 	@rm -rf broadcast cache out dependencies node_modules soldeer.lock yarn.lock lcov.info lcov.info.pruned artifacts cache_hardhat
