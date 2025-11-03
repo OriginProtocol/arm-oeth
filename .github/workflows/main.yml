@@ -81,7 +81,7 @@ jobs:
         run: 	forge soldeer install && yarn install
 
       - name: Run non-invariant tests
-        run: FOUNDRY_NO_MATCH_CONTRACT=Fuzzer forge test -vvvvv
+        run: FOUNDRY_NO_MATCH_CONTRACT=Fuzzer forge test -vvv
 
   foundry-tests-invariants:
     name: Foundry Invariants Tests
