@@ -44,7 +44,7 @@ contract Fork_Concrete_ARMRouter_SwapTokensForExactTokens_Test_ is Fork_Shared_A
         vm.stopSnapshotGas();
     }
 
-    function test_Swap_ExactETHForTokens() public {
+    function test_Swap_ETHForExactTokens() public {
         // Swap eth to eeth
         uint256 amountOut = 10 ether;
         address[] memory path = new address[](2);
@@ -52,11 +52,11 @@ contract Fork_Concrete_ARMRouter_SwapTokensForExactTokens_Test_ is Fork_Shared_A
         path[1] = address(eeth);
 
         vm.startSnapshotGas("externalD");
-        router.swapExactETHForTokens{value: amountOut}(type(uint256).max, path, address(this), block.timestamp + 1);
+        router.swapETHForExactTokens{value: amountOut * 2}(amountOut, path, address(this), block.timestamp + 1);
         vm.stopSnapshotGas();
     }
 
-    function test_Swap_ExactTokensForETH() public {
+    function test_Swap_TokensForExactETH() public {
         // Swap eeth to eth
         uint256 amountOut = 10 ether;
         address[] memory path = new address[](2);
@@ -64,7 +64,7 @@ contract Fork_Concrete_ARMRouter_SwapTokensForExactTokens_Test_ is Fork_Shared_A
         path[1] = address(weth);
 
         vm.startSnapshotGas("externalE");
-        router.swapExactTokensForETH(amountOut, type(uint256).max, path, address(this), block.timestamp + 1);
+        router.swapTokensForExactETH(amountOut, type(uint256).max, path, address(this), block.timestamp + 1);
         vm.stopSnapshotGas();
     }
 }

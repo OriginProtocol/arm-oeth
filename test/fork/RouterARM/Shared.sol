@@ -87,7 +87,7 @@ abstract contract Fork_Shared_ARMRouter_Test is Base_Test_ {
         bytes4 getEETHByWeETH = bytes4(keccak256("getEETHByWeETH(uint256)"));
         // Register wrappers in the Router
         router.registerConfig(
-            address(steth), address(wsteth), ARMRouter.SwapType.WRAPPER, address(wsteth), wrapSelector, getWstETHByStETH
+            address(steth), address(wsteth), ARMRouter.SwapType.WRAPPER, address(wsteth), wrapSelector, getStETHByWstETH
         );
         router.registerConfig(
             address(wsteth),
@@ -95,13 +95,13 @@ abstract contract Fork_Shared_ARMRouter_Test is Base_Test_ {
             ARMRouter.SwapType.WRAPPER,
             address(wsteth),
             unwrapSelector,
-            getStETHByWstETH
+            getWstETHByStETH
         );
         router.registerConfig(
-            address(eeth), address(weeth), ARMRouter.SwapType.WRAPPER, address(weeth), wrapSelector, getWeETHByeETH
+            address(eeth), address(weeth), ARMRouter.SwapType.WRAPPER, address(weeth), wrapSelector, getEETHByWeETH
         );
         router.registerConfig(
-            address(weeth), address(eeth), ARMRouter.SwapType.WRAPPER, address(weeth), unwrapSelector, getEETHByWeETH
+            address(weeth), address(eeth), ARMRouter.SwapType.WRAPPER, address(weeth), unwrapSelector, getWeETHByeETH
         );
     }
 
