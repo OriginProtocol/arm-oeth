@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
+import {console} from "forge-std/console.sol";
+
 import {Unit_Shared_ARMRouter_Test} from "test/unit/Router/shared/Shared.sol";
 
 import {WETH} from "@solmate/tokens/WETH.sol";
@@ -47,7 +49,9 @@ contract Unit_Concrete_ARMRouter_SwapExactTokensForTokens_Test is Unit_Shared_AR
         path[0] = address(eeth);
         path[1] = address(weth);
 
+        vm.startSnapshotGas("externalA");
         router.swapExactTokensForTokens(amountIn, 0, path, address(this), block.timestamp + 1);
+        vm.stopSnapshotGas();
     }
 
     function test_Swap_ByPassRouter() public {
@@ -56,7 +60,9 @@ contract Unit_Concrete_ARMRouter_SwapExactTokensForTokens_Test is Unit_Shared_AR
         path[0] = address(eeth);
         path[1] = address(weth);
 
+        vm.startSnapshotGas("externalB");
         etherfiARM.swapExactTokensForTokens(amountIn, 0, path, address(this), block.timestamp + 1);
+        vm.stopSnapshotGas();
     }
 
     function test_Swap_ExactTokensForTokens_WEETH_WETH() public {
@@ -95,4 +101,16 @@ contract Unit_Concrete_ARMRouter_SwapExactTokensForTokens_Test is Unit_Shared_AR
         deal(address(this), amountIn);
         router.swapExactETHForTokens{value: amountIn}(0, path, address(this), block.timestamp + 1);
     }
+
+    function test_Swap_ExactTokensForETH() public {
+        // Swap eeth to eth
+        uint256 amountIn = 10 ether;
+        address[] memory path = new address[](2);
+        path[0] = address(eeth);
+        path[1] = address(weth);
+
+        router.swapExactTokensForETH(amountIn, 0, path, address(this), block.timestamp + 1);
+    }
+
+    receive() external payable {}
 }

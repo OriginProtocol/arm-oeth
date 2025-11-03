@@ -88,6 +88,12 @@ contract ARMRouter {
         require(amounts[amounts.length - 1] >= amountOutMin, "ARMRouter: INSUFFICIENT_OUTPUT_AMOUNT");
     }
 
+    /// @notice Swaps as few input tokens as possible to receive an exact amount of output tokens, along the route determined by the path.
+    /// @param amountOut The exact amount of output tokens to receive.
+    /// @param amountInMax The maximum amount of input tokens that can be used for the swap.
+    /// @param path An array of token addresses representing the swap path.
+    /// @param to The address that will receive the output tokens.
+    /// @param deadline The timestamp by which the transaction must be completed.
     function swapTokensForExactTokens(
         uint256 amountOut,
         uint256 amountInMax,
@@ -131,6 +137,102 @@ contract ARMRouter {
 
         // Ensure the output amount meets the minimum requirement
         require(amounts[amounts.length - 1] >= amountOutMin, "ARMRouter: INSUFFICIENT_OUTPUT_AMOUNT");
+    }
+
+    /// @notice Swaps an exact amount of input tokens for as much ETH as possible, along the route determined by the path.
+    /// @param amountIn The exact amount of input tokens to swap.
+    /// @param amountOutMin The minimum amount of ETH that must be received for the transaction not to revert.
+    /// @param path An array of token addresses representing the swap path.
+    /// @param to The address that will receive the ETH.
+    /// @param deadline The timestamp by which the transaction must be completed.
+    /// @return amounts An array of token amounts for each step in the swap path.
+    function swapExactTokensForETH(
+        uint256 amountIn,
+        uint256 amountOutMin,
+        address[] calldata path,
+        address to,
+        uint256 deadline
+    ) external ensure(deadline) returns (uint256[] memory amounts) {
+        // Ensure the last token in the path is WETH
+        require(path[path.length - 1] == address(WETH), "ARMRouter: INVALID_PATH");
+
+        // Transfer the input tokens from the sender to this contract
+        IERC20(path[0]).transferFrom(msg.sender, address(this), amountIn);
+
+        // Perform the swaps along the path
+        amounts = _swapExactTokenFor(amountIn, path, address(this));
+
+        // Ensure the output amount meets the minimum requirement
+        require(amounts[amounts.length - 1] >= amountOutMin, "ARMRouter: INSUFFICIENT_OUTPUT_AMOUNT");
+
+        // Unwrap WETH to ETH and transfer to the recipient
+        WETH.withdraw(amounts[amounts.length - 1]);
+        payable(to).transfer(amounts[amounts.length - 1]);
+    }
+
+    /// @notice Swaps as few ETH as possible to receive an exact amount of output tokens, along the route determined by the path.
+    /// @param amountOut The exact amount of output tokens to receive.
+    /// @param path An array of token addresses representing the swap path.
+    /// @param to The address that will receive the output tokens.
+    /// @param deadline The timestamp by which the transaction must be completed.
+    /// @return amounts An array of token amounts for each step in the swap path.
+    function swapETHForExactTokens(uint256 amountOut, address[] calldata path, address to, uint256 deadline)
+        external
+        payable
+        ensure(deadline)
+        returns (uint256[] memory amounts)
+    {
+        // Ensure the first token in the path is WETH
+        require(path[0] == address(WETH), "ARMRouter: INVALID_PATH");
+
+        // Calculate the required input amounts for the desired output
+        amounts = _getAmountsIn(amountOut, path);
+
+        // Ensure the required input does not exceed the sent ETH
+        require(amounts[0] <= msg.value, "ARMRouter: EXCESSIVE_INPUT_AMOUNT");
+
+        // Wrap ETH to WETH
+        WETH.deposit{value: amounts[0]}();
+
+        // Perform the swaps along the path
+        _swapsForExactTokens(amounts, path, to);
+
+        // Refund any excess ETH to the sender
+        if (msg.value > amounts[0]) payable(msg.sender).transfer(msg.value - amounts[0]);
+    }
+
+    /// @notice Swaps as few input tokens as possible to receive an exact amount of ETH, along the route determined by the path.
+    /// @param amountOut The exact amount of ETH to receive.
+    /// @param amountInMax The maximum amount of input tokens that can be used for the swap.
+    /// @param path An array of token addresses representing the swap path.
+    /// @param to The address that will receive the ETH.
+    /// @param deadline The timestamp by which the transaction must be completed.
+    /// @return amounts An array of token amounts for each step in the swap path.
+    function swapTokensForExactETH(
+        uint256 amountOut,
+        uint256 amountInMax,
+        address[] calldata path,
+        address to,
+        uint256 deadline
+    ) external ensure(deadline) returns (uint256[] memory amounts) {
+        // Ensure the last token in the path is WETH
+        require(path[path.length - 1] == address(WETH), "ARMRouter: INVALID_PATH");
+
+        // Calculate the required input amounts for the desired output
+        amounts = _getAmountsIn(amountOut, path);
+
+        // Ensure the required input does not exceed the maximum allowed
+        require(amounts[0] <= amountInMax, "ARMRouter: EXCESSIVE_INPUT_AMOUNT");
+
+        // Transfer the input tokens from the sender to this contract
+        IERC20(path[0]).transferFrom(msg.sender, address(this), amounts[0]);
+
+        // Perform the swaps along the path
+        _swapsForExactTokens(amounts, path, address(this));
+
+        // Unwrap WETH to ETH and transfer to the recipient
+        WETH.withdraw(amounts[amounts.length - 1]);
+        payable(to).transfer(amounts[amounts.length - 1]);
     }
 
     ////////////////////////////////////////////////////
@@ -305,4 +407,6 @@ contract ARMRouter {
         // Store the ARM configuration
         configs[tokenA][tokenB] = Config({swapType: swapType, addr: addr, wrapSig: wrapSig, priceSig: priceSig});
     }
+
+    receive() external payable {}
 }
