@@ -247,9 +247,13 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         uint256 amountIn,
         uint256 amountOutMin,
         address to
-    ) external virtual {
+    ) external virtual returns (uint256[] memory amounts) {
         uint256 amountOut = _swapExactTokensForTokens(inToken, outToken, amountIn, to);
         require(amountOut >= amountOutMin, "ARM: Insufficient output amount");
+
+        amounts = new uint256[](2);
+        amounts[0] = amountIn;
+        amounts[1] = amountOut;
     }
 
     /**
@@ -304,10 +308,14 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         uint256 amountOut,
         uint256 amountInMax,
         address to
-    ) external virtual {
+    ) external virtual returns (uint256[] memory amounts) {
         uint256 amountIn = _swapTokensForExactTokens(inToken, outToken, amountOut, to);
 
         require(amountIn <= amountInMax, "ARM: Excess input amount");
+
+        amounts = new uint256[](2);
+        amounts[0] = amountIn;
+        amounts[1] = amountOut;
     }
 
     /**
