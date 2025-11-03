@@ -5,11 +5,10 @@ pragma solidity 0.8.23;
 import {Fork_Shared_Test_} from "test/fork/shared/Shared.sol";
 
 // Contracts
-import {IERC20} from "contracts/Interfaces.sol";
 import {AbstractARM} from "contracts/AbstractARM.sol";
 import {CapManager} from "contracts/CapManager.sol";
 
-contract Fork_Concrete_lidoARM_Setters_Test_ is Fork_Shared_Test_ {
+contract Fork_Concrete_LidoARM_Setters_Test_ is Fork_Shared_Test_ {
     address[] testProviders;
 
     //////////////////////////////////////////////////////
