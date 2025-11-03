@@ -240,6 +240,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
      * @param amountIn The amount of input tokens to send.
      * @param amountOutMin The minimum amount of output tokens that must be received for the transaction not to revert.
      * @param to Recipient of the output tokens.
+     * @return amounts The input and output token amounts.
      */
     function swapExactTokensForTokens(
         IERC20 inToken,
@@ -301,6 +302,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
      * @param amountOut The amount of output tokens to receive.
      * @param amountInMax The maximum amount of input tokens that can be required before the transaction reverts.
      * @param to Recipient of the output tokens.
+     * @return amounts The input and output token amounts.
      */
     function swapTokensForExactTokens(
         IERC20 inToken,
