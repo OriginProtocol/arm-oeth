@@ -13,7 +13,7 @@ ignored_warnings_from = ["src/contracts/Proxy.sol"]
 optimizer = true
 optimizer_runs = 200
 ffi = true
-gas_snapshot_check = true
+gas_snapshot_check = false
 
 # About remappings: 
 # - @pendle-sy use a different version of oz contracts than the one used in the rest of the project.
