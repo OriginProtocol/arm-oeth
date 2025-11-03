@@ -132,7 +132,7 @@ async function collectFees({ arm, signer }) {
 }
 
 async function setARMBuffer({ arm, signer, buffer }) {
-  if (buffer >= 1) {
+  if (buffer > 1) {
     throw new Error("Buffer value cannot be greater than 1");
   }
   const bufferBN = parseUnits((buffer || "0").toString(), 18);
