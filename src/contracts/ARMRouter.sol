@@ -399,7 +399,6 @@ contract ARMRouter {
     ) external {
         // Max approval for router to interact with ARMs
         IERC20(tokenA).approve(addr, type(uint256).max);
-        IERC20(tokenB).approve(addr, type(uint256).max);
 
         // Store the ARM configuration
         configs[tokenA][tokenB] = Config({swapType: swapType, addr: addr, wrapSig: wrapSig, priceSig: priceSig});
