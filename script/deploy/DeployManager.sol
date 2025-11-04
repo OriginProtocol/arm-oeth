@@ -24,7 +24,6 @@ import {UpgradeLidoARMSetBufferScript} from "./mainnet/009_UpgradeLidoARMSetBuff
 import {UpgradeOriginARMSetBufferScript} from "./sonic/005_UpgradeOriginARMSetBufferScript.sol";
 import {UpgradeLidoARMAssetScript} from "./mainnet/010_UpgradeLidoARMAssetScript.sol";
 import {DeployEtherFiARMScript} from "./mainnet/011_DeployEtherFiARMScript.sol";
-import {UpgradeEtherFiARMScript} from "./mainnet/012_UpgradeEtherFiARMScript.sol";
 
 contract DeployManager is Script {
     using stdJson for string;
@@ -85,7 +84,6 @@ contract DeployManager is Script {
             _runDeployFile(new DeployPendleAdaptor());
             _runDeployFile(new UpgradeLidoARMAssetScript());
             _runDeployFile(new DeployEtherFiARMScript());
-            _runDeployFile(new UpgradeEtherFiARMScript());
         } else if (block.chainid == 17000) {
             // Holesky
             _runDeployFile(new DeployCoreHoleskyScript());
