@@ -25,6 +25,7 @@ See the [ARM Registry](https://docs.originprotocol.com/registry/contracts/arm-re
 * @param amountIn The amount of input tokens to send.
 * @param amountOutMin The minimum amount of output tokens that must be received for the transaction not to revert.
 * @param to Recipient of the output tokens.
+* @return amounts The input and output token amounts.
 */
 function swapExactTokensForTokens(
     IERC20 inToken,
@@ -32,7 +33,7 @@ function swapExactTokensForTokens(
     uint256 amountIn,
     uint256 amountOutMin,
     address to
-) external;
+) external returns (uint256[] memory amounts);
 
 /**
 * @notice Uniswap V2 Router compatible interface. Swaps an exact amount of
@@ -65,6 +66,7 @@ function swapExactTokensForTokens(
 * @param amountOut The amount of output tokens to receive.
 * @param amountInMax The maximum amount of input tokens that can be required before the transaction reverts.
 * @param to Recipient of the output tokens.
+* @return amounts The input and output token amounts.
 */
 function swapTokensForExactTokens(
     IERC20 inToken,
@@ -72,7 +74,7 @@ function swapTokensForExactTokens(
     uint256 amountOut,
     uint256 amountInMax,
     address to
-) external;
+) external returns (uint256[] memory amounts);
 
 /**
 * @notice Uniswap V2 Router compatible interface. Receive an exact amount of
@@ -95,9 +97,11 @@ function swapTokensForExactTokens(
     uint256 deadline
 ) external returns (uint256[] memory amounts);
 
-/// @notice Get the available liquidity for a each token in the ARM.
-/// @return reserve0 The available liquidity for token0
-/// @return reserve1 The available liquidity for token1
+/**
+ * @notice Get the available liquidity for a each token in the ARM.
+ * @return reserve0 The available liquidity for token0
+ * @return reserve1 The available liquidity for token1
+ */
 function getReserves() external view returns (uint256 reserve0, uint256 reserve1);
 ```
 
@@ -159,6 +163,11 @@ function convertToAssets(uint256 shares) public view returns (uint256 assets);
 /// less the liquidity assets reserved for the ARM's withdrawal queue and accrued fees.
 /// @return The total amount of assets in the ARM
 function totalAssets() public view virtual returns (uint256);
+
+/// @notice The liquidity asset used for deposits and redeems. eg WETH or wS
+/// Used for compatibility with ERC-4626
+/// @return The address of the liquidity asset
+function asset() external view virtual returns (address);
 ```
 
 ## Development
@@ -214,7 +223,9 @@ make gas
 ## Deployment
 
 ### Store your deployer private key
+
 We use ERC-2335 to encode private key. To be sure to never reveal it, we use the cast wallet PK management.
+
 ```bash
 cast wallet import deployerKey --interactive
 ```

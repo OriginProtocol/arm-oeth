@@ -38,6 +38,7 @@ contract Fork_OethARM_Smoke_Test is AbstractSmokeTest {
         targetSender(address(this));
     }
 
+    /* It should be uncommented when upgrade OETH ARM is ready
     function test_swapExactTokensForTokens() external {
         _swapExactTokensForTokens(oeth, weth, 10 ether, 10 ether);
     }
@@ -45,6 +46,7 @@ contract Fork_OethARM_Smoke_Test is AbstractSmokeTest {
     function test_swapTokensForExactTokens() external {
         _swapTokensForExactTokens(oeth, weth, 10 ether, 10 ether);
     }
+    */
 
     function _swapExactTokensForTokens(IERC20 inToken, IERC20 outToken, uint256 amountIn, uint256 expectedOut)
         internal

@@ -50,6 +50,15 @@ test-invariant-origin:
 test-invariants:
 	@$(MAKE) test-invariant-lido && $(MAKE) test-invariant-origin
 
+test-unit:
+	@FOUNDRY_MATCH_PATH='test/unit/**' $(MAKE) test-std
+
+test-fork:
+	@FOUNDRY_MATCH_PATH='test/fork/**' $(MAKE) test-std
+
+test-smoke:
+	@FOUNDRY_MATCH_PATH='test/smoke/**' $(MAKE) test-std
+
 
 # Coverage
 coverage:
