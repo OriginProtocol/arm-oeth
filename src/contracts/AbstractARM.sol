@@ -240,6 +240,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
      * @param amountIn The amount of input tokens to send.
      * @param amountOutMin The minimum amount of output tokens that must be received for the transaction not to revert.
      * @param to Recipient of the output tokens.
+     * @return amounts The input and output token amounts.
      */
     function swapExactTokensForTokens(
         IERC20 inToken,
@@ -247,9 +248,13 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         uint256 amountIn,
         uint256 amountOutMin,
         address to
-    ) external virtual {
+    ) external virtual returns (uint256[] memory amounts) {
         uint256 amountOut = _swapExactTokensForTokens(inToken, outToken, amountIn, to);
         require(amountOut >= amountOutMin, "ARM: Insufficient output amount");
+
+        amounts = new uint256[](2);
+        amounts[0] = amountIn;
+        amounts[1] = amountOut;
     }
 
     /**
@@ -297,6 +302,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
      * @param amountOut The amount of output tokens to receive.
      * @param amountInMax The maximum amount of input tokens that can be required before the transaction reverts.
      * @param to Recipient of the output tokens.
+     * @return amounts The input and output token amounts.
      */
     function swapTokensForExactTokens(
         IERC20 inToken,
@@ -304,10 +310,14 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         uint256 amountOut,
         uint256 amountInMax,
         address to
-    ) external virtual {
+    ) external virtual returns (uint256[] memory amounts) {
         uint256 amountIn = _swapTokensForExactTokens(inToken, outToken, amountOut, to);
 
         require(amountIn <= amountInMax, "ARM: Excess input amount");
+
+        amounts = new uint256[](2);
+        amounts[0] = amountIn;
+        amounts[1] = amountOut;
     }
 
     /**
