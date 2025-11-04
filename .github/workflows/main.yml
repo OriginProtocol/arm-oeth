@@ -62,13 +62,10 @@ jobs:
   ####################################################
   ### TESTS
   ####################################################
-  foundry-tests-non-invariants:
-    name: Foundry Non-Invariants Tests
+  foundry-unit-tests:
+    name: Foundry Unit-Tests
     runs-on: ubuntu-latest
-    env:
-      PROVIDER_URL: ${{ secrets.PROVIDER_URL }}
-      FLY_API_KEY: ${{ secrets.FLY_API_KEY }}
-      SONIC_URL: ${{ secrets.SONIC_URL }}
+      
     steps:
       - uses: actions/checkout@v4
         with:
@@ -81,7 +78,51 @@ jobs:
         run: 	forge soldeer install && yarn install
 
       - name: Run non-invariant tests
-        run: make test
+        run: forge test --summary --fail-fast --show-progress --mp 'test/unit/**'
+
+  foundry-fork-tests:
+    name: Foundry Fork-Tests
+    runs-on: ubuntu-latest
+    env:
+      PROVIDER_URL: ${{ secrets.PROVIDER_URL }}
+      FLY_API_KEY: ${{ secrets.FLY_API_KEY }}
+      SONIC_URL: ${{ secrets.SONIC_URL }}
+      
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Install Dependencies
+        run: 	forge soldeer install && yarn install
+
+      - name: Run non-invariant tests
+        run: forge test --summary --fail-fast --show-progress --mp 'test/fork/**'
+
+  foundry-smoke-tests:
+    name: Foundry Smoke Tests
+    runs-on: ubuntu-latest
+    env:
+      PROVIDER_URL: ${{ secrets.PROVIDER_URL }}
+      FLY_API_KEY: ${{ secrets.FLY_API_KEY }}
+      SONIC_URL: ${{ secrets.SONIC_URL }}
+      
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Install Dependencies
+        run: 	forge soldeer install && yarn install
+
+      - name: Run non-invariant tests
+        run: forge test --summary --fail-fast --show-progress --mp 'test/smoke/**'
 
   foundry-tests-invariants:
     name: Foundry Invariants Tests
@@ -97,5 +138,14 @@ jobs:
       - name: Install Dependencies
         run: 	forge soldeer install
 
-      - name: Run invariant tests
-        run: make test-invariants
+      - name: Run invariant tests (OethARM)
+        run: |
+          FOUNDRY_INVARIANT_FAIL_ON_REVERT=false \
+          FOUNDRY_MATCH_CONTRACT=FuzzerFoundry_OethARM \
+          forge test --summary --fail-fast --show-progress
+              
+      - name: Run invariant tests (OriginARM)
+        run: |
+          FOUNDRY_INVARIANT_FAIL_ON_REVERT=true \
+          FOUNDRY_MATCH_CONTRACT=FuzzerFoundry_OriginARM \
+          forge test --summary --fail-fast --show-progress

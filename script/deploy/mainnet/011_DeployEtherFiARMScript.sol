@@ -24,7 +24,7 @@ contract DeployEtherFiARMScript is AbstractDeployScript {
     GovProposal public govProposal;
 
     string public constant override DEPLOY_NAME = "011_DeployEtherFiARMScript";
-    bool public constant override proposalExecuted = false;
+    bool public constant override proposalExecuted = true;
 
     Proxy morphoMarketProxy;
     EtherFiARM etherFiARMImpl;
