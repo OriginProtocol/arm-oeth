@@ -96,6 +96,13 @@ function swapTokensForExactTokens(
     address to,
     uint256 deadline
 ) external returns (uint256[] memory amounts);
+
+/**
+ * @notice Get the available liquidity for a each token in the ARM.
+ * @return reserve0 The available liquidity for token0
+ * @return reserve1 The available liquidity for token1
+ */
+function getReserves() external view returns (uint256 reserve0, uint256 reserve1)
 ```
 
 ## Liquidity Provider Interface
@@ -156,6 +163,11 @@ function convertToAssets(uint256 shares) public view returns (uint256 assets);
 /// less the liquidity assets reserved for the ARM's withdrawal queue and accrued fees.
 /// @return The total amount of assets in the ARM
 function totalAssets() public view virtual returns (uint256);
+
+/// @notice The liquidity asset used for deposits and redeems. eg WETH or wS
+/// Used for compatibility with ERC-4626
+/// @return The address of the liquidity asset
+function asset() external view virtual returns (address);
 ```
 
 ## Development
