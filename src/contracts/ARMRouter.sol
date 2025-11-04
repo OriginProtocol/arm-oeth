@@ -261,13 +261,9 @@ contract ARMRouter {
                 // Determine receiver address
                 address receiver = i < len - 2 ? address(this) : to;
 
-                // Build intermediate path
-                address[] memory intermediate = new address[](2);
-                intermediate[0] = path[i];
-                intermediate[1] = path[i + 1];
-
+                // Call the ARM contract's swap function
                 uint256[] memory obtained = AbstractARM(config.addr)
-                    .swapExactTokensForTokens(amounts[i], 0, intermediate, receiver, type(uint256).max);
+                    .swapExactTokensForTokens(IERC20(path[i]), IERC20(path[i + 1]), amounts[i], 0, receiver);
 
                 // Perform the ARM swap
                 amounts[i + 1] = obtained[1];
