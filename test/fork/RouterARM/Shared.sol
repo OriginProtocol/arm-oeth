@@ -8,7 +8,6 @@ import {Mainnet} from "contracts/utils/Addresses.sol";
 
 // Contracts
 import {WETH} from "@solmate/tokens/WETH.sol";
-import {Proxy} from "contracts/Proxy.sol";
 import {LidoARM} from "contracts/LidoARM.sol";
 import {LidoARM} from "contracts/LidoARM.sol";
 import {ARMRouter} from "contracts/ARMRouter.sol";

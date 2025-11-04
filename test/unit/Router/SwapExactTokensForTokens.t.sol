@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
-import {console} from "forge-std/console.sol";
-
 import {Unit_Shared_ARMRouter_Test} from "test/unit/Router/shared/Shared.sol";
 
 import {WETH} from "@solmate/tokens/WETH.sol";
