@@ -260,7 +260,11 @@ const logAssets = async (arm, blockTag) => {
     blockTag,
   });
 
+  const buffer = await arm.armBuffer({ blockTag });
+  const bufferPercent = (buffer * 10000n) / parseUnits("1");
+
   console.log(`Assets`);
+  console.log(`liquidity buffer ${formatUnits(bufferPercent, 2)}%`);
   console.log(
     `${formatUnits(liquidityWeth, 18).padEnd(24)} WETH  ${formatUnits(
       wethPercent,
