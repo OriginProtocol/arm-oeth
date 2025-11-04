@@ -376,7 +376,7 @@ contract ARMRouter {
         arm = configs[tokenA][tokenB];
 
         // Ensure the ARM configuration exists
-        require(arm.addr != address(0), "ARMRouter: ARM_NOT_FOUND");
+        require(arm.addr != address(0), "ARMRouter: PATH_NOT_FOUND");
     }
 
     ////////////////////////////////////////////////////
