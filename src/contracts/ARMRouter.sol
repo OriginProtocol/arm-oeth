@@ -153,8 +153,11 @@ contract ARMRouter {
         address to,
         uint256 deadline
     ) external ensure(deadline) returns (uint256[] memory amounts) {
+        // Cache last index in list to save gas, path and amounts lengths are the same
+        uint256 lenMinusOne = path.length - 1;
+
         // Ensure the last token in the path is WETH
-        require(path[path.length - 1] == address(WETH), "ARMRouter: INVALID_PATH");
+        require(path[lenMinusOne] == address(WETH), "ARMRouter: INVALID_PATH");
 
         // Transfer the input tokens from the sender to this contract
         IERC20(path[0]).transferFrom(msg.sender, address(this), amountIn);
@@ -163,11 +166,11 @@ contract ARMRouter {
         amounts = _swapExactTokenFor(amountIn, path, address(this));
 
         // Ensure the output amount meets the minimum requirement
-        require(amounts[amounts.length - 1] >= amountOutMin, "ARMRouter: INSUFFICIENT_OUTPUT");
+        require(amounts[lenMinusOne] >= amountOutMin, "ARMRouter: INSUFFICIENT_OUTPUT");
 
         // Unwrap WETH to ETH and transfer to the recipient
-        WETH.withdraw(amounts[amounts.length - 1]);
-        payable(to).transfer(amounts[amounts.length - 1]);
+        WETH.withdraw(amounts[lenMinusOne]);
+        payable(to).transfer(amounts[lenMinusOne]);
     }
 
     /// @notice Swaps as few ETH as possible to receive an exact amount of output tokens, along the route determined by the path.
