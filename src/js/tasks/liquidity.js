@@ -113,9 +113,26 @@ const logLiquidity = async ({ block, arm }) => {
   const baseAsset = await ethers.getContractAt("IERC20Metadata", baseAddress);
   const baseSymbol = await baseAsset.symbol();
   const baseBalance = await baseAsset.balanceOf(armAddress, { blockTag });
-  const baseWithdraws = await outstandingWithdrawalAmount({
-    withdrawer: armAddress,
-  });
+
+  // TODO need to make this more generic
+  let baseWithdraws = 0n;
+  if (arm === "Oeth") {
+    baseWithdraws = await outstandingWithdrawalAmount({
+      withdrawer: armAddress,
+    });
+  } else if (arm === "Lido") {
+    baseWithdraws = await armContract.lidoWithdrawalQueueAmount({
+      blockTag,
+    });
+  } else if (arm === "EtherFi") {
+    baseWithdraws = await armContract.etherfiWithdrawalQueueAmount({
+      blockTag,
+    });
+  } else if (arm === "Origin") {
+    baseWithdraws = await armContract.vaultWithdrawalAmount({
+      blockTag,
+    });
+  }
 
   let lendingMarketBalance = 0n;
   // TODO this can be removed after OETH is upgraded
