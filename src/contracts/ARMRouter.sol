@@ -85,7 +85,9 @@ contract ARMRouter {
         amounts = _swapExactTokenFor(amountIn, path, to);
 
         // Ensure the output amount meets the minimum requirement
-        require(amounts[amounts.length - 1] >= amountOutMin, "ARMRouter: INSUFFICIENT_OUTPUT");
+        uint256 lastIndex = amounts.length;
+        --lastIndex;
+        require(amounts[lastIndex] >= amountOutMin, "ARMRouter: INSUFFICIENT_OUTPUT");
     }
 
     /// @notice Swaps as few input tokens as possible to receive an exact amount of output tokens, along the route determined by the path.
@@ -138,7 +140,9 @@ contract ARMRouter {
         amounts = _swapExactTokenFor(msg.value, path, to);
 
         // Ensure the output amount meets the minimum requirement
-        require(amounts[amounts.length - 1] >= amountOutMin, "ARMRouter: INSUFFICIENT_OUTPUT");
+        uint256 lastIndex = amounts.length;
+        --lastIndex;
+        require(amounts[lastIndex] >= amountOutMin, "ARMRouter: INSUFFICIENT_OUTPUT");
     }
 
     /// @notice Swaps an exact amount of input tokens for as much ETH as possible, along the route determined by the path.
@@ -156,7 +160,9 @@ contract ARMRouter {
         uint256 deadline
     ) external ensure(deadline) returns (uint256[] memory amounts) {
         // Cache last index in list to save gas, path and amounts lengths are the same
-        uint256 lenMinusOne = path.length - 1;
+        // Done in 2 operations to save gas
+        uint256 lenMinusOne = path.length;
+        --lenMinusOne;
 
         // Ensure the last token in the path is WETH
         require(path[lenMinusOne] == address(WETH), "ARMRouter: INVALID_PATH");
@@ -224,7 +230,9 @@ contract ARMRouter {
         uint256 deadline
     ) external ensure(deadline) returns (uint256[] memory amounts) {
         // Cache last index in list to save gas, path and amounts lengths are the same
-        uint256 lenMinusOne = path.length - 1;
+        // Done in 2 operations to save gas
+        uint256 lenMinusOne = path.length;
+        --lenMinusOne;
         // Ensure the last token in the path is WETH
         require(path[lenMinusOne] == address(WETH), "ARMRouter: INVALID_PATH");
 
@@ -275,7 +283,7 @@ contract ARMRouter {
         // Perform the swaps along the path
         for (uint256 i; i < len - 1; i++) {
             // Next token index
-            _next = i + 1;
+            ++_next;
 
             // Cache token addresses to save gas
             address tokenA = path[i];
@@ -323,7 +331,7 @@ contract ARMRouter {
         uint256 lenMinusTwo = len - 2;
         for (uint256 i; i < len - 1; i++) {
             // Next token index
-            _next = i + 1;
+            ++_next;
 
             // Cache token addresses to save gas
             address tokenA = path[i];
@@ -359,10 +367,11 @@ contract ARMRouter {
     function _getAmountsIn(uint256 amountOut, address[] memory path) internal returns (uint256[] memory amounts) {
         // Cache length to save gas
         uint256 len = path.length;
-        // Cache length minus one to save gas
-        uint256 lenMinusOne = len - 1;
+        // Cache length minus one to save gas, in 2 operations to safe gas
+        uint256 lenMinusOne = len;
+        --lenMinusOne;
         // Ensure the path has at least two tokens
-        require(len >= 2, "ARMRouter: INVALID_PATH");
+        require(lenMinusOne > 0, "ARMRouter: INVALID_PATH");
 
         // Initialize the amounts array
         amounts = new uint256[](len);
@@ -373,7 +382,7 @@ contract ARMRouter {
         // Calculate required input amounts in reverse order
         for (uint256 i = lenMinusOne; i > 0; i--) {
             // Next token index
-            _next = i - 1;
+            --_next;
             amounts[_next] = _getAmountIn(amounts[i], path[_next], path[i]);
         }
     }
@@ -404,8 +413,9 @@ contract ARMRouter {
             require(success, "ARMRouter: GET_TRADERATE_FAIL");
 
             // Decode the returned data to get the required input amount
+            amountIn = abi.decode(data, (uint256));
             // Add 1 to account for rounding errors
-            amountIn = abi.decode(data, (uint256)) + 1;
+            ++amountIn;
         }
     }
 
