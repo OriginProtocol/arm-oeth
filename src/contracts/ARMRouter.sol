@@ -255,6 +255,8 @@ contract ARMRouter {
         uint256 len = path.length;
         // Cache next index to save gas
         uint256 _next;
+        // Cache length minus two to save gas
+        uint256 lenMinusTwo = len - 2;
         for (uint256 i; i < len - 1; i++) {
             // Next token index
             _next = i + 1;
@@ -263,7 +265,7 @@ contract ARMRouter {
 
             if (config.swapType == SwapType.ARM) {
                 // Determine receiver address
-                address receiver = i < len - 2 ? address(this) : to;
+                address receiver = i < lenMinusTwo ? address(this) : to;
 
                 // Call the ARM contract's swap function
                 uint256[] memory obtained = AbstractARM(config.addr)
@@ -282,7 +284,7 @@ contract ARMRouter {
                 amounts[_next] = abi.decode(data, (uint256));
 
                 // If this is the last swap, transfer to the recipient
-                if (i == len - 2) IERC20(path[_next]).transfer(to, amounts[_next]);
+                if (i == lenMinusTwo) IERC20(path[_next]).transfer(to, amounts[_next]);
             }
         }
     }
