@@ -1263,6 +1263,30 @@ subtask(
     "1inch",
     types.string,
   )
+  .addOptionalParam(
+    "minSellPrice",
+    "The min sell price when pricing off market. eg 1Inch or Curve",
+    undefined,
+    types.float,
+  )
+  .addOptionalParam(
+    "maxSellPrice",
+    "The max sell price when pricing off market. eg 1Inch or Curve",
+    undefined,
+    types.float,
+  )
+  .addOptionalParam(
+    "maxBuyPrice",
+    "The max buy price when pricing off market. eg 1Inch or Curve",
+    undefined,
+    types.float,
+  )
+  .addOptionalParam(
+    "minBuyPrice",
+    "The min buy price when pricing off market. eg 1Inch or Curve",
+    undefined,
+    types.float,
+  )
   .setAction(async (taskArgs) => {
     const signer = await getSigner();
 

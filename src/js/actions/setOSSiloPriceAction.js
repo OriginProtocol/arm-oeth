@@ -78,9 +78,11 @@ const handler = async (credentials) => {
     blockTag: "latest",
     marketPremium: 1, // basis points. Negative value reduces the price
     lendPremium: 200, // basis points added to lending APY (100 = 1%)
-    tolerance: 0.1, // basis points
+    tolerance: 0.3, // basis points
     market: "1inch",
     minSwapAmount: parseUnits("16000", 18),
+    minBuyPrice: 0.99,
+    // maxBuyPrice: 0.995,
   });
 };
 

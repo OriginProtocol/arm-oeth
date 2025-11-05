@@ -6,6 +6,7 @@ const { abs } = require("../utils/maths");
 const { get1InchPrices } = require("../utils/1Inch");
 const { logTxDetails } = require("../utils/txLogger");
 const { getCurvePrices } = require("../utils/curve");
+const { rangeSellPrice, rangeBuyPrice } = require("../utils/pricing");
 
 const log = require("../utils/logger")("task:lido");
 
@@ -162,55 +163,12 @@ const setPrices = async (options) => {
     }
 
     // 2.4 Adjust target prices based on min/max limits
-    log(`\nAdjusting target prices based on min/max limits:`);
-    if (maxSellPrice) {
-      const maxSellPriceBN = parseUnits(maxSellPrice.toString(), 36);
-      if (targetSellPrice > maxSellPriceBN) {
-        log(
-          `target sell price ${formatUnits(
-            targetSellPrice,
-            36,
-          )} is above max sell price ${maxSellPrice} so will use max`,
-        );
-        targetSellPrice = maxSellPriceBN;
-      }
-    }
-    if (minSellPrice) {
-      const minSellPriceBN = parseUnits(minSellPrice.toString(), 36);
-      if (targetSellPrice < minSellPriceBN) {
-        log(
-          `target sell price ${formatUnits(
-            targetSellPrice,
-            36,
-          )} is below min sell price ${minSellPrice} so will use min`,
-        );
-        targetSellPrice = minSellPriceBN;
-      }
-    }
-    if (maxBuyPrice) {
-      const maxBuyPriceBN = parseUnits(maxBuyPrice.toString(), 36);
-      if (targetBuyPrice > maxBuyPriceBN) {
-        log(
-          `target buy price  ${formatUnits(
-            targetBuyPrice,
-            36,
-          )} is above max buy price  ${maxBuyPrice} so will use max`,
-        );
-        targetBuyPrice = maxBuyPriceBN;
-      }
-    }
-    if (minBuyPrice) {
-      const minBuyPriceBN = parseUnits(minBuyPrice.toString(), 36);
-      if (targetBuyPrice < minBuyPriceBN) {
-        log(
-          `target buy price  ${formatUnits(
-            targetBuyPrice,
-            36,
-          )} is below min buy price  ${minBuyPrice} so will use min`,
-        );
-        targetBuyPrice = minBuyPriceBN;
-      }
-    }
+    targetSellPrice = rangeSellPrice(
+      targetSellPrice,
+      minSellPrice,
+      maxSellPrice,
+    );
+    targetBuyPrice = rangeBuyPrice(targetBuyPrice, minBuyPrice, maxBuyPrice);
 
     // 2.5 Adjust target prices based on cross price
     const crossPrice = await arm.crossPrice();
