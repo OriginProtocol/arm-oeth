@@ -191,17 +191,20 @@ contract ARMRouter {
         // Calculate the required input amounts for the desired output
         amounts = _getAmountsIn(amountOut, path);
 
+        // Cache amounts[0] to save gas
+        uint256 amount0 = amounts[0];
+
         // Ensure the required input does not exceed the sent ETH
-        require(amounts[0] <= msg.value, "ARMRouter: EXCESSIVE_INPUT");
+        require(amount0 <= msg.value, "ARMRouter: EXCESSIVE_INPUT");
 
         // Wrap ETH to WETH
-        WETH.deposit{value: amounts[0]}();
+        WETH.deposit{value: amount0}();
 
         // Perform the swaps along the path
         _swapsForExactTokens(amounts, path, to);
 
         // Refund any excess ETH to the sender
-        if (msg.value > amounts[0]) payable(msg.sender).transfer(msg.value - amounts[0]);
+        if (msg.value > amount0) payable(msg.sender).transfer(msg.value - amount0);
     }
 
     /// @notice Swaps as few input tokens as possible to receive an exact amount of ETH, along the route determined by the path.
