@@ -28,6 +28,7 @@ interface IOethARM {
      * @param amountIn The amount of input tokens to send.
      * @param amountOutMin The minimum amount of output tokens that must be received for the transaction not to revert.
      * @param to Recipient of the output tokens.
+     * @return amounts The input and output token amounts.
      */
     function swapExactTokensForTokens(
         IERC20 inToken,
@@ -35,7 +36,7 @@ interface IOethARM {
         uint256 amountIn,
         uint256 amountOutMin,
         address to
-    ) external;
+    ) external returns (uint256[] memory amounts);
 
     /**
      * @notice Uniswap V2 Router compatible interface. Swaps an exact amount of
@@ -68,6 +69,7 @@ interface IOethARM {
      * @param amountOut The amount of output tokens to receive.
      * @param amountInMax The maximum amount of input tokens that can be required before the transaction reverts.
      * @param to Recipient of the output tokens.
+     * @return amounts The input and output token amounts.
      */
     function swapTokensForExactTokens(
         IERC20 inToken,
@@ -75,7 +77,7 @@ interface IOethARM {
         uint256 amountOut,
         uint256 amountInMax,
         address to
-    ) external;
+    ) external returns (uint256[] memory amounts);
 
     /**
      * @notice Uniswap V2 Router compatible interface. Receive an exact amount of
