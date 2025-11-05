@@ -253,9 +253,13 @@ contract ARMRouter {
 
         // Perform the swaps along the path
         uint256 len = path.length;
+        // Cache next index to save gas
+        uint256 _next;
         for (uint256 i; i < len - 1; i++) {
+            // Next token index
+            _next = i + 1;
             // Get ARM or Wrapper config
-            Config memory config = getConfigFor(path[i], path[i + 1]);
+            Config memory config = getConfigFor(path[i], path[_next]);
 
             if (config.swapType == SwapType.ARM) {
                 // Determine receiver address
@@ -263,10 +267,10 @@ contract ARMRouter {
 
                 // Call the ARM contract's swap function
                 uint256[] memory obtained = AbstractARM(config.addr)
-                    .swapExactTokensForTokens(IERC20(path[i]), IERC20(path[i + 1]), amounts[i], 0, receiver);
+                    .swapExactTokensForTokens(IERC20(path[i]), IERC20(path[_next]), amounts[i], 0, receiver);
 
                 // Perform the ARM swap
-                amounts[i + 1] = obtained[1];
+                amounts[_next] = obtained[1];
             } else {
                 // Call the Wrapper contract's wrap/unwrap function
                 (bool success, bytes memory data) = config.addr.call(abi.encodeWithSelector(config.wrapSig, amounts[i]));
@@ -275,10 +279,10 @@ contract ARMRouter {
                 require(success, "ARMRouter: WRAP_UNWRAP_FAILED");
 
                 // It's a wrap/unwrap operation
-                amounts[i + 1] = abi.decode(data, (uint256));
+                amounts[_next] = abi.decode(data, (uint256));
 
                 // If this is the last swap, transfer to the recipient
-                if (i == len - 2) IERC20(path[i + 1]).transfer(to, amounts[i + 1]);
+                if (i == len - 2) IERC20(path[_next]).transfer(to, amounts[_next]);
             }
         }
     }
