@@ -300,7 +300,7 @@ contract ARMRouter {
         uint256 _next;
         // Cache length minus two to save gas
         uint256 lenMinusTwo = len - 2;
-        for (uint256 i = 0; i < len - 1; i++) {
+        for (uint256 i; i < len - 1; i++) {
             // Next token index
             _next = i + 1;
             address tokenA = path[i];
@@ -334,16 +334,24 @@ contract ARMRouter {
     /// @param path The swap path as an array of token addresses.
     /// @return amounts An array of token amounts for each step in the swap path.
     function _getAmountsIn(uint256 amountOut, address[] memory path) internal returns (uint256[] memory amounts) {
+        // Cache length to save gas
+        uint256 len = path.length;
+        // Cache length minus one to save gas
+        uint256 lenMinusOne = len - 1;
         // Ensure the path has at least two tokens
-        require(path.length >= 2, "ARMRouter: INVALID_PATH");
+        require(len >= 2, "ARMRouter: INVALID_PATH");
 
         // Initialize the amounts array
-        amounts = new uint256[](path.length);
-        amounts[amounts.length - 1] = amountOut;
+        amounts = new uint256[](len);
+        amounts[lenMinusOne] = amountOut;
 
+        // Cache next index to save gas
+        uint256 _next = lenMinusOne;
         // Calculate required input amounts in reverse order
-        for (uint256 i = path.length - 1; i > 0; i--) {
-            amounts[i - 1] = _getAmountIn(amounts[i], path[i - 1], path[i]);
+        for (uint256 i = lenMinusOne; i > 0; i--) {
+            // Next token index
+            _next = i - 1;
+            amounts[_next] = _getAmountIn(amounts[i], path[_next], path[i]);
         }
     }
 
