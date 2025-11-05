@@ -72,7 +72,7 @@ const setOSSiloPrice = async (options) => {
       fromAsset: addresses.sonic.OSonicProxy,
       toAsset: addresses.sonic.WS,
       fromAmount: swapAmount,
-      excludedProtocols: "ORIGIN",
+      excludedProtocols: "SONIC_ORIGIN_WS_ARM",
       chainId: 146,
     });
     // adjust buy amount by 1Inch's 0.3% infrastructure fee for non-stable coin swaps
