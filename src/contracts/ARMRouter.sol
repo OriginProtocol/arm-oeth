@@ -104,11 +104,13 @@ contract ARMRouter {
         // Calculate the required input amounts for the desired output
         amounts = _getAmountsIn(amountOut, path);
 
+        // Cache amounts[0] to save gas
+        uint256 amount0 = amounts[0];
         // Ensure the required input does not exceed the maximum allowed
-        require(amounts[0] <= amountInMax, "ARMRouter: EXCESSIVE_INPUT");
+        require(amount0 <= amountInMax, "ARMRouter: EXCESSIVE_INPUT");
 
         // Transfer the input tokens from the sender to this contract
-        IERC20(path[0]).transferFrom(msg.sender, address(this), amounts[0]);
+        IERC20(path[0]).transferFrom(msg.sender, address(this), amount0);
 
         // Perform the swaps along the path
         _swapsForExactTokens(amounts, path, to);
@@ -221,24 +223,30 @@ contract ARMRouter {
         address to,
         uint256 deadline
     ) external ensure(deadline) returns (uint256[] memory amounts) {
+        // Cache last index in list to save gas, path and amounts lengths are the same
+        uint256 lenMinusOne = path.length - 1;
         // Ensure the last token in the path is WETH
-        require(path[path.length - 1] == address(WETH), "ARMRouter: INVALID_PATH");
+        require(path[lenMinusOne] == address(WETH), "ARMRouter: INVALID_PATH");
 
         // Calculate the required input amounts for the desired output
         amounts = _getAmountsIn(amountOut, path);
 
+        // Cache amounts[0] to save gas
+        uint256 amount0 = amounts[0];
         // Ensure the required input does not exceed the maximum allowed
-        require(amounts[0] <= amountInMax, "ARMRouter: EXCESSIVE_INPUT");
+        require(amount0 <= amountInMax, "ARMRouter: EXCESSIVE_INPUT");
 
         // Transfer the input tokens from the sender to this contract
-        IERC20(path[0]).transferFrom(msg.sender, address(this), amounts[0]);
+        IERC20(path[0]).transferFrom(msg.sender, address(this), amount0);
 
         // Perform the swaps along the path
         _swapsForExactTokens(amounts, path, address(this));
 
+        // Cache last amount to save gas
+        uint256 lastAmount = amounts[lenMinusOne];
         // Unwrap WETH to ETH and transfer to the recipient
-        WETH.withdraw(amounts[amounts.length - 1]);
-        payable(to).transfer(amounts[amounts.length - 1]);
+        WETH.withdraw(lastAmount);
+        payable(to).transfer(lastAmount);
     }
 
     ////////////////////////////////////////////////////
