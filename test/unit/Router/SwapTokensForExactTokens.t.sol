@@ -47,7 +47,9 @@ contract Unit_Concrete_ARMRouter_SwapTokensForExactTokens_Test is Unit_Shared_AR
         path[0] = address(eeth);
         path[1] = address(weth);
 
+        vm.startSnapshotGas("TokensForExactTokens: EETH_WETH");
         router.swapTokensForExactTokens(amountOut, type(uint256).max, path, address(this), block.timestamp + 1);
+        vm.stopSnapshotGas();
     }
 
     function test_Swap_TokensForExactTokens_WEETH_WETH() public {
@@ -60,7 +62,9 @@ contract Unit_Concrete_ARMRouter_SwapTokensForExactTokens_Test is Unit_Shared_AR
         path[1] = address(eeth);
         path[2] = address(weth);
 
+        vm.startSnapshotGas("TokensForExactTokens: WEETH_WETH");
         router.swapTokensForExactTokens(amountOut, type(uint256).max, path, address(this), block.timestamp + 1);
+        vm.stopSnapshotGas();
     }
 
     function test_Swap_TokensForExactTokens_WEETH_WSTETH() public {
@@ -75,7 +79,9 @@ contract Unit_Concrete_ARMRouter_SwapTokensForExactTokens_Test is Unit_Shared_AR
         path[3] = address(steth);
         path[4] = address(wsteth);
 
+        vm.startSnapshotGas("TokensForExactTokens: WEETH_WSTETH");
         router.swapTokensForExactTokens(amountOut, type(uint256).max, path, address(this), block.timestamp + 1);
+        vm.stopSnapshotGas();
     }
 
     function test_Swap_ETHForExactTokens() public {
@@ -87,7 +93,9 @@ contract Unit_Concrete_ARMRouter_SwapTokensForExactTokens_Test is Unit_Shared_AR
         path[1] = address(eeth);
 
         deal(address(this), 20 ether);
+        vm.startSnapshotGas("ETHForExactTokens: EETH");
         router.swapETHForExactTokens{value: 20 ether}(amountOut, path, address(this), block.timestamp + 1);
+        vm.stopSnapshotGas();
     }
 
     function test_Swap_TokensForExactETH() public {
@@ -98,7 +106,9 @@ contract Unit_Concrete_ARMRouter_SwapTokensForExactTokens_Test is Unit_Shared_AR
         path[0] = address(eeth);
         path[1] = address(weth);
 
+        vm.startSnapshotGas("TokensForExactETH: EETH");
         router.swapTokensForExactETH(amountOut, type(uint256).max, path, address(this), block.timestamp + 1);
+        vm.stopSnapshotGas();
     }
 
     receive() external payable {}

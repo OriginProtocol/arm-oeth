@@ -47,7 +47,7 @@ contract Unit_Concrete_ARMRouter_SwapExactTokensForTokens_Test is Unit_Shared_AR
         path[0] = address(eeth);
         path[1] = address(weth);
 
-        vm.startSnapshotGas("externalA");
+        vm.startSnapshotGas("ExactTokensForTokens: EETH_WETH");
         router.swapExactTokensForTokens(amountIn, 0, path, address(this), block.timestamp + 1);
         vm.stopSnapshotGas();
     }
@@ -58,7 +58,7 @@ contract Unit_Concrete_ARMRouter_SwapExactTokensForTokens_Test is Unit_Shared_AR
         path[0] = address(eeth);
         path[1] = address(weth);
 
-        vm.startSnapshotGas("externalB");
+        vm.startSnapshotGas("Bypass Router: EETH_WETH");
         etherfiARM.swapExactTokensForTokens(amountIn, 0, path, address(this), block.timestamp + 1);
         vm.stopSnapshotGas();
     }
@@ -72,7 +72,9 @@ contract Unit_Concrete_ARMRouter_SwapExactTokensForTokens_Test is Unit_Shared_AR
         path[1] = address(eeth);
         path[2] = address(weth);
 
+        vm.startSnapshotGas("ExactTokensForTokens: WEETH_WETH");
         router.swapExactTokensForTokens(amountIn, 0, path, address(this), block.timestamp + 1);
+        vm.stopSnapshotGas();
     }
 
     function test_Swap_ExactTokensForTokens_WEETH_WSTETH() public {
@@ -86,7 +88,9 @@ contract Unit_Concrete_ARMRouter_SwapExactTokensForTokens_Test is Unit_Shared_AR
         path[3] = address(steth);
         path[4] = address(wsteth);
 
+        vm.startSnapshotGas("ExactTokensForTokens: WEETH_WSTETH");
         router.swapExactTokensForTokens(amountIn, 0, path, address(this), block.timestamp + 1);
+        vm.stopSnapshotGas();
     }
 
     function test_Swap_ExactETHForTokens_EETH() public {
@@ -97,7 +101,9 @@ contract Unit_Concrete_ARMRouter_SwapExactTokensForTokens_Test is Unit_Shared_AR
         path[1] = address(eeth);
 
         deal(address(this), amountIn);
+        vm.startSnapshotGas("ExactETHForTokens: EETH");
         router.swapExactETHForTokens{value: amountIn}(0, path, address(this), block.timestamp + 1);
+        vm.stopSnapshotGas();
     }
 
     function test_Swap_ExactTokensForETH() public {
@@ -107,7 +113,9 @@ contract Unit_Concrete_ARMRouter_SwapExactTokensForTokens_Test is Unit_Shared_AR
         path[0] = address(eeth);
         path[1] = address(weth);
 
+        vm.startSnapshotGas("ExactTokensForETH: EETH");
         router.swapExactTokensForETH(amountIn, 0, path, address(this), block.timestamp + 1);
+        vm.stopSnapshotGas();
     }
 
     receive() external payable {}
