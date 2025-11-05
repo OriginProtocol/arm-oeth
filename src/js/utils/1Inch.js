@@ -8,6 +8,8 @@ const log = require("./logger")("utils:1inch");
 
 const ONEINCH_API_ENDPOINT = "https://api.1inch.dev/swap/v6.1";
 
+const origin1InchProtocols = "ORIGIN,ORIGIN_ARMOETH,SONIC_ORIGIN_WS_ARM";
+
 /**
  * Gets a swap quote from 1Inch's swap API
  * @param fromAsset The address of the asset to swap from.
@@ -106,7 +108,7 @@ const get1InchPrices = async (
     fromAsset: assets.liquid,
     toAsset: assets.base,
     fromAmount: amountBI, // liquid amount
-    excludedProtocols: "ORIGIN",
+    excludedProtocols: origin1InchProtocols,
     chainId,
   });
   // base buy amount adjusted by 1Inch's infrastructure fee
@@ -120,7 +122,7 @@ const get1InchPrices = async (
     fromAsset: assets.base,
     toAsset: assets.liquid,
     fromAmount: amountBI, // base amount
-    excludedProtocols: "ORIGIN",
+    excludedProtocols: origin1InchProtocols,
     chainId,
   });
   // liquid sell amount adjusted by 1Inch's infrastructure fee
