@@ -261,21 +261,28 @@ contract ARMRouter {
         internal
         returns (uint256[] memory amounts)
     {
+        // Cache length to save gas
+        uint256 len = path.length;
+
         // Initialize the amounts array
-        amounts = new uint256[](path.length);
+        amounts = new uint256[](len);
         amounts[0] = amountIn;
 
-        // Perform the swaps along the path
-        uint256 len = path.length;
         // Cache next index to save gas
         uint256 _next;
         // Cache length minus two to save gas
         uint256 lenMinusTwo = len - 2;
+        // Perform the swaps along the path
         for (uint256 i; i < len - 1; i++) {
             // Next token index
             _next = i + 1;
+
+            // Cache token addresses to save gas
+            address tokenA = path[i];
+            address tokenB = path[_next];
+
             // Get ARM or Wrapper config
-            Config memory config = getConfigFor(path[i], path[_next]);
+            Config memory config = getConfigFor(tokenA, tokenB);
 
             if (config.swapType == SwapType.ARM) {
                 // Determine receiver address
@@ -283,7 +290,7 @@ contract ARMRouter {
 
                 // Call the ARM contract's swap function
                 uint256[] memory obtained = AbstractARM(config.addr)
-                    .swapExactTokensForTokens(IERC20(path[i]), IERC20(path[_next]), amounts[i], 0, receiver);
+                    .swapExactTokensForTokens(IERC20(tokenA), IERC20(tokenB), amounts[i], 0, receiver);
 
                 // Perform the ARM swap
                 amounts[_next] = obtained[1];
@@ -298,7 +305,7 @@ contract ARMRouter {
                 amounts[_next] = abi.decode(data, (uint256));
 
                 // If this is the last swap, transfer to the recipient
-                if (i == lenMinusTwo) IERC20(path[_next]).transfer(to, amounts[_next]);
+                if (i == lenMinusTwo) IERC20(tokenB).transfer(to, amounts[_next]);
             }
         }
     }
@@ -317,6 +324,8 @@ contract ARMRouter {
         for (uint256 i; i < len - 1; i++) {
             // Next token index
             _next = i + 1;
+
+            // Cache token addresses to save gas
             address tokenA = path[i];
             address tokenB = path[_next];
 
