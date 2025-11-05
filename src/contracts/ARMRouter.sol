@@ -294,20 +294,28 @@ contract ARMRouter {
     /// @param path The swap path as an array of token addresses.
     /// @param to The address that will receive the output tokens.
     function _swapsForExactTokens(uint256[] memory amounts, address[] memory path, address to) internal {
-        for (uint256 i = 0; i < path.length - 1; i++) {
+        // Cache length to save gas
+        uint256 len = path.length;
+        // Cache next index to save gas
+        uint256 _next;
+        // Cache length minus two to save gas
+        uint256 lenMinusTwo = len - 2;
+        for (uint256 i = 0; i < len - 1; i++) {
+            // Next token index
+            _next = i + 1;
             address tokenA = path[i];
-            address tokenB = path[i + 1];
+            address tokenB = path[_next];
 
             // Get ARM or Wrapper config
             Config memory config = getConfigFor(tokenA, tokenB);
 
             if (config.swapType == SwapType.ARM) {
                 // Determine receiver address
-                address receiver = i < path.length - 2 ? address(this) : to;
+                address receiver = i < lenMinusTwo ? address(this) : to;
 
                 // Perform the ARM swap
                 AbstractARM(config.addr)
-                    .swapTokensForExactTokens(IERC20(tokenA), IERC20(tokenB), amounts[i + 1], amounts[i], receiver);
+                    .swapTokensForExactTokens(IERC20(tokenA), IERC20(tokenB), amounts[_next], amounts[i], receiver);
             } else {
                 // Call the Wrapper contract's wrap/unwrap function
                 (bool success,) = config.addr.call(abi.encodeWithSelector(config.wrapSig, amounts[i]));
@@ -316,7 +324,7 @@ contract ARMRouter {
                 require(success, "ARMRouter: WRAP_UNWRAP_FAILED");
 
                 // If this is the last swap, transfer to the recipient
-                if (i == path.length - 2) IERC20(tokenB).transfer(to, amounts[i + 1]);
+                if (i == lenMinusTwo) IERC20(tokenB).transfer(to, amounts[_next]);
             }
         }
     }
