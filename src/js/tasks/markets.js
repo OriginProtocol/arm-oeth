@@ -6,6 +6,7 @@ const { getCurvePrices } = require("../utils/curve");
 const { getUniswapV3SpotPrices } = require("../utils/uniswap");
 const { getSigner } = require("../utils/signers");
 const { getFluidSpotPrices } = require("../utils/fluid");
+const { mainnet } = require("../utils/addresses");
 
 const log = require("../utils/logger")("task:markets");
 
@@ -266,10 +267,80 @@ const logFluidPrices = async (options, ammPrices, poolName) => {
   return fluid;
 };
 
+const logWrappedEtherFiPrices = async ({ amount, armPrices }) => {
+  const pair = "weETH/WETH";
+
+  const wrappedEtherFi = await ethers.getContractAt(
+    ["function getEETHByWeETH(uint256) external view returns (uint256)"],
+    mainnet.weETH,
+  );
+  const wrappedEtherFiScaled = parseUnits(amount.toString(), 18);
+  const etherFiAmount =
+    await wrappedEtherFi.getEETHByWeETH(wrappedEtherFiScaled);
+  const wrapperPrice = (etherFiAmount * parseUnits("1")) / wrappedEtherFiScaled;
+  console.log(
+    `\nEther.fi wrapper (weETH) price: ${formatUnits(wrapperPrice, 18)} weETH/eETH`,
+  );
+
+  // Get weETH/WETH prices from 1Inch
+  const oneInch = await get1InchPrices(
+    amount,
+    {
+      liquid: mainnet.WETH,
+      base: mainnet.weETH,
+    },
+    10n,
+    1,
+  );
+
+  log(
+    `buy  ${formatUnits(oneInch.buyToAmount)} base assets for ${amount} liquidity assets`,
+  );
+  log(
+    `sell ${amount} base assets for ${formatUnits(oneInch.sellToAmount)} liquidity assets`,
+  );
+
+  console.log(
+    `\n1Inch wrapped eETH (weETH) prices adjusted back to eETH for swap size ${amount}`,
+  );
+
+  const adjustedBuyPrice = (oneInch.buyPrice * parseUnits("1")) / wrapperPrice;
+  const buyRateDiff = adjustedBuyPrice - armPrices.sellPrice;
+  console.log(
+    `buy    : ${formatUnits(adjustedBuyPrice, 18).padEnd(
+      20,
+    )} ${pair}, diff ${formatUnits(buyRateDiff, 14).padEnd(17)} bps to ARM`,
+  );
+
+  console.log(
+    `mid    : ${formatUnits(oneInch.midPrice, 18).padEnd(20)} ${pair}`,
+  );
+
+  const adjustedSellPrice =
+    (oneInch.sellPrice * parseUnits("1")) / wrapperPrice;
+  const sellRateDiff = adjustedSellPrice - armPrices.buyPrice;
+  console.log(
+    `sell   : ${formatUnits(adjustedSellPrice, 18).padEnd(
+      20,
+    )} ${pair}, diff ${formatUnits(sellRateDiff, 14).padEnd(17)} bps to ARM`,
+  );
+  console.log(`spread : ${formatUnits(oneInch.spread, 14)} bps`);
+
+  console.log(
+    `\nBest buy : ${
+      armPrices.sellPrice < adjustedBuyPrice ? "Origin" : "1Inch"
+    }`,
+  );
+  console.log(
+    `Best sell: ${armPrices.buyPrice > adjustedSellPrice ? "Origin" : "1Inch"}`,
+  );
+};
+
 module.exports = {
   log1InchPrices,
   logArmPrices,
   logCurvePrices,
   logUniswapSpotPrices,
   logFluidPrices,
+  logWrappedEtherFiPrices,
 };

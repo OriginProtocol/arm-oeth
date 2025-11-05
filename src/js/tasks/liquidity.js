@@ -5,7 +5,11 @@ const utc = require("dayjs/plugin/utc");
 const { getBlock } = require("../utils/block");
 const { resolveArmContract } = require("../utils/addressParser");
 const { outstandingWithdrawalAmount } = require("../utils/armQueue");
-const { logArmPrices, log1InchPrices } = require("./markets");
+const {
+  logArmPrices,
+  log1InchPrices,
+  logWrappedEtherFiPrices,
+} = require("./markets");
 const { logTxDetails } = require("../utils/txLogger");
 
 const log = require("../utils/logger")("task:liquidity");
@@ -80,6 +84,10 @@ const snap = async ({ arm, block, gas, amount, oneInch }) => {
               : "Unknown";
       const chainId = await (await ethers.provider.getNetwork()).chainId;
       await log1InchPrices({ amount, assets, fee, pair, chainId }, armPrices);
+
+      if (arm === "EtherFi") {
+        await logWrappedEtherFiPrices({ amount, armPrices });
+      }
     }
   }
 };
