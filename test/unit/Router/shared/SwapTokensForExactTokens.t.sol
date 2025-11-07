@@ -4,40 +4,18 @@ pragma solidity 0.8.23;
 import {Unit_Shared_ARMRouter_Test} from "test/unit/Router/shared/Shared.sol";
 
 import {WETH} from "@solmate/tokens/WETH.sol";
-import {MockERC20} from "@solmate/test/utils/mocks/MockERC20.sol";
 import {MockWrapper} from "test/unit/Router/shared/mocks/MockWrapper.sol";
 
-contract Unit_Concrete_ARMRouter_SwapTokensForExactTokens_Test is Unit_Shared_ARMRouter_Test {
-    //////////////////////////////////////////////////////
-    /// --- SETUP
-    //////////////////////////////////////////////////////
-    function setUp() public virtual override {
-        super.setUp();
-        deal(address(this), 2_200 ether);
-        WETH(payable(address(weth))).deposit{value: 2_200 ether}();
+abstract contract Unit_Concrete_ARMRouter_SwapTokensForExactTokens_Test is Unit_Shared_ARMRouter_Test {
+    function test_Swap_TokensForExactTokens_ByPassRouter() public {
+        uint256 amountOut = 10 ether;
+        address[] memory path = new address[](2);
+        path[0] = address(eeth);
+        path[1] = address(weth);
 
-        // Fund ARMs with liquidity
-        MockERC20(address(steth)).mint(address(lidoARM), 1_000 ether);
-        MockERC20(address(eeth)).mint(address(etherfiARM), 1_000 ether);
-        weth.transfer(address(lidoARM), 1_000 ether);
-        weth.transfer(address(etherfiARM), 1_000 ether);
-
-        // Fund this contract with tokens
-        MockERC20(address(steth)).mint(address(this), 100 ether);
-        MockERC20(address(eeth)).mint(address(this), 100 ether);
-
-        // Approve router
-        weth.approve(address(router), type(uint256).max);
-        eeth.approve(address(router), type(uint256).max);
-        weeth.approve(address(router), type(uint256).max);
-        steth.approve(address(router), type(uint256).max);
-        wsteth.approve(address(router), type(uint256).max);
-
-        // Approve ARMs
-        eeth.approve(address(etherfiARM), type(uint256).max);
-        weth.approve(address(etherfiARM), type(uint256).max);
-        steth.approve(address(lidoARM), type(uint256).max);
-        weth.approve(address(lidoARM), type(uint256).max);
+        vm.startSnapshotGas("TokensForExactTokens: Bypass Router: EETH_WETH");
+        etherfiARM.swapTokensForExactTokens(amountOut, type(uint256).max, path, address(this), block.timestamp + 1);
+        vm.stopSnapshotGas();
     }
 
     function test_Swap_TokensForExactTokens_EETH_WETH() public {
@@ -48,6 +26,18 @@ contract Unit_Concrete_ARMRouter_SwapTokensForExactTokens_Test is Unit_Shared_AR
         path[1] = address(weth);
 
         vm.startSnapshotGas("TokensForExactTokens: EETH_WETH");
+        router.swapTokensForExactTokens(amountOut, type(uint256).max, path, address(this), block.timestamp + 1);
+        vm.stopSnapshotGas();
+    }
+
+    function test_Swap_TokensForExactTokens_WETH_EETH() public {
+        // Swap weth to eeth
+        uint256 amountOut = 10 ether;
+        address[] memory path = new address[](2);
+        path[0] = address(weth);
+        path[1] = address(eeth);
+
+        vm.startSnapshotGas("TokensForExactTokens: WETH_EETH");
         router.swapTokensForExactTokens(amountOut, type(uint256).max, path, address(this), block.timestamp + 1);
         vm.stopSnapshotGas();
     }
@@ -67,6 +57,20 @@ contract Unit_Concrete_ARMRouter_SwapTokensForExactTokens_Test is Unit_Shared_AR
         vm.stopSnapshotGas();
     }
 
+    function test_Swap_TokensForExactTokens_WETH_WEETH() public {
+        uint256 amountOut = 10 ether;
+
+        // Swap weth to weeth
+        address[] memory path = new address[](3);
+        path[0] = address(weth);
+        path[1] = address(eeth);
+        path[2] = address(weeth);
+
+        vm.startSnapshotGas("TokensForExactTokens: WETH_WEETH");
+        router.swapTokensForExactTokens(amountOut, type(uint256).max, path, address(this), block.timestamp + 1);
+        vm.stopSnapshotGas();
+    }
+
     function test_Swap_TokensForExactTokens_WEETH_WSTETH() public {
         uint256 amountOut = 10 ether;
 
@@ -80,6 +84,23 @@ contract Unit_Concrete_ARMRouter_SwapTokensForExactTokens_Test is Unit_Shared_AR
         path[4] = address(wsteth);
 
         vm.startSnapshotGas("TokensForExactTokens: WEETH_WSTETH");
+        router.swapTokensForExactTokens(amountOut, type(uint256).max, path, address(this), block.timestamp + 1);
+        vm.stopSnapshotGas();
+    }
+
+    function test_Swap_TokensForExactTokens_WSTETH_WEETH() public {
+        uint256 amountOut = 10 ether;
+
+        // Swap wsteth to weeth
+        MockWrapper(address(wsteth)).wrap(amountOut + 1 ether);
+        address[] memory path = new address[](5);
+        path[0] = address(wsteth);
+        path[1] = address(steth);
+        path[2] = address(weth);
+        path[3] = address(eeth);
+        path[4] = address(weeth);
+
+        vm.startSnapshotGas("TokensForExactTokens: WSTETH_WEETH");
         router.swapTokensForExactTokens(amountOut, type(uint256).max, path, address(this), block.timestamp + 1);
         vm.stopSnapshotGas();
     }
@@ -110,6 +131,4 @@ contract Unit_Concrete_ARMRouter_SwapTokensForExactTokens_Test is Unit_Shared_AR
         router.swapTokensForExactETH(amountOut, type(uint256).max, path, address(this), block.timestamp + 1);
         vm.stopSnapshotGas();
     }
-
-    receive() external payable {}
 }
