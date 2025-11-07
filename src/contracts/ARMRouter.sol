@@ -1,16 +1,19 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import {IWETH} from "src/contracts/Interfaces.sol";
-import {IERC20} from "src/contracts/Interfaces.sol";
+// Contract Imports
 import {AbstractARM} from "src/contracts/AbstractARM.sol";
 
-interface Wrapper {
-    function wrap(uint256 amount) external returns (uint256);
-    function unwrap(uint256 amount) external returns (uint256);
-}
+// Library Imports
+import {DynamicArrayLib} from "@solady/utils/DynamicArrayLib.sol";
+
+// Interface Imports
+import {IWETH} from "src/contracts/Interfaces.sol";
+import {IERC20} from "src/contracts/Interfaces.sol";
 
 contract ARMRouter {
+    using DynamicArrayLib for address[];
+    using DynamicArrayLib for uint256[];
     ////////////////////////////////////////////////////
     ///                 Structs and Enums
     ////////////////////////////////////////////////////
@@ -87,7 +90,7 @@ contract ARMRouter {
         // Ensure the output amount meets the minimum requirement
         uint256 lastIndex = amounts.length;
         --lastIndex;
-        require(amounts[lastIndex] >= amountOutMin, "ARMRouter: INSUFFICIENT_OUTPUT");
+        require(amounts.get(lastIndex) >= amountOutMin, "ARMRouter: INSUFFICIENT_OUTPUT");
     }
 
     /// @notice Swaps as few input tokens as possible to receive an exact amount of output tokens, along the route determined by the path.
@@ -107,7 +110,7 @@ contract ARMRouter {
         amounts = _getAmountsIn(amountOut, path);
 
         // Cache amounts[0] to save gas
-        uint256 amount0 = amounts[0];
+        uint256 amount0 = amounts.get(0);
         // Ensure the required input does not exceed the maximum allowed
         require(amount0 <= amountInMax, "ARMRouter: EXCESSIVE_INPUT");
 
@@ -142,7 +145,7 @@ contract ARMRouter {
         // Ensure the output amount meets the minimum requirement
         uint256 lastIndex = amounts.length;
         --lastIndex;
-        require(amounts[lastIndex] >= amountOutMin, "ARMRouter: INSUFFICIENT_OUTPUT");
+        require(amounts.get(lastIndex) >= amountOutMin, "ARMRouter: INSUFFICIENT_OUTPUT");
     }
 
     /// @notice Swaps an exact amount of input tokens for as much ETH as possible, along the route determined by the path.
@@ -174,11 +177,11 @@ contract ARMRouter {
         amounts = _swapExactTokenFor(amountIn, path, address(this));
 
         // Ensure the output amount meets the minimum requirement
-        require(amounts[lenMinusOne] >= amountOutMin, "ARMRouter: INSUFFICIENT_OUTPUT");
+        require(amounts.get(lenMinusOne) >= amountOutMin, "ARMRouter: INSUFFICIENT_OUTPUT");
 
         // Unwrap WETH to ETH and transfer to the recipient
-        WETH.withdraw(amounts[lenMinusOne]);
-        payable(to).transfer(amounts[lenMinusOne]);
+        WETH.withdraw(amounts.get(lenMinusOne));
+        payable(to).transfer(amounts.get(lenMinusOne));
     }
 
     /// @notice Swaps as few ETH as possible to receive an exact amount of output tokens, along the route determined by the path.
@@ -200,7 +203,7 @@ contract ARMRouter {
         amounts = _getAmountsIn(amountOut, path);
 
         // Cache amounts[0] to save gas
-        uint256 amount0 = amounts[0];
+        uint256 amount0 = amounts.get(0);
 
         // Ensure the required input does not exceed the sent ETH
         require(amount0 <= msg.value, "ARMRouter: EXCESSIVE_INPUT");
@@ -240,7 +243,7 @@ contract ARMRouter {
         amounts = _getAmountsIn(amountOut, path);
 
         // Cache amounts[0] to save gas
-        uint256 amount0 = amounts[0];
+        uint256 amount0 = amounts.get(0);
         // Ensure the required input does not exceed the maximum allowed
         require(amount0 <= amountInMax, "ARMRouter: EXCESSIVE_INPUT");
 
@@ -251,7 +254,7 @@ contract ARMRouter {
         _swapsForExactTokens(amounts, path, address(this));
 
         // Cache last amount to save gas
-        uint256 lastAmount = amounts[lenMinusOne];
+        uint256 lastAmount = amounts.get(lenMinusOne);
         // Unwrap WETH to ETH and transfer to the recipient
         WETH.withdraw(lastAmount);
         payable(to).transfer(lastAmount);
@@ -273,8 +276,8 @@ contract ARMRouter {
         uint256 len = path.length;
 
         // Initialize the amounts array
-        amounts = new uint256[](len);
-        amounts[0] = amountIn;
+        amounts = DynamicArrayLib.malloc(len);
+        amounts.set(0, amountIn);
 
         // Cache next index to save gas
         uint256 _next;
@@ -298,22 +301,23 @@ contract ARMRouter {
 
                 // Call the ARM contract's swap function
                 uint256[] memory obtained = AbstractARM(config.addr)
-                    .swapExactTokensForTokens(IERC20(tokenA), IERC20(tokenB), amounts[i], 0, receiver);
+                    .swapExactTokensForTokens(IERC20(tokenA), IERC20(tokenB), amounts.get(i), 0, receiver);
 
                 // Perform the ARM swap
-                amounts[_next] = obtained[1];
+                amounts[_next] = obtained.get(1);
             } else {
                 // Call the Wrapper contract's wrap/unwrap function
-                (bool success, bytes memory data) = config.addr.call(abi.encodeWithSelector(config.wrapSig, amounts[i]));
+                (bool success, bytes memory data) =
+                    config.addr.call(abi.encodeWithSelector(config.wrapSig, amounts.get(i)));
 
                 // Ensure the wrap/unwrap was successful
                 require(success, "ARMRouter: WRAP_UNWRAP_FAILED");
 
                 // It's a wrap/unwrap operation
-                amounts[_next] = abi.decode(data, (uint256));
+                amounts.set(_next, abi.decode(data, (uint256)));
 
                 // If this is the last swap, transfer to the recipient
-                if (i == lenMinusTwo) IERC20(tokenB).transfer(to, amounts[_next]);
+                if (i == lenMinusTwo) IERC20(tokenB).transfer(to, amounts.get(_next));
             }
         }
     }
@@ -349,13 +353,13 @@ contract ARMRouter {
                     .swapTokensForExactTokens(IERC20(tokenA), IERC20(tokenB), amounts[_next], amounts[i], receiver);
             } else {
                 // Call the Wrapper contract's wrap/unwrap function
-                (bool success,) = config.addr.call(abi.encodeWithSelector(config.wrapSig, amounts[i]));
+                (bool success,) = config.addr.call(abi.encodeWithSelector(config.wrapSig, amounts.get(i)));
 
                 // Ensure the wrap/unwrap was successful
                 require(success, "ARMRouter: WRAP_UNWRAP_FAILED");
 
                 // If this is the last swap, transfer to the recipient
-                if (i == lenMinusTwo) IERC20(tokenB).transfer(to, amounts[_next]);
+                if (i == lenMinusTwo) IERC20(tokenB).transfer(to, amounts.get(_next));
             }
         }
     }
@@ -374,8 +378,8 @@ contract ARMRouter {
         require(lenMinusOne > 0, "ARMRouter: INVALID_PATH");
 
         // Initialize the amounts array
-        amounts = new uint256[](len);
-        amounts[lenMinusOne] = amountOut;
+        amounts = DynamicArrayLib.malloc(len);
+        amounts.set(lenMinusOne, amountOut);
 
         // Cache next index to save gas
         uint256 _next = lenMinusOne;
@@ -383,7 +387,7 @@ contract ARMRouter {
         for (uint256 i = lenMinusOne; i > 0; i--) {
             // Next token index
             --_next;
-            amounts[_next] = _getAmountIn(amounts[i], path[_next], path[i]);
+            amounts.set(_next, _getAmountIn(amounts.get(i), path[_next], path[i]));
         }
     }
 
