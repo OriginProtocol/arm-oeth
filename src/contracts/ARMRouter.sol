@@ -2,7 +2,8 @@
 pragma solidity ^0.8.23;
 
 // Contract Imports
-import {AbstractARM} from "src/contracts/AbstractARM.sol";
+import {Ownable} from "contracts/Ownable.sol";
+import {AbstractARM} from "contracts/AbstractARM.sol";
 
 // Library Imports
 import {DynamicArrayLib} from "@solady/utils/DynamicArrayLib.sol";
@@ -11,9 +12,12 @@ import {DynamicArrayLib} from "@solady/utils/DynamicArrayLib.sol";
 import {IWETH} from "src/contracts/Interfaces.sol";
 import {IERC20} from "src/contracts/Interfaces.sol";
 
-contract ARMRouter {
+/// @author Origin Protocol
+/// @notice ARM Router contract for facilitating token swaps via ARMs and Wrappers.
+contract ARMRouter is Ownable {
     using DynamicArrayLib for address[];
     using DynamicArrayLib for uint256[];
+
     ////////////////////////////////////////////////////
     ///                 Structs and Enums
     ////////////////////////////////////////////////////
@@ -488,7 +492,7 @@ contract ARMRouter {
         address addr,
         bytes4 wrapSig,
         bytes4 priceSig
-    ) external {
+    ) external onlyOwner {
         // Max approval for router to interact with ARMs
         IERC20(tokenA).approve(addr, type(uint256).max);
 
