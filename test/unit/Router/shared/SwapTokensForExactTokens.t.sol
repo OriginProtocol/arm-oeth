@@ -13,9 +13,11 @@ abstract contract Unit_Concrete_ARMRouter_SwapTokensForExactTokens_Test is Unit_
         path[0] = address(eeth);
         path[1] = address(weth);
 
+        uint256 balanceBefore = weth.balanceOf(address(this));
         vm.startSnapshotGas("TokensForExactTokens: Bypass Router: EETH_WETH");
         etherfiARM.swapTokensForExactTokens(amountOut, type(uint256).max, path, address(this), block.timestamp + 1);
         vm.stopSnapshotGas();
+        assertEq(weth.balanceOf(address(this)), balanceBefore + amountOut);
     }
 
     function test_Swap_TokensForExactTokens_EETH_WETH() public {
@@ -25,9 +27,11 @@ abstract contract Unit_Concrete_ARMRouter_SwapTokensForExactTokens_Test is Unit_
         path[0] = address(eeth);
         path[1] = address(weth);
 
+        uint256 balanceBefore = weth.balanceOf(address(this));
         vm.startSnapshotGas("TokensForExactTokens: EETH_WETH");
         router.swapTokensForExactTokens(amountOut, type(uint256).max, path, address(this), block.timestamp + 1);
         vm.stopSnapshotGas();
+        assertEq(weth.balanceOf(address(this)), balanceBefore + amountOut);
     }
 
     function test_Swap_TokensForExactTokens_WETH_EETH() public {
@@ -37,9 +41,11 @@ abstract contract Unit_Concrete_ARMRouter_SwapTokensForExactTokens_Test is Unit_
         path[0] = address(weth);
         path[1] = address(eeth);
 
+        uint256 balanceBefore = eeth.balanceOf(address(this));
         vm.startSnapshotGas("TokensForExactTokens: WETH_EETH");
         router.swapTokensForExactTokens(amountOut, type(uint256).max, path, address(this), block.timestamp + 1);
         vm.stopSnapshotGas();
+        assertEq(eeth.balanceOf(address(this)), balanceBefore + amountOut);
     }
 
     function test_Swap_TokensForExactTokens_WEETH_WETH() public {
@@ -52,9 +58,11 @@ abstract contract Unit_Concrete_ARMRouter_SwapTokensForExactTokens_Test is Unit_
         path[1] = address(eeth);
         path[2] = address(weth);
 
+        uint256 balanceBefore = weth.balanceOf(address(this));
         vm.startSnapshotGas("TokensForExactTokens: WEETH_WETH");
         router.swapTokensForExactTokens(amountOut, type(uint256).max, path, address(this), block.timestamp + 1);
         vm.stopSnapshotGas();
+        assertEq(weth.balanceOf(address(this)), balanceBefore + amountOut);
     }
 
     function test_Swap_TokensForExactTokens_WETH_WEETH() public {
@@ -66,9 +74,11 @@ abstract contract Unit_Concrete_ARMRouter_SwapTokensForExactTokens_Test is Unit_
         path[1] = address(eeth);
         path[2] = address(weeth);
 
+        uint256 balanceBefore = weeth.balanceOf(address(this));
         vm.startSnapshotGas("TokensForExactTokens: WETH_WEETH");
         router.swapTokensForExactTokens(amountOut, type(uint256).max, path, address(this), block.timestamp + 1);
         vm.stopSnapshotGas();
+        assertEq(weeth.balanceOf(address(this)), balanceBefore + amountOut);
     }
 
     function test_Swap_TokensForExactTokens_WEETH_WSTETH() public {
@@ -83,9 +93,11 @@ abstract contract Unit_Concrete_ARMRouter_SwapTokensForExactTokens_Test is Unit_
         path[3] = address(steth);
         path[4] = address(wsteth);
 
+        uint256 balanceBefore = wsteth.balanceOf(address(this));
         vm.startSnapshotGas("TokensForExactTokens: WEETH_WSTETH");
         router.swapTokensForExactTokens(amountOut, type(uint256).max, path, address(this), block.timestamp + 1);
         vm.stopSnapshotGas();
+        assertEq(wsteth.balanceOf(address(this)), balanceBefore + amountOut);
     }
 
     function test_Swap_TokensForExactTokens_WSTETH_WEETH() public {
@@ -100,9 +112,11 @@ abstract contract Unit_Concrete_ARMRouter_SwapTokensForExactTokens_Test is Unit_
         path[3] = address(eeth);
         path[4] = address(weeth);
 
+        uint256 balanceBefore = weeth.balanceOf(address(this));
         vm.startSnapshotGas("TokensForExactTokens: WSTETH_WEETH");
         router.swapTokensForExactTokens(amountOut, type(uint256).max, path, address(this), block.timestamp + 1);
         vm.stopSnapshotGas();
+        assertEq(weeth.balanceOf(address(this)), balanceBefore + amountOut);
     }
 
     function test_Swap_ETHForExactTokens() public {
@@ -114,9 +128,11 @@ abstract contract Unit_Concrete_ARMRouter_SwapTokensForExactTokens_Test is Unit_
         path[1] = address(eeth);
 
         deal(address(this), 20 ether);
+        uint256 balanceBefore = eeth.balanceOf(address(this));
         vm.startSnapshotGas("ETHForExactTokens: EETH");
         router.swapETHForExactTokens{value: 20 ether}(amountOut, path, address(this), block.timestamp + 1);
         vm.stopSnapshotGas();
+        assertEq(eeth.balanceOf(address(this)), balanceBefore + amountOut);
     }
 
     function test_Swap_TokensForExactETH() public {
@@ -127,8 +143,10 @@ abstract contract Unit_Concrete_ARMRouter_SwapTokensForExactTokens_Test is Unit_
         path[0] = address(eeth);
         path[1] = address(weth);
 
+        uint256 balanceBefore = address(this).balance;
         vm.startSnapshotGas("TokensForExactETH: EETH");
         router.swapTokensForExactETH(amountOut, type(uint256).max, path, address(this), block.timestamp + 1);
         vm.stopSnapshotGas();
+        assertEq(address(this).balance, balanceBefore + amountOut);
     }
 }
