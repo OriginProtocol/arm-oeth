@@ -113,44 +113,64 @@ const logArmPrices = async ({ blockTag, gas }, arm) => {
   };
 };
 
-const log1InchPrices = async (
-  { amount, gas, assets, pair, fee, chainId },
+const logMarketPrices = async ({
+  marketPrices,
   armPrices,
-) => {
+  marketName,
+  pair,
+  amount,
+  gas,
+}) => {
+  log(
+    `buy  ${formatUnits(marketPrices.buyToAmount)} base assets for ${amount} liquidity assets`,
+  );
+  log(
+    `sell ${amount} base assets for ${formatUnits(marketPrices.sellToAmount)} liquidity assets`,
+  );
+
+  console.log(`\n${marketName} prices for swap size ${amount}`);
+  // Note market sell is from the trader's perspective while the ARM sell price is from the AMM's perspective
+  const buyRateDiff = marketPrices.buyPrice - armPrices.sellPrice;
+  const buyGasCosts = gas
+    ? `, ${marketPrices.buyGas.toLocaleString()} gas`
+    : "";
+  console.log(
+    `buy    : ${formatUnits(marketPrices.buyPrice, 18).padEnd(
+      20,
+    )} ${pair}, ${formatUnits(buyRateDiff, 14)} bps to ARM sell${buyGasCosts}`,
+  );
+
+  console.log(
+    `mid    : ${formatUnits(marketPrices.midPrice, 18).padEnd(20)} ${pair}`,
+  );
+
+  // Note market buy is from the trader's perspective while the ARM buy price is from the AMM's perspective
+  const sellRateDiff = marketPrices.sellPrice - armPrices.buyPrice;
+  const armBuyToMarketSellDiff = marketPrices.buyPrice - armPrices.buyPrice;
+  const sellGasCosts = gas
+    ? `, ${marketPrices.sellGas.toLocaleString()} gas`
+    : "";
+  console.log(
+    `sell   : ${formatUnits(marketPrices.sellPrice, 18).padEnd(
+      20,
+    )} ${pair}, ${formatUnits(sellRateDiff, 14).padEnd(
+      17,
+    )} bps from ARM buy, ${formatUnits(armBuyToMarketSellDiff, 14)} bps to ARM sell${sellGasCosts}`,
+  );
+  console.log(`spread : ${formatUnits(marketPrices.spread, 14)} bps`);
+};
+
+const log1InchPrices = async (options, armPrices) => {
+  const { amount, assets, fee, chainId } = options;
+
   const oneInch = await get1InchPrices(amount, assets, fee, chainId);
 
-  log(
-    `buy  ${formatUnits(oneInch.buyToAmount)} base assets for ${amount} liquidity assets`,
-  );
-  log(
-    `sell ${amount} base assets for ${formatUnits(oneInch.sellToAmount)} liquidity assets`,
-  );
-
-  console.log(`\n1Inch prices for swap size ${amount}`);
-  const buyRateDiff = oneInch.buyPrice - armPrices.sellPrice;
-  const buyGasCosts = gas ? `, ${oneInch.buyGas.toLocaleString()} gas` : "";
-  console.log(
-    `buy    : ${formatUnits(oneInch.buyPrice, 18).padEnd(
-      20,
-    )} ${pair}, diff ${formatUnits(buyRateDiff, 14).padEnd(
-      17,
-    )} bps to ARM${buyGasCosts}`,
-  );
-
-  console.log(
-    `mid    : ${formatUnits(oneInch.midPrice, 18).padEnd(20)} ${pair}`,
-  );
-
-  const sellRateDiff = oneInch.sellPrice - armPrices.buyPrice;
-  const sellGasCosts = gas ? `, ${oneInch.sellGas.toLocaleString()} gas` : "";
-  console.log(
-    `sell   : ${formatUnits(oneInch.sellPrice, 18).padEnd(
-      20,
-    )} ${pair}, diff ${formatUnits(sellRateDiff, 14).padEnd(
-      17,
-    )} bps to ARM${sellGasCosts}`,
-  );
-  console.log(`spread : ${formatUnits(oneInch.spread, 14)} bps`);
+  await logMarketPrices({
+    ...options,
+    marketPrices: oneInch,
+    armPrices,
+    marketName: "1Inch",
+  });
 
   console.log(
     `\nBest buy : ${
@@ -164,112 +184,46 @@ const log1InchPrices = async (
   return oneInch;
 };
 
-const logCurvePrices = async (options, ammPrices) => {
-  const { amount, pair, poolName, gas } = options;
-
+const logCurvePrices = async (options, armPrices) => {
   const curve = await getCurvePrices(options);
-  const buyRateDiff = curve.buyPrice - ammPrices.sellPrice;
-  const sellRateDiff = curve.sellPrice - ammPrices.buyPrice;
 
-  log(
-    `buy  ${formatUnits(curve.buyToAmount)} base assets for ${amount} liquidity assets`,
-  );
-  log(
-    `sell ${amount} base assets for ${formatUnits(curve.sellToAmount)} liquidity assets`,
-  );
-
-  console.log(`\n${poolName} Curve prices for swap size ${amount}`);
-  const buyGasCosts = gas ? `, ${curve.buyGas.toLocaleString()} gas` : "";
-  const sellGasCosts = gas ? `, ${curve.sellGas.toLocaleString()} gas` : "";
-  console.log(
-    `buy    : ${formatUnits(curve.buyPrice, 18).padEnd(
-      20,
-    )} ${pair}, diff ${formatUnits(buyRateDiff, 14).padEnd(
-      17,
-    )} bps to ARM${buyGasCosts}`,
-  );
-  console.log(`mid    : ${formatUnits(curve.midPrice, 18).padEnd(20)} ${pair}`);
-  console.log(
-    `sell   : ${formatUnits(curve.sellPrice, 18).padEnd(
-      20,
-    )} ${pair}, diff ${formatUnits(sellRateDiff, 14).padEnd(
-      17,
-    )} bps to ARM${sellGasCosts}`,
-  );
-  console.log(`spread : ${formatUnits(curve.spread, 14)} bps`);
+  await logMarketPrices({
+    ...options,
+    marketPrices: curve,
+    armPrices,
+    marketName: options.poolName + " Curve",
+  });
 
   return curve;
 };
 
-const logUniswapSpotPrices = async (options, ammPrices, poolName) => {
-  const { amount, pair, gas } = options;
+const logUniswapSpotPrices = async (options, armPrices, poolName) => {
   const uniswap = await getUniswapV3SpotPrices(options);
-  const buyRateDiff = uniswap.buyPrice - ammPrices.sellPrice;
-  const sellRateDiff = uniswap.sellPrice - ammPrices.buyPrice;
 
-  log(
-    `buy  ${formatUnits(uniswap.buyToAmount)} base assets for ${amount} liquidity assets`,
-  );
-  log(
-    `sell ${amount} base assets for ${formatUnits(uniswap.sellToAmount)} liquidity assets`,
-  );
-
-  console.log(`\n${poolName} Uniswap V3 spot prices for swap size ${amount}`);
-  const buyGasCosts = gas ? `, ${uniswap.buyGas.toLocaleString()} gas` : "";
-  const sellGasCosts = gas ? `, ${uniswap.sellGas.toLocaleString()} gas` : "";
-  console.log(
-    `buy    : ${formatUnits(uniswap.buyPrice, 18).padEnd(
-      20,
-    )} ${pair}, diff ${formatUnits(buyRateDiff, 14)} bps to ARM${buyGasCosts}`,
-  );
-  console.log(
-    `mid    : ${formatUnits(uniswap.midPrice, 18).padEnd(20)} ${pair}`,
-  );
-  console.log(
-    `sell   : ${formatUnits(uniswap.sellPrice, 18).padEnd(
-      20,
-    )} ${pair}, diff ${formatUnits(sellRateDiff, 14)} bps to ARM${sellGasCosts}`,
-  );
-  console.log(`spread : ${formatUnits(uniswap.spread, 14)} bps`);
+  await logMarketPrices({
+    ...options,
+    marketPrices: uniswap,
+    armPrices,
+    marketName: poolName + " Curve",
+  });
 
   return uniswap;
 };
 
-const logFluidPrices = async (options, ammPrices, poolName) => {
-  const { amount, pair, gas } = options;
+const logFluidPrices = async (options, armPrices, poolName) => {
   const fluid = await getFluidSpotPrices(options);
-  const buyRateDiff = fluid.buyPrice - ammPrices.sellPrice;
-  const sellRateDiff = fluid.sellPrice - ammPrices.buyPrice;
 
-  log(
-    `buy  ${formatUnits(fluid.buyToAmount)} base assets for ${amount} liquidity assets`,
-  );
-  log(
-    `sell ${amount} base assets for ${formatUnits(fluid.sellToAmount)} liquidity assets`,
-  );
-
-  console.log(`\n${poolName} FluidDex spot prices for swap size ${amount}`);
-  const buyGasCosts = gas ? `, ${fluid.buyGas.toLocaleString()} gas` : "";
-  const sellGasCosts = gas ? `, ${fluid.sellGas.toLocaleString()} gas` : "";
-  console.log(
-    `buy    : ${formatUnits(fluid.buyPrice, 18).padEnd(
-      20,
-    )} ${pair}, diff ${formatUnits(buyRateDiff, 14)} bps to ARM${buyGasCosts}`,
-  );
-  console.log(`mid    : ${formatUnits(fluid.midPrice, 18).padEnd(20)} ${pair}`);
-  console.log(
-    `sell   : ${formatUnits(fluid.sellPrice, 18).padEnd(
-      20,
-    )} ${pair}, diff ${formatUnits(sellRateDiff, 14)} bps to ARM${sellGasCosts}`,
-  );
-  console.log(`spread : ${formatUnits(fluid.spread, 14)} bps`);
+  await logMarketPrices({
+    ...options,
+    marketPrices: fluid,
+    armPrices,
+    marketName: poolName + " Fluid",
+  });
 
   return fluid;
 };
 
 const logWrappedEtherFiPrices = async ({ amount, armPrices }) => {
-  const pair = "weETH/WETH";
-
   const wrappedEtherFi = await ethers.getContractAt(
     ["function getEETHByWeETH(uint256) external view returns (uint256)"],
     mainnet.weETH,
@@ -292,47 +246,28 @@ const logWrappedEtherFiPrices = async ({ amount, armPrices }) => {
     10n,
     1,
   );
+  const adjustedMarketPrices = {
+    ...oneInch,
+    buyPrice: (oneInch.buyPrice * parseUnits("1")) / wrapperPrice,
+    sellPrice: (oneInch.sellPrice * parseUnits("1")) / wrapperPrice,
+    midPrice: (oneInch.midPrice * parseUnits("1")) / wrapperPrice,
+  };
 
-  log(
-    `buy  ${formatUnits(oneInch.buyToAmount)} base assets for ${amount} liquidity assets`,
-  );
-  log(
-    `sell ${amount} base assets for ${formatUnits(oneInch.sellToAmount)} liquidity assets`,
-  );
-
-  console.log(
-    `\n1Inch wrapped eETH (weETH) prices adjusted back to eETH for swap size ${amount}`,
-  );
-
-  const adjustedBuyPrice = (oneInch.buyPrice * parseUnits("1")) / wrapperPrice;
-  const buyRateDiff = adjustedBuyPrice - armPrices.sellPrice;
-  console.log(
-    `buy    : ${formatUnits(adjustedBuyPrice, 18).padEnd(
-      20,
-    )} ${pair}, diff ${formatUnits(buyRateDiff, 14).padEnd(17)} bps to ARM`,
-  );
-
-  console.log(
-    `mid    : ${formatUnits(oneInch.midPrice, 18).padEnd(20)} ${pair}`,
-  );
-
-  const adjustedSellPrice =
-    (oneInch.sellPrice * parseUnits("1")) / wrapperPrice;
-  const sellRateDiff = adjustedSellPrice - armPrices.buyPrice;
-  console.log(
-    `sell   : ${formatUnits(adjustedSellPrice, 18).padEnd(
-      20,
-    )} ${pair}, diff ${formatUnits(sellRateDiff, 14).padEnd(17)} bps to ARM`,
-  );
-  console.log(`spread : ${formatUnits(oneInch.spread, 14)} bps`);
+  await logMarketPrices({
+    amount,
+    marketPrices: adjustedMarketPrices,
+    armPrices,
+    pair: "weETH->eUSD->WETH",
+    marketName: "1Inch wrapped eETH (weETH) prices adjusted back to eETH",
+  });
 
   console.log(
     `\nBest buy : ${
-      armPrices.sellPrice < adjustedBuyPrice ? "Origin" : "1Inch"
+      armPrices.sellPrice < adjustedMarketPrices.buyPrice ? "Origin" : "1Inch"
     }`,
   );
   console.log(
-    `Best sell: ${armPrices.buyPrice > adjustedSellPrice ? "Origin" : "1Inch"}`,
+    `Best sell: ${armPrices.buyPrice > adjustedMarketPrices.sellPrice ? "Origin" : "1Inch"}`,
   );
 };
 
