@@ -131,13 +131,14 @@ const logMarketPrices = async ({
   console.log(`\n${marketName} prices for swap size ${amount}`);
   // Note market sell is from the trader's perspective while the ARM sell price is from the AMM's perspective
   const buyRateDiff = marketPrices.buyPrice - armPrices.sellPrice;
+  const armBuyToMarketSellDiff = marketPrices.buyPrice - armPrices.buyPrice;
   const buyGasCosts = gas
     ? `, ${marketPrices.buyGas.toLocaleString()} gas`
     : "";
   console.log(
     `buy    : ${formatUnits(marketPrices.buyPrice, 18).padEnd(
       20,
-    )} ${pair}, ${formatUnits(buyRateDiff, 14)} bps to ARM sell${buyGasCosts}`,
+    )} ${pair}, ${formatUnits(armBuyToMarketSellDiff, 14)} bps from ARM buy, ${formatUnits(buyRateDiff, 14)} bps from ARM sell${buyGasCosts}`,
   );
 
   console.log(
@@ -146,7 +147,6 @@ const logMarketPrices = async ({
 
   // Note market buy is from the trader's perspective while the ARM buy price is from the AMM's perspective
   const sellRateDiff = marketPrices.sellPrice - armPrices.buyPrice;
-  const armBuyToMarketSellDiff = marketPrices.buyPrice - armPrices.buyPrice;
   const sellGasCosts = gas
     ? `, ${marketPrices.sellGas.toLocaleString()} gas`
     : "";
@@ -155,7 +155,7 @@ const logMarketPrices = async ({
       20,
     )} ${pair}, ${formatUnits(sellRateDiff, 14).padEnd(
       17,
-    )} bps from ARM buy, ${formatUnits(armBuyToMarketSellDiff, 14)} bps to ARM sell${sellGasCosts}`,
+    )} bps from ARM buy${sellGasCosts}`,
   );
   console.log(`spread : ${formatUnits(marketPrices.spread, 14)} bps`);
 };
