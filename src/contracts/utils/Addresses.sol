@@ -37,6 +37,7 @@ library Mainnet {
     address public constant OETH_VAULT = 0x39254033945AA2E4809Cc2977E7087BEE48bd7Ab;
     address public constant OETH_ARM = 0x6bac785889A4127dB0e0CeFEE88E0a9F1Aaf3cC7;
     address public constant LIDO_ARM = 0x85B78AcA6Deae198fBF201c82DAF6Ca21942acc6;
+    address public constant ETHERFI_ARM = 0xfB0A3CF9B019BFd8827443d131b235B3E0FC58d2;
     address public constant ARM_BUYBACK = 0xBa0E6d6ea72cDc0D6f9fCdcc04147c671BA83dB5;
 
     // Lido
