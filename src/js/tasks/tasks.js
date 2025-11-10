@@ -1031,14 +1031,13 @@ subtask(
     const signer = await getSigner();
     const eeth = await resolveAsset("EETH");
 
-    const etherFiArmAddress = await parseDeployedAddress("ETHERFI_ARM");
-    const arm = await ethers.getContractAt("EtherFiARM", etherFiArmAddress);
+    const armContract = await resolveArmContract("EtherFi");
 
     await requestEtherFiWithdrawals({
       ...taskArgs,
       signer,
       eeth,
-      arm,
+      arm: armContract,
     });
   });
 task("requestEtherFiWithdrawals").setAction(async (_, __, runSuper) => {
@@ -1055,18 +1054,17 @@ subtask("claimEtherFiWithdrawals", "Claim requested withdrawals from EtherFi")
   .setAction(async (taskArgs) => {
     const signer = await getSigner();
 
-    const etherFiArmAddress = await parseDeployedAddress("ETHERFI_ARM");
-    const arm = await ethers.getContractAt("EtherFiARM", etherFiArmAddress);
+    const armContract = await resolveArmContract("EtherFi");
 
     const withdrawalQueue = await hre.ethers.getContractAt(
       "IEETHWithdrawalNFT",
-      mainnet.etherFiWithdrawalQueue,
+      mainnet.etherfiWithdrawalQueue,
     );
 
     await claimEtherFiWithdrawals({
       ...taskArgs,
       signer,
-      arm,
+      arm: armContract,
       withdrawalQueue,
     });
   });
