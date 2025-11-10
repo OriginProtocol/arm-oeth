@@ -8,6 +8,7 @@ const { outstandingWithdrawalAmount } = require("../utils/armQueue");
 const {
   logArmPrices,
   log1InchPrices,
+  logKyberPrices,
   logWrappedEtherFiPrices,
 } = require("./markets");
 const { logTxDetails } = require("../utils/txLogger");
@@ -55,7 +56,7 @@ const withdrawRequestStatus = async ({ id, arm, vault }) => {
   }
 };
 
-const snap = async ({ arm, block, gas, amount, oneInch }) => {
+const snap = async ({ arm, block, gas, amount, oneInch, kyber }) => {
   const armContract = await resolveArmContract(arm);
 
   const blockTag = await getBlock(block);
@@ -68,26 +69,38 @@ const snap = async ({ arm, block, gas, amount, oneInch }) => {
 
     const armPrices = await logArmPrices({ block, gas }, armContract);
 
+    const pair =
+      arm === "Lido"
+        ? "stETH/WETH"
+        : arm === "EtherFi"
+          ? "eETH/WETH"
+          : arm == "Origin"
+            ? "OS/wS"
+            : "Unknown";
+
     if (oneInch) {
       const assets = {
         liquid: await armContract.liquidityAsset(),
         base: await armContract.baseAsset(),
       };
       const fee = arm === "Lido" ? 10n : 30n;
-      const pair =
-        arm === "Lido"
-          ? "stETH/WETH"
-          : arm === "EtherFi"
-            ? "eETH/WETH"
-            : arm == "Origin"
-              ? "OS/wS"
-              : "Unknown";
+
       const chainId = await (await ethers.provider.getNetwork()).chainId;
       await log1InchPrices({ amount, assets, fee, pair, chainId }, armPrices);
 
       if (arm === "EtherFi") {
         await logWrappedEtherFiPrices({ amount, armPrices });
       }
+    }
+
+    if (kyber && arm !== "Origin") {
+      // Kyber does not support Sonic
+      const assets = {
+        liquid: await armContract.liquidityAsset(),
+        base: await armContract.baseAsset(),
+      };
+
+      await logKyberPrices({ amount, assets, pair }, armPrices);
     }
   }
 };

@@ -4,6 +4,7 @@ const addresses = require("../utils/addresses");
 const {
   logArmPrices,
   log1InchPrices,
+  logKyberPrices,
   logCurvePrices,
   logUniswapSpotPrices,
   logFluidPrices,
@@ -65,6 +66,7 @@ const snapLido = async ({
   block,
   curve,
   oneInch,
+  kyber,
   uniswap,
   gas,
   queue,
@@ -104,11 +106,11 @@ const snapLido = async ({
     await logCaps(capManager, totalAssets, blockTag);
   }
 
-  const ammPrices = await logArmPrices(commonOptions, lidoARM);
+  const armPrices = await logArmPrices(commonOptions, lidoARM);
 
   if (uniswap) {
     const poolName = "wstETH/ETH 0.01%";
-    await logUniswapSpotPrices(commonOptions, ammPrices, poolName);
+    await logUniswapSpotPrices(commonOptions, armPrices, poolName);
   }
 
   if (curve) {
@@ -118,7 +120,7 @@ const snapLido = async ({
         poolName: "NextGen",
         poolAddress: addresses.mainnet.CurveNgStEthPool,
       },
-      ammPrices,
+      armPrices,
     );
 
     await logCurvePrices(
@@ -127,17 +129,21 @@ const snapLido = async ({
         poolName: "Old",
         poolAddress: addresses.mainnet.CurveStEthPool,
       },
-      ammPrices,
+      armPrices,
     );
   }
 
   if (fluid) {
     const poolName = "wstETH/ETH";
-    await logFluidPrices(commonOptions, ammPrices, poolName);
+    await logFluidPrices(commonOptions, armPrices, poolName);
+  }
+
+  if (kyber) {
+    await logKyberPrices(commonOptions, armPrices);
   }
 
   if (oneInch) {
-    await log1InchPrices(commonOptions, ammPrices);
+    await log1InchPrices(commonOptions, armPrices);
   }
 };
 

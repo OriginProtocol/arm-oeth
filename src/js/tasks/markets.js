@@ -3,6 +3,7 @@ const { formatUnits, parseUnits } = require("ethers");
 const addresses = require("../utils/addresses");
 const { get1InchPrices } = require("../utils/1Inch");
 const { getCurvePrices } = require("../utils/curve");
+const { getKyberPrices } = require("../utils/kyber");
 const { getUniswapV3SpotPrices } = require("../utils/uniswap");
 const { getSigner } = require("../utils/signers");
 const { getFluidSpotPrices } = require("../utils/fluid");
@@ -163,64 +164,88 @@ const logMarketPrices = async ({
 const log1InchPrices = async (options, armPrices) => {
   const { amount, assets, fee, chainId } = options;
 
-  const oneInch = await get1InchPrices(amount, assets, fee, chainId);
+  const marketPrices = await get1InchPrices(amount, assets, fee, chainId);
 
   await logMarketPrices({
     ...options,
-    marketPrices: oneInch,
+    marketPrices,
     armPrices,
     marketName: "1Inch",
   });
 
   console.log(
     `\nBest buy : ${
-      armPrices.sellPrice < oneInch.buyPrice ? "Origin" : "1Inch"
+      armPrices.sellPrice < marketPrices.buyPrice ? "Origin" : "1Inch"
     }`,
   );
   console.log(
-    `Best sell: ${armPrices.buyPrice > oneInch.sellPrice ? "Origin" : "1Inch"}`,
+    `Best sell: ${armPrices.buyPrice > marketPrices.sellPrice ? "Origin" : "1Inch"}`,
   );
 
-  return oneInch;
+  return marketPrices;
 };
 
-const logCurvePrices = async (options, armPrices) => {
-  const curve = await getCurvePrices(options);
+const logKyberPrices = async (options, armPrices) => {
+  const { amount, assets } = options;
+
+  const marketPrices = await getKyberPrices(amount, assets);
 
   await logMarketPrices({
     ...options,
-    marketPrices: curve,
+    marketPrices,
+    armPrices,
+    marketName: "Kyber",
+  });
+
+  console.log(
+    `\nBest buy : ${
+      armPrices.sellPrice < marketPrices.buyPrice ? "Origin" : "Kyber"
+    }`,
+  );
+  console.log(
+    `Best sell: ${armPrices.buyPrice > marketPrices.sellPrice ? "Origin" : "Kyber"}`,
+  );
+
+  return marketPrices;
+};
+
+const logCurvePrices = async (options, armPrices) => {
+  const marketPrices = await getCurvePrices(options);
+
+  await logMarketPrices({
+    ...options,
+    marketPrices,
     armPrices,
     marketName: options.poolName + " Curve",
   });
 
-  return curve;
+  return marketPrices;
 };
 
 const logUniswapSpotPrices = async (options, armPrices, poolName) => {
-  const uniswap = await getUniswapV3SpotPrices(options);
+  const marketPrices = await getUniswapV3SpotPrices(options);
 
   await logMarketPrices({
     ...options,
-    marketPrices: uniswap,
+    marketPrices,
     armPrices,
     marketName: poolName + " Curve",
   });
 
-  return uniswap;
+  return marketPrices;
 };
 
 const logFluidPrices = async (options, armPrices, poolName) => {
-  const fluid = await getFluidSpotPrices(options);
+  const marketPrices = await getFluidSpotPrices(options);
 
   await logMarketPrices({
     ...options,
-    marketPrices: fluid,
+    marketPrices,
     armPrices,
     marketName: poolName + " Fluid",
   });
 
-  return fluid;
+  return marketPrices;
 };
 
 const logWrappedEtherFiPrices = async ({ amount, armPrices }) => {
@@ -273,6 +298,7 @@ const logWrappedEtherFiPrices = async ({ amount, armPrices }) => {
 
 module.exports = {
   log1InchPrices,
+  logKyberPrices,
   logArmPrices,
   logCurvePrices,
   logUniswapSpotPrices,
