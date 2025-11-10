@@ -44,12 +44,13 @@ contract Fork_Concrete_OriginARM_AllocateWithoutAdapter_Test_ is Fork_Shared_Tes
         assertEq(market.balanceOf(address(originARM)), 0, "shares before");
         assertApproxEqAbs(originARM.totalAssets(), DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, 1, "totalAssets before");
         uint256 expectedShares = market.convertToShares(DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY);
+        int256 expectedLiquidityDelta = (DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY).toInt256();
 
         // Expected event
         vm.expectEmit(address(market));
         emit IERC4626.Deposit(address(originARM), address(originARM), DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, expectedShares);
         vm.expectEmit(address(originARM));
-        emit AbstractARM.Allocated(address(market), (DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY).toInt256());
+        emit AbstractARM.Allocated(address(market), expectedLiquidityDelta, expectedLiquidityDelta);
 
         // Main call
         originARM.allocate();
@@ -74,16 +75,16 @@ contract Fork_Concrete_OriginARM_AllocateWithoutAdapter_Test_ is Fork_Shared_Tes
         assertApproxEqAbs(marketBalanceBefore, sharesBefore, 1, "shares before");
         assertApproxEqAbs(originARM.totalAssets(), DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, 1, "totalAssets before");
 
-        int256 expectedAmount = getLiquidityDelta();
-        uint256 expectedShares = market.previewWithdraw(abs(expectedAmount));
+        int256 expectedLiquidityDelta = getLiquidityDelta();
+        uint256 expectedShares = market.previewWithdraw(abs(expectedLiquidityDelta));
 
         // Expected event
         vm.expectEmit(address(market));
         emit IERC4626.Withdraw(
-            address(originARM), address(originARM), address(originARM), abs(expectedAmount), expectedShares
+            address(originARM), address(originARM), address(originARM), abs(expectedLiquidityDelta), expectedShares
         );
         vm.expectEmit(address(originARM));
-        emit AbstractARM.Allocated(address(market), expectedAmount);
+        emit AbstractARM.Allocated(address(market), expectedLiquidityDelta, expectedLiquidityDelta);
 
         // Main call
         originARM.allocate();
@@ -108,17 +109,17 @@ contract Fork_Concrete_OriginARM_AllocateWithoutAdapter_Test_ is Fork_Shared_Tes
         assertApproxEqAbs(marketBalanceBefore, sharesBefore, 1, "shares before");
         assertApproxEqAbs(originARM.totalAssets(), DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, 1, "totalAssets before");
 
-        int256 expectedAmount = getLiquidityDelta();
-        uint256 expectedShares = market.previewWithdraw(abs(expectedAmount));
-        assertApproxEqAbs(abs(expectedAmount), DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, 1, "expectedAmount");
+        int256 expectedLiquidityDelta = getLiquidityDelta();
+        uint256 expectedShares = market.previewWithdraw(abs(expectedLiquidityDelta));
+        assertApproxEqAbs(abs(expectedLiquidityDelta), DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, 1, "expectedLiquidityDelta");
 
         // Expected event
         vm.expectEmit(address(market));
         emit IERC4626.Withdraw(
-            address(originARM), address(originARM), address(originARM), abs(expectedAmount), expectedShares
+            address(originARM), address(originARM), address(originARM), abs(expectedLiquidityDelta), expectedShares
         );
         vm.expectEmit(address(originARM));
-        emit AbstractARM.Allocated(address(market), expectedAmount);
+        emit AbstractARM.Allocated(address(market), expectedLiquidityDelta, expectedLiquidityDelta);
 
         // Main call
         originARM.allocate();
@@ -147,6 +148,7 @@ contract Fork_Concrete_OriginARM_AllocateWithoutAdapter_Test_ is Fork_Shared_Tes
 
         uint256 expectedShares = market.maxRedeem(address(originARM));
         uint256 expectedAmount = market.convertToAssets(expectedShares);
+        int256 expectedLiquidityDelta = getLiquidityDelta();
 
         // Expected event
         vm.expectEmit(address(market));
@@ -154,7 +156,7 @@ contract Fork_Concrete_OriginARM_AllocateWithoutAdapter_Test_ is Fork_Shared_Tes
             address(originARM), address(originARM), address(originARM), expectedAmount - 1, expectedShares
         );
         vm.expectEmit(address(originARM));
-        emit AbstractARM.Allocated(address(market), getLiquidityDelta());
+        emit AbstractARM.Allocated(address(market), expectedLiquidityDelta, expectedLiquidityDelta);
         // Main call
         originARM.allocate();
 
