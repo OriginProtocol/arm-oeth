@@ -102,7 +102,7 @@ function swapTokensForExactTokens(
  * @return reserve0 The available liquidity for token0
  * @return reserve1 The available liquidity for token1
  */
-function getReserves() external view returns (uint256 reserve0, uint256 reserve1)
+function getReserves() external view returns (uint256 reserve0, uint256 reserve1);
 ```
 
 ## Liquidity Provider Interface
@@ -223,7 +223,9 @@ make gas
 ## Deployment
 
 ### Store your deployer private key
+
 We use ERC-2335 to encode private key. To be sure to never reveal it, we use the cast wallet PK management.
+
 ```bash
 cast wallet import deployerKey --interactive
 ```
@@ -312,7 +314,11 @@ npx hardhat setActionVars --id a9fc4c86-0506-4809-afbc-93b5e558cb68
 npx hardhat setActionVars --id 12977d51-d107-45eb-ac20-45942009ab01
 npx hardhat setActionVars --id 6ec46510-0b8e-48b4-a4c8-de759aad0ba4
 npx hardhat setActionVars --id 6d148f26-54a6-4377-92f2-3148d572eea3 --name ONEINCH_API_KEY # Don't forget to run `export ONEINCH_API_KEY=...` first!
-npx hardhat setActionVars --id acfbb7d6-5ea6-4ffc-a758-fa4b4f584dd1
+npx hardhat setActionVars --id acfbb7d6-5ea6-4ffc-a758-fa4b4f584dd1 # allocateLido
+npx hardhat setActionVars --id 6e26641e-4132-4824-bb80-7c891fd31455 # collectEtherFiFees
+npx hardhat setActionVars --id 002c2b0d-9522-4d5f-a340-9713ee43a1c3 # allocateEtherFi
+npx hardhat setActionVars --id 062cfee1-c34e-43ae-beb0-de62bc668bbd # autoRequestEtherFiWithdraw
+npx hardhat setActionVars --id 6c52f3a9-85d8-4c7f-8aee-90a95b13965c # autoClaimEtherFiWithdraw
 
 # The Defender autotask client uses generic env var names so we'll set them first from the values in the .env file
 export API_KEY=
@@ -332,6 +338,10 @@ npx defender-autotask update-code 12977d51-d107-45eb-ac20-45942009ab01 ./dist/au
 npx defender-autotask update-code 6ec46510-0b8e-48b4-a4c8-de759aad0ba4 ./dist/autoClaimWithdrawSonic
 npx defender-autotask update-code 6d148f26-54a6-4377-92f2-3148d572eea3 ./dist/setOSSiloPriceAction
 npx defender-autotask update-code acfbb7d6-5ea6-4ffc-a758-fa4b4f584dd1 ./dist/allocateLido
+npx defender-autotask update-code 6e26641e-4132-4824-bb80-7c891fd31455 ./dist/collectEtherFiFees
+npx defender-autotask update-code 002c2b0d-9522-4d5f-a340-9713ee43a1c3 ./dist/allocateEtherFi
+npx defender-autotask update-code 062cfee1-c34e-43ae-beb0-de62bc668bbd ./dist/autoRequestEtherFiWithdraw
+npx defender-autotask update-code 6c52f3a9-85d8-4c7f-8aee-90a95b13965c ./dist/autoClaimEtherFiWithdraw
 ```
 
 `rollup` and `defender-autotask` can be installed globally to avoid the `npx` prefix.

@@ -4,6 +4,7 @@ const addresses = require("../utils/addresses");
 const {
   logArmPrices,
   log1InchPrices,
+  logKyberPrices,
   logCurvePrices,
   logUniswapSpotPrices,
   logFluidPrices,
@@ -13,6 +14,7 @@ const { getLidoQueueData } = require("../utils/lido");
 const { getSigner } = require("../utils/signers");
 const { logTxDetails } = require("../utils/txLogger");
 const {
+  resolveArmContract,
   parseAddress,
   parseDeployedAddress,
 } = require("../utils/addressParser");
@@ -64,6 +66,7 @@ const snapLido = async ({
   block,
   curve,
   oneInch,
+  kyber,
   uniswap,
   gas,
   queue,
@@ -77,8 +80,7 @@ const snapLido = async ({
   const signer = await getSigner();
   const commonOptions = { amount, blockTag, pair: "stETH/ETH", gas, signer };
 
-  const armAddress = await parseAddress("LIDO_ARM");
-  const lidoARM = await ethers.getContractAt("LidoARM", armAddress);
+  const lidoARM = await resolveArmContract("Lido");
   const capManagerAddress = await parseDeployedAddress("LIDO_ARM_CAP_MAN");
   const capManager = await ethers.getContractAt(
     "CapManager",
@@ -104,10 +106,11 @@ const snapLido = async ({
     await logCaps(capManager, totalAssets, blockTag);
   }
 
-  const ammPrices = await logArmPrices(commonOptions, lidoARM);
+  const armPrices = await logArmPrices(commonOptions, lidoARM);
 
   if (uniswap) {
-    await logUniswapSpotPrices(commonOptions, ammPrices);
+    const poolName = "wstETH/ETH 0.01%";
+    await logUniswapSpotPrices(commonOptions, armPrices, poolName);
   }
 
   if (curve) {
@@ -117,7 +120,7 @@ const snapLido = async ({
         poolName: "NextGen",
         poolAddress: addresses.mainnet.CurveNgStEthPool,
       },
-      ammPrices,
+      armPrices,
     );
 
     await logCurvePrices(
@@ -126,16 +129,21 @@ const snapLido = async ({
         poolName: "Old",
         poolAddress: addresses.mainnet.CurveStEthPool,
       },
-      ammPrices,
+      armPrices,
     );
   }
 
-  if (oneInch) {
-    await log1InchPrices(commonOptions, ammPrices);
+  if (fluid) {
+    const poolName = "wstETH/ETH";
+    await logFluidPrices(commonOptions, armPrices, poolName);
   }
 
-  if (fluid) {
-    await logFluidPrices(commonOptions, ammPrices);
+  if (kyber) {
+    await logKyberPrices(commonOptions, armPrices);
+  }
+
+  if (oneInch) {
+    await log1InchPrices(commonOptions, armPrices);
   }
 };
 
@@ -258,7 +266,11 @@ const logAssets = async (arm, blockTag) => {
     blockTag,
   });
 
+  const buffer = await arm.armBuffer({ blockTag });
+  const bufferPercent = (buffer * 10000n) / parseUnits("1");
+
   console.log(`Assets`);
+  console.log(`liquidity buffer ${formatUnits(bufferPercent, 2)}%`);
   console.log(
     `${formatUnits(liquidityWeth, 18).padEnd(24)} WETH  ${formatUnits(
       wethPercent,
@@ -304,8 +316,7 @@ const swapLido = async ({ from, to, amount }) => {
   const signer = await getSigner();
   const signerAddress = await signer.getAddress();
 
-  const armAddress = await parseAddress("LIDO_ARM");
-  const lidoARM = await ethers.getContractAt("LidoARM", armAddress);
+  const lidoARM = await resolveArmContract("Lido");
 
   if (from) {
     const fromAddress = await resolveAddress(from.toUpperCase());

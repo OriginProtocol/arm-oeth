@@ -8,6 +8,8 @@ const log = require("./logger")("utils:1inch");
 
 const ONEINCH_API_ENDPOINT = "https://api.1inch.dev/swap/v6.1";
 
+const origin1InchProtocols = "ORIGIN,ORIGIN_ARMOETH,SONIC_ORIGIN_WS_ARM";
+
 /**
  * Gets a swap quote from 1Inch's swap API
  * @param fromAsset The address of the asset to swap from.
@@ -82,32 +84,49 @@ const get1InchSwapQuote = async ({
   throw Error(`Call to 1Inch swap quote API failed: Rate-limited`);
 };
 
-const get1InchPrices = async (amount) => {
+/**
+ * Gets 1Inch prices for buying and selling the base asset using the liquid asset.
+ * @param {*} amount Amount not scaled to 18 decimals
+ * @param {*} assets liquidity and base asset addresses. eg WETH and stETH
+ * @param {BigInt} fee 1Inch infrastructure fee in basis points.
+ * 10 = 0.1% for stable coins. eg stETH
+ * 30 = 0.3% for non-stable coins. eg OS
+ * https://portal.1inch.dev/documentation/faq/infrastructure-fee
+ */
+const get1InchPrices = async (
+  amount,
+  assets = {
+    liquid: addresses.mainnet.WETH,
+    base: addresses.mainnet.stETH,
+  },
+  fee = 10n,
+  chainId = 1,
+) => {
   const amountBI = parseUnits(amount.toString(), 18);
 
   const buyQuote = await get1InchSwapQuote({
-    fromAsset: addresses.mainnet.WETH,
-    toAsset: addresses.mainnet.stETH,
-    fromAmount: amountBI, // WETH amount
-    excludedProtocols: "ORIGIN",
+    fromAsset: assets.liquid,
+    toAsset: assets.base,
+    fromAmount: amountBI, // liquid amount
+    excludedProtocols: origin1InchProtocols,
+    chainId,
   });
-  // stETH buy amount adjusted by 1Inch's 0.1% infrastructure fee
-  // https://portal.1inch.dev/documentation/faq/infrastructure-fee
-  const buyToAmount = (BigInt(buyQuote.dstAmount) * 1001n) / 1000n;
+  // base buy amount adjusted by 1Inch's infrastructure fee
+  const buyToAmount = (BigInt(buyQuote.dstAmount) * (10000n + fee)) / 10000n;
   // stETH/ETH rate = ETH amount / stETH amount
   const buyPrice = (amountBI * BigInt(1e18)) / buyToAmount;
 
   await sleep(800);
 
   const sellQuote = await get1InchSwapQuote({
-    fromAsset: addresses.mainnet.stETH,
-    toAsset: addresses.mainnet.WETH,
-    fromAmount: amountBI, // stETH amount
-    excludedProtocols: "ORIGIN",
+    fromAsset: assets.base,
+    toAsset: assets.liquid,
+    fromAmount: amountBI, // base amount
+    excludedProtocols: origin1InchProtocols,
+    chainId,
   });
-  // WETH sell amount adjusted by 1Inch's 0.1% infrastructure fee
-  // https://portal.1inch.dev/documentation/faq/infrastructure-fee
-  const sellToAmount = (BigInt(sellQuote.dstAmount) * 1001n) / 1000n;
+  // liquid sell amount adjusted by 1Inch's infrastructure fee
+  const sellToAmount = (BigInt(sellQuote.dstAmount) * (10000n + fee)) / 10000n;
   // stETH/WETH rate = WETH amount / stETH amount
   const sellPrice = (sellToAmount * BigInt(1e18)) / amountBI;
 
