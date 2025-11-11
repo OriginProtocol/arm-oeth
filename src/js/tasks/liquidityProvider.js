@@ -96,10 +96,12 @@ async function setLiquidityProviderCaps({ accounts, arm, cap }) {
 
   const liquidityProviders = accounts.split(",");
 
-  const lpcAddress = await parseDeployedAddress(
-    `${arm.toUpperCase()}_ARM_CAP_MAN`,
+  const armContract = await resolveArmContract(arm);
+  const capManagerAddress = await armContract.capManager();
+  const capManager = await ethers.getContractAt(
+    "CapManager",
+    capManagerAddress,
   );
-  const capManager = await ethers.getContractAt("CapManager", lpcAddress);
 
   log(
     `About to set deposit cap of ${cap} WETH for liquidity providers ${liquidityProviders} for the ${arm} ARM`,
@@ -115,10 +117,12 @@ async function setTotalAssetsCap({ arm, cap }) {
 
   const capBn = parseUnits(cap.toString());
 
-  const lpcAddress = await parseDeployedAddress(
-    `${arm.toUpperCase()}_ARM_CAP_MAN`,
+  const armContract = await resolveArmContract(arm);
+  const capManagerAddress = await armContract.capManager();
+  const capManager = await ethers.getContractAt(
+    "CapManager",
+    capManagerAddress,
   );
-  const capManager = await ethers.getContractAt("CapManager", lpcAddress);
 
   log(`About to set total asset cap of ${cap} for the ${arm} ARM`);
   const tx = await capManager.connect(signer).setTotalAssetsCap(capBn);
