@@ -915,7 +915,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @return actualLiquidityDelta the actual amount that is deposited/withdrawn to/from the lending market.
     /// A positive value is the liquidity assets that were deposited to the lending market.
     /// A negative value is the liquidity assets that were withdrawn from the lending market. This can be less than
-    /// the targetLiquidityDelta if there is high utilization in the lending market.
+    /// the `targetLiquidityDelta`, or even zero, if there is high utilization in the lending market.
     function allocate() external returns (int256 targetLiquidityDelta, int256 actualLiquidityDelta) {
         require(activeMarket != address(0), "ARM: no active market");
 
