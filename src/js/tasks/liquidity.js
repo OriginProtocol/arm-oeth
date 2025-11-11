@@ -5,6 +5,7 @@ const utc = require("dayjs/plugin/utc");
 const { getBlock } = require("../utils/block");
 const { resolveArmContract } = require("../utils/addressParser");
 const { outstandingWithdrawalAmount } = require("../utils/armQueue");
+const { logWithdrawalRequests } = require("../utils/etherFi");
 const {
   logArmPrices,
   log1InchPrices,
@@ -62,6 +63,10 @@ const snap = async ({ arm, block, gas, amount, oneInch, kyber }) => {
   const blockTag = await getBlock(block);
 
   const { liquidityBalance } = await logLiquidity({ arm, block });
+
+  if (arm === "EtherFi") {
+    await logWithdrawalRequests({ blockTag });
+  }
 
   // This can be removed after OETH is upgraded
   if (arm !== "Oeth") {
