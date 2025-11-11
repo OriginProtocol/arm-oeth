@@ -165,7 +165,7 @@ contract Fork_Concrete_OriginARM_AllocateWithAdapter_Test_ is Fork_Shared_Test {
             address(siloMarket), address(originARM), address(siloMarket), expectedAmount, expectedShares
         );
         vm.expectEmit(address(originARM));
-        emit AbstractARM.Allocated(address(siloMarket), expectedLiquidityDelta, expectedLiquidityDelta);
+        emit AbstractARM.Allocated(address(siloMarket), expectedLiquidityDelta, expectedLiquidityDelta + 1 ether + 1);
         // Main call
         originARM.allocate();
 
