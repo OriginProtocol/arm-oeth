@@ -98,4 +98,23 @@ contract EthenaARM is Initializable, AbstractARM {
 
         return cooldown.underlyingAmount;
     }
+
+    /// @dev Convert between base asset (sUSDe) and liquidity asset (USDe).
+    /// ERC-4626 convert functions are used as the preview functions can return a
+    /// smaller amount if the contract is paused or has high utilization.
+    /// Although that is not the case the the sUSDe implementation.
+    /// @param token The address of the token to convert from. sUSDe or USDe.
+    /// @param amount The amount of the token to convert from.
+    /// @return The converted to amount.
+    function _convert(address token, uint256 amount) internal view override returns (uint256) {
+        if (token == baseAsset) {
+            // Convert base asset (sUSDe) to liquidity asset (USDe)
+            return susde.convertToAssets(amount);
+        } else if (token == liquidityAsset) {
+            // Convert liquidity asset (USDe) to base asset (sUSDe)
+            return susde.convertToShares(amount);
+        } else {
+            revert("EthenaARM: Invalid token");
+        }
+    }
 }
