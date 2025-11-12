@@ -17,8 +17,16 @@ contract EthenaARM is Initializable, AbstractARM {
     IERC20 public immutable usde;
     /// @notice The address of Ethena's staked synthetic dollar token (sUSDe)
     IStakedUSDe public immutable susde;
+    /// @notice The maximum number of unstaker contracts that can be used per day of the week
+    uint8 public constant MAX_REQUESTS_PER_DAY = 10;
 
     uint256 internal _liquidityAmountInCooldown;
+
+    /// @notice Array of unstaker helper contracts
+    /// Each day of the week has MAX_REQUESTS_PER_DAY unstakers assigned to it
+    address[70] internal unstakers;
+    /// @notice Mapping of day of the week to last used unstaker index
+    mapping(uint8 => uint8) internal lastUsedUnstakerIndex;
 
     event RequestBaseWithdrawal(address indexed unstaker, uint256 baseAmount, uint256 liquidityAmount);
     event ClaimBaseWithdrawals(address indexed unstaker, uint256 liquidityAmount);
@@ -63,23 +71,44 @@ contract EthenaARM is Initializable, AbstractARM {
         _initARM(_operator, _name, _symbol, _fee, _feeCollector, _capManager);
     }
 
-    /**
-     * @notice Request a cooldown of USDe from Ethena's Staked USDe (sUSDe) contract.
-     * @param baseAmount The amount of base assets (sUSDe) to withdraw.
-     */
+    /// @notice Request a cooldown of USDe from Ethena's Staked USDe (sUSDe) contract.
+    /// @dev Uses a different unstaker contract each time to allow multiple cooldowns in parallel.
+    ///      There is a limit of MAX_REQUESTS_PER_DAY unstakers that can be used per day of the week.
+    /// @param baseAmount The amount of staked USDe (sUSDe) to withdraw.
     function requestBaseWithdrawal(uint256 baseAmount) external onlyOperatorOrOwner {
-        // Deploy a new EthenaUnstaker helper contract
-        EthenaUnstaker unstaker = new EthenaUnstaker(address(this), susde);
+        // Find which day of the week it is (0 = Thursday, 6 = Wednesday)
+        uint256 day = block.timestamp / 1 days % 7;
+        // Get last used unstaker for the day
+        uint8 index = lastUsedUnstakerIndex[day];
+
+        // Cycle through unstakers for the day
+        // If never interacted with, start at the beginning of the day's unstakers
+        // If at the end of the day's unstakers, wrap around to the beginning
+        // Otherwise, just move to the next unstaker
+        if (index == 0 || index == (day + 1) * MAX_REQUESTS_PER_DAY - 1) {
+            index = uint8(day * MAX_REQUESTS_PER_DAY);
+        } else {
+            ++index;
+        }
+
+        // Ensure unstaker isn't used during last 7 days
+        address unstaker = unstakers[index];
+        require(unstaker != address(0), "EthenaARM: Invalid unstaker");
+        uint256 amount = EthenaUnstaker(unstaker).cooldownAmount();
+        require(amount == 0, "EthenaARM: Unstaker in cooldown");
+
+        // Update last used unstaker for the day
+        lastUsedUnstakerIndex[day] = index;
 
         // Transfer sUSDe to the helper contract
-        susde.transfer(address(unstaker), baseAmount);
+        susde.transfer(unstaker, baseAmount);
 
-        uint256 liquidityAmount = unstaker.requestUnstake(baseAmount);
+        uint256 liquidityAmount = EthenaUnstaker(unstaker).requestUnstake(baseAmount);
 
         _liquidityAmountInCooldown += liquidityAmount;
 
         // Emit event for the request
-        emit RequestBaseWithdrawal(address(unstaker), baseAmount, liquidityAmount);
+        emit RequestBaseWithdrawal(unstaker, baseAmount, liquidityAmount);
     }
 
     /**
