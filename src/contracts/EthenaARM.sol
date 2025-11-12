@@ -79,7 +79,7 @@ contract EthenaARM is Initializable, AbstractARM {
         // Find which day of the week it is (0 = Thursday, 6 = Wednesday)
         uint256 day = block.timestamp / 1 days % 7;
         // Get last used unstaker for the day
-        uint8 index = lastUsedUnstakerIndex[day];
+        uint8 index = lastUsedUnstakerIndex[uint8(day)];
 
         // Cycle through unstakers for the day
         // If never interacted with, start at the beginning of the day's unstakers
@@ -98,7 +98,7 @@ contract EthenaARM is Initializable, AbstractARM {
         require(amount == 0, "EthenaARM: Unstaker in cooldown");
 
         // Update last used unstaker for the day
-        lastUsedUnstakerIndex[day] = index;
+        lastUsedUnstakerIndex[uint8(day)] = index;
 
         // Transfer sUSDe to the helper contract
         susde.transfer(unstaker, baseAmount);
