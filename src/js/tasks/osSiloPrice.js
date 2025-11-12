@@ -9,6 +9,7 @@ const addresses = require("../utils/addresses");
 const { get1InchSwapQuote } = require("../utils/1Inch");
 const { flyTradeQuote } = require("../utils/fly");
 const { logTxDetails } = require("../utils/txLogger");
+const { rangeSellPrice, rangeBuyPrice } = require("../utils/pricing");
 
 const log = require("../utils/logger")("task:osSiloPrice");
 
@@ -25,6 +26,10 @@ const setOSSiloPrice = async (options) => {
     lendPremium: lendPremiumBP = 0.3, // 0.003%
     tolerance = 0.1, // 0.0001%
     minSwapAmount = parseUnits("1000", 18), // 1000 wS
+    minBuyPrice,
+    maxBuyPrice,
+    minSellPrice,
+    maxSellPrice,
     market = "1inch", // "1inch" or "fly"
     blockTag,
   } = options;
@@ -72,7 +77,7 @@ const setOSSiloPrice = async (options) => {
       fromAsset: addresses.sonic.OSonicProxy,
       toAsset: addresses.sonic.WS,
       fromAmount: swapAmount,
-      excludedProtocols: "ORIGIN",
+      excludedProtocols: "SONIC_ORIGIN_WS_ARM",
       chainId: 146,
     });
     // adjust buy amount by 1Inch's 0.3% infrastructure fee for non-stable coin swaps
@@ -111,7 +116,7 @@ const setOSSiloPrice = async (options) => {
 
   // 6. Calculate targetBuyPrice, which is the smaller of the market buy price with added premium or buy price from lending rate
 
-  const targetBuyPrice = calculateMinBuyingPrice(
+  let targetBuyPrice = calculateMinBuyingPrice(
     marketPriceWithPremium,
     buyPriceFromLendingRate,
   );
@@ -119,7 +124,14 @@ const setOSSiloPrice = async (options) => {
     `Calculated buy price                   : ${Number(formatUnits(targetBuyPrice, 36)).toFixed(5)}`,
   );
 
-  // 7. Get current ARM sell price
+  // 7. Set the prices on the ARM contract
+  let targetSellPrice = parseUnits("1", 36); // Keep current sell price for now
+
+  // 8. Adjust target prices based on min/max limits
+  targetSellPrice = rangeSellPrice(targetSellPrice, minSellPrice, maxSellPrice);
+  targetBuyPrice = rangeBuyPrice(targetBuyPrice, minBuyPrice, maxBuyPrice);
+
+  // 9. Get current ARM sell price
 
   const currentSellPrice = parseUnits("1", 72) / (await arm.traderate0());
   const currentBuyPrice = await arm.traderate1();
@@ -130,10 +142,7 @@ const setOSSiloPrice = async (options) => {
     `Current buy price                      : ${Number(formatUnits(currentBuyPrice, 36)).toFixed(5)}`,
   );
 
-  // 8. Set the prices on the ARM contract
-  const targetSellPrice = parseUnits("1", 36); // Keep current sell price for now
-
-  // 9. Check the price difference is above the tolerance level
+  // 10. Check the price difference is above the tolerance level
 
   const diffBuyPrice = abs(targetBuyPrice - currentBuyPrice);
   log(
@@ -158,7 +167,7 @@ const setOSSiloPrice = async (options) => {
     return;
   }
 
-  // 10. Set the new price
+  // 11. Set the new price
 
   if (execute) {
     if (blockTag !== "latest") {

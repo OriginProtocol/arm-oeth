@@ -82,6 +82,22 @@ module.exports = [
     ...commonConfig,
   },
   {
+    input: "autoRequestEtherFiWithdraw.js",
+    output: {
+      file: "dist/autoRequestEtherFiWithdraw/index.js",
+      format: "cjs",
+    },
+    ...commonConfig,
+  },
+  {
+    input: "autoClaimEtherFiWithdraw.js",
+    output: {
+      file: "dist/autoClaimEtherFiWithdraw/index.js",
+      format: "cjs",
+    },
+    ...commonConfig,
+  },
+  {
     input: "collectLidoFees.js",
     output: {
       file: "dist/collectLidoFees/index.js",
@@ -93,6 +109,14 @@ module.exports = [
     input: "collectFeesSonic.js",
     output: {
       file: "dist/collectFeesSonic/index.js",
+      format: "cjs",
+    },
+    ...commonConfig,
+  },
+  {
+    input: "collectEtherFiFees.js",
+    output: {
+      file: "dist/collectEtherFiFees/index.js",
       format: "cjs",
     },
     ...commonConfig,
@@ -129,10 +153,18 @@ module.exports = [
     },
     ...commonConfig,
   },
-    {
+  {
     input: "allocateLido.js",
     output: {
       file: "dist/allocateLido/index.js",
+      format: "cjs",
+    },
+    ...commonConfig,
+  },
+  {
+    input: "allocateEtherFi.js",
+    output: {
+      file: "dist/allocateEtherFi/index.js",
       format: "cjs",
     },
     ...commonConfig,

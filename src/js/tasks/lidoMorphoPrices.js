@@ -6,6 +6,7 @@ const { abs } = require("../utils/maths");
 const { get1InchPrices } = require("../utils/1Inch");
 const { logTxDetails } = require("../utils/txLogger");
 const { getCurvePrices } = require("../utils/curve");
+const { rangeSellPrice, rangeBuyPrice } = require("../utils/pricing");
 
 const log = require("../utils/logger")("task:lido");
 
@@ -29,8 +30,8 @@ const setPrices = async (options) => {
     priceOffset,
   } = options;
 
-  // 1. Get current ARM stETH/WETH prices
-  log(`Getting current ARM stETH/WETH prices:`);
+  // 1. Get current ARM prices
+  log(`Getting current ARM prices:`);
   const currentSellPrice = parseUnits("1", 72) / (await arm.traderate0());
   const currentBuyPrice = await arm.traderate1();
   log(`current sell price : ${formatUnits(currentSellPrice, 36)}`);
@@ -40,16 +41,25 @@ const setPrices = async (options) => {
   let targetSellPrice;
   // 2. If no buy/sell prices are provided, calculate them using midPrice/1Inch/Curve
   if (!buyPrice && !sellPrice && (midPrice || curve || inch)) {
+    // Set 1Inch options
+    const assets = {
+      liquid: await arm.liquidityAsset(),
+      base: await arm.baseAsset(),
+    };
+    const inchFee = assets.base === addresses.mainnet.stETH ? 10n : 30n;
+
     // 2.1 Get latest 1inch prices if no midPrice is provided
     const referencePrices =
       // 2.1.a If midPrice is provided, use it directly
       midPrice
         ? {
             midPrice: parseUnits(midPrice.toString(), 18),
-          } // 2.1.b Otherwise, get prices from 1Inch
+          }
         : inch
-          ? await get1InchPrices(options.amount) // 2.1.c Or from Curve if specified
-          : await getCurvePrices({
+          ? // 2.1.b Otherwise, get prices from 1Inch
+            await get1InchPrices(options.amount, assets, inchFee)
+          : // 2.1.c Or from Curve if specified
+            await getCurvePrices({
               ...options,
               poolAddress: addresses.mainnet.CurveNgStEthPool,
             });
@@ -153,55 +163,12 @@ const setPrices = async (options) => {
     }
 
     // 2.4 Adjust target prices based on min/max limits
-    log(`\nAdjusting target prices based on min/max limits:`);
-    if (maxSellPrice) {
-      const maxSellPriceBN = parseUnits(maxSellPrice.toString(), 36);
-      if (targetSellPrice > maxSellPriceBN) {
-        log(
-          `target sell price ${formatUnits(
-            targetSellPrice,
-            36,
-          )} is above max sell price ${maxSellPrice} so will use max`,
-        );
-        targetSellPrice = maxSellPriceBN;
-      }
-    }
-    if (minSellPrice) {
-      const minSellPriceBN = parseUnits(minSellPrice.toString(), 36);
-      if (targetSellPrice < minSellPriceBN) {
-        log(
-          `target sell price ${formatUnits(
-            targetSellPrice,
-            36,
-          )} is below min sell price ${minSellPrice} so will use min`,
-        );
-        targetSellPrice = minSellPriceBN;
-      }
-    }
-    if (maxBuyPrice) {
-      const maxBuyPriceBN = parseUnits(maxBuyPrice.toString(), 36);
-      if (targetBuyPrice > maxBuyPriceBN) {
-        log(
-          `target buy price  ${formatUnits(
-            targetBuyPrice,
-            36,
-          )} is above max buy price  ${maxBuyPrice} so will use max`,
-        );
-        targetBuyPrice = maxBuyPriceBN;
-      }
-    }
-    if (minBuyPrice) {
-      const minBuyPriceBN = parseUnits(minBuyPrice.toString(), 36);
-      if (targetBuyPrice < minBuyPriceBN) {
-        log(
-          `target buy price  ${formatUnits(
-            targetBuyPrice,
-            36,
-          )} is below min buy price  ${minBuyPrice} so will use min`,
-        );
-        targetBuyPrice = minBuyPriceBN;
-      }
-    }
+    targetSellPrice = rangeSellPrice(
+      targetSellPrice,
+      minSellPrice,
+      maxSellPrice,
+    );
+    targetBuyPrice = rangeBuyPrice(targetBuyPrice, minBuyPrice, maxBuyPrice);
 
     // 2.5 Adjust target prices based on cross price
     const crossPrice = await arm.crossPrice();
