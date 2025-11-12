@@ -35,7 +35,6 @@ contract EtherFiARM is Initializable, AbstractARM, IERC721Receiver {
 
     event RequestEtherFiWithdrawal(uint256 amount, uint256 requestId);
     event ClaimEtherFiWithdrawals(uint256[] requestIds);
-    event RegisterEtherFiWithdrawalRequests(uint256[] requestIds, uint256 totalAmountRequested);
 
     /// @param _eeth The address of the eETH token
     /// @param _weth The address of the WETH token
@@ -90,6 +89,7 @@ contract EtherFiARM is Initializable, AbstractARM, IERC721Receiver {
     /**
      * @notice Request an eETH for ETH withdrawal.
      * Reference: https://etherfi.gitbook.io/etherfi/contracts-and-integrations/how-to
+     * @param amount The amount of eETH to withdraw.
      */
     function requestEtherFiWithdrawal(uint256 amount) external onlyOperatorOrOwner returns (uint256 requestId) {
         // Request the withdrawal from the EtherFi Withdrawal Queue.
