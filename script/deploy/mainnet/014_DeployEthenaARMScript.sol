@@ -18,7 +18,7 @@ import {Abstract4626MarketWrapper} from "contracts/markets/Abstract4626MarketWra
 import {GovProposal, GovSixHelper} from "contracts/utils/GovSixHelper.sol";
 import {AbstractDeployScript} from "../AbstractDeployScript.sol";
 
-contract DeployEtherFiARMScript is AbstractDeployScript {
+contract DeployEthenaARMScript is AbstractDeployScript {
     using GovSixHelper for GovProposal;
 
     GovProposal public govProposal;
