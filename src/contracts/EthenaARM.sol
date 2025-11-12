@@ -20,6 +20,9 @@ contract EthenaARM is Initializable, AbstractARM {
 
     uint256 internal _liquidityAmountInCooldown;
 
+    address[] public unstakers;
+    uint256 public nextUnstakerIndex;
+
     event RequestBaseWithdrawal(address indexed unstaker, uint256 baseAmount, uint256 liquidityAmount);
     event ClaimBaseWithdrawals(address indexed unstaker, uint256 liquidityAmount);
 
@@ -68,18 +71,67 @@ contract EthenaARM is Initializable, AbstractARM {
      * @param baseAmount The amount of base assets (sUSDe) to withdraw.
      */
     function requestBaseWithdrawal(uint256 baseAmount) external onlyOperatorOrOwner {
-        // Deploy a new EthenaUnstaker helper contract
-        EthenaUnstaker unstaker = new EthenaUnstaker(address(this), susde);
+        uint256 index = nextUnstakerIndex;
+        address unstaker;
+        if (unstakers.length == 0 || index >= unstakers.length) {
+            // Ensure we don't deploy too many unstaker contracts
+            require(unstakers.length < 50, "EthenaARM: Too many unstakers");
+            // Deploy a new EthenaUnstaker helper contract
+            unstaker = address(new EthenaUnstaker(address(this), susde));
+            // Add the new unstaker to the array
+            unstakers.push(unstaker);
+        } else {
+            // Reuse an existing unstaker
+            unstaker = unstakers[index];
+        }
+        // Move to the next unstaker for the next request
+        ++nextUnstakerIndex;
 
         // Transfer sUSDe to the helper contract
         susde.transfer(address(unstaker), baseAmount);
 
-        uint256 liquidityAmount = unstaker.requestUnstake(baseAmount);
+        uint256 liquidityAmount = EthenaUnstaker(unstaker).requestUnstake(baseAmount);
 
         _liquidityAmountInCooldown += liquidityAmount;
 
         // Emit event for the request
         emit RequestBaseWithdrawal(address(unstaker), baseAmount, liquidityAmount);
+    }
+
+    function claimBaseWithdrawals() external {
+        // Take the first unstaker in the array
+        address unstaker = unstakers[0];
+
+        // Get the cooldown amount for that unstaker
+        uint256 cooldownAmount = EthenaUnstaker(unstaker).cooldownAmount();
+        require(cooldownAmount > 0, "EthenaARM: No cooldown amount");
+
+        // Shift all the other unstakers to the left
+        for (uint256 i; i < unstakers.length - 1; i++) {
+            unstakers[i] = unstakers[i + 1];
+        }
+        // Put the first unstaker at the end and decrease the nextUnstakerIndex
+        unstakers[unstakers.length - 1] = unstaker;
+        --nextUnstakerIndex;
+
+        // Manage the liquidity amount in cooldown
+        if (_liquidityAmountInCooldown < cooldownAmount) {
+            _liquidityAmountInCooldown = 0;
+        } else {
+            _liquidityAmountInCooldown -= cooldownAmount;
+        }
+
+        // Claim all the underlying USDe that has cooled down for the unstaker and send to the ARM
+        EthenaUnstaker(unstaker).claimUnstake();
+
+        emit ClaimBaseWithdrawals(unstaker, cooldownAmount);
+    }
+
+    function _remove(uint256 index) internal {
+        for (uint256 i = index; i < unstakers.length - 1; i++) {
+            unstakers[i] = unstakers[i + 1];
+        }
+        unstakers.pop();
     }
 
     /**
