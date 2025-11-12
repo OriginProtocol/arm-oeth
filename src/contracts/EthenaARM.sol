@@ -5,6 +5,7 @@ import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Ini
 import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 
 import {AbstractARM} from "./AbstractARM.sol";
+import {EthenaUnstaker} from "./EthenaUnstaker.sol";
 import {IERC20, IStakedUSDe, UserCooldown} from "./Interfaces.sol";
 
 /**
@@ -17,8 +18,10 @@ contract EthenaARM is Initializable, AbstractARM {
     /// @notice The address of Ethena's staked synthetic dollar token (sUSDe)
     IStakedUSDe public immutable susde;
 
-    event RequestBaseWithdrawal(uint256 amount);
-    event ClaimBaseWithdrawals(uint256 liquidityAmountClaimed);
+    uint256 internal _liquidityAmountInCooldown;
+
+    event RequestBaseWithdrawal(address indexed unstaker, uint256 baseAmount, uint256 liquidityAmount);
+    event ClaimBaseWithdrawals(address indexed unstaker, uint256 liquidityAmount);
 
     /// @param _usde The address of Ethena's synthetic dollar token (USDe)
     /// @param _susde The address of Ethena's staked synthetic dollar token (sUSDe)
@@ -65,38 +68,47 @@ contract EthenaARM is Initializable, AbstractARM {
      * @param baseAmount The amount of base assets (sUSDe) to withdraw.
      */
     function requestBaseWithdrawal(uint256 baseAmount) external onlyOperatorOrOwner {
-        // For now put in a restriction that only one request can be outstanding at a time.
-        // TODO replace this with a pool of helper contracts that can manage multiple cooldowns in parallel.
-        UserCooldown memory cooldown = susde.cooldowns(address(this));
-        require(cooldown.underlyingAmount == 0, "EthenaARM: Existing cooldown");
+        // Deploy a new EthenaUnstaker helper contract
+        EthenaUnstaker unstaker = new EthenaUnstaker(address(this), susde);
 
-        // Request an unstaked from Ethena's staked USDe (sUSDe) contract
-        susde.cooldownShares(baseAmount);
+        // Transfer sUSDe to the helper contract
+        susde.transfer(address(unstaker), baseAmount);
+
+        uint256 liquidityAmount = unstaker.requestUnstake(baseAmount);
+
+        _liquidityAmountInCooldown += liquidityAmount;
 
         // Emit event for the request
-        emit RequestBaseWithdrawal(baseAmount);
+        emit RequestBaseWithdrawal(address(unstaker), baseAmount, liquidityAmount);
     }
 
     /**
      * @notice Claim all the USDe that is now claimable from the Staked USDe contract.
      * Reverts with `InvalidCooldown` from the Staked USDe contract if the cooldown period has not yet passed.
      */
-    function claimBaseWithdrawals() external {
-        UserCooldown memory cooldown = susde.cooldowns(address(this));
+    function claimBaseWithdrawals(address unstaker) external {
+        uint256 cooldownAmount = EthenaUnstaker(unstaker).cooldownAmount();
+        require(cooldownAmount > 0, "EthenaARM: No cooldown amount");
 
-        susde.unstake(address(this));
+        if (_liquidityAmountInCooldown < cooldownAmount) {
+            _liquidityAmountInCooldown = 0;
+        } else {
+            _liquidityAmountInCooldown -= cooldownAmount;
+        }
 
-        emit ClaimBaseWithdrawals(cooldown.underlyingAmount);
+        // Claim all the underlying USDe that has cooled down for the unstaker and send to the ARM
+        EthenaUnstaker(unstaker).claimUnstake();
+
+        emit ClaimBaseWithdrawals(unstaker, cooldownAmount);
     }
 
     /**
-     * @dev Gets the amount of USDe waiting to be claimed from the Staked USDe contract.
+     * @dev Gets the total amount of USDe waiting to be claimed from the Staked USDe contract.
+     * This can be for many different cooldowns.
      * This can be either in the cooldown period or ready to be claimed.
      */
     function _externalWithdrawQueue() internal view override returns (uint256) {
-        UserCooldown memory cooldown = susde.cooldowns(address(this));
-
-        return cooldown.underlyingAmount;
+        return _liquidityAmountInCooldown;
     }
 
     /// @dev Convert between base asset (sUSDe) and liquidity asset (USDe).
