@@ -147,7 +147,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     event MarketAdded(address indexed market);
     event MarketRemoved(address indexed market);
     event ARMBufferUpdated(uint256 armBuffer);
-    event Allocated(address indexed market, int256 assets);
+    event Allocated(address indexed market, int256 targetLiquidityDelta, int256 actualLiquidityDelta);
 
     constructor(
         address _token0,
@@ -905,41 +905,53 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
     /// @notice Deposit or withdraw liquidity assets to/from the active lending market
     /// to match the ARM's liquidity buffer which is a percentage of the available assets.
+    /// The buffer excludes liquidity assets reserved for the ARM's withdrawal queue. That is, more
+    /// liquidity assets will be withdrawn from the lending market if the ARM's liquidity asset balance
+    /// does not cover the buffer, which can be zero, and the ARM's outstanding withdrawals.
     /// Will revert if there is no active lending market set.
-    /// @return liquidityDelta The actual liquidity less target liquidity before
-    ///         the deposit/withdrawal to/from the active lending market.
-    function allocate() external returns (int256 liquidityDelta) {
+    /// @return targetLiquidityDelta the desired amount that is deposited/withdrawn to/from the lending market.
+    /// A positive value is the liquidity assets that should be deposited to the lending market.
+    /// A negative value is the desired liquidity assets that should be withdrawn from the lending market.
+    /// @return actualLiquidityDelta the actual amount that is deposited/withdrawn to/from the lending market.
+    /// A positive value is the liquidity assets that were deposited to the lending market.
+    /// A negative value is the liquidity assets that were withdrawn from the lending market. This can be less than
+    /// the `targetLiquidityDelta`, or even zero, if there is high utilization in the lending market.
+    function allocate() external returns (int256 targetLiquidityDelta, int256 actualLiquidityDelta) {
         require(activeMarket != address(0), "ARM: no active market");
 
-        liquidityDelta = _allocate();
+        return _allocate();
     }
 
-    function _allocate() internal returns (int256 liquidityDelta) {
+    function _allocate() internal returns (int256 targetLiquidityDelta, int256 actualLiquidityDelta) {
         (uint256 availableAssets, uint256 outstandingWithdrawals) = _availableAssets();
-        if (availableAssets == 0) return 0;
-
-        int256 armLiquidity = SafeCast.toInt256(IERC20(liquidityAsset).balanceOf(address(this)))
-            - SafeCast.toInt256(outstandingWithdrawals);
+        if (availableAssets == 0) return (0, 0);
         uint256 targetArmLiquidity = availableAssets * armBuffer / 1e18;
 
-        liquidityDelta = armLiquidity - SafeCast.toInt256(targetArmLiquidity);
+        // The current liquidity available in swap is the liquidity asset balance less
+        // any outstanding withdrawals from the ARM's withdrawal queue
+        int256 currentArmLiquidity = SafeCast.toInt256(IERC20(liquidityAsset).balanceOf(address(this)))
+            - SafeCast.toInt256(outstandingWithdrawals);
+
+        targetLiquidityDelta = currentArmLiquidity - SafeCast.toInt256(targetArmLiquidity);
 
         // Load the active lending market address from storage to save gas
         address activeMarketMem = activeMarket;
 
         // The allocateThreshold prevents the ARM from constantly depositing and withdrawing if there are rounding issues
-        if (liquidityDelta > allocateThreshold) {
+        if (targetLiquidityDelta > allocateThreshold) {
             // We have too much liquidity in the ARM, we need to deposit some to the active lending market
 
-            uint256 depositAmount = SafeCast.toUint256(liquidityDelta);
+            uint256 depositAmount = SafeCast.toUint256(targetLiquidityDelta);
 
             IERC20(liquidityAsset).approve(activeMarketMem, depositAmount);
             IERC4626(activeMarketMem).deposit(depositAmount, address(this));
-        } else if (liquidityDelta < 0) {
+
+            actualLiquidityDelta = SafeCast.toInt256(depositAmount);
+        } else if (targetLiquidityDelta < 0) {
             // We have too little liquidity in the ARM, we need to withdraw some from the active lending market
 
             uint256 availableMarketAssets = IERC4626(activeMarketMem).maxWithdraw(address(this));
-            uint256 desiredWithdrawAmount = SafeCast.toUint256(-liquidityDelta);
+            uint256 desiredWithdrawAmount = SafeCast.toUint256(-targetLiquidityDelta);
 
             if (availableMarketAssets < desiredWithdrawAmount) {
                 // Not enough assets in the market so redeem as much as possible.
@@ -947,17 +959,19 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
                 // redeem of the ARM's balance can fail if the lending market is highly utilized or temporarily paused.
                 // Redeem and not withdrawal is used to avoid leaving a small amount of assets in the market.
                 uint256 shares = IERC4626(activeMarketMem).maxRedeem(address(this));
-                if (shares <= minSharesToRedeem) return liquidityDelta;
+                if (shares <= minSharesToRedeem) return (targetLiquidityDelta, 0);
                 // This should not fail according to the ERC-4626 spec as maxRedeem was used earlier
                 // but it depends on the 4626 implementation of the lending market.
                 // It may fail if the market is highly utilized and not compliant with 4626.
-                IERC4626(activeMarketMem).redeem(shares, address(this), address(this));
+                uint256 redeemedAssets = IERC4626(activeMarketMem).redeem(shares, address(this), address(this));
+                actualLiquidityDelta = -SafeCast.toInt256(redeemedAssets);
             } else {
                 IERC4626(activeMarketMem).withdraw(desiredWithdrawAmount, address(this), address(this));
+                actualLiquidityDelta = -SafeCast.toInt256(desiredWithdrawAmount);
             }
         }
 
-        emit Allocated(activeMarketMem, liquidityDelta);
+        emit Allocated(activeMarketMem, targetLiquidityDelta, actualLiquidityDelta);
     }
 
     ////////////////////////////////////////////////////
