@@ -46,36 +46,6 @@ contract Fork_Concrete_EthenaARM_swapExactTokensForTokens_Test_ is Fork_Shared_T
         assertEq(susdeBalanceAfter, susdeBalanceBefore + expectedAmountOut, "SUSDe balance should have increased");
     }
 
-    function test_swapExactTokensForTokens_SUSDE_To_USDE_NoOutstandingWithdrawals_Sig1() public {
-        // Record balances before swap
-        uint256 usdeBalanceBefore = usde.balanceOf(address(this));
-        uint256 susdeBalanceBefore = susde.balanceOf(address(this));
-
-        // Precompute expected amount out
-        uint256 traderate = ethenaARM.traderate1();
-        uint256 expectedAmountOut = (susde.convertToAssets(AMOUNT_IN) * traderate) / 1e36;
-
-        // Expected events
-        vm.expectEmit({emitter: address(susde)});
-        emit IERC20.Transfer(address(this), address(ethenaARM), AMOUNT_IN);
-        vm.expectEmit({emitter: address(usde)});
-        emit IERC20.Transfer(address(ethenaARM), address(this), expectedAmountOut);
-
-        // Perform the swap
-        uint256[] memory obtained =
-            ethenaARM.swapExactTokensForTokens(IERC20(address(susde)), usde, AMOUNT_IN, 0, address(this));
-
-        // Record balances after swap
-        uint256 usdeBalanceAfter = usde.balanceOf(address(this));
-        uint256 susdeBalanceAfter = susde.balanceOf(address(this));
-
-        // Assertions
-        assertEq(obtained[0], AMOUNT_IN, "Obtained SUSDe amount should match input");
-        assertEq(obtained[1], expectedAmountOut, "Obtained USDe amount should match expected output");
-        assertEq(usdeBalanceAfter, usdeBalanceBefore + expectedAmountOut, "USDe balance should have increased");
-        assertEq(susdeBalanceBefore, susdeBalanceAfter + AMOUNT_IN, "SUSDe balance should have decreased");
-    }
-
     function test_swapExactTokensForTokens_USDE_To_SUSDE_Sig2() public {
         // Record balances before swap
         uint256 usdeBalanceBefore = usde.balanceOf(address(this));
@@ -108,6 +78,36 @@ contract Fork_Concrete_EthenaARM_swapExactTokensForTokens_Test_ is Fork_Shared_T
         assertEq(obtained[1], expectedAmountOut, "Obtained SUSDe amount should match expected output");
         assertEq(usdeBalanceBefore, usdeBalanceAfter + AMOUNT_IN, "USDe balance should have decreased");
         assertEq(susdeBalanceAfter, susdeBalanceBefore + expectedAmountOut, "SUSDe balance should have increased");
+    }
+
+    function test_swapExactTokensForTokens_SUSDE_To_USDE_NoOutstandingWithdrawals_Sig1() public {
+        // Record balances before swap
+        uint256 usdeBalanceBefore = usde.balanceOf(address(this));
+        uint256 susdeBalanceBefore = susde.balanceOf(address(this));
+
+        // Precompute expected amount out
+        uint256 traderate = ethenaARM.traderate1();
+        uint256 expectedAmountOut = (susde.convertToAssets(AMOUNT_IN) * traderate) / 1e36;
+
+        // Expected events
+        vm.expectEmit({emitter: address(susde)});
+        emit IERC20.Transfer(address(this), address(ethenaARM), AMOUNT_IN);
+        vm.expectEmit({emitter: address(usde)});
+        emit IERC20.Transfer(address(ethenaARM), address(this), expectedAmountOut);
+
+        // Perform the swap
+        uint256[] memory obtained =
+            ethenaARM.swapExactTokensForTokens(IERC20(address(susde)), usde, AMOUNT_IN, 0, address(this));
+
+        // Record balances after swap
+        uint256 usdeBalanceAfter = usde.balanceOf(address(this));
+        uint256 susdeBalanceAfter = susde.balanceOf(address(this));
+
+        // Assertions
+        assertEq(obtained[0], AMOUNT_IN, "Obtained SUSDe amount should match input");
+        assertEq(obtained[1], expectedAmountOut, "Obtained USDe amount should match expected output");
+        assertEq(usdeBalanceAfter, usdeBalanceBefore + expectedAmountOut, "USDe balance should have increased");
+        assertEq(susdeBalanceBefore, susdeBalanceAfter + AMOUNT_IN, "SUSDe balance should have decreased");
     }
 
     //////////////////////////////////////////////////////
