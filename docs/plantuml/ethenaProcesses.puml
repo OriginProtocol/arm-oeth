@@ -1,0 +1,132 @@
+
+@startuml
+
+title "Ethena ARM Processes"
+
+actor "Operator" as op
+actor "Anyone" as any
+' participant "Ethena\nAPI" as api <<Ethena>>
+
+box Blockchain
+participant "Ethena\nARM" as arm <<Origin>>
+participant "Ethena\nCooldown\nFactory" as factory <<Origin>>
+participant "Ethena\nCooldown\nHelper" as helper <<Origin>>
+participant "Ethena\nMinting" as mint <<Ethena>>
+participant "sUSDe\nToken" as susde <<Ethena>>
+participant "USDe\nToken" as usde <<Ethena>>
+' participant "USDT\nToken" as usdt <<Tether>>
+end box
+
+group unstake sUSDe
+
+op -> arm : requestUnstake(\n  amount)
+activate arm
+
+arm -> factory : assignHelper()
+activate factory
+
+note over factory: increment helper index
+
+factory -> mint : cooldowns(\n  helper address)
+activate mint
+return
+
+alt cooldown exits and ended
+    factory -> helper : claimUnstake()
+    activate helper
+    helper -> susde : unstake(arm)
+    activate susde
+    note right: check cooldown passed
+    susde -> usde : transfer(\n  arm,\n  amount)
+    activate usde
+    note right: transfer all\nunderlying USDe\nto ARM
+    return
+    return
+    return
+else cooling exits and not ended
+    note over factory: revert and wait for cooldown to end
+end
+return helper address
+
+arm -> susde : transfer(\n  helper address,\n  amount)
+activate susde
+note right: transfer sUSDe\nfrom ARM\nto Helper
+return
+
+arm -> helper : requestUnstake(\n  amount)
+activate helper
+helper -> susde : cooldownShares(\n  sUSDe amount)
+activate susde
+note right
+burn sUSDe from helper
+increment underlying USDe
+restart 7 day cooldown
+end note
+return USDe amount
+return USDe amount
+return
+note right: emit USDe amount and helper address
+
+... 7 day cooldown ...
+
+any -> arm : claimUnstake(\n  helper address)
+activate arm
+' arm -> factory : claimUnstake(\n  helper address)
+' activate factory
+' factory -> helper : claimUnstake()
+arm -> helper : claimUnstake()
+activate helper
+helper -> susde : unstake(arm)
+activate susde
+note right: check cooldown passed
+susde -> usde : transfer(\n  arm,\n  amount)
+activate usde
+note right: transfer all\nunderlying USDe\nto ARM
+return
+return
+return
+return
+
+end group
+
+' group redeem USDe for USDT
+
+' op -> api : GET Request For Quote\npayload: {\n  pair,\n  side,\n  size,\n  benefactor}
+' activate api
+' return order details: {\n  rfq_id,\n  collateral_amount,\n  amount...}
+
+' op -> op : sign(hash(order details))
+' note right: sign order hash using Operator's private key
+
+' op -> arm : redeemEthenaRequest (\n  order details,\n  signature)
+' activate arm
+' note right
+' verify redeem price >= cross price
+' verify collateral asset = USDT
+' store map of order hash to signature
+' end note
+
+' arm -> usde : approve(\n  amount,\n  Ethena Minting)
+' activate usde
+' return
+' return
+
+' op -> api : POST Submit Order\nparams:\n  signature,\n  signature_type=EIP1271\npayload: order details
+' activate api
+' api -> mint : redeem (\n  order details,\n  signature: {\n  bytes, type: 1})
+' activate mint
+' mint -> arm : isValidSignature(\n  order hash,\n  signature bytes)
+' activate arm
+' return
+' mint -> usde : burnFrom(\n  arm,\n  amount)
+' activate usde
+' note right: burn USDe from ARM
+' return
+' mint -> usdt : transfer(\n  arm,\n  amount)
+' activate usdt
+' note right: transfer USDT to ARM
+' return
+' return
+' return tx hash
+
+' end group
