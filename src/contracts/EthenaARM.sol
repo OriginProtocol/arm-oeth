@@ -2,11 +2,9 @@
 pragma solidity ^0.8.23;
 
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 
 import {AbstractARM} from "./AbstractARM.sol";
 import {EthenaUnstaker} from "./EthenaUnstaker.sol";
-import {IERC20, IStakedUSDe, UserCooldown} from "./Interfaces.sol";
 
 /**
  * @title Ethena sUSDe/USDe Automated Redemption Manager (ARM)
@@ -20,8 +18,8 @@ contract EthenaARM is Initializable, AbstractARM {
     /// @notice The address of Ethena's staked synthetic dollar token (sUSDe)
     IStakedUSDe public immutable susde;
 
+    /// @notice The total amount of liquidity asset (USDe) currently in cooldown
     uint256 internal _liquidityAmountInCooldown;
-
     /// @notice Array of unstaker helper contracts
     address[42] internal unstakers;
     /// @notice The index of the next unstaker to use in the round robin
