@@ -123,13 +123,19 @@ contract DeployEthenaARMScript is AbstractDeployScript {
         // 16. Set ARM buffer to 10%
         EthenaARM(payable(address(armProxy))).setARMBuffer(0.1e18); // 10% buffer
 
-        // 17. Transfer ownership of ARM to the 5/8 multisig
+        // 17. Deploy Unstakers
+        address[MAX_UNSTAKERS] memory unstakers = _deployUnstakers();
+
+        // 18. Set Unstakers in the ARM
+        EthenaARM(payable(address(armProxy))).setUnstakers(unstakers);
+
+        // 19. Transfer ownership of ARM to the 5/8 multisig
         armProxy.setOwner(Mainnet.GOV_MULTISIG);
 
         console.log("Finished deploying", DEPLOY_NAME);
     }
 
-    function deployUnstakers() external returns (address[MAX_UNSTAKERS] memory unstakers) {
+    function _deployUnstakers() internal returns (address[MAX_UNSTAKERS] memory unstakers) {
         for (uint256 i = 0; i < MAX_UNSTAKERS; i++) {
             address unstaker = address(new EthenaUnstaker(payable(armProxy), IStakedUSDe(Mainnet.SUSDE)));
             unstakers[i] = address(unstaker);
