@@ -8,7 +8,6 @@ import {console} from "forge-std/console.sol";
 import {IWETH} from "contracts/Interfaces.sol";
 import {Proxy} from "contracts/Proxy.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
-import {ZapperARM} from "contracts/ZapperARM.sol";
 import {EthenaARM} from "contracts/EthenaARM.sol";
 import {CapManager} from "contracts/CapManager.sol";
 import {IStakedUSDe} from "contracts/Interfaces.sol";
@@ -32,6 +31,8 @@ contract DeployEthenaARMScript is AbstractDeployScript {
     EthenaARM armImpl;
     MorphoMarket morphoMarket;
     Proxy armProxy;
+
+    uint256 public constant MAX_UNSTAKERS = 42;
 
     function _execute() internal override {
         console.log("Deploy:", DEPLOY_NAME);
@@ -128,8 +129,8 @@ contract DeployEthenaARMScript is AbstractDeployScript {
         console.log("Finished deploying", DEPLOY_NAME);
     }
 
-    function deployUnstakers() external returns (address[42] memory unstakers) {
-        for (uint256 i = 0; i < 42; i++) {
+    function deployUnstakers() external returns (address[MAX_UNSTAKERS] memory unstakers) {
+        for (uint256 i = 0; i < MAX_UNSTAKERS; i++) {
             address unstaker = address(new EthenaUnstaker(payable(armProxy), IStakedUSDe(Mainnet.SUSDE)));
             unstakers[i] = address(unstaker);
             console.log("Deployed unstaker", i, address(unstaker));
