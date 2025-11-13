@@ -99,7 +99,7 @@ contract OriginARM is Initializable, AbstractARM {
     }
 
     /**
-     * @dev Calculates the outstanding amount of oTokens in the Origin Vault
+     * @dev Calculates the outstanding amount of wS in the Origin Vault
      */
     function _externalWithdrawQueue() internal view override returns (uint256) {
         return vaultWithdrawalAmount;
