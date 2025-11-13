@@ -8,9 +8,6 @@ import {Fork_Shared_Test} from "test/fork/EthenaARM/shared/Shared.sol";
 import {EthenaARM} from "contracts/EthenaARM.sol";
 import {EthenaUnstaker} from "contracts/EthenaUnstaker.sol";
 
-// Interfaces
-import {IERC20} from "contracts/Interfaces.sol";
-
 contract Fork_Concrete_EthenaARM_RequestWithdraw_Test_ is Fork_Shared_Test {
     uint256 public AMOUNT_IN = 100 ether;
 
@@ -71,5 +68,54 @@ contract Fork_Concrete_EthenaARM_RequestWithdraw_Test_ is Fork_Shared_Test {
         uint256 balanceAfter = susde.balanceOf(address(ethenaARM));
         assertEq(ethenaARM.nextUnstakerIndex(), 0, "nextUnstakerIndex not wrapped around");
         assertEq(balanceBefore - balanceAfter, AMOUNT_IN * MAX_UNSTAKERS, "sUSDe balance after max requests incorrect");
+    }
+
+    //////////////////////////////////////////////////////
+    /// --- REVERT TESTS
+    //////////////////////////////////////////////////////
+    function test_RevertWhen_RequestWithdraw_RequestDelayNotPassed() public {
+        vm.prank(operator);
+        ethenaARM.requestBaseWithdrawal(AMOUNT_IN);
+
+        vm.expectRevert("EthenaARM: Delay not passed");
+        vm.prank(operator);
+        ethenaARM.requestBaseWithdrawal(AMOUNT_IN);
+    }
+
+    function test_RevertWhen_RequestWithdraw_InvalidUnstaker() public {
+        address[42] memory emptyUnstakers;
+        vm.prank(governor);
+        ethenaARM.setUnstakers(emptyUnstakers);
+
+        vm.expectRevert("EthenaARM: Invalid unstaker");
+        vm.prank(operator);
+        ethenaARM.requestBaseWithdrawal(AMOUNT_IN);
+    }
+
+    function test_RevertWhen_RequestWithdraw_UnstakerInCooldown() public {
+        uint256 delay = ethenaARM.DELAY_REQUEST();
+
+        // Make MAX_UNSTAKERS requests
+        for (uint256 i; i < MAX_UNSTAKERS; i++) {
+            vm.prank(operator);
+            ethenaARM.requestBaseWithdrawal(AMOUNT_IN);
+            skip(delay);
+        }
+
+        vm.prank(operator);
+        vm.expectRevert("EthenaARM: Unstaker in cooldown");
+        ethenaARM.requestBaseWithdrawal(AMOUNT_IN);
+    }
+
+    function test_RevertWhen_RequestWithdraw_NotOperatorOrOwner() public {
+        vm.expectRevert("ARM: Only operator or owner can call this function.");
+        ethenaARM.requestBaseWithdrawal(AMOUNT_IN);
+    }
+
+    function test_RevertWhen_RequestWithdraw_UnauthorizedCaller() public {
+        address unstakerAddress = ethenaARM.unstakers(0);
+
+        vm.expectRevert("Only ARM can request unstake");
+        EthenaUnstaker(unstakerAddress).requestUnstake(AMOUNT_IN);
     }
 }
