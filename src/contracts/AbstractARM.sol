@@ -751,8 +751,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         availableAssets = assets - outstandingWithdrawals;
     }
 
-    /// @dev Hook for calculating the amount of assets in an external withdrawal queue like Lido or OETH
-    /// @return assets The amount of liquidity assets in the external withdrawal queue. eg WETH or wS
+    /// @dev Hook for calculating the amount of liquidity assets in an external withdrawal queue like Lido or OETH.
+    /// @return assets The amount of liquidity assets, eg WETH or wS, expected to be returned from the external withdrawal queue.
+    /// The actual amount returned can be less in the event of a slashing.
     /// This is not the ARM's withdrawal queue.
     function _externalWithdrawQueue() internal view virtual returns (uint256 assets);
 
