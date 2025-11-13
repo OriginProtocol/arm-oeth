@@ -145,7 +145,7 @@ contract EtherFiARM is Initializable, AbstractARM, IERC721Receiver {
     }
 
     /**
-     * @dev Calculates the amount of eETH in the EtherFi Withdrawal Queue.
+     * @dev Calculates the amount of WETH expected to be returned from the EtherFi Withdrawal Queue.
      */
     function _externalWithdrawQueue() internal view override returns (uint256) {
         return etherfiWithdrawalQueueAmount;

@@ -174,7 +174,8 @@ contract LidoARM is Initializable, AbstractARM {
     }
 
     /**
-     * @dev Calculates the amount of stETH in the Lido Withdrawal Queue.
+     * @dev Calculates the amount of WETH expected to be returned from the Lido Withdrawal Queue.
+     * The actual amount returned can be less in the event of a slashing.
      */
     function _externalWithdrawQueue() internal view override returns (uint256) {
         return lidoWithdrawalQueueAmount;

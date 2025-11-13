@@ -434,6 +434,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @param amount The amount of the token to convert from.
     /// @return The converted to amount.
     /// Defaults to 1:1 conversion.
+    /// This can be overridden if the base asset appreciates relative to the liquidity asset.
+    /// For example, wstETH to WETH, weETH to WETH, sUSDe to USDe or wOETH to WETH.
     function _convert(address token, uint256 amount) internal view virtual returns (uint256) {
         return amount;
     }
@@ -718,9 +720,11 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         // Convert the base assets in the ARM to the amount of liquidity assets
         uint256 baseConvertedToLiquid = _convert(baseAsset, IERC20(baseAsset).balanceOf(address(this)));
 
-        // Liquidity assets, eg WETH, in the ARM and lending markets are valued at 1.0
-        // Base assets, eg stETH, in the withdrawal queue are valued at the amount of liquidity assets that will be returned
-        // Base assets, eg stETH, in the ARM are valued the liquidity asset amount and then the cross price which is a discounted price
+        // Liquidity assets, eg WETH, in the ARM and lending markets are valued at 1.0.
+        // Base assets, eg stETH, in the withdrawal queue are valued at the amount of liquidity assets that are expected to be returned.
+        // Base assets, eg stETH, in the ARM is converted to liquidity assets and then the cross price applied. The cross price
+        // is the discounted price for the redemption time delay. This ensures the ARM's assets per share does not decrease if the ARM
+        // sells base assets at a discount (less than 1). That's because the base sell price is greater than or equal to the cross price.
         uint256 assets = IERC20(liquidityAsset).balanceOf(address(this)) + _externalWithdrawQueue()
             + baseConvertedToLiquid * crossPrice / PRICE_SCALE;
 
@@ -747,8 +751,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         availableAssets = assets - outstandingWithdrawals;
     }
 
-    /// @dev Hook for calculating the amount of assets in an external withdrawal queue like Lido or OETH
-    /// @return assets The amount of liquidity assets in the external withdrawal queue. eg WETH or wS
+    /// @dev Hook for calculating the amount of liquidity assets in an external withdrawal queue like Lido or OETH.
+    /// @return assets The amount of liquidity assets, eg WETH or wS, expected to be returned from the external withdrawal queue.
+    /// The actual amount returned can be less in the event of a slashing.
     /// This is not the ARM's withdrawal queue.
     function _externalWithdrawQueue() internal view virtual returns (uint256 assets);
 
