@@ -5,19 +5,30 @@ import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Ini
 
 import {AbstractARM} from "./AbstractARM.sol";
 import {EthenaUnstaker} from "./EthenaUnstaker.sol";
-import {IERC20, IStakedUSDe, UserCooldown} from "./Interfaces.sol";
+import {IERC20, IStakedUSDe} from "./Interfaces.sol";
 
 /**
  * @title Ethena sUSDe/USDe Automated Redemption Manager (ARM)
  * @author Origin Protocol Inc
  */
 contract EthenaARM is Initializable, AbstractARM {
+    /// @notice The delay before a new unstake request can be made
+    uint256 public constant DELAY_REQUEST = 3 hours;
+    /// @notice The maximum number of unstaker helper contracts
+    uint8 public constant MAX_UNSTAKERS = 42;
     /// @notice The address of Ethena's synthetic dollar token (USDe)
     IERC20 public immutable usde;
     /// @notice The address of Ethena's staked synthetic dollar token (sUSDe)
     IStakedUSDe public immutable susde;
 
+    /// @notice The total amount of liquidity asset (USDe) currently in cooldown
     uint256 internal _liquidityAmountInCooldown;
+    /// @notice Array of unstaker helper contracts
+    address[MAX_UNSTAKERS] internal unstakers;
+    /// @notice The index of the next unstaker to use in the round robin
+    uint8 public nextUnstakerIndex;
+    /// @notice The timestamp of the last request made
+    uint32 public lastRequestTimestamp;
 
     event RequestBaseWithdrawal(address indexed unstaker, uint256 baseAmount, uint256 liquidityAmount);
     event ClaimBaseWithdrawals(address indexed unstaker, uint256 liquidityAmount);
@@ -62,29 +73,38 @@ contract EthenaARM is Initializable, AbstractARM {
         _initARM(_operator, _name, _symbol, _fee, _feeCollector, _capManager);
     }
 
-    /**
-     * @notice Request a cooldown of USDe from Ethena's Staked USDe (sUSDe) contract.
-     * @param baseAmount The amount of base assets (sUSDe) to withdraw.
-     */
+    /// @notice Request a cooldown of USDe from Ethena's Staked USDe (sUSDe) contract.
+    /// @dev Uses a round robin to select the next unstaker helper contract.
+    /// @param baseAmount The amount of staked USDe (sUSDe) to withdraw.
     function requestBaseWithdrawal(uint256 baseAmount) external onlyOperatorOrOwner {
-        // Deploy a new EthenaUnstaker helper contract
-        EthenaUnstaker unstaker = new EthenaUnstaker(address(this), susde);
+        require(block.timestamp >= lastRequestTimestamp + DELAY_REQUEST, "EthenaARM: Request delay not passed");
+        lastRequestTimestamp = uint32(block.timestamp);
+
+        // Get the next unstaker contract in the round robin
+        address unstaker = unstakers[nextUnstakerIndex];
+        // Ensure unstaker is valid
+        require(unstaker != address(0), "EthenaARM: Invalid unstaker");
+
+        // Ensure unstaker isn't used during last 7 days
+        uint256 amount = EthenaUnstaker(unstaker).cooldownAmount();
+        require(amount == 0, "EthenaARM: Unstaker in cooldown");
+
+        // Update last used unstaker for the day. Safe to cast as there is a maximum of MAX_UNSTAKERS
+        nextUnstakerIndex = uint8((nextUnstakerIndex + 1) % MAX_UNSTAKERS);
 
         // Transfer sUSDe to the helper contract
-        susde.transfer(address(unstaker), baseAmount);
+        susde.transfer(unstaker, baseAmount);
 
-        uint256 liquidityAmount = unstaker.requestUnstake(baseAmount);
+        uint256 liquidityAmount = EthenaUnstaker(unstaker).requestUnstake(baseAmount);
 
         _liquidityAmountInCooldown += liquidityAmount;
 
         // Emit event for the request
-        emit RequestBaseWithdrawal(address(unstaker), baseAmount, liquidityAmount);
+        emit RequestBaseWithdrawal(unstaker, baseAmount, liquidityAmount);
     }
 
-    /**
-     * @notice Claim all the USDe that is now claimable from the Staked USDe contract.
-     * Reverts with `InvalidCooldown` from the Staked USDe contract if the cooldown period has not yet passed.
-     */
+    /// @notice Claim all the USDe that is now claimable from the Staked USDe contract.
+    /// Reverts with `InvalidCooldown` from the Staked USDe contract if the cooldown period has not yet passed.
     function claimBaseWithdrawals(address unstaker) external {
         uint256 cooldownAmount = EthenaUnstaker(unstaker).cooldownAmount();
         require(cooldownAmount > 0, "EthenaARM: No cooldown amount");
@@ -101,11 +121,9 @@ contract EthenaARM is Initializable, AbstractARM {
         emit ClaimBaseWithdrawals(unstaker, cooldownAmount);
     }
 
-    /**
-     * @dev Gets the total amount of USDe waiting to be claimed from the Staked USDe contract.
-     * This can be for many different cooldowns.
-     * This can be either in the cooldown period or ready to be claimed.
-     */
+    /// @dev Gets the total amount of USDe waiting to be claimed from the Staked USDe contract.
+    /// This can be for many different cooldowns.
+    /// This can be either in the cooldown period or ready to be claimed.
     function _externalWithdrawQueue() internal view override returns (uint256) {
         return _liquidityAmountInCooldown;
     }
@@ -127,5 +145,12 @@ contract EthenaARM is Initializable, AbstractARM {
         } else {
             revert("EthenaARM: Invalid token");
         }
+    }
+
+    /// @notice Set the unstaker helper contracts.
+    /// @param _unstakers The array of unstaker contract addresses.
+    function setUnstaker(address[MAX_UNSTAKERS] calldata _unstakers) external onlyOwner {
+        require(_unstakers.length == MAX_UNSTAKERS, "EthenaARM: Invalid unstakers length");
+        unstakers = _unstakers;
     }
 }
