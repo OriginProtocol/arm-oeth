@@ -77,7 +77,7 @@ contract EthenaARM is Initializable, AbstractARM {
     /// @dev Uses a round robin to select the next unstaker helper contract.
     /// @param baseAmount The amount of staked USDe (sUSDe) to withdraw.
     function requestBaseWithdrawal(uint256 baseAmount) external onlyOperatorOrOwner {
-        require(block.timestamp >= lastRequestTimestamp + DELAY_REQUEST, "EthenaARM: Request delay not passed");
+        require(block.timestamp >= lastRequestTimestamp + DELAY_REQUEST, "EthenaARM: Delay not passed");
         lastRequestTimestamp = uint32(block.timestamp);
 
         // Get the next unstaker contract in the round robin
