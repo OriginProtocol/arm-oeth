@@ -24,7 +24,7 @@ contract EthenaARM is Initializable, AbstractARM {
     /// @notice The total amount of liquidity asset (USDe) currently in cooldown
     uint256 internal _liquidityAmountInCooldown;
     /// @notice Array of unstaker helper contracts
-    address[MAX_UNSTAKERS] internal unstakers;
+    address[MAX_UNSTAKERS] public unstakers;
     /// @notice The index of the next unstaker to use in the round robin
     uint8 public nextUnstakerIndex;
     /// @notice The timestamp of the last request made
