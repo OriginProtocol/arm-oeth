@@ -7,11 +7,13 @@ import {console} from "forge-std/console.sol";
 // Contract imports
 import {IWETH} from "contracts/Interfaces.sol";
 import {Proxy} from "contracts/Proxy.sol";
+import {Mainnet} from "contracts/utils/Addresses.sol";
+import {ZapperARM} from "contracts/ZapperARM.sol";
 import {EthenaARM} from "contracts/EthenaARM.sol";
 import {CapManager} from "contracts/CapManager.sol";
-import {Mainnet} from "contracts/utils/Addresses.sol";
+import {IStakedUSDe} from "contracts/Interfaces.sol";
 import {MorphoMarket} from "contracts/markets/MorphoMarket.sol";
-import {ZapperARM} from "contracts/ZapperARM.sol";
+import {EthenaUnstaker} from "contracts/EthenaARM.sol";
 import {Abstract4626MarketWrapper} from "contracts/markets/Abstract4626MarketWrapper.sol";
 
 // Deployment imports
@@ -29,13 +31,14 @@ contract DeployEthenaARMScript is AbstractDeployScript {
     Proxy morphoMarketProxy;
     EthenaARM armImpl;
     MorphoMarket morphoMarket;
+    Proxy armProxy;
 
     function _execute() internal override {
         console.log("Deploy:", DEPLOY_NAME);
         console.log("------------");
 
         // 1. Deploy new ARM proxy contract
-        Proxy armProxy = new Proxy();
+        armProxy = new Proxy();
         _recordDeploy("ETHENA_ARM", address(armProxy));
 
         // 2. Deploy proxy for the CapManager
@@ -123,5 +126,14 @@ contract DeployEthenaARMScript is AbstractDeployScript {
         armProxy.setOwner(Mainnet.GOV_MULTISIG);
 
         console.log("Finished deploying", DEPLOY_NAME);
+    }
+
+    function deployUnstakers() external returns (address[42] memory unstakers) {
+        for (uint256 i = 0; i < 42; i++) {
+            address unstaker = address(new EthenaUnstaker(payable(armProxy), IStakedUSDe(Mainnet.SUSDE)));
+            unstakers[i] = address(unstaker);
+            console.log("Deployed unstaker", i, address(unstaker));
+        }
+        return unstakers;
     }
 }
