@@ -13,6 +13,8 @@ import {IERC20, IStakedUSDe, UserCooldown} from "./Interfaces.sol";
  * @author Origin Protocol Inc
  */
 contract EthenaARM is Initializable, AbstractARM {
+    /// @notice The delay before a new unstake request can be made
+    uint256 public constant DELAY_REQUEST = 3 hours;
     /// @notice The address of Ethena's synthetic dollar token (USDe)
     IERC20 public immutable usde;
     /// @notice The address of Ethena's staked synthetic dollar token (sUSDe)
@@ -23,7 +25,9 @@ contract EthenaARM is Initializable, AbstractARM {
     /// @notice Array of unstaker helper contracts
     address[42] internal unstakers;
     /// @notice The index of the next unstaker to use in the round robin
-    uint8 internal nextUnstakerIndex;
+    uint8 public nextUnstakerIndex;
+    /// @notice The timestamp of the last request made
+    uint32 public lastRequestTimestamp;
 
     event RequestBaseWithdrawal(address indexed unstaker, uint256 baseAmount, uint256 liquidityAmount);
     event ClaimBaseWithdrawals(address indexed unstaker, uint256 liquidityAmount);
@@ -72,6 +76,9 @@ contract EthenaARM is Initializable, AbstractARM {
     /// @dev Uses a round robin to select the next unstaker helper contract.
     /// @param baseAmount The amount of staked USDe (sUSDe) to withdraw.
     function requestBaseWithdrawal(uint256 baseAmount) external onlyOperatorOrOwner {
+        require(block.timestamp >= lastRequestTimestamp + DELAY_REQUEST, "EthenaARM: Request delay not passed");
+        lastRequestTimestamp = uint32(block.timestamp);
+
         // Get the next unstaker contract in the round robin
         address unstaker = unstakers[nextUnstakerIndex];
         // Ensure unstaker is valid
