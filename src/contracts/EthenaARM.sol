@@ -5,6 +5,7 @@ import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Ini
 
 import {AbstractARM} from "./AbstractARM.sol";
 import {EthenaUnstaker} from "./EthenaUnstaker.sol";
+import {IERC20, IStakedUSDe} from "./Interfaces.sol";
 
 /**
  * @title Ethena sUSDe/USDe Automated Redemption Manager (ARM)
@@ -13,6 +14,8 @@ import {EthenaUnstaker} from "./EthenaUnstaker.sol";
 contract EthenaARM is Initializable, AbstractARM {
     /// @notice The delay before a new unstake request can be made
     uint256 public constant DELAY_REQUEST = 3 hours;
+    /// @notice The maximum number of unstaker helper contracts
+    uint8 public constant MAX_UNSTAKERS = 42;
     /// @notice The address of Ethena's synthetic dollar token (USDe)
     IERC20 public immutable usde;
     /// @notice The address of Ethena's staked synthetic dollar token (sUSDe)
@@ -21,7 +24,7 @@ contract EthenaARM is Initializable, AbstractARM {
     /// @notice The total amount of liquidity asset (USDe) currently in cooldown
     uint256 internal _liquidityAmountInCooldown;
     /// @notice Array of unstaker helper contracts
-    address[42] internal unstakers;
+    address[MAX_UNSTAKERS] internal unstakers;
     /// @notice The index of the next unstaker to use in the round robin
     uint8 public nextUnstakerIndex;
     /// @notice The timestamp of the last request made
@@ -86,8 +89,8 @@ contract EthenaARM is Initializable, AbstractARM {
         uint256 amount = EthenaUnstaker(unstaker).cooldownAmount();
         require(amount == 0, "EthenaARM: Unstaker in cooldown");
 
-        // Update last used unstaker for the day. Safe to cast as there is a max of 42 unstakers
-        nextUnstakerIndex = uint8((nextUnstakerIndex + 1) % unstakers.length);
+        // Update last used unstaker for the day. Safe to cast as there is a maximum of MAX_UNSTAKERS
+        nextUnstakerIndex = uint8((nextUnstakerIndex + 1) % MAX_UNSTAKERS);
 
         // Transfer sUSDe to the helper contract
         susde.transfer(unstaker, baseAmount);
@@ -146,8 +149,8 @@ contract EthenaARM is Initializable, AbstractARM {
 
     /// @notice Set the unstaker helper contracts.
     /// @param _unstakers The array of unstaker contract addresses.
-    function setUnstaker(address[42] calldata _unstakers) external onlyOwner {
-        require(unstakers.length == _unstakers.length, "EthenaARM: Invalid unstakers length");
+    function setUnstaker(address[MAX_UNSTAKERS] calldata _unstakers) external onlyOwner {
+        require(_unstakers.length == MAX_UNSTAKERS, "EthenaARM: Invalid unstakers length");
         unstakers = _unstakers;
     }
 }
