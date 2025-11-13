@@ -102,10 +102,8 @@ contract EthenaARM is Initializable, AbstractARM {
         emit RequestBaseWithdrawal(unstaker, baseAmount, liquidityAmount);
     }
 
-    /**
-     * @notice Claim all the USDe that is now claimable from the Staked USDe contract.
-     * Reverts with `InvalidCooldown` from the Staked USDe contract if the cooldown period has not yet passed.
-     */
+    /// @notice Claim all the USDe that is now claimable from the Staked USDe contract.
+    /// Reverts with `InvalidCooldown` from the Staked USDe contract if the cooldown period has not yet passed.
     function claimBaseWithdrawals(address unstaker) external {
         uint256 cooldownAmount = EthenaUnstaker(unstaker).cooldownAmount();
         require(cooldownAmount > 0, "EthenaARM: No cooldown amount");
@@ -122,11 +120,9 @@ contract EthenaARM is Initializable, AbstractARM {
         emit ClaimBaseWithdrawals(unstaker, cooldownAmount);
     }
 
-    /**
-     * @dev Gets the total amount of USDe waiting to be claimed from the Staked USDe contract.
-     * This can be for many different cooldowns.
-     * This can be either in the cooldown period or ready to be claimed.
-     */
+    /// @dev Gets the total amount of USDe waiting to be claimed from the Staked USDe contract.
+    /// This can be for many different cooldowns.
+    /// This can be either in the cooldown period or ready to be claimed.
     function _externalWithdrawQueue() internal view override returns (uint256) {
         return _liquidityAmountInCooldown;
     }
