@@ -377,6 +377,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         virtual
         returns (uint256 amountOut)
     {
+        // Convert base asset to liquid asset or vice versa if needed
+        uint256 convertedAmountIn = _convert(address(inToken), amountIn);
+
         uint256 price;
         if (inToken == token0) {
             require(outToken == token1, "ARM: Invalid out token");
@@ -387,7 +390,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         } else {
             revert("ARM: Invalid in token");
         }
-        amountOut = amountIn * price / PRICE_SCALE;
+        amountOut = convertedAmountIn * price / PRICE_SCALE;
 
         // Transfer the input tokens from the caller to this ARM contract
         _transferAssetFrom(address(inToken), msg.sender, address(this), amountIn);
@@ -401,6 +404,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         virtual
         returns (uint256 amountIn)
     {
+        // Convert base asset to liquid asset or vice versa if needed
+        uint256 convertedAmountOut = _convert(address(outToken), amountOut);
+
         uint256 price;
         if (inToken == token0) {
             require(outToken == token1, "ARM: Invalid out token");
@@ -414,13 +420,24 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         // always round in our favor
         // +1 for truncation when dividing integers
         // +2 to cover stETH transfers being up to 2 wei short of the requested transfer amount
-        amountIn = ((amountOut * PRICE_SCALE) / price) + 3;
+        amountIn = ((convertedAmountOut * PRICE_SCALE) / price) + 3;
 
         // Transfer the input tokens from the caller to this ARM contract
         _transferAssetFrom(address(inToken), msg.sender, address(this), amountIn);
 
         // Transfer the output tokens to the recipient
         _transferAsset(address(outToken), to, amountOut);
+    }
+
+    /// @dev Convert between base asset and liquidity asset if needed.
+    /// @param token The address of the token to convert from.
+    /// @param amount The amount of the token to convert from.
+    /// @return The converted to amount.
+    /// Defaults to 1:1 conversion.
+    /// This can be overridden if the base asset appreciates relative to the liquidity asset.
+    /// For example, wstETH to WETH, weETH to WETH, sUSDe to USDe or wOETH to WETH.
+    function _convert(address token, uint256 amount) internal view virtual returns (uint256) {
+        return amount;
     }
 
     /// @notice Get the available liquidity for a each token in the ARM.
@@ -441,6 +458,10 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         // If not, swap the reserves
         if (address(token0) == baseAsset) (reserve0, reserve1) = (reserve1, reserve0);
     }
+
+    ////////////////////////////////////////////////////
+    ///         Swap Admin Functions
+    ////////////////////////////////////////////////////
 
     /**
      * @notice Set exchange rates from an operator account from the ARM's perspective.
@@ -696,11 +717,16 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// and active lending market, less liquidity assets reserved for the ARM's withdrawal queue.
     /// This does not exclude any accrued performance fees.
     function _availableAssets() internal view returns (uint256 availableAssets, uint256 outstandingWithdrawals) {
-        // Liquidity assets, eg WETH, in the ARM and lending markets are priced at 1.0
-        // Base assets, eg stETH, in the withdrawal queue are also priced at 1.0
-        // Base assets, eg stETH, in the ARM are priced at the cross price which is a discounted price
+        // Convert the base assets in the ARM to the amount of liquidity assets
+        uint256 baseConvertedToLiquid = _convert(baseAsset, IERC20(baseAsset).balanceOf(address(this)));
+
+        // Liquidity assets, eg WETH, in the ARM and lending markets are valued at 1.0.
+        // Base assets, eg stETH, in the withdrawal queue are valued at the amount of liquidity assets that are expected to be returned.
+        // Base assets, eg stETH, in the ARM is converted to liquidity assets and then the cross price applied. The cross price
+        // is the discounted price for the redemption time delay. This ensures the ARM's assets per share does not decrease if the ARM
+        // sells base assets at a discount (less than 1). That's because the base sell price is greater than or equal to the cross price.
         uint256 assets = IERC20(liquidityAsset).balanceOf(address(this)) + _externalWithdrawQueue()
-            + IERC20(baseAsset).balanceOf(address(this)) * crossPrice / PRICE_SCALE;
+            + baseConvertedToLiquid * crossPrice / PRICE_SCALE;
 
         address activeMarketMem = activeMarket;
         if (activeMarketMem != address(0)) {
@@ -725,8 +751,10 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         availableAssets = assets - outstandingWithdrawals;
     }
 
-    /// @dev Hook for calculating the amount of assets in an external withdrawal queue like Lido or OETH
-    /// This is not the ARM's withdrawal queue
+    /// @dev Hook for calculating the amount of liquidity assets in an external withdrawal queue like Lido or OETH.
+    /// @return assets The amount of liquidity assets, eg WETH or wS, expected to be returned from the external withdrawal queue.
+    /// The actual amount returned can be less in the event of a slashing.
+    /// This is not the ARM's withdrawal queue.
     function _externalWithdrawQueue() internal view virtual returns (uint256 assets);
 
     /// @notice Calculates the amount of shares for a given amount of liquidity assets
