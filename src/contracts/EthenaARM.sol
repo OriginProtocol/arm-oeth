@@ -2,7 +2,6 @@
 pragma solidity ^0.8.23;
 
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 
 import {AbstractARM} from "./AbstractARM.sol";
 import {EthenaUnstaker} from "./EthenaUnstaker.sol";
