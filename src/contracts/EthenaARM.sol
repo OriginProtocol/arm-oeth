@@ -149,7 +149,7 @@ contract EthenaARM is Initializable, AbstractARM {
 
     /// @notice Set the unstaker helper contracts.
     /// @param _unstakers The array of unstaker contract addresses.
-    function setUnstaker(address[MAX_UNSTAKERS] calldata _unstakers) external onlyOwner {
+    function setUnstakers(address[MAX_UNSTAKERS] calldata _unstakers) external onlyOwner {
         require(_unstakers.length == MAX_UNSTAKERS, "EthenaARM: Invalid unstakers length");
         unstakers = _unstakers;
     }
