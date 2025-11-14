@@ -8,10 +8,113 @@ const { getUniswapV3SpotPrices } = require("../utils/uniswap");
 const { getSigner } = require("../utils/signers");
 const { getFluidSpotPrices } = require("../utils/fluid");
 const { mainnet } = require("../utils/addresses");
+const { resolveAddress } = require("../utils/assets");
 
 const log = require("../utils/logger")("task:markets");
 
-const logArmPrices = async ({ blockTag, gas }, arm) => {
+const snapMarket = async ({
+  amount,
+  base,
+  liquid,
+  wrapped,
+  days,
+  fee1Inch,
+  oneInch,
+  kyber,
+}) => {
+  const baseAddress = await resolveAddress(base.toUpperCase());
+  const liquidAddress = await resolveAddress(liquid.toUpperCase());
+  const assets = {
+    liquid: liquidAddress,
+    base: baseAddress,
+  };
+
+  // Assume the wrapped base asset is ERC-4626
+  let wrapPrice;
+  if (wrapped) {
+    const vault = await ethers.getContractAt("IERC4626", baseAddress);
+    const assetAmount = await vault.convertToAssets(
+      parseUnits(amount.toString(), 18),
+    );
+    wrapPrice =
+      (assetAmount * parseUnits("1")) / parseUnits(amount.toString(), 18);
+
+    console.log(
+      `\nWrapped price: ${formatUnits(wrapPrice, 18)} ${base}/${liquid}`,
+    );
+  }
+
+  const pair = wrapped ? `unwrapped ${base}->${liquid}` : `${base}/${liquid}`;
+  if (oneInch) {
+    const fee = BigInt(fee1Inch);
+
+    const chainId = await (await ethers.provider.getNetwork()).chainId;
+    const marketPrices = await log1InchPrices({
+      amount,
+      assets,
+      fee,
+      pair,
+      chainId,
+      wrapPrice,
+    });
+
+    if (days) {
+      logDiscount(marketPrices.sellPrice, days);
+    }
+  }
+
+  if (kyber) {
+    const marketPrices = await logKyberPrices({
+      amount,
+      days,
+      assets,
+      pair,
+      wrapPrice,
+    });
+
+    if (days) {
+      logDiscount(marketPrices.sellPrice, days);
+    }
+  }
+};
+
+const logDiscountsOverDays = (marketPrice, daysArray) => {
+  // take 80% of the discount to cover the 20% fee
+  const discount = BigInt(1e18) - marketPrice;
+  const discountPostFee = (discount * 8n) / 10n;
+  console.log(
+    `\nYield on ${formatUnits(
+      discountPostFee * 10000n,
+      18,
+    )} bps discount after 20% fee`,
+  );
+
+  let output = "";
+  for (const days of daysArray) {
+    const discountAPY =
+      (discountPostFee * 36500n) / BigInt(days) / parseUnits("1", 16);
+    output += `${days} days ${formatUnits(discountAPY, 2)}%, `;
+  }
+  output = output.slice(0, -2); // remove trailing comma and space
+  output += " APY";
+
+  console.log(output);
+};
+
+const logDiscount = (marketPrice, days) => {
+  const discount = BigInt(1e18) - marketPrice;
+  // take 80% of the discount to cover the 20% fee
+  const discountPostFee = (discount * 8n) / 10n;
+  const discountAPY = (discountPostFee * 365n) / BigInt(days);
+  console.log(
+    `Discount over ${days} days after 20% fee: ${formatUnits(
+      discountPostFee * 10000n,
+      18,
+    )} bps, ${formatUnits(discountAPY * 100n, 18)}% APY`,
+  );
+};
+
+const logArmPrices = async ({ blockTag, gas, days }, arm) => {
   console.log(`\nARM Prices`);
   // The rate of 1 WETH for stETH to 36 decimals from the perspective of the AMM. ie WETH/stETH
   // from the trader's perspective, this is the stETH/WETH buy price
@@ -80,31 +183,11 @@ const logArmPrices = async ({ blockTag, gas }, arm) => {
   // Origin rates are to 36 decimals
   console.log(`spread : ${formatUnits(spread, 14)} bps`);
 
-  // take 80% of the discount to cover the 20% fee
-  const buyDiscount = BigInt(1e18) - buyPrice;
-  const buyDiscountPostFee = (buyDiscount * 8n) / 10n;
-
-  console.log(
-    `\nYield on ${formatUnits(
-      buyDiscount * 10000n,
-      18,
-    )} bps buy discount after fee`,
-  );
-  console.log(
-    `1 day ${formatUnits(
-      buyDiscountPostFee * 36500n,
-      18,
-    )}%, 2 days ${formatUnits(
-      (buyDiscountPostFee * 36500n) / 2n,
-      18,
-    )}%, 3 days ${formatUnits(
-      (buyDiscountPostFee * 36500n) / 3n,
-      18,
-    )}%, 4 days ${formatUnits(
-      (buyDiscountPostFee * 36500n) / 4n,
-      18,
-    )}%, 5 days ${formatUnits((buyDiscountPostFee * 36500n) / 5n, 18)}% APY`,
-  );
+  if (days) {
+    logDiscount(buyPrice, days);
+  } else {
+    logDiscountsOverDays(buyPrice, [1, 2, 3, 4, 5, 7]);
+  }
 
   return {
     buyPrice,
@@ -130,16 +213,20 @@ const logMarketPrices = async ({
   );
 
   console.log(`\n${marketName} prices for swap size ${amount}`);
-  // Note market sell is from the trader's perspective while the ARM sell price is from the AMM's perspective
-  const buyRateDiff = marketPrices.buyPrice - armPrices.sellPrice;
-  const armBuyToMarketSellDiff = marketPrices.buyPrice - armPrices.buyPrice;
-  const buyGasCosts = gas
-    ? `, ${marketPrices.buyGas.toLocaleString()} gas`
-    : "";
+  let armDiff = "";
+  if (armPrices) {
+    // Note market sell is from the trader's perspective while the ARM sell price is from the AMM's perspective
+    const buyRateDiff = marketPrices.buyPrice - armPrices.sellPrice;
+    const armBuyToMarketSellDiff = marketPrices.buyPrice - armPrices.buyPrice;
+    const buyGasCosts = gas
+      ? `, ${marketPrices.buyGas.toLocaleString()} gas`
+      : "";
+    armDiff = `, ${formatUnits(armBuyToMarketSellDiff, 14)} bps from ARM buy, ${formatUnits(buyRateDiff, 14)} bps from ARM sell${buyGasCosts}`;
+  }
   console.log(
     `buy    : ${formatUnits(marketPrices.buyPrice, 18).padEnd(
       20,
-    )} ${pair}, ${formatUnits(armBuyToMarketSellDiff, 14)} bps from ARM buy, ${formatUnits(buyRateDiff, 14)} bps from ARM sell${buyGasCosts}`,
+    )} ${pair}${armDiff}`,
   );
 
   console.log(
@@ -147,24 +234,31 @@ const logMarketPrices = async ({
   );
 
   // Note market buy is from the trader's perspective while the ARM buy price is from the AMM's perspective
-  const sellRateDiff = marketPrices.sellPrice - armPrices.buyPrice;
-  const sellGasCosts = gas
-    ? `, ${marketPrices.sellGas.toLocaleString()} gas`
-    : "";
+  if (armPrices) {
+    const sellRateDiff = marketPrices.sellPrice - armPrices.buyPrice;
+    const sellGasCosts = gas
+      ? `, ${marketPrices.sellGas.toLocaleString()} gas`
+      : "";
+    armDiff = `, ${formatUnits(sellRateDiff, 14).padEnd(
+      17,
+    )} bps from ARM buy${sellGasCosts}`;
+  }
   console.log(
     `sell   : ${formatUnits(marketPrices.sellPrice, 18).padEnd(
       20,
-    )} ${pair}, ${formatUnits(sellRateDiff, 14).padEnd(
-      17,
-    )} bps from ARM buy${sellGasCosts}`,
+    )} ${pair}${armDiff}`,
   );
   console.log(`spread : ${formatUnits(marketPrices.spread, 14)} bps`);
 };
 
 const log1InchPrices = async (options, armPrices) => {
-  const { amount, assets, fee, chainId } = options;
+  const { amount, assets, fee, chainId, wrapPrice } = options;
 
   const marketPrices = await get1InchPrices(amount, assets, fee, chainId);
+
+  if (wrapPrice) {
+    unwrapPrices(marketPrices, wrapPrice);
+  }
 
   await logMarketPrices({
     ...options,
@@ -172,6 +266,8 @@ const log1InchPrices = async (options, armPrices) => {
     armPrices,
     marketName: "1Inch",
   });
+
+  if (armPrices === undefined) return marketPrices;
 
   console.log(
     `\nBest buy : ${
@@ -186,9 +282,13 @@ const log1InchPrices = async (options, armPrices) => {
 };
 
 const logKyberPrices = async (options, armPrices) => {
-  const { amount, assets } = options;
+  const { amount, assets, wrapPrice } = options;
 
   const marketPrices = await getKyberPrices(amount, assets);
+
+  if (wrapPrice) {
+    unwrapPrices(marketPrices, wrapPrice);
+  }
 
   await logMarketPrices({
     ...options,
@@ -196,6 +296,8 @@ const logKyberPrices = async (options, armPrices) => {
     armPrices,
     marketName: "Kyber",
   });
+
+  if (armPrices === undefined) return marketPrices;
 
   console.log(
     `\nBest buy : ${
@@ -207,6 +309,18 @@ const logKyberPrices = async (options, armPrices) => {
   );
 
   return marketPrices;
+};
+
+const unwrapPrices = (marketPrices, wrapPrice) => {
+  // Adjust prices back to unwrapped base asset
+  marketPrices.buyPrice = (marketPrices.buyPrice * parseUnits("1")) / wrapPrice;
+  marketPrices.sellPrice =
+    (marketPrices.sellPrice * parseUnits("1")) / wrapPrice;
+  marketPrices.midPrice = (marketPrices.midPrice * parseUnits("1")) / wrapPrice;
+  marketPrices.buyToAmount =
+    (marketPrices.buyToAmount * parseUnits("1")) / wrapPrice;
+  marketPrices.sellToAmount =
+    (marketPrices.sellToAmount * parseUnits("1")) / wrapPrice;
 };
 
 const logCurvePrices = async (options, armPrices) => {
@@ -297,6 +411,7 @@ const logWrappedEtherFiPrices = async ({ amount, armPrices }) => {
 };
 
 module.exports = {
+  snapMarket,
   log1InchPrices,
   logKyberPrices,
   logArmPrices,

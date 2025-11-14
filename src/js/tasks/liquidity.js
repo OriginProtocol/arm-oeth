@@ -72,7 +72,8 @@ const snap = async ({ arm, block, gas, amount, oneInch, kyber }) => {
   if (arm !== "Oeth") {
     await logWithdrawalQueue(armContract, blockTag, liquidityBalance);
 
-    const armPrices = await logArmPrices({ block, gas }, armContract);
+    const days = arm === "EtherFi" ? 5 : undefined;
+    const armPrices = await logArmPrices({ block, gas, days }, armContract);
 
     const pair =
       arm === "Lido"
@@ -82,12 +83,12 @@ const snap = async ({ arm, block, gas, amount, oneInch, kyber }) => {
           : arm == "Origin"
             ? "OS/wS"
             : "Unknown";
+    const assets = {
+      liquid: await armContract.liquidityAsset(),
+      base: await armContract.baseAsset(),
+    };
 
     if (oneInch) {
-      const assets = {
-        liquid: await armContract.liquidityAsset(),
-        base: await armContract.baseAsset(),
-      };
       const fee = arm === "Lido" ? 10n : 30n;
 
       const chainId = await (await ethers.provider.getNetwork()).chainId;
@@ -100,11 +101,6 @@ const snap = async ({ arm, block, gas, amount, oneInch, kyber }) => {
 
     if (kyber && arm !== "Origin") {
       // Kyber does not support Sonic
-      const assets = {
-        liquid: await armContract.liquidityAsset(),
-        base: await armContract.baseAsset(),
-      };
-
       await logKyberPrices({ amount, assets, pair }, armPrices);
     }
   }

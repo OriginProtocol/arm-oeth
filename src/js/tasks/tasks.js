@@ -33,6 +33,7 @@ const {
   snap,
   withdrawRequestStatus,
 } = require("./liquidity");
+const { snapMarket } = require("./markets");
 const {
   autoRequestWithdraw,
   autoClaimWithdraw,
@@ -613,7 +614,12 @@ task("claimRedeemARM").setAction(async (_, __, runSuper) => {
 // Capital Management
 
 subtask("setLiquidityProviderCaps", "Set deposit cap for liquidity providers")
-  .addParam("arm", "Name of the ARM. eg Lido, Origin or EtherFi", "Lido", types.string)
+  .addParam(
+    "arm",
+    "Name of the ARM. eg Lido, Origin or EtherFi",
+    "Lido",
+    types.string,
+  )
   .addParam(
     "cap",
     "Amount of WETH not scaled to 18 decimals",
@@ -632,7 +638,12 @@ task("setLiquidityProviderCaps").setAction(async (_, __, runSuper) => {
 });
 
 subtask("setTotalAssetsCap", "Set total assets cap")
-  .addParam("arm", "Name of the ARM. eg Lido, Origin or EtherFi", "Lido", types.string)
+  .addParam(
+    "arm",
+    "Name of the ARM. eg Lido, Origin or EtherFi",
+    "Lido",
+    types.string,
+  )
   .addParam(
     "cap",
     "Amount of WETH not scaled to 18 decimals",
@@ -1093,6 +1104,25 @@ task("setOperator").setAction(async (_, __, runSuper) => {
 });
 
 // ARM Snapshots
+
+subtask("snapMarket", "Take a market snapshot of prices")
+  .addParam("base", "Symbol of base asset", undefined, types.string)
+  .addParam("wrapped", "Is the base asset wrapped?", false, types.boolean)
+  .addParam("liquid", "Symbol of liquid asset", undefined, types.string)
+  .addOptionalParam("amount", "Swap quantity", 100, types.int)
+  .addOptionalParam(
+    "days",
+    "Days to unwrap the base asset",
+    undefined,
+    types.float,
+  )
+  .addOptionalParam("oneInch", "Include 1Inch prices", true, types.boolean)
+  .addOptionalParam("fee1Inch", "1Inch infrastructure fee", 10, types.int)
+  .addOptionalParam("kyber", "Include Kyber prices", true, types.boolean)
+  .setAction(snapMarket);
+task("snapMarket").setAction(async (_, __, runSuper) => {
+  return runSuper();
+});
 
 subtask("snap", "Take a snapshot of the an ARM")
   .addOptionalParam(
