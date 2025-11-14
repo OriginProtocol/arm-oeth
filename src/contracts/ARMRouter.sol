@@ -466,13 +466,52 @@ contract ARMRouter is Ownable {
     /// @notice Retrieves the ARM or Wrapper configuration for a given token pair.
     /// @param tokenA The address of the first token.
     /// @param tokenB The address of the second token.
-    /// @return arm The configuration struct containing swap type, address, and function signatures.
-    function getConfigFor(address tokenA, address tokenB) public view returns (Config memory arm) {
+    /// @return config The configuration struct containing swap type, address, and function signatures.
+    function getConfigFor(address tokenA, address tokenB) public view returns (Config memory config) {
         // Fetch the ARM configuration for the token pair
-        arm = configs[tokenA][tokenB];
+        // The following assembly block efficiently computes the storage slot for configs[tokenA][tokenB]
+        // ~~ arm = configs[tokenA][tokenB];
+        assembly {
+            // Temporary memory pointer for keccak256 calculations
+            let ptr := mload(0x40)
 
-        // Ensure the ARM configuration exists
-        require(arm.addr != address(0), "ARMRouter: PATH_NOT_FOUND");
+            // Compute inner mapping slot: mapping(address => mapping(...))[from]
+            mstore(ptr, tokenA)
+            mstore(add(ptr, 0x20), configs.slot)
+            let innerSlot := keccak256(ptr, 0x40)
+
+            // Compute final storage slot: mapping(address => Config)[to] inside the inner mapping
+            mstore(ptr, tokenB)
+            mstore(add(ptr, 0x20), innerSlot)
+            let slot := keccak256(ptr, 0x40)
+
+            // Load the single packed storage slot (29 bytes → fits in one word)
+            let packed := sload(slot)
+
+            // Optional: early return if route doesn't exist
+            if iszero(packed) {
+                mstore(0x80, 0xe47e2d62) // bytes4(keccak256("ARMRouter: PATH_NOT_FOUND")) → 0xe47e2d62
+                revert(0x9c, 0x04) // Reads 4 bytes.
+            }
+
+            // Allocate memory for the returned struct (4 full slots)
+            config := mload(0x40)
+            mstore(0x40, add(config, 0x80)) // advance free memory pointer
+
+            // Unpack swapType (lowest 8 bits) → enum is right-aligned
+            mstore(config, and(packed, 0xff))
+
+            // Unpack address (bits 8 → 167) → right-aligned (standard for address)
+            mstore(add(config, 0x20), and(shr(8, packed), 0xffffffffffffffffffffffffffffffffffffffff))
+
+            // Unpack wrapSig (bits 168 → 199) → bytes4 must be left-aligned in memory
+            let wrapSig := and(shr(168, packed), 0xffffffff)
+            mstore(add(config, 0x40), shl(224, wrapSig))
+
+            // Unpack priceSig (bits 200 → 231) → bytes4 must be left-aligned in memory
+            let priceSig := and(shr(200, packed), 0xffffffff)
+            mstore(add(config, 0x60), shl(224, priceSig))
+        }
     }
 
     ////////////////////////////////////////////////////
