@@ -109,11 +109,7 @@ contract EthenaARM is Initializable, AbstractARM {
         uint256 cooldownAmount = EthenaUnstaker(unstaker).cooldownAmount();
         require(cooldownAmount > 0, "EthenaARM: No cooldown amount");
 
-        if (_liquidityAmountInCooldown < cooldownAmount) {
-            _liquidityAmountInCooldown = 0;
-        } else {
-            _liquidityAmountInCooldown -= cooldownAmount;
-        }
+        _liquidityAmountInCooldown -= cooldownAmount;
 
         // Claim all the underlying USDe that has cooled down for the unstaker and send to the ARM
         EthenaUnstaker(unstaker).claimUnstake();
