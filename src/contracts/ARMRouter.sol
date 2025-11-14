@@ -470,7 +470,7 @@ contract ARMRouter is Ownable {
     function getConfigFor(address tokenA, address tokenB) public view returns (Config memory config) {
         // Fetch the ARM configuration for the token pair
         // The following assembly block efficiently computes the storage slot for configs[tokenA][tokenB]
-        // ~~ arm = configs[tokenA][tokenB];
+        // ~~ config = configs[tokenA][tokenB];
         assembly {
             // Temporary memory pointer for keccak256 calculations
             let ptr := mload(0x40)
