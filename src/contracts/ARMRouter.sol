@@ -434,17 +434,73 @@ contract ARMRouter is Ownable {
         // Get ARM or Wrapper config
         Config memory config = getConfigFor(tokenA, tokenB);
 
+        // Inline assembly to optimize traderate fetching and amountIn calculation
+        // WIP
+        assembly {
+            // config: 0: swapType, 1: addr, 2: wrapSig, 3: priceSig
+            let swapType := mload(config)
+            let addr := mload(add(config, 0x20))
+            let priceSig := mload(add(config, 0x60))
+            if iszero(swapType) {
+                let token0 := 0
+                {
+                    //AbstractARM(config.addr).token0();
+                    let ptr := mload(0x40)
+                    // bytes4(keccak256("token0()")) → 0x0dfe1681
+                    // It need to be left-aligned in memory for the call, because there is no arguments.
+                    mstore(ptr, 0x0dfe168100000000000000000000000000000000000000000000000000000000)
+                    let success := staticcall(gas(), addr, ptr, 0x04, ptr, 0x20)
+                    if iszero(success) {
+                        mstore(0x80, 0x572a7e6d) // bytes4(keccak256("ARMRouter: GET_TOKEN0_FAIL")) → 0x572a7e6d
+                        revert(0x9c, 0x04) // Reads 4 bytes.
+                    }
+                    token0 := mload(ptr)
+                }
+                let traderate := 0
+                if eq(tokenA, token0) {
+                    let ptr := mload(0x40)
+                    // bytes4(keccak256("traderate0()")) → 0x45059a6b
+                    // It need to be left-aligned in memory for the call, because there is no arguments.
+                    mstore(ptr, 0x45059a6b00000000000000000000000000000000000000000000000000000000)
+                    let success := staticcall(gas(), addr, ptr, 0x04, ptr, 0x20)
+                    if iszero(success) {
+                        mstore(0x80, 0xc10bcf53) // bytes4(keccak256("ARMRouter: GET_TRADERATE0_FAIL")) → 0xc10bcf53
+                        revert(0x9c, 0x04) // Reads 4 bytes.
+                    }
+                    traderate := mload(ptr)
+                }
+                if eq(tokenB, token0) {
+                    let ptr := mload(0x40)
+                    // bytes4(keccak256("traderate1()")) → 0xcf1de5d8
+                    // It need to be left-aligned in memory for the call, because there is no arguments.
+                    mstore(ptr, 0xcf1de5d800000000000000000000000000000000000000000000000000000000)
+                    let success := staticcall(gas(), addr, ptr, 0x04, ptr, 0x20)
+                    if iszero(success) {
+                        mstore(0x80, 0xc2d1624a) // bytes4(keccak256("ARMRouter: GET_TRADERATE1_FAIL")) → 0xc2d1624a
+                        revert(0x9c, 0x04) // Reads 4 bytes.
+                    }
+                    traderate := mload(ptr)
+                }
+
+                // Calculate required input amount
+                // amountIn = ((amountOut * PRICE_SCALE) / traderate) + 3;
+                // Round up division. ceil(a/b) = (a + b - 1) / b
+                // Adding 3 to account for rounding errors
+                amountIn := add(div(add(mul(amountOut, PRICE_SCALE), sub(traderate, 1)), traderate), 3)
+            }
+        }
+
         if (config.swapType == SwapType.ARM) {
             // Fetch token0 from ARM
-            IERC20 token0 = AbstractARM(config.addr).token0();
+            //IERC20 token0 = AbstractARM(config.addr).token0();
 
             // Get traderate based on token position
-            uint256 traderate = tokenA == address(token0)
-                ? AbstractARM(config.addr).traderate0()
-                : AbstractARM(config.addr).traderate1();
+            //uint256 traderate = tokenA == address(token0)
+            //    ? AbstractARM(config.addr).traderate0()
+            //    : AbstractARM(config.addr).traderate1();
 
             // Calculate required input amount
-            amountIn = ((amountOut * PRICE_SCALE) / traderate) + 3;
+            //amountIn = ((amountOut * PRICE_SCALE) / traderate) + 3;
         } else {
             // Call the Wrapper contract's price query function
             (bool success, bytes memory data) = config.addr.call(abi.encodeWithSelector(config.priceSig, amountOut));
