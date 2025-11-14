@@ -143,4 +143,14 @@ abstract contract Unit_Concrete_ARMRouter_SwapExactTokensForTokens_Test is Unit_
         vm.stopSnapshotGas();
         assertLt(address(this).balance, balanceBefore + amountIn);
     }
+
+    function test_RevertWhen_Swap_ExactTokensForTokens_PathNotFound() public {
+        uint256 amountIn = 10 ether;
+        address[] memory path = new address[](2);
+        path[0] = address(eeth);
+        path[1] = address(steth); // No direct ARM path between EETH and STETH
+
+        vm.expectRevert(abi.encodeWithSignature("ARMRouter: PATH_NOT_FOUND"));
+        router.swapExactTokensForTokens(amountIn, 0, path, address(this), block.timestamp + 1);
+    }
 }
