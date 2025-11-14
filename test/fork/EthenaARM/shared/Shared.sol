@@ -7,12 +7,15 @@ import {Base_Test_} from "test/Base.sol";
 // Contracts
 import {Proxy} from "contracts/Proxy.sol";
 import {EthenaARM} from "contracts/EthenaARM.sol";
+import {EthenaUnstaker} from "contracts/EthenaUnstaker.sol";
 
 // Interfaces
 import {Mainnet} from "src/contracts/utils/Addresses.sol";
-import {IERC20, IERC4626} from "contracts/Interfaces.sol";
+import {IERC20, IERC4626, IStakedUSDe} from "contracts/Interfaces.sol";
 
 abstract contract Fork_Shared_Test is Base_Test_ {
+    uint256 public constant MAX_UNSTAKERS = 42;
+
     //////////////////////////////////////////////////////
     /// --- SETUP
     //////////////////////////////////////////////////////
@@ -114,5 +117,16 @@ abstract contract Fork_Shared_Test is Base_Test_ {
 
         // Swap usde to susde using ARM to have some susde balance
         ethenaARM.swapExactTokensForTokens(IERC20(address(susde)), usde, 5_000 ether, 0, address(this));
+
+        vm.startPrank(ethenaARM.owner());
+        ethenaARM.setUnstakers(_deployUnstakers());
+        vm.stopPrank();
+    }
+
+    function _deployUnstakers() internal returns (address[MAX_UNSTAKERS] memory unstakers) {
+        for (uint256 i; i < MAX_UNSTAKERS; i++) {
+            address unstaker = address(new EthenaUnstaker(payable(ethenaProxy), IStakedUSDe(Mainnet.SUSDE)));
+            unstakers[i] = address(unstaker);
+        }
     }
 }

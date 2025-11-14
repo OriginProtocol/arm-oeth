@@ -24,7 +24,7 @@ contract EthenaARM is Initializable, AbstractARM {
     /// @notice The total amount of liquidity asset (USDe) currently in cooldown
     uint256 internal _liquidityAmountInCooldown;
     /// @notice Array of unstaker helper contracts
-    address[MAX_UNSTAKERS] internal unstakers;
+    address[MAX_UNSTAKERS] public unstakers;
     /// @notice The index of the next unstaker to use in the round robin
     uint8 public nextUnstakerIndex;
     /// @notice The timestamp of the last request made
@@ -77,7 +77,7 @@ contract EthenaARM is Initializable, AbstractARM {
     /// @dev Uses a round robin to select the next unstaker helper contract.
     /// @param baseAmount The amount of staked USDe (sUSDe) to withdraw.
     function requestBaseWithdrawal(uint256 baseAmount) external onlyOperatorOrOwner {
-        require(block.timestamp >= lastRequestTimestamp + DELAY_REQUEST, "EthenaARM: Request delay not passed");
+        require(block.timestamp >= lastRequestTimestamp + DELAY_REQUEST, "EthenaARM: Delay not passed");
         lastRequestTimestamp = uint32(block.timestamp);
 
         // Get the next unstaker contract in the round robin
@@ -109,11 +109,7 @@ contract EthenaARM is Initializable, AbstractARM {
         uint256 cooldownAmount = EthenaUnstaker(unstaker).cooldownAmount();
         require(cooldownAmount > 0, "EthenaARM: No cooldown amount");
 
-        if (_liquidityAmountInCooldown < cooldownAmount) {
-            _liquidityAmountInCooldown = 0;
-        } else {
-            _liquidityAmountInCooldown -= cooldownAmount;
-        }
+        _liquidityAmountInCooldown -= cooldownAmount;
 
         // Claim all the underlying USDe that has cooled down for the unstaker and send to the ARM
         EthenaUnstaker(unstaker).claimUnstake();
@@ -149,7 +145,7 @@ contract EthenaARM is Initializable, AbstractARM {
 
     /// @notice Set the unstaker helper contracts.
     /// @param _unstakers The array of unstaker contract addresses.
-    function setUnstaker(address[MAX_UNSTAKERS] calldata _unstakers) external onlyOwner {
+    function setUnstakers(address[MAX_UNSTAKERS] calldata _unstakers) external onlyOwner {
         require(_unstakers.length == MAX_UNSTAKERS, "EthenaARM: Invalid unstakers length");
         unstakers = _unstakers;
     }
