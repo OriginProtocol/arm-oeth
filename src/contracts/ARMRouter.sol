@@ -397,31 +397,43 @@ contract ARMRouter is Ownable {
     /// @param path The swap path as an array of token addresses.
     /// @return amounts An array of token amounts for each step in the swap path.
     function _getAmountsIn(uint256 amountOut, address[] memory path) internal returns (uint256[] memory amounts) {
-        // Cache length to save gas
-        uint256 len = path.length;
-        // Cache length minus one to save gas, in 2 operations to safe gas
-        uint256 lenMinusOne = len;
+        // ---
+        // The following assembly block is equivalent to:
+        // require(path.length > 1, "ARMRouter: INVALID_PATH");
+        // amounts = new uint256[](path.length);
+        // amounts[path.length - 1] = amountOut;
+        // ---
         assembly {
-            // lenMinusOne -= 1
-            lenMinusOne := sub(lenMinusOne, 1)
-        }
-        // Ensure the path has at least two tokens
-        require(lenMinusOne > 0, "ARMRouter: INVALID_PATH");
-
-        // Initialize the amounts array
-        amounts = DynamicArrayLib.malloc(len);
-        amounts.set(lenMinusOne, amountOut);
-
-        // Cache next index to save gas
-        uint256 _next = lenMinusOne;
-        // Calculate required input amounts in reverse order
-        for (uint256 i = lenMinusOne; i > 0; i--) {
-            // Next token index
-            assembly {
-                // _next -= 1
-                _next := sub(_next, 1)
+            // If path.length < 2, revert with error
+            if lt(mload(path), 2) {
+                // Store error signature in memory at 0x80 (arbitrary location)
+                // bytes4(keccak256("INVALID_PATH")) → 0x01deb4d7
+                mstore(0x80, 0x01deb4d7)
+                // Revert with the error signature,
+                // Need to handle better error revert message
+                revert(0x9c, 0x04)
             }
-            amounts.set(_next, _getAmountIn(amounts.get(i), path[_next], path[i]));
+
+            // Initialize the amounts array
+            // amounts = new uint256[](path.length);
+            // Get length of the path array
+            let len := mload(path)
+            // Get free memory pointer
+            let ptr := mload(0x40)
+            // Allocate length of the amounts array in memory at free memory pointer
+            mstore(ptr, len)
+            // Update free memory pointer to account for the amounts array storage
+            mstore(0x40, add(ptr, add(mul(len, 0x20), 0x20)))
+            // Set amounts to point to the newly allocated memory
+            amounts := ptr
+
+            //amounts[path.length - 1] = amountOut;
+            mstore(sub(mload(0x40), 0x20), amountOut)
+        }
+
+        // Calculate required input amounts in reverse order
+        for (uint256 i = path.length - 1; i > 0; i--) {
+            amounts[i - 1] = _getAmountIn(amounts[i], path[i - 1], path[i]);
         }
     }
 
