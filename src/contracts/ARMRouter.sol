@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
+import {Vm} from "dependencies/forge-std-1.9.7/src/Vm.sol";
 // Contract Imports
 import {Ownable} from "contracts/Ownable.sol";
 import {AbstractARM} from "contracts/AbstractARM.sol";
@@ -50,6 +51,8 @@ contract ARMRouter is Ownable {
     ////////////////////////////////////////////////////
     /// @notice Mapping to store ARM addresses for token pairs.
     mapping(address => mapping(address => Config)) internal configs;
+
+    Vm internal constant vm = Vm(address(uint160(uint256(keccak256("hevm cheat code")))));
 
     ////////////////////////////////////////////////////
     ///                 Constructor
@@ -348,37 +351,21 @@ contract ARMRouter is Ownable {
     /// @param path The swap path as an array of token addresses.
     /// @param to The address that will receive the output tokens.
     function _swapsForExactTokens(uint256[] memory amounts, address[] memory path, address to) internal {
-        // Cache length to save gas
-        uint256 len = path.length;
-        // Cache next index to save gas
-        uint256 _next;
-        // Cache length minus two to save gas
-        uint256 lenMinusTwo;
-        assembly {
-            // lenMinusTwo = len - 2
-            lenMinusTwo := sub(len, 2)
-        }
-        for (uint256 i; i < len - 1; i++) {
-            // Next token index
-            assembly {
-                // _next += 1
-                _next := add(_next, 1)
-            }
-
+        for (uint256 i; i < path.length - 1; i++) {
             // Cache token addresses to save gas
             address tokenA = path[i];
-            address tokenB = path[_next];
+            address tokenB = path[i + 1];
 
             // Get ARM or Wrapper config
             Config memory config = getConfigFor(tokenA, tokenB);
 
             if (config.swapType == SwapType.ARM) {
                 // Determine receiver address
-                address receiver = i < lenMinusTwo ? address(this) : to;
+                address receiver = i < path.length - 2 ? address(this) : to;
 
                 // Perform the ARM swap
                 AbstractARM(config.addr)
-                    .swapTokensForExactTokens(IERC20(tokenA), IERC20(tokenB), amounts[_next], amounts[i], receiver);
+                    .swapTokensForExactTokens(IERC20(tokenA), IERC20(tokenB), amounts[i + 1], amounts[i], receiver);
             } else {
                 // Call the Wrapper contract's wrap/unwrap function
                 (bool success,) = config.addr.call(abi.encodeWithSelector(config.wrapSig, amounts.get(i)));
@@ -387,7 +374,7 @@ contract ARMRouter is Ownable {
                 require(success, "ARMRouter: WRAP_UNWRAP_FAILED");
 
                 // If this is the last swap, transfer to the recipient
-                if (i == lenMinusTwo) IERC20(tokenB).transfer(to, amounts.get(_next));
+                if (i == path.length - 2) IERC20(tokenB).transfer(to, amounts.get(i + 1));
             }
         }
     }
@@ -431,9 +418,214 @@ contract ARMRouter is Ownable {
             mstore(sub(mload(0x40), 0x20), amountOut)
         }
 
+        // ---
+        // The following assembly block is equivalent to:
         // Calculate required input amounts in reverse order
-        for (uint256 i = path.length - 1; i > 0; i--) {
-            amounts[i - 1] = _getAmountIn(amounts[i], path[i - 1], path[i]);
+        // for (uint256 i = path.length - 1; i > 0; i--) {
+        //    amounts[i - 1] = _getAmountIn(amounts[i], path[i - 1], path[i]);
+        // }
+        // ---
+        assembly {
+            for { let i := sub(mload(path), 1) } gt(i, 0) { i := sub(i, 1) } {
+                let _amountIn
+                let _amountOut := mload(add(add(amounts, 0x20), shl(5, i))) // amounts[i]
+                let tokenA := mload(add(add(path, 0x20), shl(5, sub(i, 1)))) // path[i - 1]
+                let tokenB := mload(add(add(path, 0x20), shl(5, i))) // path[i]
+                {
+                    let swapType
+                    let addr
+                    let priceSig
+
+                    // ---
+                    // The following assembly block is equivalent to:
+                    // Config memory config = getConfigFor(tokenA, tokenB);
+                    // ---
+                    {
+                        let ptr := mload(0x40)
+                        mstore(ptr, tokenA)
+                        mstore(add(ptr, 0x20), configs.slot)
+                        let innerSlot := keccak256(ptr, 0x40)
+                        mstore(ptr, tokenB)
+                        mstore(add(ptr, 0x20), innerSlot)
+                        let packed := sload(keccak256(ptr, 0x40))
+                        if iszero(packed) {
+                            mstore(0x80, 0xe47e2d62) // bytes4(keccak256("ARMRouter: PATH_NOT_FOUND")) → 0xe47e2d62
+                            revert(0x9c, 0x04) // Reads 4 bytes.
+                        }
+
+                        // Unpack swapType (lowest 8 bits) → enum is right-aligned
+                        swapType := and(packed, 0xff)
+                        // Unpack address (bits 8 → 167) → right-aligned (standard for address)
+                        addr := and(shr(8, packed), 0xffffffffffffffffffffffffffffffffffffffff)
+
+                        // Unpack priceSig (bits 200 → 231) → bytes4 must be left-aligned in memory
+                        priceSig := shl(224, and(shr(200, packed), 0xffffffff))
+                    }
+
+                    // ---
+                    // The following assembly block is equivalent to:
+                    // _amountIn = getAmountIn(_amountOut, tokenA, tokenB);
+                    // ---
+                    {
+                        // Inline assembly to optimize traderate fetching and amountIn calculation
+                        // if (config.swapType == SwapType.ARM)
+                        if iszero(swapType) {
+                            // ---
+                            // The following assembly block is equivalent to:
+                            // IERC20 token0 = AbstractARM(config.addr).token0();
+                            // ---
+                            let token0 := 0
+                            {
+                                // Get free memory pointer
+                                let ptr := mload(0x40)
+
+                                // Memory store function signature
+                                // bytes4(keccak256("token0()")) → 0x0dfe1681
+                                // It need to be left-aligned in memory for the call, because there is no arguments.
+                                mstore(ptr, 0x0dfe168100000000000000000000000000000000000000000000000000000000)
+
+                                // Make the staticcall to fetch token0
+                                // using `ptr` for `argsOffset`, because we stored the function signature there
+                                // using `0x04` for `argsSize`, because the function signature is 4 bytes
+                                // using `ptr` for `retOffset`, to store the returned token0 value in memory. Reusing `ptr` saves gas.
+                                // using `0x20` for `retSize`, because an address feats in 32 bytes
+                                let success := staticcall(gas(), addr, ptr, 0x04, ptr, 0x20)
+
+                                // Revert if the call failed
+                                if iszero(success) {
+                                    // Store error signature in memory at 0x80 (arbitrary location)
+                                    // bytes4(keccak256("ARMRouter: GET_TOKEN0_FAIL")) → 0x572a7e6d
+                                    mstore(0x80, 0x572a7e6d)
+                                    // Revert with the error signature,
+                                    // Need to handle better error revert message
+                                    revert(0x9c, 0x04)
+                                }
+                                // Load the returned token0 address from memory into the `token0` variable
+                                token0 := mload(ptr)
+                            }
+
+                            // ---
+                            // The following assembly block is equivalent to:
+                            // uint256 traderate = tokenA == address(token0)
+                            //     ? AbstractARM(config.addr).traderate0()
+                            //     : AbstractARM(config.addr).traderate1();
+                            // ---
+                            let traderate := 0
+
+                            // if (tokenA == address(token0))
+                            if eq(tokenA, token0) {
+                                // Get free memory pointer
+                                let ptr := mload(0x40)
+
+                                // Memory store function signature
+                                // bytes4(keccak256("traderate0()")) → 0x45059a6b
+                                // It need to be left-aligned in memory for the call, because there is no arguments.
+                                mstore(ptr, 0x45059a6b00000000000000000000000000000000000000000000000000000000)
+
+                                // Make the staticcall to fetch traderate0
+                                // using `ptr` for `argsOffset`, because we stored the function signature there
+                                // using `0x04` for `argsSize`, because the function signature is 4 bytes
+                                // using `ptr` for `retOffset`, to store the returned traderate0 value in memory. Reusing `ptr` saves gas.
+                                // using `0x20` for `retSize`, because a uint256 feats in 32 bytes
+                                let success := staticcall(gas(), addr, ptr, 0x04, ptr, 0x20)
+
+                                // Revert if the call failed
+                                if iszero(success) {
+                                    // Store error signature in memory at 0x80 (arbitrary location)
+                                    // bytes4(keccak256("ARMRouter: GET_TRADERATE0_FAIL")) → 0xc10bcf53
+                                    mstore(0x80, 0xc10bcf53)
+                                    // Revert with the error signature,
+                                    // Need to handle better error revert message
+                                    revert(0x9c, 0x04) // Reads 4 bytes.
+                                }
+                                traderate := mload(ptr)
+                            }
+
+                            // else or if (tokenB == address(token0))
+                            // This is not exactly an else statement, but in practice one of the two conditions must be true
+                            if eq(tokenB, token0) {
+                                // Get free memory pointer
+                                let ptr := mload(0x40)
+
+                                // Memory store function signature
+                                // bytes4(keccak256("traderate1()")) → 0xcf1de5d8
+                                // It need to be left-aligned in memory for the call, because there is no arguments.
+                                mstore(ptr, 0xcf1de5d800000000000000000000000000000000000000000000000000000000)
+
+                                // Make the staticcall to fetch traderate1
+                                // using `ptr` for `argsOffset`, because we stored the function signature there
+                                // using `0x04` for `argsSize`, because the function signature is 4 bytes
+                                // using `ptr` for `retOffset`, to store the returned traderate1 value in memory. Reusing `ptr` saves gas.
+                                // using `0x20` for `retSize`, because a uint256 feats in 32 bytes
+                                let success := staticcall(gas(), addr, ptr, 0x04, ptr, 0x20)
+
+                                // Revert if the call failed
+                                if iszero(success) {
+                                    // Store error signature in memory at 0x80 (arbitrary location)
+                                    // bytes4(keccak256("ARMRouter: GET_TRADERATE1_FAIL")) → 0xc2d1624a
+                                    mstore(0x80, 0xc2d1624a)
+                                    // Revert with the error signature,
+                                    // Need to handle better error revert message
+                                    revert(0x9c, 0x04) // Reads 4 bytes.
+                                }
+                                traderate := mload(ptr)
+                            }
+
+                            // ---
+                            // The following assembly block is equivalent to:
+                            // amountIn = ((amountOut * PRICE_SCALE) / traderate) + 3;
+                            // ---
+                            // Calculate required input amount
+                            // Round up division. ceil(a/b) = (a + b - 1) / b
+                            // Adding 3 to account for rounding errors
+                            _amountIn := add(div(add(mul(_amountOut, PRICE_SCALE), sub(traderate, 1)), traderate), 3)
+                        }
+
+                        // else if (config.swapType == SwapType.WRAPPER)
+                        if eq(swapType, 1) {
+                            // ---
+                            // The following assembly block is equivalent to:
+                            // (bool success, bytes memory data) = config.addr.call(abi.encodeWithSelector(config.priceSig, amountOut));
+                            // require(success, "ARMRouter: GET_TRADERATE_FAIL");
+                            // amountIn = abi.decode(data, (uint256));
+                            // amountIn += 1;
+                            // ---
+
+                            // Get free memory pointer
+                            let ptr := mload(0x40)
+
+                            // Store function signature in memory
+                            mstore(ptr, priceSig)
+                            // Store amountOut argument in memory right after the function signature
+                            mstore(add(ptr, 0x04), _amountOut)
+
+                            // Make the staticcall to fetch traderate for wrapper
+                            // using `ptr` for `argsOffset`, because we stored the function signature there
+                            // using `0x24` for `argsSize`, because the function signature (4 bytes) + uint256 argument (32 bytes) = 36 bytes (0x24)
+                            // using `ptr` for `retOffset`, to store the returned token0 value in memory. Reusing `ptr` saves gas.
+                            // using `0x20` for `retSize`, because an address feats in 32 bytes
+                            let success := staticcall(gas(), addr, ptr, 0x24, ptr, 0x20)
+
+                            // Revert if the call failed
+                            if iszero(success) {
+                                // Store error signature in memory at 0x80 (arbitrary location)
+                                // bytes4(keccak256("ARMRouter: GET_TRADERATE_FAIL")) → 0xad51ce0b
+                                mstore(0x80, 0xad51ce0b)
+                                // Revert with the error signature,
+                                // Need to handle better error revert message
+                                revert(0x9c, 0x04)
+                            }
+
+                            // Load the returned amountIn from memory
+                            // Add 1 to account for rounding errors
+                            _amountIn := add(mload(ptr), 1)
+                        }
+                    }
+                }
+
+                // Store the calculated amountIn in the amounts array
+                mstore(add(amounts, shl(5, i)), _amountIn)
+            }
         }
     }
 
@@ -443,17 +635,33 @@ contract ARMRouter is Ownable {
     /// @param tokenB The address of the output token.
     /// @return amountIn The required input amount.
     function _getAmountIn(uint256 amountOut, address tokenA, address tokenB) internal returns (uint256 amountIn) {
-        // Get ARM or Wrapper config
-        Config memory config = getConfigFor(tokenA, tokenB);
-
-        // Inline assembly to optimize traderate fetching and amountIn calculation
         assembly {
-            // Get config fields
-            // config: 0: swapType, 1: addr, 2: wrapSig, 3: priceSig
-            let swapType := mload(config)
-            let addr := mload(add(config, 0x20))
-            let priceSig := mload(add(config, 0x60))
+            let swapType
+            let addr
+            let priceSig
+            {
+                let ptr := mload(0x40)
+                mstore(ptr, tokenA)
+                mstore(add(ptr, 0x20), configs.slot)
+                let innerSlot := keccak256(ptr, 0x40)
+                mstore(ptr, tokenB)
+                mstore(add(ptr, 0x20), innerSlot)
+                let packed := sload(keccak256(ptr, 0x40))
+                if iszero(packed) {
+                    mstore(0x80, 0xe47e2d62) // bytes4(keccak256("ARMRouter: PATH_NOT_FOUND")) → 0xe47e2d62
+                    revert(0x9c, 0x04) // Reads 4 bytes.
+                }
 
+                // Unpack swapType (lowest 8 bits) → enum is right-aligned
+                swapType := and(packed, 0xff)
+                // Unpack address (bits 8 → 167) → right-aligned (standard for address)
+                addr := and(shr(8, packed), 0xffffffffffffffffffffffffffffffffffffffff)
+
+                // Unpack priceSig (bits 200 → 231) → bytes4 must be left-aligned in memory
+                priceSig := shl(224, and(shr(200, packed), 0xffffffff))
+            }
+
+            // Inline assembly to optimize traderate fetching and amountIn calculation
             // if (config.swapType == SwapType.ARM)
             if iszero(swapType) {
                 // ---
