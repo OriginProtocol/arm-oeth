@@ -110,6 +110,22 @@ contract Fork_Concrete_EthenaARM_swapExactTokensForTokens_Test_ is Fork_Shared_T
         assertEq(susdeBalanceBefore, susdeBalanceAfter + AMOUNT_IN, "SUSDe balance should have decreased");
     }
 
+    function test_swapExactTokensForTokens_SUSDE_To_USDE_WithOutstandingWithdrawals_Sig1() public {
+        ethenaARM.requestRedeem(AMOUNT_IN);
+
+        // Precompute expected amount out
+        uint256 traderate = ethenaARM.traderate1();
+        uint256 expectedAmountOut = (susde.convertToAssets(AMOUNT_IN) * traderate) / 1e36;
+
+        // Perform the swap
+        uint256[] memory obtained =
+            ethenaARM.swapExactTokensForTokens(IERC20(address(susde)), usde, AMOUNT_IN, 0, address(this));
+
+        // Assertions
+        assertEq(obtained[0], AMOUNT_IN, "Obtained SUSDe amount should match input");
+        assertEq(obtained[1], expectedAmountOut, "Obtained USDe amount should match expected output");
+    }
+
     //////////////////////////////////////////////////////
     /// --- REVERTING TESTS
     //////////////////////////////////////////////////////
@@ -167,5 +183,12 @@ contract Fork_Concrete_EthenaARM_swapExactTokensForTokens_Test_ is Fork_Shared_T
 
         vm.expectRevert(bytes("ARM: Invalid path length"));
         ethenaARM.swapExactTokensForTokens(AMOUNT_IN, 0, longPath, address(this), block.timestamp + 1 hours);
+    }
+
+    function test_RevertWhen_swapExactTokensForTokens_Because_InsufficientLiquidity() public {
+        ethenaARM.requestRedeem(ethenaARM.balanceOf(address(this)));
+
+        vm.expectRevert(bytes("ARM: Insufficient liquidity"));
+        ethenaARM.swapExactTokensForTokens(IERC20(address(susde)), usde, AMOUNT_IN, 0, address(this));
     }
 }

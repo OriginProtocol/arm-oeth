@@ -5,13 +5,13 @@ pragma solidity 0.8.23;
 import {console} from "forge-std/console.sol";
 
 // Contract imports
-import {IWETH} from "contracts/Interfaces.sol";
 import {Proxy} from "contracts/Proxy.sol";
+import {Mainnet} from "contracts/utils/Addresses.sol";
 import {EthenaARM} from "contracts/EthenaARM.sol";
 import {CapManager} from "contracts/CapManager.sol";
-import {Mainnet} from "contracts/utils/Addresses.sol";
 import {MorphoMarket} from "contracts/markets/MorphoMarket.sol";
-import {ZapperARM} from "contracts/ZapperARM.sol";
+import {EthenaUnstaker} from "contracts/EthenaARM.sol";
+import {IWETH, IStakedUSDe} from "contracts/Interfaces.sol";
 import {Abstract4626MarketWrapper} from "contracts/markets/Abstract4626MarketWrapper.sol";
 
 // Deployment imports
@@ -29,13 +29,16 @@ contract DeployEthenaARMScript is AbstractDeployScript {
     Proxy morphoMarketProxy;
     EthenaARM armImpl;
     MorphoMarket morphoMarket;
+    Proxy armProxy;
+
+    uint256 public constant MAX_UNSTAKERS = 42;
 
     function _execute() internal override {
         console.log("Deploy:", DEPLOY_NAME);
         console.log("------------");
 
         // 1. Deploy new ARM proxy contract
-        Proxy armProxy = new Proxy();
+        armProxy = new Proxy();
         _recordDeploy("ETHENA_ARM", address(armProxy));
 
         // 2. Deploy proxy for the CapManager
@@ -119,9 +122,24 @@ contract DeployEthenaARMScript is AbstractDeployScript {
         // 16. Set ARM buffer to 10%
         EthenaARM(payable(address(armProxy))).setARMBuffer(0.1e18); // 10% buffer
 
-        // 17. Transfer ownership of ARM to the 5/8 multisig
+        // 17. Deploy Unstakers
+        address[MAX_UNSTAKERS] memory unstakers = _deployUnstakers();
+
+        // 18. Set Unstakers in the ARM
+        EthenaARM(payable(address(armProxy))).setUnstakers(unstakers);
+
+        // 19. Transfer ownership of ARM to the 5/8 multisig
         armProxy.setOwner(Mainnet.GOV_MULTISIG);
 
         console.log("Finished deploying", DEPLOY_NAME);
+    }
+
+    function _deployUnstakers() internal returns (address[MAX_UNSTAKERS] memory unstakers) {
+        for (uint256 i = 0; i < MAX_UNSTAKERS; i++) {
+            address unstaker = address(new EthenaUnstaker(payable(armProxy), IStakedUSDe(Mainnet.SUSDE)));
+            unstakers[i] = address(unstaker);
+            console.log("Deployed unstaker", i, address(unstaker));
+        }
+        return unstakers;
     }
 }
