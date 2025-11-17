@@ -26,7 +26,7 @@ const { requestLidoWithdrawals, claimLidoWithdrawals } = require("./lidoQueue");
 const {
   requestEtherFiWithdrawals,
   claimEtherFiWithdrawals,
-} = require("./etherFiQueue");
+} = require("./etherfiQueue");
 const {
   requestWithdraw,
   claimWithdraw,
