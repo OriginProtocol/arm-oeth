@@ -601,6 +601,7 @@ contract ARMRouter is Ownable {
     /// @param path The swap path as an array of token addresses.
     /// @param to The address that will receive the output tokens.
     function _swapsForExactTokens(uint256[] memory amounts, address[] memory path, address to) internal {
+        /*
         for (uint256 i; i < path.length - 1; i++) {
             // Cache token addresses to save gas
             address tokenA = path[i];
@@ -625,6 +626,99 @@ contract ARMRouter is Ownable {
 
                 // If this is the last swap, transfer to the recipient
                 if (i == path.length - 2) IERC20(tokenB).transfer(to, amounts.get(i + 1));
+            }
+        }
+        */
+        assembly {
+            for { let i := 0 } lt(i, sub(mload(path), 1)) { i := add(i, 1) } {
+                let tokenA := mload(add(add(path, 0x20), shl(5, i)))
+                let tokenB := mload(add(add(path, 0x20), shl(5, add(i, 1))))
+                let _amountInMax := mload(add(add(amounts, 0x20), shl(5, i)))
+                let _amountOut := mload(add(add(amounts, 0x20), shl(5, add(i, 1))))
+                let swapType
+                let addr
+                let wrapSig
+
+                // ---
+                // The following assembly block is equivalent to:
+                // Config memory config = getConfigFor(tokenA, tokenB);
+                // ---
+                {
+                    let ptr := mload(0x40)
+                    mstore(ptr, tokenA)
+                    mstore(add(ptr, 0x20), configs.slot)
+                    let innerSlot := keccak256(ptr, 0x40)
+                    mstore(ptr, tokenB)
+                    mstore(add(ptr, 0x20), innerSlot)
+                    let packed := sload(keccak256(ptr, 0x40))
+                    if iszero(packed) {
+                        mstore(0x80, 0xe47e2d62) // bytes4(keccak256("ARMRouter: PATH_NOT_FOUND")) → 0xe47e2d62
+                        revert(0x9c, 0x04) // Reads 4 bytes.
+                    }
+
+                    // Unpack swapType (lowest 8 bits) → enum is right-aligned
+                    swapType := and(packed, 0xff)
+                    // Unpack address (bits 8 → 167) → right-aligned (standard for address)
+                    addr := and(shr(8, packed), 0xffffffffffffffffffffffffffffffffffffffff)
+
+                    // Unpack wrapSig (bits 168 → 199) → bytes4 must be left-aligned in memory
+                    wrapSig := shl(224, and(shr(168, packed), 0xffffffff))
+                }
+
+                if iszero(swapType) {
+                    let receiver
+                    switch lt(i, sub(mload(path), 2))
+                    case 1 { receiver := address() }
+                    default { receiver := to }
+
+                    let ptr := mload(0x40)
+                    mstore(ptr, 0xf7d3180900000000000000000000000000000000000000000000000000000000) //bytes4(keccak256("swapTokensForExactTokens(address,address,uint256,uint256,address)")) → 0xf7d31809
+                    mstore(add(ptr, 0x04), tokenA)
+                    mstore(add(ptr, 0x24), tokenB)
+                    mstore(add(ptr, 0x44), _amountOut)
+                    mstore(add(ptr, 0x64), _amountInMax)
+                    mstore(add(ptr, 0x84), receiver)
+
+                    let success := call(gas(), addr, 0, ptr, 0xa4, 0, 0)
+                    if iszero(success) {
+                        // Store error signature in memory at 0x80 (arbitrary location)
+                        // bytes4(keccak256("ARMRouter: ARM_SWAP_FAILED")) → 0x009befa8
+                        mstore(0x80, 0x009befa8)
+                        // Revert with the error signature,
+                        // Need to handle better error revert message
+                        revert(0x9c, 0x04)
+                    }
+                }
+
+                if eq(swapType, 1) {
+                    let ptr := mload(0x40)
+                    mstore(ptr, wrapSig)
+                    mstore(add(ptr, 0x04), _amountInMax)
+                    let success := call(gas(), addr, 0, ptr, 0x24, 0, 0)
+                    if iszero(success) {
+                        // Store error signature in memory at 0x80 (arbitrary location)
+                        // bytes4(keccak256("ARMRouter: WRAP_UNWRAP_FAILED")) → 0xe99b4d3c
+                        mstore(0x80, 0xe99b4d3c)
+                        // Revert with the error signature,
+                        // Need to handle better error revert message
+                        revert(0x9c, 0x04)
+                    }
+
+                    if eq(i, sub(mload(path), 2)) {
+                        mstore(ptr, 0xa9059cbb00000000000000000000000000000000000000000000000000000000) // bytes4(keccak256("transfer(address,uint256)")) → 0xa9059cbb
+                        mstore(add(ptr, 0x04), to)
+                        mstore(add(ptr, 0x24), _amountOut)
+                        success := call(gas(), tokenB, 0, ptr, 0x44, 0, 0)
+                        if iszero(success) {
+                            // Store error signature in memory at 0x80 (arbitrary location)
+                            // bytes4(keccak256("ARMRouter: TRANSFER_FAILED")) → 0x86866d06
+                            mstore(0x80, 0x86866d06)
+                            // Revert with the error signature,
+                            // Need to handle better error revert message
+                            revert(0x9c, 0x04)
+                        }
+                    }
+                }
             }
         }
     }
