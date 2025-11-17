@@ -3,7 +3,6 @@ const { ethers } = require("ethers");
 
 const { claimEtherFiWithdrawals } = require("../tasks/etherfiQueue");
 const { mainnet } = require("../utils/addresses");
-const etherFiWithdrawalQueueAbi = require("../../abis/EtherFiWithdrawQueue.json");
 const etherFiARMAbi = require("../../abis/EtherFiARM.json");
 
 // Entrypoint for the Defender Action
@@ -22,16 +21,10 @@ const handler = async (event) => {
 
   // References to contracts
   const arm = new ethers.Contract(mainnet.etherfiARM, etherFiARMAbi, signer);
-  const withdrawalQueue = new ethers.Contract(
-    mainnet.etherfiWithdrawalQueue,
-    etherFiWithdrawalQueueAbi,
-    signer,
-  );
 
   await claimEtherFiWithdrawals({
     signer,
     arm,
-    withdrawalQueue,
   });
 };
 
