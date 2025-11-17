@@ -5,7 +5,7 @@ import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Ini
 
 import {AbstractARM} from "./AbstractARM.sol";
 import {EthenaUnstaker} from "./EthenaUnstaker.sol";
-import {IERC20, IStakedUSDe} from "./Interfaces.sol";
+import {IERC20, IStakedUSDe, UserCooldown} from "./Interfaces.sol";
 
 /**
  * @title Ethena sUSDe/USDe Automated Redemption Manager (ARM)
@@ -86,8 +86,8 @@ contract EthenaARM is Initializable, AbstractARM {
         require(unstaker != address(0), "EthenaARM: Invalid unstaker");
 
         // Ensure unstaker isn't used during last 7 days
-        uint256 amount = EthenaUnstaker(unstaker).cooldownAmount();
-        require(amount == 0, "EthenaARM: Unstaker in cooldown");
+        UserCooldown memory cooldown = susde.cooldowns(address(unstaker));
+        require(cooldown.underlyingAmount == 0, "EthenaARM: Unstaker in cooldown");
 
         // Update last used unstaker for the day. Safe to cast as there is a maximum of MAX_UNSTAKERS
         nextUnstakerIndex = uint8((nextUnstakerIndex + 1) % MAX_UNSTAKERS);
@@ -106,15 +106,15 @@ contract EthenaARM is Initializable, AbstractARM {
     /// @notice Claim all the USDe that is now claimable from the Staked USDe contract.
     /// Reverts with `InvalidCooldown` from the Staked USDe contract if the cooldown period has not yet passed.
     function claimBaseWithdrawals(address unstaker) external {
-        uint256 cooldownAmount = EthenaUnstaker(unstaker).cooldownAmount();
-        require(cooldownAmount > 0, "EthenaARM: No cooldown amount");
+        UserCooldown memory cooldown = susde.cooldowns(address(unstaker));
+        require(cooldown.underlyingAmount > 0, "EthenaARM: No cooldown amount");
 
-        _liquidityAmountInCooldown -= cooldownAmount;
+        _liquidityAmountInCooldown -= cooldown.underlyingAmount;
 
         // Claim all the underlying USDe that has cooled down for the unstaker and send to the ARM
         EthenaUnstaker(unstaker).claimUnstake();
 
-        emit ClaimBaseWithdrawals(unstaker, cooldownAmount);
+        emit ClaimBaseWithdrawals(unstaker, cooldown.underlyingAmount);
     }
 
     /// @dev Gets the total amount of USDe waiting to be claimed from the Staked USDe contract.
