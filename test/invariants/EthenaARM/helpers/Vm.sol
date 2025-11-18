@@ -89,5 +89,7 @@ interface Vm {
     function parseInt(string memory) external returns (int256);
     function parseBool(string memory) external returns (bool);
 
+    // Only works with Foundry
     function label(address account, string calldata newLabel) external;
+    function assume(bool condition) external;
 }
