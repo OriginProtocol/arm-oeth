@@ -48,9 +48,9 @@ abstract contract TargetFunctions is Setup, StdUtils {
     // ╔══════════════════════════════════════════════════════════════════════════════╗
     // ║                                ✦✦✦ MORPHO ✦✦✦                                ║
     // ╚══════════════════════════════════════════════════════════════════════════════╝
-    // [ ] Deposit
-    // [ ] Withdraw
-    // [ ] TransferInRewards
+    // [x] Deposit
+    // [x] Withdraw
+    // [x] TransferInRewards
     // ╔══════════════════════════════════════════════════════════════════════════════╗
     // ║                                   ✦✦✦  ✦✦✦                                   ║
     // ╚══════════════════════════════════════════════════════════════════════════════╝
@@ -172,6 +172,64 @@ abstract contract TargetFunctions is Setup, StdUtils {
 
         if (this.isConsoleAvailable()) {
             console.log(">>> sUSDe Rewards:\t Governor transferred in %18e USDe as rewards, bps: %d", rewards, bps);
+        }
+    }
+
+    // ╔══════════════════════════════════════════════════════════════════════════════╗
+    // ║                                ✦✦✦ MORPHO ✦✦✦                                ║
+    // ╚══════════════════════════════════════════════════════════════════════════════╝
+    function targetMorphoDeposit(uint88 amount) external {
+        // Ensure we don't mint 0 shares.
+        uint256 totalAssets = morpho.totalAssets();
+        uint256 totalSupply = morpho.totalSupply();
+        uint256 minAmount = totalAssets / totalSupply + 1;
+        // Prevent zero deposits
+        amount = uint88(_bound(amount, minAmount, type(uint88).max));
+
+        // Mint amount to harry
+        MockERC20(address(usde)).mint(harry, amount);
+
+        // Deposit as harry
+        vm.prank(harry);
+        uint256 shares = morpho.deposit(amount, harry);
+
+        if (this.isConsoleAvailable()) {
+            console.log(
+                ">>> Morpho Deposit:\t Harry deposited %18e USDe\t and received %18e Morpho shares", amount, shares
+            );
+        }
+    }
+
+    function targetMorphoWithdraw(uint88 amount) external {
+        // Check harry's balance
+        uint256 balance = morpho.balanceOf(harry);
+
+        // Assume balance not zero
+        if (assume(balance > 1)) return;
+
+        // Bound shareAmount to [1, balance]
+        amount = uint88(_bound(amount, 1, balance));
+
+        // Withdraw as harry
+        vm.prank(harry);
+        uint256 shares = morpho.withdraw(amount, harry, harry);
+        if (this.isConsoleAvailable()) {
+            console.log(
+                ">>> Morpho Withdraw:\t Harry withdrew %18e Morpho shares\t for %18e USDe underlying", shares, amount
+            );
+        }
+
+        MockERC20(address(usde)).burn(harry, amount);
+    }
+
+    function targetMorphoTransferInRewards(uint8 bps) external {
+        uint256 balance = usde.balanceOf(address(morpho));
+        bps = uint8(_bound(bps, 1, 10));
+        uint256 rewards = (balance * bps) / 10_000;
+        MockERC20(address(usde)).mint(address(morpho), rewards);
+
+        if (this.isConsoleAvailable()) {
+            console.log(">>> Morpho Rewards:\t Transferred in %18e USDe as rewards, bps: %d", rewards, bps);
         }
     }
 }
