@@ -78,5 +78,6 @@ abstract contract Base_Test_ {
 
     /// @notice Indicates if labels have been set in the Vm.
     function isLabelAvailable() external view virtual returns (bool);
+    function isAssumeAvailable() external view virtual returns (bool);
 }
 

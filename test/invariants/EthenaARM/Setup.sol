@@ -256,9 +256,28 @@ abstract contract Setup is Base_Test_ {
         arm.setCrossPrice(0.9998e36);
         vm.prank(operator);
         arm.setPrices(0.9992e36, 0.9999e36);
+
+        // Grace will only deposit/withdraw USDe from/to sUSDe.
+        vm.prank(grace);
+        usde.approve(address(susde), type(uint256).max);
+
+        // Harry will only deposit/withdraw USDe from/to Morpho.
+        vm.prank(harry);
+        usde.approve(address(morpho), type(uint256).max);
+
+        // Governor will deposit usde rewards into sUSDe.
+        vm.prank(governor);
+        usde.approve(address(susde), type(uint256).max);
     }
 
     function generateAddr(string memory name) internal returns (address) {
         return vm.addr(uint256(keccak256(abi.encodePacked(name))));
+    }
+
+    function assume(bool condition) internal returns (bool returnEarly) {
+        if (!condition) {
+            if (this.isAssumeAvailable()) vm.assume(false);
+            else returnEarly = true;
+        }
     }
 }
