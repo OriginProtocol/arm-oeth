@@ -39,11 +39,11 @@ abstract contract TargetFunctions is Setup, StdUtils {
     // ╔══════════════════════════════════════════════════════════════════════════════╗
     // ║                                ✦✦✦ SUSDE ✦✦✦                                 ║
     // ╚══════════════════════════════════════════════════════════════════════════════╝
-    // [ ] Deposit
-    // [ ] CoolDownShares
-    // [ ] Unstake
+    // [x] Deposit
+    // [x] CoolDownShares
+    // [x] Unstake
     // --- Admin functions
-    // [ ] TransferInRewards
+    // [x] TransferInRewards
     //
     // ╔══════════════════════════════════════════════════════════════════════════════╗
     // ║                                ✦✦✦ MORPHO ✦✦✦                                ║
