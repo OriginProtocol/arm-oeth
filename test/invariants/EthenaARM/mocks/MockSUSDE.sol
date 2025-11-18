@@ -15,13 +15,13 @@ contract MockSUSDE is ERC4626, Owned {
     //////////////////////////////////////////////////////
     address public immutable SILO;
     uint256 public immutable VESTING_DURATION;
+    uint256 public immutable COOLDOWN_DURATION;
 
     //////////////////////////////////////////////////////
     /// --- STATE VARIABLES
     //////////////////////////////////////////////////////
     uint256 public vestingAmount;
     uint256 public lastDistribution;
-    uint256 public cooldownDuration;
     mapping(address => UserCooldown) public cooldowns;
 
     //////////////////////////////////////////////////////
@@ -39,6 +39,7 @@ contract MockSUSDE is ERC4626, Owned {
     {
         SILO = address(new MockSilo(asset));
         VESTING_DURATION = 8 hours;
+        COOLDOWN_DURATION = 7 days;
     }
 
     //////////////////////////////////////////////////////
@@ -83,10 +84,10 @@ contract MockSUSDE is ERC4626, Owned {
 
         shares = previewWithdraw(assets);
 
-        cooldowns[msg.sender].cooldownEnd = uint104(block.timestamp + cooldownDuration);
+        cooldowns[msg.sender].cooldownEnd = uint104(block.timestamp + COOLDOWN_DURATION);
         cooldowns[msg.sender].underlyingAmount += uint152(assets);
 
-        withdraw(assets, SILO, msg.sender);
+        super.withdraw(assets, SILO, msg.sender);
     }
 
     function cooldownShares(uint256 shares) external returns (uint256 assets) {
@@ -94,21 +95,23 @@ contract MockSUSDE is ERC4626, Owned {
 
         assets = previewRedeem(shares);
 
-        cooldowns[msg.sender].cooldownEnd = uint104(block.timestamp + cooldownDuration);
+        cooldowns[msg.sender].cooldownEnd = uint104(block.timestamp + COOLDOWN_DURATION);
         cooldowns[msg.sender].underlyingAmount += uint152(assets);
 
-        withdraw(assets, SILO, msg.sender);
+        super.withdraw(assets, SILO, msg.sender);
+    }
+
+    function withdraw(uint256, address, address) public pure override returns (uint256) {
+        revert("SUSDE: Use cooldown functions");
+    }
+
+    function redeem(uint256, address, address) public pure override returns (uint256) {
+        revert("SUSDE: Use cooldown functions");
     }
 
     //////////////////////////////////////////////////////
     /// --- ADMIN FUNCTIONS
     //////////////////////////////////////////////////////
-    function setCooldownDuration(uint256 _cooldownDuration) external onlyOwner {
-        require(_cooldownDuration <= 30 days, "SUSDE: cooldown too long");
-        emit CooldownSet(cooldownDuration, _cooldownDuration);
-        cooldownDuration = _cooldownDuration;
-    }
-
     function transferInRewards(uint256 amount) external onlyOwner {
         require(amount != 0, "SUSDE: amount zero");
 
