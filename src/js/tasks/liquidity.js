@@ -86,6 +86,9 @@ const snap = async ({ arm, block, gas, amount, oneInch, kyber }) => {
     const assets = {
       liquid: await armContract.liquidityAsset(),
       base: await armContract.baseAsset(),
+      // TODO get decimals from the token contracts
+      baseDecimals: 18,
+      liquidDecimals: 18,
     };
 
     if (oneInch) {

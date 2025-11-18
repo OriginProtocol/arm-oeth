@@ -98,37 +98,41 @@ const get1InchPrices = async (
   assets = {
     liquid: addresses.mainnet.WETH,
     base: addresses.mainnet.stETH,
+    baseDecimals: 18,
+    liquidDecimals: 18,
   },
   fee = 10n,
   chainId = 1,
 ) => {
-  const amountBI = parseUnits(amount.toString(), 18);
+  const liquidAmountBI = parseUnits(amount.toString(), assets.liquidDecimals);
 
   const buyQuote = await get1InchSwapQuote({
     fromAsset: assets.liquid,
     toAsset: assets.base,
-    fromAmount: amountBI, // liquid amount
+    fromAmount: liquidAmountBI,
     excludedProtocols: origin1InchProtocols,
     chainId,
   });
   // base buy amount adjusted by 1Inch's infrastructure fee
   const buyToAmount = (BigInt(buyQuote.dstAmount) * (10000n + fee)) / 10000n;
   // stETH/ETH rate = ETH amount / stETH amount
-  const buyPrice = (amountBI * BigInt(1e18)) / buyToAmount;
+  const buyPrice = (liquidAmountBI * BigInt(1e18)) / buyToAmount;
 
   await sleep(800);
+
+  const baseAmountBI = parseUnits(amount.toString(), assets.baseDecimals);
 
   const sellQuote = await get1InchSwapQuote({
     fromAsset: assets.base,
     toAsset: assets.liquid,
-    fromAmount: amountBI, // base amount
+    fromAmount: baseAmountBI,
     excludedProtocols: origin1InchProtocols,
     chainId,
   });
   // liquid sell amount adjusted by 1Inch's infrastructure fee
   const sellToAmount = (BigInt(sellQuote.dstAmount) * (10000n + fee)) / 10000n;
   // stETH/WETH rate = WETH amount / stETH amount
-  const sellPrice = (sellToAmount * BigInt(1e18)) / amountBI;
+  const sellPrice = (sellToAmount * BigInt(1e18)) / baseAmountBI;
 
   const midPrice = (buyPrice + sellPrice) / 2n;
   const spread = buyPrice - sellPrice;

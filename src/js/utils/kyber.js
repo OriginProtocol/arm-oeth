@@ -84,31 +84,47 @@ const getKyberPrices = async (
   assets = {
     liquid: addresses.mainnet.WETH,
     base: addresses.mainnet.stETH,
+    baseDecimals: 18,
+    liquidDecimals: 18,
   },
 ) => {
-  const amountBI = parseUnits(amount.toString(), 18);
+  const liquidAmountBI = parseUnits(amount.toString(), assets.liquidDecimals);
 
   const buyQuote = await getKyberSwapQuote({
     tokenIn: assets.liquid,
     tokenOut: assets.base,
-    amountIn: amountBI, // liquid amount
+    amountIn: liquidAmountBI,
     excludedSources: originSources,
   });
   const buyToAmount = BigInt(buyQuote.amountOut);
   // stETH/ETH rate = ETH amount / stETH amount
-  const buyPrice = (amountBI * BigInt(1e18)) / buyToAmount;
+  const buyPrice =
+    (liquidAmountBI *
+      parseUnits(
+        "1",
+        assets.baseDecimals + (assets.baseDecimals - assets.liquidDecimals),
+      )) /
+    buyToAmount;
 
   await sleep(800);
+
+  const baseAmountBI = parseUnits(amount.toString(), assets.baseDecimals);
 
   const sellQuote = await getKyberSwapQuote({
     tokenIn: assets.base,
     tokenOut: assets.liquid,
-    amountIn: amountBI, // base amount
+    amountIn: baseAmountBI,
     excludedSources: originSources,
   });
   const sellToAmount = BigInt(sellQuote.amountOut);
   // stETH/WETH rate = WETH amount / stETH amount
-  const sellPrice = (sellToAmount * BigInt(1e18)) / amountBI;
+  const sellPrice =
+    (sellToAmount *
+      parseUnits(
+        "1",
+        assets.baseDecimals + (assets.baseDecimals - assets.liquidDecimals),
+      )) /
+    baseAmountBI;
 
   const midPrice = (buyPrice + sellPrice) / 2n;
   const spread = buyPrice - sellPrice;

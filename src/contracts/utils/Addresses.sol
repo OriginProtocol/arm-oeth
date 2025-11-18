@@ -34,6 +34,9 @@ library Mainnet {
     address public constant MORPHO = 0x58D97B57BB95320F9a05dC918Aef65434969c2B2;
     address public constant USDE = 0x4c9EDD5852cd905f086C759E8383e09bff1E68B3;
     address public constant SUSDE = 0x9D39A5DE30e57443BfF2A8307A4256c8797A3497;
+    address public constant USDT = 0xdac17f958d2ee523a2206206994597c13d831ec7;
+    address public constant USDC = 0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48;
+    address public constant USR = 0x66a1e37c9b0eaddca17d3662d6c05f4decf3e110;
 
     // Contracts
     address public constant OETH_VAULT = 0x39254033945AA2E4809Cc2977E7087BEE48bd7Ab;

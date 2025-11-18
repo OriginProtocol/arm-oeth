@@ -8,7 +8,7 @@ const { getUniswapV3SpotPrices } = require("../utils/uniswap");
 const { getSigner } = require("../utils/signers");
 const { getFluidSpotPrices } = require("../utils/fluid");
 const { mainnet } = require("../utils/addresses");
-const { resolveAddress } = require("../utils/assets");
+const { resolveAsset } = require("../utils/assets");
 
 const log = require("../utils/logger")("task:markets");
 
@@ -22,25 +22,31 @@ const snapMarket = async ({
   oneInch,
   kyber,
 }) => {
-  const baseAddress = await resolveAddress(base.toUpperCase());
-  const liquidAddress = await resolveAddress(liquid.toUpperCase());
+  const baseContract = await resolveAsset(base.toUpperCase());
+  const liquidContract = await resolveAsset(liquid.toUpperCase());
   const assets = {
-    liquid: liquidAddress,
-    base: baseAddress,
+    liquid: await liquidContract.getAddress(),
+    base: await baseContract.getAddress(),
+    baseDecimals: await baseContract.decimals(),
+    liquidDecimals: await liquidContract.decimals(),
   };
 
   // Assume the wrapped base asset is ERC-4626
   let wrapPrice;
   if (wrapped) {
-    const vault = await ethers.getContractAt("IERC4626", baseAddress);
+    const vault = await ethers.getContractAt(
+      "IERC4626",
+      await baseContract.getAddress(),
+    );
     const assetAmount = await vault.convertToAssets(
-      parseUnits(amount.toString(), 18),
+      parseUnits(amount.toString(), assets.baseDecimals),
     );
     wrapPrice =
-      (assetAmount * parseUnits("1")) / parseUnits(amount.toString(), 18);
+      (assetAmount * parseUnits("1", assets.baseDecimals)) /
+      parseUnits(amount.toString(), assets.baseDecimals);
 
     console.log(
-      `\nWrapped price: ${formatUnits(wrapPrice, 18)} ${base}/${liquid}`,
+      `\nWrapped price: ${formatUnits(wrapPrice, assets.baseDecimals)} ${base}/${liquid}`,
     );
   }
 
