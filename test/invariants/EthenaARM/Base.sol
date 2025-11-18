@@ -3,8 +3,10 @@ pragma solidity 0.8.23;
 
 // Contracts
 import {Proxy} from "contracts/Proxy.sol";
+import {ERC4626} from "@solmate/mixins/ERC4626.sol";
 import {EthenaARM} from "contracts/EthenaARM.sol";
 import {MorphoMarket} from "src/contracts/markets/MorphoMarket.sol";
+import {EthenaUnstaker} from "contracts/EthenaUnstaker.sol";
 
 // Interfaces
 import {IERC20} from "contracts/Interfaces.sol";
@@ -27,9 +29,10 @@ abstract contract Base_Test_ {
     // --- Main contracts ---
     Proxy public armProxy;
     Proxy public morphoMarketProxy;
-    address public morpho;
+    ERC4626 public morpho;
     EthenaARM public arm;
     MorphoMarket public market;
+    EthenaUnstaker[] public unstakers;
 
     // --- Tokens ---
     IERC20 public usde;
@@ -54,6 +57,8 @@ abstract contract Base_Test_ {
     address public david;
     address public elise;
     address public frank;
+    address public grace;
+    address public harry;
     address public dead;
 
     // --- Group of users ---
@@ -65,6 +70,7 @@ abstract contract Base_Test_ {
     //////////////////////////////////////////////////////
     uint256 public constant MAKERS_COUNT = 3;
     uint256 public constant TRADERS_COUNT = 3;
+    uint256 public constant UNSTAKERS_COUNT = 42;
     uint256 public constant DEFAULT_CLAIM_DELAY = 10 minutes;
     uint256 public constant DEFAULT_MIN_TOTAL_SUPPLY = 1e12;
     uint256 public constant DEFAULT_ALLOCATE_THRESHOLD = 1e18;

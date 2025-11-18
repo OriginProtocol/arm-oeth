@@ -6,8 +6,10 @@ import {Base_Test_} from "./Base.sol";
 
 // Contracts
 import {Proxy} from "contracts/Proxy.sol";
+import {ERC4626} from "@solmate/mixins/ERC4626.sol";
 import {EthenaARM} from "contracts/EthenaARM.sol";
 import {MorphoMarket} from "src/contracts/markets/MorphoMarket.sol";
+import {EthenaUnstaker} from "contracts/EthenaUnstaker.sol";
 import {Abstract4626MarketWrapper} from "contracts/markets/Abstract4626MarketWrapper.sol";
 
 // Mocks
@@ -65,6 +67,8 @@ abstract contract Setup is Base_Test_ {
         david = generateAddr("david");
         elise = generateAddr("elise");
         frank = generateAddr("frank");
+        grace = generateAddr("grace");
+        harry = generateAddr("harry");
         dead = generateAddr("dead");
 
         // --- Group of users ---
@@ -87,12 +91,13 @@ abstract contract Setup is Base_Test_ {
         susde = IStakedUSDe(address(new MockSUSDE(address(usde), governor)));
 
         // Deploy mock Morpho Market.
-        morpho = address(new MockERC4626(ERC20(address(usde)), "Morpho USDe Market", "morpho-USDe"));
+        morpho = ERC4626(address(new MockERC4626(ERC20(address(usde)), "Morpho USDe Market", "morpho-USDe")));
     }
 
     function _deployContracts() internal virtual {
         vm.startPrank(deployer);
 
+        // --- Ethena ARM ---
         // Deploy Ethena ARM proxy.
         armProxy = new Proxy();
 
@@ -119,16 +124,30 @@ abstract contract Setup is Base_Test_ {
             treasury,
             address(0) // CapManager address
         );
-        armProxy.initialize(address(arm), governor, data);
+        armProxy.initialize(address(arm), deployer, data);
 
         // Cast proxy address to EthenaARM type for easier interaction.
         arm = EthenaARM(address(armProxy));
 
+        // --- Ethena Unstakers ---
+        // Deploy 42 Ethena Unstaker contracts
+        address[UNSTAKERS_COUNT] memory _unstakers;
+        for (uint256 i; i < UNSTAKERS_COUNT; i++) {
+            unstakers.push(new EthenaUnstaker(address(arm), susde));
+            _unstakers[i] = address(unstakers[i]);
+        }
+        // Set unstakers in the ARM
+        arm.setUnstakers(_unstakers);
+
+        // Transfer ownership of the ARM to the governor.
+        arm.setOwner(governor);
+
+        // --- Morpho Market ---
         // Deploy Morpho Market Proxy.
         morphoMarketProxy = new Proxy();
 
         // Deploy Morpho Market implementation.
-        market = new MorphoMarket(address(arm), morpho);
+        market = new MorphoMarket(address(arm), address(morpho));
 
         // Initialize Morpho Market proxy.
         data = abi.encodeWithSelector(Abstract4626MarketWrapper.initialize.selector, address(0x1), address(0x1));
@@ -152,6 +171,49 @@ abstract contract Setup is Base_Test_ {
         vm.label(address(arm), "Ethena ARM");
         vm.label(address(market), "Morpho Market");
         vm.label(address(morpho), "Morpho Blue");
+        vm.label(address(unstakers[0]), "Ethena Unstaker 0");
+        vm.label(address(unstakers[1]), "Ethena Unstaker 1");
+        vm.label(address(unstakers[2]), "Ethena Unstaker 2");
+        vm.label(address(unstakers[3]), "Ethena Unstaker 3");
+        vm.label(address(unstakers[4]), "Ethena Unstaker 4");
+        vm.label(address(unstakers[5]), "Ethena Unstaker 5");
+        vm.label(address(unstakers[6]), "Ethena Unstaker 6");
+        vm.label(address(unstakers[7]), "Ethena Unstaker 7");
+        vm.label(address(unstakers[8]), "Ethena Unstaker 8");
+        vm.label(address(unstakers[9]), "Ethena Unstaker 9");
+        vm.label(address(unstakers[10]), "Ethena Unstaker 10");
+        vm.label(address(unstakers[11]), "Ethena Unstaker 11");
+        vm.label(address(unstakers[12]), "Ethena Unstaker 12");
+        vm.label(address(unstakers[13]), "Ethena Unstaker 13");
+        vm.label(address(unstakers[14]), "Ethena Unstaker 14");
+        vm.label(address(unstakers[15]), "Ethena Unstaker 15");
+        vm.label(address(unstakers[16]), "Ethena Unstaker 16");
+        vm.label(address(unstakers[17]), "Ethena Unstaker 17");
+        vm.label(address(unstakers[18]), "Ethena Unstaker 18");
+        vm.label(address(unstakers[19]), "Ethena Unstaker 19");
+        vm.label(address(unstakers[20]), "Ethena Unstaker 20");
+        vm.label(address(unstakers[21]), "Ethena Unstaker 21");
+        vm.label(address(unstakers[22]), "Ethena Unstaker 22");
+        vm.label(address(unstakers[23]), "Ethena Unstaker 23");
+        vm.label(address(unstakers[24]), "Ethena Unstaker 24");
+        vm.label(address(unstakers[25]), "Ethena Unstaker 25");
+        vm.label(address(unstakers[26]), "Ethena Unstaker 26");
+        vm.label(address(unstakers[27]), "Ethena Unstaker 27");
+        vm.label(address(unstakers[28]), "Ethena Unstaker 28");
+        vm.label(address(unstakers[29]), "Ethena Unstaker 29");
+        vm.label(address(unstakers[30]), "Ethena Unstaker 30");
+        vm.label(address(unstakers[31]), "Ethena Unstaker 31");
+        vm.label(address(unstakers[32]), "Ethena Unstaker 32");
+        vm.label(address(unstakers[33]), "Ethena Unstaker 33");
+        vm.label(address(unstakers[34]), "Ethena Unstaker 34");
+        vm.label(address(unstakers[35]), "Ethena Unstaker 35");
+        vm.label(address(unstakers[36]), "Ethena Unstaker 36");
+        vm.label(address(unstakers[37]), "Ethena Unstaker 37");
+        vm.label(address(unstakers[38]), "Ethena Unstaker 38");
+        vm.label(address(unstakers[39]), "Ethena Unstaker 39");
+        vm.label(address(unstakers[40]), "Ethena Unstaker 40");
+        vm.label(address(unstakers[41]), "Ethena Unstaker 41");
+        // Using a loop here would be cleaner, but Vm.label doesn't support dynamic strings.
 
         // --- Tokens ---
         vm.label(address(usde), "USDe");
@@ -170,6 +232,8 @@ abstract contract Setup is Base_Test_ {
         vm.label(david, "David");
         vm.label(elise, "Elise");
         vm.label(frank, "Frank");
+        vm.label(grace, "Grace");
+        vm.label(harry, "Harry");
         vm.label(dead, "Dead");
     }
 
@@ -183,9 +247,15 @@ abstract contract Setup is Base_Test_ {
         susde.deposit(1_000_000 ether, dead);
 
         // Same for morpho contract.
-        usde.approve(morpho, 1_000_000 ether);
-        MockERC4626(morpho).deposit(1_000_000 ether, dead);
+        usde.approve(address(morpho), 1_000_000 ether);
+        ERC4626(morpho).deposit(1_000_000 ether, dead);
         vm.stopPrank();
+
+        // Set initial prices in the ARM.
+        vm.prank(governor);
+        arm.setCrossPrice(0.9998e36);
+        vm.prank(operator);
+        arm.setPrices(0.9992e36, 0.9999e36);
     }
 
     function generateAddr(string memory name) internal returns (address) {
