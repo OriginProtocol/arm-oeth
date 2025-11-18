@@ -3,7 +3,9 @@ pragma solidity 0.8.23;
 
 // Test imports
 import {Setup} from "./Setup.sol";
+import {console} from "forge-std/console.sol";
 import {StdUtils} from "forge-std/StdUtils.sol";
+import {StdStyle} from "forge-std/StdStyle.sol";
 
 // Solmate
 import {MockERC20} from "@solmate/test/utils/mocks/MockERC20.sol";
@@ -69,7 +71,13 @@ abstract contract TargetFunctions is Setup, StdUtils {
 
         // Deposit as grace
         vm.prank(grace);
-        susde.deposit(amount, grace);
+        uint256 shares = susde.deposit(amount, grace);
+
+        if (this.isConsoleAvailable()) {
+            console.log(
+                ">>> sUSDe Deposit:\t Grace deposited %18e USDe\t and received %18e sUSDe shares", amount, shares
+            );
+        }
     }
 
     function targetSUSDeCooldownShares(uint88 shareAmount) external {
@@ -84,7 +92,14 @@ abstract contract TargetFunctions is Setup, StdUtils {
 
         // Cooldown shares as grace
         vm.prank(grace);
-        susde.cooldownShares(shareAmount);
+        uint256 amount = susde.cooldownShares(shareAmount);
+        if (this.isConsoleAvailable()) {
+            console.log(
+                ">>> sUSDe Cooldown:\t Grace cooled down %18e sUSDe shares\t for %18e USDe underlying",
+                shareAmount,
+                amount
+            );
+        }
     }
 
     function targetSUSDeUnstake() external {
@@ -95,12 +110,32 @@ abstract contract TargetFunctions is Setup, StdUtils {
         if (assume(cooldown.cooldownEnd != 0)) return;
 
         // Fast forward to after cooldown end
-        vm.warp(cooldown.cooldownEnd + 1);
+        if (this.isConsoleAvailable()) {
+            console.log(
+                StdStyle.yellow(
+                    string(
+                        abi.encodePacked(
+                            ">>> Time jump:\t Fast forwarded to: ",
+                            vm.toString(cooldown.cooldownEnd),
+                            "  (+ ",
+                            vm.toString(cooldown.cooldownEnd - block.timestamp),
+                            "s)"
+                        )
+                    )
+                )
+            );
+        }
+        vm.warp(cooldown.cooldownEnd);
 
         // Unstake as grace
         vm.prank(grace);
         susde.unstake(grace);
 
+        if (this.isConsoleAvailable()) {
+            console.log(
+                ">>> sUSDe Unstake:\t Grace unstaked %18e USDe underlying after cooldown", cooldown.underlyingAmount
+            );
+        }
         MockERC20(address(usde)).burn(grace, cooldown.underlyingAmount);
     }
 
@@ -109,7 +144,22 @@ abstract contract TargetFunctions is Setup, StdUtils {
         uint256 lastDistribution = susde.lastDistributionTimestamp();
         if (block.timestamp - lastDistribution < 8 hours) {
             // Fast forward time to allow rewards distribution
-            vm.warp(lastDistribution + 8 hours + 1);
+            if (this.isConsoleAvailable()) {
+                console.log(
+                    StdStyle.yellow(
+                        string(
+                            abi.encodePacked(
+                                ">>> Time jump:\t Fast forwarded to: ",
+                                vm.toString(lastDistribution + 8 hours),
+                                "  (+ ",
+                                vm.toString((lastDistribution + 8 hours) - block.timestamp),
+                                "s)"
+                            )
+                        )
+                    )
+                );
+                vm.warp(lastDistribution + 8 hours);
+            }
         }
 
         uint256 balance = usde.balanceOf(address(susde));
@@ -119,5 +169,9 @@ abstract contract TargetFunctions is Setup, StdUtils {
         MockERC20(address(usde)).mint(governor, rewards);
         vm.prank(governor);
         susde.transferInRewards(rewards);
+
+        if (this.isConsoleAvailable()) {
+            console.log(">>> sUSDe Rewards:\t Governor transferred in %18e USDe as rewards, bps: %d", rewards, bps);
+        }
     }
 }

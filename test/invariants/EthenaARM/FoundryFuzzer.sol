@@ -16,6 +16,7 @@ import {StdInvariant} from "forge-std/StdInvariant.sol";
 contract FuzzerFoundry_EthenaARM is Properties, StdInvariant {
     bool public constant override isLabelAvailable = true;
     bool public constant override isAssumeAvailable = true;
+    bool public constant override isConsoleAvailable = true;
 
     //////////////////////////////////////////////////////
     /// --- SETUP
