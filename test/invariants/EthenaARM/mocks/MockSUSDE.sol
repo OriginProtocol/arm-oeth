@@ -21,7 +21,7 @@ contract MockSUSDE is ERC4626, Owned {
     /// --- STATE VARIABLES
     //////////////////////////////////////////////////////
     uint256 public vestingAmount;
-    uint256 public lastDistribution;
+    uint256 public lastDistributionTimestamp;
     mapping(address => UserCooldown) public cooldowns;
 
     //////////////////////////////////////////////////////
@@ -50,7 +50,7 @@ contract MockSUSDE is ERC4626, Owned {
     }
 
     function getUnvestedAmount() public view returns (uint256) {
-        uint256 timeSinceLastDistribution = block.timestamp - lastDistribution;
+        uint256 timeSinceLastDistribution = block.timestamp - lastDistributionTimestamp;
 
         if (timeSinceLastDistribution >= VESTING_DURATION) {
             return 0;
@@ -118,8 +118,8 @@ contract MockSUSDE is ERC4626, Owned {
         // Ensure previous vesting period is complete before starting a new one
         // _updateVestingAmount(amount) in original contract
         require(getUnvestedAmount() == 0, "SUSDE: previous vesting not complete");
-        vestingAmount += amount;
-        lastDistribution = block.timestamp;
+        vestingAmount = amount;
+        lastDistributionTimestamp = block.timestamp;
 
         asset.transferFrom(msg.sender, address(this), amount);
         emit RewardReceived(amount);
