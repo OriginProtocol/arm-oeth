@@ -268,6 +268,19 @@ abstract contract Setup is Base_Test_ {
         // Governor will deposit usde rewards into sUSDe.
         vm.prank(governor);
         usde.approve(address(susde), type(uint256).max);
+
+        // Makers and traders approve ARM to spend their USDe.
+        for (uint256 i; i < MAKERS_COUNT; i++) {
+            vm.prank(makers[i]);
+            usde.approve(address(arm), type(uint256).max);
+        }
+
+        for (uint256 i; i < TRADERS_COUNT; i++) {
+            vm.startPrank(traders[i]);
+            usde.approve(address(arm), type(uint256).max);
+            susde.approve(address(arm), type(uint256).max);
+            vm.stopPrank();
+        }
     }
 
     function generateAddr(string memory name) internal returns (address) {
@@ -279,5 +292,11 @@ abstract contract Setup is Base_Test_ {
             if (this.isAssumeAvailable()) vm.assume(false);
             else returnEarly = true;
         }
+    }
+
+    modifier ensureTimeIncrease() {
+        uint256 oldTimestamp = block.timestamp;
+        _;
+        require(block.timestamp >= oldTimestamp, "TIME_DECREASED");
     }
 }

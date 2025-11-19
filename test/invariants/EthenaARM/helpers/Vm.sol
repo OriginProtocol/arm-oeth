@@ -91,5 +91,6 @@ interface Vm {
 
     // Only works with Foundry
     function label(address account, string calldata newLabel) external;
+    function getLabel(address account) external returns (string memory);
     function assume(bool condition) external;
 }

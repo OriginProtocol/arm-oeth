@@ -64,6 +64,7 @@ abstract contract Base_Test_ {
     // --- Group of users ---
     address[] public makers;
     address[] public traders;
+    mapping(address => uint256[]) public pendingRequests;
 
     //////////////////////////////////////////////////////
     /// --- DEFAULT VALUES
