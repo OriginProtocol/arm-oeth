@@ -29,9 +29,17 @@ contract MockMorpho is ERC4626 {
     }
 
     function maxWithdraw(address owner) public view override returns (uint256) {
-        uint256 remainingLiquidity = totalAssets() * (1e18 - utilizationRate) / 1e18;
+        uint256 remainingLiquidity = availableLiquidity();
         uint256 userLiquidity = convertToAssets(balanceOf[owner]);
         return userLiquidity > remainingLiquidity ? remainingLiquidity : userLiquidity;
+    }
+
+    function beforeWithdraw(uint256 assets, uint256) internal view override {
+        require(assets <= availableLiquidity(), "INSUFFICIENT_LIQUIDITY");
+    }
+
+    function availableLiquidity() public view returns (uint256) {
+        return totalAssets() * (1e18 - utilizationRate) / 1e18;
     }
 
     //////////////////////////////////////////////////////
