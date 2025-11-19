@@ -34,6 +34,12 @@ contract MockMorpho is ERC4626 {
         return userLiquidity > remainingLiquidity ? remainingLiquidity : userLiquidity;
     }
 
+    function maxRedeem(address owner) public view override returns (uint256) {
+        uint256 maxRedeemableShares = convertToShares(availableLiquidity());
+        uint256 userShares = balanceOf[owner];
+        return userShares > maxRedeemableShares ? maxRedeemableShares : userShares;
+    }
+
     function beforeWithdraw(uint256 assets, uint256) internal view override {
         require(assets <= availableLiquidity(), "INSUFFICIENT_LIQUIDITY");
     }

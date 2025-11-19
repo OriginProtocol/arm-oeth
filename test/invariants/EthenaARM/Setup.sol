@@ -254,6 +254,10 @@ abstract contract Setup is Base_Test_ {
         arm.setCrossPrice(0.9998e36);
         vm.prank(operator);
         arm.setPrices(0.9992e36, 0.9999e36);
+        address[] memory markets = new address[](1);
+        markets[0] = address(market);
+        vm.prank(governor);
+        arm.addMarkets(markets);
 
         // Grace will only deposit/withdraw USDe from/to sUSDe.
         vm.prank(grace);
@@ -290,6 +294,10 @@ abstract contract Setup is Base_Test_ {
             if (this.isAssumeAvailable()) vm.assume(false);
             else returnEarly = true;
         }
+    }
+
+    function abs(int256 x) internal pure returns (uint256) {
+        return uint256(x >= 0 ? x : -x);
     }
 
     modifier ensureTimeIncrease() {

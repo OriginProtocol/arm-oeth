@@ -26,7 +26,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
     // [ ] SwapExactTokensForTokens
     // [ ] SwapTokensForExactTokens
     // [x] Deposit
-    // [ ] Allocate
+    // [x] Allocate
     // [ ] CollectFees
     // [x] RequestRedeem
     // [x] ClaimRedeem
@@ -36,8 +36,8 @@ abstract contract TargetFunctions is Setup, StdUtils {
     // [ ] SetPrices
     // [ ] SetCrossPrice
     // [ ] SetFee
-    // [ ] SetActiveMarket
-    // [ ] SetARMBuffer
+    // [x] SetActiveMarket
+    // [x] SetARMBuffer
     //
     // ╔══════════════════════════════════════════════════════════════════════════════╗
     // ║                                ✦✦✦ SUSDE ✦✦✦                                 ║
@@ -183,6 +183,65 @@ abstract contract TargetFunctions is Setup, StdUtils {
                 ),
                 requestId,
                 amount
+            );
+        }
+    }
+
+    function targetARMSetARMBuffer(uint256 pct) external {
+        pct = _bound(pct, 0, 100);
+
+        vm.prank(operator);
+        arm.setARMBuffer(pct * 1e16);
+
+        if (this.isConsoleAvailable()) {
+            console.log(">>> ARM Buffer:\t Governor set ARM buffer to %s%", pct);
+        }
+    }
+
+    function targetARMSetActiveMarket(bool isActive) external {
+        // If isActive is true it will `setActiveMarket` with MorphoMarket
+        // else it will set it to address(0)
+        address currentMarket = arm.activeMarket();
+        address targetMarket = isActive ? address(market) : address(0);
+
+        // If the current market is the morpho market and we want to deactivate it
+        // ensure the is enough liquidity in Morpho to cover the ARM's assets withdrawals
+        if (currentMarket == address(market) && !isActive) {
+            uint256 shares = market.balanceOf(address(arm));
+            uint256 assets = market.convertToAssets(shares);
+            uint256 availableLiquidity = morpho.availableLiquidity();
+            if (assume(assets < availableLiquidity)) return;
+        }
+
+        vm.prank(operator);
+        arm.setActiveMarket(targetMarket);
+
+        if (this.isConsoleAvailable()) {
+            console.log(
+                ">>> ARM SetMarket:\t Governor set active market to %s", isActive ? "Morpho Market" : "No active market"
+            );
+        }
+    }
+
+    function targetARMAllocate() external {
+        address currentMarket = arm.activeMarket();
+        if (assume(currentMarket != address(0))) return;
+
+        (int256 targetLiquidityDelta, int256 actualLiquidityDelta) = arm.allocate();
+
+        if (this.isConsoleAvailable()) {
+            console.log(
+                string(
+                    abi.encodePacked(
+                        ">>> ARM Allocate:\t ARM allocated liquidity to active market. Target delta: ",
+                        targetLiquidityDelta < 0 ? "-" : "",
+                        "%18e USDe\t Actual delta: ",
+                        actualLiquidityDelta < 0 ? "-" : "",
+                        "%18e USDe"
+                    )
+                ),
+                abs(targetLiquidityDelta),
+                abs(actualLiquidityDelta)
             );
         }
     }
@@ -344,6 +403,10 @@ abstract contract TargetFunctions is Setup, StdUtils {
         // Bound shareAmount to [1, balance]
         amount = uint88(_bound(amount, 1, balance));
 
+        // Ensure there is enough liquidity to withdraw the amount
+        uint256 maxWithdrawable = morpho.maxWithdraw(harry);
+        if (assume(amount <= maxWithdrawable)) return;
+
         // Withdraw as harry
         vm.prank(harry);
         uint256 shares = morpho.withdraw(amount, harry, harry);
@@ -367,13 +430,13 @@ abstract contract TargetFunctions is Setup, StdUtils {
         }
     }
 
-    function targetMorphoSetUtilizationRate(uint256 utilizationRatePct) external {
-        utilizationRatePct = _bound(utilizationRatePct, 0, 100);
+    function targetMorphoSetUtilizationRate(uint256 pct) external {
+        pct = _bound(pct, 0, 100);
 
-        morpho.setUtilizationRate(utilizationRatePct * 1e16);
+        morpho.setUtilizationRate(pct * 1e16);
 
         if (this.isConsoleAvailable()) {
-            console.log(">>> Morpho UseRate:\t Governor set utilization rate to %s%", utilizationRatePct);
+            console.log(">>> Morpho UseRate:\t Governor set utilization rate to %s%", pct);
         }
     }
 }
