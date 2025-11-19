@@ -33,7 +33,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
     // [ ] RequestBaseWithdrawal
     // [ ] ClaimBaseWithdrawals
     // --- Admin functions
-    // [ ] SetPrices
+    // [x] SetPrices
     // [ ] SetCrossPrice
     // [ ] SetFee
     // [x] SetActiveMarket
@@ -242,6 +242,26 @@ abstract contract TargetFunctions is Setup, StdUtils {
                 ),
                 abs(targetLiquidityDelta),
                 abs(actualLiquidityDelta)
+            );
+        }
+    }
+
+    function targetARMSetPrices(uint256 buyPrice, uint256 sellPrice) external {
+        uint256 crossPrice = arm.crossPrice();
+        // Bound sellPrice
+        sellPrice = uint120(_bound(sellPrice, crossPrice, (1e37 - 1) / 9)); // -> min traderate0 -> 0.9e36
+        // Bound buyPrice
+        buyPrice = uint120(_bound(buyPrice, 0.9e36, crossPrice - 1)); // -> min traderate1 -> 0.9e36
+
+        vm.prank(operator);
+        arm.setPrices(buyPrice, sellPrice);
+
+        if (this.isConsoleAvailable()) {
+            console.log(
+                ">>> ARM SetPrices:\t Governor set buy price to %36e\t sell price to %36e\t cross price to %36e",
+                buyPrice,
+                1e72 / sellPrice,
+                arm.crossPrice()
             );
         }
     }

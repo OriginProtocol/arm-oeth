@@ -29,7 +29,7 @@ contract FuzzerFoundry_EthenaARM is Properties, StdInvariant {
         targetContract(address(this));
 
         // Add selectors
-        bytes4[] memory selectors = new bytes4[](14);
+        bytes4[] memory selectors = new bytes4[](15);
         // --- sUSDe ---
         selectors[0] = this.targetSUSDeDeposit.selector;
         selectors[1] = this.targetSUSDeCooldownShares.selector;
@@ -47,6 +47,7 @@ contract FuzzerFoundry_EthenaARM is Properties, StdInvariant {
         selectors[11] = this.targetARMSetARMBuffer.selector;
         selectors[12] = this.targetARMSetActiveMarket.selector;
         selectors[13] = this.targetARMAllocate.selector;
+        selectors[14] = this.targetARMSetPrices.selector;
         // Target selectors
         targetSelector(FuzzSelector({addr: address(this), selectors: selectors}));
     }
