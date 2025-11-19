@@ -6,17 +6,15 @@ import {Base_Test_} from "./Base.sol";
 
 // Contracts
 import {Proxy} from "contracts/Proxy.sol";
-import {ERC4626} from "@solmate/mixins/ERC4626.sol";
 import {EthenaARM} from "contracts/EthenaARM.sol";
 import {MorphoMarket} from "src/contracts/markets/MorphoMarket.sol";
 import {EthenaUnstaker} from "contracts/EthenaUnstaker.sol";
 import {Abstract4626MarketWrapper} from "contracts/markets/Abstract4626MarketWrapper.sol";
 
 // Mocks
-import {ERC20} from "@solmate/tokens/ERC20.sol";
 import {MockERC20} from "@solmate/test/utils/mocks/MockERC20.sol";
 import {MockSUSDE} from "test/invariants/EthenaARM/mocks/MockSUSDE.sol";
-import {MockERC4626} from "@solmate/test/utils/mocks/MockERC4626.sol";
+import {MockMorpho} from "test/invariants/EthenaARM/mocks/MockMorpho.sol";
 
 // Interfaces
 import {IERC20} from "contracts/Interfaces.sol";
@@ -91,7 +89,7 @@ abstract contract Setup is Base_Test_ {
         susde = IStakedUSDe(address(new MockSUSDE(address(usde), governor)));
 
         // Deploy mock Morpho Market.
-        morpho = ERC4626(address(new MockERC4626(ERC20(address(usde)), "Morpho USDe Market", "morpho-USDe")));
+        morpho = new MockMorpho(address(usde));
     }
 
     function _deployContracts() internal virtual {
@@ -248,7 +246,7 @@ abstract contract Setup is Base_Test_ {
 
         // Same for morpho contract.
         usde.approve(address(morpho), 1_000_000 ether);
-        ERC4626(morpho).deposit(1_000_000 ether, dead);
+        morpho.deposit(1_000_000 ether, dead);
         vm.stopPrank();
 
         // Set initial prices in the ARM.

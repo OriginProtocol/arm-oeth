@@ -54,6 +54,8 @@ abstract contract TargetFunctions is Setup, StdUtils {
     // [x] Deposit
     // [x] Withdraw
     // [x] TransferInRewards
+    // [x] SetUtilizationRate
+    //
     // ╔══════════════════════════════════════════════════════════════════════════════╗
     // ║                                   ✦✦✦  ✦✦✦                                   ║
     // ╚══════════════════════════════════════════════════════════════════════════════╝
@@ -362,6 +364,16 @@ abstract contract TargetFunctions is Setup, StdUtils {
 
         if (this.isConsoleAvailable()) {
             console.log(">>> Morpho Rewards:\t Transferred in %18e USDe as rewards, bps: %d", rewards, bps);
+        }
+    }
+
+    function targetMorphoSetUtilizationRate(uint256 utilizationRatePct) external {
+        utilizationRatePct = _bound(utilizationRatePct, 0, 100);
+
+        morpho.setUtilizationRate(utilizationRatePct * 1e16);
+
+        if (this.isConsoleAvailable()) {
+            console.log(">>> Morpho UseRate:\t Governor set utilization rate to %s%", utilizationRatePct);
         }
     }
 }

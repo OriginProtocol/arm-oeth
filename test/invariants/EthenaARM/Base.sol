@@ -3,8 +3,8 @@ pragma solidity 0.8.23;
 
 // Contracts
 import {Proxy} from "contracts/Proxy.sol";
-import {ERC4626} from "@solmate/mixins/ERC4626.sol";
 import {EthenaARM} from "contracts/EthenaARM.sol";
+import {MockMorpho} from "test/invariants/EthenaARM/mocks/MockMorpho.sol";
 import {MorphoMarket} from "src/contracts/markets/MorphoMarket.sol";
 import {EthenaUnstaker} from "contracts/EthenaUnstaker.sol";
 
@@ -29,8 +29,8 @@ abstract contract Base_Test_ {
     // --- Main contracts ---
     Proxy public armProxy;
     Proxy public morphoMarketProxy;
-    ERC4626 public morpho;
     EthenaARM public arm;
+    MockMorpho public morpho;
     MorphoMarket public market;
     EthenaUnstaker[] public unstakers;
 
