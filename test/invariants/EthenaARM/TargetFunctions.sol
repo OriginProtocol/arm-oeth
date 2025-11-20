@@ -12,6 +12,7 @@ import {MockERC20} from "@solmate/test/utils/mocks/MockERC20.sol";
 
 // Contracts
 import {IERC20} from "contracts/Interfaces.sol";
+import {IERC4626} from "contracts/Interfaces.sol";
 import {UserCooldown} from "contracts/Interfaces.sol";
 
 // Helpers
@@ -28,7 +29,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
     // [x] SwapTokensForExactTokens
     // [x] Deposit
     // [x] Allocate
-    // [ ] CollectFees
+    // [x] CollectFees
     // [x] RequestRedeem
     // [x] ClaimRedeem
     // [ ] RequestBaseWithdrawal
@@ -36,7 +37,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
     // --- Admin functions
     // [x] SetPrices
     // [x] SetCrossPrice
-    // [ ] SetFee
+    // [x] SetFee
     // [x] SetActiveMarket
     // [x] SetARMBuffer
     //
@@ -133,6 +134,11 @@ abstract contract TargetFunctions is Setup, StdUtils {
         uint256 requestId;
         uint256 claimTimestamp;
         uint256 claimable = arm.claimable();
+        uint256 availableLiquidity = usde.balanceOf(address(arm));
+        address market = arm.activeMarket();
+        if (market != address(0)) {
+            availableLiquidity += IERC4626(market).maxWithdraw(address(arm));
+        }
         if (assume(claimable != 0)) return;
         // Find a user with a pending request, where the amount is <= claimable
         {
@@ -142,7 +148,8 @@ abstract contract TargetFunctions is Setup, StdUtils {
                     randomAddressIndex: randomAddressIndex,
                     randomArrayIndex: randomArrayIndex,
                     users: makers,
-                    targetAmount: claimable
+                    claimable: uint128(claimable),
+                    availableLiquidity: uint128(availableLiquidity)
                 }),
                 pendingRequests
             );
@@ -417,6 +424,40 @@ abstract contract TargetFunctions is Setup, StdUtils {
                 spent[0],
                 amountOut
             );
+        }
+    }
+
+    function targetARMCollectFees() external {
+        uint256 fees = arm.feesAccrued();
+        uint256 balance = usde.balanceOf(address(arm));
+        uint256 outstandingWithdrawals = arm.withdrawsQueued() - arm.withdrawsClaimed();
+        if (assume(balance >= fees + outstandingWithdrawals)) return;
+
+        uint256 feesCollected = arm.collectFees();
+
+        if (this.isConsoleAvailable()) {
+            console.log(">>> ARM Collect:\t Governor collected %18e USDe in fees", feesCollected);
+        }
+        require(feesCollected == fees, "Fees collected mismatch");
+    }
+
+    function targetARMSetFees(uint256 fee) external {
+        // Ensure current fee can be collected
+        uint256 fees = arm.feesAccrued();
+        if (fees != 0) {
+            uint256 balance = usde.balanceOf(address(arm));
+            uint256 outstandingWithdrawals = arm.withdrawsQueued() - arm.withdrawsClaimed();
+            if (assume(balance >= fees + outstandingWithdrawals)) return;
+        }
+
+        uint256 oldFee = arm.fee();
+        // Bound fee to [0, 50%]
+        fee = _bound(fee, 0, 50);
+        vm.prank(governor);
+        arm.setFee(fee * 100);
+
+        if (this.isConsoleAvailable()) {
+            console.log(">>> ARM SetFees:\t Governor set ARM fee from %s% to %s%", oldFee / 100, fee);
         }
     }
 
