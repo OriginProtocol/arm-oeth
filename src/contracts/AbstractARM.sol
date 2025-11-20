@@ -612,7 +612,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     }
 
     /// @notice Claim liquidity assets from a previous withdrawal request after the claim delay has passed.
-    /// This will withdraw from the active lending market if there are not enough liquidity assets in the ARM.
+    /// This will try and withdraw from the active lending market if there are not enough liquidity assets in the ARM.
+    /// If there is not enough liquidity in the ARM and lending market the transaction will revert.
+    /// If the lending market has enough liquidity but has high utilization preventing the withdrawal, the transaction will revert.
     /// @param requestId The index of the withdrawal request
     /// @return assets The amount of liquidity assets that were transferred to the redeemer
     function claimRedeem(uint256 requestId) external returns (uint256 assets) {
@@ -620,8 +622,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         WithdrawalRequest memory request = withdrawalRequests[requestId];
 
         require(request.claimTimestamp <= block.timestamp, "Claim delay not met");
-        // Is there enough liquidity to claim this request?
-        // This includes liquidity assets in the ARM and the the active lending market
+        // Is there enough liquidity in the ARM and lending market to claim this request?
         require(request.queued <= claimable(), "Queue pending liquidity");
         require(request.withdrawer == msg.sender, "Not requester");
         require(request.claimed == false, "Already claimed");
@@ -653,16 +654,18 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     }
 
     /// @notice Used to work out if an ARM's withdrawal request can be claimed.
-    /// If the withdrawal request's `queued` amount is less than the returned `claimable` amount, then it can be claimed.
-    /// The `claimable` amount is the all the withdrawals already claimed plus the liquidity assets in the ARM
-    /// and active lending market.
-    /// @return claimableAmount The amount of liquidity assets that can be claimed
+    /// If the withdrawal request's `queued` amount is less than the returned `claimableAmount`, then
+    /// the withdrawal request can be claimed.
+    /// @return claimableAmount The ARM's already claimed withdrawal requests plus the liquidity in the ARM
+    /// and liquidity that is withdrawable from the lending market.
     function claimable() public view returns (uint256 claimableAmount) {
         claimableAmount = withdrawsClaimed + IERC20(liquidityAsset).balanceOf(address(this));
 
         // if there is an active lending market, add to the claimable amount
         address activeMarketMem = activeMarket;
         if (activeMarketMem != address(0)) {
+            // maxWithdraw is used as during periods of high utilization or temporary pauses,
+            // maxWithdraw may return less than convertToAssets.
             claimableAmount += IERC4626(activeMarketMem).maxWithdraw(address(this));
         }
     }
