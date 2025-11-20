@@ -11,6 +11,7 @@ import {StdStyle} from "forge-std/StdStyle.sol";
 import {MockERC20} from "@solmate/test/utils/mocks/MockERC20.sol";
 
 // Contracts
+import {IERC20} from "contracts/Interfaces.sol";
 import {UserCooldown} from "contracts/Interfaces.sol";
 
 // Helpers
@@ -23,8 +24,8 @@ abstract contract TargetFunctions is Setup, StdUtils {
     // ╔══════════════════════════════════════════════════════════════════════════════╗
     // ║                              ✦✦✦ ETHENA ARM ✦✦✦                              ║
     // ╚══════════════════════════════════════════════════════════════════════════════╝
-    // [ ] SwapExactTokensForTokens
-    // [ ] SwapTokensForExactTokens
+    // [x] SwapExactTokensForTokens
+    // [x] SwapTokensForExactTokens
     // [x] Deposit
     // [x] Allocate
     // [ ] CollectFees
@@ -34,7 +35,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
     // [ ] ClaimBaseWithdrawals
     // --- Admin functions
     // [x] SetPrices
-    // [ ] SetCrossPrice
+    // [x] SetCrossPrice
     // [ ] SetFee
     // [x] SetActiveMarket
     // [x] SetARMBuffer
@@ -262,6 +263,159 @@ abstract contract TargetFunctions is Setup, StdUtils {
                 buyPrice,
                 1e72 / sellPrice,
                 arm.crossPrice()
+            );
+        }
+    }
+
+    function targetARMSetCrossPrice(uint256 crossPrice) external {
+        uint256 maxCrossPrice = 1e36;
+        uint256 minCrossPrice = 1e36 - 20e32;
+        uint256 sellT1 = 1e72 / (arm.traderate0());
+        uint256 buyT1 = arm.traderate1() + 1;
+        minCrossPrice = max(minCrossPrice, buyT1);
+        maxCrossPrice = min(maxCrossPrice, sellT1);
+        if (assume(maxCrossPrice >= minCrossPrice)) return;
+        crossPrice = _bound(crossPrice, minCrossPrice, maxCrossPrice);
+
+        if (arm.crossPrice() > crossPrice) {
+            if (assume(susde.balanceOf(address(arm)) < 1e12)) return;
+        }
+
+        vm.prank(governor);
+        arm.setCrossPrice(crossPrice);
+
+        if (this.isConsoleAvailable()) {
+            console.log(">>> ARM SetCPrice:\t Governor set cross price to %36e", crossPrice);
+        }
+    }
+
+    function targetARMSwapExactTokensForTokens(bool token0ForToken1, uint88 amountIn, uint256 randomAddressIndex)
+        external
+    {
+        (IERC20 tokenIn, IERC20 tokenOut) = token0ForToken1
+            ? (IERC20(address(usde)), IERC20(address(susde)))
+            : (IERC20(address(susde)), IERC20(address(usde)));
+
+        // What's the maximum amountOut we can obtain?
+        uint256 maxAmountOut;
+        if (address(tokenOut) == address(usde)) {
+            uint256 balance = usde.balanceOf(address(arm));
+            uint256 outstandingWithdrawals = arm.withdrawsQueued() - arm.withdrawsClaimed();
+            maxAmountOut = outstandingWithdrawals >= balance ? 0 : balance - outstandingWithdrawals;
+        } else {
+            maxAmountOut = susde.balanceOf(address(arm));
+        }
+        // Ensure there is liquidity available in ARM
+        if (assume(maxAmountOut > 1)) return;
+
+        // What's the maximum amountIn we can provide to not exceed maxAmountOut?
+        uint256 maxAmountIn = token0ForToken1
+            ? (maxAmountOut * 1e36 / arm.traderate0()) * susde.totalAssets() / susde.totalSupply()
+            : (maxAmountOut * 1e36 / arm.traderate1()) * susde.totalSupply() / susde.totalAssets();
+        if (assume(maxAmountIn > 0)) return;
+
+        // Bound amountIn
+        amountIn = uint88(_bound(amountIn, 1, maxAmountIn));
+        // Select a random user from makers
+        address user = traders[randomAddressIndex % TRADERS_COUNT];
+
+        vm.startPrank(user);
+        // Mint amountIn to user
+        if (token0ForToken1) {
+            MockERC20(address(usde)).mint(user, amountIn);
+        } else {
+            // Mint too much USDe to user to be able to mint enough sUSDe
+            MockERC20(address(usde)).mint(user, uint256(amountIn) * 10);
+            // Mint sUSDe to user
+            susde.mint(amountIn, user);
+            // Burn excess USDe
+            MockERC20(address(usde)).burn(user, usde.balanceOf(user));
+        }
+        // Perform swap
+        uint256[] memory obtained = arm.swapExactTokensForTokens(tokenIn, tokenOut, amountIn, 0, user);
+        vm.stopPrank();
+
+        if (this.isConsoleAvailable()) {
+            console.log(
+                string(
+                    abi.encodePacked(
+                        ">>> ARM SwapEF:\t ",
+                        vm.getLabel(user),
+                        " swapped %18e ",
+                        token0ForToken1 ? "USDe" : "sUSDe",
+                        "\t for %18e ",
+                        token0ForToken1 ? "sUSDe" : "USDe"
+                    )
+                ),
+                amountIn,
+                obtained[1]
+            );
+        }
+    }
+
+    function targetARMSwapTokensForExactTokens(bool token0ForToken1, uint88 amountOut, uint256 randomAddressIndex)
+        external
+    {
+        (IERC20 tokenIn, IERC20 tokenOut) = token0ForToken1
+            ? (IERC20(address(usde)), IERC20(address(susde)))
+            : (IERC20(address(susde)), IERC20(address(usde)));
+
+        // What's the maximum amountOut we can obtain?
+        uint256 maxAmountOut;
+        if (address(tokenOut) == address(usde)) {
+            uint256 balance = usde.balanceOf(address(arm));
+            uint256 outstandingWithdrawals = arm.withdrawsQueued() - arm.withdrawsClaimed();
+            maxAmountOut = outstandingWithdrawals >= balance ? 0 : balance - outstandingWithdrawals;
+        } else {
+            maxAmountOut = susde.balanceOf(address(arm));
+        }
+        // Ensure there is liquidity available in ARM
+        if (assume(maxAmountOut > 1)) return;
+
+        amountOut = uint88(_bound(amountOut, 1, maxAmountOut));
+
+        // What's the maximum amountIn we can provide to not exceed maxAmountOut?
+        uint256 convertedAmountOut;
+        if (token0ForToken1) {
+            convertedAmountOut = (amountOut * susde.totalAssets()) / susde.totalSupply();
+        } else {
+            convertedAmountOut = (amountOut * susde.totalSupply()) / susde.totalAssets();
+        }
+        uint256 price = token0ForToken1 ? arm.traderate0() : arm.traderate1();
+        uint256 amountIn = ((uint256(convertedAmountOut) * 1e36) / price) + 3 + 10; // slippage + rounding buffer
+
+        // Select a random user from makers
+        address user = traders[randomAddressIndex % TRADERS_COUNT];
+        vm.startPrank(user);
+        // Mint amountIn to user
+        if (token0ForToken1) {
+            MockERC20(address(usde)).mint(user, amountIn);
+        } else {
+            // Mint too much USDe to user to be able to mint enough sUSDe
+            MockERC20(address(usde)).mint(user, amountIn * 2);
+            // Mint sUSDe to user
+            susde.mint(amountIn, user);
+            // Burn excess USDe
+            MockERC20(address(usde)).burn(user, usde.balanceOf(user));
+        }
+        // Perform swap
+        uint256[] memory spent = arm.swapTokensForExactTokens(tokenIn, tokenOut, amountOut, type(uint256).max, user);
+        vm.stopPrank();
+
+        if (this.isConsoleAvailable()) {
+            console.log(
+                string(
+                    abi.encodePacked(
+                        ">>> ARM SwapFT:\t ",
+                        vm.getLabel(user),
+                        " swapped %18e ",
+                        token0ForToken1 ? "USDe" : "sUSDe",
+                        "\t for %18e ",
+                        token0ForToken1 ? "sUSDe" : "USDe"
+                    )
+                ),
+                spent[0],
+                amountOut
             );
         }
     }

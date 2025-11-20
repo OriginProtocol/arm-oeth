@@ -280,6 +280,7 @@ abstract contract Setup is Base_Test_ {
         for (uint256 i; i < TRADERS_COUNT; i++) {
             vm.startPrank(traders[i]);
             usde.approve(address(arm), type(uint256).max);
+            usde.approve(address(susde), type(uint256).max);
             susde.approve(address(arm), type(uint256).max);
             vm.stopPrank();
         }
@@ -298,6 +299,14 @@ abstract contract Setup is Base_Test_ {
 
     function abs(int256 x) internal pure returns (uint256) {
         return uint256(x >= 0 ? x : -x);
+    }
+
+    function max(uint256 a, uint256 b) internal pure returns (uint256) {
+        return a >= b ? a : b;
+    }
+
+    function min(uint256 a, uint256 b) internal pure returns (uint256) {
+        return a <= b ? a : b;
     }
 
     modifier ensureTimeIncrease() {
