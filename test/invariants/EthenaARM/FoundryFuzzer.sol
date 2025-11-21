@@ -64,7 +64,14 @@ contract FuzzerFoundry_EthenaARM is Properties, StdInvariant, StdAssertions {
     /// --- INVARIANTS
     //////////////////////////////////////////////////////
     function invariantA() public view {
-        assertTrue(propertyA());
-        assertTrue(propertyB());
+        assertTrue(propertyA(), "Property A failed");
+        assertTrue(propertyB(), "Property B failed");
+        assertTrue(propertyC(), "Property C failed");
+        assertTrue(propertyD(), "Property D failed");
+        assertTrue(propertyE(), "Property E failed");
+        assertTrue(propertyF(), "Property F failed");
+        assertTrue(propertyG(), "Property G failed");
+        assertTrue(propertyH(), "Property H failed");
+        assertTrue(propertyI(), "Property I failed");
     }
 }

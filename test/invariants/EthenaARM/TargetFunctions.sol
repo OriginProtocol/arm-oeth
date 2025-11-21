@@ -129,6 +129,8 @@ abstract contract TargetFunctions is Setup, StdUtils {
                 requestId
             );
         }
+
+        sumUSDeUserRequest += amount;
     }
 
     function targetARMClaimRedeem(uint248 randomAddressIndex, uint248 randomArrayIndex) external ensureTimeIncrease {
@@ -470,17 +472,17 @@ abstract contract TargetFunctions is Setup, StdUtils {
     }
 
     function targetARMCollectFees() external {
-        uint256 fees = arm.feesAccrued();
+        uint256 feesAccrued = arm.feesAccrued();
         uint256 balance = usde.balanceOf(address(arm));
         uint256 outstandingWithdrawals = arm.withdrawsQueued() - arm.withdrawsClaimed();
-        if (assume(balance >= fees + outstandingWithdrawals)) return;
+        if (assume(balance >= feesAccrued + outstandingWithdrawals)) return;
 
         uint256 feesCollected = arm.collectFees();
 
         if (this.isConsoleAvailable()) {
             console.log(">>> ARM Collect:\t Governor collected %18e USDe in fees", feesCollected);
         }
-        require(feesCollected == fees, "Fees collected mismatch");
+        require(feesCollected == feesAccrued, "Fees collected mismatch");
 
         sumUSDeFeesCollected += feesCollected;
     }

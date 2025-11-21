@@ -91,6 +91,7 @@ abstract contract Base_Test_ {
     uint256 public sumUSDeSwapOut;
     uint256 public sumUSDeUserDeposit;
     uint256 public sumUSDeUserRedeem;
+    uint256 public sumUSDeUserRequest;
     uint256 public sumUSDeBaseRedeem;
     uint256 public sumUSDeFeesCollected;
     uint256 public sumUSDeMarketDeposit;
