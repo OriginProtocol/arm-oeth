@@ -89,6 +89,8 @@ abstract contract TargetFunctions is Setup, StdUtils {
                 shares
             );
         }
+
+        sumUSDeUserDeposit += amount;
     }
 
     function targetARMRequestRedeem(uint88 shareAmount, uint248 randomAddressIndex) external {
@@ -177,6 +179,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         }
 
         // Claim redeem as user
+        uint256 balanceBefore = usde.balanceOf(address(arm));
         vm.prank(user);
         uint256 amount = arm.claimRedeem(requestId);
 
@@ -192,6 +195,12 @@ abstract contract TargetFunctions is Setup, StdUtils {
                 requestId,
                 amount
             );
+        }
+
+        sumUSDeUserRedeem += amount;
+        if (balanceBefore < amount) {
+            // This means we had to withdraw from market
+            sumUSDeMarketWithdraw += amount - balanceBefore;
         }
     }
 
@@ -221,13 +230,22 @@ abstract contract TargetFunctions is Setup, StdUtils {
             if (assume(assets < availableLiquidity)) return;
         }
 
+        uint256 balanceBefore = usde.balanceOf(address(arm));
         vm.prank(operator);
         arm.setActiveMarket(targetMarket);
+        uint256 balanceAfter = usde.balanceOf(address(arm));
 
         if (this.isConsoleAvailable()) {
             console.log(
                 ">>> ARM SetMarket:\t Governor set active market to %s", isActive ? "Morpho Market" : "No active market"
             );
+        }
+
+        int256 diff = int256(balanceAfter) - int256(balanceBefore);
+        if (diff > 0) {
+            sumUSDeMarketWithdraw += uint256(diff);
+        } else {
+            sumUSDeMarketDeposit += uint256(-diff);
         }
     }
 
@@ -251,6 +269,12 @@ abstract contract TargetFunctions is Setup, StdUtils {
                 abs(targetLiquidityDelta),
                 abs(actualLiquidityDelta)
             );
+        }
+
+        if (actualLiquidityDelta > 0) {
+            sumUSDeMarketDeposit += uint256(actualLiquidityDelta);
+        } else {
+            sumUSDeMarketWithdraw += uint256(-actualLiquidityDelta);
         }
     }
 
@@ -358,6 +382,15 @@ abstract contract TargetFunctions is Setup, StdUtils {
                 obtained[1]
             );
         }
+
+        require(obtained[0] == amountIn, "Amount in mismatch");
+        if (token0ForToken1) {
+            sumUSDeSwapIn += obtained[0];
+            sumSUSDeSwapOut += obtained[1];
+        } else {
+            sumSUSDeSwapIn += obtained[0];
+            sumUSDeSwapOut += obtained[1];
+        }
     }
 
     function targetARMSwapTokensForExactTokens(bool token0ForToken1, uint88 amountOut, uint256 randomAddressIndex)
@@ -406,7 +439,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
             MockERC20(address(usde)).burn(user, usde.balanceOf(user));
         }
         // Perform swap
-        uint256[] memory spent = arm.swapTokensForExactTokens(tokenIn, tokenOut, amountOut, type(uint256).max, user);
+        uint256[] memory obtained = arm.swapTokensForExactTokens(tokenIn, tokenOut, amountOut, type(uint256).max, user);
         vm.stopPrank();
 
         if (this.isConsoleAvailable()) {
@@ -421,9 +454,18 @@ abstract contract TargetFunctions is Setup, StdUtils {
                         token0ForToken1 ? "sUSDe" : "USDe"
                     )
                 ),
-                spent[0],
+                obtained[0],
                 amountOut
             );
+        }
+
+        require(obtained[1] == amountOut, "Amount out mismatch");
+        if (token0ForToken1) {
+            sumUSDeSwapIn += obtained[0];
+            sumSUSDeSwapOut += obtained[1];
+        } else {
+            sumSUSDeSwapIn += obtained[0];
+            sumUSDeSwapOut += obtained[1];
         }
     }
 
@@ -439,15 +481,17 @@ abstract contract TargetFunctions is Setup, StdUtils {
             console.log(">>> ARM Collect:\t Governor collected %18e USDe in fees", feesCollected);
         }
         require(feesCollected == fees, "Fees collected mismatch");
+
+        sumUSDeFeesCollected += feesCollected;
     }
 
     function targetARMSetFees(uint256 fee) external {
         // Ensure current fee can be collected
-        uint256 fees = arm.feesAccrued();
-        if (fees != 0) {
+        uint256 feesAccrued = arm.feesAccrued();
+        if (feesAccrued != 0) {
             uint256 balance = usde.balanceOf(address(arm));
             uint256 outstandingWithdrawals = arm.withdrawsQueued() - arm.withdrawsClaimed();
-            if (assume(balance >= fees + outstandingWithdrawals)) return;
+            if (assume(balance >= feesAccrued + outstandingWithdrawals)) return;
         }
 
         uint256 oldFee = arm.fee();
@@ -459,6 +503,8 @@ abstract contract TargetFunctions is Setup, StdUtils {
         if (this.isConsoleAvailable()) {
             console.log(">>> ARM SetFees:\t Governor set ARM fee from %s% to %s%", oldFee / 100, fee);
         }
+
+        sumUSDeFeesCollected += feesAccrued;
     }
 
     function targetARMRequestBaseWithdrawal(uint88 amount) external {
@@ -507,6 +553,8 @@ abstract contract TargetFunctions is Setup, StdUtils {
                 nextIndex
             );
         }
+
+        sumSUSDeBaseRedeem += amount;
     }
 
     function targetARMClaimBaseWithdrawals(uint256 randomAddressIndex) external ensureTimeIncrease {
@@ -555,6 +603,8 @@ abstract contract TargetFunctions is Setup, StdUtils {
                 cooldown.underlyingAmount
             );
         }
+
+        sumUSDeBaseRedeem += cooldown.underlyingAmount;
     }
 
     // ╔══════════════════════════════════════════════════════════════════════════════╗

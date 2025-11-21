@@ -82,5 +82,22 @@ abstract contract Base_Test_ {
     function isLabelAvailable() external view virtual returns (bool);
     function isAssumeAvailable() external view virtual returns (bool);
     function isConsoleAvailable() external view virtual returns (bool);
+
+    //////////////////////////////////////////////////////
+    /// --- GHOST VALUES
+    //////////////////////////////////////////////////////
+    // --- USDe values ---
+    uint256 public sumUSDeSwapIn;
+    uint256 public sumUSDeSwapOut;
+    uint256 public sumUSDeUserDeposit;
+    uint256 public sumUSDeUserRedeem;
+    uint256 public sumUSDeBaseRedeem;
+    uint256 public sumUSDeFeesCollected;
+    uint256 public sumUSDeMarketDeposit;
+    uint256 public sumUSDeMarketWithdraw;
+    // --- sUSDe values ---
+    uint256 public sumSUSDeSwapIn;
+    uint256 public sumSUSDeSwapOut;
+    uint256 public sumSUSDeBaseRedeem;
 }
 
