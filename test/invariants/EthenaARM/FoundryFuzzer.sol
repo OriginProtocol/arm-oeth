@@ -4,6 +4,7 @@ pragma solidity 0.8.23;
 // Test imports
 import {Properties} from "./Properties.sol";
 import {StdInvariant} from "forge-std/StdInvariant.sol";
+import {StdAssertions} from "forge-std/StdAssertions.sol";
 
 /// @title FuzzerFoundry
 /// @notice Concrete fuzzing contract implementing Foundry's invariant testing framework.
@@ -13,7 +14,7 @@ import {StdInvariant} from "forge-std/StdInvariant.sol";
 ///         - Implements invariant test functions that call property validators
 ///         - Each invariant function represents a critical system property to maintain
 ///         - Fuzzer will call targeted handlers randomly and check invariants after each call
-contract FuzzerFoundry_EthenaARM is Properties, StdInvariant {
+contract FuzzerFoundry_EthenaARM is Properties, StdInvariant, StdAssertions {
     bool public constant override isLabelAvailable = true;
     bool public constant override isAssumeAvailable = true;
     bool public constant override isConsoleAvailable = true;
@@ -62,5 +63,8 @@ contract FuzzerFoundry_EthenaARM is Properties, StdInvariant {
     //////////////////////////////////////////////////////
     /// --- INVARIANTS
     //////////////////////////////////////////////////////
-    function invariantA() public {}
+    function invariantA() public view {
+        assertTrue(propertyA());
+        assertTrue(propertyB());
+    }
 }
