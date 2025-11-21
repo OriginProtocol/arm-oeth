@@ -33,6 +33,7 @@ abstract contract Base_Test_ {
     MockMorpho public morpho;
     MorphoMarket public market;
     EthenaUnstaker[] public unstakers;
+    uint256[] public unstakerIndices;
 
     // --- Tokens ---
     IERC20 public usde;

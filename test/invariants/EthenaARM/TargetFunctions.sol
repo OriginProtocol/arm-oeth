@@ -32,8 +32,8 @@ abstract contract TargetFunctions is Setup, StdUtils {
     // [x] CollectFees
     // [x] RequestRedeem
     // [x] ClaimRedeem
-    // [ ] RequestBaseWithdrawal
-    // [ ] ClaimBaseWithdrawals
+    // [x] RequestBaseWithdrawal
+    // [x] ClaimBaseWithdrawals
     // --- Admin functions
     // [x] SetPrices
     // [x] SetCrossPrice
@@ -458,6 +458,102 @@ abstract contract TargetFunctions is Setup, StdUtils {
 
         if (this.isConsoleAvailable()) {
             console.log(">>> ARM SetFees:\t Governor set ARM fee from %s% to %s%", oldFee / 100, fee);
+        }
+    }
+
+    function targetARMRequestBaseWithdrawal(uint88 amount) external {
+        uint256 balance = susde.balanceOf(address(arm));
+        if (assume(balance > 1)) return;
+        amount = uint88(_bound(amount, 1, balance));
+
+        // Ensure there is an unstaker available
+        uint256 nextIndex = arm.nextUnstakerIndex();
+        address unstaker = arm.unstakers(nextIndex);
+        UserCooldown memory cooldown = susde.cooldowns(unstaker);
+        // If next unstaker has an active cooldown, this means all unstakers are in cooldown
+        // -> no unstaker available
+        if (assume(cooldown.underlyingAmount == 0)) return;
+
+        // Ensure time delay has passed
+        uint32 lastRequestTimestamp = arm.lastRequestTimestamp();
+        if (block.timestamp < lastRequestTimestamp + 3 hours) {
+            if (this.isConsoleAvailable()) {
+                console.log(
+                    StdStyle.yellow(
+                        string(
+                            abi.encodePacked(
+                                ">>> Time jump:\t Fast forwarded to: ",
+                                vm.toString(lastRequestTimestamp + 3 hours),
+                                "  (+ ",
+                                vm.toString((lastRequestTimestamp + 3 hours) - block.timestamp),
+                                "s)"
+                            )
+                        )
+                    )
+                );
+            }
+            vm.warp(lastRequestTimestamp + 3 hours);
+        }
+
+        vm.prank(operator);
+        arm.requestBaseWithdrawal(amount);
+
+        unstakerIndices.push(nextIndex);
+
+        if (this.isConsoleAvailable()) {
+            console.log(
+                ">>> ARM ReqBaseW:\t Operator requested base withdrawal of %18e sUSDe underlying, using unstakers #%s",
+                amount,
+                nextIndex
+            );
+        }
+    }
+
+    function targetARMClaimBaseWithdrawals(uint256 randomAddressIndex) external ensureTimeIncrease {
+        if (assume(unstakerIndices.length != 0)) return;
+        // Select a random unstaker index from used unstakers
+        uint256 selectedIndex = unstakerIndices[randomAddressIndex % unstakerIndices.length];
+        address unstaker = arm.unstakers(uint8(selectedIndex));
+        UserCooldown memory cooldown = susde.cooldowns(address(unstaker));
+        uint256 endTimestamp = cooldown.cooldownEnd;
+
+        // Fast forward time if needed
+        if (block.timestamp < endTimestamp) {
+            if (this.isConsoleAvailable()) {
+                console.log(
+                    StdStyle.yellow(
+                        string(
+                            abi.encodePacked(
+                                ">>> Time jump:\t Fast forwarded to: ",
+                                vm.toString(endTimestamp),
+                                "  (+ ",
+                                vm.toString(endTimestamp - block.timestamp),
+                                "s)"
+                            )
+                        )
+                    )
+                );
+            }
+            vm.warp(endTimestamp);
+        }
+
+        vm.prank(operator);
+        arm.claimBaseWithdrawals(unstaker);
+
+        // Remove selectedIndex from unstakerIndices, without preserving order
+        unstakerIndices[randomAddressIndex % unstakerIndices.length] = unstakerIndices[unstakerIndices.length - 1];
+        unstakerIndices.pop();
+
+        if (this.isConsoleAvailable()) {
+            console.log(
+                string(
+                    abi.encodePacked(
+                        ">>> ARM ClaimBaseW:\t Operator claimed base withdrawals using %s\t ", "who unstaked %18e USDe"
+                    )
+                ),
+                vm.getLabel(unstaker),
+                cooldown.underlyingAmount
+            );
         }
     }
 
