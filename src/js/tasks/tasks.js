@@ -7,8 +7,7 @@ const {
   parseAddress,
   parseDeployedAddress,
 } = require("../utils/addressParser");
-const { setAutotaskVars } = require("./autotask");
-const { setActionVars } = require("./defender");
+const { setActionVars, updateAction } = require("./defender");
 const {
   submitLido,
   snapLido,
@@ -276,22 +275,6 @@ subtask("withdrawStatus", "Get the status of a OETH withdrawal request")
     });
   });
 task("withdrawStatus").setAction(async (_, __, runSuper) => {
-  return runSuper();
-});
-
-// Defender
-subtask(
-  "setAutotaskVars",
-  "Set environment variables on Defender Autotasks. eg DEBUG=origin*",
-)
-  .addOptionalParam(
-    "id",
-    "Identifier of the Defender Autotask",
-    "ffcfc580-7b0a-42ed-a4f2-3f0a3add9779",
-    types.string,
-  )
-  .setAction(setAutotaskVars);
-task("setAutotaskVars").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
 
@@ -1206,6 +1189,14 @@ subtask(
   )
   .setAction(setActionVars);
 task("setActionVars").setAction(async (_, __, runSuper) => {
+  return runSuper();
+});
+
+subtask("updateAction", "Upload a Defender Actions")
+  .addParam("id", "Identifier of the Defender Actions", undefined, types.string)
+  .addParam("file", "Path to the file to upload", undefined, types.string)
+  .setAction(updateAction);
+task("updateAction").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
 
