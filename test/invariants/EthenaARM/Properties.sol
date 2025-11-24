@@ -49,7 +49,16 @@ abstract contract Properties is TargetFunctions {
     // ╚══════════════════════════════════════════════════════════════════════════════╝
     // [x] Invariant L: liquidityAmountInCooldown == ∑unstaker.underlyingAmount
     // [x] Invariant M: nextUnstakerIndex < MAX_UNSTAKERS
-    // [ ] Invariant N: ∀ unstaker, usde.balanceOf(unstaker) == 0 && susde.balanceOf(unstaker) == 0
+    // [x] Invariant N: ∀ unstaker, usde.balanceOf(unstaker) == 0 && susde.balanceOf(unstaker) == 0
+    //
+    // ╔══════════════════════════════════════════════════════════════════════════════╗
+    // ║                              ✦✦✦ AFTER ALL ✦✦✦                               ║
+    // ╚══════════════════════════════════════════════════════════════════════════════╝
+    // [x] USDe in ARM < 1 ether
+    // [x] sUSDe in ARM == 0
+    // [x] Morpho shares in ARM == 0
+    // [x] ARM total assets < 1 ether
+    // [x] ∀ user, usde.balanceOf(user) >= totalMinted - 1e1
     //
     // ╔══════════════════════════════════════════════════════════════════════════════╗
     // ║                                   ✦✦✦  ✦✦✦                                   ║
@@ -179,6 +188,42 @@ abstract contract Properties is TargetFunctions {
         for (uint256 i; i < len; i++) {
             address unstaker = address(unstakers[i]);
             if (usde.balanceOf(unstaker) != 0 || susde.balanceOf(unstaker) != 0) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // ╔══════════════════════════════════════════════════════════════════════════════╗
+    // ║                              ✦✦✦ AFTER ALL ✦✦✦                               ║
+    // ╚══════════════════════════════════════════════════════════════════════════════╝
+    function propertyAfterAll() public returns (bool) {
+        uint256 usdeBalance = usde.balanceOf(address(arm));
+        uint256 susdeBalance = susde.balanceOf(address(arm));
+        uint256 morphoBalance = morpho.balanceOf(address(arm));
+        uint256 armTotalAssets = arm.totalAssets();
+        if (this.isConsoleAvailable()) {
+            console.log("--- Final Balances ---");
+            console.log("ARM USDe balance:\t %18e", usdeBalance);
+            console.log("ARM sUSDe balance:\t %18e", susdeBalance);
+            console.log("ARM Morpho shares:\t %18e", morphoBalance);
+            console.log("ARM total assets:\t %18e", armTotalAssets);
+        }
+        require(usdeBalance < 1 ether, "USDe balance should be less than 1 ether");
+        require(susdeBalance == 0, "sUSDe balance not zero");
+        require(morphoBalance == 0, "Morpho shares not zero");
+        require(armTotalAssets < 1 ether, "ARM total assets should be less than 1 ether");
+        for (uint256 i; i < MAKERS_COUNT; i++) {
+            address user = makers[i];
+            uint256 totalMinted = mintedUSDe[user];
+            uint256 userBalance = usde.balanceOf(user);
+            if (!Math.approxGteAbs(userBalance, totalMinted, 1e1)) {
+                if (this.isConsoleAvailable()) {
+                    console.log(">>> Property After All failed for user %s:", vm.getLabel(user));
+                    console.log("    - User USDe balance:   %18e", userBalance);
+                    console.log("    - Total minted USDe:   %18e", totalMinted);
+                    console.log("    - Difference:          %18e", Math.absDiff(userBalance, totalMinted));
+                }
                 return false;
             }
         }

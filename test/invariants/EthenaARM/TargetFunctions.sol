@@ -91,6 +91,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         }
 
         sumUSDeUserDeposit += amount;
+        mintedUSDe[user] += amount;
     }
 
     function targetARMRequestRedeem(uint88 shareAmount, uint248 randomAddressIndex) external {
@@ -801,5 +802,76 @@ abstract contract TargetFunctions is Setup, StdUtils {
         if (this.isConsoleAvailable()) {
             console.log(">>> Morpho UseRate:\t Governor set utilization rate to %s%", pct);
         }
+    }
+
+    function targetAfterAll() public {
+        // In this function, we will simulate shutting down the ARM. This involves letting all users redeem their funds.
+        // This is important to ensure that the ARM can handle a complete withdrawal scenario without issues.
+        // This involves:
+        // 1. Claim all sUSDe base withdrawals
+        // 2. Request base withdrawal of the remaining sUSDe
+        // 3. Claim previous base withdrawals. At this point we shouldn't have any sUSDe left in the ARM.
+        // 4. Remove position from Morpho if any.
+        // 5. Let all ARM users (including dead address) redeem their shares.
+        // 6. Claim fees accrued.
+
+        // 1. Claim all sUSDe base withdrawals
+        // Fast forward time to allow claiming all previous base withdrawals
+        vm.warp(block.timestamp + 7 days);
+        for (uint256 i; i < unstakerIndices.length; i++) {
+            arm.claimBaseWithdrawals(arm.unstakers(uint8(unstakerIndices[i])));
+        }
+
+        // 2. Request base withdrawal of the remaining sUSDe
+        uint256 susdeBalance = susde.balanceOf(address(arm));
+        uint256 nextIndex = arm.nextUnstakerIndex();
+        if (susdeBalance > 0) {
+            vm.prank(operator);
+            arm.requestBaseWithdrawal(susdeBalance);
+        }
+
+        // 3. Claim previous base withdrawals. At this point we shouldn't have any sUSDe left in the ARM.
+        if (susdeBalance > 0) {
+            // Fast forward time to allow claiming the last base withdrawal
+            vm.warp(block.timestamp + 7 days);
+            arm.claimBaseWithdrawals(arm.unstakers(uint8(nextIndex)));
+        }
+        require(susde.balanceOf(address(arm)) == 0, "ARM still has sUSDe balance");
+
+        // 4. Remove position from Morpho if any.
+        address activeMarket = arm.activeMarket();
+        if (activeMarket != address(0)) {
+            morpho.setUtilizationRate(0);
+            vm.prank(operator);
+            arm.setActiveMarket(address(0));
+        }
+
+        // 5. Let all ARM users redeem their shares.
+        for (uint256 i; i < MAKERS_COUNT; i++) {
+            address user = makers[i];
+            uint256 balance = arm.balanceOf(user);
+            if (balance > 0) {
+                vm.prank(user);
+                arm.requestRedeem(balance);
+            }
+        }
+
+        // Also redeem for the dead address
+        uint256 balanceDead = arm.balanceOf(dead);
+        vm.prank(dead);
+        arm.requestRedeem(balanceDead);
+
+        // Fast forward time to allow claiming all redemptions
+        vm.warp(block.timestamp + DEFAULT_CLAIM_DELAY);
+        uint256 nextWithdrawalIndex = arm.nextWithdrawalIndex();
+        for (uint256 i; i < nextWithdrawalIndex; i++) {
+            (address user, bool claimed,,,) = arm.withdrawalRequests(i);
+            if (claimed) continue;
+            vm.prank(user);
+            arm.claimRedeem(i);
+        }
+
+        // 6. Claim fees accrued.
+        arm.collectFees();
     }
 }

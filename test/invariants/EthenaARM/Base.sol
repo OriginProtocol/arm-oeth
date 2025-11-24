@@ -96,6 +96,7 @@ abstract contract Base_Test_ {
     uint256 public sumUSDeFeesCollected;
     uint256 public sumUSDeMarketDeposit;
     uint256 public sumUSDeMarketWithdraw;
+    mapping(address => uint256) public mintedUSDe;
     // --- sUSDe values ---
     uint256 public sumSUSDeSwapIn;
     uint256 public sumSUSDeSwapOut;

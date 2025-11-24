@@ -85,4 +85,9 @@ contract FuzzerFoundry_EthenaARM is Properties, StdInvariant, StdAssertions {
         assertTrue(propertyM(), "Property M failed");
         assertTrue(propertyN(), "Property N failed");
     }
+
+    function afterInvariant() public {
+        targetAfterAll();
+        assertTrue(propertyAfterAll(), "Property After All failed");
+    }
 }
