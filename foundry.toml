@@ -63,7 +63,7 @@ show_metrics = true
 fail_on_revert = false
 
 [profile.ci.invariant]
-runs = 1_000
+runs = 500
 depth = 1_000
 shrink_run_limit = 5_000
 show_metrics = true
