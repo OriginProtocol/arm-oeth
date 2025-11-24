@@ -94,7 +94,10 @@ abstract contract TargetFunctions is Setup, StdUtils {
         mintedUSDe[user] += amount;
     }
 
-    function targetARMRequestRedeem(uint88 shareAmount, uint248 randomAddressIndex) external ensureExchangeRateIncrease {
+    function targetARMRequestRedeem(uint88 shareAmount, uint248 randomAddressIndex)
+        external
+        ensureExchangeRateIncrease
+    {
         address user;
         uint256 balance;
         // Todo: mirgate it to Find library
@@ -134,7 +137,11 @@ abstract contract TargetFunctions is Setup, StdUtils {
         sumUSDeUserRequest += amount;
     }
 
-    function targetARMClaimRedeem(uint248 randomAddressIndex, uint248 randomArrayIndex) external ensureExchangeRateIncrease ensureTimeIncrease {
+    function targetARMClaimRedeem(uint248 randomAddressIndex, uint248 randomArrayIndex)
+        external
+        ensureExchangeRateIncrease
+        ensureTimeIncrease
+    {
         address user;
         uint256 requestId;
         uint256 claimTimestamp;
@@ -324,7 +331,8 @@ abstract contract TargetFunctions is Setup, StdUtils {
     }
 
     function targetARMSwapExactTokensForTokens(bool token0ForToken1, uint88 amountIn, uint256 randomAddressIndex)
-        external ensureExchangeRateIncrease
+        external
+        ensureExchangeRateIncrease
     {
         (IERC20 tokenIn, IERC20 tokenOut) = token0ForToken1
             ? (IERC20(address(usde)), IERC20(address(susde)))
@@ -397,7 +405,8 @@ abstract contract TargetFunctions is Setup, StdUtils {
     }
 
     function targetARMSwapTokensForExactTokens(bool token0ForToken1, uint88 amountOut, uint256 randomAddressIndex)
-        external ensureExchangeRateIncrease
+        external
+        ensureExchangeRateIncrease
     {
         (IERC20 tokenIn, IERC20 tokenOut) = token0ForToken1
             ? (IERC20(address(usde)), IERC20(address(susde)))
@@ -560,7 +569,11 @@ abstract contract TargetFunctions is Setup, StdUtils {
         sumSUSDeBaseRedeem += amount;
     }
 
-    function targetARMClaimBaseWithdrawals(uint256 randomAddressIndex) external ensureExchangeRateIncrease ensureTimeIncrease {
+    function targetARMClaimBaseWithdrawals(uint256 randomAddressIndex)
+        external
+        ensureExchangeRateIncrease
+        ensureTimeIncrease
+    {
         if (assume(unstakerIndices.length != 0)) return;
         // Select a random unstaker index from used unstakers
         uint256 selectedIndex = unstakerIndices[randomAddressIndex % unstakerIndices.length];
