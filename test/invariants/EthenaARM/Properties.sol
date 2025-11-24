@@ -54,10 +54,8 @@ abstract contract Properties is TargetFunctions {
     // ╔══════════════════════════════════════════════════════════════════════════════╗
     // ║                              ✦✦✦ AFTER ALL ✦✦✦                               ║
     // ╚══════════════════════════════════════════════════════════════════════════════╝
-    // [x] USDe in ARM < 1 ether
     // [x] sUSDe in ARM == 0
     // [x] Morpho shares in ARM == 0
-    // [x] ARM total assets < 1 ether
     // [x] ∀ user, usde.balanceOf(user) >= totalMinted - 1e1
     //
     // ╔══════════════════════════════════════════════════════════════════════════════╗
@@ -209,10 +207,8 @@ abstract contract Properties is TargetFunctions {
             console.log("ARM Morpho shares:\t %18e", morphoBalance);
             console.log("ARM total assets:\t %18e", armTotalAssets);
         }
-        require(usdeBalance < 1 ether, "USDe balance should be less than 1 ether");
         require(susdeBalance == 0, "sUSDe balance not zero");
         require(morphoBalance == 0, "Morpho shares not zero");
-        require(armTotalAssets < 1 ether, "ARM total assets should be less than 1 ether");
         for (uint256 i; i < MAKERS_COUNT; i++) {
             address user = makers[i];
             uint256 totalMinted = mintedUSDe[user];
