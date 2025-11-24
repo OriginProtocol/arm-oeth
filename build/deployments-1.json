@@ -9,10 +9,12 @@
         "007_UpgradeLidoARMMorphoScript": 1754407511,
         "008_DeployPendleAdaptor": 1755770279,
         "009_UpgradeLidoARMSetBufferScript": 1755692363,
-        "011_DeployEtherFiARMScript": 1761812927
+        "011_DeployEtherFiARMScript": 1761812927,
+        "012_UpgradeEtherFiARMScript": 1763557643
     },
     "contracts": {
         "ARM_ZAPPER": "0xE11EDbd5AE4Fa434Af7f8D7F03Da1742996e7Ab2",
+        "ETHERFI_ARM_IMPL": "0x69b98667134EeE3eBF75799dacBCd604E28709ab",
         "ETHER_FI_ARM": "0xfB0A3CF9B019BFd8827443d131b235B3E0FC58d2",
         "ETHER_FI_ARM_CAP_IMPL": "0xe27720Fc3f3707D47015e274D81a99e5B0800472",
         "ETHER_FI_ARM_CAP_MAN": "0xf2A18F7330141Ec737EB73A0A5Ea8E4d7e9bE7ec",

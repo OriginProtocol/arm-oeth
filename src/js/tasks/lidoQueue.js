@@ -51,7 +51,7 @@ const claimLidoWithdrawals = async (options) => {
   if (id) {
     finalizedIds.push(id);
   } else {
-    // Get the outstanding withdrawal requests for the AMM
+    // Get the outstanding Lido withdrawal requests for the ARM
     const requestIds = await withdrawalQueue.getWithdrawalRequests(
       arm.getAddress(),
     );
