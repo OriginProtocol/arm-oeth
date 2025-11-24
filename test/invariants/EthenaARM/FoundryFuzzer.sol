@@ -63,9 +63,12 @@ contract FuzzerFoundry_EthenaARM is Properties, StdInvariant, StdAssertions {
     //////////////////////////////////////////////////////
     /// --- INVARIANTS
     //////////////////////////////////////////////////////
-    function invariantA() public view {
+    function invariantSwap() public view {
         assertTrue(propertyA(), "Property A failed");
         assertTrue(propertyB(), "Property B failed");
+    }
+
+    function invariantLP() public {
         assertTrue(propertyC(), "Property C failed");
         assertTrue(propertyD(), "Property D failed");
         assertTrue(propertyE(), "Property E failed");
@@ -73,5 +76,13 @@ contract FuzzerFoundry_EthenaARM is Properties, StdInvariant, StdAssertions {
         assertTrue(propertyG(), "Property G failed");
         assertTrue(propertyH(), "Property H failed");
         assertTrue(propertyI(), "Property I failed");
+        assertTrue(propertyJ(), "Property J failed");
+        assertTrue(propertyK(), "Property K failed");
+    }
+
+    function invariantLiquidity() public {
+        assertTrue(propertyL(), "Property L failed");
+        assertTrue(propertyM(), "Property M failed");
+        assertTrue(propertyN(), "Property N failed");
     }
 }

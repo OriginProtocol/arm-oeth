@@ -10,6 +10,9 @@ import {TargetFunctions} from "./TargetFunctions.sol";
 // Helpers
 import {Math} from "./helpers/Math.sol";
 
+// Interfaces
+import {UserCooldown} from "contracts/Interfaces.sol";
+
 /// @title Properties
 /// @notice Abstract contract defining invariant properties for formal verification and fuzzing.
 /// @dev    This contract contains pure property functions that express system invariants:
@@ -40,7 +43,21 @@ abstract contract Properties is TargetFunctions {
     // [x] Invariant I: withdrawsClaimed == ∑claimRedeem.amount
     // [x] Invariant J: ∀ requestId, request.queued >= request.assets
     // [x] Invariant K: ∑feesCollected == feeCollector.balance
+    //
+    // ╔══════════════════════════════════════════════════════════════════════════════╗
+    // ║                         ✦✦✦ LIQUIDITY MANAGEMENT ✦✦✦                         ║
+    // ╚══════════════════════════════════════════════════════════════════════════════╝
+    // [x] Invariant L: liquidityAmountInCooldown == ∑unstaker.underlyingAmount
+    // [x] Invariant M: nextUnstakerIndex < MAX_UNSTAKERS
+    // [ ] Invariant N: ∀ unstaker, usde.balanceOf(unstaker) == 0 && susde.balanceOf(unstaker) == 0
+    //
+    // ╔══════════════════════════════════════════════════════════════════════════════╗
+    // ║                                   ✦✦✦  ✦✦✦                                   ║
+    // ╚══════════════════════════════════════════════════════════════════════════════╝
 
+    // ╔══════════════════════════════════════════════════════════════════════════════╗
+    // ║                           ✦✦✦ SWAP PROPERTIES ✦✦✦                            ║
+    // ╚══════════════════════════════════════════════════════════════════════════════╝
     function propertyA() public view returns (bool) {
         uint256 usdeBalance = usde.balanceOf(address(arm));
         uint256 inflow = 1e12 + sumUSDeSwapIn + sumUSDeUserDeposit + sumUSDeMarketWithdraw + sumUSDeBaseRedeem;
@@ -81,6 +98,9 @@ abstract contract Properties is TargetFunctions {
         return Math.eq(susdeBalance, Math.absDiff(inflow, outflow));
     }
 
+    // ╔══════════════════════════════════════════════════════════════════════════════╗
+    // ║                            ✦✦✦ LP PROPERTIES ✦✦✦                             ║
+    // ╚══════════════════════════════════════════════════════════════════════════════╝
     function propertyC() public view returns (bool) {
         return Math.gt(arm.totalSupply(), 0);
     }
@@ -134,5 +154,34 @@ abstract contract Properties is TargetFunctions {
     function propertyK() public view returns (bool) {
         uint256 feeCollectorBalance = usde.balanceOf(treasury);
         return Math.eq(sumUSDeFeesCollected, feeCollectorBalance);
+    }
+
+    // ╔══════════════════════════════════════════════════════════════════════════════╗
+    // ║                         ✦✦✦ LIQUIDITY MANAGEMENT ✦✦✦                         ║
+    // ╚══════════════════════════════════════════════════════════════════════════════╝
+    function propertyL() public returns (bool) {
+        uint256 liquidityAmountInCooldown;
+        uint256 len = unstakers.length;
+        for (uint256 i; i < len; i++) {
+            UserCooldown memory cooldown = susde.cooldowns(address(unstakers[i]));
+            liquidityAmountInCooldown += cooldown.underlyingAmount;
+        }
+        return Math.eq(liquidityAmountInCooldown, uint256(vm.load(address(arm), bytes32(uint256(100)))));
+    }
+
+    function propertyM() public view returns (bool) {
+        uint256 nextUnstakerIndex = arm.nextUnstakerIndex();
+        return Math.lt(nextUnstakerIndex, arm.MAX_UNSTAKERS());
+    }
+
+    function propertyN() public view returns (bool) {
+        uint256 len = unstakers.length;
+        for (uint256 i; i < len; i++) {
+            address unstaker = address(unstakers[i]);
+            if (usde.balanceOf(unstaker) != 0 || susde.balanceOf(unstaker) != 0) {
+                return false;
+            }
+        }
+        return true;
     }
 }
