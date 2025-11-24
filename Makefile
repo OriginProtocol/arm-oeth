@@ -47,6 +47,9 @@ test-invariant-lido:
 test-invariant-origin:
 	@FOUNDRY_INVARIANT_FAIL_ON_REVERT=true FOUNDRY_MATCH_CONTRACT=FuzzerFoundry_OriginARM $(MAKE) test-std
 
+test-invariant-ethena:
+	@FOUNDRY_INVARIANT_FAIL_ON_REVERT=true FOUNDRY_MATCH_CONTRACT=FuzzerFoundry_EthenaARM $(MAKE) test-std
+
 test-invariants:
 	@$(MAKE) test-invariant-lido && $(MAKE) test-invariant-origin
 
