@@ -39,3 +39,6 @@ build/deployments-fork*.json
 
 # Reports. eg stats.html
 *.html
+
+# Other
+.DS_Store
