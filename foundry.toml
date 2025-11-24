@@ -55,12 +55,18 @@ lint_on_build = false
 [fuzz]
 runs = 1_000
 
-[invariant]
+[profile.default.invariant]
 runs = 256
 depth = 500
 shrink_run_limit = 5_000
 show_metrics = true
 fail_on_revert = false
+
+[profile.ci.invariant]
+runs = 1_000
+depth = 1_000
+shrink_run_limit = 5_000
+show_metrics = true
 
 [dependencies]
 solmate = "6.7.0"

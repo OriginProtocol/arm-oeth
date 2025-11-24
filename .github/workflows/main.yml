@@ -56,8 +56,8 @@ jobs:
       - name: Compile contracts with Forge
         run: forge build --sizes
 
-      - name: Compile contracts with Hardhat
-        run: npx hardhat compile
+      #- name: Compile contracts with Hardhat
+      #  run: npx hardhat compile
 
   ####################################################
   ### TESTS
@@ -140,12 +140,21 @@ jobs:
 
       - name: Run invariant tests (OethARM)
         run: |
+          FOUNDRY_PROFILE=ci \
           FOUNDRY_INVARIANT_FAIL_ON_REVERT=false \
           FOUNDRY_MATCH_CONTRACT=FuzzerFoundry_OethARM \
           forge test --summary --fail-fast --show-progress
               
       - name: Run invariant tests (OriginARM)
         run: |
+          FOUNDRY_PROFILE=ci \
           FOUNDRY_INVARIANT_FAIL_ON_REVERT=true \
           FOUNDRY_MATCH_CONTRACT=FuzzerFoundry_OriginARM \
+          forge test --summary --fail-fast --show-progress
+
+      - name: Run invariant tests (EthenaARM)
+        run: |
+          FOUNDRY_PROFILE=ci \
+          FOUNDRY_INVARIANT_FAIL_ON_REVERT=true \
+          FOUNDRY_MATCH_CONTRACT=FuzzerFoundry_EthenaARM \
           forge test --summary --fail-fast --show-progress
