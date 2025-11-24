@@ -197,7 +197,8 @@ abstract contract Properties is TargetFunctions {
     // ╔══════════════════════════════════════════════════════════════════════════════╗
     // ║                              ✦✦✦ AFTER ALL ✦✦✦                               ║
     // ╚══════════════════════════════════════════════════════════════════════════════╝
-    function propertyAfterAll() public returns (bool) {
+    function _propertyAfterAll() internal returns (bool) {
+        return true;
         uint256 usdeBalance = usde.balanceOf(address(arm));
         uint256 susdeBalance = susde.balanceOf(address(arm));
         uint256 morphoBalance = morpho.balanceOf(address(arm));

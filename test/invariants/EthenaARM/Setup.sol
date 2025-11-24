@@ -26,7 +26,7 @@ abstract contract Setup is Base_Test_ {
     //////////////////////////////////////////////////////
     /// --- SETUP
     //////////////////////////////////////////////////////
-    function setUp() public virtual {
+    function _setup() internal virtual {
         // 1. Setup a realistic test environnement.
         _setUpRealisticEnvironnement();
 
@@ -40,7 +40,7 @@ abstract contract Setup is Base_Test_ {
         _deployContracts();
 
         // 5. Label addresses
-        _labelAll();
+        //_labelAll();
 
         // 6. Ignite contracts
         _ignite();

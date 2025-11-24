@@ -22,8 +22,8 @@ contract FuzzerFoundry_EthenaARM is Properties, StdInvariant, StdAssertions {
     //////////////////////////////////////////////////////
     /// --- SETUP
     //////////////////////////////////////////////////////
-    function setUp() public override {
-        super.setUp();
+    function setUp() public {
+        _setup();
 
         // --- Setup Fuzzer target ---
         // Setup target
@@ -87,7 +87,7 @@ contract FuzzerFoundry_EthenaARM is Properties, StdInvariant, StdAssertions {
     }
 
     function afterInvariant() public {
-        targetAfterAll();
-        assertTrue(propertyAfterAll(), "Property After All failed");
+        _targetAfterAll();
+        assertTrue(_propertyAfterAll(), "Property After All failed");
     }
 }

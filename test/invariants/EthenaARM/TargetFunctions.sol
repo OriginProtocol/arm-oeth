@@ -804,7 +804,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         }
     }
 
-    function targetAfterAll() public {
+    function _targetAfterAll() internal {
         // In this function, we will simulate shutting down the ARM. This involves letting all users redeem their funds.
         // This is important to ensure that the ARM can handle a complete withdrawal scenario without issues.
         // This involves:
