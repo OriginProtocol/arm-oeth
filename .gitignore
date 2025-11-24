@@ -29,6 +29,7 @@ soldeer.lock
 
 # Coverage
 lcov.info*
+crytic-export/**
 
 # Defender Actions
 dist
