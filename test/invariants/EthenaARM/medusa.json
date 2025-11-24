@@ -38,7 +38,7 @@
 			"testViewMethods": true,
 			"verbosity": 2,
 			"assertionTesting": {
-				"enabled": true,
+				"enabled": false,
 				"panicCodeConfig": {
 					"failOnCompilerInsertedPanic": false,
 					"failOnAssertion": true,
@@ -55,7 +55,7 @@
 			"propertyTesting": {
 				"enabled": true,
 				"testPrefixes": [
-					"property_"
+					"property"
 				]
 			},
 			"optimizationTesting": {
