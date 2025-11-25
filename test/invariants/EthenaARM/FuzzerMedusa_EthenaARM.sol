@@ -19,5 +19,4 @@ contract FuzzerMedusa_EthenaARM is Properties {
     constructor() {
         _setup();
     }
-
 }

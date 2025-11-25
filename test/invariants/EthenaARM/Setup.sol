@@ -159,7 +159,7 @@ abstract contract Setup is Base_Test_ {
 
     function _labelAll() internal virtual {
         // This only works with Foundry's Vm.label feature.
-        if (isLabelAvailable) return;
+        if (!isLabelAvailable) return;
 
         // --- Proxies ---
         vm.label(address(armProxy), "Proxy EthenaARM");

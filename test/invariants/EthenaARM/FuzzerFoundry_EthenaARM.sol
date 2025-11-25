@@ -18,12 +18,14 @@ contract FuzzerFoundry_EthenaARM is Properties, StdInvariant, StdAssertions {
     //////////////////////////////////////////////////////
     /// --- SETUP
     //////////////////////////////////////////////////////
-    function setUp() public {
+    constructor() {
         // --- Fuzzer configuration ---
         isLabelAvailable = true;
         isAssumeAvailable = true;
         isConsoleAvailable = true;
+    }
 
+    function setUp() public {
         // --- Common setup ---
         _setup();
 
