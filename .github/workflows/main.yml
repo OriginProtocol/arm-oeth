@@ -26,6 +26,8 @@ jobs:
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: "1.4.4"
       
       - name: Show Forge version
         run: forge --version
@@ -46,6 +48,8 @@ jobs:
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: "1.4.4"
       
       - name: Show Forge version
         run: forge --version
@@ -73,6 +77,8 @@ jobs:
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: "1.4.4"
 
       - name: Install Dependencies
         run: 	forge soldeer install && yarn install
@@ -95,6 +101,8 @@ jobs:
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: "1.4.4"
 
       - name: Install Dependencies
         run: 	forge soldeer install && yarn install
@@ -117,6 +125,8 @@ jobs:
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: "1.4.4"
 
       - name: Install Dependencies
         run: 	forge soldeer install && yarn install
@@ -134,6 +144,8 @@ jobs:
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: "1.4.4"
 
       - name: Install Dependencies
         run: 	forge soldeer install
