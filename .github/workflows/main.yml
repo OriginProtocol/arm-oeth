@@ -138,7 +138,7 @@ jobs:
   ### FUZZ TESTS
   ####################################################
   foundry-tests-invariants-OethARM:
-    name: Foundry Invariants Tests
+    name: Foundry Invariants Tests - OethARM
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -161,7 +161,7 @@ jobs:
           forge test --summary --fail-fast --show-progress
       
   foundry-tests-invariants-OriginARM:
-    name: Foundry Invariants Tests
+    name: Foundry Invariants Tests - OriginARM
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -184,7 +184,7 @@ jobs:
           forge test --summary --fail-fast --show-progress
 
   foundry-tests-invariants-EthenaARM:
-    name: Foundry Invariants Tests
+    name: Foundry Invariants Tests - EthenaARM
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -199,13 +199,16 @@ jobs:
       - name: Install Dependencies
         run: 	forge soldeer install
 
-      - name: Install Medusa
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+
+      - name: Install Medusa from Source
+        run: go install github.com/crytic/medusa@latest
+
+      - name: Run Medusa
         run: |
-          wget https://github.com/crytic/medusa/releases/download/v0.1.4/medusa-linux-amd64.tar.gz
-          
-          tar -xzf medusa-linux-amd64.tar.gz
-          sudo mv medusa /usr/local/bin/
-          
           medusa --version
         
   
