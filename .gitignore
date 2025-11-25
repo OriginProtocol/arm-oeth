@@ -29,6 +29,7 @@ soldeer.lock
 
 # Coverage
 lcov.info*
+crytic-export
 
 # Defender Actions
 dist
@@ -38,3 +39,6 @@ build/deployments-fork*.json
 
 # Reports. eg stats.html
 *.html
+
+# Other
+.DS_Store

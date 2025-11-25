@@ -357,4 +357,10 @@ interface IStakedUSDe is IERC4626 {
     function unstake(address receiver) external;
 
     function cooldowns(address receiver) external view returns (UserCooldown memory);
+
+    function getUnvestedAmount() external view returns (uint256);
+
+    function lastDistributionTimestamp() external view returns (uint256);
+
+    function transferInRewards(uint256 amount) external;
 }

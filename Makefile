@@ -15,8 +15,14 @@ install:
 clean:
 	@rm -rf broadcast cache out
 
-clean-all:
-	@rm -rf broadcast cache out dependencies node_modules soldeer.lock yarn.lock lcov.info lcov.info.pruned artifacts cache_hardhat
+# Remove every "crytic-export" directory anywhere in the project
+clean-crytic:
+	@find . -type d -name crytic-export -exec rm -rf '{}' +
+
+clean-all: 
+	@rm -rf broadcast cache out dependencies node_modules soldeer.lock yarn.lock .lcov.info lcov.info pruned artifacts cache hardhat-node_modules
+	@$(MAKE) clean-crytic
+
 
 gas:
 	@forge test --gas-report
@@ -47,8 +53,11 @@ test-invariant-lido:
 test-invariant-origin:
 	@FOUNDRY_INVARIANT_FAIL_ON_REVERT=true FOUNDRY_MATCH_CONTRACT=FuzzerFoundry_OriginARM $(MAKE) test-std
 
+test-invariant-ethena:
+	@FOUNDRY_INVARIANT_FAIL_ON_REVERT=true FOUNDRY_MATCH_CONTRACT=FuzzerFoundry_EthenaARM $(MAKE) test-std
+
 test-invariants:
-	@$(MAKE) test-invariant-lido && $(MAKE) test-invariant-origin
+	@$(MAKE) test-invariant-lido && $(MAKE) test-invariant-origin && $(MAKE) test-invariant-ethena
 
 test-unit:
 	@FOUNDRY_MATCH_PATH='test/unit/**' $(MAKE) test-std
