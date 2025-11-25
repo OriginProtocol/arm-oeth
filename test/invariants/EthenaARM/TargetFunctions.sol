@@ -860,11 +860,6 @@ abstract contract TargetFunctions is Setup, StdUtils {
             }
         }
 
-        // Also redeem for the dead address
-        uint256 balanceDead = arm.balanceOf(dead);
-        vm.prank(dead);
-        arm.requestRedeem(balanceDead);
-
         // Fast forward time to allow claiming all redemptions
         vm.warp(block.timestamp + DEFAULT_CLAIM_DELAY);
         uint256 nextWithdrawalIndex = arm.nextWithdrawalIndex();

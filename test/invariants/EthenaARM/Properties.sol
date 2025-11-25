@@ -208,9 +208,10 @@ abstract contract Properties is TargetFunctions {
             console.log("ARM Morpho shares:\t %18e", morphoBalance);
             console.log("ARM total assets:\t %18e", armTotalAssets);
         }
-        require(usdeBalance < 1e13, "USDe balance not zero");
         require(susdeBalance == 0, "sUSDe balance not zero");
         require(morphoBalance == 0, "Morpho shares not zero");
+        // Allow USDe balance to be < 1 ether to account for potential earning from dead address in Morpho Market
+        require(usdeBalance < 1 ether, "USDe balance should be < 1 ether");
         for (uint256 i; i < MAKERS_COUNT; i++) {
             address user = makers[i];
             uint256 totalMinted = mintedUSDe[user];
