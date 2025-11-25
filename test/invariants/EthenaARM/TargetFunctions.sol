@@ -65,7 +65,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
     // ╔══════════════════════════════════════════════════════════════════════════════╗
     // ║                              ✦✦✦ ETHENA ARM ✦✦✦                              ║
     // ╚══════════════════════════════════════════════════════════════════════════════╝
-    function targetARMDeposit(uint88 amount, uint256 randomAddressIndex) external {
+    function targetARMDeposit(uint88 amount, uint256 randomAddressIndex) external ensureExchangeRateIncrease {
         // Select a random user from makers
         address user = makers[randomAddressIndex % MAKERS_COUNT];
 
@@ -94,7 +94,10 @@ abstract contract TargetFunctions is Setup, StdUtils {
         mintedUSDe[user] += amount;
     }
 
-    function targetARMRequestRedeem(uint88 shareAmount, uint248 randomAddressIndex) external {
+    function targetARMRequestRedeem(uint88 shareAmount, uint248 randomAddressIndex)
+        external
+        ensureExchangeRateIncrease
+    {
         address user;
         uint256 balance;
         // Todo: mirgate it to Find library
@@ -134,7 +137,11 @@ abstract contract TargetFunctions is Setup, StdUtils {
         sumUSDeUserRequest += amount;
     }
 
-    function targetARMClaimRedeem(uint248 randomAddressIndex, uint248 randomArrayIndex) external ensureTimeIncrease {
+    function targetARMClaimRedeem(uint248 randomAddressIndex, uint248 randomArrayIndex)
+        external
+        ensureExchangeRateIncrease
+        ensureTimeIncrease
+    {
         address user;
         uint256 requestId;
         uint256 claimTimestamp;
@@ -207,7 +214,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         }
     }
 
-    function targetARMSetARMBuffer(uint256 pct) external {
+    function targetARMSetARMBuffer(uint256 pct) external ensureExchangeRateIncrease {
         pct = _bound(pct, 0, 100);
 
         vm.prank(operator);
@@ -218,7 +225,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         }
     }
 
-    function targetARMSetActiveMarket(bool isActive) external {
+    function targetARMSetActiveMarket(bool isActive) external ensureExchangeRateIncrease {
         // If isActive is true it will `setActiveMarket` with MorphoMarket
         // else it will set it to address(0)
         address currentMarket = arm.activeMarket();
@@ -252,7 +259,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         }
     }
 
-    function targetARMAllocate() external {
+    function targetARMAllocate() external ensureExchangeRateIncrease {
         address currentMarket = arm.activeMarket();
         if (assume(currentMarket != address(0))) return;
 
@@ -281,7 +288,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         }
     }
 
-    function targetARMSetPrices(uint256 buyPrice, uint256 sellPrice) external {
+    function targetARMSetPrices(uint256 buyPrice, uint256 sellPrice) external ensureExchangeRateIncrease {
         uint256 crossPrice = arm.crossPrice();
         // Bound sellPrice
         sellPrice = uint120(_bound(sellPrice, crossPrice, (1e37 - 1) / 9)); // -> min traderate0 -> 0.9e36
@@ -301,7 +308,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         }
     }
 
-    function targetARMSetCrossPrice(uint256 crossPrice) external {
+    function targetARMSetCrossPrice(uint256 crossPrice) external ensureExchangeRateIncrease {
         uint256 maxCrossPrice = 1e36;
         uint256 minCrossPrice = 1e36 - 20e32;
         uint256 sellT1 = 1e72 / (arm.traderate0());
@@ -325,6 +332,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
 
     function targetARMSwapExactTokensForTokens(bool token0ForToken1, uint88 amountIn, uint256 randomAddressIndex)
         external
+        ensureExchangeRateIncrease
     {
         (IERC20 tokenIn, IERC20 tokenOut) = token0ForToken1
             ? (IERC20(address(usde)), IERC20(address(susde)))
@@ -398,6 +406,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
 
     function targetARMSwapTokensForExactTokens(bool token0ForToken1, uint88 amountOut, uint256 randomAddressIndex)
         external
+        ensureExchangeRateIncrease
     {
         (IERC20 tokenIn, IERC20 tokenOut) = token0ForToken1
             ? (IERC20(address(usde)), IERC20(address(susde)))
@@ -472,7 +481,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         }
     }
 
-    function targetARMCollectFees() external {
+    function targetARMCollectFees() external ensureExchangeRateIncrease {
         uint256 feesAccrued = arm.feesAccrued();
         uint256 balance = usde.balanceOf(address(arm));
         uint256 outstandingWithdrawals = arm.withdrawsQueued() - arm.withdrawsClaimed();
@@ -488,7 +497,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         sumUSDeFeesCollected += feesCollected;
     }
 
-    function targetARMSetFees(uint256 fee) external {
+    function targetARMSetFees(uint256 fee) external ensureExchangeRateIncrease {
         // Ensure current fee can be collected
         uint256 feesAccrued = arm.feesAccrued();
         if (feesAccrued != 0) {
@@ -510,7 +519,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         sumUSDeFeesCollected += feesAccrued;
     }
 
-    function targetARMRequestBaseWithdrawal(uint88 amount) external {
+    function targetARMRequestBaseWithdrawal(uint88 amount) external ensureExchangeRateIncrease {
         uint256 balance = susde.balanceOf(address(arm));
         if (assume(balance > 1)) return;
         amount = uint88(_bound(amount, 1, balance));
@@ -560,7 +569,11 @@ abstract contract TargetFunctions is Setup, StdUtils {
         sumSUSDeBaseRedeem += amount;
     }
 
-    function targetARMClaimBaseWithdrawals(uint256 randomAddressIndex) external ensureTimeIncrease {
+    function targetARMClaimBaseWithdrawals(uint256 randomAddressIndex)
+        external
+        ensureExchangeRateIncrease
+        ensureTimeIncrease
+    {
         if (assume(unstakerIndices.length != 0)) return;
         // Select a random unstaker index from used unstakers
         uint256 selectedIndex = unstakerIndices[randomAddressIndex % unstakerIndices.length];
@@ -613,7 +626,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
     // ╔══════════════════════════════════════════════════════════════════════════════╗
     // ║                                ✦✦✦ SUSDE ✦✦✦                                 ║
     // ╚══════════════════════════════════════════════════════════════════════════════╝
-    function targetSUSDeDeposit(uint88 amount) external {
+    function targetSUSDeDeposit(uint88 amount) external ensureExchangeRateIncrease {
         // Ensure we don't mint 0 shares.
         uint256 totalAssets = susde.totalAssets();
         uint256 totalSupply = susde.totalSupply();
@@ -635,7 +648,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         }
     }
 
-    function targetSUSDeCooldownShares(uint88 shareAmount) external {
+    function targetSUSDeCooldownShares(uint88 shareAmount) external ensureExchangeRateIncrease {
         // Cache balance
         uint256 balance = susde.balanceOf(grace);
 
@@ -657,7 +670,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         }
     }
 
-    function targetSUSDeUnstake() external ensureTimeIncrease {
+    function targetSUSDeUnstake() external ensureExchangeRateIncrease ensureTimeIncrease {
         // Check grace's cooldown
         UserCooldown memory cooldown = susde.cooldowns(grace);
 
@@ -696,7 +709,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         MockERC20(address(usde)).burn(grace, cooldown.underlyingAmount);
     }
 
-    function targetSUSDeTransferInRewards(uint8 bps) external ensureTimeIncrease {
+    function targetSUSDeTransferInRewards(uint8 bps) external ensureExchangeRateIncrease ensureTimeIncrease {
         // Ensure enough time has passed since last distribution
         uint256 lastDistribution = susde.lastDistributionTimestamp();
         if (block.timestamp < 8 hours + lastDistribution) {
@@ -735,7 +748,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
     // ╔══════════════════════════════════════════════════════════════════════════════╗
     // ║                                ✦✦✦ MORPHO ✦✦✦                                ║
     // ╚══════════════════════════════════════════════════════════════════════════════╝
-    function targetMorphoDeposit(uint88 amount) external {
+    function targetMorphoDeposit(uint88 amount) external ensureExchangeRateIncrease {
         // Ensure we don't mint 0 shares.
         uint256 totalAssets = morpho.totalAssets();
         uint256 totalSupply = morpho.totalSupply();
@@ -757,7 +770,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         }
     }
 
-    function targetMorphoWithdraw(uint88 amount) external {
+    function targetMorphoWithdraw(uint88 amount) external ensureExchangeRateIncrease {
         // Check harry's balance
         uint256 balance = morpho.balanceOf(harry);
 
@@ -783,7 +796,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         MockERC20(address(usde)).burn(harry, amount);
     }
 
-    function targetMorphoTransferInRewards(uint8 bps) external {
+    function targetMorphoTransferInRewards(uint8 bps) external ensureExchangeRateIncrease {
         uint256 balance = usde.balanceOf(address(morpho));
         bps = uint8(_bound(bps, 1, 10));
         uint256 rewards = (balance * bps) / 10_000;
@@ -794,7 +807,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         }
     }
 
-    function targetMorphoSetUtilizationRate(uint256 pct) external {
+    function targetMorphoSetUtilizationRate(uint256 pct) external ensureExchangeRateIncrease {
         pct = _bound(pct, 0, 100);
 
         morpho.setUtilizationRate(pct * 1e16);

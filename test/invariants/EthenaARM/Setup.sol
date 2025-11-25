@@ -309,9 +309,21 @@ abstract contract Setup is Base_Test_ {
         return a <= b ? a : b;
     }
 
+    function getExchangeRate() internal view returns (uint256) {
+        uint256 totalAssets = susde.totalAssets();
+        uint256 totalSupply = susde.totalSupply();
+        return (totalAssets * 1e18) / totalSupply;
+    }
+
     modifier ensureTimeIncrease() {
         uint256 oldTimestamp = block.timestamp;
         _;
         require(block.timestamp >= oldTimestamp, "TIME_DECREASED");
+    }
+
+    modifier ensureExchangeRateIncrease() {
+        uint256 oldExchangeRate = getExchangeRate();
+        _;
+        require(getExchangeRate() >= oldExchangeRate, "EXCHANGE_RATE_DECREASED");
     }
 }
