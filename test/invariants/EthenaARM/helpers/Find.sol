@@ -41,4 +41,14 @@ library Find {
             }
         }
     }
+
+    function getUserWithARMShares(address[] memory users, address arm) internal view returns (address user, uint256 balance) {
+        for (uint256 i; i < users.length; i++) {
+            balance = AbstractARM(arm).balanceOf(users[i]);
+            if (balance > 1) {
+                user = users[i];
+                break;
+            }
+        }
+    }
 }

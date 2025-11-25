@@ -100,16 +100,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
     {
         address user;
         uint256 balance;
-        // Todo: mirgate it to Find library
-        for (uint256 i; i < MAKERS_COUNT; i++) {
-            address _user = makers[(randomAddressIndex + i) % MAKERS_COUNT];
-            uint256 _balance = arm.balanceOf(_user);
-            // Found a user with non-zero balance
-            if (_balance > 1) {
-                (user, balance) = (_user, _balance);
-                break;
-            }
-        }
+        (user, balance) = Find.getUserWithARMShares(makers, address(arm));
         if (assume(user != address(0))) return;
         // Bound shareAmount to [1, balance]
         shareAmount = uint88(_bound(shareAmount, 1, balance));
