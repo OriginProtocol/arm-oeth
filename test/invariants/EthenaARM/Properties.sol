@@ -38,7 +38,7 @@ abstract contract Properties is TargetFunctions {
     // [x] Invariant D: totalShares == ∑userShares + deadShares
     // [x] Invariant E: previewRedeem(∑shares) == totalAssets
     // [x] Invariant F: withdrawsQueued == ∑requestRedeem.amount
-    // [x] Invariant G: withdrawsQueued > withdrawsClaimed
+    // [x] Invariant G: withdrawsQueued >= withdrawsClaimed
     // [x] Invariant H: withdrawsQueued == ∑request.assets
     // [x] Invariant I: withdrawsClaimed == ∑claimRedeem.amount
     // [x] Invariant J: ∀ requestId, request.queued >= request.assets
