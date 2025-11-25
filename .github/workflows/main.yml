@@ -64,7 +64,7 @@ jobs:
       #  run: npx hardhat compile
 
   ####################################################
-  ### TESTS
+  ### CONCRETE TESTS
   ####################################################
   foundry-unit-tests:
     name: Foundry Unit-Tests
@@ -134,7 +134,10 @@ jobs:
       - name: Run non-invariant tests
         run: forge test --summary --fail-fast --show-progress --mp 'test/smoke/**'
 
-  foundry-tests-invariants:
+  ####################################################
+  ### FUZZ TESTS
+  ####################################################
+  foundry-tests-invariants-OethARM:
     name: Foundry Invariants Tests
     runs-on: ubuntu-latest
     steps:
@@ -156,6 +159,22 @@ jobs:
           FOUNDRY_INVARIANT_FAIL_ON_REVERT=false \
           FOUNDRY_MATCH_CONTRACT=FuzzerFoundry_OethARM \
           forge test --summary --fail-fast --show-progress
+      
+  foundry-tests-invariants-OriginARM:
+    name: Foundry Invariants Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: "v1.4.4"
+
+      - name: Install Dependencies
+        run: 	forge soldeer install
               
       - name: Run invariant tests (OriginARM)
         run: |
@@ -164,9 +183,29 @@ jobs:
           FOUNDRY_MATCH_CONTRACT=FuzzerFoundry_OriginARM \
           forge test --summary --fail-fast --show-progress
 
-      - name: Run invariant tests (EthenaARM)
+  foundry-tests-invariants-EthenaARM:
+    name: Foundry Invariants Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: "v1.4.4"
+
+      - name: Install Dependencies
+        run: 	forge soldeer install
+
+      - name: Install Medusa
         run: |
-          FOUNDRY_PROFILE=ci \
-          FOUNDRY_INVARIANT_FAIL_ON_REVERT=true \
-          FOUNDRY_MATCH_CONTRACT=FuzzerFoundry_EthenaARM \
-          forge test --summary --fail-fast --show-progress
+          wget https://github.com/crytic/medusa/releases/download/v0.1.4/medusa-linux-amd64.tar.gz
+          
+          tar -xzf medusa-linux-amd64.tar.gz
+          sudo mv medusa /usr/local/bin/
+          
+          medusa --version
+        
+  
