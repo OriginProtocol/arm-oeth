@@ -199,6 +199,13 @@ jobs:
       - name: Install Dependencies
         run: 	forge soldeer install
 
+      - name: Run invariant tests (EthenaARM)
+        run: |
+          FOUNDRY_PROFILE=ci \
+          FOUNDRY_INVARIANT_FAIL_ON_REVERT=true \
+          FOUNDRY_MATCH_CONTRACT=FuzzerFoundry_EthenaARM \
+          forge test --summary --fail-fast --show-progress
+
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
@@ -210,5 +217,7 @@ jobs:
       - name: Run Medusa
         run: |
           medusa --version
+          cd test/invariants/EthenaARM/
+          medusa fuzz --timeout 1800 --seq-len 500 --fail-fast
         
   
