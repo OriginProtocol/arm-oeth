@@ -25,11 +25,11 @@ abstract contract Properties is TargetFunctions {
     // ╔══════════════════════════════════════════════════════════════════════════════╗
     // ║                           ✦✦✦ SWAP PROPERTIES ✦✦✦                            ║
     // ╚══════════════════════════════════════════════════════════════════════════════╝
-    // [ ] Invariant A: USDe  balance == ∑swapIn - ∑swapOut
+    // [x] Invariant A: USDe  balance == ∑swapIn - ∑swapOut
     //                                   + ∑userDeposit - ∑userWithdraw
     //                                   + ∑marketWithdraw - ∑marketDeposit
     //                                   + ∑baseRedeem - ∑feesCollected
-    // [ ] Invariant B: sUSDe balance == (∑swapIn - ∑swapOut) - ∑baseRedeem
+    // [x] Invariant B: sUSDe balance == (∑swapIn - ∑swapOut) - ∑baseRedeem
     //
     // ╔══════════════════════════════════════════════════════════════════════════════╗
     // ║                            ✦✦✦ LP PROPERTIES ✦✦✦                             ║
@@ -54,6 +54,7 @@ abstract contract Properties is TargetFunctions {
     // ╔══════════════════════════════════════════════════════════════════════════════╗
     // ║                              ✦✦✦ AFTER ALL ✦✦✦                               ║
     // ╚══════════════════════════════════════════════════════════════════════════════╝
+    // [x] USDe  in ARM < 1e13
     // [x] sUSDe in ARM == 0
     // [x] Morpho shares in ARM == 0
     // [x] ∀ user, usde.balanceOf(user) >= totalMinted - 1e1
@@ -207,6 +208,7 @@ abstract contract Properties is TargetFunctions {
             console.log("ARM Morpho shares:\t %18e", morphoBalance);
             console.log("ARM total assets:\t %18e", armTotalAssets);
         }
+        require(usdeBalance < 1e13, "USDe balance not zero");
         require(susdeBalance == 0, "sUSDe balance not zero");
         require(morphoBalance == 0, "Morpho shares not zero");
         for (uint256 i; i < MAKERS_COUNT; i++) {
