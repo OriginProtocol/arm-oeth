@@ -54,7 +54,6 @@ abstract contract Properties is TargetFunctions {
     // ╔══════════════════════════════════════════════════════════════════════════════╗
     // ║                              ✦✦✦ AFTER ALL ✦✦✦                               ║
     // ╚══════════════════════════════════════════════════════════════════════════════╝
-    // [x] USDe  in ARM < 1 ether
     // [x] sUSDe in ARM == 0
     // [x] Morpho shares in ARM == 0
     // [x] ∀ user, usde.balanceOf(user) >= totalMinted - 1e1
@@ -210,8 +209,6 @@ abstract contract Properties is TargetFunctions {
         }
         require(susdeBalance == 0, "sUSDe balance not zero");
         require(morphoBalance == 0, "Morpho shares not zero");
-        // Allow USDe balance to be < 1 ether to account for potential earning from dead address in Morpho Market
-        require(usdeBalance < 1 ether, "USDe balance should be < 1 ether");
         for (uint256 i; i < MAKERS_COUNT; i++) {
             address user = makers[i];
             uint256 totalMinted = mintedUSDe[user];

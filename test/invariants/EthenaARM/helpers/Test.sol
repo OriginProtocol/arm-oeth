@@ -13,13 +13,12 @@ contract Unit_Ethena_replay is Test {
         f.setUp();
     }
 
-    function test_unit() public {
-        //f.targetARMDeposit(309485009.821_345_068_724_781_052 ether, 1);
-        //f.targetARMDeposit(3538, 10000);
-        //f.targetARMSetActiveMarket(true); // usde: 309485009821346068724784590
-        //f.targetARMRequestRedeem(309485009.821_345_068_724_781_054 ether, 6731);
-        //f.targetMorphoTransferInRewards(7);
-        //f.targetAfterAll(); //
-        //assertTrue(f.propertyAfterAll());
+    function test_ethena_replay_unit() public {
+        //f.targetARMDeposit(309485009821345068724781054, 814939);
+        //f.targetARMSetActiveMarket(true);
+        //f.targetARMRequestRedeem(309485009821345068724781053, 52648352319298637938247915450656049947404);
+        //f.targetMorphoTransferInRewards(0);
+        //f._targetAfterAll();
+        //assertTrue(f._propertyAfterAll(), "Property After All failed");
     }
 }
