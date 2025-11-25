@@ -57,7 +57,7 @@ test-invariant-ethena:
 	@FOUNDRY_INVARIANT_FAIL_ON_REVERT=true FOUNDRY_MATCH_CONTRACT=FuzzerFoundry_EthenaARM $(MAKE) test-std
 
 test-invariants:
-	@$(MAKE) test-invariant-lido && $(MAKE) test-invariant-origin
+	@$(MAKE) test-invariant-lido && $(MAKE) test-invariant-origin && $(MAKE) test-invariant-ethena
 
 test-unit:
 	@FOUNDRY_MATCH_PATH='test/unit/**' $(MAKE) test-std
