@@ -51,6 +51,12 @@ remappings = [
 
 [lint]
 lint_on_build = false
+ignore = [
+  "test/**/*",
+  "script/**/*",
+  "src/contracts/pendle/*",
+  "src/contracts/utils/*",
+]
 
 [fuzz]
 runs = 1_000
