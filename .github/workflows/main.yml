@@ -58,7 +58,7 @@ jobs:
         run: 	forge soldeer install && yarn install
 
       - name: Compile contracts with Forge
-        run: forge build --sizes
+        run: forge build --sizes --skip Fuzzer
 
       #- name: Compile contracts with Hardhat
       #  run: npx hardhat compile
