@@ -199,12 +199,12 @@ jobs:
       - name: Install Dependencies
         run: 	forge soldeer install
 
-      #- name: Run invariant tests (EthenaARM)
-      #  run: |
-      #    FOUNDRY_PROFILE=ci \
-      #    FOUNDRY_INVARIANT_FAIL_ON_REVERT=true \
-      #    FOUNDRY_MATCH_CONTRACT=FuzzerFoundry_EthenaARM \
-      #    forge test --summary --fail-fast --show-progress
+      - name: Run invariant tests (EthenaARM)
+        run: |
+          FOUNDRY_PROFILE=ci \
+          FOUNDRY_INVARIANT_FAIL_ON_REVERT=true \
+          FOUNDRY_MATCH_CONTRACT=FuzzerFoundry_EthenaARM \
+          forge test --summary --fail-fast --show-progress
 
       - name: Setup Go
         uses: actions/setup-go@v5
