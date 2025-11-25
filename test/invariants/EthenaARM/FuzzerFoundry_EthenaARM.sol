@@ -15,14 +15,16 @@ import {StdAssertions} from "forge-std/StdAssertions.sol";
 ///         - Each invariant function represents a critical system property to maintain
 ///         - Fuzzer will call targeted handlers randomly and check invariants after each call
 contract FuzzerFoundry_EthenaARM is Properties, StdInvariant, StdAssertions {
-    bool public constant override isLabelAvailable = true;
-    bool public constant override isAssumeAvailable = true;
-    bool public constant override isConsoleAvailable = true;
-
     //////////////////////////////////////////////////////
     /// --- SETUP
     //////////////////////////////////////////////////////
     function setUp() public {
+        // --- Fuzzer configuration ---
+        isLabelAvailable = true;
+        isAssumeAvailable = true;
+        isConsoleAvailable = true;
+
+        // --- Common setup ---
         _setup();
 
         // --- Setup Fuzzer target ---

@@ -79,9 +79,9 @@ abstract contract Base_Test_ {
     uint256 internal constant DEFAULT_MIN_SHARES_TO_REDEEM = 1e7;
 
     /// @notice Indicates if labels have been set in the Vm.
-    function isLabelAvailable() external view virtual returns (bool);
-    function isAssumeAvailable() external view virtual returns (bool);
-    function isConsoleAvailable() external view virtual returns (bool);
+    bool public isLabelAvailable;
+    bool public isAssumeAvailable;
+    bool public isConsoleAvailable;
 
     //////////////////////////////////////////////////////
     /// --- GHOST VALUES

@@ -203,7 +203,7 @@ abstract contract Properties is TargetFunctions {
         uint256 susdeBalance = susde.balanceOf(address(arm));
         uint256 morphoBalance = morpho.balanceOf(address(arm));
         uint256 armTotalAssets = arm.totalAssets();
-        if (this.isConsoleAvailable()) {
+        if (isConsoleAvailable) {
             console.log("--- Final Balances ---");
             console.log("ARM USDe balance:\t %18e", usdeBalance);
             console.log("ARM sUSDe balance:\t %18e", susdeBalance);
@@ -219,7 +219,7 @@ abstract contract Properties is TargetFunctions {
             uint256 totalMinted = mintedUSDe[user];
             uint256 userBalance = usde.balanceOf(user);
             if (!Math.approxGteAbs(userBalance, totalMinted, 1e1)) {
-                if (this.isConsoleAvailable()) {
+                if (isConsoleAvailable) {
                     console.log(">>> Property After All failed for user %s:", vm.getLabel(user));
                     console.log("    - User USDe balance:   %18e", userBalance);
                     console.log("    - Total minted USDe:   %18e", totalMinted);

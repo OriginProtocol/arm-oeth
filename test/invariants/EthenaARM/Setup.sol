@@ -40,7 +40,7 @@ abstract contract Setup is Base_Test_ {
         _deployContracts();
 
         // 5. Label addresses
-        //_labelAll();
+        _labelAll();
 
         // 6. Ignite contracts
         _ignite();
@@ -159,7 +159,7 @@ abstract contract Setup is Base_Test_ {
 
     function _labelAll() internal virtual {
         // This only works with Foundry's Vm.label feature.
-        if (!this.isLabelAvailable()) return;
+        if (isLabelAvailable) return;
 
         // --- Proxies ---
         vm.label(address(armProxy), "Proxy EthenaARM");
@@ -292,7 +292,7 @@ abstract contract Setup is Base_Test_ {
 
     function assume(bool condition) internal returns (bool returnEarly) {
         if (!condition) {
-            if (this.isAssumeAvailable()) vm.assume(false);
+            if (isAssumeAvailable) vm.assume(false);
             else returnEarly = true;
         }
     }

@@ -40,16 +40,16 @@
 			"assertionTesting": {
 				"enabled": false,
 				"panicCodeConfig": {
-					"failOnCompilerInsertedPanic": false,
+					"failOnCompilerInsertedPanic": true,
 					"failOnAssertion": true,
-					"failOnArithmeticUnderflow": false,
-					"failOnDivideByZero": false,
-					"failOnEnumTypeConversionOutOfBounds": false,
-					"failOnIncorrectStorageAccess": false,
-					"failOnPopEmptyArray": false,
-					"failOnOutOfBoundsArrayAccess": false,
-					"failOnAllocateTooMuchMemory": false,
-					"failOnCallUninitializedVariable": false
+					"failOnArithmeticUnderflow": true,
+					"failOnDivideByZero": true,
+					"failOnEnumTypeConversionOutOfBounds": true,
+					"failOnIncorrectStorageAccess": true,
+					"failOnPopEmptyArray": true,
+					"failOnOutOfBoundsArrayAccess": true,
+					"failOnAllocateTooMuchMemory": true,
+					"failOnCallUninitializedVariable": true
 				}
 			},
 			"propertyTesting": {
@@ -96,7 +96,7 @@
 		}
 	},
 	"slither": {
-		"useSlither": false,
+		"useSlither": true,
 		"cachePath": "",
 		"args": []
 	},
