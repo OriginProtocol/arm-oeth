@@ -54,7 +54,7 @@ abstract contract Properties is TargetFunctions {
     // ╔══════════════════════════════════════════════════════════════════════════════╗
     // ║                              ✦✦✦ AFTER ALL ✦✦✦                               ║
     // ╚══════════════════════════════════════════════════════════════════════════════╝
-    // [x] USDe  in ARM < 1e13
+    // [x] USDe  in ARM < 1 ether
     // [x] sUSDe in ARM == 0
     // [x] Morpho shares in ARM == 0
     // [x] ∀ user, usde.balanceOf(user) >= totalMinted - 1e1

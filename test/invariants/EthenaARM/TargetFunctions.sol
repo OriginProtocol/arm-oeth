@@ -17,6 +17,7 @@ import {UserCooldown} from "contracts/Interfaces.sol";
 
 // Helpers
 import {Find} from "./helpers/Find.sol";
+import {Math} from "./helpers/Math.sol";
 
 /// @title TargetFunctions
 /// @notice TargetFunctions contract for tests, containing the target functions that should be tested.
@@ -267,8 +268,8 @@ abstract contract TargetFunctions is Setup, StdUtils {
                         "%18e USDe"
                     )
                 ),
-                abs(targetLiquidityDelta),
-                abs(actualLiquidityDelta)
+                Math.abs(targetLiquidityDelta),
+                Math.abs(actualLiquidityDelta)
             );
         }
 
@@ -304,8 +305,8 @@ abstract contract TargetFunctions is Setup, StdUtils {
         uint256 minCrossPrice = 1e36 - 20e32;
         uint256 sellT1 = 1e72 / (arm.traderate0());
         uint256 buyT1 = arm.traderate1() + 1;
-        minCrossPrice = max(minCrossPrice, buyT1);
-        maxCrossPrice = min(maxCrossPrice, sellT1);
+        minCrossPrice = Math.max(minCrossPrice, buyT1);
+        maxCrossPrice = Math.min(maxCrossPrice, sellT1);
         if (assume(maxCrossPrice >= minCrossPrice)) return;
         crossPrice = _bound(crossPrice, minCrossPrice, maxCrossPrice);
 

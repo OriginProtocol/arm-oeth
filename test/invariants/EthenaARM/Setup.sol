@@ -297,18 +297,6 @@ abstract contract Setup is Base_Test_ {
         }
     }
 
-    function abs(int256 x) internal pure returns (uint256) {
-        return uint256(x >= 0 ? x : -x);
-    }
-
-    function max(uint256 a, uint256 b) internal pure returns (uint256) {
-        return a >= b ? a : b;
-    }
-
-    function min(uint256 a, uint256 b) internal pure returns (uint256) {
-        return a <= b ? a : b;
-    }
-
     function getExchangeRate() internal view returns (uint256) {
         uint256 totalAssets = susde.totalAssets();
         uint256 totalSupply = susde.totalSupply();
