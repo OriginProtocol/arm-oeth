@@ -6,7 +6,7 @@ import {Properties} from "./Properties.sol";
 import {StdInvariant} from "forge-std/StdInvariant.sol";
 import {StdAssertions} from "forge-std/StdAssertions.sol";
 
-/// @title FuzzerFoundry
+/// @title FuzzerFoundry_EthenaARM
 /// @notice Concrete fuzzing contract implementing Foundry's invariant testing framework.
 /// @dev    This contract configures and executes property-based testing:
 ///         - Inherits from Properties to access handler functions and properties
