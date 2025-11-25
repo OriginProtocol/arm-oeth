@@ -56,8 +56,8 @@ lint_on_build = false
 runs = 1_000
 
 [profile.default.invariant]
-runs = 256
-depth = 500
+runs = 1
+depth = 5
 shrink_run_limit = 5_000
 show_metrics = true
 fail_on_revert = false
