@@ -3,7 +3,7 @@ pragma solidity 0.8.23;
 
 import {Test} from "forge-std/Test.sol";
 
-import {FuzzerFoundry_EthenaARM} from "test/invariants/EthenaARM/FoundryFuzzer.sol";
+import {FuzzerFoundry_EthenaARM} from "test/invariants/EthenaARM/FuzzerFoundry_EthenaARM.sol";
 
 contract Unit_Ethena_replay is Test {
     FuzzerFoundry_EthenaARM f;

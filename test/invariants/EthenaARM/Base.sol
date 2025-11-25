@@ -27,79 +27,79 @@ abstract contract Base_Test_ {
     /// --- CONTRACTS
     //////////////////////////////////////////////////////
     // --- Main contracts ---
-    Proxy public armProxy;
-    Proxy public morphoMarketProxy;
-    EthenaARM public arm;
-    MockMorpho public morpho;
-    MorphoMarket public market;
-    EthenaUnstaker[] public unstakers;
-    uint256[] public unstakerIndices;
+    Proxy internal armProxy;
+    Proxy internal morphoMarketProxy;
+    EthenaARM internal arm;
+    MockMorpho internal morpho;
+    MorphoMarket internal market;
+    EthenaUnstaker[] internal unstakers;
+    uint256[] internal unstakerIndices;
 
     // --- Tokens ---
-    IERC20 public usde;
-    IStakedUSDe public susde;
+    IERC20 internal usde;
+    IStakedUSDe internal susde;
 
     // --- Utils ---
-    Vm public vm = Vm(address(uint160(uint256(keccak256("hevm cheat code")))));
+    Vm internal vm = Vm(address(uint160(uint256(keccak256("hevm cheat code")))));
 
     //////////////////////////////////////////////////////
     /// --- USERS
     //////////////////////////////////////////////////////
     // --- Users with roles ---
-    address public deployer;
-    address public governor;
-    address public operator;
-    address public treasury;
+    address internal deployer;
+    address internal governor;
+    address internal operator;
+    address internal treasury;
 
     // --- Regular users ---
-    address public alice;
-    address public bobby;
-    address public carol;
-    address public david;
-    address public elise;
-    address public frank;
-    address public grace;
-    address public harry;
-    address public dead;
+    address internal alice;
+    address internal bobby;
+    address internal carol;
+    address internal david;
+    address internal elise;
+    address internal frank;
+    address internal grace;
+    address internal harry;
+    address internal dead;
 
     // --- Group of users ---
-    address[] public makers;
-    address[] public traders;
-    mapping(address => uint256[]) public pendingRequests;
+    address[] internal makers;
+    address[] internal traders;
+    mapping(address => uint256[]) internal pendingRequests;
 
     //////////////////////////////////////////////////////
     /// --- DEFAULT VALUES
     //////////////////////////////////////////////////////
-    uint256 public constant MAKERS_COUNT = 3;
-    uint256 public constant TRADERS_COUNT = 3;
-    uint256 public constant UNSTAKERS_COUNT = 42;
-    uint256 public constant DEFAULT_CLAIM_DELAY = 10 minutes;
-    uint256 public constant DEFAULT_MIN_TOTAL_SUPPLY = 1e12;
-    uint256 public constant DEFAULT_ALLOCATE_THRESHOLD = 1e18;
-    uint256 public constant DEFAULT_MIN_SHARES_TO_REDEEM = 1e7;
+    uint256 internal constant MAKERS_COUNT = 3;
+    uint256 internal constant TRADERS_COUNT = 3;
+    uint256 internal constant UNSTAKERS_COUNT = 42;
+    uint256 internal constant DEFAULT_CLAIM_DELAY = 10 minutes;
+    uint256 internal constant DEFAULT_MIN_TOTAL_SUPPLY = 1e12;
+    uint256 internal constant DEFAULT_ALLOCATE_THRESHOLD = 1e18;
+    uint256 internal constant DEFAULT_MIN_SHARES_TO_REDEEM = 1e7;
 
     /// @notice Indicates if labels have been set in the Vm.
-    function isLabelAvailable() external view virtual returns (bool);
-    function isAssumeAvailable() external view virtual returns (bool);
-    function isConsoleAvailable() external view virtual returns (bool);
+    bool public isLabelAvailable;
+    bool public isAssumeAvailable;
+    bool public isConsoleAvailable;
 
     //////////////////////////////////////////////////////
     /// --- GHOST VALUES
     //////////////////////////////////////////////////////
     // --- USDe values ---
-    uint256 public sumUSDeSwapIn;
-    uint256 public sumUSDeSwapOut;
-    uint256 public sumUSDeUserDeposit;
-    uint256 public sumUSDeUserRedeem;
-    uint256 public sumUSDeUserRequest;
-    uint256 public sumUSDeBaseRedeem;
-    uint256 public sumUSDeFeesCollected;
-    uint256 public sumUSDeMarketDeposit;
-    uint256 public sumUSDeMarketWithdraw;
-    mapping(address => uint256) public mintedUSDe;
+    uint256 internal sumUSDeSwapIn;
+    uint256 internal sumUSDeSwapOut;
+    uint256 internal sumUSDeUserDeposit;
+    uint256 internal sumUSDeUserRedeem;
+    uint256 internal sumUSDeUserRequest;
+    uint256 internal sumUSDeBaseRedeem;
+    uint256 internal sumUSDeFeesCollected;
+    uint256 internal sumUSDeMarketDeposit;
+    uint256 internal sumUSDeMarketWithdraw;
+    mapping(address => uint256) internal mintedUSDe;
     // --- sUSDe values ---
-    uint256 public sumSUSDeSwapIn;
-    uint256 public sumSUSDeSwapOut;
-    uint256 public sumSUSDeBaseRedeem;
+    uint256 internal sumSUSDeSwapIn;
+    uint256 internal sumSUSDeSwapOut;
+    uint256 internal sumSUSDeBaseRedeem;
 }
 

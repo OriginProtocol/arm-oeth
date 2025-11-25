@@ -15,15 +15,19 @@ import {StdAssertions} from "forge-std/StdAssertions.sol";
 ///         - Each invariant function represents a critical system property to maintain
 ///         - Fuzzer will call targeted handlers randomly and check invariants after each call
 contract FuzzerFoundry_EthenaARM is Properties, StdInvariant, StdAssertions {
-    bool public constant override isLabelAvailable = true;
-    bool public constant override isAssumeAvailable = true;
-    bool public constant override isConsoleAvailable = true;
-
     //////////////////////////////////////////////////////
     /// --- SETUP
     //////////////////////////////////////////////////////
-    function setUp() public override {
-        super.setUp();
+    constructor() {
+        // --- Fuzzer configuration ---
+        isLabelAvailable = true;
+        isAssumeAvailable = true;
+        isConsoleAvailable = true;
+    }
+
+    function setUp() public {
+        // --- Common setup ---
+        _setup();
 
         // --- Setup Fuzzer target ---
         // Setup target
@@ -87,7 +91,7 @@ contract FuzzerFoundry_EthenaARM is Properties, StdInvariant, StdAssertions {
     }
 
     function afterInvariant() public {
-        targetAfterAll();
-        assertTrue(propertyAfterAll(), "Property After All failed");
+        _targetAfterAll();
+        assertTrue(_propertyAfterAll(), "Property After All failed");
     }
 }

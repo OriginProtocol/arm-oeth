@@ -81,7 +81,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         vm.prank(user);
         uint256 shares = arm.deposit(amount, user);
 
-        if (this.isConsoleAvailable()) {
+        if (isConsoleAvailable) {
             console.log(
                 ">>> ARM Deposit:\t %s deposited %18e USDe\t and received %18e ARM shares",
                 vm.getLabel(user),
@@ -110,7 +110,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         (uint256 requestId, uint256 amount) = arm.requestRedeem(shareAmount);
         pendingRequests[user].push(requestId);
 
-        if (this.isConsoleAvailable()) {
+        if (isConsoleAvailable) {
             console.log(
                 string(
                     abi.encodePacked(
@@ -161,7 +161,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
 
         // Fast forward time if needed
         if (block.timestamp < claimTimestamp) {
-            if (this.isConsoleAvailable()) {
+            if (isConsoleAvailable) {
                 console.log(
                     StdStyle.yellow(
                         string(
@@ -184,7 +184,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         vm.prank(user);
         uint256 amount = arm.claimRedeem(requestId);
 
-        if (this.isConsoleAvailable()) {
+        if (isConsoleAvailable) {
             console.log(
                 string(
                     abi.encodePacked(
@@ -211,7 +211,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         vm.prank(operator);
         arm.setARMBuffer(pct * 1e16);
 
-        if (this.isConsoleAvailable()) {
+        if (isConsoleAvailable) {
             console.log(">>> ARM Buffer:\t Governor set ARM buffer to %s%", pct);
         }
     }
@@ -236,7 +236,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         arm.setActiveMarket(targetMarket);
         uint256 balanceAfter = usde.balanceOf(address(arm));
 
-        if (this.isConsoleAvailable()) {
+        if (isConsoleAvailable) {
             console.log(
                 ">>> ARM SetMarket:\t Governor set active market to %s", isActive ? "Morpho Market" : "No active market"
             );
@@ -256,7 +256,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
 
         (int256 targetLiquidityDelta, int256 actualLiquidityDelta) = arm.allocate();
 
-        if (this.isConsoleAvailable()) {
+        if (isConsoleAvailable) {
             console.log(
                 string(
                     abi.encodePacked(
@@ -289,7 +289,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         vm.prank(operator);
         arm.setPrices(buyPrice, sellPrice);
 
-        if (this.isConsoleAvailable()) {
+        if (isConsoleAvailable) {
             console.log(
                 ">>> ARM SetPrices:\t Governor set buy price to %36e\t sell price to %36e\t cross price to %36e",
                 buyPrice,
@@ -316,7 +316,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         vm.prank(governor);
         arm.setCrossPrice(crossPrice);
 
-        if (this.isConsoleAvailable()) {
+        if (isConsoleAvailable) {
             console.log(">>> ARM SetCPrice:\t Governor set cross price to %36e", crossPrice);
         }
     }
@@ -368,7 +368,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         uint256[] memory obtained = arm.swapExactTokensForTokens(tokenIn, tokenOut, amountIn, 0, user);
         vm.stopPrank();
 
-        if (this.isConsoleAvailable()) {
+        if (isConsoleAvailable) {
             console.log(
                 string(
                     abi.encodePacked(
@@ -445,7 +445,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         uint256[] memory obtained = arm.swapTokensForExactTokens(tokenIn, tokenOut, amountOut, type(uint256).max, user);
         vm.stopPrank();
 
-        if (this.isConsoleAvailable()) {
+        if (isConsoleAvailable) {
             console.log(
                 string(
                     abi.encodePacked(
@@ -480,7 +480,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
 
         uint256 feesCollected = arm.collectFees();
 
-        if (this.isConsoleAvailable()) {
+        if (isConsoleAvailable) {
             console.log(">>> ARM Collect:\t Governor collected %18e USDe in fees", feesCollected);
         }
         require(feesCollected == feesAccrued, "Fees collected mismatch");
@@ -503,7 +503,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         vm.prank(governor);
         arm.setFee(fee * 100);
 
-        if (this.isConsoleAvailable()) {
+        if (isConsoleAvailable) {
             console.log(">>> ARM SetFees:\t Governor set ARM fee from %s% to %s%", oldFee / 100, fee);
         }
 
@@ -526,7 +526,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         // Ensure time delay has passed
         uint32 lastRequestTimestamp = arm.lastRequestTimestamp();
         if (block.timestamp < lastRequestTimestamp + 3 hours) {
-            if (this.isConsoleAvailable()) {
+            if (isConsoleAvailable) {
                 console.log(
                     StdStyle.yellow(
                         string(
@@ -549,7 +549,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
 
         unstakerIndices.push(nextIndex);
 
-        if (this.isConsoleAvailable()) {
+        if (isConsoleAvailable) {
             console.log(
                 ">>> ARM ReqBaseW:\t Operator requested base withdrawal of %18e sUSDe underlying, using unstakers #%s",
                 amount,
@@ -574,7 +574,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
 
         // Fast forward time if needed
         if (block.timestamp < endTimestamp) {
-            if (this.isConsoleAvailable()) {
+            if (isConsoleAvailable) {
                 console.log(
                     StdStyle.yellow(
                         string(
@@ -599,7 +599,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         unstakerIndices[randomAddressIndex % unstakerIndices.length] = unstakerIndices[unstakerIndices.length - 1];
         unstakerIndices.pop();
 
-        if (this.isConsoleAvailable()) {
+        if (isConsoleAvailable) {
             console.log(
                 string(
                     abi.encodePacked(
@@ -632,7 +632,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         vm.prank(grace);
         uint256 shares = susde.deposit(amount, grace);
 
-        if (this.isConsoleAvailable()) {
+        if (isConsoleAvailable) {
             console.log(
                 ">>> sUSDe Deposit:\t Grace deposited %18e USDe\t and received %18e sUSDe shares", amount, shares
             );
@@ -652,7 +652,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         // Cooldown shares as grace
         vm.prank(grace);
         uint256 amount = susde.cooldownShares(shareAmount);
-        if (this.isConsoleAvailable()) {
+        if (isConsoleAvailable) {
             console.log(
                 ">>> sUSDe Cooldown:\t Grace cooled down %18e sUSDe shares\t for %18e USDe underlying",
                 shareAmount,
@@ -670,7 +670,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
 
         // Fast forward to after cooldown end if needed
         if (block.timestamp < cooldown.cooldownEnd) {
-            if (this.isConsoleAvailable()) {
+            if (isConsoleAvailable) {
                 console.log(
                     StdStyle.yellow(
                         string(
@@ -692,7 +692,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         vm.prank(grace);
         susde.unstake(grace);
 
-        if (this.isConsoleAvailable()) {
+        if (isConsoleAvailable) {
             console.log(
                 ">>> sUSDe Unstake:\t Grace unstaked %18e USDe underlying after cooldown", cooldown.underlyingAmount
             );
@@ -705,7 +705,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         uint256 lastDistribution = susde.lastDistributionTimestamp();
         if (block.timestamp < 8 hours + lastDistribution) {
             // Fast forward time to allow rewards distribution
-            if (this.isConsoleAvailable()) {
+            if (isConsoleAvailable) {
                 console.log(
                     StdStyle.yellow(
                         string(
@@ -731,7 +731,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         vm.prank(governor);
         susde.transferInRewards(rewards);
 
-        if (this.isConsoleAvailable()) {
+        if (isConsoleAvailable) {
             console.log(">>> sUSDe Rewards:\t Governor transferred in %18e USDe as rewards, bps: %d", rewards, bps);
         }
     }
@@ -754,7 +754,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         vm.prank(harry);
         uint256 shares = morpho.deposit(amount, harry);
 
-        if (this.isConsoleAvailable()) {
+        if (isConsoleAvailable) {
             console.log(
                 ">>> Morpho Deposit:\t Harry deposited %18e USDe\t and received %18e Morpho shares", amount, shares
             );
@@ -778,7 +778,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         // Withdraw as harry
         vm.prank(harry);
         uint256 shares = morpho.withdraw(amount, harry, harry);
-        if (this.isConsoleAvailable()) {
+        if (isConsoleAvailable) {
             console.log(
                 ">>> Morpho Withdraw:\t Harry withdrew %18e Morpho shares\t for %18e USDe underlying", shares, amount
             );
@@ -793,7 +793,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         uint256 rewards = (balance * bps) / 10_000;
         MockERC20(address(usde)).mint(address(morpho), rewards);
 
-        if (this.isConsoleAvailable()) {
+        if (isConsoleAvailable) {
             console.log(">>> Morpho Rewards:\t Transferred in %18e USDe as rewards, bps: %d", rewards, bps);
         }
     }
@@ -803,12 +803,12 @@ abstract contract TargetFunctions is Setup, StdUtils {
 
         morpho.setUtilizationRate(pct * 1e16);
 
-        if (this.isConsoleAvailable()) {
+        if (isConsoleAvailable) {
             console.log(">>> Morpho UseRate:\t Governor set utilization rate to %s%", pct);
         }
     }
 
-    function targetAfterAll() public {
+    function _targetAfterAll() internal {
         // In this function, we will simulate shutting down the ARM. This involves letting all users redeem their funds.
         // This is important to ensure that the ARM can handle a complete withdrawal scenario without issues.
         // This involves:
