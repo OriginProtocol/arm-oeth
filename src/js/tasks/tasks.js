@@ -26,7 +26,7 @@ const { requestLidoWithdrawals, claimLidoWithdrawals } = require("./lidoQueue");
 const {
   requestEtherFiWithdrawals,
   claimEtherFiWithdrawals,
-} = require("./etherFiQueue");
+} = require("./etherfiQueue");
 const {
   requestWithdraw,
   claimWithdraw,
@@ -1067,16 +1067,10 @@ subtask("claimEtherFiWithdrawals", "Claim requested withdrawals from EtherFi")
 
     const armContract = await resolveArmContract("EtherFi");
 
-    const withdrawalQueue = await hre.ethers.getContractAt(
-      "IEETHWithdrawalNFT",
-      mainnet.etherfiWithdrawalQueue,
-    );
-
     await claimEtherFiWithdrawals({
       ...taskArgs,
       signer,
       arm: armContract,
-      withdrawalQueue,
     });
   });
 task("claimEtherFiWithdrawals").setAction(async (_, __, runSuper) => {
