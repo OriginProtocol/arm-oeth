@@ -27,7 +27,7 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: "latest"
+          version: "stable"
       
       - name: Show Forge version
         run: forge --version
@@ -49,7 +49,7 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: "latest"
+          version: "stable"
       
       - name: Show Forge version
         run: forge --version
@@ -78,7 +78,7 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: "latest"
+          version: "stable"
 
       - name: Install Dependencies
         run: 	forge soldeer install && yarn install
@@ -102,7 +102,7 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: "latest"
+          version: "stable"
 
       - name: Install Dependencies
         run: 	forge soldeer install && yarn install
@@ -126,7 +126,7 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: "latest"
+          version: "stable"
 
       - name: Install Dependencies
         run: 	forge soldeer install && yarn install
@@ -148,7 +148,7 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: "latest"
+          version: "stable"
 
       - name: Install Dependencies
         run: 	forge soldeer install
@@ -171,7 +171,7 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: "latest"
+          version: "stable"
 
       - name: Install Dependencies
         run: 	forge soldeer install
@@ -194,7 +194,7 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: "latest"
+          version: "stable"
 
       - name: Install Dependencies
         run: 	forge soldeer install
