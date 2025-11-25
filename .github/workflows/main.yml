@@ -199,25 +199,31 @@ jobs:
       - name: Install Dependencies
         run: 	forge soldeer install
 
-      - name: Run invariant tests (EthenaARM)
-        run: |
-          FOUNDRY_PROFILE=ci \
-          FOUNDRY_INVARIANT_FAIL_ON_REVERT=true \
-          FOUNDRY_MATCH_CONTRACT=FuzzerFoundry_EthenaARM \
-          forge test --summary --fail-fast --show-progress
+      #- name: Run invariant tests (EthenaARM)
+      #  run: |
+      #    FOUNDRY_PROFILE=ci \
+      #    FOUNDRY_INVARIANT_FAIL_ON_REVERT=true \
+      #    FOUNDRY_MATCH_CONTRACT=FuzzerFoundry_EthenaARM \
+      #    forge test --summary --fail-fast --show-progress
 
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
           go-version: '1.21'
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10' 
+
+      - name: Install Crytic Compile
+        run: pip install crytic-compile
+
       - name: Install Medusa from Source
         run: go install github.com/crytic/medusa@latest
 
       - name: Run Medusa
-        run: |
-          medusa --version
-          cd test/invariants/EthenaARM/
-          medusa fuzz --timeout 1800 --seq-len 500 --fail-fast
+        working-directory: test/invariants/EthenaARM/
+        run: medusa fuzz --timeout 1800 --seq-len 500 --fail-fast
         
   
