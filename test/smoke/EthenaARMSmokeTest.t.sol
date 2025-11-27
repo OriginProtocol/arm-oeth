@@ -38,6 +38,9 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
 
         vm.prank(ethenaARM.owner());
         ethenaARM.setOwner(Mainnet.TIMELOCK);
+
+        vm.prank(Mainnet.TIMELOCK);
+        ethenaARM.setCrossPrice(0.9998e36);
     }
 
     function test_initialConfig() external view {
@@ -56,8 +59,8 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
         assertEq(ethenaARM.crossPrice(), 0.9998e36, "cross price");
 
         assertEq(capManager.accountCapEnabled(), true, "account cap enabled");
-        assertEq(capManager.totalAssetsCap(), 250 ether, "total assets cap");
-        assertEq(capManager.liquidityProviderCaps(Mainnet.TREASURY_LP), 250 ether, "liquidity provider cap");
+        assertEq(capManager.totalAssetsCap(), 100000 ether, "total assets cap");
+        assertEq(capManager.liquidityProviderCaps(Mainnet.TREASURY_LP), 20000 ether, "liquidity provider cap");
         assertEq(capManager.operator(), Mainnet.ARM_RELAYER, "Operator");
         assertEq(capManager.arm(), address(ethenaARM), "arm");
     }
@@ -240,5 +243,22 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
         address unstaker = ethenaARM.unstakers(nextUnstakerIndex);
         vm.prank(Mainnet.ARM_RELAYER);
         ethenaARM.claimBaseWithdrawals(unstaker);
+    }
+
+    // Allocate to market
+    function test_allocate_toAAVEMarket() external {
+        _swapExactTokensForTokens(usde, susde, 0.9999e36, 1_000 ether);
+
+        vm.prank(Mainnet.ARM_RELAYER);
+        ethenaARM.setARMBuffer(5000); // 50%
+
+        uint256 balanceBefore = usde.balanceOf(address(ethenaARM));
+        ethenaARM.allocate();
+
+        vm.prank(Mainnet.ARM_RELAYER);
+        ethenaARM.setActiveMarket(address(0));
+        uint256 balanceAfter = usde.balanceOf(address(ethenaARM));
+
+        assertApproxEqAbs(balanceAfter, balanceBefore, 2, "Allocated amount");
     }
 }
