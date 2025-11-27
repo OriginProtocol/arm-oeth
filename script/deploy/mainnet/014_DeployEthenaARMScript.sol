@@ -55,11 +55,17 @@ contract DeployEthenaARMScript is AbstractDeployScript {
         CapManager capManager = CapManager(address(capManProxy));
 
         // 4. Set total assets and liquidity provider caps
-        capManager.setTotalAssetsCap(250 ether);
+        capManager.setTotalAssetsCap(100000 ether); // 100,000 USDe total cap
         capManager.setAccountCapEnabled(true);
-        address[] memory lpAccounts = new address[](1);
+        address[] memory lpAccounts = new address[](7);
         lpAccounts[0] = Mainnet.TREASURY_LP;
-        capManager.setLiquidityProviderCaps(lpAccounts, 250 ether);
+        lpAccounts[1] = 0x8ac3b96d118288427055ae7f62e407fC7c482F57;
+        lpAccounts[2] = 0x49aFBb19ebAd01274707A7226A34D5297B6dAf75;
+        lpAccounts[3] = 0xF2B8C142Edcf2f3Cc22665cCE863a7C9A3E9F156;
+        lpAccounts[4] = 0x8fAEE3092ef992FC3BD5BdAF496C30a3Ae1066c6;
+        lpAccounts[5] = 0xE6030d4E773888e1DfE4CC31DA6e05bfe53091ac;
+        lpAccounts[6] = 0x86D888C3fA8A7F67452eF2Eccc1C5EE9751Ec8d6;
+        capManager.setLiquidityProviderCaps(lpAccounts, 20000 ether); // 20,000 USDe cap each
 
         // 5. Transfer ownership of CapManager to the mainnet 5/8 multisig
         capManProxy.setOwner(Mainnet.GOV_MULTISIG);
@@ -70,8 +76,8 @@ contract DeployEthenaARMScript is AbstractDeployScript {
             Mainnet.USDE,
             Mainnet.SUSDE,
             claimDelay,
-            1e7, // minSharesToRedeem
-            1e18 // allocateThreshold
+            1e18, // minSharesToRedeem
+            100e18 // allocateThreshold
         );
         _recordDeploy("ETHENA_ARM_IMPL", address(armImpl));
 
@@ -93,42 +99,27 @@ contract DeployEthenaARMScript is AbstractDeployScript {
 
         console.log("Initialized Ethena ARM");
 
-        // 10. Deploy MorphoMarket proxy
-        morphoMarketProxy = new Proxy();
-        _recordDeploy("MORPHO_MARKET_ETHENA", address(morphoMarketProxy));
-
-        // 11. Deploy MorphoMarket
-        morphoMarket = new MorphoMarket(address(armProxy), Mainnet.MORPHO_MARKET_ETHENA);
-        _recordDeploy("MORPHO_MARKET_ETHENA_IMPL", address(morphoMarket));
-
-        // 12. Initialize MorphoMarket proxy with the implementation, Timelock as owner
-        bytes memory data = abi.encodeWithSelector(
-            Abstract4626MarketWrapper.initialize.selector, Mainnet.STRATEGIST, Mainnet.MERKLE_DISTRIBUTOR
-        );
-        morphoMarketProxy.initialize(address(morphoMarket), Mainnet.TIMELOCK, data);
-
-        // 13. Set crossPrice to 0.9998 USDe
-        uint256 crossPrice = 0.9998 * 1e36;
+        // 9. Set crossPrice to 0.999 USDe which is a 10 bps discount
+        uint256 crossPrice = 0.999 * 1e36;
         EthenaARM(payable(address(armProxy))).setCrossPrice(crossPrice);
 
-        // 14. Add Morpho Market as an active market
+        // 10. Add Aave Market as an active market
         address[] memory markets = new address[](1);
-        markets[0] = address(morphoMarketProxy);
+        markets[0] = Mainnet.AAVE_USDE_VAULT;
         EthenaARM(payable(address(armProxy))).addMarkets(markets);
 
-        // 15. Set Morpho Market as the active market
-        EthenaARM(payable(address(armProxy))).setActiveMarket(address(morphoMarketProxy));
-
-        // 16. Set ARM buffer to 10%
+        // 11. Set Aave Market as the active market
+        EthenaARM(payable(address(armProxy))).setActiveMarket(Mainnet.AAVE_USDE_VAULT);
+        // 12. Set ARM buffer to 10%
         EthenaARM(payable(address(armProxy))).setARMBuffer(0.1e18); // 10% buffer
 
-        // 17. Deploy Unstakers
+        // 13. Deploy Unstakers
         address[MAX_UNSTAKERS] memory unstakers = _deployUnstakers();
 
         // 18. Set Unstakers in the ARM
         EthenaARM(payable(address(armProxy))).setUnstakers(unstakers);
 
-        // 19. Transfer ownership of ARM to the 5/8 multisig
+        // 14. Transfer ownership of ARM to the 5/8 multisig
         armProxy.setOwner(Mainnet.GOV_MULTISIG);
 
         console.log("Finished deploying", DEPLOY_NAME);
