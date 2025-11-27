@@ -63,8 +63,7 @@ library Mainnet {
     address public constant MERKLE_DISTRIBUTOR = 0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae;
 
     // Aave USDe Vault
-    // TODO Update with real address
-    address public constant AAVE_USDE_VAULT = 0x0000000000000000000000000000000000000001;
+    address public constant AAVE_USDE_VAULT = 0x0DC20109Ea012f050BeDA184844c1eD5ec6dA33A;
 }
 
 library Holesky {
