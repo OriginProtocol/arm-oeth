@@ -246,7 +246,7 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
     }
 
     // Allocate to market
-    function test_allocate_toAAVEMarket() external {
+    function test_allocate_AAVEMarket_withoutYield() external {
         _swapExactTokensForTokens(usde, susde, 0.9999e36, 1_000 ether);
 
         vm.prank(Mainnet.ARM_RELAYER);
@@ -260,5 +260,31 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
         uint256 balanceAfter = usde.balanceOf(address(ethenaARM));
 
         assertApproxEqAbs(balanceAfter, balanceBefore, 2, "Allocated amount");
+    }
+
+    function test_allocate_AAVEMarket_withYield() external {
+        _swapExactTokensForTokens(usde, susde, 0.9999e36, 1_000 ether);
+
+        vm.prank(Mainnet.ARM_RELAYER);
+        ethenaARM.setARMBuffer(5000); // 50%
+
+
+        // Allocate
+        uint256 balanceBefore = usde.balanceOf(address(ethenaARM));
+        ethenaARM.allocate();
+
+        // Simulate yield by transferring aUSDE to the active market
+        address aUSDE = 0x4F5923Fc5FD4a93352581b38B7cD26943012DECF;
+        address whale = 0xc468315a2df54f9c076bD5Cfe5002BA211F74CA6;
+        address activeMarket = ethenaARM.activeMarket();
+        vm.prank(whale);
+        IERC20(aUSDE).transfer(activeMarket, 10 ether);
+
+        // Deallocate
+        vm.prank(Mainnet.ARM_RELAYER);
+        ethenaARM.setActiveMarket(address(0));
+        uint256 balanceAfter = usde.balanceOf(address(ethenaARM));
+
+        assertGt(balanceAfter, balanceBefore, "Allocated amount with yield");
     }
 }
