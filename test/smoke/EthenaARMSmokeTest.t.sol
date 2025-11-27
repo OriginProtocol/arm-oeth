@@ -268,7 +268,6 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
         vm.prank(Mainnet.ARM_RELAYER);
         ethenaARM.setARMBuffer(5000); // 50%
 
-
         // Allocate
         uint256 balanceBefore = usde.balanceOf(address(ethenaARM));
         ethenaARM.allocate();
