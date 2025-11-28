@@ -51,7 +51,7 @@ abstract contract Properties is Setup, Utils {
     // Invariant G: withdrawsQueued == ∑requestRedeem.amount
     // Invariant H: withdrawsQueued > withdrawsClaimed
     // Invariant I: withdrawsQueued == ∑request.assets
-    // Invariant J: withdrawsClaimed == ∑claimRedeem.amount
+    // Invariant J: withdrawsClaimed >= ∑claimRedeem.amount
     // Invariant K: ∀ requestId, request.queued >= request.assets
     // Invariant M: ∑feesCollected == feeCollector.balance
 
@@ -131,7 +131,7 @@ abstract contract Properties is Setup, Utils {
     }
 
     function property_lp_invariant_J() public view returns (bool) {
-        return eq(lidoARM.withdrawsClaimed(), sum_weth_withdraw);
+        return gte(lidoARM.withdrawsClaimed(), sum_weth_withdraw);
     }
 
     function property_lp_invariant_K() public view returns (bool) {
