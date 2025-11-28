@@ -62,7 +62,7 @@ contract Unit_Concrete_OriginARM_ClaimRedeem_Test_ is Unit_Shared_Test {
         emit AbstractARM.RedeemClaimed(alice, 0, DEFAULT_AMOUNT);
         originARM.claimRedeem(0);
 
-        (, bool claimed,,,) = originARM.withdrawalRequests(0);
+        (, bool claimed,,,,) = originARM.withdrawalRequests(0);
         // Assertions
         assertEq(claimed, true, "Claimed should be true");
         assertEq(originARM.withdrawsClaimed(), DEFAULT_AMOUNT, "Claimed amount should be DEFAULT_AMOUNT");
@@ -85,7 +85,7 @@ contract Unit_Concrete_OriginARM_ClaimRedeem_Test_ is Unit_Shared_Test {
         emit AbstractARM.RedeemClaimed(alice, 0, DEFAULT_AMOUNT);
         originARM.claimRedeem(0);
 
-        (, bool claimed,,,) = originARM.withdrawalRequests(0);
+        (, bool claimed,,,,) = originARM.withdrawalRequests(0);
         // Assertions
         assertEq(claimed, true, "Claimed should be true");
         assertEq(originARM.withdrawsClaimed(), DEFAULT_AMOUNT, "Claimed amount should be DEFAULT_AMOUNT");
@@ -108,7 +108,7 @@ contract Unit_Concrete_OriginARM_ClaimRedeem_Test_ is Unit_Shared_Test {
         emit AbstractARM.RedeemClaimed(alice, 0, DEFAULT_AMOUNT);
         originARM.claimRedeem(0);
 
-        (, bool claimed,,,) = originARM.withdrawalRequests(0);
+        (, bool claimed,,,,) = originARM.withdrawalRequests(0);
         // Assertions
         assertEq(claimed, true, "Claimed should be true");
         assertEq(originARM.withdrawsClaimed(), DEFAULT_AMOUNT, "Claimed amount should be DEFAULT_AMOUNT");
