@@ -24,7 +24,7 @@ contract DeployEthenaARMScript is AbstractDeployScript {
     GovProposal public govProposal;
 
     string public constant override DEPLOY_NAME = "014_DeployEthenaARMScript";
-    bool public constant override proposalExecuted = true;
+    bool public constant override proposalExecuted = false;
 
     Proxy morphoMarketProxy;
     EthenaARM armImpl;
