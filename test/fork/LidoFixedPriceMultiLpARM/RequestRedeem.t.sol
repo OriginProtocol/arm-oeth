@@ -55,7 +55,9 @@ contract Fork_Concrete_LidoARM_RequestRedeem_Test_ is Fork_Shared_Test_ {
         // Assertions After
         assertEq(requestId, 0); // First request
         assertEqQueueMetadata(DEFAULT_AMOUNT, 0, 1); // One request in the queue
-        assertEqUserRequest(0, address(this), false, block.timestamp + delay, DEFAULT_AMOUNT, DEFAULT_AMOUNT); // Requested the full amount
+        assertEqUserRequest(
+            0, address(this), false, block.timestamp + delay, DEFAULT_AMOUNT, DEFAULT_AMOUNT, DEFAULT_AMOUNT
+        ); // Requested the full amount
         assertEq(assets, DEFAULT_AMOUNT, "Wrong amount of assets"); // As no profits, assets returned are the same as deposited
         assertEq(steth.balanceOf(address(lidoARM)), 0);
         assertEq(weth.balanceOf(address(lidoARM)), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT);
@@ -101,7 +103,7 @@ contract Fork_Concrete_LidoARM_RequestRedeem_Test_ is Fork_Shared_Test_ {
         assertEq(requestId, 1); // Second request
         assertEqQueueMetadata(DEFAULT_AMOUNT * 3 / 4, 0, 2); // Two requests in the queue
         assertEqUserRequest(
-            1, address(this), false, block.timestamp + delay, DEFAULT_AMOUNT / 2, DEFAULT_AMOUNT * 3 / 4
+            1, address(this), false, block.timestamp + delay, DEFAULT_AMOUNT / 2, DEFAULT_AMOUNT * 3 / 4, DEFAULT_AMOUNT / 2
         );
         assertEq(assets, DEFAULT_AMOUNT / 2, "Wrong amount of assets"); // As no profits, assets returned are the same as deposited
         assertEq(steth.balanceOf(address(lidoARM)), 0);
@@ -164,7 +166,8 @@ contract Fork_Concrete_LidoARM_RequestRedeem_Test_ is Fork_Shared_Test_ {
             false,
             block.timestamp + lidoARM.claimDelay(),
             expectedAssetsFromRedeem,
-            expectedAssetsFromRedeem
+            expectedAssetsFromRedeem,
+            DEFAULT_AMOUNT
         );
     }
 
@@ -211,7 +214,13 @@ contract Fork_Concrete_LidoARM_RequestRedeem_Test_ is Fork_Shared_Test_ {
         if (ac) assertEq(capManager.liquidityProviderCaps(address(this)), 0);
         assertEqQueueMetadata(expectedAssetsFromRedeem, 0, 1);
         assertEqUserRequest(
-            0, address(this), false, block.timestamp + delay, expectedAssetsFromRedeem, expectedAssetsFromRedeem
+            0,
+            address(this),
+            false,
+            block.timestamp + delay,
+            expectedAssetsFromRedeem,
+            expectedAssetsFromRedeem,
+            DEFAULT_AMOUNT
         );
     }
 }

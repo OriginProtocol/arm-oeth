@@ -515,7 +515,7 @@ abstract contract TargetFunction is Properties {
         // No unclaimed requests
         uint256 len = originARM.nextWithdrawalIndex();
         for (uint256 i; i < len; i++) {
-            (, bool claimed,,,) = originARM.withdrawalRequests(i);
+            (, bool claimed,,,,) = originARM.withdrawalRequests(i);
             require(claimed, "All withdrawals should be claimed");
         }
         // No users with shares

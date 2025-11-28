@@ -179,7 +179,7 @@ abstract contract Helpers is Setup, Logger {
 
             // Access the element at the shuffled position
             uint256 id = requests_[indices[j]];
-            (,, uint40 ts, uint256 asset, uint256 queued) = originARM.withdrawalRequests(id);
+            (,, uint40 ts, uint256 asset, uint256 queued,) = originARM.withdrawalRequests(id);
 
             // Return if it satisfies the condition
             if (queued <= claimable) return (id, asset, ts);

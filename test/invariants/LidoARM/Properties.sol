@@ -123,7 +123,7 @@ abstract contract Properties is Setup, Utils {
         uint256 sum;
         uint256 nextWithdrawalIndex = lidoARM.nextWithdrawalIndex();
         for (uint256 i; i < nextWithdrawalIndex; i++) {
-            (,,, uint128 assets,) = lidoARM.withdrawalRequests(i);
+            (,,, uint128 assets,,) = lidoARM.withdrawalRequests(i);
             sum += assets;
         }
 
@@ -137,7 +137,7 @@ abstract contract Properties is Setup, Utils {
     function property_lp_invariant_K() public view returns (bool) {
         uint256 nextWithdrawalIndex = lidoARM.nextWithdrawalIndex();
         for (uint256 i; i < nextWithdrawalIndex; i++) {
-            (,,, uint128 assets, uint128 queued) = lidoARM.withdrawalRequests(i);
+            (,,, uint128 assets, uint128 queued,) = lidoARM.withdrawalRequests(i);
             if (queued < assets) return false;
         }
 
