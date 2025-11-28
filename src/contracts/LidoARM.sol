@@ -136,6 +136,7 @@ contract LidoARM is Initializable, AbstractARM {
     /**
      * @notice Claim the ETH owed from the redemption requests and convert it to WETH.
      * Before calling this method, caller should check on the request NFTs to ensure the withdrawal was processed.
+     * Withdrawal NFTs that have been transferred in from another account will be reverted.
      * @param requestIds The request IDs of the withdrawal requests.
      * @param hintIds The hint IDs of the withdrawal requests.
      * Call `findCheckpointHints` on the Lido withdrawal queue contract to get the hint IDs.
@@ -160,14 +161,11 @@ contract LidoARM is Initializable, AbstractARM {
         }
 
         // Store the reduced outstanding withdrawals from the Lido Withdrawal Queue
-        if (lidoWithdrawalQueueAmount < totalAmountRequested) {
-            // This can happen if a Lido withdrawal request was transferred to the ARM contract
-            lidoWithdrawalQueueAmount = 0;
-        } else {
-            lidoWithdrawalQueueAmount -= totalAmountRequested;
-        }
+        // Since withdrawal NFTs that have been transferred in from another account are reverted above,
+        // this subtraction should never underflow.
+        lidoWithdrawalQueueAmount -= totalAmountRequested;
 
-        // Wrap all the received ETH to WETH.
+        // Wrap all the received ETH to WETH. This can be less than the requested amount in the event of slashing.
         weth.deposit{value: address(this).balance}();
 
         emit ClaimLidoWithdrawals(requestIds);
