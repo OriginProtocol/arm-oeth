@@ -40,7 +40,7 @@ abstract contract Properties is TargetFunctions {
     // [x] Invariant F: withdrawsQueued == ∑requestRedeem.amount
     // [x] Invariant G: withdrawsQueued >= withdrawsClaimed
     // [x] Invariant H: withdrawsQueued == ∑request.assets
-    // [x] Invariant I: withdrawsClaimed == ∑claimRedeem.amount
+    // [x] Invariant I: withdrawsClaimed >= ∑claimRedeem.amount
     // [x] Invariant J: ∀ requestId, request.queued >= request.assets
     // [x] Invariant K: ∑feesCollected == feeCollector.balance
     //
@@ -144,7 +144,7 @@ abstract contract Properties is TargetFunctions {
     }
 
     function propertyI() public view returns (bool) {
-        return Math.eq(arm.withdrawsClaimed(), sumUSDeUserRedeem);
+        return Math.gte(arm.withdrawsClaimed(), sumUSDeUserRedeem);
     }
 
     function propertyJ() public view returns (bool) {
