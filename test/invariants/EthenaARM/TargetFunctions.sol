@@ -865,7 +865,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         vm.warp(block.timestamp + DEFAULT_CLAIM_DELAY);
         uint256 nextWithdrawalIndex = arm.nextWithdrawalIndex();
         for (uint256 i; i < nextWithdrawalIndex; i++) {
-            (address user, bool claimed,,,) = arm.withdrawalRequests(i);
+            (address user, bool claimed,,,,) = arm.withdrawalRequests(i);
             if (claimed) continue;
             vm.prank(user);
             arm.claimRedeem(i);

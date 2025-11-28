@@ -137,7 +137,7 @@ abstract contract Properties is TargetFunctions {
         uint256 sum = 0;
         uint256 len = arm.nextWithdrawalIndex();
         for (uint256 i; i < len; i++) {
-            (,,, uint128 amount,) = arm.withdrawalRequests(i);
+            (,,, uint128 amount,,) = arm.withdrawalRequests(i);
             sum += amount;
         }
         return Math.eq(arm.withdrawsQueued(), sum);
@@ -150,7 +150,7 @@ abstract contract Properties is TargetFunctions {
     function propertyJ() public view returns (bool) {
         uint256 len = arm.nextWithdrawalIndex();
         for (uint256 i; i < len; i++) {
-            (,,, uint128 amount, uint128 queued) = arm.withdrawalRequests(i);
+            (,,, uint128 amount, uint128 queued,) = arm.withdrawalRequests(i);
             if (queued < amount) {
                 return false;
             }

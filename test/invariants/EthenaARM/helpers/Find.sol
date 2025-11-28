@@ -27,7 +27,7 @@ library Find {
                 // Take a random request from that user
                 uint256 _requestId = pendingRequests[_user][($.randomArrayIndex + j) % pendingRequests[_user].length];
                 // Check request data
-                (,, uint40 _claimTimestamp, uint128 _amount, uint128 _queued) =
+                (,, uint40 _claimTimestamp, uint128 _amount, uint128 _queued,) =
                     AbstractARM($.arm).withdrawalRequests(_requestId);
                 // Check if this is claimable
                 if (_queued <= $.claimable && _amount <= $.availableLiquidity) {
