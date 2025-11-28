@@ -39,7 +39,7 @@ contract Unit_Concrete_OriginARM_RequestRedeem_Test_ is Unit_Shared_Test {
         vm.prank(alice);
         originARM.requestRedeem(DEFAULT_AMOUNT);
 
-        (address withdrawer, bool claimed, uint256 requestTimestamp, uint256 amount, uint256 queued_) =
+        (address withdrawer, bool claimed, uint256 requestTimestamp, uint256 amount, uint256 queued_, uint256 shares) =
             originARM.withdrawalRequests(0);
         // Assertions
         assertEq(
@@ -54,5 +54,6 @@ contract Unit_Concrete_OriginARM_RequestRedeem_Test_ is Unit_Shared_Test {
         assertEq(requestTimestamp, block.timestamp + CLAIM_DELAY, "Request timestamp should be updated");
         assertEq(amount, DEFAULT_AMOUNT, "Amount should be updated");
         assertEq(queued_, queued + DEFAULT_AMOUNT, "Queued should be updated");
+        assertEq(shares, expectedShares, "Shares should be updated");
     }
 }

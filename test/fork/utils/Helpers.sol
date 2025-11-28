@@ -43,21 +43,29 @@ abstract contract Helpers is Base_Test_ {
         assertEq(lidoARM.nextWithdrawalIndex(), expectedNextIndex, "metadata nextWithdrawalIndex");
     }
 
-    /// @notice Asserts the equality bewteen value of `withdrawalRequests()` and the expected values.
+    /// @notice Asserts the equality between value of `withdrawalRequests()` and the expected values.
     function assertEqUserRequest(
         uint256 requestId,
         address withdrawer,
         bool claimed,
         uint256 claimTimestamp,
         uint256 assets,
-        uint256 queued
+        uint256 queued,
+        uint256 shares
     ) public view {
-        (address _withdrawer, bool _claimed, uint40 _claimTimestamp, uint128 _assets, uint128 _queued) =
-            lidoARM.withdrawalRequests(requestId);
+        (
+            address _withdrawer,
+            bool _claimed,
+            uint40 _claimTimestamp,
+            uint128 _assets,
+            uint128 _queued,
+            uint128 _shares
+        ) = lidoARM.withdrawalRequests(requestId);
         assertEq(_withdrawer, withdrawer, "Wrong withdrawer");
         assertEq(_claimed, claimed, "Wrong claimed");
         assertEq(_claimTimestamp, claimTimestamp, "Wrong claimTimestamp");
         assertEq(_assets, assets, "Wrong assets");
         assertEq(_queued, queued, "Wrong queued");
+        assertEq(_shares, shares, "Wrong shares");
     }
 }

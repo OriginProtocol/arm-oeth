@@ -102,7 +102,7 @@ abstract contract Properties is Setup, Helpers {
     function property_lp_K() public view returns (bool) {
         uint256 len = originARM.nextWithdrawalIndex();
         for (uint256 i; i < len; i++) {
-            (,,, uint128 amount, uint128 queued) = originARM.withdrawalRequests(i);
+            (,,, uint128 amount, uint128 queued,) = originARM.withdrawalRequests(i);
             if (queued < amount) {
                 return false;
             }
@@ -124,7 +124,7 @@ abstract contract Properties is Setup, Helpers {
     function sumOfRequestRedeemAmount() public view returns (uint256 sum) {
         uint256 len = originARM.nextWithdrawalIndex();
         for (uint256 i; i < len; i++) {
-            (,,, uint128 amount,) = originARM.withdrawalRequests(i);
+            (,,, uint128 amount,,) = originARM.withdrawalRequests(i);
             sum += amount;
         }
     }

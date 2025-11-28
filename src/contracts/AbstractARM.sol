@@ -100,6 +100,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         uint128 assets;
         // Cumulative total of all withdrawal requests including this one when the redeem request was made.
         uint128 queued;
+        // The amount of shares that were burned at the time of this request.
+        // This has been added with a contract upgrade so may be zero for older requests.
+        uint128 shares;
     }
 
     /// @notice Mapping of withdrawal request indices to the user withdrawal request data.
@@ -578,7 +581,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @notice Request to redeem liquidity provider shares for liquidity assets
     /// @param shares The amount of shares the redeemer wants to burn for liquidity assets
     /// @return requestId The index of the withdrawal request
-    /// @return assets The amount of liquidity assets that will be claimable by the redeemer
+    /// @return assets The max amount of liquidity assets that will be claimable by the redeemer.
+    /// The amount can be less at claim time if ARM's assets per share has decreased. This can happen
+    /// from a significant slashing event on the base asset, eg stETH.
     function requestRedeem(uint256 shares) external returns (uint256 requestId, uint256 assets) {
         // Calculate the amount of assets to transfer to the redeemer
         assets = convertToAssets(shares);
@@ -599,7 +604,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
             claimed: false,
             claimTimestamp: claimTimestamp,
             assets: SafeCast.toUint128(assets),
-            queued: queued
+            queued: queued,
+            shares: SafeCast.toUint128(shares)
         });
 
         // burn redeemer's shares
@@ -615,6 +621,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// This will try and withdraw from the active lending market if there are not enough liquidity assets in the ARM.
     /// If there is not enough liquidity in the ARM and lending market the transaction will revert.
     /// If the lending market has enough liquidity but has high utilization preventing the withdrawal, the transaction will revert.
+    /// If the assets per shares has decreased since the redeem request, the asset value of the redeemed shares at claim is used.
     /// @param requestId The index of the withdrawal request
     /// @return assets The amount of liquidity assets that were transferred to the redeemer
     function claimRedeem(uint256 requestId) external returns (uint256 assets) {
@@ -627,12 +634,19 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         require(request.withdrawer == msg.sender, "Not requester");
         require(request.claimed == false, "Already claimed");
 
-        assets = request.assets;
+        // In the scenario where the ARM has made a loss from after the redeem request, the asset value of
+        // the redeemed shares at the time of the claim is used.
+        // This can happen if there was a significant slashing event on the base asset, eg stETH, after the redeem request was made.
+        uint256 assetsAtClaim = request.shares > 0 ? convertToAssets(request.shares) : request.assets;
+        // Use the minimum of the asset value of the redeemed shares at request or claim.
+        assets = request.assets < assetsAtClaim ? request.assets : assetsAtClaim;
 
         // Store the request as claimed
         withdrawalRequests[requestId].claimed = true;
         // Store the updated claimed amount
-        withdrawsClaimed += SafeCast.toUint128(assets);
+        // The asset value at the time of the request is used instead of the value at the time of claim
+        // as the queued amount used the value at the time of the request.
+        withdrawsClaimed += SafeCast.toUint128(request.assets);
 
         // If there is not enough liquidity assets in the ARM, get from the active market if one is configured.
         // Read the active market address from storage once to save gas.
