@@ -257,4 +257,26 @@ contract Fork_Concrete_LidoARM_ClaimRedeem_Test_ is Fork_Shared_Test_ {
         assertEq(assets, DEFAULT_AMOUNT / 2);
         assertEq(lidoARM.claimable(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT);
     }
+
+    function test_ClaimRequest_AfterSlashing()
+        public
+        setTotalAssetsCap(DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY)
+        setLiquidityProviderCap(address(this), DEFAULT_AMOUNT)
+        depositInLidoARM(address(this), DEFAULT_AMOUNT)
+        requestRedeemFromLidoARM(address(this), DEFAULT_AMOUNT / 2)
+        skipTime(delay)
+    {
+        // simulate loss in the ARM
+        vm.prank(address(lidoARM));
+        weth.transfer(address(0), DEFAULT_AMOUNT / 10); // burn some WETH
+
+        // Withdrawal request
+        (,,, uint128 assets,,) = lidoARM.withdrawalRequests(0);
+
+        // Main call
+        uint256 claimed = lidoARM.claimRedeem(0);
+
+        // Assertions after, amount redeemed should be less than requested due to slashing
+        assertLt(claimed, assets);
+    }
 }
