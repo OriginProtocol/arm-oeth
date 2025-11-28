@@ -238,7 +238,7 @@ contract Abstract4626MarketWrapper is Initializable, Ownable {
     function transferTokens(address token, address to, uint256 amount) external onlyOwner {
         require(token != asset && token != market, "Cannot transfer asset or market token");
         require(to != address(0), "Invalid address");
-        require(to == owner() || to == harvester, "Cannot transfer to non-owner or non-harvester");
+        require(to == msg.sender || to == harvester, "Cannot transfer to non-owner or non-harvester");
 
         if (address(token) == address(0)) {
             // Move ETH
