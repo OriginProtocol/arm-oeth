@@ -103,7 +103,13 @@ contract Fork_Concrete_LidoARM_RequestRedeem_Test_ is Fork_Shared_Test_ {
         assertEq(requestId, 1); // Second request
         assertEqQueueMetadata(DEFAULT_AMOUNT * 3 / 4, 0, 2); // Two requests in the queue
         assertEqUserRequest(
-            1, address(this), false, block.timestamp + delay, DEFAULT_AMOUNT / 2, DEFAULT_AMOUNT * 3 / 4, DEFAULT_AMOUNT / 2
+            1,
+            address(this),
+            false,
+            block.timestamp + delay,
+            DEFAULT_AMOUNT / 2,
+            DEFAULT_AMOUNT * 3 / 4,
+            DEFAULT_AMOUNT / 2
         );
         assertEq(assets, DEFAULT_AMOUNT / 2, "Wrong amount of assets"); // As no profits, assets returned are the same as deposited
         assertEq(steth.balanceOf(address(lidoARM)), 0);
