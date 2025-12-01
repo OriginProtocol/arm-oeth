@@ -131,6 +131,8 @@ contract EtherFiARM is Initializable, AbstractARM, IERC721Receiver {
         }
 
         // Store the reduced outstanding withdrawals from the EtherFi Withdrawal Queue
+        // Since withdrawal NFTs that have been transferred in from another account are reverted above,
+        // this subtraction should never underflow.
         etherfiWithdrawalQueueAmount -= totalAmountRequested;
 
         // Wrap all the received ETH to WETH.
