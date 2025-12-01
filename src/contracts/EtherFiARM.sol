@@ -24,8 +24,6 @@ contract EtherFiARM is Initializable, AbstractARM, IERC721Receiver {
     IEETHWithdrawal public immutable etherfiWithdrawalQueue;
     /// @notice The address of the EtherFi Withdrawal NFT contract
     IEETHWithdrawalNFT public immutable etherfiWithdrawalNFT;
-    /// @notice The address of the EtherFi Redemption Manager contract
-    IEETHRedemptionManager public immutable etherfiRedemptionManager;
 
     /// @notice The amount of eETH in the EtherFi Withdrawal Queue
     uint256 public etherfiWithdrawalQueueAmount;
@@ -50,14 +48,12 @@ contract EtherFiARM is Initializable, AbstractARM, IERC721Receiver {
         uint256 _claimDelay,
         uint256 _minSharesToRedeem,
         int256 _allocateThreshold,
-        address _etherfiWithdrawalNFT,
-        address _etherfiRedemptionManager
+        address _etherfiWithdrawalNFT
     ) AbstractARM(_weth, _eeth, _weth, _claimDelay, _minSharesToRedeem, _allocateThreshold) {
         eeth = IERC20(_eeth);
         weth = IWETH(_weth);
         etherfiWithdrawalQueue = IEETHWithdrawal(_etherfiWithdrawalQueue);
         etherfiWithdrawalNFT = IEETHWithdrawalNFT(_etherfiWithdrawalNFT);
-        etherfiRedemptionManager = IEETHRedemptionManager(_etherfiRedemptionManager);
 
         _disableInitializers();
     }

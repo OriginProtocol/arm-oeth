@@ -14,7 +14,6 @@ import {IERC20, IEETHWithdrawalNFT, IEETHRedemptionManager} from "contracts/Inte
 
 abstract contract Fork_Shared_Test is Base_Test_ {
     IEETHWithdrawalNFT public etherfiWithdrawalNFT;
-    IEETHRedemptionManager public etherfiRedemptionManager;
 
     //////////////////////////////////////////////////////
     /// --- SETUP
@@ -55,7 +54,6 @@ abstract contract Fork_Shared_Test is Base_Test_ {
         weth = IERC20(resolver.resolve("WETH"));
         weeth = IERC20(resolver.resolve("WEETH"));
         etherfiWithdrawalNFT = IEETHWithdrawalNFT(Mainnet.ETHERFI_WITHDRAWAL_NFT);
-        etherfiRedemptionManager = IEETHRedemptionManager(Mainnet.ETHERFI_REDEMPTION_MANAGER);
     }
 
     function _generateAddresses() internal {
@@ -78,14 +76,7 @@ abstract contract Fork_Shared_Test is Base_Test_ {
         // --- Deploy EtherFiARM implementation ---
         // Deploy EtherFiARM implementation.
         EtherFiARM etherfiImpl = new EtherFiARM(
-            address(eeth),
-            address(weth),
-            Mainnet.ETHERFI_WITHDRAWAL,
-            10 minutes,
-            0,
-            0,
-            Mainnet.ETHERFI_WITHDRAWAL_NFT,
-            Mainnet.ETHERFI_REDEMPTION_MANAGER
+            address(eeth), address(weth), Mainnet.ETHERFI_WITHDRAWAL, 10 minutes, 0, 0, Mainnet.ETHERFI_WITHDRAWAL_NFT
         );
 
         // Deployer will need WETH to initialize the ARM.
