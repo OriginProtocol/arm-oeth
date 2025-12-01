@@ -131,12 +131,7 @@ contract EtherFiARM is Initializable, AbstractARM, IERC721Receiver {
         }
 
         // Store the reduced outstanding withdrawals from the EtherFi Withdrawal Queue
-        if (etherfiWithdrawalQueueAmount < totalAmountRequested) {
-            // This can happen if a EtherFi withdrawal request was transferred to the ARM contract
-            etherfiWithdrawalQueueAmount = 0;
-        } else {
-            etherfiWithdrawalQueueAmount -= totalAmountRequested;
-        }
+        etherfiWithdrawalQueueAmount -= totalAmountRequested;
 
         // Wrap all the received ETH to WETH.
         weth.deposit{value: address(this).balance}();
