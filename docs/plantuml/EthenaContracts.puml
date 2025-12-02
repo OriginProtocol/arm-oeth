@@ -1,0 +1,61 @@
+@startuml
+
+!$originColor = DeepSkyBlue
+' !$originColor = WhiteSmoke
+!$newColor = LightGreen
+!$changedColor = Orange
+!$thirdPartyColor = WhiteSmoke
+
+legend
+blue - Origin
+' green - new
+' orange - changed
+white - 3rd Party
+end legend
+
+title "Ethena\nAutomated Redemption Manager (ARM)\nContract Dependencies"
+
+
+object "ZapperARM" as zap <<Origin>> #$originColor {
+}
+
+object "EthenaARM" as arm <<Origin>><<Proxy>> #$originColor {
+    shares: ARM-sUSDe-USDe
+    assets: sUSDe, USDe
+}
+
+object "CapManager" as capMan <<Origin>><<Proxy>> #$originColor {
+}
+
+
+object "Ethena\nUnstaker" as unstaker <<Origin>> #$originColor {
+}
+
+object "Ethena\nMinting" as em <<Ethena>><<Proxy>> #$thirdPartyColor {
+}
+
+' object "Aave Market" as aMarket <<Origin>><<Proxy>> #$originColor {
+'     asset: USDe
+' }
+
+object "Aave Vault" as aVault <<Aave>><<Proxy>> #$thirdPartyColor {
+    asset: USDe
+}
+
+object "aUSDe" as aUSDe <<Aave>> #$thirdPartyColor {
+    asset: USDe
+}
+
+zap <..> arm
+arm <.> capMan
+arm ..> unstaker
+arm ...> em
+unstaker ..> em
+' arm ..> aMarket
+' aMarket ..> aVault
+' aVault ..> aUSDe
+' aMarket ...> aUSDe
+arm ..> aVault
+aVault ..> aUSDe
+
+@enduml

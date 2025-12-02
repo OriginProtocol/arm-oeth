@@ -8,6 +8,7 @@ import {Test} from "forge-std/Test.sol";
 import {Proxy} from "contracts/Proxy.sol";
 import {OethARM} from "contracts/OethARM.sol";
 import {LidoARM} from "contracts/LidoARM.sol";
+import {EthenaARM} from "contracts/EthenaARM.sol";
 import {EtherFiARM} from "contracts/EtherFiARM.sol";
 import {OriginARM} from "contracts/OriginARM.sol";
 import {SonicHarvester} from "contracts/SonicHarvester.sol";
@@ -40,12 +41,14 @@ abstract contract Base_Test_ is Test {
     Proxy public proxy;
     Proxy public lpcProxy;
     Proxy public lidoProxy;
+    Proxy public ethenaProxy;
     Proxy public etherfiProxy;
     Proxy public originARMProxy;
     Proxy public harvesterProxy;
     Proxy public morphoMarketProxy;
     OethARM public oethARM;
     LidoARM public lidoARM;
+    EthenaARM public ethenaARM;
     EtherFiARM public etherfiARM;
     SonicHarvester public harvester;
     OriginARM public originARM;
@@ -57,6 +60,7 @@ abstract contract Base_Test_ is Test {
     IERC20 public ws;
     IERC20 public os;
     IERC20 public wos;
+    IERC20 public usde;
     IERC20 public oeth;
     IERC20 public weth;
     IERC20 public eeth;
@@ -65,6 +69,7 @@ abstract contract Base_Test_ is Test {
     IERC20 public wsteth;
     IERC20 public morpho;
     IERC20 public badToken;
+    IERC4626 public susde;
     IERC4626 public market;
     IERC4626 public market2;
     IOriginVault public vault;
@@ -108,6 +113,7 @@ abstract contract Base_Test_ is Test {
         _labelNotNull(address(proxy), "DEFAULT PROXY");
         _labelNotNull(address(lpcProxy), "LPC PROXY");
         _labelNotNull(address(lidoProxy), "LIDO ARM PROXY");
+        _labelNotNull(address(ethenaProxy), "ETHENA ARM PROXY");
         _labelNotNull(address(etherfiProxy), "ETHERFI ARM PROXY");
         _labelNotNull(address(oethARM), "OETH ARM");
         _labelNotNull(address(lidoARM), "LIDO ARM");
@@ -118,6 +124,8 @@ abstract contract Base_Test_ is Test {
 
         _labelNotNull(address(ws), "WS");
         _labelNotNull(address(os), "OS");
+        _labelNotNull(address(wos), "WOS");
+        _labelNotNull(address(usde), "USDE");
         _labelNotNull(address(oeth), "OETH");
         _labelNotNull(address(weth), "WETH");
         _labelNotNull(address(eeth), "EETH");
@@ -127,6 +135,9 @@ abstract contract Base_Test_ is Test {
         _labelNotNull(address(wsteth), " WRAPPED STETH");
         _labelNotNull(address(badToken), "BAD TOKEN");
         _labelNotNull(address(vault), "OETH VAULT");
+        _labelNotNull(address(market), "MARKET");
+        _labelNotNull(address(market2), "MARKET 2");
+        _labelNotNull(address(susde), "SUSDE");
 
         // Governance, multisig and EOAs
         _labelNotNull(alice, "Alice");
