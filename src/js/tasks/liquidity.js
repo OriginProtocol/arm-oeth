@@ -81,7 +81,9 @@ const snap = async ({ arm, block, days, gas, amount, oneInch, kyber }) => {
           ? "eETH/WETH"
           : arm == "Origin"
             ? "OS/wS"
-            : "Unknown";
+            : arm === "Ethena"
+              ? "sUSDe/USDe"
+              : null;
     const assets = {
       liquid: await armContract.liquidityAsset(),
       base: await armContract.baseAsset(),

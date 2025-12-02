@@ -1104,7 +1104,7 @@ task("snapMarket").setAction(async (_, __, runSuper) => {
 subtask("snap", "Take a snapshot of the an ARM")
   .addOptionalParam(
     "arm",
-    "The name of the ARM. eg Lido, Oeth, Origin or EtherFi",
+    "The name of the ARM. eg Lido, Oeth, Origin, EtherFi or Ethena",
     "Lido",
     types.string,
   )
