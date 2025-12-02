@@ -112,5 +112,18 @@ simulate-deploys:
 simulate-sonic-deploys:
 	@forge script script/deploy/DeployManager.sol --fork-url $(SONIC_URL) -vvvv
 
+# Usage : make verify file=src/contracts/Proxy.sol addr=0xCED...
+SHELL := /bin/bash
+match:
+	@if [ -z "$(file)" ] || [ -z "$(addr)" ]; then \
+		echo "Usage: make verify file=<path> addr=<address>"; \
+		exit 1; \
+	fi
+	@name=$$(basename $(file) .sol); \
+	diff <(forge flatten $(file)) <(cast source --flatten -e $$ETHERSCAN_KEY $(addr)) \
+	&& printf "✅ Success: Local contract %-20s matches deployment at $(addr)\n" "$$name" \
+	|| printf "❌ Failure: Local contract %-20s differs from deployment at $(addr)\n" "$$name"
+
+
 # Override default `test` and `coverage` targets
-.PHONY: test coverage
+.PHONY: test coverage match
