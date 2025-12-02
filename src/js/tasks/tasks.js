@@ -78,7 +78,7 @@ subtask(
 )
   .addParam(
     "arm",
-    "Name of the ARM. eg Lido, Origin, Oeth or Ether.Fi",
+    "Name of the ARM. eg Lido, Origin, Oeth, EtherFi or Ethena",
     "Lido",
     types.string,
   )
