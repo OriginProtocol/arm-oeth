@@ -12,7 +12,6 @@ import {CapManager} from "contracts/CapManager.sol";
 import {MorphoMarket} from "contracts/markets/MorphoMarket.sol";
 import {EthenaUnstaker} from "contracts/EthenaARM.sol";
 import {IWETH, IStakedUSDe} from "contracts/Interfaces.sol";
-import {Abstract4626MarketWrapper} from "contracts/markets/Abstract4626MarketWrapper.sol";
 
 // Deployment imports
 import {GovProposal, GovSixHelper} from "contracts/utils/GovSixHelper.sol";
@@ -24,7 +23,7 @@ contract DeployEthenaARMScript is AbstractDeployScript {
     GovProposal public govProposal;
 
     string public constant override DEPLOY_NAME = "014_DeployEthenaARMScript";
-    bool public constant override proposalExecuted = false;
+    bool public constant override proposalExecuted = true;
 
     Proxy morphoMarketProxy;
     EthenaARM armImpl;

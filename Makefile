@@ -112,7 +112,6 @@ simulate-deploys:
 simulate-sonic-deploys:
 	@forge script script/deploy/DeployManager.sol --fork-url $(SONIC_URL) -vvvv
 
-
 # Usage : make verify file=src/contracts/Proxy.sol addr=0xCED...
 SHELL := /bin/bash
 match:
