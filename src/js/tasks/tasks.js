@@ -643,7 +643,7 @@ task("setTotalAssetsCap").setAction(async (_, __, runSuper) => {
 subtask("setPrices", "Update Lido ARM's swap prices")
   .addOptionalParam(
     "arm",
-    "The name of the ARM. eg Lido, Origin or EtherFi",
+    "The name of the ARM. eg Lido, Origin, EtherFi or Ethena",
     "Lido",
     types.string,
   )
