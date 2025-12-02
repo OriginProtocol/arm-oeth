@@ -27,6 +27,11 @@ const {
   claimEtherFiWithdrawals,
 } = require("./etherfiQueue");
 const {
+  requestEthenaWithdrawals,
+  claimEthenaWithdrawals,
+  ethenaWithdrawStatus,
+} = require("./ethenaQueue");
+const {
   requestWithdraw,
   claimWithdraw,
   snap,
@@ -734,7 +739,10 @@ subtask("setPrices", "Update Lido ARM's swap prices")
   .setAction(async (taskArgs) => {
     const signer = await getSigner();
 
+    console.log("SIGNER:", signer);
+    log("BEFORE RESOLVE ARM");
     const armContract = await resolveArmContract(taskArgs.arm);
+    log("AFTER RESOLVE ARM");
 
     const activeMarketAddress = await armContract.activeMarket();
     log(`Active lending market: ${activeMarketAddress}`);
@@ -744,10 +752,10 @@ subtask("setPrices", "Update Lido ARM's swap prices")
       activeMarketAddress === ethers.ZeroAddress
         ? undefined
         : await hre.ethers.getContractAt(
-          ["function market() external view returns (address)"],
-          activeMarketAddress,
-          signer,
-        );
+            ["function market() external view returns (address)"],
+            activeMarketAddress,
+            signer,
+          );
 
     await setPrices({ ...taskArgs, signer, arm: armContract, market });
   });
@@ -1060,6 +1068,78 @@ task("claimEtherFiWithdrawals").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
 
+// Ethena
+subtask(
+  "requestEthenaWithdrawals",
+  "Request withdrawals from the Ethena Staked USDe",
+)
+  .addOptionalParam(
+    "amount",
+    "Exact amount of sUSDe to withdraw. (default: all)",
+    undefined,
+    types.float,
+  )
+  .addOptionalParam(
+    "minAmount",
+    "Minimum amount of sUSDe to withdraw. (default: 1 sUSDe)",
+    1,
+    types.float,
+  )
+  .setAction(async (taskArgs) => {
+    const signer = await getSigner();
+    const susde = await resolveAsset("SUSDE");
+
+    const armContract = await resolveArmContract("Ethena");
+
+    await requestEthenaWithdrawals({
+      ...taskArgs,
+      signer,
+      susde,
+      arm: armContract,
+    });
+  });
+task("requestEthenaWithdrawals").setAction(async (_, __, runSuper) => {
+  return runSuper();
+});
+
+subtask("claimEthenaWithdrawals", "Claim requested withdrawals from Ethena")
+  .addOptionalParam(
+    "unstaker",
+    "Unstaker to use. (default: all)",
+    undefined,
+    types.string,
+  )
+  .setAction(async (taskArgs) => {
+    const signer = await getSigner();
+    const armContract = await resolveArmContract("Ethena");
+
+    await claimEthenaWithdrawals({
+      ...taskArgs,
+      signer,
+      arm: armContract,
+    });
+  });
+task("claimEthenaWithdrawals").setAction(async (_, __, runSuper) => {
+  return runSuper();
+});
+
+subtask(
+  "ethenaWithdrawStatus",
+  "Get the status of an Ethena withdrawal",
+).setAction(async (taskArgs) => {
+  const signer = await getSigner();
+  const armContract = await resolveArmContract("Ethena");
+
+  await ethenaWithdrawStatus({
+    ...taskArgs,
+    signer,
+    arm: armContract,
+  });
+});
+task("ethenaWithdrawStatus").setAction(async (_, __, runSuper) => {
+  return runSuper();
+});
+
 // Governance
 
 subtask("setOperator", "Set the operator of a contract")
@@ -1319,10 +1399,10 @@ subtask(
       activeMarket === ethers.ZeroAddress
         ? undefined
         : await hre.ethers.getContractAt(
-          ["function market() external view returns (address)"],
-          activeMarket,
-          signer,
-        );
+            ["function market() external view returns (address)"],
+            activeMarket,
+            signer,
+          );
 
     // Get the WS and OS token contracts
     const wSAddress = await armContract.token0();
