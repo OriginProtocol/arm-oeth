@@ -57,7 +57,7 @@ const withdrawRequestStatus = async ({ id, arm, vault }) => {
   }
 };
 
-const snap = async ({ arm, block, gas, amount, oneInch, kyber }) => {
+const snap = async ({ arm, block, days, gas, amount, oneInch, kyber }) => {
   const armContract = await resolveArmContract(arm);
 
   const blockTag = await getBlock(block);
@@ -72,7 +72,6 @@ const snap = async ({ arm, block, gas, amount, oneInch, kyber }) => {
   if (arm !== "Oeth") {
     await logWithdrawalQueue(armContract, blockTag, liquidityBalance);
 
-    const days = arm === "EtherFi" ? 5 : undefined;
     const armPrices = await logArmPrices({ block, gas, days }, armContract);
 
     const pair =

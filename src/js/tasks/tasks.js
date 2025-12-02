@@ -1116,6 +1116,12 @@ subtask("snap", "Take a snapshot of the an ARM")
     types.int,
   )
   .addOptionalParam("amount", "Swap quantity", 100, types.int)
+  .addOptionalParam(
+    "days",
+    "Days to unwrap the base asset",
+    undefined,
+    types.float,
+  )
   .addOptionalParam("oneInch", "Include 1Inch prices", true, types.boolean)
   .addOptionalParam("kyber", "Include Kyber prices", true, types.boolean)
   .setAction(snap);
