@@ -542,7 +542,7 @@ task("redeemAll").setAction(async (_, __, runSuper) => {
 subtask("depositARM", "Deposit to an ARM and receive ARM LP tokens")
   .addParam(
     "arm",
-    "Name of the ARM. eg Lido, Origin or Ether.Fi",
+    "Name of the ARM. eg Lido, Origin, EtherFi or Ethena",
     "Lido",
     types.string,
   )
@@ -566,7 +566,7 @@ task("depositARM").setAction(async (_, __, runSuper) => {
 subtask("requestRedeemARM", "Request redeem from an ARM")
   .addParam(
     "arm",
-    "Name of the ARM. eg Lido, Origin or EtherFi",
+    "Name of the ARM. eg Lido, Origin, EtherFi or Ethena",
     "Lido",
     types.string,
   )
@@ -584,7 +584,7 @@ task("requestRedeemARM").setAction(async (_, __, runSuper) => {
 subtask("claimRedeemARM", "Claim from a previously requested ARM redeem")
   .addParam(
     "arm",
-    "Name of the ARM. eg Lido, Origin or EtherFi",
+    "Name of the ARM. eg Lido, Origin, EtherFi or Ethena",
     "Lido",
     types.string,
   )
@@ -744,10 +744,10 @@ subtask("setPrices", "Update Lido ARM's swap prices")
       activeMarketAddress === ethers.ZeroAddress
         ? undefined
         : await hre.ethers.getContractAt(
-            ["function market() external view returns (address)"],
-            activeMarketAddress,
-            signer,
-          );
+          ["function market() external view returns (address)"],
+          activeMarketAddress,
+          signer,
+        );
 
     await setPrices({ ...taskArgs, signer, arm: armContract, market });
   });
@@ -1319,10 +1319,10 @@ subtask(
       activeMarket === ethers.ZeroAddress
         ? undefined
         : await hre.ethers.getContractAt(
-            ["function market() external view returns (address)"],
-            activeMarket,
-            signer,
-          );
+          ["function market() external view returns (address)"],
+          activeMarket,
+          signer,
+        );
 
     // Get the WS and OS token contracts
     const wSAddress = await armContract.token0();
