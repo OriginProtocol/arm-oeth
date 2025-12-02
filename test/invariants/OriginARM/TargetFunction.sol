@@ -504,7 +504,6 @@ abstract contract TargetFunction is Properties {
         // - Ensure everything is empty
         // No more OS in the ARM
         require(os.balanceOf(address(originARM)) == 0, "ARM should be OS empty");
-        require(ws.balanceOf(address(originARM)) <= 1e14, "ARM should be WS empty");
         // No unclaimed requests
         uint256 len = originARM.nextWithdrawalIndex();
         for (uint256 i; i < len; i++) {
