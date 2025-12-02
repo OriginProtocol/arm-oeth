@@ -840,7 +840,7 @@ task("lidoWithdrawStatus").setAction(async (_, __, runSuper) => {
 subtask("collectFees", "Collect the performance fees from an ARM")
   .addOptionalParam(
     "arm",
-    "The name of the ARM. eg Lido, Origin or EtherFi",
+    "The name of the ARM. eg Lido, Origin, EtherFi or Ethena",
     "Lido",
     types.string,
   )
@@ -945,7 +945,7 @@ task("setHarvester").setAction(async (_, __, runSuper) => {
 subtask("allocate", "Allocate to/from the active lending market")
   .addOptionalParam(
     "arm",
-    "The name of the ARM. eg Lido, OETH, Origin or EtherFi",
+    "The name of the ARM. eg Lido, OETH, Origin, EtherFi or Ethena",
     "Origin",
     types.string,
   )
@@ -982,7 +982,7 @@ task("allocate").setAction(async (_, __, runSuper) => {
 subtask("setARMBuffer", "Set the ARM buffer percentage")
   .addOptionalParam(
     "arm",
-    "The name of the ARM. eg Lido, OETH, Origin or EtherFi",
+    "The name of the ARM. eg Lido, OETH, Origin, EtherFi or Ethena",
     "Origin",
     types.string,
   )
