@@ -65,11 +65,11 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
     function test_swap_exact_susde_for_usde() external {
         // trader sells sUSDe and buys USDe, the ARM buys sUSDe as a
         // 20 bps discount
-        _swapExactTokensForTokens(susde, usde, 0.9980e36, 100 ether);
+        _swapExactTokensForTokens(susde, usde, 0.998e36, 100 ether);
         // 30 bps discount
-        _swapExactTokensForTokens(susde, usde, 0.9970e36, 1e15);
+        _swapExactTokensForTokens(susde, usde, 0.997e36, 1e15);
         // 40 bps discount
-        _swapExactTokensForTokens(susde, usde, 0.9960e36, 1 ether);
+        _swapExactTokensForTokens(susde, usde, 0.996e36, 1 ether);
     }
 
     function test_swap_exact_usde_for_susde() external {
@@ -83,11 +83,11 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
     function test_swapTokensForExactTokens() external {
         // trader sells sUSDe and buys USDe, the ARM buys sUSDe at a
         // 20 bps discount
-        _swapTokensForExactTokens(susde, usde, 0.9980e36, 10 ether);
+        _swapTokensForExactTokens(susde, usde, 0.998e36, 10 ether);
         // 30 bps discount
-        _swapTokensForExactTokens(susde, usde, 0.9970e36, 100 ether);
+        _swapTokensForExactTokens(susde, usde, 0.997e36, 100 ether);
         // 50 bps discount
-        _swapTokensForExactTokens(susde, usde, 0.9950e36, 10 ether);
+        _swapTokensForExactTokens(susde, usde, 0.995e36, 10 ether);
     }
 
     function _swapExactTokensForTokens(IERC20 inToken, IERC20 outToken, uint256 price, uint256 amountIn) internal {
@@ -102,7 +102,7 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
             expectedOut = IStakedUSDe(address(susde)).convertToShares(expectedOut);
 
             vm.prank(Mainnet.ARM_RELAYER);
-            ethenaARM.setPrices(0.9900e36, price);
+            ethenaARM.setPrices(0.99e36, price);
         } else {
             // Trader is selling sUSDe and buying USDE
             // the ARM is buying sUSDe and selling USDE
@@ -139,7 +139,7 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
             expectedIn = IStakedUSDe(address(susde)).convertToAssets(amountOut) * price / 1e36;
 
             vm.prank(Mainnet.ARM_RELAYER);
-            ethenaARM.setPrices(0.9900e36, price);
+            ethenaARM.setPrices(0.99e36, price);
         } else {
             // Trader is selling sUSDe and buying USDE
             // the ARM is buying sUSDe and selling USDE
@@ -209,7 +209,7 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
 
     function test_request_ethena_withdrawal_operator() external {
         // trader sells sUSDe and buys USDE, the ARM buys sUSDe as a 20 bps discount
-        _swapExactTokensForTokens(susde, usde, 0.9980e36, 100 ether);
+        _swapExactTokensForTokens(susde, usde, 0.998e36, 100 ether);
 
         // Operator requests an Ethena withdrawal
         vm.prank(Mainnet.ARM_RELAYER);
@@ -218,7 +218,7 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
 
     function test_request_ethena_withdrawal_owner() external {
         // trader sells sUSDe and buys USDE, the ARM buys sUSDe as a 20 bps discount
-        _swapExactTokensForTokens(susde, usde, 0.9980e36, 100 ether);
+        _swapExactTokensForTokens(susde, usde, 0.998e36, 100 ether);
 
         // Owner requests an Ethena withdrawal
         vm.prank(Mainnet.TIMELOCK);
@@ -227,7 +227,7 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
 
     function test_claim_ethena_request_with_delay() external {
         // trader sells sUSDe and buys USDE, the ARM buys sUSDe as a 20 bps discount
-        _swapExactTokensForTokens(susde, usde, 0.9980e36, 100 ether);
+        _swapExactTokensForTokens(susde, usde, 0.998e36, 100 ether);
 
         // Owner requests an Ethena withdrawal
         uint256 nextUnstakerIndex = ethenaARM.nextUnstakerIndex();
