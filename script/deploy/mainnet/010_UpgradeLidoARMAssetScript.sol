@@ -20,7 +20,7 @@ contract UpgradeLidoARMAssetScript is AbstractDeployScript {
     GovProposal public govProposal;
 
     string public constant override DEPLOY_NAME = "010_UpgradeLidoARMAssetScript";
-    bool public constant override proposalExecuted = true;
+    bool public constant override proposalExecuted = false;
 
     Proxy morphoMarketProxy;
     LidoARM lidoARMImpl;
