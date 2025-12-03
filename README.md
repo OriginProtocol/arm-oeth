@@ -320,7 +320,7 @@ yarn hardhat setActionVars --id 6c52f3a9-85d8-4c7f-8aee-90a95b13965c # autoClaim
 yarn hardhat setActionVars --id 82ead29e-88f1-43bc-a5ed-503fadb3e491 # collectEthenaFees
 yarn hardhat setActionVars --id 80565995-9bb2-42a0-bbd5-e15297b67050 # allocateEthena
 yarn hardhat setActionVars --id 3a49c165-62d9-43a2-bef0-901ce1d59bef # autoRequestEthenaWithdraw
-yarn hardhat setActionVars --id b362885c-a023-4fb5-8c04-1c33147465eb # autoClaimEtherFiWithdraw
+yarn hardhat setActionVars --id b362885c-a023-4fb5-8c04-1c33147465eb # autoClaimEthenaWithdraw
 
 # Mainnet
 yarn hardhat updateAction --id 93c010f9-05b5-460f-bd10-1205dd80a7c9 --file autoRequestWithdraw
@@ -343,7 +343,7 @@ yarn hardhat updateAction --id 6c52f3a9-85d8-4c7f-8aee-90a95b13965c --file autoC
 yarn hardhat updateAction --id 82ead29e-88f1-43bc-a5ed-503fadb3e491 --file collectEthenaFees
 yarn hardhat updateAction --id 80565995-9bb2-42a0-bbd5-e15297b67050 --file allocateEthena
 yarn hardhat updateAction --id 3a49c165-62d9-43a2-bef0-901ce1d59bef --file autoRequestEthenaWithdraw
-yarn hardhat updateAction --id b362885c-a023-4fb5-8c04-1c33147465eb --file autoClaimEtherFiWithdraw
+yarn hardhat updateAction --id b362885c-a023-4fb5-8c04-1c33147465eb --file autoClaimEthenaWithdraw
 ```
 
 `rollup` can be installed globally to avoid the `yarn` prefix.
