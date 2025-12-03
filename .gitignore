@@ -15,7 +15,6 @@ logs
 
 # npm
 node_modules
-yarn.lock
 *.log
 
 # hardhat
