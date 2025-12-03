@@ -1,3 +1,4 @@
+const path = require("path");
 const resolve = require("@rollup/plugin-node-resolve");
 const commonjs = require("@rollup/plugin-commonjs");
 const json = require("@rollup/plugin-json");
@@ -28,177 +29,40 @@ const commonConfig = {
     "@openzeppelin/defender-relay-client/lib/ethers",
     "@nomicfoundation/solidity-analyzer-darwin-arm64",
     "@nomicfoundation/solidity-analyzer-darwin-x64",
+    /^@nomicfoundation\/edr-.*$/,
     "fsevents",
   ],
 };
 
-module.exports = [
-  {
-    input: "autoRequestWithdraw.js",
-    output: {
-      file: "dist/autoRequestWithdraw/index.js",
-      format: "cjs",
-    },
-    ...commonConfig,
-  },
-  {
-    input: "autoClaimWithdraw.js",
-    output: {
-      file: "dist/autoClaimWithdraw/index.js",
-      format: "cjs",
-    },
-    ...commonConfig,
-  },
-  {
-    input: "autoRequestWithdrawSonic.js",
-    output: {
-      file: "dist/autoRequestWithdrawSonic/index.js",
-      format: "cjs",
-    },
-    ...commonConfig,
-  },
-  {
-    input: "autoClaimWithdrawSonic.js",
-    output: {
-      file: "dist/autoClaimWithdrawSonic/index.js",
-      format: "cjs",
-    },
-    ...commonConfig,
-  },
-  {
-    input: "autoRequestLidoWithdraw.js",
-    output: {
-      file: "dist/autoRequestLidoWithdraw/index.js",
-      format: "cjs",
-    },
-    ...commonConfig,
-  },
-  {
-    input: "autoClaimLidoWithdraw.js",
-    output: {
-      file: "dist/autoClaimLidoWithdraw/index.js",
-      format: "cjs",
-    },
-    ...commonConfig,
-  },
-  {
-    input: "autoRequestEtherFiWithdraw.js",
-    output: {
-      file: "dist/autoRequestEtherFiWithdraw/index.js",
-      format: "cjs",
-    },
-    ...commonConfig,
-  },
-  {
-    input: "autoClaimEtherFiWithdraw.js",
-    output: {
-      file: "dist/autoClaimEtherFiWithdraw/index.js",
-      format: "cjs",
-    },
-    ...commonConfig,
-  },
-  {
-    input: "autoRequestEthenaWithdraw.js",
-    output: {
-      file: "dist/autoRequestEthenaWithdraw/index.js",
-      format: "cjs",
-    },
-    ...commonConfig,
-  },
-  {
-    input: "autoClaimEthenaWithdraw.js",
-    output: {
-      file: "dist/autoClaimEthenaWithdraw/index.js",
-      format: "cjs",
-    },
-    ...commonConfig,
-  },
-  {
-    input: "collectLidoFees.js",
-    output: {
-      file: "dist/collectLidoFees/index.js",
-      format: "cjs",
-    },
-    ...commonConfig,
-  },
-  {
-    input: "collectFeesSonic.js",
-    output: {
-      file: "dist/collectFeesSonic/index.js",
-      format: "cjs",
-    },
-    ...commonConfig,
-  },
-  {
-    input: "collectEtherFiFees.js",
-    output: {
-      file: "dist/collectEtherFiFees/index.js",
-      format: "cjs",
-    },
-    ...commonConfig,
-  },
-  {
-    input: "collectEthenaFees.js",
-    output: {
-      file: "dist/collectEthenaFees/index.js",
-      format: "cjs",
-    },
-    ...commonConfig,
-  },
-  {
-    input: "allocateSonic.js",
-    output: {
-      file: "dist/allocateSonic/index.js",
-      format: "cjs",
-    },
-    ...commonConfig,
-  },
-  {
-    input: "collectRewardsSonic.js",
-    output: {
-      file: "dist/collectRewardsSonic/index.js",
-      format: "cjs",
-    },
-    ...commonConfig,
-  },
-  {
-    input: "setPrices.js",
-    output: {
-      file: "dist/setPrices/index.js",
-      format: "cjs",
-    },
-    ...commonConfig,
-  },
-  {
-    input: "setOSSiloPriceAction.js",
-    output: {
-      file: "dist/setOSSiloPriceAction/index.js",
-      format: "cjs",
-    },
-    ...commonConfig,
-  },
-  {
-    input: "allocateLido.js",
-    output: {
-      file: "dist/allocateLido/index.js",
-      format: "cjs",
-    },
-    ...commonConfig,
-  },
-  {
-    input: "allocateEtherFi.js",
-    output: {
-      file: "dist/allocateEtherFi/index.js",
-      format: "cjs",
-    },
-    ...commonConfig,
-  },
-  {
-    input: "allocateEthena.js",
-    output: {
-      file: "dist/allocateEthena/index.js",
-      format: "cjs",
-    },
-    ...commonConfig,
-  },
+const actions = [
+  "autoRequestWithdraw",
+  "autoClaimWithdraw",
+  "autoRequestWithdrawSonic",
+  "autoClaimWithdrawSonic",
+  "autoRequestLidoWithdraw",
+  "autoClaimLidoWithdraw",
+  "autoRequestEtherFiWithdraw",
+  "autoClaimEtherFiWithdraw",
+  "autoRequestEthenaWithdraw",
+  "autoClaimEthenaWithdraw",
+  "collectLidoFees",
+  "collectFeesSonic",
+  "collectEtherFiFees",
+  "collectEthenaFees",
+  "allocateSonic",
+  "collectRewardsSonic",
+  "setPrices",
+  "setOSSiloPriceAction",
+  "allocateLido",
+  "allocateEtherFi",
+  "allocateEthena",
 ];
+
+module.exports = actions.map((action) => ({
+  input: path.resolve(__dirname, `${action}.js`),
+  output: {
+    file: path.resolve(__dirname, `dist/${action}/index.js`),
+    format: "cjs",
+  },
+  ...commonConfig,
+}));
