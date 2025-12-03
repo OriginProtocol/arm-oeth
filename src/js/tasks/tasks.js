@@ -739,10 +739,7 @@ subtask("setPrices", "Update Lido ARM's swap prices")
   .setAction(async (taskArgs) => {
     const signer = await getSigner();
 
-    console.log("SIGNER:", signer);
-    log("BEFORE RESOLVE ARM");
     const armContract = await resolveArmContract(taskArgs.arm);
-    log("AFTER RESOLVE ARM");
 
     const activeMarketAddress = await armContract.activeMarket();
     log(`Active lending market: ${activeMarketAddress}`);
