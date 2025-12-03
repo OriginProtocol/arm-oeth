@@ -98,6 +98,22 @@ module.exports = [
     ...commonConfig,
   },
   {
+    input: "autoRequestEthenaWithdraw.js",
+    output: {
+      file: "dist/autoRequestEthenaWithdraw/index.js",
+      format: "cjs",
+    },
+    ...commonConfig,
+  },
+  {
+    input: "autoClaimEthenaWithdraw.js",
+    output: {
+      file: "dist/autoClaimEthenaWithdraw/index.js",
+      format: "cjs",
+    },
+    ...commonConfig,
+  },
+  {
     input: "collectLidoFees.js",
     output: {
       file: "dist/collectLidoFees/index.js",
@@ -117,6 +133,14 @@ module.exports = [
     input: "collectEtherFiFees.js",
     output: {
       file: "dist/collectEtherFiFees/index.js",
+      format: "cjs",
+    },
+    ...commonConfig,
+  },
+  {
+    input: "collectEthenaFees.js",
+    output: {
+      file: "dist/collectEthenaFees/index.js",
       format: "cjs",
     },
     ...commonConfig,
@@ -165,6 +189,14 @@ module.exports = [
     input: "allocateEtherFi.js",
     output: {
       file: "dist/allocateEtherFi/index.js",
+      format: "cjs",
+    },
+    ...commonConfig,
+  },
+  {
+    input: "allocateEthena.js",
+    output: {
+      file: "dist/allocateEthena/index.js",
       format: "cjs",
     },
     ...commonConfig,

@@ -58,9 +58,13 @@ async function depositARM({ amount, asset, arm }) {
       .connect(signer)
       .deposit(armAddress, { value: amountBn });
     await logTxDetails(tx, "zap deposit");
+  } else if (asset == "USDE") {
+    log(`About to deposit ${amount} USDe to the ${arm} ARM`);
+    const tx = await armContract.connect(signer).deposit(amountBn);
+    await logTxDetails(tx, "deposit");
   } else {
     throw new Error(
-      `Unsupported asset type: ${asset}. Supported types are WETH, ETH, WS, S.`,
+      `Unsupported asset type: ${asset}. Supported types are WETH, ETH, WS, S and USDe.`,
     );
   }
 }

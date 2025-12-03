@@ -27,6 +27,11 @@ const {
   claimEtherFiWithdrawals,
 } = require("./etherfiQueue");
 const {
+  requestEthenaWithdrawals,
+  claimEthenaWithdrawals,
+  ethenaWithdrawStatus,
+} = require("./ethenaQueue");
+const {
   requestWithdraw,
   claimWithdraw,
   snap,
@@ -78,7 +83,7 @@ subtask(
 )
   .addParam(
     "arm",
-    "Name of the ARM. eg Lido, Origin, Oeth or Ether.Fi",
+    "Name of the ARM. eg Lido, Origin, Oeth, EtherFi or Ethena",
     "Lido",
     types.string,
   )
@@ -542,7 +547,7 @@ task("redeemAll").setAction(async (_, __, runSuper) => {
 subtask("depositARM", "Deposit to an ARM and receive ARM LP tokens")
   .addParam(
     "arm",
-    "Name of the ARM. eg Lido, Origin or Ether.Fi",
+    "Name of the ARM. eg Lido, Origin, EtherFi or Ethena",
     "Lido",
     types.string,
   )
@@ -566,7 +571,7 @@ task("depositARM").setAction(async (_, __, runSuper) => {
 subtask("requestRedeemARM", "Request redeem from an ARM")
   .addParam(
     "arm",
-    "Name of the ARM. eg Lido, Origin or EtherFi",
+    "Name of the ARM. eg Lido, Origin, EtherFi or Ethena",
     "Lido",
     types.string,
   )
@@ -584,7 +589,7 @@ task("requestRedeemARM").setAction(async (_, __, runSuper) => {
 subtask("claimRedeemARM", "Claim from a previously requested ARM redeem")
   .addParam(
     "arm",
-    "Name of the ARM. eg Lido, Origin or EtherFi",
+    "Name of the ARM. eg Lido, Origin, EtherFi or Ethena",
     "Lido",
     types.string,
   )
@@ -643,7 +648,7 @@ task("setTotalAssetsCap").setAction(async (_, __, runSuper) => {
 subtask("setPrices", "Update Lido ARM's swap prices")
   .addOptionalParam(
     "arm",
-    "The name of the ARM. eg Lido, Origin or EtherFi",
+    "The name of the ARM. eg Lido, Origin, EtherFi or Ethena",
     "Lido",
     types.string,
   )
@@ -840,7 +845,7 @@ task("lidoWithdrawStatus").setAction(async (_, __, runSuper) => {
 subtask("collectFees", "Collect the performance fees from an ARM")
   .addOptionalParam(
     "arm",
-    "The name of the ARM. eg Lido, Origin or EtherFi",
+    "The name of the ARM. eg Lido, Origin, EtherFi or Ethena",
     "Lido",
     types.string,
   )
@@ -945,7 +950,7 @@ task("setHarvester").setAction(async (_, __, runSuper) => {
 subtask("allocate", "Allocate to/from the active lending market")
   .addOptionalParam(
     "arm",
-    "The name of the ARM. eg Lido, OETH, Origin or EtherFi",
+    "The name of the ARM. eg Lido, OETH, Origin, EtherFi or Ethena",
     "Origin",
     types.string,
   )
@@ -982,7 +987,7 @@ task("allocate").setAction(async (_, __, runSuper) => {
 subtask("setARMBuffer", "Set the ARM buffer percentage")
   .addOptionalParam(
     "arm",
-    "The name of the ARM. eg Lido, OETH, Origin or EtherFi",
+    "The name of the ARM. eg Lido, OETH, Origin, EtherFi or Ethena",
     "Origin",
     types.string,
   )
@@ -1060,6 +1065,78 @@ task("claimEtherFiWithdrawals").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
 
+// Ethena
+subtask(
+  "requestEthenaWithdrawals",
+  "Request withdrawals from the Ethena Staked USDe",
+)
+  .addOptionalParam(
+    "amount",
+    "Exact amount of sUSDe to withdraw. (default: all)",
+    undefined,
+    types.float,
+  )
+  .addOptionalParam(
+    "minAmount",
+    "Minimum amount of sUSDe to withdraw. (default: 1 sUSDe)",
+    1,
+    types.float,
+  )
+  .setAction(async (taskArgs) => {
+    const signer = await getSigner();
+    const susde = await resolveAsset("SUSDE");
+
+    const armContract = await resolveArmContract("Ethena");
+
+    await requestEthenaWithdrawals({
+      ...taskArgs,
+      signer,
+      susde,
+      arm: armContract,
+    });
+  });
+task("requestEthenaWithdrawals").setAction(async (_, __, runSuper) => {
+  return runSuper();
+});
+
+subtask("claimEthenaWithdrawals", "Claim requested withdrawals from Ethena")
+  .addOptionalParam(
+    "unstaker",
+    "Unstaker to use. (default: all)",
+    undefined,
+    types.string,
+  )
+  .setAction(async (taskArgs) => {
+    const signer = await getSigner();
+    const armContract = await resolveArmContract("Ethena");
+
+    await claimEthenaWithdrawals({
+      ...taskArgs,
+      signer,
+      arm: armContract,
+    });
+  });
+task("claimEthenaWithdrawals").setAction(async (_, __, runSuper) => {
+  return runSuper();
+});
+
+subtask(
+  "ethenaWithdrawStatus",
+  "Get the status of an Ethena withdrawal",
+).setAction(async (taskArgs) => {
+  const signer = await getSigner();
+  const armContract = await resolveArmContract("Ethena");
+
+  await ethenaWithdrawStatus({
+    ...taskArgs,
+    signer,
+    arm: armContract,
+  });
+});
+task("ethenaWithdrawStatus").setAction(async (_, __, runSuper) => {
+  return runSuper();
+});
+
 // Governance
 
 subtask("setOperator", "Set the operator of a contract")
@@ -1104,7 +1181,7 @@ task("snapMarket").setAction(async (_, __, runSuper) => {
 subtask("snap", "Take a snapshot of the an ARM")
   .addOptionalParam(
     "arm",
-    "The name of the ARM. eg Lido, Oeth, Origin or EtherFi",
+    "The name of the ARM. eg Lido, Oeth, Origin, EtherFi or Ethena",
     "Lido",
     types.string,
   )

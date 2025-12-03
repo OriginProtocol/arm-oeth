@@ -21,10 +21,12 @@ addresses.mainnet.stETH = "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84";
 addresses.mainnet.wstETH = "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0";
 addresses.mainnet.eETH = "0x35fA164735182de50811E8e2E824cFb9B6118ac2";
 addresses.mainnet.weETH = "0xcd5fe23c85820f7b72d0926fc9b05b43e359b7ee";
+addresses.mainnet.sUSDe = "0x9D39A5DE30e57443BfF2A8307A4256c8797A3497";
 
 addresses.mainnet.OethARM = "0x6bac785889A4127dB0e0CeFEE88E0a9F1Aaf3cC7";
 addresses.mainnet.lidoARM = "0x85B78AcA6Deae198fBF201c82DAF6Ca21942acc6";
 addresses.mainnet.etherfiARM = "0xfB0A3CF9B019BFd8827443d131b235B3E0FC58d2";
+addresses.mainnet.ethenaARM = "0xCEDa2d856238aA0D12f6329de20B9115f07C366d";
 
 // Lido
 addresses.mainnet.lidoWithdrawalQueue =

@@ -66,9 +66,11 @@ const otherSymbol = (arm, symbol) => {
     return symbol === "stETH" ? "WETH" : "stETH";
   } else if (arm === "EtherFi") {
     return symbol === "EETH" ? "WETH" : "EETH";
+  } else if (arm === "Ethena") {
+    return symbol === "SUSDE" ? "USDE" : "SUSDE";
   }
   throw new Error(
-    `Unknown ARM ${arm}. Has to be Oeth, Lido, Origin or EtherFi`,
+    `Unknown ARM ${arm}. Has to be Oeth, Lido, Origin, EtherFi or Ethena`,
   );
 };
 
