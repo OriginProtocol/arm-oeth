@@ -25,7 +25,7 @@ const handler = async (event) => {
   await allocate({
     signer,
     arm,
-    threshold: 20,
+    threshold: 5000,
     maxGasPrice: 5,
   });
 };
