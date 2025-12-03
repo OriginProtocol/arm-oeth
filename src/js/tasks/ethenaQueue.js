@@ -1,4 +1,5 @@
 const { formatUnits, parseUnits } = require("ethers");
+const { ethers } = require("ethers");
 const { logTxDetails } = require("../utils/txLogger");
 const log = require("../utils/logger")("task:ethenaQueue");
 
