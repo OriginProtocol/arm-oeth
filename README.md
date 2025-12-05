@@ -25,6 +25,7 @@ See the [ARM Registry](https://docs.originprotocol.com/registry/contracts/arm-re
 * @param amountIn The amount of input tokens to send.
 * @param amountOutMin The minimum amount of output tokens that must be received for the transaction not to revert.
 * @param to Recipient of the output tokens.
+* @return amounts The input and output token amounts.
 */
 function swapExactTokensForTokens(
     IERC20 inToken,
@@ -32,7 +33,7 @@ function swapExactTokensForTokens(
     uint256 amountIn,
     uint256 amountOutMin,
     address to
-) external;
+) external returns (uint256[] memory amounts);
 
 /**
 * @notice Uniswap V2 Router compatible interface. Swaps an exact amount of
@@ -65,6 +66,7 @@ function swapExactTokensForTokens(
 * @param amountOut The amount of output tokens to receive.
 * @param amountInMax The maximum amount of input tokens that can be required before the transaction reverts.
 * @param to Recipient of the output tokens.
+* @return amounts The input and output token amounts.
 */
 function swapTokensForExactTokens(
     IERC20 inToken,
@@ -72,7 +74,7 @@ function swapTokensForExactTokens(
     uint256 amountOut,
     uint256 amountInMax,
     address to
-) external;
+) external returns (uint256[] memory amounts);
 
 /**
 * @notice Uniswap V2 Router compatible interface. Receive an exact amount of
@@ -94,6 +96,13 @@ function swapTokensForExactTokens(
     address to,
     uint256 deadline
 ) external returns (uint256[] memory amounts);
+
+/**
+ * @notice Get the available liquidity for a each token in the ARM.
+ * @return reserve0 The available liquidity for token0
+ * @return reserve1 The available liquidity for token1
+ */
+function getReserves() external view returns (uint256 reserve0, uint256 reserve1);
 ```
 
 ## Liquidity Provider Interface
@@ -154,6 +163,11 @@ function convertToAssets(uint256 shares) public view returns (uint256 assets);
 /// less the liquidity assets reserved for the ARM's withdrawal queue and accrued fees.
 /// @return The total amount of assets in the ARM
 function totalAssets() public view virtual returns (uint256);
+
+/// @notice The liquidity asset used for deposits and redeems. eg WETH or wS
+/// Used for compatibility with ERC-4626
+/// @return The address of the liquidity asset
+function asset() external view virtual returns (address);
 ```
 
 ## Development
@@ -209,7 +223,9 @@ make gas
 ## Deployment
 
 ### Store your deployer private key
+
 We use ERC-2335 to encode private key. To be sure to never reveal it, we use the cast wallet PK management.
+
 ```bash
 cast wallet import deployerKey --interactive
 ```
@@ -273,13 +289,9 @@ For this to work, a Defender Team API key with `Manage Actions` capabilities is 
 The following will set the Defender Team API key and bundle the Actions code ready for upload.
 
 ```bash
-cd ./src/js/actions
+# Set the DEFENDER_TEAM_KEY and DEFENDER_TEAM_SECRET env vars in the .env file
 
-# Export the Defender Team API key. This is different to the Defender Relayer API key.
-export API_KEY=
-export API_SECRET=
-
-npx rollup -c
+yarn rollup -c src/js/actions/rollup.config.cjs
 ```
 
 The following will upload the different Action bundles to Defender.
@@ -287,41 +299,53 @@ The following will upload the different Action bundles to Defender.
 ```bash
 
 # Set the DEBUG environment variable to oeth* for the Defender Action
-npx hardhat setActionVars --id 93c010f9-05b5-460f-bd10-1205dd80a7c9
-npx hardhat setActionVars --id 563d8d0c-17dc-46d3-8955-e4824864869f
-npx hardhat setActionVars --id c010fb76-ea63-409d-9981-69322d27993a
-npx hardhat setActionVars --id 127171fd-7b85-497e-8335-fd7907c08386
-npx hardhat setActionVars --id 84b5f134-8351-4402-8f6a-fb4376034bc4
-npx hardhat setActionVars --id ffcfc580-7b0a-42ed-a4f2-3f0a3add9779 --name ONEINCH_API_KEY # Don't forget to run `export ONEINCH_API_KEY=...` first!
-npx hardhat setActionVars --id 32dbc67b-89f3-4856-8f3d-ad4dc5a09322
-npx hardhat setActionVars --id 7a0cb2c9-11c2-41dd-bcd0-d7c2dbda6af6
-npx hardhat setActionVars --id a9fc4c86-0506-4809-afbc-93b5e558cb68
-npx hardhat setActionVars --id 12977d51-d107-45eb-ac20-45942009ab01
-npx hardhat setActionVars --id 6ec46510-0b8e-48b4-a4c8-de759aad0ba4
-npx hardhat setActionVars --id 6d148f26-54a6-4377-92f2-3148d572eea3 --name ONEINCH_API_KEY # Don't forget to run `export ONEINCH_API_KEY=...` first!
-npx hardhat setActionVars --id acfbb7d6-5ea6-4ffc-a758-fa4b4f584dd1
-
-# The Defender autotask client uses generic env var names so we'll set them first from the values in the .env file
-export API_KEY=
-export API_SECRET=
+yarn hardhat setActionVars --id 93c010f9-05b5-460f-bd10-1205dd80a7c9
+yarn hardhat setActionVars --id 563d8d0c-17dc-46d3-8955-e4824864869f
+yarn hardhat setActionVars --id c010fb76-ea63-409d-9981-69322d27993a
+yarn hardhat setActionVars --id 127171fd-7b85-497e-8335-fd7907c08386
+yarn hardhat setActionVars --id 84b5f134-8351-4402-8f6a-fb4376034bc4
+yarn hardhat setActionVars --id ffcfc580-7b0a-42ed-a4f2-3f0a3add9779 --name ONEINCH_API_KEY # Don't forget to run `export ONEINCH_API_KEY=...` first!
+yarn hardhat setActionVars --id 32dbc67b-89f3-4856-8f3d-ad4dc5a09322
+yarn hardhat setActionVars --id 7a0cb2c9-11c2-41dd-bcd0-d7c2dbda6af6
+yarn hardhat setActionVars --id a9fc4c86-0506-4809-afbc-93b5e558cb68
+yarn hardhat setActionVars --id 12977d51-d107-45eb-ac20-45942009ab01
+yarn hardhat setActionVars --id 6ec46510-0b8e-48b4-a4c8-de759aad0ba4
+yarn hardhat setActionVars --id 6d148f26-54a6-4377-92f2-3148d572eea3 --name ONEINCH_API_KEY # Don't forget to run `export ONEINCH_API_KEY=...` first!
+yarn hardhat setActionVars --id acfbb7d6-5ea6-4ffc-a758-fa4b4f584dd1 # allocateLido
+yarn hardhat setActionVars --id 6e26641e-4132-4824-bb80-7c891fd31455 # collectEtherFiFees
+yarn hardhat setActionVars --id 002c2b0d-9522-4d5f-a340-9713ee43a1c3 # allocateEtherFi
+yarn hardhat setActionVars --id 062cfee1-c34e-43ae-beb0-de62bc668bbd # autoRequestEtherFiWithdraw
+yarn hardhat setActionVars --id 6c52f3a9-85d8-4c7f-8aee-90a95b13965c # autoClaimEtherFiWithdraw
+yarn hardhat setActionVars --id 82ead29e-88f1-43bc-a5ed-503fadb3e491 # collectEthenaFees
+yarn hardhat setActionVars --id 80565995-9bb2-42a0-bbd5-e15297b67050 # allocateEthena
+yarn hardhat setActionVars --id 3a49c165-62d9-43a2-bef0-901ce1d59bef # autoRequestEthenaWithdraw
+yarn hardhat setActionVars --id b362885c-a023-4fb5-8c04-1c33147465eb # autoClaimEthenaWithdraw
 
 # Mainnet
-npx defender-autotask update-code 93c010f9-05b5-460f-bd10-1205dd80a7c9 ./dist/autoRequestWithdraw
-npx defender-autotask update-code 563d8d0c-17dc-46d3-8955-e4824864869f ./dist/autoClaimWithdraw
-npx defender-autotask update-code c010fb76-ea63-409d-9981-69322d27993a ./dist/autoRequestLidoWithdraw
-npx defender-autotask update-code 127171fd-7b85-497e-8335-fd7907c08386 ./dist/autoClaimLidoWithdraw
-npx defender-autotask update-code 84b5f134-8351-4402-8f6a-fb4376034bc4 ./dist/collectLidoFees
-npx defender-autotask update-code ffcfc580-7b0a-42ed-a4f2-3f0a3add9779 ./dist/setPrices
-npx defender-autotask update-code 32dbc67b-89f3-4856-8f3d-ad4dc5a09322 ./dist/collectFeesSonic
-npx defender-autotask update-code 7a0cb2c9-11c2-41dd-bcd0-d7c2dbda6af6 ./dist/allocateSonic
-npx defender-autotask update-code a9fc4c86-0506-4809-afbc-93b5e558cb68 ./dist/collectRewardsSonic
-npx defender-autotask update-code 12977d51-d107-45eb-ac20-45942009ab01 ./dist/autoRequestWithdrawSonic
-npx defender-autotask update-code 6ec46510-0b8e-48b4-a4c8-de759aad0ba4 ./dist/autoClaimWithdrawSonic
-npx defender-autotask update-code 6d148f26-54a6-4377-92f2-3148d572eea3 ./dist/setOSSiloPriceAction
-npx defender-autotask update-code acfbb7d6-5ea6-4ffc-a758-fa4b4f584dd1 ./dist/allocateLido
+yarn hardhat updateAction --id 93c010f9-05b5-460f-bd10-1205dd80a7c9 --file autoRequestWithdraw
+yarn hardhat updateAction --id 563d8d0c-17dc-46d3-8955-e4824864869f --file autoClaimWithdraw
+yarn hardhat updateAction --id c010fb76-ea63-409d-9981-69322d27993a --file autoRequestLidoWithdraw
+yarn hardhat updateAction --id 127171fd-7b85-497e-8335-fd7907c08386 --file autoClaimLidoWithdraw
+yarn hardhat updateAction --id 84b5f134-8351-4402-8f6a-fb4376034bc4 --file collectLidoFees
+yarn hardhat updateAction --id ffcfc580-7b0a-42ed-a4f2-3f0a3add9779 --file setPrices
+yarn hardhat updateAction --id 32dbc67b-89f3-4856-8f3d-ad4dc5a09322 --file collectFeesSonic
+yarn hardhat updateAction --id 7a0cb2c9-11c2-41dd-bcd0-d7c2dbda6af6 --file allocateSonic
+yarn hardhat updateAction --id a9fc4c86-0506-4809-afbc-93b5e558cb68 --file collectRewardsSonic
+yarn hardhat updateAction --id 12977d51-d107-45eb-ac20-45942009ab01 --file autoRequestWithdrawSonic
+yarn hardhat updateAction --id 6ec46510-0b8e-48b4-a4c8-de759aad0ba4 --file autoClaimWithdrawSonic
+yarn hardhat updateAction --id 6d148f26-54a6-4377-92f2-3148d572eea3 --file setOSSiloPriceAction
+yarn hardhat updateAction --id acfbb7d6-5ea6-4ffc-a758-fa4b4f584dd1 --file allocateLido
+yarn hardhat updateAction --id 6e26641e-4132-4824-bb80-7c891fd31455 --file collectEtherFiFees
+yarn hardhat updateAction --id 002c2b0d-9522-4d5f-a340-9713ee43a1c3 --file allocateEtherFi
+yarn hardhat updateAction --id 062cfee1-c34e-43ae-beb0-de62bc668bbd --file autoRequestEtherFiWithdraw
+yarn hardhat updateAction --id 6c52f3a9-85d8-4c7f-8aee-90a95b13965c --file autoClaimEtherFiWithdraw
+yarn hardhat updateAction --id 82ead29e-88f1-43bc-a5ed-503fadb3e491 --file collectEthenaFees
+yarn hardhat updateAction --id 80565995-9bb2-42a0-bbd5-e15297b67050 --file allocateEthena
+yarn hardhat updateAction --id 3a49c165-62d9-43a2-bef0-901ce1d59bef --file autoRequestEthenaWithdraw
+yarn hardhat updateAction --id b362885c-a023-4fb5-8c04-1c33147465eb --file autoClaimEthenaWithdraw
 ```
 
-`rollup` and `defender-autotask` can be installed globally to avoid the `npx` prefix.
+`rollup` can be installed globally to avoid the `yarn` prefix.
 
 The Defender Actions need to be under 5MB in size. The [rollup-plugin-visualizer](https://www.npmjs.com/package/rollup-plugin-visualizer) can be used to visualize the size of an Action's dependencies.
 A `stats.html` file is generated in the`src/js/actions` folder that can be opened in a browser to see the size of the Action's dependencies.

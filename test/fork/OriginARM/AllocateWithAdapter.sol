@@ -51,6 +51,7 @@ contract Fork_Concrete_OriginARM_AllocateWithAdapter_Test_ is Fork_Shared_Test {
         assertEq(market.balanceOf(address(siloMarket)), 0, "shares before");
         assertApproxEqAbs(originARM.totalAssets(), DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, 1, "totalAssets before");
         uint256 expectedShares = market.convertToShares(DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY);
+        int256 expectedLiquidityDelta = (DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY).toInt256();
 
         // Expected event
         vm.expectEmit(address(market));
@@ -58,7 +59,7 @@ contract Fork_Concrete_OriginARM_AllocateWithAdapter_Test_ is Fork_Shared_Test {
             address(siloMarket), address(siloMarket), DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, expectedShares
         );
         vm.expectEmit(address(originARM));
-        emit AbstractARM.Allocated(address(siloMarket), (DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY).toInt256());
+        emit AbstractARM.Allocated(address(siloMarket), expectedLiquidityDelta, expectedLiquidityDelta);
 
         // Main call
         originARM.allocate();
@@ -83,16 +84,16 @@ contract Fork_Concrete_OriginARM_AllocateWithAdapter_Test_ is Fork_Shared_Test {
         assertApproxEqAbs(marketBalanceBefore, sharesBefore, 1, "shares before");
         assertApproxEqAbs(originARM.totalAssets(), DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, 1, "totalAssets before");
 
-        int256 expectedAmount = getLiquidityDelta();
-        uint256 expectedShares = market.previewWithdraw(abs(expectedAmount));
+        int256 expectedLiquidityDelta = getLiquidityDelta();
+        uint256 expectedShares = market.previewWithdraw(abs(expectedLiquidityDelta));
 
         // Expected event
         vm.expectEmit(address(market));
         emit IERC4626.Withdraw(
-            address(siloMarket), address(originARM), address(siloMarket), abs(expectedAmount), expectedShares
+            address(siloMarket), address(originARM), address(siloMarket), abs(expectedLiquidityDelta), expectedShares
         );
         vm.expectEmit(address(originARM));
-        emit AbstractARM.Allocated(address(siloMarket), expectedAmount);
+        emit AbstractARM.Allocated(address(siloMarket), expectedLiquidityDelta, expectedLiquidityDelta);
 
         // Main call
         originARM.allocate();
@@ -117,17 +118,17 @@ contract Fork_Concrete_OriginARM_AllocateWithAdapter_Test_ is Fork_Shared_Test {
         assertApproxEqAbs(marketBalanceBefore, sharesBefore, 1, "shares before");
         assertApproxEqAbs(originARM.totalAssets(), DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, 1, "totalAssets before");
 
-        int256 expectedAmount = getLiquidityDelta();
-        uint256 expectedShares = market.previewWithdraw(abs(expectedAmount));
-        assertApproxEqAbs(abs(expectedAmount), DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, 1, "expectedAmount");
+        int256 expectedLiquidityDelta = getLiquidityDelta();
+        uint256 expectedShares = market.previewWithdraw(abs(expectedLiquidityDelta));
+        assertApproxEqAbs(abs(expectedLiquidityDelta), DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, 1, "expectedLiquidityDelta");
 
         // Expected event
         vm.expectEmit(address(market));
         emit IERC4626.Withdraw(
-            address(siloMarket), address(originARM), address(siloMarket), abs(expectedAmount), expectedShares
+            address(siloMarket), address(originARM), address(siloMarket), abs(expectedLiquidityDelta), expectedShares
         );
         vm.expectEmit(address(originARM));
-        emit AbstractARM.Allocated(address(siloMarket), expectedAmount);
+        emit AbstractARM.Allocated(address(siloMarket), expectedLiquidityDelta, expectedLiquidityDelta);
 
         // Main call
         originARM.allocate();
@@ -156,6 +157,7 @@ contract Fork_Concrete_OriginARM_AllocateWithAdapter_Test_ is Fork_Shared_Test {
 
         uint256 expectedShares = siloMarket.maxRedeem(address(originARM));
         uint256 expectedAmount = market.convertToAssets(expectedShares);
+        int256 expectedLiquidityDelta = getLiquidityDelta();
 
         // Expected event
         vm.expectEmit(address(market));
@@ -163,7 +165,7 @@ contract Fork_Concrete_OriginARM_AllocateWithAdapter_Test_ is Fork_Shared_Test {
             address(siloMarket), address(originARM), address(siloMarket), expectedAmount, expectedShares
         );
         vm.expectEmit(address(originARM));
-        emit AbstractARM.Allocated(address(siloMarket), getLiquidityDelta());
+        emit AbstractARM.Allocated(address(siloMarket), expectedLiquidityDelta, expectedLiquidityDelta + 1 ether + 1);
         // Main call
         originARM.allocate();
 

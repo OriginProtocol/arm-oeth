@@ -36,7 +36,10 @@ async function allocate({
     return;
   }
 
-  const liquidityDelta = await arm.allocate.staticCall();
+  // 1. Call the allocate static call to get the return values
+  // Returned value can be either a single int256 or a tuple of two int256 values
+  let liquidityDelta;
+  [, liquidityDelta] = await arm.allocate.staticCall();
 
   const thresholdBN = parseUnits((threshold || "10").toString(), 18);
   if (liquidityDelta < thresholdBN && liquidityDelta > -thresholdBN) {
@@ -132,7 +135,7 @@ async function collectFees({ arm, signer }) {
 }
 
 async function setARMBuffer({ arm, signer, buffer }) {
-  if (buffer >= 1) {
+  if (buffer > 1) {
     throw new Error("Buffer value cannot be greater than 1");
   }
   const bufferBN = parseUnits((buffer || "0").toString(), 18);

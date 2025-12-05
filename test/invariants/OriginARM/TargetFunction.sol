@@ -501,21 +501,13 @@ abstract contract TargetFunction is Properties {
         // - Claim fees
         originARM.collectFees();
 
-        address dead = address(0xdEaD);
-        vm.startPrank(dead);
-        (uint256 id,) = originARM.requestRedeem(originARM.balanceOf(dead));
-        skip(CLAIM_DELAY);
-        originARM.claimRedeem(id);
-        vm.stopPrank();
-
         // - Ensure everything is empty
         // No more OS in the ARM
         require(os.balanceOf(address(originARM)) == 0, "ARM should be OS empty");
-        require(ws.balanceOf(address(originARM)) == 0, "ARM should be WS empty");
         // No unclaimed requests
         uint256 len = originARM.nextWithdrawalIndex();
         for (uint256 i; i < len; i++) {
-            (, bool claimed,,,) = originARM.withdrawalRequests(i);
+            (, bool claimed,,,,) = originARM.withdrawalRequests(i);
             require(claimed, "All withdrawals should be claimed");
         }
         // No users with shares

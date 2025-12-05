@@ -24,7 +24,7 @@ contract DeployEtherFiARMScript is AbstractDeployScript {
     GovProposal public govProposal;
 
     string public constant override DEPLOY_NAME = "011_DeployEtherFiARMScript";
-    bool public constant override proposalExecuted = false;
+    bool public constant override proposalExecuted = true;
 
     Proxy morphoMarketProxy;
     EtherFiARM etherFiARMImpl;
@@ -70,8 +70,7 @@ contract DeployEtherFiARMScript is AbstractDeployScript {
             claimDelay,
             1e7, // minSharesToRedeem
             1e18, // allocateThreshold
-            Mainnet.ETHERFI_WITHDRAWAL_NFT,
-            Mainnet.ETHERFI_REDEMPTION_MANAGER
+            Mainnet.ETHERFI_WITHDRAWAL_NFT
         );
         _recordDeploy("ETHER_FI_ARM_IMPL", address(etherFiARMImpl));
 

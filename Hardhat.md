@@ -16,7 +16,7 @@ unset DEFENDER_API_KEY
 unset DEFENDER_API_SECRET
 export IMPERSONATE=0x39878253374355DBcc15C86458F084fb6f2d6DE7
 export DEBUG=origin*
-npx hardhat requestWithdraw --amount 300 --network local
+yarn hardhat requestWithdraw --amount 300 --network local
 ```
 
 3. Create a Relayer API key
@@ -30,7 +30,7 @@ unset IMPERSONATE
 export DEFENDER_API_KEY=
 export DEFENDER_API_SECRET=
 export DEBUG=origin*
-npx hardhat requestWithdraw --amount 300 --network mainnet
+yarn hardhat requestWithdraw --amount 300 --network mainnet
 ```
 
 5. Delete the Relayer API key
@@ -38,7 +38,7 @@ npx hardhat requestWithdraw --amount 300 --network mainnet
 For more information, see the `requestWithdraw` help
 
 ```
-npx hardhat requestWithdraw --help
+yarn hardhat requestWithdraw --help
 ```
 
 ## Claim all claimable OETH withdraw requests
@@ -56,7 +56,7 @@ unset DEFENDER_API_KEY
 unset DEFENDER_API_SECRET
 export IMPERSONATE=0x39878253374355DBcc15C86458F084fb6f2d6DE7
 export DEBUG=origin*
-npx hardhat autoClaimWithdraw --network local
+yarn hardhat autoClaimWithdraw --network local
 ```
 
 3. Create a Relayer API key
@@ -70,7 +70,7 @@ unset IMPERSONATE
 export DEFENDER_API_KEY=
 export DEFENDER_API_SECRET=
 export DEBUG=origin*
-npx hardhat autoClaimWithdraw --network mainnet
+yarn hardhat autoClaimWithdraw --network mainnet
 ```
 
 5. Delete the Relayer API key
@@ -78,5 +78,5 @@ npx hardhat autoClaimWithdraw --network mainnet
 For more information, see the `autoClaimWithdraw` help
 
 ```
-npx hardhat autoClaimWithdraw --help
+yarn hardhat autoClaimWithdraw --help
 ```

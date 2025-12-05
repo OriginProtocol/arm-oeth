@@ -24,8 +24,6 @@ contract EtherFiARM is Initializable, AbstractARM, IERC721Receiver {
     IEETHWithdrawal public immutable etherfiWithdrawalQueue;
     /// @notice The address of the EtherFi Withdrawal NFT contract
     IEETHWithdrawalNFT public immutable etherfiWithdrawalNFT;
-    /// @notice The address of the EtherFi Redemption Manager contract
-    IEETHRedemptionManager public immutable etherfiRedemptionManager;
 
     /// @notice The amount of eETH in the EtherFi Withdrawal Queue
     uint256 public etherfiWithdrawalQueueAmount;
@@ -35,7 +33,6 @@ contract EtherFiARM is Initializable, AbstractARM, IERC721Receiver {
 
     event RequestEtherFiWithdrawal(uint256 amount, uint256 requestId);
     event ClaimEtherFiWithdrawals(uint256[] requestIds);
-    event RegisterEtherFiWithdrawalRequests(uint256[] requestIds, uint256 totalAmountRequested);
 
     /// @param _eeth The address of the eETH token
     /// @param _weth The address of the WETH token
@@ -51,14 +48,12 @@ contract EtherFiARM is Initializable, AbstractARM, IERC721Receiver {
         uint256 _claimDelay,
         uint256 _minSharesToRedeem,
         int256 _allocateThreshold,
-        address _etherfiWithdrawalNFT,
-        address _etherfiRedemptionManager
+        address _etherfiWithdrawalNFT
     ) AbstractARM(_weth, _eeth, _weth, _claimDelay, _minSharesToRedeem, _allocateThreshold) {
         eeth = IERC20(_eeth);
         weth = IWETH(_weth);
         etherfiWithdrawalQueue = IEETHWithdrawal(_etherfiWithdrawalQueue);
         etherfiWithdrawalNFT = IEETHWithdrawalNFT(_etherfiWithdrawalNFT);
-        etherfiRedemptionManager = IEETHRedemptionManager(_etherfiRedemptionManager);
 
         _disableInitializers();
     }
@@ -90,6 +85,7 @@ contract EtherFiARM is Initializable, AbstractARM, IERC721Receiver {
     /**
      * @notice Request an eETH for ETH withdrawal.
      * Reference: https://etherfi.gitbook.io/etherfi/contracts-and-integrations/how-to
+     * @param amount The amount of eETH to withdraw.
      */
     function requestEtherFiWithdrawal(uint256 amount) external onlyOperatorOrOwner returns (uint256 requestId) {
         // Request the withdrawal from the EtherFi Withdrawal Queue.
@@ -131,12 +127,9 @@ contract EtherFiARM is Initializable, AbstractARM, IERC721Receiver {
         }
 
         // Store the reduced outstanding withdrawals from the EtherFi Withdrawal Queue
-        if (etherfiWithdrawalQueueAmount < totalAmountRequested) {
-            // This can happen if a EtherFi withdrawal request was transferred to the ARM contract
-            etherfiWithdrawalQueueAmount = 0;
-        } else {
-            etherfiWithdrawalQueueAmount -= totalAmountRequested;
-        }
+        // Since withdrawal NFTs that have been transferred in from another account are reverted above,
+        // this subtraction should never underflow.
+        etherfiWithdrawalQueueAmount -= totalAmountRequested;
 
         // Wrap all the received ETH to WETH.
         weth.deposit{value: address(this).balance}();
@@ -145,7 +138,7 @@ contract EtherFiARM is Initializable, AbstractARM, IERC721Receiver {
     }
 
     /**
-     * @dev Calculates the amount of eETH in the EtherFi Withdrawal Queue.
+     * @dev Calculates the amount of WETH expected to be returned from the EtherFi Withdrawal Queue.
      */
     function _externalWithdrawQueue() internal view override returns (uint256) {
         return etherfiWithdrawalQueueAmount;

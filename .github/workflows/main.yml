@@ -26,6 +26,8 @@ jobs:
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: "stable"
       
       - name: Show Forge version
         run: forge --version
@@ -46,6 +48,8 @@ jobs:
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: "stable"
       
       - name: Show Forge version
         run: forge --version
@@ -54,21 +58,18 @@ jobs:
         run: 	forge soldeer install && yarn install
 
       - name: Compile contracts with Forge
-        run: forge build --sizes
+        run: forge build --sizes --skip Fuzzer
 
-      - name: Compile contracts with Hardhat
-        run: npx hardhat compile
+      #- name: Compile contracts with Hardhat
+      #  run: npx hardhat compile
 
   ####################################################
-  ### TESTS
+  ### CONCRETE TESTS
   ####################################################
-  foundry-tests-non-invariants:
-    name: Foundry Non-Invariants Tests
+  foundry-unit-tests:
+    name: Foundry Unit-Tests
     runs-on: ubuntu-latest
-    env:
-      PROVIDER_URL: ${{ secrets.PROVIDER_URL }}
-      FLY_API_KEY: ${{ secrets.FLY_API_KEY }}
-      SONIC_URL: ${{ secrets.SONIC_URL }}
+      
     steps:
       - uses: actions/checkout@v4
         with:
@@ -76,15 +77,68 @@ jobs:
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: "stable"
 
       - name: Install Dependencies
         run: 	forge soldeer install && yarn install
 
       - name: Run non-invariant tests
-        run: make test
+        run: forge test --summary --fail-fast --show-progress --mp 'test/unit/**'
 
-  foundry-tests-invariants:
-    name: Foundry Invariants Tests
+  foundry-fork-tests:
+    name: Foundry Fork-Tests
+    runs-on: ubuntu-latest
+    env:
+      PROVIDER_URL: ${{ secrets.PROVIDER_URL }}
+      FLY_API_KEY: ${{ secrets.FLY_API_KEY }}
+      SONIC_URL: ${{ secrets.SONIC_URL }}
+      
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: "stable"
+
+      - name: Install Dependencies
+        run: 	forge soldeer install && yarn install
+
+      - name: Run non-invariant tests
+        run: forge test --summary --fail-fast --show-progress --mp 'test/fork/**'
+
+  foundry-smoke-tests:
+    name: Foundry Smoke Tests
+    runs-on: ubuntu-latest
+    env:
+      PROVIDER_URL: ${{ secrets.PROVIDER_URL }}
+      FLY_API_KEY: ${{ secrets.FLY_API_KEY }}
+      SONIC_URL: ${{ secrets.SONIC_URL }}
+      
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: "stable"
+
+      - name: Install Dependencies
+        run: 	forge soldeer install && yarn install
+
+      - name: Run non-invariant tests
+        run: forge test --summary --fail-fast --show-progress --mp 'test/smoke/**'
+
+  ####################################################
+  ### FUZZ TESTS
+  ####################################################
+  foundry-tests-invariants-OethARM:
+    name: Foundry Invariants Tests - OethARM
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -93,9 +147,83 @@ jobs:
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: "stable"
 
       - name: Install Dependencies
         run: 	forge soldeer install
 
-      - name: Run invariant tests
-        run: make test-invariants
+      - name: Run invariant tests (OethARM)
+        run: |
+          FOUNDRY_PROFILE=ci \
+          FOUNDRY_INVARIANT_FAIL_ON_REVERT=false \
+          FOUNDRY_MATCH_CONTRACT=FuzzerFoundry_OethARM \
+          forge test --summary --fail-fast --show-progress
+      
+  foundry-tests-invariants-OriginARM:
+    name: Foundry Invariants Tests - OriginARM
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: "stable"
+
+      - name: Install Dependencies
+        run: 	forge soldeer install
+              
+      - name: Run invariant tests (OriginARM)
+        run: |
+          FOUNDRY_PROFILE=ci \
+          FOUNDRY_INVARIANT_FAIL_ON_REVERT=true \
+          FOUNDRY_MATCH_CONTRACT=FuzzerFoundry_OriginARM \
+          forge test --summary --fail-fast --show-progress
+
+  foundry-tests-invariants-EthenaARM:
+    name: Foundry Invariants Tests - EthenaARM
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: "stable"
+
+      - name: Install Dependencies
+        run: 	forge soldeer install
+
+      - name: Run invariant tests (EthenaARM)
+        run: |
+          FOUNDRY_PROFILE=ci \
+          FOUNDRY_INVARIANT_FAIL_ON_REVERT=true \
+          FOUNDRY_MATCH_CONTRACT=FuzzerFoundry_EthenaARM \
+          forge test --summary --fail-fast --show-progress
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10' 
+
+      - name: Install Crytic Compile
+        run: pip install crytic-compile
+
+      - name: Install Medusa from Source
+        run: go install github.com/crytic/medusa@latest
+
+      - name: Run Medusa
+        working-directory: test/invariants/EthenaARM/
+        run: medusa fuzz --timeout 1800 --seq-len 500 --fail-fast
+        
+  

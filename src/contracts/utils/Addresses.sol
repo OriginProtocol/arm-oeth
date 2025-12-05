@@ -33,12 +33,17 @@ library Mainnet {
     address public constant WOETH = 0xDcEe70654261AF21C44c093C300eD3Bb97b78192;
     address public constant WSTETH = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
     address public constant MORPHO = 0x58D97B57BB95320F9a05dC918Aef65434969c2B2;
+    address public constant USDE = 0x4c9EDD5852cd905f086C759E8383e09bff1E68B3;
+    address public constant SUSDE = 0x9D39A5DE30e57443BfF2A8307A4256c8797A3497;
+    address public constant SIUSD = 0xDBDC1Ef57537E34680B898E1FEBD3D68c7389bCB;
+    address public constant IUSD = 0x48f9e38f3070AD8945DFEae3FA70987722E3D89c;
 
     // Contracts
     address public constant OETH_VAULT = 0x39254033945AA2E4809Cc2977E7087BEE48bd7Ab;
     address public constant OETH_ARM = 0x6bac785889A4127dB0e0CeFEE88E0a9F1Aaf3cC7;
     address public constant LIDO_ARM = 0x85B78AcA6Deae198fBF201c82DAF6Ca21942acc6;
     address public constant ARM_BUYBACK = 0xBa0E6d6ea72cDc0D6f9fCdcc04147c671BA83dB5;
+    address public constant ETHERFI_ARM = 0xfB0A3CF9B019BFd8827443d131b235B3E0FC58d2;
 
     // Lido
     address public constant LIDO_WITHDRAWAL = 0x889edC2eDab5f40e902b864aD4d7AdE8E412F9B1;
@@ -49,14 +54,18 @@ library Mainnet {
     address public constant ETHERFI_WITHDRAWAL = 0x308861A430be4cce5502d0A12724771Fc6DaF216;
     address public constant ETHERFI_LIQUIDITY_POOL = 0x308861A430be4cce5502d0A12724771Fc6DaF216;
     address public constant ETHERFI_WITHDRAWAL_NFT = 0x7d5706f6ef3F89B3951E23e557CDFBC3239D4E2c;
-    address public constant ETHERFI_REDEMPTION_MANAGER = 0xDadEf1fFBFeaAB4f68A9fD181395F68b4e4E7Ae0;
 
     // Morpho Market
     address public constant MORPHO_MARKET_MEVCAPITAL = 0x9a8bC3B04b7f3D87cfC09ba407dCED575f2d61D8;
     address public constant MORPHO_MARKET_ETHERFI = 0x4881Ef0BF6d2365D3dd6499ccd7532bcdBCE0658;
+    // Apostro Ethena USDe is currently the only curated Morpho market that takes USDe
+    address public constant MORPHO_MARKET_ETHENA = 0x4EDfaB296F8Eb15aC0907CF9eCb7079b1679Da57;
 
     // Merkle Distributor
     address public constant MERKLE_DISTRIBUTOR = 0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae;
+
+    // Aave USDe Vault
+    address public constant AAVE_USDE_VAULT = 0x0DC20109Ea012f050BeDA184844c1eD5ec6dA33A;
 }
 
 library Holesky {

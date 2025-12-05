@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
+import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
+
 interface IERC20 {
     function totalSupply() external view returns (uint256);
     function balanceOf(address account) external view returns (uint256);
@@ -237,4 +239,33 @@ interface IDistributor {
         uint256[] calldata amounts,
         bytes32[][] calldata proofs
     ) external;
+}
+
+// Ethena Interfaces
+
+struct UserCooldown {
+    uint104 cooldownEnd;
+    uint152 underlyingAmount;
+}
+
+interface IStakedUSDe is IERC4626 {
+    // Errors //
+    /// @notice Error emitted when the shares amount to redeem is greater than the shares balance of the owner
+    error ExcessiveRedeemAmount();
+    /// @notice Error emitted when the shares amount to withdraw is greater than the shares balance of the owner
+    error ExcessiveWithdrawAmount();
+
+    function cooldownAssets(uint256 assets) external returns (uint256 shares);
+
+    function cooldownShares(uint256 shares) external returns (uint256 assets);
+
+    function unstake(address receiver) external;
+
+    function cooldowns(address receiver) external view returns (UserCooldown memory);
+
+    function getUnvestedAmount() external view returns (uint256);
+
+    function lastDistributionTimestamp() external view returns (uint256);
+
+    function transferInRewards(uint256 amount) external;
 }
