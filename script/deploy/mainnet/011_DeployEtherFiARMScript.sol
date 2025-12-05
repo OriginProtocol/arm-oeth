@@ -70,8 +70,7 @@ contract DeployEtherFiARMScript is AbstractDeployScript {
             claimDelay,
             1e7, // minSharesToRedeem
             1e18, // allocateThreshold
-            Mainnet.ETHERFI_WITHDRAWAL_NFT,
-            Mainnet.ETHERFI_REDEMPTION_MANAGER
+            Mainnet.ETHERFI_WITHDRAWAL_NFT
         );
         _recordDeploy("ETHER_FI_ARM_IMPL", address(etherFiARMImpl));
 

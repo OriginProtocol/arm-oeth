@@ -7,6 +7,7 @@ const { resolveArmContract } = require("../utils/addressParser");
 const { outstandingWithdrawalAmount } = require("../utils/armQueue");
 const { logWithdrawalRequests } = require("../utils/etherFi");
 const {
+  convertToAsset,
   logArmPrices,
   log1InchPrices,
   logKyberPrices,
@@ -57,7 +58,7 @@ const withdrawRequestStatus = async ({ id, arm, vault }) => {
   }
 };
 
-const snap = async ({ arm, block, gas, amount, oneInch, kyber }) => {
+const snap = async ({ arm, block, days, gas, amount, oneInch, kyber }) => {
   const armContract = await resolveArmContract(arm);
 
   const blockTag = await getBlock(block);
@@ -72,7 +73,6 @@ const snap = async ({ arm, block, gas, amount, oneInch, kyber }) => {
   if (arm !== "Oeth") {
     await logWithdrawalQueue(armContract, blockTag, liquidityBalance);
 
-    const days = arm === "EtherFi" ? 5 : undefined;
     const armPrices = await logArmPrices({ block, gas, days }, armContract);
 
     const pair =
@@ -82,17 +82,27 @@ const snap = async ({ arm, block, gas, amount, oneInch, kyber }) => {
           ? "eETH/WETH"
           : arm == "Origin"
             ? "OS/wS"
-            : "Unknown";
+            : arm === "Ethena"
+              ? "sUSDe/USDe"
+              : null;
     const assets = {
       liquid: await armContract.liquidityAsset(),
       base: await armContract.baseAsset(),
     };
 
+    let wrapPrice;
+    if (arm === "Ethena") {
+      wrapPrice = await convertToAsset(assets.base, amount);
+    }
+
     if (oneInch) {
       const fee = arm === "Lido" ? 10n : 30n;
 
       const chainId = await (await ethers.provider.getNetwork()).chainId;
-      await log1InchPrices({ amount, assets, fee, pair, chainId }, armPrices);
+      await log1InchPrices(
+        { amount, assets, fee, pair, chainId, wrapPrice },
+        armPrices,
+      );
 
       if (arm === "EtherFi") {
         await logWrappedEtherFiPrices({ amount, armPrices });
@@ -101,7 +111,7 @@ const snap = async ({ arm, block, gas, amount, oneInch, kyber }) => {
 
     if (kyber && arm !== "Origin") {
       // Kyber does not support Sonic
-      await logKyberPrices({ amount, assets, pair }, armPrices);
+      await logKyberPrices({ amount, assets, pair, wrapPrice }, armPrices);
     }
   }
 };
