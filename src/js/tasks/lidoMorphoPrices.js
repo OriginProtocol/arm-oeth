@@ -3,6 +3,7 @@ const { formatUnits, parseUnits } = require("ethers");
 const addresses = require("../utils/addresses");
 
 const { abs } = require("../utils/maths");
+const { getKyberPrices } = require("../utils/kyber");
 const { get1InchPrices } = require("../utils/1Inch");
 const { logTxDetails } = require("../utils/txLogger");
 const { getCurvePrices } = require("../utils/curve");
@@ -26,8 +27,10 @@ const setPrices = async (options) => {
     offset,
     curve,
     inch,
+    kyber,
     market,
     priceOffset,
+    dryrun,
   } = options;
 
   // 1. Get current ARM prices
@@ -40,7 +43,7 @@ const setPrices = async (options) => {
   let targetBuyPrice;
   let targetSellPrice;
   // 2. If no buy/sell prices are provided, calculate them using midPrice/1Inch/Curve
-  if (!buyPrice && !sellPrice && (midPrice || curve || inch)) {
+  if (!buyPrice && !sellPrice && (midPrice || curve || inch || kyber)) {
     // Set 1Inch options
     const assets = {
       liquid: await arm.liquidityAsset(),
@@ -58,20 +61,25 @@ const setPrices = async (options) => {
         : inch
           ? // 2.1.b Otherwise, get prices from 1Inch
             await get1InchPrices(options.amount, assets, inchFee)
-          : // 2.1.c Or from Curve if specified
-            await getCurvePrices({
-              ...options,
-              poolAddress: addresses.mainnet.CurveNgStEthPool,
-            });
+          : kyber
+            ? // 2.1.c Or from Kyber if specified
+              await getKyberPrices(options.amount, assets)
+            : // 2.1.d Or from Curve if specified
+              await getCurvePrices({
+                ...options,
+                poolAddress: addresses.mainnet.CurveNgStEthPool,
+              });
     log(
       `\nReference prices from ${
         midPrice
           ? "midPrice"
           : inch
             ? "1Inch"
-            : curve
-              ? "Curve"
-              : "unknown source"
+            : kyber
+              ? "Kyber"
+              : curve
+                ? "Curve"
+                : "unknown source"
       }:`,
     );
     log(`mid price          : ${formatUnits(referencePrices.midPrice)}`);
@@ -224,6 +232,11 @@ const setPrices = async (options) => {
     console.log(`About to update ARM prices`);
     console.log(`sell: ${formatUnits(targetSellPrice, 36)}`);
     console.log(`buy : ${formatUnits(targetBuyPrice, 36)}`);
+
+    if (dryrun) {
+      console.log(`Dry run mode - not calling setPrices`);
+      return;
+    }
 
     const tx = await arm
       .connect(signer)
