@@ -2,6 +2,7 @@
 pragma solidity 0.8.23;
 
 // Test imports
+import {Mainnet} from "src/contracts/utils/Addresses.sol";
 import {Fork_Shared_Test_} from "test/fork/shared/Shared.sol";
 
 contract Fork_Concrete_LidoARM_Constructor_Test is Fork_Shared_Test_ {
