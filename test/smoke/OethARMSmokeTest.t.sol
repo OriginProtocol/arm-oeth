@@ -50,7 +50,6 @@ contract Fork_OriginARM_Smoke_Test is AbstractSmokeTest {
         vm.prank(Mainnet.WOETH);
         oeth.transfer(to, amount);
     }
-    */
 
     ////////////////////////////////////////////////////
     /// --- INITIAL CONFIG
