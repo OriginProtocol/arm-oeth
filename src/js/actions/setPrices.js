@@ -28,7 +28,7 @@ const handler = async (event) => {
       arm,
       // sellPrice: 0.9998,
       // buyPrice: 0.9997,
-      maxSellPrice: 0.99998,
+      maxSellPrice: 1.0,
       minSellPrice: 0.9999,
       maxBuyPrice: 0.999,
       minBuyPrice: 0.998,
