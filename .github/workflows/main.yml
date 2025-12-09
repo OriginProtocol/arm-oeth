@@ -66,8 +66,8 @@ jobs:
   ####################################################
   ### CONCRETE TESTS
   ####################################################
-  foundry-unit-tests:
-    name: Foundry Unit-Tests
+  unit-tests:
+    name: Unit-Tests
     runs-on: ubuntu-latest
       
     steps:
@@ -83,11 +83,11 @@ jobs:
       - name: Install Dependencies
         run: 	forge soldeer install && yarn install
 
-      - name: Run non-invariant tests
+      - name: Run unit tests
         run: forge test --summary --fail-fast --show-progress --mp 'test/unit/**'
 
-  foundry-fork-tests:
-    name: Foundry Fork-Tests
+  fork-tests:
+    name: Fork-Tests
     runs-on: ubuntu-latest
     env:
       PROVIDER_URL: ${{ secrets.PROVIDER_URL }}
@@ -107,11 +107,11 @@ jobs:
       - name: Install Dependencies
         run: 	forge soldeer install && yarn install
 
-      - name: Run non-invariant tests
+      - name: Run fork tests
         run: forge test --summary --fail-fast --show-progress --mp 'test/fork/**'
 
-  foundry-smoke-tests:
-    name: Foundry Smoke Tests
+  smoke-tests:
+    name: Smoke Tests
     runs-on: ubuntu-latest
     env:
       PROVIDER_URL: ${{ secrets.PROVIDER_URL }}
@@ -131,37 +131,14 @@ jobs:
       - name: Install Dependencies
         run: 	forge soldeer install && yarn install
 
-      - name: Run non-invariant tests
+      - name: Run smoke tests
         run: forge test --summary --fail-fast --show-progress --mp 'test/smoke/**'
 
   ####################################################
   ### FUZZ TESTS
   ####################################################
-  foundry-tests-invariants-OethARM:
-    name: Foundry Invariants Tests - OethARM
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-
-      - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: "stable"
-
-      - name: Install Dependencies
-        run: 	forge soldeer install
-
-      - name: Run invariant tests (OethARM)
-        run: |
-          FOUNDRY_PROFILE=ci \
-          FOUNDRY_INVARIANT_FAIL_ON_REVERT=false \
-          FOUNDRY_MATCH_CONTRACT=FuzzerFoundry_OethARM \
-          forge test --summary --fail-fast --show-progress
-      
-  foundry-tests-invariants-OriginARM:
-    name: Foundry Invariants Tests - OriginARM
+  invariant-tests-OriginARM:
+    name: Invariant Tests - OriginARM
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -183,8 +160,31 @@ jobs:
           FOUNDRY_MATCH_CONTRACT=FuzzerFoundry_OriginARM \
           forge test --summary --fail-fast --show-progress
 
-  foundry-tests-invariants-EthenaARM:
-    name: Foundry Invariants Tests - EthenaARM
+  invariant-tests-LidoARM:
+    name: Invariant Tests - LidoARM
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: "stable"
+
+      - name: Install Dependencies
+        run: 	forge soldeer install
+              
+      - name: Run invariant tests (LidoARM)
+        run: |
+          FOUNDRY_PROFILE=ci \
+          FOUNDRY_INVARIANT_FAIL_ON_REVERT=true \
+          FOUNDRY_MATCH_CONTRACT=FuzzerFoundry_LidoARM \
+          forge test --summary --fail-fast --show-progress
+
+  invariant-tests-EthenaARM:
+    name: Invariant Tests - EthenaARM
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
