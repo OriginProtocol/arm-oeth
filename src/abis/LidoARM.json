@@ -8,7 +8,17 @@
         "name": "_lidoWithdrawalQueue",
         "type": "address"
       },
-      { "internalType": "uint256", "name": "_claimDelay", "type": "uint256" }
+      { "internalType": "uint256", "name": "_claimDelay", "type": "uint256" },
+      {
+        "internalType": "uint256",
+        "name": "_minSharesToRedeem",
+        "type": "uint256"
+      },
+      {
+        "internalType": "int256",
+        "name": "_allocateThreshold",
+        "type": "int256"
+      }
     ],
     "stateMutability": "nonpayable",
     "type": "constructor"
@@ -94,6 +104,32 @@
     "inputs": [
       {
         "indexed": false,
+        "internalType": "uint256",
+        "name": "armBuffer",
+        "type": "uint256"
+      }
+    ],
+    "name": "ARMBufferUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "market",
+        "type": "address"
+      }
+    ],
+    "name": "ActiveMarketUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
         "internalType": "address",
         "name": "previousAdmin",
         "type": "address"
@@ -106,6 +142,31 @@
       }
     ],
     "name": "AdminChanged",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "market",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "int256",
+        "name": "targetLiquidityDelta",
+        "type": "int256"
+      },
+      {
+        "indexed": false,
+        "internalType": "int256",
+        "name": "actualLiquidityDelta",
+        "type": "int256"
+      }
+    ],
+    "name": "Allocated",
     "type": "event"
   },
   {
@@ -253,6 +314,32 @@
       }
     ],
     "name": "Initialized",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "market",
+        "type": "address"
+      }
+    ],
+    "name": "MarketAdded",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "market",
+        "type": "address"
+      }
+    ],
+    "name": "MarketRemoved",
     "type": "event"
   },
   {
@@ -434,6 +521,47 @@
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "activeMarket",
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address[]", "name": "_markets", "type": "address[]" }
+    ],
+    "name": "addMarkets",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "allocate",
+    "outputs": [
+      {
+        "internalType": "int256",
+        "name": "targetLiquidityDelta",
+        "type": "int256"
+      },
+      {
+        "internalType": "int256",
+        "name": "actualLiquidityDelta",
+        "type": "int256"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "allocateThreshold",
+    "outputs": [{ "internalType": "int256", "name": "", "type": "int256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [
       { "internalType": "address", "name": "owner", "type": "address" },
       { "internalType": "address", "name": "spender", "type": "address" }
@@ -451,6 +579,20 @@
     "name": "approve",
     "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "armBuffer",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "asset",
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -511,7 +653,13 @@
   {
     "inputs": [],
     "name": "claimable",
-    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "claimableAmount",
+        "type": "uint256"
+      }
+    ],
     "stateMutability": "view",
     "type": "function"
   },
@@ -607,6 +755,16 @@
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "getReserves",
+    "outputs": [
+      { "internalType": "uint256", "name": "reserve0", "type": "uint256" },
+      { "internalType": "uint256", "name": "reserve1", "type": "uint256" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [
       { "internalType": "string", "name": "_name", "type": "string" },
       { "internalType": "string", "name": "_symbol", "type": "string" },
@@ -660,6 +818,13 @@
     "inputs": [],
     "name": "liquidityAsset",
     "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "minSharesToRedeem",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
     "stateMutability": "view",
     "type": "function"
   },
@@ -722,6 +887,15 @@
   },
   {
     "inputs": [
+      { "internalType": "address", "name": "_market", "type": "address" }
+    ],
+    "name": "removeMarket",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
       { "internalType": "uint256[]", "name": "amounts", "type": "uint256[]" }
     ],
     "name": "requestLidoWithdrawals",
@@ -740,6 +914,24 @@
       { "internalType": "uint256", "name": "requestId", "type": "uint256" },
       { "internalType": "uint256", "name": "assets", "type": "uint256" }
     ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "uint256", "name": "_armBuffer", "type": "uint256" }
+    ],
+    "name": "setARMBuffer",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "_market", "type": "address" }
+    ],
+    "name": "setActiveMarket",
+    "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
@@ -818,6 +1010,17 @@
   },
   {
     "inputs": [
+      { "internalType": "address", "name": "market", "type": "address" }
+    ],
+    "name": "supportedMarkets",
+    "outputs": [
+      { "internalType": "bool", "name": "supported", "type": "bool" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
       { "internalType": "uint256", "name": "amountIn", "type": "uint256" },
       { "internalType": "uint256", "name": "amountOutMin", "type": "uint256" },
       { "internalType": "address[]", "name": "path", "type": "address[]" },
@@ -848,7 +1051,9 @@
       { "internalType": "address", "name": "to", "type": "address" }
     ],
     "name": "swapExactTokensForTokens",
-    "outputs": [],
+    "outputs": [
+      { "internalType": "uint256[]", "name": "amounts", "type": "uint256[]" }
+    ],
     "stateMutability": "nonpayable",
     "type": "function"
   },
@@ -884,7 +1089,9 @@
       { "internalType": "address", "name": "to", "type": "address" }
     ],
     "name": "swapTokensForExactTokens",
-    "outputs": [],
+    "outputs": [
+      { "internalType": "uint256[]", "name": "amounts", "type": "uint256[]" }
+    ],
     "stateMutability": "nonpayable",
     "type": "function"
   },
@@ -981,7 +1188,8 @@
       { "internalType": "bool", "name": "claimed", "type": "bool" },
       { "internalType": "uint40", "name": "claimTimestamp", "type": "uint40" },
       { "internalType": "uint128", "name": "assets", "type": "uint128" },
-      { "internalType": "uint128", "name": "queued", "type": "uint128" }
+      { "internalType": "uint128", "name": "queued", "type": "uint128" },
+      { "internalType": "uint128", "name": "shares", "type": "uint128" }
     ],
     "stateMutability": "view",
     "type": "function"

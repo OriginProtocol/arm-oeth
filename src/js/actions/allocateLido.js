@@ -3,7 +3,7 @@ const { ethers } = require("ethers");
 
 const { allocate } = require("../tasks/admin");
 const { mainnet } = require("../utils/addresses");
-const armAbi = require("../../abis/OriginARM.json");
+const armAbi = require("../../abis/LidoARM.json");
 
 // Entrypoint for the Defender Action
 const handler = async (event) => {
