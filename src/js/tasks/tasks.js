@@ -672,25 +672,25 @@ subtask("setPrices", "Update Lido ARM's swap prices")
   )
   .addOptionalParam(
     "minSellPrice",
-    "The min sell price when pricing off market. eg 1Inch or Curve",
+    "The min sell price when pricing off market. eg 1Inch, Kyber or Curve",
     undefined,
     types.float,
   )
   .addOptionalParam(
     "maxSellPrice",
-    "The max sell price when pricing off market. eg 1Inch or Curve",
+    "The max sell price when pricing off market. eg 1Inch, Kyber or Curve",
     undefined,
     types.float,
   )
   .addOptionalParam(
     "maxBuyPrice",
-    "The max buy price when pricing off market. eg 1Inch or Curve",
+    "The max buy price when pricing off market. eg 1Inch, Kyber or Curve",
     undefined,
     types.float,
   )
   .addOptionalParam(
     "minBuyPrice",
-    "The min buy price when pricing off market. eg 1Inch or Curve",
+    "The min buy price when pricing off market. eg 1Inch, Kyber or Curve",
     undefined,
     types.float,
   )
@@ -720,20 +720,32 @@ subtask("setPrices", "Update Lido ARM's swap prices")
   )
   .addOptionalParam(
     "curve",
-    "Set prices off the current Curve mid price.",
+    "Set prices off the current Curve prices",
     undefined,
     types.boolean,
   )
   .addOptionalParam(
     "inch",
-    "Set prices off the current 1Inch mid price.",
+    "Set prices off the current 1Inch prices",
+    undefined,
+    types.boolean,
+  )
+  .addOptionalParam(
+    "kyber",
+    "Set prices off the current Kyber prices",
     undefined,
     types.boolean,
   )
   .addOptionalParam(
     "priceOffset",
-    "Offset the 1Inch/Curve buyPrice by `--offset` amount in basis points",
+    "Offset the 1Inch/Kyber/Curve buyPrice by `--offset` amount in basis points",
     undefined,
+    types.boolean,
+  )
+  .addOptionalParam(
+    "dryrun",
+    "Do not call setPrices. Just log the computed prices.",
+    false,
     types.boolean,
   )
   .setAction(async (taskArgs) => {
