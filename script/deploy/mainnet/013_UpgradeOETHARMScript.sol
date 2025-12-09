@@ -83,7 +83,7 @@ contract UpgradeOETHARMScript is AbstractDeployScript {
             "ARM-WETH-OETH",
             Mainnet.ARM_RELAYER,
             2000, // 20% performance fee
-            Mainnet.ARM_BUYBACK,
+            Mainnet.BUYBACK_OPERATOR, // Fee collector
             address(0)
         );
 

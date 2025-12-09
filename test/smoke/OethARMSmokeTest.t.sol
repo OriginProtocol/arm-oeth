@@ -60,7 +60,7 @@ contract Fork_OriginARM_Smoke_Test is AbstractSmokeTest {
         assertEq(originARM.symbol(), "ARM-WETH-OETH", "Symbol");
         assertEq(originARM.owner(), Mainnet.TIMELOCK, "Owner");
         assertEq(originARM.operator(), Mainnet.ARM_RELAYER, "Operator");
-        assertEq(originARM.feeCollector(), Mainnet.ARM_BUYBACK, "Fee collector");
+        assertEq(originARM.feeCollector(), Mainnet.BUYBACK_OPERATOR, "Fee collector");
         assertEq((100 * uint256(originARM.fee())) / originARM.FEE_SCALE(), 20, "Performance fee as a percentage");
 
         // Assets
