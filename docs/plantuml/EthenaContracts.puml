@@ -15,10 +15,6 @@ end legend
 
 title "Ethena\nAutomated Redemption Manager (ARM)\nContract Dependencies"
 
-
-object "ZapperARM" as zap <<Origin>> #$originColor {
-}
-
 object "EthenaARM" as arm <<Origin>><<Proxy>> #$originColor {
     shares: ARM-sUSDe-USDe
     assets: sUSDe, USDe
@@ -46,7 +42,6 @@ object "aUSDe" as aUSDe <<Aave>> #$thirdPartyColor {
     asset: USDe
 }
 
-zap <..> arm
 arm <.> capMan
 arm ..> unstaker
 arm ...> em
