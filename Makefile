@@ -120,7 +120,7 @@ match:
 		exit 1; \
 	fi
 	@name=$$(basename $(file) .sol); \
-	diff <(forge flatten $(file)) <(cast source --flatten -e $$ETHERSCAN_KEY $(addr)) \
+	diff <(forge flatten $(file)) <(cast source --flatten $(addr)) \
 	&& printf "✅ Success: Local contract %-20s matches deployment at $(addr)\n" "$$name" \
 	|| printf "❌ Failure: Local contract %-20s differs from deployment at $(addr)\n" "$$name"
 
