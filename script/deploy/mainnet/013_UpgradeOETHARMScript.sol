@@ -106,6 +106,10 @@ contract UpgradeOETHARMScript is AbstractDeployScript {
             abi.encode(deployedContracts["MORPHO_MARKET_ORIGIN"])
         );
 
+        // 8. Set crossPrice to 0.9995 ETH
+        uint256 crossPrice = 0.9995 * 1e36;
+        govProposal.action(deployedContracts["OETH_ARM"], "setCrossPrice(uint256)", abi.encode(crossPrice));
+
         govProposal.simulate();
     }
 }
