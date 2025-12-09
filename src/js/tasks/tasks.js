@@ -21,6 +21,7 @@ const {
   harvestRewards,
   setHarvester,
 } = require("./sonicHarvest");
+const { collectMorphoRewards } = require("./rewards");
 const { requestLidoWithdrawals, claimLidoWithdrawals } = require("./lidoQueue");
 const {
   requestEtherFiWithdrawals,
@@ -879,23 +880,31 @@ subtask("collectRewards", "Collect rewards")
     "Origin",
     types.string,
   )
-  .setAction(async () => {
+  .setAction(async ({ arm }) => {
     const signer = await getSigner();
 
-    const siloMarketAddress = await parseDeployedAddress(
-      "SILO_VARLAMORE_S_MARKET",
-    );
-    const harvesterAddress = await parseDeployedAddress("HARVESTER");
-    const harvester = await ethers.getContractAt(
-      "SonicHarvester",
-      harvesterAddress,
-    );
+    if (arm === "Origin") {
+      const siloMarketAddress = await parseDeployedAddress(
+        "SILO_VARLAMORE_S_MARKET",
+      );
 
-    await collectRewards({
-      signer,
-      harvester,
-      strategies: [siloMarketAddress],
-    });
+      const harvesterAddress =
+        arm === "Origin" ? await parseDeployedAddress("HARVESTER") : undefined;
+      const harvester = await ethers.getContractAt(
+        "SonicHarvester",
+        harvesterAddress,
+      );
+
+      await collectRewards({
+        signer,
+        harvester,
+        strategies: [siloMarketAddress],
+      });
+
+      return;
+    }
+
+    await collectMorphoRewards({ arm, signer });
   });
 task("collectRewards").setAction(async (_, __, runSuper) => {
   return runSuper();
