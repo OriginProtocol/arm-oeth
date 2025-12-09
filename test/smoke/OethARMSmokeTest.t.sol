@@ -86,8 +86,8 @@ contract Fork_OriginARM_Smoke_Test is AbstractSmokeTest {
 
     function test_swap_exact_oeth_for_weth() external {
         // trader sells OETH and buys WETH, the ARM buys OETH as a
-        // 4 bps discount
-        _swapExactTokensForTokens(oeth, weth, 0.9996e36, 100 ether);
+        // 6 bps discount
+        _swapExactTokensForTokens(oeth, weth, 0.9994e36, 100 ether);
         // 10 bps discount
         _swapExactTokensForTokens(oeth, weth, 0.999e36, 1e15);
         // 20 bps discount
@@ -147,8 +147,8 @@ contract Fork_OriginARM_Smoke_Test is AbstractSmokeTest {
 
     function test_swap_oeth_for_exact_weth() external {
         // trader sells OETH and buys WETH, the ARM buys OETH at a
-        // 4 bps discount
-        _swapTokensForExactTokens(oeth, weth, 0.9996e36, 10 ether);
+        // 6 bps discount
+        _swapTokensForExactTokens(oeth, weth, 0.9994e36, 10 ether);
         // 10 bps discount
         _swapTokensForExactTokens(oeth, weth, 0.999e36, 100 ether);
         // 50 bps discount
