@@ -1,0 +1,44 @@
+@startuml
+
+!$originColor = DeepSkyBlue
+' !$originColor = WhiteSmoke
+!$newColor = LightGreen
+!$changedColor = Orange
+!$thirdPartyColor = WhiteSmoke
+
+' legend
+' blue - Origin
+' ' green - new
+' ' orange - changed
+' white - 3rd Party
+' end legend
+
+title "Origin OETH Automated Redemption Manager (ARM) Contract Dependencies"
+
+
+object "ZapperARM" as zap <<Origin>> #$originColor {
+}
+
+object "OriginARM" as arm <<Origin>><<Proxy>> #$originColor {
+    shares: ARM-oETH-WETH
+    assets: oETH, WETH
+}
+
+object "OETHVault" as oethVault <<Origin>><<Proxy>> #$thirdPartyColor {
+    assets: oETH, WETH
+}
+
+object "Morpho Market" as morphoMarket <<Origin>><<Proxy>> #$originColor {
+    assets: WETH
+}
+
+object "Yearn OG WETH" as metaMorpho <<Morpho>> #$thirdPartyColor {
+    assets: WETH
+}
+
+zap ..> arm
+arm ..> oethVault
+arm ..> morphoMarket
+morphoMarket ..> metaMorpho
+
+@enduml

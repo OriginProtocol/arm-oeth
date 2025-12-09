@@ -41,7 +41,7 @@ object "Gauntlet WETH Core" as metaMorpho <<Morpho>> #$thirdPartyColor {
     assets: WETH
 }
 
-zap <..> arm
+zap ..> arm
 arm <.> capMan
 arm ...> rm
 arm ...> wq

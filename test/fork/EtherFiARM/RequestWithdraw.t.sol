@@ -2,7 +2,6 @@
 pragma solidity 0.8.23;
 
 // Test
-import {Mainnet} from "src/contracts/utils/Addresses.sol";
 import {Fork_Shared_Test} from "test/fork/EtherFiARM/shared/Shared.sol";
 
 contract Fork_Concrete_EtherFiARM_RequestWithdraw_Test_ is Fork_Shared_Test {

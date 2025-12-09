@@ -5,11 +5,11 @@ pragma solidity 0.8.23;
 import {Fork_Shared_Test_} from "test/fork/shared/Shared.sol";
 
 // Contracts
-import {IERC20, IStETHWithdrawal} from "contracts/Interfaces.sol";
+import {IStETHWithdrawal} from "contracts/Interfaces.sol";
 import {LidoARM} from "contracts/LidoARM.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
 
-contract Fork_Concrete_LidoARM_RequestLidoWithdrawals_Test_ is Fork_Shared_Test_ {
+contract Fork_Concrete_LidoARM_ClaimLidoWithdrawals_Test_ is Fork_Shared_Test_ {
     uint256[] amounts0;
     uint256[] amounts1;
     uint256[] amounts2;

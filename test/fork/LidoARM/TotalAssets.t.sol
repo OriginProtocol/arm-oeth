@@ -7,10 +7,6 @@ import {stdError} from "forge-std/StdError.sol";
 // Test imports
 import {Fork_Shared_Test_} from "test/fork/shared/Shared.sol";
 
-// Contracts
-import {IERC20} from "contracts/Interfaces.sol";
-import {AbstractARM} from "contracts/AbstractARM.sol";
-
 contract Fork_Concrete_LidoARM_TotalAssets_Test_ is Fork_Shared_Test_ {
     //////////////////////////////////////////////////////
     /// --- SETUP

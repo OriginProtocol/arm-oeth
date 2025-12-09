@@ -3,7 +3,6 @@
 pragma solidity 0.8.23;
 
 import "forge-std/console.sol";
-import {Vm} from "forge-std/Vm.sol";
 
 import {Proxy} from "contracts/Proxy.sol";
 import {AbstractDeployScript} from "../AbstractDeployScript.sol";

@@ -5,7 +5,6 @@ import {Sonic} from "contracts/utils/Addresses.sol";
 import {SonicHarvester} from "contracts/SonicHarvester.sol";
 
 import {Fork_Shared_Test} from "test/fork/Harvester/shared/Shared.sol";
-import {console} from "forge-std/console.sol";
 
 contract Fork_Concrete_Harvester_Swap_Test_ is Fork_Shared_Test {
     address public constant OS_WHALE = 0x9F0dF7799f6FDAd409300080cfF680f5A23df4b1;
