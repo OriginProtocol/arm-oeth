@@ -305,6 +305,7 @@ yarn hardhat setActionVars --id c010fb76-ea63-409d-9981-69322d27993a
 yarn hardhat setActionVars --id 127171fd-7b85-497e-8335-fd7907c08386
 yarn hardhat setActionVars --id 84b5f134-8351-4402-8f6a-fb4376034bc4
 yarn hardhat setActionVars --id ffcfc580-7b0a-42ed-a4f2-3f0a3add9779 --name ONEINCH_API_KEY # Don't forget to run `export ONEINCH_API_KEY=...` first!
+yarn hardhat setActionVars --id 89658c5f-3857-4972-bef8-a5e914e13c56 # setPricesEtherFi
 yarn hardhat setActionVars --id 32dbc67b-89f3-4856-8f3d-ad4dc5a09322
 yarn hardhat setActionVars --id 7a0cb2c9-11c2-41dd-bcd0-d7c2dbda6af6
 yarn hardhat setActionVars --id a9fc4c86-0506-4809-afbc-93b5e558cb68
@@ -328,6 +329,7 @@ yarn hardhat updateAction --id c010fb76-ea63-409d-9981-69322d27993a --file autoR
 yarn hardhat updateAction --id 127171fd-7b85-497e-8335-fd7907c08386 --file autoClaimLidoWithdraw
 yarn hardhat updateAction --id 84b5f134-8351-4402-8f6a-fb4376034bc4 --file collectLidoFees
 yarn hardhat updateAction --id ffcfc580-7b0a-42ed-a4f2-3f0a3add9779 --file setPrices
+yarn hardhat updateAction --id 89658c5f-3857-4972-bef8-a5e914e13c56 --file setPricesEtherFi
 yarn hardhat updateAction --id 32dbc67b-89f3-4856-8f3d-ad4dc5a09322 --file collectFeesSonic
 yarn hardhat updateAction --id 7a0cb2c9-11c2-41dd-bcd0-d7c2dbda6af6 --file allocateSonic
 yarn hardhat updateAction --id a9fc4c86-0506-4809-afbc-93b5e558cb68 --file collectRewardsSonic
