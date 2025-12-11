@@ -21,7 +21,7 @@ const {
   harvestRewards,
   setHarvester,
 } = require("./sonicHarvest");
-const { collectMorphoRewards } = require("./rewards");
+const { claimMerklRewards, collectMorphoRewards } = require("./rewards");
 const { requestLidoWithdrawals, claimLidoWithdrawals } = require("./lidoQueue");
 const {
   requestEtherFiWithdrawals,
@@ -1451,5 +1451,26 @@ subtask(
     });
   });
 task("setOSSiloPrice").setAction(async (_, __, runSuper) => {
+  return runSuper();
+});
+
+// Merkl Rewards
+
+subtask("claimMerklRewards", "Claim Merkl rewards for Morpho markets")
+  .addOptionalParam(
+    "arm",
+    "Name of the ARM. eg Lido, Ether.fi or Oeth",
+    "Lido",
+    types.string,
+  )
+  .setAction(async ({ arm }) => {
+    const signer = await getSigner();
+
+    const armContract = await resolveArmContract(arm);
+    const marketVaultAddress = await armContract.activeMarket();
+
+    await claimMerklRewards(marketVaultAddress, signer);
+  });
+task("claimMerklRewards").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
