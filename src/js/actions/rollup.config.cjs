@@ -52,6 +52,7 @@ const actions = [
   "allocateSonic",
   "collectRewardsSonic",
   "setPrices",
+  "setPricesEtherFi",
   "setOSSiloPriceAction",
   "allocateLido",
   "allocateEtherFi",
