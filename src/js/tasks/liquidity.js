@@ -156,6 +156,10 @@ const logLiquidity = async ({ block, arm }) => {
     baseWithdraws = await armContract.vaultWithdrawalAmount({
       blockTag,
     });
+  } else if (arm === "Ethena") {
+    baseWithdraws = await armContract.liquidityAmountInCooldown({
+      blockTag,
+    });
   }
 
   let lendingMarketBalance = 0n;
