@@ -13,6 +13,7 @@ const {
   logKyberPrices,
   logWrappedEtherFiPrices,
 } = require("./markets");
+const { getMerklRewards } = require("../utils/merkl");
 const { logTxDetails } = require("../utils/txLogger");
 
 const log = require("../utils/logger")("task:liquidity");
@@ -171,6 +172,7 @@ const logLiquidity = async ({ block, arm }) => {
   }
 
   let lendingMarketBalance = 0n;
+  let morphoRewards = 0n;
   // TODO this can be removed after OETH is upgraded
   if (arm !== "Oeth") {
     // Get the lending market from the active SiloMarket
@@ -183,6 +185,13 @@ const logLiquidity = async ({ block, arm }) => {
     lendingMarketBalance = await market.convertToAssets(armShares, {
       blockTag,
     });
+
+    if (arm !== "Ethena") {
+      const { amount } = await getMerklRewards({
+        userAddress: marketAddress,
+      });
+      morphoRewards = amount;
+    }
   }
 
   const total =
@@ -234,6 +243,7 @@ const logLiquidity = async ({ block, arm }) => {
   console.log(`${formatUnits(accruedFees, 18)} accrued fees`);
   console.log(`${formatUnits(totalAssets, 18)} total assets`);
   console.log(`liquidity buffer ${formatUnits(bufferPercent, 2)}%`);
+  console.log(`${formatUnits(morphoRewards, 18)} MORPHO rewards claimable`);
 
   return { total, liquidityBalance };
 };

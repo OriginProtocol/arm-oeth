@@ -37,7 +37,7 @@ async function allocate({
   }
 
   // 1. Call the allocate static call to get the return values
-  // Returned value can be either a single int256 or a tuple of two int256 values
+  // Returned value is a tuple of two int256 values
   let liquidityDelta;
   [, liquidityDelta] = await arm.allocate.staticCall();
 

@@ -8,7 +8,7 @@ const getMerklRewards = async ({ userAddress, chainId = 1 }) => {
     const response = await axios.get(url);
 
     return {
-      amount: response.data[0].rewards[0].amount,
+      amount: response.data[0].rewards[0].pending,
       token: response.data[0].rewards[0].token.address,
       proofs: response.data[0].rewards[0].proofs,
     };
