@@ -93,6 +93,18 @@ const snap = async ({ arm, block, days, gas, amount, oneInch, kyber }) => {
     let wrapPrice;
     if (arm === "Ethena") {
       wrapPrice = await convertToAsset(assets.base, amount);
+      const actualArmSellPrice =
+        (armPrices.sellPrice * wrapPrice) / parseUnits("1", 18);
+      const actualArmBuyPrice =
+        (armPrices.buyPrice * wrapPrice) / parseUnits("1", 18);
+
+      console.log(`\nEthena : ${formatUnits(wrapPrice, 18)} sUSDe/USDe`);
+      console.log(
+        `Sell   : ${formatUnits(actualArmSellPrice, 18).padEnd(20)} sUSDe/USDe`,
+      );
+      console.log(
+        `Buy    : ${formatUnits(actualArmBuyPrice, 18).padEnd(20)} sUSDe/USDe`,
+      );
     }
 
     if (oneInch) {
