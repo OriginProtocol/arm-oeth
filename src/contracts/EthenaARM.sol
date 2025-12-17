@@ -22,7 +22,7 @@ contract EthenaARM is Initializable, AbstractARM {
     IStakedUSDe public immutable susde;
 
     /// @notice The total amount of liquidity asset (USDe) currently in cooldown
-    uint256 internal _liquidityAmountInCooldown;
+    uint256 public liquidityAmountInCooldown;
     /// @notice Array of unstaker helper contracts
     address[MAX_UNSTAKERS] public unstakers;
     /// @notice The index of the next unstaker to use in the round robin
@@ -97,7 +97,7 @@ contract EthenaARM is Initializable, AbstractARM {
 
         uint256 liquidityAmount = EthenaUnstaker(unstaker).requestUnstake(baseAmount);
 
-        _liquidityAmountInCooldown += liquidityAmount;
+        liquidityAmountInCooldown += liquidityAmount;
 
         // Emit event for the request
         emit RequestBaseWithdrawal(unstaker, baseAmount, liquidityAmount);
@@ -109,7 +109,7 @@ contract EthenaARM is Initializable, AbstractARM {
         UserCooldown memory cooldown = susde.cooldowns(address(unstaker));
         require(cooldown.underlyingAmount > 0, "EthenaARM: No cooldown amount");
 
-        _liquidityAmountInCooldown -= cooldown.underlyingAmount;
+        liquidityAmountInCooldown -= cooldown.underlyingAmount;
 
         // Claim all the underlying USDe that has cooled down for the unstaker and send to the ARM
         EthenaUnstaker(unstaker).claimUnstake();
@@ -121,7 +121,7 @@ contract EthenaARM is Initializable, AbstractARM {
     /// This can be for many different cooldowns.
     /// This can be either in the cooldown period or ready to be claimed.
     function _externalWithdrawQueue() internal view override returns (uint256) {
-        return _liquidityAmountInCooldown;
+        return liquidityAmountInCooldown;
     }
 
     /// @dev Convert between base asset (sUSDe) and liquidity asset (USDe).
