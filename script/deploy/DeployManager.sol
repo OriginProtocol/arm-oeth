@@ -23,6 +23,7 @@ import {DeployEtherFiARMScript} from "./mainnet/011_DeployEtherFiARMScript.sol";
 import {UpgradeEtherFiARMScript} from "./mainnet/012_UpgradeEtherFiARMScript.sol";
 import {UpgradeOETHARMScript} from "./mainnet/013_UpgradeOETHARMScript.sol";
 import {DeployEthenaARMScript} from "./mainnet/014_DeployEthenaARMScript.sol";
+import {UpgradeEthenaARMScript} from "./mainnet/015_UpgradeEthenaARMScript.sol";
 
 contract DeployManager is Script {
     using stdJson for string;
@@ -84,6 +85,7 @@ contract DeployManager is Script {
             _runDeployFile(new UpgradeEtherFiARMScript());
             _runDeployFile(new UpgradeOETHARMScript());
             _runDeployFile(new DeployEthenaARMScript());
+            _runDeployFile(new UpgradeEthenaARMScript());
         } else if (block.chainid == 17000) {
             // Holesky
         } else if (block.chainid == 146) {
