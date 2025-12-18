@@ -1,9 +1,9 @@
 const { Defender } = require("@openzeppelin/defender-sdk");
 const { ethers } = require("ethers");
 
-const { collectFees } = require("../tasks/admin");
+const { allocate } = require("../tasks/admin");
 const { mainnet } = require("../utils/addresses");
-const armAbi = require("../../abis/EtherFiARM.json");
+const armAbi = require("../../abis/OriginARM.json");
 
 // Entrypoint for the Defender Action
 const handler = async (event) => {
@@ -20,11 +20,13 @@ const handler = async (event) => {
   );
 
   // References to contracts
-  const arm = new ethers.Contract(mainnet.etherfiARM, armAbi, signer);
+  const arm = new ethers.Contract(mainnet.OethARM, armAbi, signer);
 
-  await collectFees({
+  await allocate({
     signer,
     arm,
+    threshold: 10000,
+    maxGasPrice: 500,
   });
 };
 
