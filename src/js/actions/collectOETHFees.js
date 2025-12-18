@@ -1,12 +1,11 @@
 const { Defender } = require("@openzeppelin/defender-sdk");
 const { ethers } = require("ethers");
 
-const { autoRequestWithdraw } = require("../tasks/liquidityAutomation");
+const { collectFees } = require("../tasks/admin");
 const { mainnet } = require("../utils/addresses");
-const erc20Abi = require("../../abis/ERC20.json");
-const oethARMAbi = require("../../abis/OethARM.json");
+const armAbi = require("../../abis/OriginARM.json");
 
-// Entrypoint for the Autotask
+// Entrypoint for the Defender Action
 const handler = async (event) => {
   // Initialize defender relayer provider and signer
   const client = new Defender(event);
@@ -21,15 +20,11 @@ const handler = async (event) => {
   );
 
   // References to contracts
-  const baseAsset = new ethers.Contract(mainnet.OETHProxy, erc20Abi, signer);
-  const arm = new ethers.Contract(mainnet.OethARM, oethARMAbi, signer);
+  const arm = new ethers.Contract(mainnet.OethARM, armAbi, signer);
 
-  await autoRequestWithdraw({
+  await collectFees({
     signer,
-    baseAsset,
     arm,
-    minAmount: 5,
-    confirm: true,
   });
 };
 

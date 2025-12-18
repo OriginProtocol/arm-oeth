@@ -11,6 +11,7 @@ const {
 } = require("./markets");
 const { getBlock } = require("../utils/block");
 const { getLidoQueueData } = require("../utils/lido");
+const { getMerklRewards } = require("../utils/merkl");
 const { getSigner } = require("../utils/signers");
 const { logTxDetails } = require("../utils/txLogger");
 const {
@@ -226,7 +227,7 @@ const logAssets = async (arm, blockTag) => {
   let lendingMarketBalance = 0n;
   // Get the lending market from the active market
   // Atm we use a hardcoded address, but this should be replaced with a call to the active market once the ARM is upgraded
-  let marketAddress = "0x29c4Bb7B1eBcc53e8CBd16480B5bAe52C69806D3"; //await arm.activeMarket({ blockTag });
+  let marketAddress = await arm.activeMarket({ blockTag });
   if (marketAddress != addresses.zero) {
     const marketContract = await ethers.getContractAt(
       "Abstract4626MarketWrapper",
@@ -269,6 +270,10 @@ const logAssets = async (arm, blockTag) => {
   const buffer = await arm.armBuffer({ blockTag });
   const bufferPercent = (buffer * 10000n) / parseUnits("1");
 
+  const { amount: morphoRewards } = await getMerklRewards({
+    userAddress: marketAddress,
+  });
+
   console.log(`Assets`);
   console.log(`liquidity buffer ${formatUnits(bufferPercent, 2)}%`);
   console.log(
@@ -303,6 +308,7 @@ const logAssets = async (arm, blockTag) => {
   console.log(
     `${formatUnits(wethInStrategist, 18).padEnd(24)} WETH in Strategist (fees)`,
   );
+  console.log(`${formatUnits(morphoRewards, 18)} MORPHO rewards claimable`);
 
   return { totalAssets, totalSupply, liquidityWeth };
 };
