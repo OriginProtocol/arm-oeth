@@ -84,7 +84,7 @@ subtask(
 )
   .addParam(
     "arm",
-    "Name of the ARM. eg Lido, Origin, Oeth, EtherFi or Ethena",
+    "Name of the ARM. eg Lido, Origin, EtherFi or Ethena",
     "Lido",
     types.string,
   )
@@ -138,31 +138,24 @@ task("swapLido").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
 
-// OETH ARM Liquidity management
+// Origin ARM Liquidity management
 
 subtask(
   "autoRequestWithdraw",
   "Request withdrawal of base asset (WETH/OS) from the Origin Vault",
 )
   .addOptionalParam(
-    "arm",
-    "The name of the ARM. eg Oeth or Origin",
-    "Oeth",
-    types.string,
-  )
-  .addOptionalParam(
     "minAmount",
-    "Minimum amount of OETH that will be withdrawn",
+    "Minimum amount of oTokens that will be withdrawn",
     2,
     types.float,
   )
   .setAction(async (taskArgs) => {
-    const arm = taskArgs.arm;
     const signer = await getSigner();
-    const assetSymbol = arm === "Oeth" ? "OETH" : "OS";
-    const asset = await resolveAsset(assetSymbol);
 
-    const armContract = await resolveArmContract(arm);
+    const armContract = await resolveArmContract("Origin");
+    const assetAddress = await armContract.asset();
+    const asset = await ethers.getContractAt("IERC20Metadata", assetAddress);
 
     await autoRequestWithdraw({
       ...taskArgs,
@@ -175,33 +168,26 @@ task("autoRequestWithdraw").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
 
-subtask("autoClaimWithdraw", "Claim withdrawal requests from the OETH Vault")
-  .addOptionalParam(
-    "arm",
-    "The name of the ARM. eg Oeth or Origin",
-    "Oeth",
-    types.string,
-  )
-  .setAction(async (taskArgs) => {
-    const arm = taskArgs.arm;
-    const signer = await getSigner();
-    const liquiditySymbol = arm === "Oeth" ? "WETH" : "WS";
-    const liquidityAsset = await resolveAsset(liquiditySymbol);
+subtask(
+  "autoClaimWithdraw",
+  "Claim withdrawal requests from an Origin Vault",
+).setAction(async (taskArgs) => {
+  const signer = await getSigner();
 
-    const armContract = await resolveArmContract(arm);
+  const armContract = await resolveArmContract("Origin");
+  const vaultAddress = await armContract.vault();
+  const vault = await ethers.getContractAt("IOriginVault", vaultAddress);
+  const assetAddress = await armContract.asset();
+  const asset = await ethers.getContractAt("IERC20Metadata", assetAddress);
 
-    const vaultName = arm === "Oeth" ? "OETH" : "OS";
-    const vaultAddress = await parseAddress(`${vaultName}_VAULT`);
-    const vault = await ethers.getContractAt("IOriginVault", vaultAddress);
-
-    await autoClaimWithdraw({
-      ...taskArgs,
-      signer,
-      liquidityAsset,
-      arm: armContract,
-      vault,
-    });
+  await autoClaimWithdraw({
+    ...taskArgs,
+    signer,
+    asset,
+    arm: armContract,
+    vault,
   });
+});
 task("autoClaimWithdraw").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
@@ -210,22 +196,15 @@ subtask(
   "requestWithdraw",
   "Request a specific amount of oTokens to withdraw from the Vault",
 )
-  .addOptionalParam(
-    "arm",
-    "The name of the ARM. eg Oeth or Origin",
-    "Oeth",
-    types.string,
-  )
-  .addParam("amount", "OETH withdraw amount", 50, types.float)
+  .addParam("amount", "oToken withdraw amount", 50, types.float)
   .setAction(async (taskArgs) => {
     const signer = await getSigner();
 
-    const armContract = await resolveArmContract(taskArgs.arm);
+    const armContract = await resolveArmContract("Origin");
 
     await requestWithdraw({
       ...taskArgs,
       signer,
-      armName: taskArgs.arm,
       arm: armContract,
     });
   });
@@ -234,22 +213,15 @@ task("requestWithdraw").setAction(async (_, __, runSuper) => {
 });
 
 subtask("claimWithdraw", "Claim a requested oToken withdrawal from the Vault")
-  .addOptionalParam(
-    "arm",
-    "The name of the ARM. eg Oeth or Origin",
-    "Oeth",
-    types.string,
-  )
   .addParam("id", "Request identifier", undefined, types.string)
   .setAction(async (taskArgs) => {
     const signer = await getSigner();
 
-    const armContract = await resolveArmContract(taskArgs.arm);
+    const armContract = await resolveArmContract("Origin");
 
     await claimWithdraw({
       ...taskArgs,
       signer,
-      armName: taskArgs.arm,
       arm: armContract,
     });
   });
@@ -257,20 +229,13 @@ task("claimWithdraw").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
 
-subtask("withdrawStatus", "Get the status of a OETH withdrawal request")
-  .addOptionalParam(
-    "arm",
-    "The name of the ARM. eg Oeth or Origin",
-    "Oeth",
-    types.string,
-  )
+subtask("withdrawStatus", "Get the status of a oToken withdrawal request")
   .addParam("id", "Request number", undefined, types.string)
   .setAction(async (taskArgs) => {
     const signer = await getSigner();
 
-    const armContract = await resolveArmContract(taskArgs.arm);
-    const vaultName = taskArgs.arm === "Oeth" ? "OETH_VAULT" : "OS_VAULT";
-    const vaultAddress = await parseAddress(vaultName);
+    const armContract = await resolveArmContract("Origin");
+    const vaultAddress = await armContract.vault();
     const vault = await ethers.getContractAt("IOriginVault", vaultAddress);
 
     await withdrawRequestStatus({
@@ -284,7 +249,8 @@ task("withdrawStatus").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
 
-// Token tasks.
+// Token tasks
+
 subtask("allowance", "Get the token allowance an owner has given to a spender")
   .addParam(
     "symbol",
@@ -392,6 +358,7 @@ task("transferFrom").setAction(async (_, __, runSuper) => {
 });
 
 // WETH tasks
+
 subtask("depositWETH", "Deposit ETH into WETH")
   .addParam("amount", "Amount of ETH to deposit", undefined, types.float)
   .setAction(async (taskArgs) => {
@@ -429,7 +396,7 @@ task("submitLido").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
 
-// Vault tasks.
+// Origin Vault tasks
 
 task(
   "queueLiquidity",
@@ -971,7 +938,7 @@ task("setHarvester").setAction(async (_, __, runSuper) => {
 subtask("allocate", "Allocate to/from the active lending market")
   .addOptionalParam(
     "arm",
-    "The name of the ARM. eg Lido, OETH, Origin, EtherFi or Ethena",
+    "The name of the ARM. eg Lido, Origin, EtherFi or Ethena",
     "Origin",
     types.string,
   )
@@ -1008,7 +975,7 @@ task("allocate").setAction(async (_, __, runSuper) => {
 subtask("setARMBuffer", "Set the ARM buffer percentage")
   .addOptionalParam(
     "arm",
-    "The name of the ARM. eg Lido, OETH, Origin, EtherFi or Ethena",
+    "The name of the ARM. eg Lido, Origin, EtherFi or Ethena",
     "Origin",
     types.string,
   )
@@ -1202,7 +1169,7 @@ task("snapMarket").setAction(async (_, __, runSuper) => {
 subtask("snap", "Take a snapshot of the an ARM")
   .addOptionalParam(
     "arm",
-    "The name of the ARM. eg Lido, Oeth, Origin, EtherFi or Ethena",
+    "The name of the ARM. eg Lido, Origin, EtherFi or Ethena",
     "Lido",
     types.string,
   )
@@ -1352,7 +1319,7 @@ subtask(
 )
   .addOptionalParam(
     "arm",
-    "Name of the ARM. eg Lido, Origin or Oeth",
+    "Name of the ARM. currently only Origin",
     "Origin",
     types.string,
   )
@@ -1459,7 +1426,7 @@ task("setOSSiloPrice").setAction(async (_, __, runSuper) => {
 subtask("claimMerklRewards", "Claim Merkl rewards for Morpho markets")
   .addOptionalParam(
     "arm",
-    "Name of the ARM. eg Lido, Ether.fi or Oeth",
+    "Name of the ARM. eg Lido, Ether.fi or Origin",
     "Lido",
     types.string,
   )

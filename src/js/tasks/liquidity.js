@@ -21,27 +21,23 @@ const log = require("../utils/logger")("task:liquidity");
 // Extend Day.js with the UTC plugin
 dayjs.extend(utc);
 
-const requestWithdraw = async ({ amount, signer, armName, arm }) => {
+const requestWithdraw = async ({ amount, signer, arm }) => {
   const amountBI = parseUnits(amount.toString(), 18);
 
-  log(`About to request ${amount} OETH withdrawal`);
+  log(`About to request ${amount} oToken withdrawal`);
 
-  const functionName =
-    armName == "Origin" ? "requestOriginWithdrawal" : "requestWithdrawal";
-  const tx = await arm.connect(signer)[functionName](amountBI);
+  const tx = await arm.connect(signer).requestOriginWithdrawal(amountBI);
 
-  await logTxDetails(tx, functionName);
+  await logTxDetails(tx, "requestOriginWithdrawal");
 
   // TODO parse the request id from the WithdrawalRequested event on the OETH Vault
 };
 
-const claimWithdraw = async ({ id, signer, armName, arm }) => {
-  const functionName =
-    armName == "Origin" ? "claimOriginWithdrawals" : "claimWithdrawals";
-  const tx = await arm.connect(signer)[functionName]([id]);
+const claimWithdraw = async ({ id, signer, arm }) => {
+  const tx = await arm.connect(signer).claimOriginWithdrawals([id]);
 
-  log(`About to claim withdrawal request ${id} calling ${functionName}`);
-  await logTxDetails(tx, functionName);
+  log(`About to claim withdrawal request ${id}`);
+  await logTxDetails(tx, "claimOriginWithdrawals");
 };
 
 const withdrawRequestStatus = async ({ id, arm, vault }) => {
@@ -62,6 +58,8 @@ const withdrawRequestStatus = async ({ id, arm, vault }) => {
 const snap = async ({ arm, block, days, gas, amount, oneInch, kyber }) => {
   const armContract = await resolveArmContract(arm);
 
+  const { chainId } = await ethers.provider.getNetwork();
+
   const blockTag = await getBlock(block);
 
   const { liquidityBalance } = await logLiquidity({ arm, block });
@@ -70,62 +68,58 @@ const snap = async ({ arm, block, days, gas, amount, oneInch, kyber }) => {
     await logWithdrawalRequests({ blockTag });
   }
 
-  // This can be removed after OETH is upgraded
-  if (arm !== "Oeth") {
-    await logWithdrawalQueue(armContract, blockTag, liquidityBalance);
+  await logWithdrawalQueue(armContract, blockTag, liquidityBalance);
 
-    const armPrices = await logArmPrices({ block, gas, days }, armContract);
+  const armPrices = await logArmPrices({ block, gas, days }, armContract);
 
-    const pair =
-      arm === "Lido"
-        ? "stETH/WETH"
-        : arm === "EtherFi"
-          ? "eETH/WETH"
-          : arm == "Origin"
+  const pair =
+    arm === "Lido"
+      ? "stETH/WETH"
+      : arm === "EtherFi"
+        ? "eETH/WETH"
+        : arm === "Ethena"
+          ? "sUSDe/USDe"
+          : arm == "Origin" && chainId === 146
             ? "OS/wS"
-            : arm === "Ethena"
-              ? "sUSDe/USDe"
-              : null;
-    const assets = {
-      liquid: await armContract.liquidityAsset(),
-      base: await armContract.baseAsset(),
-    };
+            : "OETH/WETH";
+  const assets = {
+    liquid: await armContract.liquidityAsset(),
+    base: await armContract.baseAsset(),
+  };
 
-    let wrapPrice;
-    if (arm === "Ethena") {
-      wrapPrice = await convertToAsset(assets.base, amount);
-      const actualArmSellPrice =
-        (armPrices.sellPrice * wrapPrice) / parseUnits("1", 18);
-      const actualArmBuyPrice =
-        (armPrices.buyPrice * wrapPrice) / parseUnits("1", 18);
+  let wrapPrice;
+  if (arm === "Ethena") {
+    wrapPrice = await convertToAsset(assets.base, amount);
+    const actualArmSellPrice =
+      (armPrices.sellPrice * wrapPrice) / parseUnits("1", 18);
+    const actualArmBuyPrice =
+      (armPrices.buyPrice * wrapPrice) / parseUnits("1", 18);
 
-      console.log(`\nEthena : ${formatUnits(wrapPrice, 18)} sUSDe/USDe`);
-      console.log(
-        `Sell   : ${formatUnits(actualArmSellPrice, 18).padEnd(20)} sUSDe/USDe`,
-      );
-      console.log(
-        `Buy    : ${formatUnits(actualArmBuyPrice, 18).padEnd(20)} sUSDe/USDe`,
-      );
+    console.log(`\nEthena : ${formatUnits(wrapPrice, 18)} sUSDe/USDe`);
+    console.log(
+      `Sell   : ${formatUnits(actualArmSellPrice, 18).padEnd(20)} sUSDe/USDe`,
+    );
+    console.log(
+      `Buy    : ${formatUnits(actualArmBuyPrice, 18).padEnd(20)} sUSDe/USDe`,
+    );
+  }
+
+  if (oneInch) {
+    const fee = arm === "Lido" ? 10n : 30n;
+
+    await log1InchPrices(
+      { amount, assets, fee, pair, chainId, wrapPrice },
+      armPrices,
+    );
+
+    if (arm === "EtherFi") {
+      await logWrappedEtherFiPrices({ amount, armPrices });
     }
+  }
 
-    if (oneInch) {
-      const fee = arm === "Lido" ? 10n : 30n;
-
-      const chainId = await (await ethers.provider.getNetwork()).chainId;
-      await log1InchPrices(
-        { amount, assets, fee, pair, chainId, wrapPrice },
-        armPrices,
-      );
-
-      if (arm === "EtherFi") {
-        await logWrappedEtherFiPrices({ amount, armPrices });
-      }
-    }
-
-    if (kyber && arm !== "Origin") {
-      // Kyber does not support Sonic
-      await logKyberPrices({ amount, assets, pair, wrapPrice }, armPrices);
-    }
+  if (kyber && chainId !== 146) {
+    // Kyber does not support Sonic
+    await logKyberPrices({ amount, assets, pair, wrapPrice }, armPrices);
   }
 };
 

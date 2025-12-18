@@ -34,10 +34,8 @@ const autoRequestWithdraw = async ({
 
   log(`About to request ${formatUnits(assetBalance)} ${symbol} withdrawal`);
 
-  const functionName =
-    symbol == "OS" ? "requestOriginWithdrawal" : "requestWithdrawal";
-  const tx = await arm.connect(signer)[functionName](assetBalance);
-  await logTxDetails(tx, "requestWithdrawal", confirm);
+  const tx = await arm.connect(signer).requestOriginWithdrawal(assetBalance);
+  await logTxDetails(tx, "requestOriginWithdrawal", confirm);
 };
 
 const autoClaimWithdraw = async ({
@@ -85,10 +83,8 @@ const autoClaimWithdraw = async ({
 
   log(`About to claim requests: ${requestIds} `);
 
-  const functionName =
-    liquiditySymbol == "wS" ? "claimOriginWithdrawals" : "claimWithdrawals";
-  const tx = await arm.connect(signer)[functionName](requestIds);
-  await logTxDetails(tx, "claimWithdrawals", confirm);
+  const tx = await arm.connect(signer).claimOriginWithdrawals(requestIds);
+  await logTxDetails(tx, "claimOriginWithdrawals", confirm);
 
   return requestIds;
 };
