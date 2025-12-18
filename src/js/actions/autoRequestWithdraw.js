@@ -1,7 +1,7 @@
 const { Defender } = require("@openzeppelin/defender-sdk");
 const { ethers } = require("ethers");
 
-const { autoRequestWithdraw } = require("../tasks/liquidity");
+const { autoRequestWithdraw } = require("../tasks/liquidityAutomation");
 const { mainnet } = require("../utils/addresses");
 const erc20Abi = require("../../abis/ERC20.json");
 const oethARMAbi = require("../../abis/OethARM.json");
@@ -21,14 +21,14 @@ const handler = async (event) => {
   );
 
   // References to contracts
-  const asset = new ethers.Contract(mainnet.OETHProxy, erc20Abi, signer);
+  const baseAsset = new ethers.Contract(mainnet.OETHProxy, erc20Abi, signer);
   const arm = new ethers.Contract(mainnet.OethARM, oethARMAbi, signer);
 
   await autoRequestWithdraw({
     signer,
-    asset,
+    baseAsset,
     arm,
-    minAmount: 1,
+    minAmount: 5,
     confirm: true,
   });
 };

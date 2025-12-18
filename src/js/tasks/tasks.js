@@ -154,13 +154,16 @@ subtask(
     const signer = await getSigner();
 
     const armContract = await resolveArmContract("Origin");
-    const assetAddress = await armContract.asset();
-    const asset = await ethers.getContractAt("IERC20Metadata", assetAddress);
+    const baseAssetAddress = await armContract.baseAsset();
+    const baseAsset = await ethers.getContractAt(
+      "IERC20Metadata",
+      baseAssetAddress,
+    );
 
     await autoRequestWithdraw({
       ...taskArgs,
       signer,
-      asset,
+      baseAsset,
       arm: armContract,
     });
   });
@@ -178,12 +181,15 @@ subtask(
   const vaultAddress = await armContract.vault();
   const vault = await ethers.getContractAt("IOriginVault", vaultAddress);
   const assetAddress = await armContract.asset();
-  const asset = await ethers.getContractAt("IERC20Metadata", assetAddress);
+  const liquidityAsset = await ethers.getContractAt(
+    "IERC20Metadata",
+    assetAddress,
+  );
 
   await autoClaimWithdraw({
     ...taskArgs,
     signer,
-    asset,
+    liquidityAsset,
     arm: armContract,
     vault,
   });

@@ -12,13 +12,13 @@ dayjs.extend(utc);
 
 const autoRequestWithdraw = async ({
   signer,
-  asset,
+  baseAsset,
   arm,
   minAmount,
   confirm,
 }) => {
-  const symbol = await asset.symbol();
-  const assetBalance = await asset.balanceOf(await arm.getAddress());
+  const symbol = await baseAsset.symbol();
+  const assetBalance = await baseAsset.balanceOf(await arm.getAddress());
   log(`${formatUnits(assetBalance)} ${symbol} in ARM`);
 
   const minAmountBI = parseUnits(minAmount.toString(), 18);
