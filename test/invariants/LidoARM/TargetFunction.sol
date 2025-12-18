@@ -320,7 +320,7 @@ abstract contract TargetFunction is Properties {
     ////////////////////////////////////////////////////
     /// --- HELPERS
     ////////////////////////////////////////////////////
-    uint256 constant SHARES_UP_ONLY__ERROR_TOLERANCE = 1e4;
+    uint256 constant SHARES_UP_ONLY__ERROR_TOLERANCE = 1e6;
 
     function finalizeLidoClaims() public {
         if (lidoWithdrawRequests.length == 0) return;
