@@ -22,7 +22,7 @@ contract UpgradeOETHARMScript is AbstractDeployScript {
     GovProposal public govProposal;
 
     string public constant override DEPLOY_NAME = "013_UpgradeOETHARMScript";
-    bool public constant override proposalExecuted = false;
+    bool public constant override proposalExecuted = true;
 
     Proxy morphoMarketProxy;
     OriginARM originARMImpl;
