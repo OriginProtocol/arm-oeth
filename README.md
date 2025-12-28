@@ -170,6 +170,10 @@ function totalAssets() public view virtual returns (uint256);
 function asset() external view virtual returns (address);
 ```
 
+## Lending Platforms
+
+The ARM token can be used as collateral on lending platforms to borrow other assets. The ARM token can not be borrowed on lending platforms as the ARM's price, or assets per share, can be increased by donating assets to the ARM. eg donating WETH or stETH to the Lido ARM will increase the ARM's token price. Increasing the price of a borrowed asset increases the borrower's loan to value (LTV) ratio which can lead to a liquidation.
+
 ## Development
 
 ### Install

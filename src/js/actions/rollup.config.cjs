@@ -49,14 +49,17 @@ const actions = [
   "collectFeesSonic",
   "collectEtherFiFees",
   "collectEthenaFees",
-  "allocateSonic",
+  "collectOETHFees",
   "collectRewardsSonic",
-  "setPrices",
-  "setPricesEtherFi",
-  "setOSSiloPriceAction",
   "allocateLido",
   "allocateEtherFi",
   "allocateEthena",
+  "allocateOETH",
+  "allocateSonic",
+  "setOSSiloPriceAction",
+  "setPrices",
+  "setPricesEtherFi",
+  "setPricesOETH",
 ];
 
 module.exports = actions.map((action) => ({
