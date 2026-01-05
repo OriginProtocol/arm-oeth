@@ -19,7 +19,7 @@ contract UpgradeEthenaARMScript is AbstractDeployScript {
     GovProposal public govProposal;
 
     string public constant override DEPLOY_NAME = "015_UpgradeEthenaARMScript";
-    bool public constant override proposalExecuted = false;
+    bool public constant override proposalExecuted = true;
 
     EthenaARM armImpl;
 

@@ -53,7 +53,7 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
         assertEq(ethenaARM.liquidityAsset(), Mainnet.USDE, "liquidity asset");
         assertEq(ethenaARM.asset(), Mainnet.USDE, "ERC-4626 asset");
         assertEq(ethenaARM.claimDelay(), 10 minutes, "claim delay");
-        assertEq(ethenaARM.crossPrice(), 0.999e36, "cross price");
+        assertEq(ethenaARM.crossPrice(), 0.9995e36, "cross price");
 
         assertEq(capManager.accountCapEnabled(), true, "account cap enabled");
         assertEq(capManager.totalAssetsCap(), 100000 ether, "total assets cap");

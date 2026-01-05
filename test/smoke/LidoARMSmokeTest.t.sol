@@ -51,7 +51,7 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
         assertEq(lidoARM.liquidityAsset(), Mainnet.WETH, "liquidity asset");
         assertEq(lidoARM.asset(), Mainnet.WETH, "ERC-4626 asset");
         assertEq(lidoARM.claimDelay(), 10 minutes, "claim delay");
-        assertEq(lidoARM.crossPrice(), 0.9999e36, "cross price");
+        assertEq(lidoARM.crossPrice(), 0.99996e36, "cross price");
 
         assertEq(capManager.accountCapEnabled(), false, "account cap enabled");
         assertEq(capManager.operator(), Mainnet.ARM_RELAYER, "Operator");
@@ -70,10 +70,10 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
 
     function test_swap_exact_weth_for_steth() external {
         // trader buys stETH and sells WETH, the ARM sells stETH at a
+        // 0.3 bps discount
+        _swapExactTokensForTokens(weth, steth, 0.99997e36, 10 ether);
         // 0.5 bps discount
-        _swapExactTokensForTokens(weth, steth, 0.99995e36, 10 ether);
-        // 1 bps discount
-        _swapExactTokensForTokens(weth, steth, 0.9999e36, 100 ether);
+        _swapExactTokensForTokens(weth, steth, 0.99996e36, 100 ether);
     }
 
     function test_swapTokensForExactTokens() external {
@@ -107,7 +107,7 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
             expectedOut = amountIn * price / 1e36;
 
             vm.prank(Mainnet.ARM_RELAYER);
-            uint256 sellPrice = price < 0.9997e36 ? 0.9999e36 : price + 2e32;
+            uint256 sellPrice = price < 0.9997e36 ? 0.99996e36 : price + 2e32;
             lidoARM.setPrices(price, sellPrice);
         }
         // Approve the ARM to transfer the input token of the swap.
@@ -144,7 +144,7 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
             expectedIn = amountOut * 1e36 / price + 3;
 
             vm.prank(Mainnet.ARM_RELAYER);
-            uint256 sellPrice = price < 0.9997e36 ? 0.9999e36 : price + 2e32;
+            uint256 sellPrice = price < 0.9997e36 ? 0.99996e36 : price + 2e32;
             lidoARM.setPrices(price, sellPrice);
         }
         // Approve the ARM to transfer the input token of the swap.

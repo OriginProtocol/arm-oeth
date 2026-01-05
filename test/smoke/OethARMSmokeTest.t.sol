@@ -28,8 +28,8 @@ contract Fork_OriginARM_Smoke_Test is AbstractSmokeTest {
         vm.label(address(oeth), "OETH");
         vm.label(address(operator), "OPERATOR");
 
-        proxy = Proxy(payable(deployManager.getDeployment("ORIGIN_ARM")));
-        originARM = OriginARM(deployManager.getDeployment("ORIGIN_ARM"));
+        proxy = Proxy(payable(deployManager.getDeployment("OETH_ARM")));
+        originARM = OriginARM(deployManager.getDeployment("OETH_ARM"));
 
         _dealWETH(address(originARM), 100 ether);
         _dealOETH(address(originARM), 100 ether);
