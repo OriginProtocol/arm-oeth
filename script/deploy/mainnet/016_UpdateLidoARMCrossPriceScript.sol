@@ -29,7 +29,7 @@ contract UpgradeLidoARMCrossPriceScript is AbstractDeployScript {
     function _buildGovernanceProposal() internal override {
         govProposal.setDescription("Update Lido ARM cross price");
 
-        govProposal.action(deployedContracts["LIDO_ARM"], "setCrossPrice(uint256)", abi.encode(0.99995e36));
+        govProposal.action(deployedContracts["LIDO_ARM"], "setCrossPrice(uint256)", abi.encode(0.99996e36));
 
         govProposal.simulate();
     }
