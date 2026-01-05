@@ -28,8 +28,8 @@ contract Fork_OriginARM_Smoke_Test is AbstractSmokeTest {
         vm.label(address(oeth), "OETH");
         vm.label(address(operator), "OPERATOR");
 
-        proxy = Proxy(payable(deployManager.getDeployment("OETH_ARM")));
-        originARM = OriginARM(deployManager.getDeployment("OETH_ARM"));
+        proxy = Proxy(payable(deployManager.getDeployment("ORIGIN_ARM")));
+        originARM = OriginARM(deployManager.getDeployment("ORIGIN_ARM"));
 
         _dealWETH(address(originARM), 100 ether);
         _dealOETH(address(originARM), 100 ether);
@@ -100,8 +100,8 @@ contract Fork_OriginARM_Smoke_Test is AbstractSmokeTest {
         vm.startPrank(address(originARM));
         oeth.transfer(address(this), oeth.balanceOf(address(originARM)));
         vm.stopPrank();
-        vm.prank(Mainnet.TIMELOCK);
-        originARM.setCrossPrice(0.9999e36);
+        //vm.prank(Mainnet.TIMELOCK);
+        //originARM.setCrossPrice(0.9995e36);
 
         // trader buys OETH and sells WETH, the ARM sells OETH at a
         // 0.5 bps discount
@@ -121,7 +121,7 @@ contract Fork_OriginARM_Smoke_Test is AbstractSmokeTest {
             expectedOut = amountIn * 1e36 / price;
 
             vm.prank(Mainnet.ARM_RELAYER);
-            originARM.setPrices(price - 2e32, price);
+            originARM.setPrices(0.99e36, price);
         } else {
             // Trader is selling stETH and buying WETH
             // the ARM is buying stETH and selling WETH
@@ -161,8 +161,8 @@ contract Fork_OriginARM_Smoke_Test is AbstractSmokeTest {
         vm.startPrank(address(originARM));
         oeth.transfer(address(this), oeth.balanceOf(address(originARM)));
         vm.stopPrank();
-        vm.prank(Mainnet.TIMELOCK);
-        originARM.setCrossPrice(0.9999e36);
+        //vm.prank(Mainnet.TIMELOCK);
+        //originARM.setCrossPrice(0.9999e36);
 
         // trader buys OETH and sells WETH, the ARM sells OETH at a
         // 0.5 bps discount
@@ -182,7 +182,7 @@ contract Fork_OriginARM_Smoke_Test is AbstractSmokeTest {
             expectedIn = amountOut * price / 1e36;
 
             vm.prank(Mainnet.ARM_RELAYER);
-            originARM.setPrices(price - 2e32, price);
+            originARM.setPrices(0.99e36, price);
         } else {
             // Trader is selling stETH and buying WETH
             // the ARM is buying stETH and selling WETH
