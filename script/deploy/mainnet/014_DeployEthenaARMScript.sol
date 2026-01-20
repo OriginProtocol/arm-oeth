@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
-// Foundry imports
-import {console} from "forge-std/console.sol";
-
 // Contract imports
 import {Proxy} from "contracts/Proxy.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
@@ -14,15 +11,13 @@ import {EthenaUnstaker} from "contracts/EthenaARM.sol";
 import {IWETH, IStakedUSDe} from "contracts/Interfaces.sol";
 
 // Deployment imports
-import {GovProposal, GovSixHelper} from "contracts/utils/GovSixHelper.sol";
-import {AbstractDeployScript} from "../AbstractDeployScript.sol";
+import {GovHelper, GovProposal} from "script/deploy/helpers/GovHelper.sol";
+import {AbstractDeployScript} from "script/deploy/helpers/AbstractDeployScript.s.sol";
 
-contract DeployEthenaARMScript is AbstractDeployScript {
-    using GovSixHelper for GovProposal;
+contract DeployEthenaARMScript is AbstractDeployScript("014_DeployEthenaARMScript") {
+    using GovHelper for GovProposal;
 
-    GovProposal public govProposal;
-
-    string public constant override DEPLOY_NAME = "014_DeployEthenaARMScript";
+    bool public override skip = false;
     bool public constant override proposalExecuted = true;
 
     Proxy morphoMarketProxy;
@@ -33,20 +28,17 @@ contract DeployEthenaARMScript is AbstractDeployScript {
     uint256 public constant MAX_UNSTAKERS = 42;
 
     function _execute() internal override {
-        console.log("Deploy:", DEPLOY_NAME);
-        console.log("------------");
-
         // 1. Deploy new ARM proxy contract
         armProxy = new Proxy();
-        _recordDeploy("ETHENA_ARM", address(armProxy));
+        _recordDeployment("ETHENA_ARM", address(armProxy));
 
         // 2. Deploy proxy for the CapManager
         Proxy capManProxy = new Proxy();
-        _recordDeploy("ETHENA_ARM_CAP_MAN", address(capManProxy));
+        _recordDeployment("ETHENA_ARM_CAP_MAN", address(capManProxy));
 
         // 3. Deploy CapManager implementation
         CapManager capManagerImpl = new CapManager(address(armProxy));
-        _recordDeploy("ETHENA_ARM_CAP_IMPL", address(capManagerImpl));
+        _recordDeployment("ETHENA_ARM_CAP_IMPL", address(capManagerImpl));
 
         // 4. Initialize Proxy with CapManager implementation and set the owner to the deployer for now
         bytes memory capManData = abi.encodeWithSignature("initialize(address)", Mainnet.ARM_RELAYER);
@@ -70,7 +62,7 @@ contract DeployEthenaARMScript is AbstractDeployScript {
         capManProxy.setOwner(Mainnet.GOV_MULTISIG);
 
         // 6. Deploy new Ethena implementation
-        uint256 claimDelay = tenderlyTestnet ? 1 minutes : 10 minutes;
+        uint256 claimDelay = 10 minutes;
         armImpl = new EthenaARM(
             Mainnet.USDE,
             Mainnet.SUSDE,
@@ -78,7 +70,7 @@ contract DeployEthenaARMScript is AbstractDeployScript {
             1e18, // minSharesToRedeem
             100e18 // allocateThreshold
         );
-        _recordDeploy("ETHENA_ARM_IMPL", address(armImpl));
+        _recordDeployment("ETHENA_ARM_IMPL", address(armImpl));
 
         // 7. Give the deployer a tiny amount of USDe for the initialization
         // This can be skipped if the deployer already has USDe
@@ -95,8 +87,6 @@ contract DeployEthenaARMScript is AbstractDeployScript {
             address(capManager)
         );
         armProxy.initialize(address(armImpl), deployer, armData);
-
-        console.log("Initialized Ethena ARM");
 
         // 9. Set crossPrice to 0.999 USDe which is a 10 bps discount
         uint256 crossPrice = 0.999 * 1e36;
@@ -120,15 +110,12 @@ contract DeployEthenaARMScript is AbstractDeployScript {
 
         // 14. Transfer ownership of ARM to the 5/8 multisig
         armProxy.setOwner(Mainnet.GOV_MULTISIG);
-
-        console.log("Finished deploying", DEPLOY_NAME);
     }
 
     function _deployUnstakers() internal returns (address[MAX_UNSTAKERS] memory unstakers) {
         for (uint256 i = 0; i < MAX_UNSTAKERS; i++) {
             address unstaker = address(new EthenaUnstaker(payable(armProxy), IStakedUSDe(Mainnet.SUSDE)));
             unstakers[i] = address(unstaker);
-            console.log("Deployed unstaker", i, address(unstaker));
         }
         return unstakers;
     }

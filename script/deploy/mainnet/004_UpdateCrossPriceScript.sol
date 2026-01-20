@@ -1,16 +1,14 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity 0.8.23;
 
-import {GovProposal, GovSixHelper} from "contracts/utils/GovSixHelper.sol";
-import {AbstractDeployScript} from "../AbstractDeployScript.sol";
+// Deployment imports
+import {GovHelper, GovProposal} from "script/deploy/helpers/GovHelper.sol";
+import {AbstractDeployScript} from "script/deploy/helpers/AbstractDeployScript.s.sol";
 
-contract UpdateCrossPriceMainnetScript is AbstractDeployScript {
-    using GovSixHelper for GovProposal;
+contract UpdateCrossPriceMainnetScript is AbstractDeployScript("004_UpdateCrossPriceScript") {
+    using GovHelper for GovProposal;
 
-    GovProposal public govProposal;
-
-    string public constant override DEPLOY_NAME = "004_UpdateCrossPriceScript";
+    bool public override skip = false;
     bool public constant override proposalExecuted = true;
 
     function _execute() internal override {}
@@ -20,14 +18,6 @@ contract UpdateCrossPriceMainnetScript is AbstractDeployScript {
 
         uint256 newCrossPrice = 0.9999 * 1e36;
 
-        govProposal.action(deployedContracts["LIDO_ARM"], "setCrossPrice(uint256)", abi.encode(newCrossPrice));
-
-        _fork();
-    }
-
-    function _fork() internal override {
-        if (this.isForked()) {
-            govProposal.simulate();
-        }
+        govProposal.action(resolver.implementations("LIDO_ARM"), "setCrossPrice(uint256)", abi.encode(newCrossPrice));
     }
 }

@@ -1,33 +1,24 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
-// Foundry imports
-import {console} from "forge-std/console.sol";
-
 // Contract imports
 import {PendleOriginARMSY} from "contracts/pendle/PendleOriginARMSY.sol";
 
 // Deployment imports
-import {GovProposal, GovSixHelper} from "contracts/utils/GovSixHelper.sol";
-import {AbstractDeployScript} from "../AbstractDeployScript.sol";
+import {GovHelper, GovProposal} from "script/deploy/helpers/GovHelper.sol";
+import {AbstractDeployScript} from "script/deploy/helpers/AbstractDeployScript.s.sol";
 
-contract DeployPendleAdaptor is AbstractDeployScript {
-    using GovSixHelper for GovProposal;
+contract DeployPendleAdaptor is AbstractDeployScript("008_DeployPendleAdaptor") {
+    using GovHelper for GovProposal;
 
-    GovProposal public govProposal;
-
-    string public constant override DEPLOY_NAME = "008_DeployPendleAdaptor";
+    bool public override skip = false;
     bool public constant override proposalExecuted = true;
 
     function _execute() internal override {
-        console.log("Deploy:", DEPLOY_NAME);
-        console.log("------------");
-
         // 1. Deploy PendleOriginARMSY
-        PendleOriginARMSY sy = new PendleOriginARMSY("SY Lido ARM", "SY-ARM-WETH-stETH", deployedContracts["LIDO_ARM"]);
-        _recordDeploy("PENDLE_ORIGIN_ARM_SY", address(sy));
-
-        console.log("Finished deploying", DEPLOY_NAME);
+        PendleOriginARMSY sy =
+            new PendleOriginARMSY("SY Lido ARM", "SY-ARM-WETH-stETH", resolver.implementations("LIDO_ARM"));
+        _recordDeployment("PENDLE_ORIGIN_ARM_SY", address(sy));
     }
 
     function _buildGovernanceProposal() internal override {}

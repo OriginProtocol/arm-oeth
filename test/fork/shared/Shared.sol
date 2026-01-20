@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
-// Deployer
-import {DeployManager} from "script/deploy/DeployManager.sol";
-
 // Test imports
 import {Modifiers} from "test/fork/utils/Modifiers.sol";
 
@@ -37,7 +34,6 @@ import {Mainnet} from "contracts/utils/Addresses.sol";
 /// @dev `setUp()` function should be marked as `virtual` to allow overriding in child contracts.
 abstract contract Fork_Shared_Test_ is Modifiers {
     uint256 public forkId;
-    DeployManager public deployManager;
 
     //////////////////////////////////////////////////////
     /// --- SETUP
@@ -64,12 +60,7 @@ abstract contract Fork_Shared_Test_ is Modifiers {
     //////////////////////////////////////////////////////
     /// --- HELPERS
     //////////////////////////////////////////////////////
-    function _createDeployManager() internal {
-        deployManager = new DeployManager();
-
-        deployManager.setUp();
-        deployManager.run();
-    }
+    function _createDeployManager() internal {}
 
     function _createAndSelectFork() internal {
         // Check if the PROVIDER_URL is set.
@@ -89,16 +80,16 @@ abstract contract Fork_Shared_Test_ is Modifiers {
         deployer = makeAddr("deployer");
         feeCollector = makeAddr("fee collector");
 
-        operator = resolver.resolve("OPERATOR");
-        governor = resolver.resolve("GOVERNOR");
-        oethWhale = resolver.resolve("WHALE_OETH");
+        operator = Mainnet.ARM_RELAYER;
+        governor = Mainnet.GOVERNOR_FIVE;
+        oethWhale = Mainnet.WOETH;
 
         // Contracts.
-        oeth = IERC20(resolver.resolve("OETH"));
-        weth = IERC20(resolver.resolve("WETH"));
-        steth = IERC20(resolver.resolve("STETH"));
-        wsteth = IERC20(resolver.resolve("WSTETH"));
-        vault = IOriginVault(resolver.resolve("OETH_VAULT"));
+        oeth = IERC20(Mainnet.OETH);
+        weth = IERC20(Mainnet.WETH);
+        steth = IERC20(Mainnet.STETH);
+        wsteth = IERC20(Mainnet.WSTETH);
+        vault = IOriginVault(Mainnet.OETH_VAULT);
         badToken = IERC20(vm.randomAddress());
     }
 

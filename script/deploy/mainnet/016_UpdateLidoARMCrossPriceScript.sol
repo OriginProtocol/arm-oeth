@@ -1,36 +1,20 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
-// Foundry imports
-import {console} from "forge-std/console.sol";
-
-// Contract imports
-import {Proxy} from "contracts/Proxy.sol";
-import {EthenaARM} from "contracts/EthenaARM.sol";
-import {Mainnet} from "contracts/utils/Addresses.sol";
-
 // Deployment imports
-import {GovProposal, GovSixHelper} from "contracts/utils/GovSixHelper.sol";
-import {AbstractDeployScript} from "../AbstractDeployScript.sol";
+import {GovHelper, GovProposal} from "script/deploy/helpers/GovHelper.sol";
+import {AbstractDeployScript} from "script/deploy/helpers/AbstractDeployScript.s.sol";
 
-contract UpgradeLidoARMCrossPriceScript is AbstractDeployScript {
-    using GovSixHelper for GovProposal;
+contract UpgradeLidoARMCrossPriceScript is AbstractDeployScript("016_UpgradeLidoARMCrossPriceScript") {
+    using GovHelper for GovProposal;
 
-    GovProposal public govProposal;
+    bool public override skip = false;
+    bool public constant override proposalExecuted = false;
 
-    string public constant override DEPLOY_NAME = "016_UpgradeLidoARMCrossPriceScript";
-    bool public constant override proposalExecuted = true;
-
-    function _execute() internal override {
-        console.log("Deploy:", DEPLOY_NAME);
-        console.log("------------");
-    }
+    function _execute() internal override {}
 
     function _buildGovernanceProposal() internal override {
         govProposal.setDescription("Update Lido ARM cross price");
-
-        govProposal.action(deployedContracts["LIDO_ARM"], "setCrossPrice(uint256)", abi.encode(0.99996e36));
-
-        govProposal.simulate();
+        govProposal.action(resolver.implementations("LIDO_ARM"), "setCrossPrice(uint256)", abi.encode(0.99996e36));
     }
 }

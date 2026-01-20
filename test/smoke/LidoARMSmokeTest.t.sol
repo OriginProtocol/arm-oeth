@@ -21,17 +21,17 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
     address operator;
 
     function setUp() public {
-        weth = IERC20(resolver.resolve("WETH"));
-        steth = IERC20(resolver.resolve("STETH"));
-        operator = resolver.resolve("OPERATOR");
+        weth = IERC20(Mainnet.WETH);
+        steth = IERC20(Mainnet.STETH);
+        operator = Mainnet.ARM_RELAYER;
 
         vm.label(address(weth), "WETH");
         vm.label(address(steth), "stETH");
         vm.label(address(operator), "OPERATOR");
 
-        proxy = Proxy(payable(deployManager.getDeployment("LIDO_ARM")));
-        lidoARM = LidoARM(payable(deployManager.getDeployment("LIDO_ARM")));
-        capManager = CapManager(deployManager.getDeployment("LIDO_ARM_CAP_MAN"));
+        proxy = Proxy(payable(resolver.implementations("LIDO_ARM")));
+        lidoARM = LidoARM(payable(resolver.implementations("LIDO_ARM")));
+        capManager = CapManager(resolver.implementations("LIDO_ARM_CAP_MAN"));
 
         // Only fuzz from this address. Big speedup on fork.
         targetSender(address(this));
@@ -149,8 +149,6 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
         }
         // Approve the ARM to transfer the input token of the swap.
         inToken.approve(address(lidoARM), expectedIn + 10000);
-        console.log("Approved Lido ARM to spend %d", inToken.allowance(address(this), address(lidoARM)));
-        console.log("In token balance: %d", inToken.balanceOf(address(this)));
 
         uint256 startIn = inToken.balanceOf(address(this));
         uint256 startOut = outToken.balanceOf(address(this));
@@ -219,8 +217,6 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
         // Get the status of all the withdrawal requests. eg amount, owner, claimed status
         IStETHWithdrawal.WithdrawalRequestStatus[] memory statuses =
             IStETHWithdrawal(Mainnet.LIDO_WITHDRAWAL).getWithdrawalStatus(requestIds);
-
-        console.log("Got %d withdrawal requests", requestIds.length);
 
         for (uint256 i = 0; i < requestIds.length; i++) {
             assertEq(lidoARM.lidoWithdrawalRequests(requestIds[i]), statuses[i].amountOfStETH);

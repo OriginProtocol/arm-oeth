@@ -55,8 +55,8 @@ abstract contract Fork_Shared_Test is Base_Test_, Helpers {
     }
 
     function _deployMockContracts() internal {
-        os = IERC20(resolver.resolve("OS"));
-        ws = IERC20(resolver.resolve("WS"));
+        os = IERC20(Sonic.OS);
+        ws = IERC20(Sonic.WS);
     }
 
     function _generateAddresses() internal {

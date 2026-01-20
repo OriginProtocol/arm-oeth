@@ -1,25 +1,13 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.23;
 
-import {AddressResolver} from "./Addresses.sol";
-import {IGovernance} from "../Interfaces.sol";
-
 import {Vm} from "forge-std/Vm.sol";
-import {console} from "forge-std/console.sol";
+import {Logger} from "script/deploy/helpers/Logger.sol";
+import {GovAction, GovProposal} from "script/deploy/helpers/DeploymentTypes.sol";
 
-struct GovAction {
-    address target;
-    uint256 value;
-    string fullsig;
-    bytes data;
-}
+library GovHelper {
+    using Logger for bool;
 
-struct GovProposal {
-    string description;
-    GovAction[] actions;
-}
-
-library GovSixHelper {
     function id(GovProposal memory prop) internal pure returns (uint256 proposalId) {
         bytes32 descriptionHash = keccak256(bytes(prop.description));
         (address[] memory targets, uint256[] memory values,,, bytes[] memory calldatas) = getParams(prop);
@@ -88,68 +76,56 @@ library GovSixHelper {
         );
     }
 
-    function impersonateAndSimulate(GovProposal memory prop) internal {
-        AddressResolver resolver = new AddressResolver();
-        address governor = resolver.resolve("GOVERNOR");
+    function logProposalData(bool log, GovProposal memory prop) internal view {
+        IGovernance governance = IGovernance(0x1D3Fbd4d129Ddd2372EA85c5Fa00b2682081c9EC);
+        require(governance.proposalSnapshot(id(prop)) == 0, "Proposal already exists");
 
-        address VM_ADDRESS = address(uint160(uint256(keccak256("hevm cheat code"))));
-        Vm vm = Vm(VM_ADDRESS);
-        console.log("Impersonating governor to simulate governance proposal...");
-        vm.startPrank(governor);
-        for (uint256 i = 0; i < prop.actions.length; i++) {
-            GovAction memory propAction = prop.actions[i];
-            bytes memory sig = abi.encodePacked(bytes4(keccak256(bytes(propAction.fullsig))));
-            (bool success,) = propAction.target.call(abi.encodePacked(sig, propAction.data));
-            if (!success) {
-                console.log(propAction.fullsig);
-                revert("Governance action failed");
-            }
-        }
-        vm.stopPrank();
-        console.log("Governance proposal simulation complete");
+        log.logGovProposalHeader();
+        log.logCalldata(address(governance), getProposeCalldata(prop));
     }
 
-    function simulate(GovProposal memory prop) internal {
-        AddressResolver resolver = new AddressResolver();
-        address govMultisig = resolver.resolve("GOV_MULTISIG");
-        IGovernance governance = IGovernance(resolver.resolve("GOVERNANCE"));
-
+    function simulate(bool log, GovProposal memory prop) internal {
         address VM_ADDRESS = address(uint160(uint256(keccak256("hevm cheat code"))));
         Vm vm = Vm(VM_ADDRESS);
+
+        address govMultisig = 0xbe2AB3d3d8F6a32b96414ebbd865dBD276d3d899;
+        IGovernance governance = IGovernance(0x1D3Fbd4d129Ddd2372EA85c5Fa00b2682081c9EC);
+        vm.label(address(governance), "Governance");
+        vm.label(govMultisig, "Gov Multisig");
 
         uint256 proposalId = id(prop);
 
-        vm.startPrank(govMultisig);
-
         uint256 snapshot = governance.proposalSnapshot(proposalId);
+        require(snapshot == 0, "Proposal already exists");
 
         if (snapshot == 0) {
             bytes memory proposeData = getProposeCalldata(prop);
 
-            console.log("----------------------------------");
-            console.log("Create following tx on Governance:");
-            console.log("To:", address(governance));
-            console.log("Data:");
-            console.logBytes(proposeData);
-            console.log("----------------------------------");
+            log.logGovProposalHeader();
+            log.logCalldata(address(governance), proposeData);
 
             // Proposal doesn't exists, create it
-            console.log("Creating proposal on fork...");
+            log.info("Creating proposal on fork...");
+            vm.startBroadcast(govMultisig);
             (bool success,) = address(governance).call(proposeData);
+            vm.stopBroadcast();
             if (!success) {
                 revert("Fail to create proposal");
             }
+            log.success("Proposal created");
         }
 
         IGovernance.ProposalState state = governance.state(proposalId);
+        log.logProposalState(_proposalStateToString(state));
 
         if (state == IGovernance.ProposalState.Executed) {
             // Skipping executed proposal
+            log.success("Proposal already executed");
             return;
         }
 
         if (state == IGovernance.ProposalState.Pending) {
-            console.log("Waiting for voting period...");
+            log.info("Waiting for voting period...");
             // Wait for voting to start
             vm.roll(block.number + 7300);
             vm.warp(block.timestamp + 1 minutes);
@@ -158,39 +134,89 @@ library GovSixHelper {
         }
 
         if (state == IGovernance.ProposalState.Active) {
-            console.log("Voting on proposal...");
+            log.info("Voting on proposal...");
             // Vote on proposal
-            try governance.castVote(proposalId, 1) {} catch {}
+            vm.startBroadcast(govMultisig);
+            governance.castVote(proposalId, 1);
+            vm.stopBroadcast();
             // Wait for voting to end
             vm.roll(governance.proposalDeadline(proposalId) + 20);
             vm.warp(block.timestamp + 2 days);
+            log.success("Vote cast");
 
             state = governance.state(proposalId);
         }
 
         if (state == IGovernance.ProposalState.Succeeded) {
-            console.log("Queuing proposal...");
+            log.info("Queuing proposal...");
+            // Queue proposal
+            vm.startBroadcast(govMultisig);
             governance.queue(proposalId);
+            vm.stopBroadcast();
+            log.success("Proposal queued");
 
             state = governance.state(proposalId);
         }
 
         if (state == IGovernance.ProposalState.Queued) {
-            console.log("Executing proposal");
+            log.info("Executing proposal...");
             // Wait for timelock
             uint256 propEta = governance.proposalEta(proposalId);
             vm.roll(block.number + 10);
             vm.warp(propEta + 20);
 
+            vm.startBroadcast(govMultisig);
             governance.execute(proposalId);
+            vm.stopBroadcast();
+            log.success("Proposal executed");
 
             state = governance.state(proposalId);
         }
 
         if (state != IGovernance.ProposalState.Executed) {
+            log.error("Unexpected proposal state");
             revert("Unexpected proposal state");
         }
-
-        vm.stopPrank();
     }
+
+    function _proposalStateToString(IGovernance.ProposalState state) private pure returns (string memory) {
+        if (state == IGovernance.ProposalState.Pending) return "Pending";
+        if (state == IGovernance.ProposalState.Active) return "Active";
+        if (state == IGovernance.ProposalState.Canceled) return "Canceled";
+        if (state == IGovernance.ProposalState.Defeated) return "Defeated";
+        if (state == IGovernance.ProposalState.Succeeded) return "Succeeded";
+        if (state == IGovernance.ProposalState.Queued) return "Queued";
+        if (state == IGovernance.ProposalState.Expired) return "Expired";
+        if (state == IGovernance.ProposalState.Executed) return "Executed";
+        return "Unknown";
+    }
+}
+
+interface IGovernance {
+    enum ProposalState {
+        Pending,
+        Active,
+        Canceled,
+        Defeated,
+        Succeeded,
+        Queued,
+        Expired,
+        Executed
+    }
+
+    function state(uint256 proposalId) external view returns (ProposalState);
+
+    function proposalSnapshot(uint256 proposalId) external view returns (uint256);
+
+    function proposalDeadline(uint256 proposalId) external view returns (uint256);
+
+    function proposalEta(uint256 proposalId) external view returns (uint256);
+
+    function votingDelay() external view returns (uint256);
+
+    function castVote(uint256 proposalId, uint8 support) external returns (uint256 balance);
+
+    function queue(uint256 proposalId) external;
+
+    function execute(uint256 proposalId) external;
 }

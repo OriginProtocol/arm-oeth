@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-// Foundry
-import {console} from "forge-std/console.sol";
-
 import {AbstractSmokeTest} from "./AbstractSmokeTest.sol";
 
 import {IERC20} from "contracts/Interfaces.sol";
@@ -26,15 +23,15 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
     function setUp() public {
         usde = IERC20(Mainnet.USDE);
         susde = IERC20(Mainnet.SUSDE);
-        operator = resolver.resolve("OPERATOR");
+        operator = Mainnet.ARM_RELAYER;
 
         vm.label(address(usde), "USDE");
         vm.label(address(susde), "SUSDE");
         vm.label(address(operator), "OPERATOR");
 
-        armProxy = Proxy(payable(deployManager.getDeployment("ETHENA_ARM")));
-        ethenaARM = EthenaARM(payable(deployManager.getDeployment("ETHENA_ARM")));
-        capManager = CapManager(deployManager.getDeployment("ETHENA_ARM_CAP_MAN"));
+        armProxy = Proxy(payable(resolver.implementations("ETHENA_ARM")));
+        ethenaARM = EthenaARM(payable(resolver.implementations("ETHENA_ARM")));
+        capManager = CapManager(resolver.implementations("ETHENA_ARM_CAP_MAN"));
 
         vm.prank(ethenaARM.owner());
         ethenaARM.setOwner(Mainnet.TIMELOCK);
@@ -155,8 +152,6 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
         }
         // Approve the ARM to transfer the input token of the swap.
         inToken.approve(address(ethenaARM), expectedIn + 10000);
-        console.log("Approved Lido ARM to spend %d", inToken.allowance(address(this), address(ethenaARM)));
-        console.log("In token balance: %d", inToken.balanceOf(address(this)));
 
         uint256 startIn = inToken.balanceOf(address(this));
         uint256 startOut = outToken.balanceOf(address(this));

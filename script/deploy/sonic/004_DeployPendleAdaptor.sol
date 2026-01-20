@@ -1,29 +1,20 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity 0.8.23;
-
-import "forge-std/console.sol";
 
 // Contract imports
 import {PendleOriginARMSY} from "contracts/pendle/PendleOriginARMSY.sol";
 
 // Deployment imports
-import {AbstractDeployScript} from "../AbstractDeployScript.sol";
+import {AbstractDeployScript} from "script/deploy/helpers/AbstractDeployScript.s.sol";
 
-contract DeployPendleAdaptorSonic is AbstractDeployScript {
-    string public constant override DEPLOY_NAME = "004_DeployPendleAdaptor";
+contract DeployPendleAdaptorSonic is AbstractDeployScript("004_DeployPendleAdaptor") {
+    bool public override skip = false;
     bool public constant override proposalExecuted = false;
 
     function _execute() internal override {
-        console.log("Deploy:", DEPLOY_NAME);
-        console.log("------------");
-
         // 1. Deploy PendleOriginARMSY
-        PendleOriginARMSY sy = new PendleOriginARMSY("SY ORIGIN ARM", "SY-ARM-WS-OS", deployedContracts["ORIGIN_ARM"]);
-        _recordDeploy("PENDLE_ORIGIN_ARM_SY", address(sy));
-
-        console.log("Finished deploying", DEPLOY_NAME);
+        PendleOriginARMSY sy =
+            new PendleOriginARMSY("SY ORIGIN ARM", "SY-ARM-WS-OS", resolver.implementations("ORIGIN_ARM"));
+        _recordDeployment("PENDLE_ORIGIN_ARM_SY", address(sy));
     }
-
-    function _buildGovernanceProposal() internal override {}
 }

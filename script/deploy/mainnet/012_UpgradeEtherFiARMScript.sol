@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
-// Foundry imports
-import {console} from "forge-std/console.sol";
-
 // Contract imports
 import {Proxy} from "contracts/Proxy.sol";
 import {EtherFiARM} from "contracts/EtherFiARM.sol";
@@ -11,15 +8,13 @@ import {Mainnet} from "contracts/utils/Addresses.sol";
 import {MorphoMarket} from "contracts/markets/MorphoMarket.sol";
 
 // Deployment imports
-import {GovProposal, GovSixHelper} from "contracts/utils/GovSixHelper.sol";
-import {AbstractDeployScript} from "../AbstractDeployScript.sol";
+import {GovHelper, GovProposal} from "script/deploy/helpers/GovHelper.sol";
+import {AbstractDeployScript} from "script/deploy/helpers/AbstractDeployScript.s.sol";
 
-contract UpgradeEtherFiARMScript is AbstractDeployScript {
-    using GovSixHelper for GovProposal;
+contract UpgradeEtherFiARMScript is AbstractDeployScript("012_UpgradeEtherFiARMScript") {
+    using GovHelper for GovProposal;
 
-    GovProposal public govProposal;
-
-    string public constant override DEPLOY_NAME = "012_UpgradeEtherFiARMScript";
+    bool public override skip = false;
     bool public constant override proposalExecuted = true;
 
     Proxy morphoMarketProxy;
@@ -27,11 +22,8 @@ contract UpgradeEtherFiARMScript is AbstractDeployScript {
     MorphoMarket morphoMarket;
 
     function _execute() internal override {
-        console.log("Deploy:", DEPLOY_NAME);
-        console.log("------------");
-
         // 1. Deploy new EtherFiARM implementation
-        uint256 claimDelay = tenderlyTestnet ? 1 minutes : 10 minutes;
+        uint256 claimDelay = 10 minutes;
         etherFiARMImpl = new EtherFiARM(
             Mainnet.EETH,
             Mainnet.WETH,
@@ -41,14 +33,12 @@ contract UpgradeEtherFiARMScript is AbstractDeployScript {
             1e18, // allocateThreshold
             Mainnet.ETHERFI_WITHDRAWAL_NFT
         );
-        _recordDeploy("ETHERFI_ARM_IMPL", address(etherFiARMImpl));
-
-        console.log("Finished deploying", DEPLOY_NAME);
+        _recordDeployment("ETHERFI_ARM_IMPL", address(etherFiARMImpl));
     }
 
     function _fork() internal override {
-        vm.startPrank(Proxy(payable(deployedContracts["ETHER_FI_ARM"])).owner());
-        Proxy(payable(deployedContracts["ETHER_FI_ARM"])).upgradeTo(address(etherFiARMImpl));
+        vm.startPrank(Proxy(payable(resolver.implementations("ETHER_FI_ARM"))).owner());
+        Proxy(payable(resolver.implementations("ETHER_FI_ARM"))).upgradeTo(address(etherFiARMImpl));
         vm.stopPrank();
     }
 }

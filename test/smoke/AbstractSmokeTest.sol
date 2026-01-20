@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
+// Foundry imports
 import {Test} from "forge-std/Test.sol";
 
-import {DeployManager} from "script/deploy/DeployManager.sol";
-import {AddressResolver} from "contracts/utils/Addresses.sol";
+import {DeployManager} from "script/deploy/DeployManager.s.sol";
+import {Resolver} from "script/deploy/helpers/Resolver.sol";
 
 abstract contract AbstractSmokeTest is Test {
-    AddressResolver public resolver;
+    Resolver internal resolver = Resolver(address(uint160(uint256(keccak256("Resolver")))));
+
     DeployManager internal deployManager;
 
     constructor() {
@@ -16,8 +18,6 @@ abstract contract AbstractSmokeTest is Test {
 
         // Create a fork.
         vm.createSelectFork(vm.envString("PROVIDER_URL"));
-
-        resolver = new AddressResolver();
 
         deployManager = new DeployManager();
 

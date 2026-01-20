@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity 0.8.23;
 
+// Contract imports
 import {LidoARM} from "contracts/LidoARM.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
-import {GovProposal, GovSixHelper} from "contracts/utils/GovSixHelper.sol";
-import {AbstractDeployScript} from "../AbstractDeployScript.sol";
 
-contract ChangeFeeCollectorScript is AbstractDeployScript {
-    using GovSixHelper for GovProposal;
+// Deployment imports
+import {GovHelper, GovProposal} from "script/deploy/helpers/GovHelper.sol";
+import {AbstractDeployScript} from "script/deploy/helpers/AbstractDeployScript.s.sol";
 
-    GovProposal public govProposal;
+contract ChangeFeeCollectorScript is AbstractDeployScript("006_ChangeFeeCollector") {
+    using GovHelper for GovProposal;
 
-    string public constant override DEPLOY_NAME = "006_ChangeFeeCollector";
+    bool public override skip = false;
     bool public constant override proposalExecuted = true;
 
     LidoARM lidoARMImpl;
@@ -23,13 +23,7 @@ contract ChangeFeeCollectorScript is AbstractDeployScript {
         govProposal.setDescription("Change fee collector");
 
         govProposal.action(
-            deployedContracts["LIDO_ARM"], "setFeeCollector(address)", abi.encode(Mainnet.BUYBACK_OPERATOR)
+            resolver.implementations("LIDO_ARM"), "setFeeCollector(address)", abi.encode(Mainnet.BUYBACK_OPERATOR)
         );
-    }
-
-    function _fork() internal override {
-        if (this.isForked()) {
-            govProposal.simulate();
-        }
     }
 }

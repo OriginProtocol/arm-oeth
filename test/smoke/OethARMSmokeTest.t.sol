@@ -20,16 +20,16 @@ contract Fork_OriginARM_Smoke_Test is AbstractSmokeTest {
     address operator;
 
     function setUp() public {
-        oeth = IERC20(resolver.resolve("OETH"));
-        weth = IERC20(resolver.resolve("WETH"));
-        operator = resolver.resolve("OPERATOR");
+        oeth = IERC20(Mainnet.OETH);
+        weth = IERC20(Mainnet.WETH);
+        operator = Mainnet.ARM_RELAYER;
 
         vm.label(address(weth), "WETH");
         vm.label(address(oeth), "OETH");
         vm.label(address(operator), "OPERATOR");
 
-        proxy = Proxy(payable(deployManager.getDeployment("OETH_ARM")));
-        originARM = OriginARM(deployManager.getDeployment("OETH_ARM"));
+        proxy = Proxy(payable(resolver.implementations("OETH_ARM")));
+        originARM = OriginARM(resolver.implementations("OETH_ARM"));
 
         _dealWETH(address(originARM), 100 ether);
         _dealOETH(address(originARM), 100 ether);
