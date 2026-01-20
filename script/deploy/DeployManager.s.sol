@@ -84,6 +84,9 @@ contract DeployManager is Base {
             vm.writeFile(getForkDeploymentFilePath(), deployment);
 
             vm.resumeTracing();
+        } else if (state == State.REAL_DEPLOYING) {
+            // For real deployments, read the existing deployment file
+            deployment = vm.readFile(deployFilePath);
         }
 
         // Deploy the Resolver contract which provides address lookups
@@ -208,7 +211,7 @@ contract DeployManager is Base {
     ///      - Previously deployed contract addresses (for lookups via resolver.implementations())
     ///      - Previously executed script names (to avoid re-running deployments)
     ///      Uses pauseTracing modifier to reduce noise in Forge output.
-    function _preDeployment() internal pauseTracing {
+    function _preDeployment() internal /*pauseTracing*/  {
         // Parse the JSON deployment file into structured data
         Root memory root = abi.decode(vm.parseJson(deployment), (Root));
 

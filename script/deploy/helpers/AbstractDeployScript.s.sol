@@ -15,108 +15,247 @@ import {Base} from "script/deploy/Base.s.sol";
 
 /// @title AbstractDeployScript
 /// @notice Base abstract contract for orchestrating smart contract deployments.
-/// @dev This contract standardizes the deployment workflow, including environment management,
-/// logging, address persistence, and governance proposal simulation.
+/// @dev This contract standardizes the deployment workflow by providing:
+///      - Consistent execution lifecycle across all deployment scripts
+///      - Automatic contract address persistence to the Resolver
+///      - Governance proposal building and simulation
+///      - Fork testing support with vm.prank instead of vm.broadcast
+///
+///      Inheritance Pattern:
+///      Each deployment script inherits from this contract and implements:
+///      - _execute(): The main deployment logic (optional)
+///      - _buildGovernanceProposal(): Define governance actions (optional)
+///      - _fork(): Post-deployment fork testing logic (optional)
+///      - skip(): Return true to skip this script (optional)
+///      - proposalExecuted(): Return true if governance already executed (optional)
+///
+///      Execution Flow (run()):
+///      1. Get state from Resolver
+///      2. Load deployer address from environment
+///      3. Start broadcast/prank based on state
+///      4. Execute _execute() - child contract's deployment logic
+///      5. Stop broadcast/prank
+///      6. Store deployed contracts in Resolver
+///      7. Build and handle governance proposal
+///      8. Run _fork() for additional fork testing
 abstract contract AbstractDeployScript is Base {
     using Logger for bool;
 
-    /// @notice Name of the deployment script.
+    // ==================== State Variables ==================== //
+
+    /// @notice Unique identifier for this deployment script.
+    /// @dev Used for tracking execution history in the Resolver.
+    ///      Format convention: "NNN_DescriptiveName" (e.g., "015_UpgradeEthenaARMScript")
     string public name;
-    /// @notice Address used to deploy the contracts.
+
+    /// @notice Address that will deploy the contracts.
+    /// @dev Loaded from DEPLOYER_ADDRESS environment variable.
+    ///      Used with vm.broadcast (real) or vm.prank (fork).
     address public deployer;
-    /// @notice List of contracts deployed during the current execution.
+
+    /// @notice Temporary storage for contracts deployed during this script's execution.
+    /// @dev Populated by _recordDeployment(), persisted to Resolver in _storeDeployedContract().
     Contract[] public contracts;
-    /// @notice Structure containing the actions for a governance proposal.
+
+    /// @notice Governance proposal to be executed after deployment.
+    /// @dev Populated by _buildGovernanceProposal() if the script requires governance actions.
+    ///      Contains target addresses, function signatures, and encoded parameters.
     GovProposal public govProposal;
 
-    /// @notice Initializes the script name and sets up logging preferences.
-    /// @param _name The identifiable name of the deployment task.
+    // ==================== Constructor ==================== //
+
+    /// @notice Initializes the deployment script with its unique name.
+    /// @dev Sets up logging based on deployment state.
+    ///      Logging is enabled for real deployments and dry-runs,
+    ///      disabled for fork tests unless forcedLog is set.
+    /// @param _name Unique identifier for this script (e.g., "015_UpgradeEthenaARMScript")
     constructor(string memory _name) {
         name = _name;
+        // Enable logging unless we're in fork test mode (reduces noise during tests)
         log = state != State.FORK_TEST || forcedLog;
     }
 
-    /// @notice The main entry point for the deployment process.
-    /// @dev Executes the deployment lifecycle: Setup -> Broadcast -> Execution -> Storage -> Governance.
+    // ==================== Main Entry Point ==================== //
+
+    /// @notice Main entry point for the deployment process.
+    /// @dev Executes the complete deployment lifecycle in 8 steps.
+    ///      This function is called by DeployManager._runDeployFile() after
+    ///      the script contract is deployed via vm.deployCode().
+    ///
+    ///      State-dependent behavior:
+    ///      - REAL_DEPLOYING: Uses vm.broadcast for actual on-chain transactions
+    ///      - FORK_TEST/FORK_DEPLOYING: Uses vm.prank for simulated execution
     function run() external virtual {
-        // 1. Determine the current execution state (FORK_TEST, FORK_DEPLOYING, REAL_DEPLOYING)
+        // ===== Step 1: Get Execution State =====
+        // Retrieve the current state from the Resolver (set by DeployManager)
         state = resolver.getState();
 
-        // 2. Retrieve the deployer address from environment variables
+        // ===== Step 2: Load Deployer Address =====
+        // The deployer address must be set in the .env file
         require(vm.envExists("DEPLOYER_ADDRESS"), "DEPLOYER_ADDRESS not set in .env");
         deployer = vm.envAddress("DEPLOYER_ADDRESS");
 
-        // Log the deployer info (show as simulation if in fork mode)
-        log.logDeployer(deployer, state == State.FORK_TEST || state == State.FORK_DEPLOYING);
+        // Log deployer info with simulation indicator for fork modes
+        bool isSimulation = state == State.FORK_TEST || state == State.FORK_DEPLOYING;
+        log.logDeployer(deployer, isSimulation);
 
-        // Initiate broadcast for real networks or prank for local simulations
-        if (state == State.REAL_DEPLOYING) vm.startBroadcast(deployer);
-        if (state == State.FORK_TEST || state == State.FORK_DEPLOYING) vm.startPrank(deployer);
+        // ===== Step 3: Start Transaction Context =====
+        // Real deployments use broadcast (actual txs), forks use prank (simulated)
+        if (state == State.REAL_DEPLOYING) {
+            vm.startBroadcast(deployer);
+        }
+        if (state == State.FORK_TEST || state == State.FORK_DEPLOYING) {
+            vm.startPrank(deployer);
+        }
 
-        // 3. Execute the specific deployment logic implemented in the child contract
+        // ===== Step 4: Execute Deployment Logic =====
+        // Call the child contract's _execute() implementation
         log.section(string.concat("Executing: ", name));
         _execute();
         log.endSection();
 
-        // 4. Stop broadcasting or pranking
-        if (state == State.REAL_DEPLOYING) vm.stopBroadcast();
-        if (state == State.FORK_TEST || state == State.FORK_DEPLOYING) vm.stopPrank();
+        // ===== Step 5: End Transaction Context =====
+        if (state == State.REAL_DEPLOYING) {
+            vm.stopBroadcast();
+        }
+        if (state == State.FORK_TEST || state == State.FORK_DEPLOYING) {
+            vm.stopPrank();
+        }
 
-        // 5. Persist the deployed contract addresses in the Resolver
+        // ===== Step 6: Persist Deployed Contracts =====
+        // Save all contracts recorded via _recordDeployment() to the Resolver
         _storeDeployedContract();
 
-        // 6. Construct the governance proposal if applicable
+        // ===== Step 7: Build & Handle Governance Proposal =====
+        // Call the child contract's _buildGovernanceProposal() if implemented
         _buildGovernanceProposal();
 
-        // 7. Handle the governance proposal based on the current state
+        // Check if there are any governance actions to process
         if (govProposal.actions.length == 0) {
             log.info("No governance proposal to handle");
             return;
         }
 
+        // Process governance proposal based on state
         if (govProposal.actions.length != 0) {
-            // For real deployments, output the proposal data for submission
-            if (state == State.REAL_DEPLOYING) GovHelper.logProposalData(log, govProposal);
-            // For forks/tests, simulate the execution of the proposal to ensure it works
-            if (state == State.FORK_TEST || state == State.FORK_DEPLOYING) GovHelper.simulate(log, govProposal);
+            if (state == State.REAL_DEPLOYING) {
+                // Real deployment: output proposal data for manual submission
+                GovHelper.logProposalData(log, govProposal);
+            }
+            if (state == State.FORK_TEST || state == State.FORK_DEPLOYING) {
+                // Fork mode: simulate proposal execution to verify it works
+                GovHelper.simulate(log, govProposal);
+            }
         }
 
-        // 8. Run optional post-deployment fork simulations
-        if (state == State.FORK_TEST || state == State.FORK_DEPLOYING) _fork();
+        // ===== Step 8: Run Fork-Specific Logic =====
+        // Execute any additional testing logic defined in _fork()
+        if (state == State.FORK_TEST || state == State.FORK_DEPLOYING) {
+            _fork();
+        }
     }
 
-    /// @dev Records a newly deployed contract locally and logs the event.
-    /// @param contractName The name of the contract.
-    /// @param implementation The address where the contract was deployed.
+    // ==================== Contract Recording ==================== //
+
+    /// @notice Records a newly deployed contract for later persistence.
+    /// @dev Call this in _execute() after deploying each contract.
+    ///      The contract will be:
+    ///      1. Added to the local contracts array
+    ///      2. Logged for visibility
+    ///      3. Persisted to Resolver in _storeDeployedContract()
+    ///
+    ///      Example usage in _execute():
+    ///      ```
+    ///      MyContract impl = new MyContract();
+    ///      _recordDeployment("MY_CONTRACT_IMPL", address(impl));
+    ///      ```
+    /// @param contractName Identifier for the contract (e.g., "LIDO_ARM", "ETHENA_ARM_IMPL")
+    /// @param implementation The deployed contract address
     function _recordDeployment(string memory contractName, address implementation) internal virtual {
+        // Add to local array for batch persistence later
         contracts.push(Contract({implementation: implementation, name: contractName}));
+
+        // Log the deployment for visibility
         log.logContractDeployed(contractName, implementation);
     }
 
-    /// @dev Iterates through recorded contracts and saves them into the global Resolver.
+    /// @notice Persists all recorded contracts to the Resolver and marks script as executed.
+    /// @dev Called automatically at the end of run().
+    ///      Iterates through all contracts added via _recordDeployment() and
+    ///      registers them in the global Resolver for cross-script access.
+    ///      Also records this script's execution to prevent re-runs.
     function _storeDeployedContract() internal virtual {
+        // Persist each deployed contract to the Resolver
         for (uint256 i = 0; i < contracts.length; i++) {
             resolver.addContract(contracts[i].name, contracts[i].implementation);
         }
-        // Records that this specific script has been executed
+
+        // Mark this script as executed (prevents DeployManager from re-running it)
         resolver.addExecution(name, block.timestamp);
     }
 
-    /// @dev Hook to run custom logic on a fork after the deployment is finished.
+    // ==================== Virtual Hooks (Override in Child Contracts) ==================== //
+
+    /// @notice Hook for post-deployment fork testing logic.
+    /// @dev Override this to run additional logic after deployment in fork mode.
+    ///      Useful for:
+    ///      - Testing upgrade paths
+    ///      - Verifying state after governance proposal simulation
+    ///      - Integration testing with other contracts
+    ///
+    ///      Only called when state is FORK_TEST or FORK_DEPLOYING.
     function _fork() internal virtual {}
 
-    /// @dev Main deployment logic to be implemented by the inheriting contract.
+    /// @notice Main deployment logic - MUST be implemented by child contracts.
+    /// @dev Override this to define your deployment steps.
+    ///      Use _recordDeployment() to register each deployed contract.
+    ///      Use resolver.implementations("NAME") to get previously deployed addresses.
+    ///
+    ///      Example:
+    ///      ```
+    ///      function _execute() internal override {
+    ///          address proxy = resolver.implementations("MY_PROXY");
+    ///          MyImpl impl = new MyImpl();
+    ///          _recordDeployment("MY_IMPL", address(impl));
+    ///      }
+    ///      ```
     function _execute() internal virtual {}
 
-    /// @dev Hook to define actions for a governance proposal (e.g., updating parameters).
+    /// @notice Hook to define governance proposal actions.
+    /// @dev Override this to add actions that require governance execution.
+    ///      Use govProposal.action() to add each action.
+    ///
+    ///      Example:
+    ///      ```
+    ///      function _buildGovernanceProposal() internal override {
+    ///          govProposal.setDescription("Upgrade MyContract");
+    ///          govProposal.action(
+    ///              resolver.implementations("MY_PROXY"),
+    ///              "upgradeTo(address)",
+    ///              abi.encode(resolver.implementations("MY_IMPL"))
+    ///          );
+    ///      }
+    ///      ```
     function _buildGovernanceProposal() internal virtual {}
 
-    /// @notice Logic to determine if this script should be skipped.
+    // ==================== External View Functions ==================== //
+
+    /// @notice Determines if this deployment script should be skipped.
+    /// @dev Override to return true to skip execution.
+    ///      Useful for temporarily disabling scripts without removing them.
+    ///      Checked by DeployManager._runDeployFile() before execution.
+    /// @return True to skip this script, false to execute
     function skip() external view virtual returns (bool) {}
 
-    /// @notice Logic to check if the associated governance proposal has already been executed on-chain.
+    /// @notice Checks if the governance proposal for this script has been executed.
+    /// @dev Override to return true when the on-chain proposal is complete.
+    ///      When true, DeployManager will skip this script entirely.
+    ///      Useful for scripts that deploy + create governance proposals.
+    /// @return True if governance proposal was executed on-chain
     function proposalExecuted() external view virtual returns (bool) {}
 
-    /// @notice Handles the final submission of the governance proposal.
+    /// @notice Handles governance proposal when deployment was already done.
+    /// @dev Called by DeployManager when script is in history but proposalExecuted() is false.
+    ///      Override to implement proposal resubmission or status checking logic.
     function handleGovernanceProposal() external virtual {}
 }

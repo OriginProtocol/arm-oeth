@@ -92,26 +92,27 @@ run-sonic-s-%:
 
 # Deploy scripts
 deploy:
-	@forge script script/deploy/DeployManager.sol --rpc-url $(PROVIDER_URL) --account deployerKey --sender $(DEPLOYER_ADDRESS) --broadcast --slow --verify -vvvv
+	forge b
+	@forge script script/deploy/DeployManager.s.sol --rpc-url $(PROVIDER_URL) --account deployerKey --sender $(DEPLOYER_ADDRESS) --broadcast --slow --verify -vvvv
 
 deploy-local:
-	@forge script script/deploy/DeployManager.sol --rpc-url $(LOCAL_URL) --account deployerKey --sender $(DEPLOYER_ADDRESS) --broadcast --slow -vvvv
+	@forge script script/deploy/DeployManager.s.sol --rpc-url $(LOCAL_URL) --account deployerKey --sender $(DEPLOYER_ADDRESS) --broadcast --slow -vvvv
 
 deploy-testnet:
-	@forge script script/deploy/DeployManager.sol --rpc-url $(TESTNET_URL) --broadcast --slow --unlocked -vvvv
+	@forge script script/deploy/DeployManager.s.sol --rpc-url $(TESTNET_URL) --broadcast --slow --unlocked -vvvv
 
 deploy-holesky:
-	@forge script script/deploy/DeployManager.sol --rpc-url $(HOLESKY_URL) --account deployerKey --sender $(DEPLOYER_ADDRESS) --broadcast --slow --verify -vvv
+	@forge script script/deploy/DeployManager.s.sol --rpc-url $(HOLESKY_URL) --account deployerKey --sender $(DEPLOYER_ADDRESS) --broadcast --slow --verify -vvv
 
 deploy-sonic:
-	@forge script script/deploy/DeployManager.sol --rpc-url $(SONIC_URL) --account deployerKey --sender $(DEPLOYER_ADDRESS) --broadcast --slow --verify -vvv
+	@forge script script/deploy/DeployManager.s.sol --rpc-url $(SONIC_URL) --account deployerKey --sender $(DEPLOYER_ADDRESS) --broadcast --slow --verify -vvv
 
 simulate-deploys:
 	forge b
 	@forge script script/deploy/DeployManager.s.sol --fork-url $(PROVIDER_URL) -vvvv
 
 simulate-sonic-deploys:
-	@forge script script/deploy/DeployManager.sol --fork-url $(SONIC_URL) -vvvv
+	@forge script script/deploy/DeployManager.s.sol --fork-url $(SONIC_URL) -vvvv
 
 # Usage : make verify file=src/contracts/Proxy.sol addr=0xCED...
 SHELL := /bin/bash
