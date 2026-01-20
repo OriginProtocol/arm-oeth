@@ -1,12 +1,20 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.23;
 
+// Foundry
 import {Vm} from "forge-std/Vm.sol";
+
+// Helpers
 import {Logger} from "script/deploy/helpers/Logger.sol";
 import {GovAction, GovProposal} from "script/deploy/helpers/DeploymentTypes.sol";
 
+// Utils
+import {Mainnet} from "src/contracts/utils/Addresses.sol";
+
 library GovHelper {
     using Logger for bool;
+
+    Vm internal constant vm = Vm(address(uint160(uint256(keccak256("hevm cheat code")))));
 
     function id(GovProposal memory prop) internal pure returns (uint256 proposalId) {
         bytes32 descriptionHash = keccak256(bytes(prop.description));
@@ -77,7 +85,7 @@ library GovHelper {
     }
 
     function logProposalData(bool log, GovProposal memory prop) internal view {
-        IGovernance governance = IGovernance(0x1D3Fbd4d129Ddd2372EA85c5Fa00b2682081c9EC);
+        IGovernance governance = IGovernance(Mainnet.GOVERNOR_SIX);
         require(governance.proposalSnapshot(id(prop)) == 0, "Proposal already exists");
 
         log.logGovProposalHeader();
@@ -85,13 +93,11 @@ library GovHelper {
     }
 
     function simulate(bool log, GovProposal memory prop) internal {
-        address VM_ADDRESS = address(uint160(uint256(keccak256("hevm cheat code"))));
-        Vm vm = Vm(VM_ADDRESS);
-
-        address govMultisig = 0xbe2AB3d3d8F6a32b96414ebbd865dBD276d3d899;
-        IGovernance governance = IGovernance(0x1D3Fbd4d129Ddd2372EA85c5Fa00b2682081c9EC);
-        vm.label(address(governance), "Governance");
+        address govMultisig = Mainnet.GOV_MULTISIG;
         vm.label(govMultisig, "Gov Multisig");
+
+        IGovernance governance = IGovernance(Mainnet.GOVERNOR_SIX);
+        vm.label(address(governance), "Governance");
 
         uint256 proposalId = id(prop);
 
@@ -105,10 +111,10 @@ library GovHelper {
             log.logCalldata(address(governance), proposeData);
 
             // Proposal doesn't exists, create it
+            log.info("Simulation of the governance proposal:");
             log.info("Creating proposal on fork...");
-            vm.startBroadcast(govMultisig);
+            vm.prank(govMultisig);
             (bool success,) = address(governance).call(proposeData);
-            vm.stopBroadcast();
             if (!success) {
                 revert("Fail to create proposal");
             }
@@ -116,7 +122,6 @@ library GovHelper {
         }
 
         IGovernance.ProposalState state = governance.state(proposalId);
-        log.logProposalState(_proposalStateToString(state));
 
         if (state == IGovernance.ProposalState.Executed) {
             // Skipping executed proposal
@@ -136,9 +141,8 @@ library GovHelper {
         if (state == IGovernance.ProposalState.Active) {
             log.info("Voting on proposal...");
             // Vote on proposal
-            vm.startBroadcast(govMultisig);
+            vm.prank(govMultisig);
             governance.castVote(proposalId, 1);
-            vm.stopBroadcast();
             // Wait for voting to end
             vm.roll(governance.proposalDeadline(proposalId) + 20);
             vm.warp(block.timestamp + 2 days);
@@ -150,9 +154,8 @@ library GovHelper {
         if (state == IGovernance.ProposalState.Succeeded) {
             log.info("Queuing proposal...");
             // Queue proposal
-            vm.startBroadcast(govMultisig);
+            vm.prank(govMultisig);
             governance.queue(proposalId);
-            vm.stopBroadcast();
             log.success("Proposal queued");
 
             state = governance.state(proposalId);
@@ -165,9 +168,8 @@ library GovHelper {
             vm.roll(block.number + 10);
             vm.warp(propEta + 20);
 
-            vm.startBroadcast(govMultisig);
+            vm.prank(govMultisig);
             governance.execute(proposalId);
-            vm.stopBroadcast();
             log.success("Proposal executed");
 
             state = governance.state(proposalId);

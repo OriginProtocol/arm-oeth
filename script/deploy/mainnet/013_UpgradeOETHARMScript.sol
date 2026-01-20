@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
-// Contract imports
+// Contract
 import {Proxy} from "contracts/Proxy.sol";
 import {IERC20} from "contracts/Interfaces.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
@@ -9,33 +9,27 @@ import {OriginARM} from "contracts/OriginARM.sol";
 import {MorphoMarket} from "contracts/markets/MorphoMarket.sol";
 import {Abstract4626MarketWrapper} from "contracts/markets/Abstract4626MarketWrapper.sol";
 
-// Deployment imports
-import {GovHelper, GovProposal} from "script/deploy/helpers/GovHelper.sol";
+// Deployment
 import {AbstractDeployScript} from "script/deploy/helpers/AbstractDeployScript.s.sol";
+import {GovHelper, GovProposal} from "script/deploy/helpers/GovHelper.sol";
 
-contract UpgradeOETHARMScript is AbstractDeployScript("013_UpgradeOETHARMScript") {
+contract $013_UpgradeOETHARMScript is AbstractDeployScript("013_UpgradeOETHARMScript") {
     using GovHelper for GovProposal;
 
-    bool public override skip = false;
-    bool public constant override proposalExecuted = true;
-
-    Proxy morphoMarketProxy;
-    OriginARM originARMImpl;
-    OriginARM oethARM;
-    MorphoMarket morphoMarket;
+    bool public override proposalExecuted = true;
 
     function _execute() internal override {
         // 1. Deploy new Origin implementation
         uint256 claimDelay = 10 minutes;
-        originARMImpl = new OriginARM(Mainnet.OETH, Mainnet.WETH, Mainnet.OETH_VAULT, claimDelay, 1e7, 1e18);
+        OriginARM originARMImpl = new OriginARM(Mainnet.OETH, Mainnet.WETH, Mainnet.OETH_VAULT, claimDelay, 1e7, 1e18);
         _recordDeployment("OETH_ARM_IMPL", address(originARMImpl));
 
         // 2. Deploy MorphoMarket proxy
-        morphoMarketProxy = new Proxy();
+        Proxy morphoMarketProxy = new Proxy();
         _recordDeployment("MORPHO_MARKET_ORIGIN", address(morphoMarketProxy));
 
         // 3. Deploy MorphoMarket
-        morphoMarket = new MorphoMarket(Mainnet.OETH_ARM, Mainnet.MORPHO_MARKET_YEARN_OG);
+        MorphoMarket morphoMarket = new MorphoMarket(Mainnet.OETH_ARM, Mainnet.MORPHO_MARKET_YEARN_OG);
         _recordDeployment("MORPHO_MARKET_ORIGIN_IMPL", address(morphoMarket));
         // 4. Initialize MorphoMarket proxy with the implementation, Timelock as owner
         bytes memory data = abi.encodeWithSelector(

@@ -1,25 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
-// Contract imports
+// Contract
 import {Proxy} from "contracts/Proxy.sol";
-import {EtherFiARM} from "contracts/EtherFiARM.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
-import {MorphoMarket} from "contracts/markets/MorphoMarket.sol";
+import {EtherFiARM} from "contracts/EtherFiARM.sol";
 
-// Deployment imports
-import {GovHelper, GovProposal} from "script/deploy/helpers/GovHelper.sol";
+// Deployment
 import {AbstractDeployScript} from "script/deploy/helpers/AbstractDeployScript.s.sol";
 
-contract UpgradeEtherFiARMScript is AbstractDeployScript("012_UpgradeEtherFiARMScript") {
-    using GovHelper for GovProposal;
+contract $012_UpgradeEtherFiARMScript is AbstractDeployScript("012_UpgradeEtherFiARMScript") {
+    bool public override proposalExecuted = true;
 
-    bool public override skip = false;
-    bool public constant override proposalExecuted = true;
-
-    Proxy morphoMarketProxy;
     EtherFiARM etherFiARMImpl;
-    MorphoMarket morphoMarket;
 
     function _execute() internal override {
         // 1. Deploy new EtherFiARM implementation

@@ -1,31 +1,23 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
-// Contract imports
+// Contract
 import {Proxy} from "contracts/Proxy.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
 import {EthenaARM} from "contracts/EthenaARM.sol";
 import {CapManager} from "contracts/CapManager.sol";
-import {MorphoMarket} from "contracts/markets/MorphoMarket.sol";
 import {EthenaUnstaker} from "contracts/EthenaARM.sol";
 import {IWETH, IStakedUSDe} from "contracts/Interfaces.sol";
 
-// Deployment imports
-import {GovHelper, GovProposal} from "script/deploy/helpers/GovHelper.sol";
+// Deployment
 import {AbstractDeployScript} from "script/deploy/helpers/AbstractDeployScript.s.sol";
 
-contract DeployEthenaARMScript is AbstractDeployScript("014_DeployEthenaARMScript") {
-    using GovHelper for GovProposal;
-
-    bool public override skip = false;
-    bool public constant override proposalExecuted = true;
-
-    Proxy morphoMarketProxy;
-    EthenaARM armImpl;
-    MorphoMarket morphoMarket;
-    Proxy armProxy;
+contract $014_DeployEthenaARMScript is AbstractDeployScript("014_DeployEthenaARMScript") {
+    bool public override proposalExecuted = true;
 
     uint256 public constant MAX_UNSTAKERS = 42;
+
+    Proxy armProxy;
 
     function _execute() internal override {
         // 1. Deploy new ARM proxy contract
@@ -63,7 +55,7 @@ contract DeployEthenaARMScript is AbstractDeployScript("014_DeployEthenaARMScrip
 
         // 6. Deploy new Ethena implementation
         uint256 claimDelay = 10 minutes;
-        armImpl = new EthenaARM(
+        EthenaARM armImpl = new EthenaARM(
             Mainnet.USDE,
             Mainnet.SUSDE,
             claimDelay,

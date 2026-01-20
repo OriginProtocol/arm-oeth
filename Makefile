@@ -107,7 +107,8 @@ deploy-sonic:
 	@forge script script/deploy/DeployManager.sol --rpc-url $(SONIC_URL) --account deployerKey --sender $(DEPLOYER_ADDRESS) --broadcast --slow --verify -vvv
 
 simulate-deploys:
-	@forge script script/deploy/DeployManager.sol --fork-url $(PROVIDER_URL) -vvvv
+	forge b
+	@forge script script/deploy/DeployManager.s.sol --fork-url $(PROVIDER_URL) -vvvv
 
 simulate-sonic-deploys:
 	@forge script script/deploy/DeployManager.sol --fork-url $(SONIC_URL) -vvvv

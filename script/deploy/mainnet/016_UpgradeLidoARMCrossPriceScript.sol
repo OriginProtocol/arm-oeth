@@ -1,15 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
-// Deployment imports
+// Deployment
 import {GovHelper, GovProposal} from "script/deploy/helpers/GovHelper.sol";
 import {AbstractDeployScript} from "script/deploy/helpers/AbstractDeployScript.s.sol";
 
-contract UpgradeLidoARMCrossPriceScript is AbstractDeployScript("016_UpgradeLidoARMCrossPriceScript") {
+contract $016_UpgradeLidoARMCrossPriceScript is AbstractDeployScript("016_UpgradeLidoARMCrossPriceScript") {
     using GovHelper for GovProposal;
 
-    bool public override skip = false;
-    bool public constant override proposalExecuted = false;
+    bool public override proposalExecuted = true;
 
     function _execute() internal override {}
 

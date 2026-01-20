@@ -1,18 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
-// Contract imports
+// Contract
 import {PendleOriginARMSY} from "contracts/pendle/PendleOriginARMSY.sol";
 
-// Deployment imports
-import {GovHelper, GovProposal} from "script/deploy/helpers/GovHelper.sol";
+// Deployment
 import {AbstractDeployScript} from "script/deploy/helpers/AbstractDeployScript.s.sol";
 
-contract DeployPendleAdaptor is AbstractDeployScript("008_DeployPendleAdaptor") {
-    using GovHelper for GovProposal;
-
-    bool public override skip = false;
-    bool public constant override proposalExecuted = true;
+contract $008_DeployPendleAdaptor is AbstractDeployScript("008_DeployPendleAdaptor") {
+    bool public override proposalExecuted = true;
 
     function _execute() internal override {
         // 1. Deploy PendleOriginARMSY
@@ -20,6 +16,4 @@ contract DeployPendleAdaptor is AbstractDeployScript("008_DeployPendleAdaptor") 
             new PendleOriginARMSY("SY Lido ARM", "SY-ARM-WETH-stETH", resolver.implementations("LIDO_ARM"));
         _recordDeployment("PENDLE_ORIGIN_ARM_SY", address(sy));
     }
-
-    function _buildGovernanceProposal() internal override {}
 }

@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.23;
 
+// Foundry
 import {Vm} from "forge-std/Vm.sol";
 
+// Helpers
 import {State} from "script/deploy/helpers/DeploymentTypes.sol";
 import {Resolver} from "script/deploy/helpers/Resolver.sol";
 
@@ -25,6 +27,7 @@ abstract contract Base {
 
     constructor() {
         chainNames[1] = "Ethereum Mainnet";
+        chainNames[146] = "Sonic Mainnet";
         chainNames[8453] = "Base Mainnet";
         chainNames[31337] = "Anvil";
     }

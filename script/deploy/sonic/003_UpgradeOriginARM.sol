@@ -2,18 +2,17 @@
 pragma solidity 0.8.23;
 
 // Contract imports
-import {SonicHarvester} from "contracts/SonicHarvester.sol";
-import {OriginARM} from "contracts/OriginARM.sol";
-import {SiloMarket} from "contracts/markets/SiloMarket.sol";
 import {Proxy} from "contracts/Proxy.sol";
 import {Sonic} from "contracts/utils/Addresses.sol";
+import {OriginARM} from "contracts/OriginARM.sol";
+import {SiloMarket} from "contracts/markets/SiloMarket.sol";
+import {SonicHarvester} from "contracts/SonicHarvester.sol";
 
 // Deployment imports
 import {AbstractDeployScript} from "script/deploy/helpers/AbstractDeployScript.s.sol";
 
-contract UpgradeOriginARMScript is AbstractDeployScript("003_UpgradeOriginARMScript") {
-    bool public override skip = false;
-    bool public constant override proposalExecuted = true;
+contract $003_UpgradeOriginARMScript is AbstractDeployScript("003_UpgradeOriginARMScript") {
+    bool public override proposalExecuted = true;
 
     SonicHarvester public harvesterImpl;
     OriginARM public originARMImpl;

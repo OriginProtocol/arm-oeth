@@ -1,20 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
-// Contract imports
+// Contract
 import {Proxy} from "contracts/Proxy.sol";
-import {EthenaARM} from "contracts/EthenaARM.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
+import {EthenaARM} from "contracts/EthenaARM.sol";
 
-// Deployment imports
-import {GovHelper, GovProposal} from "script/deploy/helpers/GovHelper.sol";
+// Deployment
 import {AbstractDeployScript} from "script/deploy/helpers/AbstractDeployScript.s.sol";
 
-contract UpgradeEthenaARMScript is AbstractDeployScript("015_UpgradeEthenaARMScript") {
-    using GovHelper for GovProposal;
-
-    bool public override skip = false;
-    bool public constant override proposalExecuted = true;
+contract $015_UpgradeEthenaARMScript is AbstractDeployScript("015_UpgradeEthenaARMScript") {
+    bool public override proposalExecuted = true;
 
     EthenaARM armImpl;
 

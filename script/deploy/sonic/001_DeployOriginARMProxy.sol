@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
+// Contract
 import {Proxy} from "contracts/Proxy.sol";
+
+// Deployment
 import {AbstractDeployScript} from "script/deploy/helpers/AbstractDeployScript.s.sol";
 
-contract DeployOriginARMProxyScript is AbstractDeployScript("001_DeployOriginARMProxyScript") {
-    bool public override skip = false;
-    bool public constant override proposalExecuted = true;
+contract $001_DeployOriginARMProxyScript is AbstractDeployScript("001_DeployOriginARMProxyScript") {
+    bool public override proposalExecuted = true;
 
     function _execute() internal override {
         // 1. Deploy proxy for the Origin ARM

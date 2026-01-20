@@ -1,26 +1,23 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
-// Contract imports
+// Contract
 import {LidoARM} from "contracts/LidoARM.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
 
-// Deployment imports
-import {GovHelper, GovProposal} from "script/deploy/helpers/GovHelper.sol";
+// Deployment
 import {AbstractDeployScript} from "script/deploy/helpers/AbstractDeployScript.s.sol";
+import {GovHelper, GovProposal} from "script/deploy/helpers/GovHelper.sol";
 
-contract RegisterLidoWithdrawalsScript is AbstractDeployScript("005_RegisterLidoWithdrawalsScript") {
+contract $005_RegisterLidoWithdrawalsScript is AbstractDeployScript("005_RegisterLidoWithdrawalsScript") {
     using GovHelper for GovProposal;
 
-    bool public override skip = false;
-    bool public constant override proposalExecuted = true;
-
-    LidoARM lidoARMImpl;
+    bool public override proposalExecuted = true;
 
     function _execute() internal override {
         // 1. Deploy new Lido ARM implementation
         uint256 claimDelay = 10 minutes;
-        lidoARMImpl = new LidoARM(Mainnet.STETH, Mainnet.WETH, Mainnet.LIDO_WITHDRAWAL, claimDelay, 0, 0);
+        LidoARM lidoARMImpl = new LidoARM(Mainnet.STETH, Mainnet.WETH, Mainnet.LIDO_WITHDRAWAL, claimDelay, 0, 0);
         _recordDeployment("LIDO_ARM_IMPL", address(lidoARMImpl));
     }
 

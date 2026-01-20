@@ -1,34 +1,29 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
-// Contract imports
-import {CapManager} from "contracts/CapManager.sol";
-import {SonicHarvester} from "contracts/SonicHarvester.sol";
-import {OriginARM} from "contracts/OriginARM.sol";
+// Contract
 import {Proxy} from "contracts/Proxy.sol";
-import {ZapperARM} from "contracts/ZapperARM.sol";
-import {SiloMarket} from "contracts/markets/SiloMarket.sol";
 import {Sonic} from "contracts/utils/Addresses.sol";
 import {IERC20} from "contracts/Interfaces.sol";
+import {OriginARM} from "contracts/OriginARM.sol";
+import {ZapperARM} from "contracts/ZapperARM.sol";
+import {SiloMarket} from "contracts/markets/SiloMarket.sol";
+import {CapManager} from "contracts/CapManager.sol";
+import {SonicHarvester} from "contracts/SonicHarvester.sol";
 
-// Deployment imports
+// Deployment
 import {AbstractDeployScript} from "script/deploy/helpers/AbstractDeployScript.s.sol";
 
-contract DeployOriginARMScript is AbstractDeployScript("002_DeployOriginARMScript") {
-    bool public override skip = false;
-    bool public constant override proposalExecuted = true;
+contract $002_DeployOriginARMScript is AbstractDeployScript("002_DeployOriginARMScript") {
+    bool public override proposalExecuted = true;
 
-    Proxy capManProxy;
-    CapManager capManager;
-    OriginARM originARMImpl;
-    OriginARM originARM;
-    ZapperARM zapper;
+    Proxy originARMProxy;
 
     function _execute() internal override {
-        Proxy originARMProxy = Proxy(payable(resolver.implementations("ORIGIN_ARM")));
+        originARMProxy = Proxy(payable(resolver.implementations("ORIGIN_ARM")));
 
         // 1. Deploy proxy for the CapManager
-        capManProxy = new Proxy();
+        Proxy capManProxy = new Proxy();
         _recordDeployment("ORIGIN_ARM_CAP_MAN", address(capManProxy));
 
         // 2. Deploy CapManager implementation
@@ -38,7 +33,7 @@ contract DeployOriginARMScript is AbstractDeployScript("002_DeployOriginARMScrip
         // 3. Initialize Proxy with CapManager implementation and set the owner to the deployer for now
         bytes memory data = abi.encodeWithSelector(CapManager.initialize.selector, Sonic.RELAYER);
         capManProxy.initialize(address(capManagerImpl), deployer, data);
-        capManager = CapManager(address(capManProxy));
+        CapManager capManager = CapManager(address(capManProxy));
 
         // 4. Set total wS cap
         capManager.setTotalAssetsCap(200 ether);
@@ -48,7 +43,7 @@ contract DeployOriginARMScript is AbstractDeployScript("002_DeployOriginARMScrip
 
         // 6. Deploy new Origin ARM implementation
         uint256 claimDelay = 10 minutes;
-        originARMImpl = new OriginARM(Sonic.OS, Sonic.WS, Sonic.OS_VAULT, claimDelay, 1e7, 1e18);
+        OriginARM originARMImpl = new OriginARM(Sonic.OS, Sonic.WS, Sonic.OS_VAULT, claimDelay, 1e7, 1e18);
         _recordDeployment("ORIGIN_ARM_IMPL", address(originARMImpl));
 
         // 7. Approve a little bit of wS to be transferred to the ARM proxy
@@ -67,7 +62,7 @@ contract DeployOriginARMScript is AbstractDeployScript("002_DeployOriginARMScrip
             address(capManProxy)
         );
         originARMProxy.initialize(address(originARMImpl), deployer, data);
-        originARM = OriginARM(address(originARMProxy));
+        OriginARM originARM = OriginARM(address(originARMProxy));
 
         // 9. Deploy the Silo market proxies
         Proxy silo_Varlamore_S_MarketProxy = new Proxy();
@@ -92,7 +87,7 @@ contract DeployOriginARMScript is AbstractDeployScript("002_DeployOriginARMScrip
         originARM.setOwner(Sonic.ADMIN);
 
         // 14. Deploy the Zapper
-        zapper = new ZapperARM(Sonic.WS);
+        ZapperARM zapper = new ZapperARM(Sonic.WS);
         zapper.setOwner(Sonic.ADMIN);
         _recordDeployment("ORIGIN_ARM_ZAPPER", address(zapper));
 

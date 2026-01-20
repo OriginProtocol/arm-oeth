@@ -12,7 +12,7 @@ abstract contract AbstractSmokeTest is Test {
 
     DeployManager internal deployManager;
 
-    constructor() {
+    function setUp() public virtual {
         // Check if the PROVIDER_URL is set.
         require(vm.envExists("PROVIDER_URL"), "PROVIDER_URL not set");
 

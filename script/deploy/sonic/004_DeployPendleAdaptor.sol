@@ -7,9 +7,8 @@ import {PendleOriginARMSY} from "contracts/pendle/PendleOriginARMSY.sol";
 // Deployment imports
 import {AbstractDeployScript} from "script/deploy/helpers/AbstractDeployScript.s.sol";
 
-contract DeployPendleAdaptorSonic is AbstractDeployScript("004_DeployPendleAdaptor") {
-    bool public override skip = false;
-    bool public constant override proposalExecuted = false;
+contract $004_DeployPendleAdaptorSonic is AbstractDeployScript("004_DeployPendleAdaptor") {
+    bool public override proposalExecuted = false;
 
     function _execute() internal override {
         // 1. Deploy PendleOriginARMSY

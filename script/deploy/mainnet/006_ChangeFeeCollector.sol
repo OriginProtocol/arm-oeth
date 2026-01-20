@@ -1,23 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
-// Contract imports
-import {LidoARM} from "contracts/LidoARM.sol";
+// Contract
 import {Mainnet} from "contracts/utils/Addresses.sol";
 
-// Deployment imports
-import {GovHelper, GovProposal} from "script/deploy/helpers/GovHelper.sol";
+// Deployment
 import {AbstractDeployScript} from "script/deploy/helpers/AbstractDeployScript.s.sol";
+import {GovHelper, GovProposal} from "script/deploy/helpers/GovHelper.sol";
 
-contract ChangeFeeCollectorScript is AbstractDeployScript("006_ChangeFeeCollector") {
+contract $006_ChangeFeeCollectorScript is AbstractDeployScript("006_ChangeFeeCollector") {
     using GovHelper for GovProposal;
 
-    bool public override skip = false;
-    bool public constant override proposalExecuted = true;
-
-    LidoARM lidoARMImpl;
-
-    function _execute() internal override {}
+    bool public override proposalExecuted = true;
 
     function _buildGovernanceProposal() internal override {
         govProposal.setDescription("Change fee collector");

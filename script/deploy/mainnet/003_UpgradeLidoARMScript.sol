@@ -1,23 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
-// Contract imports
-import {IERC20, IWETH, LegacyAMM} from "contracts/Interfaces.sol";
-import {LidoARM} from "contracts/LidoARM.sol";
-import {CapManager} from "contracts/CapManager.sol";
+// Contract
 import {Proxy} from "contracts/Proxy.sol";
-import {ZapperLidoARM} from "contracts/ZapperLidoARM.sol";
+import {LidoARM} from "contracts/LidoARM.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
+import {CapManager} from "contracts/CapManager.sol";
+import {ZapperLidoARM} from "contracts/ZapperLidoARM.sol";
+import {IERC20, LegacyAMM} from "contracts/Interfaces.sol";
 
-// Deployment imports
-import {GovHelper, GovProposal} from "script/deploy/helpers/GovHelper.sol";
+// Deployment
 import {AbstractDeployScript} from "script/deploy/helpers/AbstractDeployScript.s.sol";
 
-contract UpgradeLidoARMMainnetScript is AbstractDeployScript("003_UpgradeLidoARMScript") {
-    using GovHelper for GovProposal;
-
-    bool public override skip = false;
-    bool public constant override proposalExecuted = true;
+contract $003_UpgradeLidoARMMainnetScript is AbstractDeployScript("003_UpgradeLidoARMScript") {
+    bool public override proposalExecuted = true;
 
     Proxy lidoARMProxy;
     Proxy capManProxy;
@@ -60,8 +56,6 @@ contract UpgradeLidoARMMainnetScript is AbstractDeployScript("003_UpgradeLidoARM
         zapper.setOwner(Mainnet.STRATEGIST);
         _recordDeployment("LIDO_ARM_ZAPPER", address(zapper));
     }
-
-    function _buildGovernanceProposal() internal override {}
 
     function _fork() internal override {
         vm.startPrank(Mainnet.ARM_MULTISIG);
@@ -115,3 +109,5 @@ contract UpgradeLidoARMMainnetScript is AbstractDeployScript("003_UpgradeLidoARM
         vm.stopPrank();
     }
 }
+// "/Users/clement/Documents/Travail/Origin/2-SC/arm-oeth/out/016_UpdateLidoARMCrossPriceScript.sol/$016_UpdateLidoARMCrossPriceScript.json
+// "/Users/clement/Documents/Travail/Origin/2-SC/arm-oeth/out/016_UpdateLidoARMCrossPriceScript.sol/$016_UpgradeLidoARMCrossPriceScript.json
