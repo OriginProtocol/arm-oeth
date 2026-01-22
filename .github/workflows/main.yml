@@ -90,7 +90,7 @@ jobs:
     name: Fork Tests
     runs-on: ubuntu-latest
     env:
-      PROVIDER_URL: ${{ secrets.PROVIDER_URL }}
+      MAINNET_URL: ${{ secrets.MAINNET_URL }}
       FLY_API_KEY: ${{ secrets.FLY_API_KEY }}
       SONIC_URL: ${{ secrets.SONIC_URL }}
       
@@ -114,7 +114,7 @@ jobs:
     name: Smoke Tests
     runs-on: ubuntu-latest
     env:
-      PROVIDER_URL: ${{ secrets.PROVIDER_URL }}
+      MAINNET_URL: ${{ secrets.MAINNET_URL }}
       FLY_API_KEY: ${{ secrets.FLY_API_KEY }}
       SONIC_URL: ${{ secrets.SONIC_URL }}
       

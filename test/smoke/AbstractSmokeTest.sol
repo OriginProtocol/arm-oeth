@@ -13,11 +13,11 @@ abstract contract AbstractSmokeTest is Test {
     DeployManager internal deployManager;
 
     function setUp() public virtual {
-        // Check if the PROVIDER_URL is set.
-        require(vm.envExists("PROVIDER_URL"), "PROVIDER_URL not set");
+        // Check if the MAINNET_URL is set.
+        require(vm.envExists("MAINNET_URL"), "MAINNET_URL not set");
 
         // Create a fork.
-        vm.createSelectFork(vm.envString("PROVIDER_URL"));
+        vm.createSelectFork(vm.envString("MAINNET_URL"));
 
         deployManager = new DeployManager();
 

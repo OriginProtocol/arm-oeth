@@ -48,7 +48,7 @@ abstract contract Fork_Shared_Test is Base_Test_, Modifiers {
     }
 
     function _createAndSelectFork() internal {
-        // Check if the PROVIDER_URL is set.
+        // Check if the MAINNET_URL is set.
         require(vm.envExists("SONIC_URL"), "SONIC_URL not set");
 
         // Create and select a fork.
