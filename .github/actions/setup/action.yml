@@ -1,0 +1,59 @@
+name: 'Setup Environment'
+description: 'Checkout, install Foundry, and install dependencies with caching'
+
+inputs:
+  install-yarn:
+    description: 'Whether to install yarn dependencies'
+    required: false
+    default: 'false'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    # ────────────────────────────────────────────────────────────────────────────
+    # Foundry
+    # ────────────────────────────────────────────────────────────────────────────
+    - name: Install Foundry
+      uses: foundry-rs/foundry-toolchain@v1
+      with:
+        version: stable
+        cache: true
+
+    - name: Show Forge version
+      shell: bash
+      run: forge --version
+
+    # ────────────────────────────────────────────────────────────────────────────
+    # Soldeer Dependencies
+    # ────────────────────────────────────────────────────────────────────────────
+    - name: Cache Soldeer dependencies
+      uses: actions/cache@v4
+      with:
+        path: dependencies
+        key: soldeer-${{ hashFiles('soldeer.lock') }}
+        restore-keys: soldeer-
+
+    - name: Install Soldeer dependencies
+      shell: bash
+      run: forge soldeer install
+
+    # ────────────────────────────────────────────────────────────────────────────
+    # Yarn Dependencies (optional)
+    # ────────────────────────────────────────────────────────────────────────────
+    - name: Cache Yarn dependencies
+      if: inputs.install-yarn == 'true'
+      uses: actions/cache@v4
+      with:
+        path: node_modules
+        key: yarn-${{ hashFiles('yarn.lock') }}
+        restore-keys: yarn-
+
+    - name: Install Yarn dependencies
+      if: inputs.install-yarn == 'true'
+      shell: bash
+      run: yarn install --frozen-lockfile

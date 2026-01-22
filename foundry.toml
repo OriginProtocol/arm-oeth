@@ -59,6 +59,13 @@ lint_on_build = false
 [fuzz]
 runs = 1_000
 
+[profile.lite.invariant]
+runs = 50
+depth = 100
+shrink_run_limit = 5_000
+show_metrics = true
+fail_on_revert = true
+
 [profile.default.invariant]
 runs = 256
 depth = 500
