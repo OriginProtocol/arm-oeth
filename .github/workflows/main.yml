@@ -27,6 +27,7 @@ jobs:
     # Skip on scheduled runs (only need to lint on actual code changes)
     if: github.event_name != 'schedule'
     steps:
+      - uses: actions/checkout@v4
       - name: Setup environment
         uses: ./.github/actions/setup
 
@@ -42,6 +43,7 @@ jobs:
     # Skip on scheduled runs
     if: github.event_name != 'schedule'
     steps:
+      - uses: actions/checkout@v4
       - name: Setup environment
         uses: ./.github/actions/setup
         with:
@@ -59,6 +61,7 @@ jobs:
     # Skip on scheduled runs
     if: github.event_name != 'schedule'
     steps:
+      - uses: actions/checkout@v4
       - name: Setup environment
         uses: ./.github/actions/setup
         with:
@@ -75,6 +78,7 @@ jobs:
       FLY_API_KEY: ${{ secrets.FLY_API_KEY }}
       SONIC_URL: ${{ secrets.SONIC_URL }}
     steps:
+      - uses: actions/checkout@v4
       - name: Setup environment
         uses: ./.github/actions/setup
         with:
@@ -93,6 +97,7 @@ jobs:
       FLY_API_KEY: ${{ secrets.FLY_API_KEY }}
       SONIC_URL: ${{ secrets.SONIC_URL }}
     steps:
+      - uses: actions/checkout@v4
       - name: Setup environment
         uses: ./.github/actions/setup
         with:
@@ -114,6 +119,7 @@ jobs:
     env:
       FOUNDRY_PROFILE: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'ci' || 'lite' }}
     steps:
+      - uses: actions/checkout@v4
       - name: Setup environment
         uses: ./.github/actions/setup
 
@@ -129,6 +135,7 @@ jobs:
     env:
       FOUNDRY_PROFILE: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'ci' || 'lite' }}
     steps:
+      - uses: actions/checkout@v4
       - name: Setup environment
         uses: ./.github/actions/setup
 
@@ -144,6 +151,7 @@ jobs:
     env:
       FOUNDRY_PROFILE: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'ci' || 'lite' }}
     steps:
+      - uses: actions/checkout@v4
       - name: Setup environment
         uses: ./.github/actions/setup
 
