@@ -104,7 +104,7 @@ jobs:
           install-yarn: 'true'
 
       - name: Run smoke tests
-        run: forge test --summary --fail-fast --show-progress --mp 'test/smoke/**'
+        run: forge build && forge test --summary --fail-fast --show-progress --mp 'test/smoke/**'
 
   # ╔══════════════════════════════════════════════════════════════════════════════╗
   # ║                              INVARIANT TESTS                                 ║
