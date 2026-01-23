@@ -92,8 +92,13 @@ abstract contract AbstractDeployScript is Base {
 
         // ===== Step 2: Load Deployer Address =====
         // The deployer address must be set in the .env file
-        require(vm.envExists("DEPLOYER_ADDRESS"), "DEPLOYER_ADDRESS not set in .env");
-        deployer = vm.envAddress("DEPLOYER_ADDRESS");
+        if (!vm.envExists("DEPLOYER_ADDRESS")) {
+            require(state != State.REAL_DEPLOYING, "DEPLOYER_ADDRESS not set in .env");
+            log.warn("DEPLOYER_ADDRESS not set in .env, using address(0) for fork simulation");
+            deployer = address(0x1);
+        } else {
+            deployer = vm.envAddress("DEPLOYER_ADDRESS");
+        }
 
         // Log deployer info with simulation indicator for fork modes
         bool isSimulation = state == State.FORK_TEST || state == State.FORK_DEPLOYING;
