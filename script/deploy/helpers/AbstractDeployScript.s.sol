@@ -40,6 +40,7 @@ import {Base} from "script/deploy/Base.s.sol";
 ///      8. Run _fork() for additional fork testing
 abstract contract AbstractDeployScript is Base {
     using Logger for bool;
+    using GovHelper for bool;
 
     // ==================== State Variables ==================== //
 
@@ -257,5 +258,8 @@ abstract contract AbstractDeployScript is Base {
     /// @notice Handles governance proposal when deployment was already done.
     /// @dev Called by DeployManager when script is in history but proposalExecuted() is false.
     ///      Override to implement proposal resubmission or status checking logic.
-    function handleGovernanceProposal() external virtual {}
+    function handleGovernanceProposal() external virtual {
+        _buildGovernanceProposal();
+        log.simulate(govProposal);
+    }
 }

@@ -208,7 +208,6 @@ library GovHelper {
 
         // ===== Check if proposal already exists =====
         uint256 snapshot = governance.proposalSnapshot(proposalId);
-        require(snapshot == 0, "Proposal already exists");
 
         // ===== Stage 1: Create Proposal =====
         if (snapshot == 0) {
