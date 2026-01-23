@@ -212,7 +212,7 @@ contract DeployManager is Base {
     ///      - Previously deployed contract addresses (for lookups via resolver.implementations())
     ///      - Previously executed script names (to avoid re-running deployments)
     ///      Uses pauseTracing modifier to reduce noise in Forge output.
-    function _preDeployment() internal pauseTracing  {
+    function _preDeployment() internal pauseTracing {
         // Parse the JSON deployment file into structured data
         Root memory root = abi.decode(vm.parseJson(deployment), (Root));
 
