@@ -49,8 +49,11 @@ jobs:
         with:
           install-yarn: 'true'
 
-      - name: Compile contracts
-        run: forge build --sizes --skip Fuzzer
+      - name: Compile all contracts
+        run: forge build
+
+      - name: Ensure contract sizes are within limits
+        run: forge build --sizes --skip "test/**" --skip "script/**" --skip "*/forge-std/*"
 
   # ╔══════════════════════════════════════════════════════════════════════════════╗
   # ║                              CONCRETE TESTS                                  ║
