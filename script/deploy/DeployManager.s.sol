@@ -126,6 +126,7 @@ contract DeployManager is Base {
         // Files are returned in alphabetical order (e.g., 001_..., 002_..., 003_...)
         vm.pauseTracing();
         VmSafe.DirEntry[] memory files = vm.readDir(path);
+        vm.resumeTracing();
 
         // Calculate the starting index to only process the last N files
         // If we have more files than maxDeploymentFiles, start from (total - max)
@@ -148,7 +149,7 @@ contract DeployManager is Base {
             // vm.deployCode compiles and deploys the contract, returning its address
             // Then call _runDeployFile to execute the deployment logic
             string memory contractName =
-                string(abi.encodePacked(projectRoot, "/out/", onlyName, ".sol/$", onlyName, ".json"));
+                string(abi.encodePacked(projectRoot, "/out/", onlyName, ".s.sol/$", onlyName, ".json"));
             _runDeployFile(address(vm.deployCode(contractName)));
         }
         vm.resumeTracing();
@@ -211,7 +212,7 @@ contract DeployManager is Base {
     ///      - Previously deployed contract addresses (for lookups via resolver.implementations())
     ///      - Previously executed script names (to avoid re-running deployments)
     ///      Uses pauseTracing modifier to reduce noise in Forge output.
-    function _preDeployment() internal /*pauseTracing*/  {
+    function _preDeployment() internal pauseTracing  {
         // Parse the JSON deployment file into structured data
         Root memory root = abi.decode(vm.parseJson(deployment), (Root));
 

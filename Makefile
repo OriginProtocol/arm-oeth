@@ -64,6 +64,7 @@ test-fork:
 	FOUNDRY_MATCH_PATH='test/fork/**' $(MAKE) test-base
 
 test-smoke:
+	forge build
 	FOUNDRY_MATCH_PATH='test/smoke/**' $(MAKE) test-base
 
 # ╔══════════════════════════════════════════════════════════════════════════════╗

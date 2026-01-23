@@ -38,8 +38,6 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
         ethenaARM.setOwner(Mainnet.TIMELOCK);
     }
 
-    function test_naaa() public {}
-
     function test_initialConfig() external view {
         assertEq(ethenaARM.name(), "Ethena Staked USDe ARM", "Name");
         assertEq(ethenaARM.symbol(), "ARM-sUSDe-USDe", "Symbol");

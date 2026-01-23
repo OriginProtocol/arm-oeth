@@ -3,6 +3,7 @@ pragma solidity 0.8.23;
 
 // Foundry
 import {Vm} from "forge-std/Vm.sol";
+import "forge-std/console.sol";
 
 // Helpers
 import {Logger} from "script/deploy/helpers/Logger.sol";
@@ -67,13 +68,9 @@ abstract contract AbstractDeployScript is Base {
 
     /// @notice Initializes the deployment script with its unique name.
     /// @dev Sets up logging based on deployment state.
-    ///      Logging is enabled for real deployments and dry-runs,
-    ///      disabled for fork tests unless forcedLog is set.
     /// @param _name Unique identifier for this script (e.g., "015_UpgradeEthenaARMScript")
     constructor(string memory _name) {
         name = _name;
-        // Enable logging unless we're in fork test mode (reduces noise during tests)
-        log = state != State.FORK_TEST || forcedLog;
     }
 
     // ==================== Main Entry Point ==================== //
@@ -90,6 +87,8 @@ abstract contract AbstractDeployScript is Base {
         // ===== Step 1: Get Execution State =====
         // Retrieve the current state from the Resolver (set by DeployManager)
         state = resolver.getState();
+        // Enable logging unless we're in fork test mode (reduces noise during tests)
+        log = state != State.FORK_TEST || forcedLog;
 
         // ===== Step 2: Load Deployer Address =====
         // The deployer address must be set in the .env file
