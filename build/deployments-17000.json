@@ -1,9 +1,18 @@
 {
-  "executions": {
-    "001_CoreHolesky": 1723613808
-  },
-  "contracts": {
-    "OETH_ARM": "0x8c7a302e208885ee4658E7422f9E259364cC993b",
-    "OETH_ARM_IMPL": "0x699092668712E4e94B5b42Fb0aC5dA6209A67394"
-  }
+  "contracts": [
+    {
+      "implementation": "0x8c7a302e208885ee4658E7422f9E259364cC993b",
+      "name": "OETH_ARM"
+    },
+    {
+      "implementation": "0x699092668712E4e94B5b42Fb0aC5dA6209A67394",
+      "name": "OETH_ARM_IMPL"
+    }
+  ],
+  "executions": [
+    {
+      "name": "001_CoreHolesky",
+      "timestamp": 1723613808
+    }
+  ]
 }

@@ -21,9 +21,6 @@ import {IERC20} from "contracts/Interfaces.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IOriginVault} from "contracts/Interfaces.sol";
 
-// Utils
-import {AddressResolver} from "contracts/utils/Addresses.sol";
-
 /// @notice This contract should be the common parent for all test contracts.
 ///         It should be used to define common variables and that will be
 ///         used across all test contracts. This pattern is used to allow different
@@ -32,8 +29,6 @@ import {AddressResolver} from "contracts/utils/Addresses.sol";
 /// @dev This contract should only be used as storage for common variables.
 /// @dev Helpers and other functions should be defined in a separate contract.
 abstract contract Base_Test_ is Test {
-    AddressResolver public resolver;
-
     //////////////////////////////////////////////////////
     /// --- CONTRACTS
     //////////////////////////////////////////////////////
@@ -100,9 +95,7 @@ abstract contract Base_Test_ is Test {
     //////////////////////////////////////////////////////
     /// --- SETUP
     //////////////////////////////////////////////////////
-    function setUp() public virtual {
-        resolver = new AddressResolver();
-    }
+    function setUp() public virtual {}
 
     /// @notice Better if called once all contract have been depoyed.
     function labelAll() public virtual {
