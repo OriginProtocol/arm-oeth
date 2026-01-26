@@ -12,7 +12,7 @@ abstract contract AbstractSmokeTest is Test {
 
     DeployManager internal deployManager;
 
-    function setUp() public virtual {
+    constructor() {
         // Check if the MAINNET_URL is set.
         require(vm.envExists("MAINNET_URL"), "MAINNET_URL not set");
 

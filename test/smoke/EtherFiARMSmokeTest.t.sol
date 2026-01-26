@@ -20,8 +20,7 @@ contract Fork_EtherFiARM_Smoke_Test is AbstractSmokeTest {
     IEETHWithdrawalNFT etherfiWithdrawalNFT;
     address operator;
 
-    function setUp() public override {
-        super.setUp();
+    function setUp() public {
         weth = IERC20(Mainnet.WETH);
         eeth = IERC20(Mainnet.EETH);
         operator = Mainnet.ARM_RELAYER;
