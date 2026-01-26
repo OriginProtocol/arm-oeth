@@ -17,7 +17,14 @@ abstract contract AbstractSmokeTest is Test {
         require(vm.envExists("MAINNET_URL"), "MAINNET_URL not set");
 
         // Create a fork.
-        vm.createSelectFork(vm.envString("MAINNET_URL"));
+        // If block number is provided in the environment variables, use it.
+        // Otherwise, use latest block.
+        if (vm.envExists("FORK_BLOCK_NUMBER_MAINNET")) {
+            uint256 blockNumber = vm.envUint("FORK_BLOCK_NUMBER_MAINNET");
+            vm.createSelectFork(vm.envString("MAINNET_URL"), blockNumber);
+        } else {
+            vm.createSelectFork(vm.envString("MAINNET_URL"));
+        }
 
         deployManager = new DeployManager();
 

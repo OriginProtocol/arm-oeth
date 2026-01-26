@@ -36,7 +36,7 @@ contract DeployManager is Base {
     // avoiding unnecessary compilation and execution of historical deployment files.
     // Scripts are numbered (e.g., 001_, 002_...) and sorted alphabetically,
     // so only the last N scripts (most recent) will be considered for deployment.
-    uint256 public maxDeploymentFiles = 10;
+    uint256 public maxDeploymentFiles = 2;
 
     /// @notice Initializes the deployment environment before running scripts.
     /// @dev Called automatically by Forge before run(). Sets up:
