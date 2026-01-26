@@ -31,7 +31,7 @@ remappings = [
   "utils/=./src/contracts/utils",
   # Manage dependencies remappings
   "@solmate/=dependencies/solmate-6.7.0/src/",
-  "forge-std/=dependencies/forge-std-1.14.0/src/",
+  "forge-std/=dependencies/forge-std-1.9.7/src/",
   "@pendle-sy/=dependencies/@pendle-sy-1.0.0-1.0.0/contracts/",
   "@openzeppelin/contracts/=dependencies/@openzeppelin-contracts-5.0.2-5.0.2/contracts/",
   "@openzeppelin/contracts-upgradeable/=dependencies/@openzeppelin-contracts-upgradeable-5.0.2-5.0.2/contracts/",
@@ -81,7 +81,7 @@ show_metrics = true
 
 [dependencies]
 solmate = "6.7.0"
-forge-std = "1.14.0"
+forge-std = "1.9.7"
 "@pendle-sy-1.0.0" = { version = "1.0.0", git = "https://github.com/pendle-finance/Pendle-SY-Public.git", rev = "3256e7728d1656a8e16e2e70aa885f69fc66088d" }
 "@openzeppelin-contracts-4.9.3" = { version = "4.9.3", git = "https://github.com/OpenZeppelin/openzeppelin-contracts.git", rev = "fd81a96f01cc42ef1c9a5399364968d0e07e9e90" }
 "@openzeppelin-contracts-5.0.2" = { version = "5.0.2", git = "https://github.com/OpenZeppelin/openzeppelin-contracts.git", rev = "dbb6104ce834628e473d2173bbc9d47f81a9eec3" }
