@@ -110,23 +110,23 @@ snapshot:
 
 deploy-mainnet:
 	forge build
-	forge script $(DEPLOY_SCRIPT) --rpc-url $(MAINNET_URL) $(DEPLOY_BASE) --verify -vvvv
+	@forge script $(DEPLOY_SCRIPT) --rpc-url $(MAINNET_URL) $(DEPLOY_BASE) --verify -vvvv
 
 deploy-local:
 	forge build
-	forge script $(DEPLOY_SCRIPT) --rpc-url $(LOCAL_URL) $(DEPLOY_BASE) -vvvv
+	@forge script $(DEPLOY_SCRIPT) --rpc-url $(LOCAL_URL) $(DEPLOY_BASE) -vvvv
 
 deploy-testnet:
 	forge build
-	forge script $(DEPLOY_SCRIPT) --rpc-url $(TESTNET_URL) --broadcast --slow --unlocked -vvvv
+	@forge script $(DEPLOY_SCRIPT) --rpc-url $(TESTNET_URL) --broadcast --slow --unlocked -vvvv
 
 deploy-holesky:
 	forge build
-	forge script $(DEPLOY_SCRIPT) --rpc-url $(HOLESKY_URL) $(DEPLOY_BASE) --verify -vvv
+	@forge script $(DEPLOY_SCRIPT) --rpc-url $(HOLESKY_URL) $(DEPLOY_BASE) --verify -vvv
 
 deploy-sonic:
 	forge build
-	forge script $(DEPLOY_SCRIPT) --rpc-url $(SONIC_URL) $(DEPLOY_BASE) --verify -vvv
+	@forge script $(DEPLOY_SCRIPT) --rpc-url $(SONIC_URL) $(DEPLOY_BASE) --verify -vvv
 
 # ╔══════════════════════════════════════════════════════════════════════════════╗
 # ║                                 SIMULATE                                     ║
@@ -136,7 +136,7 @@ deploy-sonic:
 NETWORK ?= mainnet
 simulate:
 	forge build
-	forge script $(DEPLOY_SCRIPT) --fork-url $(if $(filter sonic,$(NETWORK)),$(SONIC_URL),$(MAINNET_URL)) -vvvv
+	@forge script $(DEPLOY_SCRIPT) --fork-url $(if $(filter sonic,$(NETWORK)),$(SONIC_URL),$(MAINNET_URL)) -vvvv
 
 # ╔══════════════════════════════════════════════════════════════════════════════╗
 # ║                                  VERIFY                                      ║
