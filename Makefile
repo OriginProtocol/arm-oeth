@@ -29,6 +29,7 @@ install:
 
 clean:
 	rm -rf broadcast cache out
+	find build -name '*fork*' -delete 2>/dev/null || true
 
 clean-crytic:
 	find . -type d -name crytic-export -exec rm -rf '{}' +
