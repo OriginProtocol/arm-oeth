@@ -93,8 +93,6 @@ jobs:
   smoke-tests:
     name: Smoke Tests
     runs-on: ubuntu-latest
-    # Skip on scheduled runs
-    if: github.event_name != 'schedule'
     env:
       MAINNET_URL: ${{ secrets.MAINNET_URL }}
       FLY_API_KEY: ${{ secrets.FLY_API_KEY }}
