@@ -19,8 +19,10 @@ async function logTxDetails(tx, method, confirm = true) {
   // Calculate tx cost in Wei
   const txCost = BigInt(receipt.gasUsed) * BigInt(tx.gasPrice ?? 0);
   log(
-    `Processed ${method} tx in block ${receipt.blockNumber}, using ${receipt.gasUsed
-    } gas, gas price ${BigInt(tx.gasPrice ?? 0n) / BigInt(1e9)
+    `Processed ${method} tx in block ${receipt.blockNumber}, using ${
+      receipt.gasUsed
+    } gas, gas price ${
+      BigInt(tx.gasPrice ?? 0n) / BigInt(1e9)
     } GWei, costing ${formatUnits(txCost)} ETH`,
   );
 
