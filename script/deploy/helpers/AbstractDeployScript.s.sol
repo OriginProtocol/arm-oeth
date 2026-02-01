@@ -108,9 +108,10 @@ abstract contract AbstractDeployScript is Base {
         // Real deployments use broadcast (actual txs), forks use prank (simulated)
         if (state == State.REAL_DEPLOYING) {
             vm.startBroadcast(deployer);
-        }
-        if (state == State.FORK_TEST || state == State.FORK_DEPLOYING) {
+        } else if (isSimulation) {
             vm.startPrank(deployer);
+        } else {
+            revert("Invalid deployment state");
         }
 
         // ===== Step 4: Execute Deployment Logic =====
@@ -122,8 +123,7 @@ abstract contract AbstractDeployScript is Base {
         // ===== Step 5: End Transaction Context =====
         if (state == State.REAL_DEPLOYING) {
             vm.stopBroadcast();
-        }
-        if (state == State.FORK_TEST || state == State.FORK_DEPLOYING) {
+        } else if (isSimulation) {
             vm.stopPrank();
         }
 
@@ -146,8 +146,7 @@ abstract contract AbstractDeployScript is Base {
             if (state == State.REAL_DEPLOYING) {
                 // Real deployment: output proposal data for manual submission
                 GovHelper.logProposalData(log, govProposal);
-            }
-            if (state == State.FORK_TEST || state == State.FORK_DEPLOYING) {
+            } else if (isSimulation) {
                 // Fork mode: simulate proposal execution to verify it works
                 GovHelper.simulate(log, govProposal);
             }
@@ -155,9 +154,7 @@ abstract contract AbstractDeployScript is Base {
 
         // ===== Step 8: Run Fork-Specific Logic =====
         // Execute any additional testing logic defined in _fork()
-        if (state == State.FORK_TEST || state == State.FORK_DEPLOYING) {
-            _fork();
-        }
+        if (isSimulation) _fork();
     }
 
     // ==================== Contract Recording ==================== //
