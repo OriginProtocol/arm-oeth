@@ -139,6 +139,9 @@ abstract contract AbstractDeployScript is Base {
         if (govProposal.actions.length == 0) {
             log.info("No governance proposal to handle");
             return;
+        } else {
+            // Ensure proposal has a description for clarity
+            require(bytes(govProposal.description).length != 0, "Governance proposal missing description");
         }
 
         // Process governance proposal based on state
