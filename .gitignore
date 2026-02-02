@@ -11,7 +11,7 @@ broadcast
 logs
 
 # Dotenv file
-.env
+.*
 
 # npm
 node_modules
