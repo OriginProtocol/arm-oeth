@@ -11,9 +11,7 @@ import {SonicHarvester} from "contracts/SonicHarvester.sol";
 // Deployment imports
 import {AbstractDeployScript} from "script/deploy/helpers/AbstractDeployScript.s.sol";
 
-contract $003_UpgradeOriginARMScript is AbstractDeployScript("003_UpgradeOriginARMScript") {
-    bool public override proposalExecuted = true;
-
+contract $003_UpgradeOriginARM is AbstractDeployScript("003_UpgradeOriginARMScript") {
     SonicHarvester public harvesterImpl;
     OriginARM public originARMImpl;
     SiloMarket public silo_Varlamore_S_MarketImpl;

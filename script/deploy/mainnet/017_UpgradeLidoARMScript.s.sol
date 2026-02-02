@@ -15,8 +15,6 @@ import {AbstractDeployScript} from "script/deploy/helpers/AbstractDeployScript.s
 contract $017_UpgradeLidoARMScript is AbstractDeployScript("017_UpgradeLidoARMScript") {
     using GovHelper for GovProposal;
 
-    bool public override proposalExecuted = false;
-
     Proxy lidoARMProxy;
     Proxy capManProxy;
     LidoARM lidoARMImpl;

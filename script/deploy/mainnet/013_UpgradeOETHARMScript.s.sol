@@ -16,8 +16,6 @@ import {GovHelper, GovProposal} from "script/deploy/helpers/GovHelper.sol";
 contract $013_UpgradeOETHARMScript is AbstractDeployScript("013_UpgradeOETHARMScript") {
     using GovHelper for GovProposal;
 
-    bool public override proposalExecuted = true;
-
     function _execute() internal override {
         // 1. Deploy new Origin implementation
         uint256 claimDelay = 10 minutes;
@@ -42,6 +40,7 @@ contract $013_UpgradeOETHARMScript is AbstractDeployScript("013_UpgradeOETHARMSc
         govProposal.setDescription("Update OETH ARM to use Origin ARM contract");
 
         // 1. Transfer OETH out of the existing OETH ARM, to have a clean assets per share ratio.
+        require(resolver.implementations("OETH_ARM") != address(0), "OETH_ARM not found in Resolver");
         uint256 balanceOETH = IERC20(Mainnet.OETH).balanceOf(resolver.implementations("OETH_ARM"));
         govProposal.action(
             resolver.implementations("OETH_ARM"),
@@ -74,6 +73,7 @@ contract $013_UpgradeOETHARMScript is AbstractDeployScript("013_UpgradeOETHARMSc
         );
 
         // 5. Upgrade OETH ARM to OriginARM and call initialize
+        require(resolver.implementations("OETH_ARM_IMPL") != address(0), "OETH_ARM_IMPL not found in Resolver");
         govProposal.action(
             resolver.implementations("OETH_ARM"),
             "upgradeToAndCall(address,bytes)",
@@ -83,6 +83,7 @@ contract $013_UpgradeOETHARMScript is AbstractDeployScript("013_UpgradeOETHARMSc
         // 6. Add Morpho Market as an active market
         address[] memory markets = new address[](1);
         markets[0] = resolver.implementations("MORPHO_MARKET_ORIGIN");
+        require(markets[0] != address(0), "MORPHO_MARKET_ORIGIN not found in Resolver");
         govProposal.action(resolver.implementations("OETH_ARM"), "addMarkets(address[])", abi.encode(markets));
 
         // 7. Set Morpho Market as the active market

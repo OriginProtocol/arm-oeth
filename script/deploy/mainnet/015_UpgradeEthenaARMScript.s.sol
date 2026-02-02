@@ -10,8 +10,6 @@ import {EthenaARM} from "contracts/EthenaARM.sol";
 import {AbstractDeployScript} from "script/deploy/helpers/AbstractDeployScript.s.sol";
 
 contract $015_UpgradeEthenaARMScript is AbstractDeployScript("015_UpgradeEthenaARMScript") {
-    bool public override proposalExecuted = true;
-
     EthenaARM armImpl;
 
     function _execute() internal override {

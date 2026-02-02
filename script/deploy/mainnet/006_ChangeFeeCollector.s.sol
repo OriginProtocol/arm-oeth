@@ -8,10 +8,8 @@ import {Mainnet} from "contracts/utils/Addresses.sol";
 import {AbstractDeployScript} from "script/deploy/helpers/AbstractDeployScript.s.sol";
 import {GovHelper, GovProposal} from "script/deploy/helpers/GovHelper.sol";
 
-contract $006_ChangeFeeCollectorScript is AbstractDeployScript("006_ChangeFeeCollector") {
+contract $006_ChangeFeeCollector is AbstractDeployScript("006_ChangeFeeCollector") {
     using GovHelper for GovProposal;
-
-    bool public override proposalExecuted = true;
 
     function _buildGovernanceProposal() internal override {
         govProposal.setDescription("Change fee collector");

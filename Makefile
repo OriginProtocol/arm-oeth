@@ -139,6 +139,16 @@ simulate:
 	@forge script $(DEPLOY_SCRIPT) --fork-url $(if $(filter sonic,$(NETWORK)),$(SONIC_URL),$(MAINNET_URL)) -vvvv
 
 # ╔══════════════════════════════════════════════════════════════════════════════╗
+# ║                               GOVERNANCE                                     ║
+# ╚══════════════════════════════════════════════════════════════════════════════╝
+
+# Check on-chain governance state and update deployment JSON
+# Usage: make update-governance (mainnet) or make update-governance NETWORK=sonic
+update-governance:
+	forge build
+	@forge script script/deploy/UpdateGovernance.s.sol --fork-url $(if $(filter sonic,$(NETWORK)),$(SONIC_URL),$(MAINNET_URL)) -vvvvv
+
+# ╔══════════════════════════════════════════════════════════════════════════════╗
 # ║                                  VERIFY                                      ║
 # ╚══════════════════════════════════════════════════════════════════════════════╝
 
@@ -178,4 +188,4 @@ frame:
 .PHONY: test test-base test-unit test-fork test-smoke test-invariants \
         coverage coverage-html gas snapshot \
         deploy-mainnet deploy-local deploy-testnet deploy-holesky deploy-sonic simulate \
-        match clean clean-crytic clean-all install frame
+        update-governance match clean clean-crytic clean-all install frame

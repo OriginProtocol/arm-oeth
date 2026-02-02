@@ -5,10 +5,8 @@ pragma solidity 0.8.23;
 import {AbstractDeployScript} from "script/deploy/helpers/AbstractDeployScript.s.sol";
 import {GovHelper, GovProposal} from "script/deploy/helpers/GovHelper.sol";
 
-contract $004_UpdateCrossPriceMainnetScript is AbstractDeployScript("004_UpdateCrossPriceScript") {
+contract $004_UpdateCrossPriceScript is AbstractDeployScript("004_UpdateCrossPriceScript") {
     using GovHelper for GovProposal;
-
-    bool public override proposalExecuted = true;
 
     function _buildGovernanceProposal() internal override {
         govProposal.setDescription("Update Cross Price for Lido ARM");

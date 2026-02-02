@@ -28,7 +28,6 @@ import {Base} from "script/deploy/Base.s.sol";
 ///      - _buildGovernanceProposal(): Define governance actions (optional)
 ///      - _fork(): Post-deployment fork testing logic (optional)
 ///      - skip(): Return true to skip this script (optional)
-///      - proposalExecuted(): Return true if governance already executed (optional)
 ///
 ///      Execution Flow (run()):
 ///      1. Get state from Resolver
@@ -137,6 +136,8 @@ abstract contract AbstractDeployScript is Base {
 
         // Check if there are any governance actions to process
         if (govProposal.actions.length == 0) {
+            // No governance needed - mark governance as complete immediately
+            resolver.addGovernanceTimestamp(name, block.timestamp);
             log.info("No governance proposal to handle");
             return;
         } else {
@@ -185,10 +186,12 @@ abstract contract AbstractDeployScript is Base {
     }
 
     /// @notice Persists all recorded contracts to the Resolver and marks script as executed.
-    /// @dev Called automatically at the end of run().
+    /// @dev Called automatically at the end of run() (Step 6, before governance in Step 7).
     ///      Iterates through all contracts added via _recordDeployment() and
     ///      registers them in the global Resolver for cross-script access.
-    ///      Also records this script's execution to prevent re-runs.
+    ///      Also records this script's execution with timestampGov = 0 (pending).
+    ///      Governance timestamp is updated later: either immediately by run() if no
+    ///      governance actions exist, or by UpdateGovernance once executed on-chain.
     function _storeDeployedContract() internal virtual {
         // Persist each deployed contract to the Resolver
         for (uint256 i = 0; i < contracts.length; i++) {
@@ -196,7 +199,13 @@ abstract contract AbstractDeployScript is Base {
         }
 
         // Mark this script as executed (prevents DeployManager from re-running it)
-        resolver.addExecution(name, block.timestamp);
+        // If no governance actions, mark governance as complete immediately
+        // If governance actions exist, leave timestampGov as 0 (pending)
+        // Note: _buildGovernanceProposal() is called AFTER this function in run(),
+        // so we cannot check govProposal.actions.length here. Instead, governance
+        // timestamp will be determined by the JSON data / UpdateGovernance tool.
+        // For fresh deployments, timestampGov starts at 0.
+        resolver.addExecution(name, block.timestamp, 0);
     }
 
     // ==================== Virtual Hooks (Override in Child Contracts) ==================== //
@@ -252,16 +261,17 @@ abstract contract AbstractDeployScript is Base {
     /// @return True to skip this script, false to execute
     function skip() external view virtual returns (bool) {}
 
-    /// @notice Checks if the governance proposal for this script has been executed.
-    /// @dev Override to return true when the on-chain proposal is complete.
-    ///      When true, DeployManager will skip this script entirely.
-    ///      Useful for scripts that deploy + create governance proposals.
-    /// @return True if governance proposal was executed on-chain
-    function proposalExecuted() external view virtual returns (bool) {}
+    /// @notice Builds and returns the governance proposal without simulating.
+    /// @dev Called by UpdateGovernance to compute proposal IDs for on-chain checks.
+    /// @return The built governance proposal
+    function buildGovernanceProposal() external virtual returns (GovProposal memory) {
+        _buildGovernanceProposal();
+        return govProposal;
+    }
 
     /// @notice Handles governance proposal when deployment was already done.
-    /// @dev Called by DeployManager when script is in history but proposalExecuted() is false.
-    ///      Override to implement proposal resubmission or status checking logic.
+    /// @dev Called by DeployManager when script is in history but governance is still pending.
+    ///      Rebuilds and simulates the governance proposal.
     function handleGovernanceProposal() external virtual {
         _buildGovernanceProposal();
         log.simulate(govProposal);

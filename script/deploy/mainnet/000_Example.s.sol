@@ -55,11 +55,6 @@ contract $000_Example is AbstractDeployScript("000_Example") {
     ///      DeployManager checks this before running the script.
     bool public constant override skip = true; // Skip this example by default
 
-    /// @notice Indicates if the governance proposal was already executed on-chain.
-    /// @dev Override this to return true when the on-chain proposal is complete.
-    ///      This prevents the script from running again after governance execution.
-    bool public constant override proposalExecuted = false;
-
     // ==================== State Variables ==================== //
 
     // Declare variables here for contracts deployed in _execute()

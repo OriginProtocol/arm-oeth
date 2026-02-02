@@ -13,8 +13,6 @@ import {IWETH, IStakedUSDe} from "contracts/Interfaces.sol";
 import {AbstractDeployScript} from "script/deploy/helpers/AbstractDeployScript.s.sol";
 
 contract $014_DeployEthenaARMScript is AbstractDeployScript("014_DeployEthenaARMScript") {
-    bool public override proposalExecuted = true;
-
     uint256 public constant MAX_UNSTAKERS = 42;
 
     Proxy armProxy;

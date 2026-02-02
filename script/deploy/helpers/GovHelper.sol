@@ -195,7 +195,7 @@ library GovHelper {
     ///
     /// @param log Whether logging is enabled
     /// @param prop The proposal to simulate
-    function simulate(bool log, GovProposal memory prop) internal {
+    function simulate(bool log, GovProposal memory prop) internal restoreBlockAndTimestamp {
         // ===== Setup: Label addresses for trace readability =====
         address govMultisig = Mainnet.GOV_MULTISIG;
         vm.label(govMultisig, "Gov Multisig");
@@ -294,6 +294,14 @@ library GovHelper {
             log.error("Unexpected proposal state");
             revert("Unexpected proposal state");
         }
+    }
+
+    modifier restoreBlockAndTimestamp() {
+        uint256 originalBlock = block.number;
+        uint256 originalTimestamp = block.timestamp;
+        _;
+        vm.roll(originalBlock);
+        vm.warp(originalTimestamp);
     }
 
     // ==================== Utility Functions ==================== //

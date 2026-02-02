@@ -14,9 +14,7 @@ import {SonicHarvester} from "contracts/SonicHarvester.sol";
 // Deployment
 import {AbstractDeployScript} from "script/deploy/helpers/AbstractDeployScript.s.sol";
 
-contract $002_DeployOriginARMScript is AbstractDeployScript("002_DeployOriginARMScript") {
-    bool public override proposalExecuted = true;
-
+contract $002_DeployOriginARM is AbstractDeployScript("002_DeployOriginARMScript") {
     Proxy originARMProxy;
 
     function _execute() internal override {

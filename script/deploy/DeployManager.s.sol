@@ -31,13 +31,6 @@ contract DeployManager is Base {
     // Contains the history of deployed contracts and executed scripts.
     string public deployment;
 
-    // Maximum number of recent deployment scripts to process.
-    // This improves efficiency by skipping older scripts that are already deployed,
-    // avoiding unnecessary compilation and execution of historical deployment files.
-    // Scripts are numbered (e.g., 001_, 002_...) and sorted alphabetically,
-    // so only the last N scripts (most recent) will be considered for deployment.
-    uint256 public maxDeploymentFiles = 2;
-
     /// @notice Initializes the deployment environment before running scripts.
     /// @dev Called automatically by Forge before run(). Sets up:
     ///      - Deployment state (FORK_TEST, FORK_DEPLOYING, or REAL_DEPLOYING)
@@ -101,8 +94,8 @@ contract DeployManager is Base {
     ///      1. Load existing deployment history into Resolver
     ///      2. Determine the correct script folder based on chain ID
     ///      3. Read all script files from the folder (sorted alphabetically)
-    ///      4. Process only the last N scripts (controlled by maxDeploymentFiles)
-    ///      5. For each script: compile, deploy, and execute via _runDeployFile()
+    ///      4. Skip scripts that are fully executed (deployment + governance) via Resolver
+    ///      5. For remaining scripts: compile, deploy, and execute via _runDeployFile()
     ///      6. Save updated deployment history back to JSON
     function run() external virtual {
         // Load existing deployment data from JSON file into the Resolver
@@ -128,104 +121,85 @@ contract DeployManager is Base {
         VmSafe.DirEntry[] memory files = vm.readDir(path);
         vm.resumeTracing();
 
-        // Calculate the starting index to only process the last N files
-        // If we have more files than maxDeploymentFiles, start from (total - max)
-        // Otherwise, start from 0 (process all files)
-        uint256 startIndex = files.length > maxDeploymentFiles ? files.length - maxDeploymentFiles : 0;
+        // Iterate through all script files, skipping those that don't need processing.
+        // Fully executed scripts (both depTimestamp and govTimestamp set and <= block.timestamp)
+        // are skipped via filename lookup (fast path, no vm.deployCode needed).
+        // For the few Sonic scripts where the filename differs from the execution name,
+        // the check returns false and the script falls through to _runDeployFile(),
+        // which handles it correctly via deployFile.name().
+        for (uint256 i = 0; i < files.length; i++) {
+            if (files[i].isDir) continue;
 
-        // Calculate how many files we'll actually process
-        // Either maxDeploymentFiles or total files count, whichever is smaller
-        uint256 resultSize = files.length > maxDeploymentFiles ? maxDeploymentFiles : files.length;
+            string memory scriptName = _extractScriptName(files[i].path);
 
-        // Iterate through the selected files (last N files in alphabetical order)
-        for (uint256 i; i < resultSize; i++) {
-            // Split the full file path by "/" to extract the filename
-            // e.g., "/path/to/script/deploy/mainnet/015_UpgradeEthenaARMScript.sol"
-            // ->    ["path", "to", ..., "015_UpgradeEthenaARMScript.sol"]
-            string[] memory splitted = vm.split(files[startIndex + i].path, "/");
-            string memory onlyName = vm.split(splitted[splitted.length - 1], ".")[0];
+            uint256 depTs = resolver.depTimestamp(scriptName);
+            uint256 govTs = resolver.govTimestamp(scriptName);
 
-            // Deploy the script contract using vm.deployCode with just the filename
-            // vm.deployCode compiles and deploys the contract, returning its address
-            // Then call _runDeployFile to execute the deployment logic
+            // Fast path: skip fully executed scripts (deployed + governance both done)
+            if (depTs > 0 && govTs > 0 && govTs <= block.timestamp) continue;
+
+            // Deploy the script contract using the explicit artifact path
             string memory contractName =
-                string(abi.encodePacked(projectRoot, "/out/", onlyName, ".s.sol/$", onlyName, ".json"));
+                string(abi.encodePacked(projectRoot, "/out/", scriptName, ".s.sol/$", scriptName, ".json"));
             _runDeployFile(address(vm.deployCode(contractName)));
         }
-        vm.resumeTracing();
 
         // Save all deployment data from Resolver back to JSON file
         _postDeployment();
     }
 
     /// @notice Executes a single deployment script with proper state checks.
-    /// @dev Implements a multi-step validation process:
-    ///      1. Check if script is marked to skip
-    ///      2. Check if governance proposal was already executed
-    ///      3. Check if deployment was already run (in history)
-    ///      4. Either handle pending governance proposal or run fresh deployment
+    /// @dev Uses timestamp comparisons to determine script state:
+    ///      - Not deployed (depTs == 0 or depTs > block.timestamp): run full deployment
+    ///      - Deployed + governance done (govTs > 0 and govTs <= block.timestamp): skip
+    ///      - Deployed + governance pending: handle governance proposal
     /// @param addr The address of the deployed AbstractDeployScript contract
     function _runDeployFile(address addr) internal {
-        // Cast the address to AbstractDeployScript interface
         AbstractDeployScript deployFile = AbstractDeployScript(addr);
-
-        // Skip if the script explicitly sets skip = true
-        // Useful for temporarily disabling scripts without removing them
         if (deployFile.skip()) return;
 
-        // Skip if the governance proposal for this script was already executed
-        // This means the script's purpose has been fully accomplished
-        if (deployFile.proposalExecuted()) return;
-
-        // Get the script's unique name for history lookup
         string memory deployFileName = deployFile.name();
-
-        // Check deployment history to see if this script was already run
-        bool alreadyDeployed = resolver.executionExists(deployFileName);
-
-        // Label the contract address for better trace readability in Forge
         vm.label(address(deployFile), deployFileName);
 
-        // At this point, proposalExecuted is false, meaning the governance
-        // proposal hasn't been finalized yet. Two scenarios:
-        //
-        // Scenario A: Script was deployed but proposal is still pending
-        //   -> Only handle the governance proposal (don't re-deploy)
-        //
-        // Scenario B: Script was never deployed
-        //   -> Run the full deployment
+        uint256 depTs = resolver.depTimestamp(deployFileName);
+        bool alreadyDeployed = depTs > 0 && depTs <= block.timestamp;
 
-        if (alreadyDeployed) {
-            // Scenario A: Deployment exists, just handle governance
-            log.logSkip(deployFileName, "deployment already executed");
-            log.info(string.concat("Handling governance proposal for ", deployFileName));
-            deployFile.handleGovernanceProposal();
+        if (!alreadyDeployed) {
+            deployFile.run();
             return;
         }
 
-        // Scenario B: Fresh deployment - run the script
-        deployFile.run();
+        uint256 govTs = resolver.govTimestamp(deployFileName);
+        if (govTs > 0 && govTs <= block.timestamp) {
+            log.logSkip(deployFileName, "fully executed");
+            return;
+        }
+
+        log.info(string.concat("Handling governance proposal for ", deployFileName));
+        deployFile.handleGovernanceProposal();
     }
 
     /// @notice Loads deployment history from JSON file into the Resolver.
     /// @dev Called at the start of run() to populate the Resolver with:
     ///      - Previously deployed contract addresses (for lookups via resolver.implementations())
     ///      - Previously executed script names (to avoid re-running deployments)
+    ///      All executions are loaded unconditionally; timestamp comparisons against
+    ///      block.timestamp are done at query time in the pre-filter and _runDeployFile.
     ///      Uses pauseTracing modifier to reduce noise in Forge output.
     function _preDeployment() internal pauseTracing {
         // Parse the JSON deployment file into structured data
         Root memory root = abi.decode(vm.parseJson(deployment), (Root));
 
         // Load all deployed contract addresses into the Resolver
-        // This allows scripts to lookup addresses via resolver.implementations("CONTRACT_NAME")
         for (uint256 i = 0; i < root.contracts.length; i++) {
             resolver.addContract(root.contracts[i].name, root.contracts[i].implementation);
         }
 
-        // Load all execution records into the Resolver
-        // This tracks which scripts have already been run to prevent duplicates
+        // Load all execution records into the Resolver unconditionally
         for (uint256 i = 0; i < root.executions.length; i++) {
-            resolver.addExecution(root.executions[i].name, root.executions[i].timestamp);
+            resolver.addExecution(
+                root.executions[i].name, root.executions[i].timestampDep, root.executions[i].timestampGov
+            );
         }
     }
 
@@ -249,10 +223,12 @@ contract DeployManager is Base {
             serializedContracts[i] = vm.serializeAddress("c_obj", "implementation", contracts[i].implementation);
         }
 
-        // Serialize each execution as a JSON object: {"name": "...", "timestamp": ...}
+        // Serialize each execution as a JSON object with governance tracking
+        // Fields are serialized in alphabetical order for consistent output
         for (uint256 i = 0; i < executions.length; i++) {
             vm.serializeString("e_obj", "name", executions[i].name);
-            serializedExecutions[i] = vm.serializeUint("e_obj", "timestamp", executions[i].timestamp);
+            vm.serializeUint("e_obj", "timestampDep", executions[i].timestampDep);
+            serializedExecutions[i] = vm.serializeUint("e_obj", "timestampGov", executions[i].timestampGov);
         }
 
         // Build the root JSON object with both arrays

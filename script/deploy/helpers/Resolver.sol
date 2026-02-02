@@ -34,21 +34,35 @@ contract Resolver {
     // Enables O(1) lookups and updates for existing contracts
     mapping(string => Position) public inContracts;
 
-    // Quick lookup to check if a deployment script was already executed
-    // Key: script name (e.g., "015_UpgradeEthenaARMScript")
-    mapping(string => bool) public executionExists;
-
     // Quick lookup for deployed contract addresses by name
     // Key: contract name (e.g., "LIDO_ARM", "ETHENA_ARM_IMPL")
     // Value: deployed address
     mapping(string => address) public implementations;
 
+    // Quick lookup for execution index by name (for governance timestamp updates)
+    // Key: script name, Value: index in executions array
+    mapping(string => uint256) public executionIndex;
+
+    // Quick lookup for deployment timestamp by script name
+    // 0 means never deployed
+    mapping(string => uint256) public depTimestamp;
+
+    // Quick lookup for governance timestamp by script name
+    // 0 means governance not yet executed
+    mapping(string => uint256) public govTimestamp;
+
     // ==================== Events ==================== //
 
     /// @notice Emitted when a new execution record is added
     /// @param name The name of the deployment script
-    /// @param timestamp The block timestamp when the script was executed
-    event ExecutionAdded(string name, uint256 timestamp);
+    /// @param timestampDep The block timestamp when the script was executed
+    /// @param timestampGov The timestamp when governance was executed (0 if pending)
+    event ExecutionAdded(string name, uint256 timestampDep, uint256 timestampGov);
+
+    /// @notice Emitted when a governance timestamp is updated for an existing execution
+    /// @param name The name of the deployment script
+    /// @param timestampGov The timestamp when governance was executed
+    event GovernanceTimestampUpdated(string name, uint256 timestampGov);
 
     /// @notice Emitted when a contract address is registered or updated
     /// @param name The identifier for the contract
@@ -85,21 +99,29 @@ contract Resolver {
     // ==================== Execution Management ==================== //
 
     /// @notice Records that a deployment script has been executed.
-    /// @dev Prevents duplicate executions by reverting if already recorded.
-    ///      Called by deployment scripts after successful execution.
+    /// @dev Called by deployment scripts after successful execution, or by DeployManager
+    ///      when loading execution history from JSON.
     /// @param name The unique name of the deployment script (e.g., "015_UpgradeEthenaARMScript")
-    /// @param timestamp The block timestamp of execution
-    function addExecution(string memory name, uint256 timestamp) external {
-        // Prevent duplicate execution records
-        require(!executionExists[name], "Execution already exists");
+    /// @param _timestampDep The block timestamp of execution
+    /// @param _timestampGov The timestamp when governance was executed (0 if pending)
+    function addExecution(string memory name, uint256 _timestampDep, uint256 _timestampGov) external {
+        executionIndex[name] = executions.length;
+        executions.push(Execution({name: name, timestampDep: _timestampDep, timestampGov: _timestampGov}));
+        depTimestamp[name] = _timestampDep;
+        govTimestamp[name] = _timestampGov;
 
-        // Add to array for JSON serialization
-        executions.push(Execution({name: name, timestamp: timestamp}));
+        emit ExecutionAdded(name, _timestampDep, _timestampGov);
+    }
 
-        // Mark as executed for quick lookups
-        executionExists[name] = true;
+    /// @notice Updates the governance timestamp for an existing execution.
+    /// @dev Called when a governance proposal is confirmed as executed on-chain.
+    /// @param name The unique name of the deployment script
+    /// @param _timestampGov The timestamp when governance was executed
+    function addGovernanceTimestamp(string memory name, uint256 _timestampGov) external {
+        executions[executionIndex[name]].timestampGov = _timestampGov;
+        govTimestamp[name] = _timestampGov;
 
-        emit ExecutionAdded(name, timestamp);
+        emit GovernanceTimestampUpdated(name, _timestampGov);
     }
 
     // ==================== View Functions ==================== //
@@ -113,7 +135,7 @@ contract Resolver {
 
     /// @notice Returns all execution records.
     /// @dev Used by DeployManager._postDeployment() to serialize to JSON.
-    /// @return Array of all Execution structs (name + timestamp)
+    /// @return Array of all Execution structs (name + timestampDep + timestampGov)
     function getExecutions() external view returns (Execution[] memory) {
         return executions;
     }

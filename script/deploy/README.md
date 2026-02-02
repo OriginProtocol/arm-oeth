@@ -30,8 +30,8 @@ script/deploy/
 2. **DeployManager.run()** executes deployment scripts:
    - Loads existing deployment history into the Resolver
    - Reads scripts from the chain-specific folder (e.g., `mainnet/` or `sonic/`)
-   - Processes only the last N scripts (default: 2) to improve efficiency
-   - For each script: compiles, deploys, and executes via `_runDeployFile()`
+   - Skips fully executed scripts (both `timestampDep` and `timestampGov` set) via timestamp checks
+   - For remaining scripts: compiles, deploys, and executes via `_runDeployFile()`
 
 3. **Each script** (inheriting from AbstractDeployScript):
    - Runs `_execute()` to deploy contracts
@@ -62,7 +62,7 @@ Format:
     { "name": "LIDO_ARM_IMPL", "implementation": "0x..." }
   ],
   "executions": [
-    { "name": "001_CoreMainnet", "timestamp": 1723685111 }
+    { "name": "001_CoreMainnet", "timestampDep": 1723685111, "timestampGov": 1723685111 }
   ]
 }
 ```
@@ -89,9 +89,6 @@ contract $017_UpgradeLidoARM is AbstractDeployScript("017_UpgradeLidoARM") {
 
     // Set to true to skip this script
     bool public constant override skip = false;
-
-    // Set to true once governance proposal is executed on-chain
-    bool public constant override proposalExecuted = false;
 
     function _execute() internal override {
         // 1. Get previously deployed contracts
@@ -127,7 +124,6 @@ contract $017_UpgradeLidoARM is AbstractDeployScript("017_UpgradeLidoARM") {
 | `_buildGovernanceProposal()` | Define governance actions |
 | `_fork()` | Post-deployment verification (fork mode only) |
 | `skip()` | Return `true` to skip this script |
-| `proposalExecuted()` | Return `true` when governance is complete |
 
 ### 4. Resolver Usage
 
@@ -189,7 +185,7 @@ govProposal.action(
 
 ## Tips
 
-1. **Always check `skip` and `proposalExecuted`** - Set `proposalExecuted = true` once governance passes to prevent re-execution.
+1. **Use `skip()` to disable scripts** - Override `skip()` to return `true` to temporarily disable a script. Governance completion is tracked automatically via `timestampGov` in the deployment JSON.
 
 2. **Use descriptive contract names** - Names like `LIDO_ARM_IMPL` are clearer than `IMPL_V2`.
 
@@ -197,6 +193,6 @@ govProposal.action(
 
 4. **Scripts are processed in order** - Name files with numeric prefixes (001_, 002_, etc.).
 
-5. **Only the last N scripts run** - By default, only the 2 most recent scripts are processed. Older scripts are skipped if already in deployment history.
+5. **Fully executed scripts are skipped** - Scripts with both `timestampDep` and `timestampGov` set in deployment history are skipped automatically.
 
 6. **Reference the example** - See `mainnet/000_Example.s.sol` for a comprehensive template.

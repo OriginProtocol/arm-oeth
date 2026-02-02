@@ -37,9 +37,10 @@ abstract contract Base {
     ///      Address is computed as the uint256 hash of "Resolver".
     ///      Provides:
     ///      - implementations(name): Get deployed contract address by name
-    ///      - executionExists(name): Check if a script has been run
+    ///      - depTimestamp(name): Get deployment timestamp for a script
+    ///      - govTimestamp(name): Get governance timestamp for a script
     ///      - addContract(name, addr): Register a deployed contract
-    ///      - addExecution(name, timestamp): Mark a script as executed
+    ///      - addExecution(name, depTs, govTs): Record a script execution
     Resolver internal resolver = Resolver(address(uint160(uint256(keccak256("Resolver")))));
 
     // ==================== Logging Configuration ==================== //
@@ -87,6 +88,17 @@ abstract contract Base {
         vm.pauseTracing();
         _;
         vm.resumeTracing();
+    }
+
+    // ==================== Helpers ==================== //
+
+    /// @notice Extracts script name (without extension) from a full file path.
+    /// @dev Example: "/path/to/015_UpgradeEthenaARMScript.s.sol" -> "015_UpgradeEthenaARMScript"
+    /// @param fullPath The full filesystem path to a deployment script file
+    /// @return The script name without directory prefix or file extension
+    function _extractScriptName(string memory fullPath) internal view returns (string memory) {
+        string[] memory segments = vm.split(fullPath, "/");
+        return vm.split(segments[segments.length - 1], ".")[0];
     }
 
     // ==================== Constructor ==================== //

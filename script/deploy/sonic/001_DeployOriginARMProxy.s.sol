@@ -7,9 +7,7 @@ import {Proxy} from "contracts/Proxy.sol";
 // Deployment
 import {AbstractDeployScript} from "script/deploy/helpers/AbstractDeployScript.s.sol";
 
-contract $001_DeployOriginARMProxyScript is AbstractDeployScript("001_DeployOriginARMProxyScript") {
-    bool public override proposalExecuted = true;
-
+contract $001_DeployOriginARMProxy is AbstractDeployScript("001_DeployOriginARMProxyScript") {
     function _execute() internal override {
         // 1. Deploy proxy for the Origin ARM
         Proxy originARMProxy = new Proxy();
