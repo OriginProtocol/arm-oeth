@@ -31,7 +31,7 @@ async function allocate({
   execute = true,
   maxGasPrice: maxGasPriceGwei = 10,
   // V1 on sonic everywhere else V2
-  armContractVerion = "v2",
+  armContractVersion = "v2",
 }) {
   if (await limitGasPrice(signer, maxGasPriceGwei)) {
     log("Skipping allocation due to high gas price");
@@ -39,10 +39,10 @@ async function allocate({
   }
 
   let liquidityDelta;
-  if (armContractVerion === "v1") {
+  if (armContractVersion === "v1") {
     // The old implementation returns only liquidityDelta
     liquidityDelta = await arm.allocate.staticCall();
-  } else if (armContractVerion === "v2") {
+  } else if (armContractVersion === "v2") {
     // 1. Call the allocate static call to get the return values
     // Returned value is a tuple of two int256 values
     [, liquidityDelta] = await arm.allocate.staticCall();

@@ -27,7 +27,7 @@ const handler = async (event) => {
     arm,
     threshold: 10000,
     maxGasPrice: 500,
-    armContractVerion: "v1",
+    armContractVersion: "v1",
   });
 };
 
