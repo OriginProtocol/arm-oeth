@@ -31,7 +31,7 @@ async function allocate({
   execute = true,
   maxGasPrice: maxGasPriceGwei = 10,
   // V1 on sonic everywhere else V2
-  armContractVerion = "v2"
+  armContractVerion = "v2",
 }) {
   if (await limitGasPrice(signer, maxGasPriceGwei)) {
     log("Skipping allocation due to high gas price");
