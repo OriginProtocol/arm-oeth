@@ -65,9 +65,7 @@ contract DeployNewMorphoMarketForOETHARMScript is AbstractDeployScript {
             abi.encode(deployedContracts["MORPHO_MARKET_ORIGIN"])
         );
 
-        govProposal.action(
-            deployedContracts["OETH_ARM"], "removeMarket(address)", abi.encode(oldMorphoMarketStrategy)
-        );
+        govProposal.action(deployedContracts["OETH_ARM"], "removeMarket(address)", abi.encode(oldMorphoMarketStrategy));
 
         govProposal.simulate();
     }
