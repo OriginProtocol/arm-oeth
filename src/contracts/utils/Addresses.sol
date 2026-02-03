@@ -60,6 +60,7 @@ library Mainnet {
     address public constant MORPHO_MARKET_MEVCAPITAL = 0x9a8bC3B04b7f3D87cfC09ba407dCED575f2d61D8;
     address public constant MORPHO_MARKET_ETHERFI = 0x4881Ef0BF6d2365D3dd6499ccd7532bcdBCE0658;
     address public constant MORPHO_MARKET_YEARN_OG = 0xE89371eAaAC6D46d4C3ED23453241987916224FC;
+    address public constant MORPHO_MARKET_OETH_VAULT = 0x3Dfe70B05657949A5dB340754aD664810ac63b21;
     // Apostro Ethena USDe is currently the only curated Morpho market that takes USDe
     address public constant MORPHO_MARKET_ETHENA = 0x4EDfaB296F8Eb15aC0907CF9eCb7079b1679Da57;
 
