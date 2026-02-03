@@ -488,6 +488,38 @@
     "type": "event"
   },
   {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "requestId",
+        "type": "uint256"
+      }
+    ],
+    "name": "RequestEtherFiWithdrawal",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256[]",
+        "name": "requestIds",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "ClaimEtherFiWithdrawals",
+    "type": "event"
+  },
+  {
     "inputs": [],
     "name": "DELAY_REQUEST",
     "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
@@ -1199,6 +1231,20 @@
     "name": "withdrawsQueued",
     "outputs": [{ "internalType": "uint128", "name": "", "type": "uint128" }],
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{"internalType": "uint256[]", "name": "requestIds", "type": "uint256[]"}],
+    "name": "claimEtherFiWithdrawals",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [{"internalType": "uint256", "name": "amount", "type": "uint256"}],
+    "name": "requestEtherFiWithdrawal",
+    "outputs": [{"internalType": "uint256", "name": "requestId", "type": "uint256"}],
+    "stateMutability": "nonpayable",
     "type": "function"
   }
 ]
