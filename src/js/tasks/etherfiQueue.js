@@ -36,7 +36,7 @@ const claimEtherFiWithdrawals = async (options) => {
 
   const requestIds = id
     ? // If an id is provided, just claim that one
-      requestIds.push(id)
+      [id]
     : // Get the outstanding EtherFi withdrawal requests for the ARM
       await claimableEtherFiRequests();
 

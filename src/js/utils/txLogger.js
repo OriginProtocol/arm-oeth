@@ -26,6 +26,10 @@ async function logTxDetails(tx, method, confirm = true) {
     } GWei, costing ${formatUnits(txCost)} ETH`,
   );
 
+  if (receipt.status !== 1) {
+    throw new Error(`Transaction ${tx.hash} calling ${method} failed.`);
+  }
+
   return receipt;
 }
 
