@@ -33,15 +33,23 @@ const requestEthenaWithdrawals = async (options) => {
     return;
   }
 
+  // Check 3 hours has passed since last withdrawal request
+  const lastRequestTime = await arm.lastRequestTimestamp();
+  const currentTime = Math.floor(Date.now() / 1000);
+  const timeSinceLastRequest = currentTime - Number(lastRequestTime);
+  const THREE_HOURS = 3 * 60 * 60;
+  if (timeSinceLastRequest < THREE_HOURS) {
+    const timeLeft = THREE_HOURS - timeSinceLastRequest;
+    log(
+      `Skipping: Last withdrawal request was only ${timeSinceLastRequest} seconds ago; need to wait another ${timeLeft} seconds`,
+    );
+    return;
+  }
+
   // 4. Execution
   log(`Requesting withdrawal for ${formattedAmount} sUSDe...`);
-
-  try {
-    const tx = await arm.connect(signer).requestBaseWithdrawal(withdrawAmount);
-    await logTxDetails(tx, "requestEthenaWithdrawal");
-  } catch (err) {
-    log(`Error requesting withdrawal: ${err.message}`);
-  }
+  const tx = await arm.connect(signer).requestBaseWithdrawal(withdrawAmount);
+  await logTxDetails(tx, "requestEthenaWithdrawal");
 };
 
 // --- CONSTANTS ---
