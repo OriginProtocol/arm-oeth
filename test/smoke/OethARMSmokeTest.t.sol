@@ -5,7 +5,7 @@ import {Test} from "forge-std/Test.sol";
 
 import {AbstractSmokeTest} from "./AbstractSmokeTest.sol";
 
-import {IERC20} from "contracts/Interfaces.sol";
+import {IERC20, IERC4626} from "contracts/Interfaces.sol";
 import {Proxy} from "contracts/Proxy.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
 import {OriginARM} from "contracts/OriginARM.sol";
@@ -17,6 +17,7 @@ contract Fork_OriginARM_Smoke_Test is AbstractSmokeTest {
     IERC20 oeth;
     Proxy proxy;
     OriginARM originARM;
+    IERC4626 morphoMarket;
     address operator;
 
     function setUp() public {
@@ -30,6 +31,7 @@ contract Fork_OriginARM_Smoke_Test is AbstractSmokeTest {
 
         proxy = Proxy(payable(deployManager.getDeployment("OETH_ARM")));
         originARM = OriginARM(deployManager.getDeployment("OETH_ARM"));
+        morphoMarket = IERC4626(deployManager.getDeployment("MORPHO_MARKET_ORIGIN"));
 
         _dealWETH(address(originARM), 100 ether);
         _dealOETH(address(originARM), 100 ether);
@@ -316,5 +318,79 @@ contract Fork_OriginARM_Smoke_Test is AbstractSmokeTest {
 
         uint256 amountClaimed = originARM.claimOriginWithdrawals(requestIds);
         assertEq(amountClaimed, 10 ether);
+    }
+
+    /* Lending Market Allocation Tests */
+
+    function test_allocate_to_lending_market() external {
+        // Add and set the active market to the Morpho market
+        vm.startPrank(Mainnet.TIMELOCK);
+        if (!originARM.supportedMarkets(address(morphoMarket))) {
+            address[] memory markets = new address[](1);
+            markets[0] = address(morphoMarket);
+            originARM.addMarkets(markets);
+        }
+        originARM.setActiveMarket(address(morphoMarket));
+        vm.stopPrank();
+
+        // Deal WETH to the ARM
+        deal(address(weth), address(originARM), 100 ether);
+
+        uint256 armWethBefore = weth.balanceOf(address(originARM));
+        uint256 marketBalanceBefore = morphoMarket.maxWithdraw(address(originARM));
+
+        // Set buffer to 0% so all liquidity goes to the lending market
+        vm.prank(Mainnet.ARM_RELAYER);
+        originARM.setARMBuffer(0);
+
+        // Allocate liquidity to the lending market
+        vm.prank(Mainnet.ARM_RELAYER);
+        (, int256 actualDelta) = originARM.allocate();
+
+        uint256 armWethAfter = weth.balanceOf(address(originARM));
+        uint256 marketBalanceAfter = morphoMarket.maxWithdraw(address(originARM));
+
+        // Verify liquidity moved to the lending market
+        assertGt(actualDelta, 0, "Actual delta should be positive (deposited to market)");
+        assertLt(armWethAfter, armWethBefore, "ARM WETH balance should decrease");
+        assertGt(marketBalanceAfter, marketBalanceBefore, "Market balance should increase");
+    }
+
+    function test_allocate_from_lending_market() external {
+        // Add and set the active market to the Morpho market
+        vm.startPrank(Mainnet.TIMELOCK);
+        if (!originARM.supportedMarkets(address(morphoMarket))) {
+            address[] memory markets = new address[](1);
+            markets[0] = address(morphoMarket);
+            originARM.addMarkets(markets);
+        }
+        originARM.setActiveMarket(address(morphoMarket));
+        vm.stopPrank();
+
+        // Deal WETH to the ARM and allocate to market with buffer at 0%
+        deal(address(weth), address(originARM), 100 ether);
+        vm.prank(Mainnet.ARM_RELAYER);
+        originARM.setARMBuffer(0);
+        vm.prank(Mainnet.ARM_RELAYER);
+        originARM.allocate();
+
+        uint256 armWethBefore = weth.balanceOf(address(originARM));
+        uint256 marketBalanceBefore = morphoMarket.maxWithdraw(address(originARM));
+
+        // Set buffer to 100% so liquidity comes back from the lending market
+        vm.prank(Mainnet.ARM_RELAYER);
+        originARM.setARMBuffer(1e18);
+
+        // Allocate liquidity from the lending market
+        vm.prank(Mainnet.ARM_RELAYER);
+        (, int256 actualDelta) = originARM.allocate();
+
+        uint256 armWethAfter = weth.balanceOf(address(originARM));
+        uint256 marketBalanceAfter = morphoMarket.maxWithdraw(address(originARM));
+
+        // Verify liquidity moved from the lending market (as much as available)
+        assertLt(actualDelta, 0, "Actual delta should be negative (withdrawn from market)");
+        assertGt(armWethAfter, armWethBefore, "ARM WETH balance should increase");
+        assertLe(marketBalanceAfter, marketBalanceBefore, "Market balance should decrease or stay same");
     }
 }
