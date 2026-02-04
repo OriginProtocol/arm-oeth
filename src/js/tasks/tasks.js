@@ -1191,7 +1191,7 @@ subtask("snap", "Take a snapshot of the an ARM")
     "days",
     "Days to unwrap the base asset",
     undefined,
-    types.float,
+    types.int,
   )
   .addOptionalParam("oneInch", "Include 1Inch prices", true, types.boolean)
   .addOptionalParam("kyber", "Include Kyber prices", true, types.boolean)
