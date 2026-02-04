@@ -42,8 +42,8 @@ abstract contract Fork_Shared_Test is Base_Test_ {
     }
 
     function _createAndSelectFork() internal {
-        // Check if the PROVIDER_URL is set.
-        require(vm.envExists("PROVIDER_URL"), "PROVIDER_URL not set");
+        // Check if the MAINNET_URL is set.
+        require(vm.envExists("MAINNET_URL"), "MAINNET_URL not set");
 
         // Create and select a fork.
         if (vm.envExists("FORK_BLOCK_NUMBER_MAINNET")) {

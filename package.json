@@ -6,7 +6,7 @@
     "lint": "eslint \"src/**/*.js\"",
     "prettier": "prettier --write \"*.js\" \"src/js/**/*.js\"",
     "prettier:check": "prettier -c \"src/js/**/*.js\"",
-    "test": "forge test --fork-url=$PROVIDER_URL --gas-report",
+    "test": "forge test --fork-url=$MAINNET_URL --gas-report",
     "snap": "npx hardhat snap --network mainnet --amount 100"
   },
   "repository": {

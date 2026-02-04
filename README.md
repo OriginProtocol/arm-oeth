@@ -183,7 +183,7 @@ make install
 cp .env.example .env
 ```
 
-In the `.env` file, set the environment variables as needed. eg `PROVIDER_URL` for the RPC endpoint.
+In the `.env` file, set the environment variables as needed. eg `MAINNET_URL` for the RPC endpoint.
 
 ### Format and Compile
 
@@ -245,7 +245,7 @@ make deploy-testnet
 
 ### Mainnet
 
-In the `.env` file, set `DEPLOYER_ADDRESS` (should match the privateKey you registered wit `cast wallet import deployerKey`), `ETHERSCAN_API_KEY` and `PROVIDER_URL` to the mainnet values.
+In the `.env` file, set `DEPLOYER_ADDRESS` (should match the privateKey you registered wit `cast wallet import deployerKey`), `ETHERSCAN_API_KEY` and `MAINNET_URL` to the mainnet values.
 
 ```bash
 make deploy
