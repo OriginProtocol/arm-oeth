@@ -25,7 +25,7 @@ import {UpgradeOETHARMScript} from "./mainnet/013_UpgradeOETHARMScript.sol";
 import {DeployEthenaARMScript} from "./mainnet/014_DeployEthenaARMScript.sol";
 import {UpgradeEthenaARMScript} from "./mainnet/015_UpgradeEthenaARMScript.sol";
 import {UpgradeLidoARMCrossPriceScript} from "./mainnet/016_UpdateLidoARMCrossPriceScript.sol";
-import {DeployNewMorphoMarketForOETHARMScript} from "./mainnet/017_DeployNewMorphoMarketForOETHARM.sol";
+import {DeployNewMorphoMarketForEtherFiARM} from "./mainnet/017_DeployNewMorphoMarketForEtherFiARM.sol";
 import {EmptyScript} from "./mainnet/999_empty.sol";
 
 contract DeployManager is Script {
@@ -90,7 +90,7 @@ contract DeployManager is Script {
             _runDeployFile(new DeployEthenaARMScript());
             _runDeployFile(new UpgradeEthenaARMScript());
             _runDeployFile(new UpgradeLidoARMCrossPriceScript());
-            _runDeployFile(new DeployNewMorphoMarketForOETHARMScript());
+            _runDeployFile(new DeployNewMorphoMarketForEtherFiARM());
             _runDeployFile(new EmptyScript());
         } else if (block.chainid == 17000) {
             // Holesky
