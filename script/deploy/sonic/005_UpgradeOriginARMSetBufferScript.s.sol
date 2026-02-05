@@ -10,8 +10,6 @@ import {OriginARM} from "contracts/OriginARM.sol";
 import {AbstractDeployScript} from "script/deploy/helpers/AbstractDeployScript.s.sol";
 
 contract $005_UpgradeOriginARMSetBufferScript is AbstractDeployScript("005_UpgradeOriginARMSetBufferScript") {
-    bool public override proposalExecuted = true;
-
     OriginARM public originARMImpl;
 
     function _execute() internal override {

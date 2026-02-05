@@ -41,13 +41,20 @@ enum State {
 /// @notice Records a deployment script execution for history tracking.
 /// @dev Stored in the Resolver to prevent re-running completed scripts.
 ///      Persisted to JSON for cross-session continuity.
+///      Fields are ordered alphabetically for Foundry JSON parser compatibility.
 struct Execution {
     /// @notice The unique name of the deployment script.
     /// @dev Format: "NNN_DescriptiveName" (e.g., "015_UpgradeEthenaARMScript")
     string name;
-    /// @notice Block timestamp when the script was executed.
-    /// @dev Used for ordering and auditing purposes.
-    uint256 timestamp;
+    /// @notice On-chain governance proposal ID.
+    /// @dev 0 = governance pending (not yet submitted), 1 = no governance needed (sentinel).
+    uint256 proposalId;
+    /// @notice Block timestamp when the deployment script was executed.
+    /// @dev Used for ordering, auditing, and deterministic fork replay.
+    uint256 tsDeployment;
+    /// @notice Block timestamp when the governance proposal was executed on-chain.
+    /// @dev 0 = governance not yet executed, 1 = no governance needed (sentinel).
+    uint256 tsGovernance;
 }
 
 /// @notice Represents a deployed contract's address and identifier.

@@ -10,8 +10,6 @@ import {EtherFiARM} from "contracts/EtherFiARM.sol";
 import {AbstractDeployScript} from "script/deploy/helpers/AbstractDeployScript.s.sol";
 
 contract $012_UpgradeEtherFiARMScript is AbstractDeployScript("012_UpgradeEtherFiARMScript") {
-    bool public override proposalExecuted = true;
-
     EtherFiARM etherFiARMImpl;
 
     function _execute() internal override {

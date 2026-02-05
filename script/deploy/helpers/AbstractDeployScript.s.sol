@@ -28,7 +28,6 @@ import {Base} from "script/deploy/Base.s.sol";
 ///      - _buildGovernanceProposal(): Define governance actions (optional)
 ///      - _fork(): Post-deployment fork testing logic (optional)
 ///      - skip(): Return true to skip this script (optional)
-///      - proposalExecuted(): Return true if governance already executed (optional)
 ///
 ///      Execution Flow (run()):
 ///      1. Get state from Resolver
@@ -129,23 +128,24 @@ abstract contract AbstractDeployScript is Base {
 
         // ===== Step 6: Persist Deployed Contracts =====
         // Save all contracts recorded via _recordDeployment() to the Resolver
-        _storeDeployedContract();
+        _storeContracts();
 
-        // ===== Step 7: Build & Handle Governance Proposal =====
+        // ===== Step 7: Build Governance Proposal =====
         // Call the child contract's _buildGovernanceProposal() if implemented
         _buildGovernanceProposal();
 
-        // Check if there are any governance actions to process
+        // ===== Step 8: Record Execution =====
+        // Record execution with correct governance metadata (must be after _buildGovernanceProposal)
+        _recordExecution();
+
+        // ===== Step 9: Handle Governance Proposal =====
         if (govProposal.actions.length == 0) {
             log.info("No governance proposal to handle");
-            return;
         } else {
             // Ensure proposal has a description for clarity
             require(bytes(govProposal.description).length != 0, "Governance proposal missing description");
-        }
 
-        // Process governance proposal based on state
-        if (govProposal.actions.length != 0) {
+            // Process governance proposal based on state
             if (state == State.REAL_DEPLOYING) {
                 // Real deployment: output proposal data for manual submission
                 GovHelper.logProposalData(log, govProposal);
@@ -155,7 +155,7 @@ abstract contract AbstractDeployScript is Base {
             }
         }
 
-        // ===== Step 8: Run Fork-Specific Logic =====
+        // ===== Step 10: Run Fork-Specific Logic =====
         // Execute any additional testing logic defined in _fork()
         if (isSimulation) _fork();
     }
@@ -184,19 +184,29 @@ abstract contract AbstractDeployScript is Base {
         log.logContractDeployed(contractName, implementation);
     }
 
-    /// @notice Persists all recorded contracts to the Resolver and marks script as executed.
-    /// @dev Called automatically at the end of run().
+    /// @notice Persists all recorded contracts to the Resolver (without recording execution).
+    /// @dev Called automatically during run() before _buildGovernanceProposal().
     ///      Iterates through all contracts added via _recordDeployment() and
     ///      registers them in the global Resolver for cross-script access.
-    ///      Also records this script's execution to prevent re-runs.
-    function _storeDeployedContract() internal virtual {
-        // Persist each deployed contract to the Resolver
+    function _storeContracts() internal virtual {
         for (uint256 i = 0; i < contracts.length; i++) {
             resolver.addContract(contracts[i].name, contracts[i].implementation);
         }
+    }
 
-        // Mark this script as executed (prevents DeployManager from re-running it)
-        resolver.addExecution(name, block.timestamp);
+    /// @notice Records execution with governance metadata.
+    /// @dev Must be called AFTER _buildGovernanceProposal() so we know if governance is needed.
+    ///      If no governance actions, uses sentinel values (proposalId=1, tsGovernance=1).
+    ///      If governance actions exist, sets proposalId=0, tsGovernance=0 (pending).
+    function _recordExecution() internal virtual {
+        uint256 proposalId;
+        uint256 tsGovernance;
+        if (govProposal.actions.length == 0) {
+            proposalId = 1; // sentinel: no governance needed
+            tsGovernance = 1; // sentinel: no governance needed
+        }
+        // else both remain 0 (governance pending)
+        resolver.addExecution(name, block.timestamp, proposalId, tsGovernance);
     }
 
     // ==================== Virtual Hooks (Override in Child Contracts) ==================== //
@@ -252,15 +262,8 @@ abstract contract AbstractDeployScript is Base {
     /// @return True to skip this script, false to execute
     function skip() external view virtual returns (bool) {}
 
-    /// @notice Checks if the governance proposal for this script has been executed.
-    /// @dev Override to return true when the on-chain proposal is complete.
-    ///      When true, DeployManager will skip this script entirely.
-    ///      Useful for scripts that deploy + create governance proposals.
-    /// @return True if governance proposal was executed on-chain
-    function proposalExecuted() external view virtual returns (bool) {}
-
     /// @notice Handles governance proposal when deployment was already done.
-    /// @dev Called by DeployManager when script is in history but proposalExecuted() is false.
+    /// @dev Called by DeployManager when script is in history but governance is pending.
     ///      Override to implement proposal resubmission or status checking logic.
     function handleGovernanceProposal() external virtual {
         _buildGovernanceProposal();

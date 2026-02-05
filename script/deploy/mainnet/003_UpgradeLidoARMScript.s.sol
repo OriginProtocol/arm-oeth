@@ -13,8 +13,6 @@ import {IERC20, LegacyAMM} from "contracts/Interfaces.sol";
 import {AbstractDeployScript} from "script/deploy/helpers/AbstractDeployScript.s.sol";
 
 contract $003_UpgradeLidoARMMainnetScript is AbstractDeployScript("003_UpgradeLidoARMScript") {
-    bool public override proposalExecuted = true;
-
     Proxy lidoARMProxy;
     Proxy capManProxy;
     LidoARM lidoARMImpl;
