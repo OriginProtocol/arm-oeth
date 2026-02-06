@@ -8,8 +8,6 @@ import {AbstractDeployScript} from "script/deploy/helpers/AbstractDeployScript.s
 contract $016_UpgradeLidoARMCrossPriceScript is AbstractDeployScript("016_UpgradeLidoARMCrossPriceScript") {
     using GovHelper for GovProposal;
 
-    bool public override proposalExecuted = true;
-
     function _execute() internal override {}
 
     function _buildGovernanceProposal() internal override {
