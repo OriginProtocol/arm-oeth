@@ -19,7 +19,8 @@ contract Fork_OriginARM_Smoke_Test is AbstractSmokeTest {
     OriginARM originARM;
     address operator;
 
-    function setUp() public {
+    function setUp() public override {
+        super.setUp();
         oeth = IERC20(Mainnet.OETH);
         weth = IERC20(Mainnet.WETH);
         operator = Mainnet.ARM_RELAYER;
