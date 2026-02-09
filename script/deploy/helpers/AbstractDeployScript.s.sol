@@ -253,6 +253,11 @@ abstract contract AbstractDeployScript is Base {
     ///      ```
     function _buildGovernanceProposal() internal virtual {}
 
+    function buildGovernanceProposal() external virtual returns (uint256) {
+        _buildGovernanceProposal();
+        return GovHelper.id(govProposal);
+    }
+
     // ==================== External View Functions ==================== //
 
     /// @notice Determines if this deployment script should be skipped.
