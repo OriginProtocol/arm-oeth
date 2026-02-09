@@ -177,25 +177,16 @@ contract UpdateGovernanceMetadata is Script {
         string memory executionsJson = "";
         for (uint256 i = 0; i < root.executions.length; i++) {
             if (i > 0) executionsJson = string.concat(executionsJson, ",\n");
-            string memory entry = string.concat(
-                '    {\n      "name": "', root.executions[i].name, '",\n'
-            );
-            entry = string.concat(
-                entry, '      "proposalId": ', vm.toString(root.executions[i].proposalId), ',\n'
-            );
-            entry = string.concat(
-                entry, '      "tsDeployment": ', vm.toString(root.executions[i].tsDeployment), ',\n'
-            );
-            entry = string.concat(
-                entry, '      "tsGovernance": ', vm.toString(root.executions[i].tsGovernance), '\n    }'
-            );
+            string memory entry = string.concat('    {\n      "name": "', root.executions[i].name, '",\n');
+            entry = string.concat(entry, '      "proposalId": ', vm.toString(root.executions[i].proposalId), ",\n");
+            entry = string.concat(entry, '      "tsDeployment": ', vm.toString(root.executions[i].tsDeployment), ",\n");
+            entry =
+                string.concat(entry, '      "tsGovernance": ', vm.toString(root.executions[i].tsGovernance), "\n    }");
             executionsJson = string.concat(executionsJson, entry);
         }
 
-        string memory json = string.concat(
-            '{\n  "contracts": [\n', contractsJson, '\n  ],\n  "executions": [\n'
-        );
-        json = string.concat(json, executionsJson, '\n  ]\n}\n');
+        string memory json = string.concat('{\n  "contracts": [\n', contractsJson, '\n  ],\n  "executions": [\n');
+        json = string.concat(json, executionsJson, "\n  ]\n}\n");
 
         vm.writeFile(string.concat(vm.projectRoot(), "/", DEPLOY_FILE), json);
     }
