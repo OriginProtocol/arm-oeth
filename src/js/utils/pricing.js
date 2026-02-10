@@ -1,6 +1,21 @@
 const { formatUnits, parseUnits } = require("ethers");
+const { ethers } = require("ethers");
 
 const log = require("../utils/logger")("task:utils:pricing");
+
+const convertToAsset = async (vaultAddress, amount, signer) => {
+  const vault = new ethers.Contract(
+    vaultAddress,
+    ["function convertToAssets(uint256) external view returns (uint256)"],
+    signer,
+  );
+  const assetAmount = await vault.convertToAssets(
+    parseUnits(amount.toString(), 18),
+  );
+  const assetPrice =
+    (assetAmount * parseUnits("1")) / parseUnits(amount.toString(), 18);
+  return assetPrice;
+};
 
 const rangeSellPrice = (targetSellPrice, minSellPrice, maxSellPrice) => {
   log(
@@ -72,6 +87,7 @@ const rangeBuyPrice = (targetBuyPrice, minBuyPrice, maxBuyPrice) => {
 };
 
 module.exports = {
+  convertToAsset,
   rangeSellPrice,
   rangeBuyPrice,
 };

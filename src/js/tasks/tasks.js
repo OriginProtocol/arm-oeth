@@ -14,7 +14,7 @@ const {
   swapLido,
   lidoWithdrawStatus,
 } = require("./lido");
-const { setPrices } = require("./lidoMorphoPrices");
+const { setPrices } = require("./armPrices");
 const { allocate, collectFees, setARMBuffer } = require("./admin");
 const {
   collectRewards,
@@ -732,7 +732,8 @@ subtask("setPrices", "Update Lido ARM's swap prices")
 
     // Get the MorphoMarketWrapper contract
     const market =
-      activeMarketAddress === ethers.ZeroAddress
+      // Ethena uses Aave, not Morpho
+      activeMarketAddress === ethers.ZeroAddress || taskArgs.arm === "Ethena"
         ? undefined
         : await hre.ethers.getContractAt(
             ["function market() external view returns (address)"],
@@ -740,7 +741,9 @@ subtask("setPrices", "Update Lido ARM's swap prices")
             signer,
           );
 
-    await setPrices({ ...taskArgs, signer, arm: armContract, market });
+    const wrapped = taskArgs.arm === "Ethena";
+
+    await setPrices({ ...taskArgs, signer, arm: armContract, market, wrapped });
   });
 task("setPrices").setAction(async (_, __, runSuper) => {
   return runSuper();

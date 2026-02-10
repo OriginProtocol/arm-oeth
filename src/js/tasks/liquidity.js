@@ -7,14 +7,15 @@ const { resolveArmContract } = require("../utils/addressParser");
 const { outstandingWithdrawalAmount } = require("../utils/armQueue");
 const { logWithdrawalRequests } = require("../utils/etherFi");
 const {
-  convertToAsset,
   logArmPrices,
   log1InchPrices,
   logKyberPrices,
   logWrappedEtherFiPrices,
 } = require("./markets");
 const { getMerklRewards } = require("../utils/merkl");
+const { convertToAsset } = require("../utils/pricing");
 const { logTxDetails } = require("../utils/txLogger");
+const { getSigner } = require("../utils/signers");
 
 const log = require("../utils/logger")("task:liquidity");
 
@@ -89,7 +90,8 @@ const snap = async ({ arm, block, days, gas, amount, oneInch, kyber }) => {
 
   let wrapPrice;
   if (arm === "Ethena") {
-    wrapPrice = await convertToAsset(assets.base, amount);
+    const signer = await getSigner();
+    wrapPrice = await convertToAsset(assets.base, amount, signer);
     const actualArmSellPrice =
       (armPrices.sellPrice * wrapPrice) / parseUnits("1", 18);
     const actualArmBuyPrice =

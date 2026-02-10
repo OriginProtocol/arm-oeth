@@ -3,7 +3,7 @@ const { ethers } = require("ethers");
 
 const { setPrices } = require("../tasks/armPrices");
 const { mainnet } = require("../utils/addresses");
-const armAbi = require("../../abis/EtherFiARM.json");
+const armAbi = require("../../abis/EthenaARM.json");
 
 // Entrypoint for the Defender Action
 const handler = async (event) => {
@@ -20,7 +20,7 @@ const handler = async (event) => {
   );
 
   // References to contracts
-  const arm = new ethers.Contract(mainnet.etherfiARM, armAbi, signer);
+  const arm = new ethers.Contract(mainnet.ethenaARM, armAbi, signer);
 
   try {
     await setPrices({
@@ -28,19 +28,20 @@ const handler = async (event) => {
       arm,
       // sellPrice: 0.9998,
       // buyPrice: 0.9997,
-      maxSellPrice: 1.0,
-      minSellPrice: 0.9998,
-      maxBuyPrice: 0.9996,
-      minBuyPrice: 0.9985,
+      maxSellPrice: 0.9999,
+      minSellPrice: 0.9997,
+      maxBuyPrice: 0.999,
+      minBuyPrice: 0.995,
       // inch: true,
       // curve: true,
       kyber: true,
-      amount: 10,
-      tolerance: 0.2,
-      fee: 0.5,
-      offset: 0.3,
+      amount: 2000,
+      tolerance: 0.3,
+      fee: 2,
+      offset: 0.4,
       priceOffset: true,
       blockTag: "latest",
+      wrapped: true,
     });
   } catch (error) {
     console.error(error);
