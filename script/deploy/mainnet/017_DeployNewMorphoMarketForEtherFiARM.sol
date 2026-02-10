@@ -20,7 +20,7 @@ contract DeployNewMorphoMarketForEtherFiARM is AbstractDeployScript {
     GovProposal public govProposal;
 
     string public constant override DEPLOY_NAME = "017_DeployNewMorphoMarketForEtherFiARM";
-    bool public constant override proposalExecuted = false;
+    bool public constant override proposalExecuted = true;
 
     Proxy morphoMarketProxy;
     MorphoMarket morphoMarket;
