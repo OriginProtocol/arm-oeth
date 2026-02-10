@@ -127,7 +127,7 @@ contract UpdateGovernanceMetadata is Script {
     function _findExecutionTimestamp(uint256 proposalId, uint256 tsDeployment) internal returns (uint256) {
         string[] memory cmd = new string[](6);
         cmd[0] = "bash";
-        cmd[1] = string.concat(vm.projectRoot(), "/script/deploy/helpers/find_execution_timestamp.sh");
+        cmd[1] = string.concat(vm.projectRoot(), "/script/deploy/helpers/find_gov_prop_execution_timestamp.sh");
         cmd[2] = vm.toString(proposalId);
         cmd[3] = vm.envString("MAINNET_URL");
         cmd[4] = vm.toString(Mainnet.GOVERNOR_SIX);
