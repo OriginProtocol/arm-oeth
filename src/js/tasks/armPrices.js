@@ -1,16 +1,37 @@
 const { formatUnits, parseUnits } = require("ethers");
 
 const addresses = require("../utils/addresses");
-
 const { abs } = require("../utils/maths");
+const { getCurvePrices } = require("../utils/curve");
 const { getKyberPrices } = require("../utils/kyber");
 const { get1InchPrices } = require("../utils/1Inch");
 const { logTxDetails } = require("../utils/txLogger");
-const { getCurvePrices } = require("../utils/curve");
-const { rangeSellPrice, rangeBuyPrice } = require("../utils/pricing");
+const {
+  convertToAsset,
+  rangeSellPrice,
+  rangeBuyPrice,
+} = require("../utils/pricing");
 
 const log = require("../utils/logger")("task:lido");
 
+/**
+ *
+ * @param {*} options
+ * signer - ethers signer to send transactions
+ * arm - name of the ARM. eg Lido, EtherFi, Ethena, OETH
+ * fee - basis points from mid price or spread if using offset
+ * tolerance - basis points difference between current and target prices to trigger an update
+ * buyPrice - target buy price (optional if midPrice or market data is provided)
+ * sellPrice - target sell price (optional if midPrice or market data is provided)
+ * midPrice - reference mid price to calculate buy/sell prices from (optional if buy/sell prices are provided)
+ * curve/inch/kyber - whether to use Curve/1Inch/Kyber for reference prices
+ * market - Ethers contract of the ARM's active lending market. Only used for Morpho markets
+ * offset - price offset in basis points to add to the reference buy price when calculating target prices
+ * priceOffset - whether to use the offset-based approach for calculating target prices, or just calculate off the reference mid price and fee
+ * dryrun - if true, will not actually call setPrices on the ARM, just log the target prices
+ * wrapped - uses for appreciating assets like sUSDe or wstETH
+ * @returns
+ */
 const setPrices = async (options) => {
   let {
     signer,
@@ -31,6 +52,7 @@ const setPrices = async (options) => {
     market,
     priceOffset,
     dryrun,
+    wrapped = false,
   } = options;
 
   // 1. Get current ARM prices
@@ -44,31 +66,50 @@ const setPrices = async (options) => {
   let targetSellPrice;
   // 2. If no buy/sell prices are provided, calculate them using midPrice/1Inch/Curve
   if (!buyPrice && !sellPrice && (midPrice || curve || inch || kyber)) {
-    // Set 1Inch options
+    // Set asset options
     const assets = {
       liquid: await arm.liquidityAsset(),
       base: await arm.baseAsset(),
     };
     const inchFee = assets.base === addresses.mainnet.stETH ? 10n : 30n;
 
-    // 2.1 Get latest 1inch prices if no midPrice is provided
-    const referencePrices =
+    // 2.1 Get reference prices
+    let referencePrices;
+    if (midPrice) {
       // 2.1.a If midPrice is provided, use it directly
-      midPrice
-        ? {
-            midPrice: parseUnits(midPrice.toString(), 18),
-          }
-        : inch
-          ? // 2.1.b Otherwise, get prices from 1Inch
-            await get1InchPrices(options.amount, assets, inchFee)
-          : kyber
-            ? // 2.1.c Or from Kyber if specified
-              await getKyberPrices(options.amount, assets)
-            : // 2.1.d Or from Curve if specified
-              await getCurvePrices({
-                ...options,
-                poolAddress: addresses.mainnet.CurveNgStEthPool,
-              });
+      referencePrices = {
+        midPrice: parseUnits(midPrice.toString(), 18),
+      };
+    } else {
+      // 2.1 Get latest market prices if no midPrice is provided
+      referencePrices = inch
+        ? // 2.1.b Otherwise, get prices from 1Inch
+          await get1InchPrices(options.amount, assets, inchFee)
+        : kyber
+          ? // 2.1.c Or from Kyber if specified
+            await getKyberPrices(options.amount, assets)
+          : // 2.1.d Or from Curve if specified
+            await getCurvePrices({
+              ...options,
+              poolAddress: addresses.mainnet.CurveNgStEthPool,
+            });
+
+      // Adjust price down if a wrapped asset like sUSDe or wstETH
+      if (wrapped) {
+        // Assume the wrapped base asset is ERC-4626
+        const wrapPrice = await convertToAsset(assets.base, options.amount, signer);
+
+        log(`Base asset price : ${formatUnits(wrapPrice, 18)} base/liquid`);
+
+        referencePrices.sellPrice =
+          (referencePrices.sellPrice * parseUnits("1", 18)) / wrapPrice;
+        referencePrices.midPrice =
+          (referencePrices.midPrice * parseUnits("1", 18)) / wrapPrice;
+        referencePrices.buyPrice =
+          (referencePrices.buyPrice * parseUnits("1", 18)) / wrapPrice;
+      }
+    }
+
     log(
       `\nReference prices from ${
         midPrice
@@ -140,7 +181,7 @@ const setPrices = async (options) => {
     }
 
     // 2.3 If no min/max prices are provided, calculate them based on the current lending market APY
-    if (!minBuyPrice || !maxBuyPrice) {
+    if ((!minBuyPrice || !maxBuyPrice) && market) {
       log(
         `\nCalculating min/max buying prices based on current lending market APY:`,
       );

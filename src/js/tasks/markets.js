@@ -9,6 +9,7 @@ const { getSigner } = require("../utils/signers");
 const { getFluidSpotPrices } = require("../utils/fluid");
 const { mainnet } = require("../utils/addresses");
 const { resolveAddress } = require("../utils/assets");
+const { convertToAsset } = require("../utils/pricing");
 
 const log = require("../utils/logger")("task:markets");
 
@@ -31,8 +32,9 @@ const snapMarket = async ({
 
   let wrapPrice;
   if (wrapped) {
+    const signer = await getSigner();
     // Assume the wrapped base asset is ERC-4626
-    wrapPrice = await convertToAsset(baseAddress, amount);
+    wrapPrice = await convertToAsset(baseAddress, amount, signer);
 
     console.log(
       `\nWrapped price: ${formatUnits(wrapPrice, 18)} ${base}/${liquid}`,
@@ -71,16 +73,6 @@ const snapMarket = async ({
       logDiscount(marketPrices.sellPrice, days);
     }
   }
-};
-
-const convertToAsset = async (vaultAddress, amount) => {
-  const vault = await ethers.getContractAt("IERC4626", vaultAddress);
-  const assetAmount = await vault.convertToAssets(
-    parseUnits(amount.toString(), 18),
-  );
-  const assetPrice =
-    (assetAmount * parseUnits("1")) / parseUnits(amount.toString(), 18);
-  return assetPrice;
 };
 
 const logDiscountsOverDays = (marketPrice, daysArray) => {
@@ -416,7 +408,6 @@ const logWrappedEtherFiPrices = async ({ amount, armPrices }) => {
 };
 
 module.exports = {
-  convertToAsset,
   snapMarket,
   log1InchPrices,
   logKyberPrices,

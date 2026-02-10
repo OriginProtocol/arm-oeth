@@ -1,7 +1,7 @@
 const { Defender } = require("@openzeppelin/defender-sdk");
 const { ethers } = require("ethers");
 
-const { setPrices } = require("../tasks/lidoMorphoPrices");
+const { setPrices } = require("../tasks/armPrices");
 const { mainnet } = require("../utils/addresses");
 const lidoARMAbi = require("../../abis/LidoARM.json");
 
