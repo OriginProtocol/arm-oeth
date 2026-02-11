@@ -24,7 +24,8 @@ contract DeployPendleAdaptorEtherFi is AbstractDeployScript {
         console.log("------------");
 
         // 1. Deploy PendleOriginARMSY
-        PendleOriginARMSY sy = new PendleOriginARMSY("SY EtherFi ARM", "SY-ARM-WETH-eETH", deployedContracts["ETHER_FI_ARM"]);
+        PendleOriginARMSY sy =
+            new PendleOriginARMSY("SY EtherFi ARM", "SY-ARM-WETH-eETH", deployedContracts["ETHER_FI_ARM"]);
         _recordDeploy("PENDLE_ETHERFI_ARM_SY", address(sy));
 
         console.log("Finished deploying", DEPLOY_NAME);
