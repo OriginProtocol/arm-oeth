@@ -16,7 +16,8 @@
         "014_DeployEthenaARMScript": 1764664655,
         "015_UpgradeEthenaARMScript": 1766319523,
         "016_UpdateLidoARMCrossPriceScript": 1767616727,
-        "017_DeployNewMorphoMarketForEtherFiARM": 1770197063
+        "017_DeployNewMorphoMarketForEtherFiARM": 1770197063,
+        "019_DeployPendleAdaptor_EtherFi": 1770793835
     },
     "contracts": {
         "ARM_ZAPPER": "0xE11EDbd5AE4Fa434Af7f8D7F03Da1742996e7Ab2",
@@ -42,6 +43,7 @@
         "MORPHO_MARKET_ORIGIN_IMPL": "0x2ea9D1827973813D77aA8f35BD23cb1F1311A648",
         "OETH_ARM": "0x6bac785889A4127dB0e0CeFEE88E0a9F1Aaf3cC7",
         "OETH_ARM_IMPL": "0x9A2be51E45Eec98F75b3e6e1b334246c94663641",
+        "PENDLE_ETHERFI_ARM_SY": "0x3362070B3727b3beE5196bFf0772543f41d4e1F1",
         "PENDLE_ORIGIN_ARM_SY": "0xbcae2Eb1cc47F137D8B2D351B0E0ea8DdA4C6184"
     }
 }
