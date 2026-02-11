@@ -1,0 +1,29 @@
+name: Update Deployment Metadata
+
+on:
+  schedule:
+    - cron: '0 */6 * * *' # Every 6 hours
+  workflow_dispatch:
+
+jobs:
+  update-metadata:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup environment
+        uses: ./.github/actions/setup
+
+      - name: Run governance metadata update
+        env:
+          MAINNET_URL: ${{ secrets.MAINNET_URL }}
+        run: forge build && forge script script/UpdateGovernanceMetadata.s.sol --fork-url $MAINNET_URL -vvvv
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add build/deployments-*.json
+          git diff --staged --quiet || git commit -m "chore: update governance metadata"
+          git push
