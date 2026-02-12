@@ -19,7 +19,8 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
     CapManager capManager;
     address operator;
 
-    function setUp() public {
+    function setUp() public override {
+        super.setUp();
         weth = IERC20(Mainnet.WETH);
         steth = IERC20(Mainnet.STETH);
         operator = Mainnet.ARM_RELAYER;

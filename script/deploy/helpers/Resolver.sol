@@ -38,6 +38,17 @@ contract Resolver {
     // Key: script name (e.g., "015_UpgradeEthenaARMScript")
     mapping(string => bool) public executionExists;
 
+    // Governance proposal IDs by script name
+    // 0 = governance pending, 1 = no governance needed (sentinel)
+    mapping(string => uint256) public proposalIds;
+
+    // Deployment timestamps by script name
+    mapping(string => uint256) public tsDeployments;
+
+    // Governance execution timestamps by script name
+    // 0 = governance not yet executed, 1 = no governance needed (sentinel)
+    mapping(string => uint256) public tsGovernances;
+
     // Quick lookup for deployed contract addresses by name
     // Key: contract name (e.g., "LIDO_ARM", "ETHENA_ARM_IMPL")
     // Value: deployed address
@@ -88,18 +99,25 @@ contract Resolver {
     /// @dev Prevents duplicate executions by reverting if already recorded.
     ///      Called by deployment scripts after successful execution.
     /// @param name The unique name of the deployment script (e.g., "015_UpgradeEthenaARMScript")
-    /// @param timestamp The block timestamp of execution
-    function addExecution(string memory name, uint256 timestamp) external {
+    /// @param tsDeployment The block timestamp when the deployment was executed
+    /// @param proposalId The governance proposal ID (0 = pending, 1 = no governance needed)
+    /// @param tsGovernance The block timestamp when governance was executed (0 = pending, 1 = no governance)
+    function addExecution(string memory name, uint256 tsDeployment, uint256 proposalId, uint256 tsGovernance) external {
         // Prevent duplicate execution records
         require(!executionExists[name], "Execution already exists");
 
         // Add to array for JSON serialization
-        executions.push(Execution({name: name, timestamp: timestamp}));
+        executions.push(
+            Execution({name: name, proposalId: proposalId, tsDeployment: tsDeployment, tsGovernance: tsGovernance})
+        );
 
         // Mark as executed for quick lookups
         executionExists[name] = true;
+        proposalIds[name] = proposalId;
+        tsDeployments[name] = tsDeployment;
+        tsGovernances[name] = tsGovernance;
 
-        emit ExecutionAdded(name, timestamp);
+        emit ExecutionAdded(name, tsDeployment);
     }
 
     // ==================== View Functions ==================== //

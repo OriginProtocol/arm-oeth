@@ -11,8 +11,6 @@ import {GovHelper, GovProposal} from "script/deploy/helpers/GovHelper.sol";
 contract $006_ChangeFeeCollectorScript is AbstractDeployScript("006_ChangeFeeCollector") {
     using GovHelper for GovProposal;
 
-    bool public override proposalExecuted = true;
-
     function _buildGovernanceProposal() internal override {
         govProposal.setDescription("Change fee collector");
 

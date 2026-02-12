@@ -8,8 +8,6 @@ import {GovHelper, GovProposal} from "script/deploy/helpers/GovHelper.sol";
 contract $004_UpdateCrossPriceMainnetScript is AbstractDeployScript("004_UpdateCrossPriceScript") {
     using GovHelper for GovProposal;
 
-    bool public override proposalExecuted = true;
-
     function _buildGovernanceProposal() internal override {
         govProposal.setDescription("Update Cross Price for Lido ARM");
 

@@ -139,6 +139,14 @@ simulate:
 	@forge script $(DEPLOY_SCRIPT) --fork-url $(if $(filter sonic,$(NETWORK)),$(SONIC_URL),$(MAINNET_URL)) -vvvv
 
 # ╔══════════════════════════════════════════════════════════════════════════════╗
+# ║                            UPDATE DEPLOYMENTS                                ║
+# ╚══════════════════════════════════════════════════════════════════════════════╝
+
+update-deployments:
+	forge build
+	@forge script script/UpdateGovernanceMetadata.s.sol --fork-url $(MAINNET_URL) -vvvv
+
+# ╔══════════════════════════════════════════════════════════════════════════════╗
 # ║                                  VERIFY                                      ║
 # ╚══════════════════════════════════════════════════════════════════════════════╝
 
@@ -178,4 +186,4 @@ frame:
 .PHONY: test test-base test-unit test-fork test-smoke test-invariants \
         coverage coverage-html gas snapshot \
         deploy-mainnet deploy-local deploy-testnet deploy-holesky deploy-sonic simulate \
-        match clean clean-crytic clean-all install frame
+        update-deployments match clean clean-crytic clean-all install frame

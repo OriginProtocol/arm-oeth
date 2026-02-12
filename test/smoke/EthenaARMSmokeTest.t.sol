@@ -20,7 +20,8 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
     CapManager capManager;
     address operator;
 
-    function setUp() public {
+    function setUp() public override {
+        super.setUp();
         usde = IERC20(Mainnet.USDE);
         susde = IERC20(Mainnet.SUSDE);
         operator = Mainnet.ARM_RELAYER;
