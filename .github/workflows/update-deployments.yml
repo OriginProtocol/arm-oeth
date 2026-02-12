@@ -2,7 +2,7 @@ name: Update Deployment Metadata
 
 on:
   schedule:
-    - cron: '0 */6 * * *' # Every 6 hours
+    - cron: '0 */1 * * *' # Every 1 hour
   workflow_dispatch:
 
 jobs:
