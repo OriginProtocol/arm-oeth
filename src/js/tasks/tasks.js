@@ -1196,7 +1196,7 @@ subtask("snap", "Take a snapshot of the an ARM")
     undefined,
     types.int,
   )
-  .addOptionalParam("oneInch", "Include 1Inch prices", true, types.boolean)
+  .addOptionalParam("oneInch", "Include 1Inch prices", false, types.boolean)
   .addOptionalParam("kyber", "Include Kyber prices", true, types.boolean)
   .setAction(snap);
 task("snap").setAction(async (_, __, runSuper) => {
@@ -1213,8 +1213,14 @@ subtask("snapLido", "Take a snapshot of the Lido ARM")
   .addOptionalParam("amount", "Swap quantity", 100, types.int)
   .addOptionalParam("oneInch", "Include 1Inch prices", true, types.boolean)
   .addOptionalParam("kyber", "Include Kyber prices", true, types.boolean)
-  .addOptionalParam("curve", "Include Curve prices", true, types.boolean)
-  .addOptionalParam("uniswap", "Include Uniswap V3 prices", true, types.boolean)
+  .addOptionalParam("curve", "Include Curve prices", false, types.boolean)
+  .addOptionalParam(
+    "uniswap",
+    "Include Uniswap V3 prices",
+    false,
+    types.boolean,
+  )
+  .addOptionalParam("fluid", "Include FluidDex prices", false, types.boolean)
   .addOptionalParam(
     "queue",
     "Include ARM withdrawal queue data",
@@ -1224,13 +1230,12 @@ subtask("snapLido", "Take a snapshot of the Lido ARM")
   .addOptionalParam(
     "lido",
     "Include Lido withdrawal queue data",
-    true,
+    false,
     types.boolean,
   )
   .addOptionalParam("user", "Include user data", false, types.boolean)
   .addOptionalParam("cap", "Include cap limit data", false, types.boolean)
   .addOptionalParam("gas", "Include gas costs", false, types.boolean)
-  .addOptionalParam("fluid", "Include FluidDex prices", true, types.boolean)
   .setAction(snapLido);
 task("snapLido").setAction(async (_, __, runSuper) => {
   return runSuper();
