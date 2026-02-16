@@ -97,6 +97,9 @@ async function allocate({
     }
 
     // Either the delta is above threshold or there is a small amount left in the market
+    log(
+      `Only ${formatUnits(availableAssets)} available in the active lending market, proceeding with allocation to drain remaining liquidity`,
+    );
   }
 
   log(
