@@ -97,7 +97,11 @@ const setPrices = async (options) => {
       // Adjust price down if a wrapped asset like sUSDe or wstETH
       if (wrapped) {
         // Assume the wrapped base asset is ERC-4626
-        const wrapPrice = await convertToAsset(assets.base, options.amount, signer);
+        const wrapPrice = await convertToAsset(
+          assets.base,
+          options.amount,
+          signer,
+        );
 
         log(`Base asset price : ${formatUnits(wrapPrice, 18)} base/liquid`);
 
