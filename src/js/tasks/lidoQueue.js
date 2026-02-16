@@ -1,4 +1,4 @@
-const { formatUnits, parseUnits } = require("ethers");
+const { ethers, formatUnits, parseUnits } = require("ethers");
 
 const { logTxDetails } = require("../utils/txLogger");
 
@@ -16,12 +16,42 @@ const requestLidoWithdrawals = async (options) => {
   const maxAmountBI = parseUnits(maxAmount.toString());
 
   if (!amount && withdrawAmount <= minAmountBI) {
-    console.log(
-      `withdraw amount of ${formatUnits(
-        withdrawAmount,
-      )} stETH is below ${minAmount} so not withdrawing`,
+    // Check if there is WETH available in the lending market
+    const activeMarketAddress = await arm.activeMarket();
+    let marketHasWeth = false;
+
+    if (activeMarketAddress !== ethers.ZeroAddress) {
+      const activeMarket = new ethers.Contract(
+        activeMarketAddress,
+        ["function maxWithdraw(address) external view returns (uint256)"],
+        signer,
+      );
+      const availableAssets = await activeMarket.maxWithdraw(
+        await arm.getAddress(),
+      );
+      log(`${formatUnits(availableAssets)} WETH available in lending market`);
+      marketHasWeth = availableAssets > 0n;
+    }
+
+    if (marketHasWeth) {
+      // WETH still available in the lending market, skip small stETH withdrawal
+      console.log(
+        `withdraw amount of ${formatUnits(
+          withdrawAmount,
+        )} stETH is below ${minAmount} and lending market still has WETH, so not withdrawing`,
+      );
+      return;
+    }
+
+    if (withdrawAmount === 0n) {
+      console.log(`No stETH left in the ARM to withdraw`);
+      return;
+    }
+
+    // No WETH left in lending market, withdraw whatever stETH remains
+    log(
+      `No WETH in lending market, withdrawing remaining ${formatUnits(withdrawAmount)} stETH`,
     );
-    return;
   }
 
   const requestAmounts = [];
