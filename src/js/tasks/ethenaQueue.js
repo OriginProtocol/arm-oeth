@@ -27,10 +27,33 @@ const requestEthenaWithdrawals = async (options) => {
 
   // Minimum check (only applies if we are sweeping the full balance, not if amount is manually set)
   if (!amount && withdrawAmount <= minAmountBI) {
+    // Check if there is USDe available in the lending market
+    const activeMarketAddress = await arm.activeMarket();
+    let marketHasLiquidity = false;
+
+    if (activeMarketAddress !== ethers.ZeroAddress) {
+      const activeMarket = new ethers.Contract(
+        activeMarketAddress,
+        ["function maxWithdraw(address) external view returns (uint256)"],
+        signer,
+      );
+      const availableAssets = await activeMarket.maxWithdraw(armAddress);
+      log(`${formatUnits(availableAssets)} USDe available in lending market`);
+      marketHasLiquidity = availableAssets > 0n;
+    }
+
+    if (marketHasLiquidity) {
+      // USDe still available in the lending market, skip small sUSDe withdrawal
+      log(
+        `Skipping: Balance (${formattedAmount} sUSDe) is below minimum threshold (${minAmount}) and lending market still has USDe`,
+      );
+      return;
+    }
+
+    // No USDe left in lending market, withdraw whatever sUSDe remains
     log(
-      `Skipping: Balance (${formattedAmount} sUSDe) is below minimum threshold (${minAmount})`,
+      `No USDe in lending market, withdrawing remaining ${formattedAmount} sUSDe`,
     );
-    return;
   }
 
   // Check 3 hours has passed since last withdrawal request
