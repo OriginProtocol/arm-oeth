@@ -87,3 +87,4 @@ make simulate-sonic-deploys  # Dry run Sonic
 - `baseAsset` = the asset being redeemed (e.g., stETH), `liquidityAsset` = the LP/quote asset (e.g., WETH)
 - Test base class: `test/Base.sol` with standard accounts (alice, bob, charlie) and shared setup
 - Dependencies managed by Soldeer (not npm) for Solidity libs
+- Prefer flat structure with early returns over deeply nested if/else blocks
