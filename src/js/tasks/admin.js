@@ -167,7 +167,6 @@ async function setARMBuffer({ arm, signer, buffer }) {
   const tx = await arm.connect(signer).setARMBuffer(bufferBN, { gasLimit });
   await logTxDetails(tx, "setARMBuffer");
 }
-
 module.exports = {
   allocate,
   collectFees,

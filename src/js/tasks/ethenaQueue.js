@@ -1,62 +1,20 @@
 const { formatUnits, parseUnits } = require("ethers");
 const { ethers } = require("ethers");
+
+const { baseWithdrawAmount } = require("./liquidityAutomation");
 const { logTxDetails } = require("../utils/txLogger");
 const log = require("../utils/logger")("task:ethenaQueue");
 
 const requestEthenaWithdrawals = async (options) => {
-  const { signer, susde, arm, amount, minAmount } = options;
+  const { signer, arm, amount } = options;
 
-  // 1. Resolve ARM Address (Supports Ethers v5 & v6)
-  const armAddress = arm.target || arm.address || (await arm.getAddress());
-
-  // 2. Determine Amount: Explicit Input OR Full Balance
+  // 1. Determine withdrawal amount: Explicit Input OR calculate from ARM and lending market balances
   const withdrawAmount = amount
     ? parseUnits(amount.toString())
-    : await susde.balanceOf(armAddress);
+    : await baseWithdrawAmount(options);
+  if (!withdrawAmount || withdrawAmount === 0n) return;
 
-  const formattedAmount = formatUnits(withdrawAmount);
-  const minAmountBI = parseUnits(minAmount.toString());
-
-  // 3. Checks & validations
-
-  // Safety check: Never try to withdraw 0
-  if (withdrawAmount == 0) {
-    log("Skipping withdrawal: Balance is 0 sUSDe");
-    return;
-  }
-
-  // Minimum check (only applies if we are sweeping the full balance, not if amount is manually set)
-  if (!amount && withdrawAmount <= minAmountBI) {
-    // Check if there is USDe available in the lending market
-    const activeMarketAddress = await arm.activeMarket();
-    let marketHasLiquidity = false;
-
-    if (activeMarketAddress !== ethers.ZeroAddress) {
-      const activeMarket = new ethers.Contract(
-        activeMarketAddress,
-        ["function maxWithdraw(address) external view returns (uint256)"],
-        signer,
-      );
-      const availableAssets = await activeMarket.maxWithdraw(armAddress);
-      log(`${formatUnits(availableAssets)} USDe available in lending market`);
-      marketHasLiquidity = availableAssets > 0n;
-    }
-
-    if (marketHasLiquidity) {
-      // USDe still available in the lending market, skip small sUSDe withdrawal
-      log(
-        `Skipping: Balance (${formattedAmount} sUSDe) is below minimum threshold (${minAmount}) and lending market still has USDe`,
-      );
-      return;
-    }
-
-    // No USDe left in lending market, withdraw whatever sUSDe remains
-    log(
-      `No USDe in lending market, withdrawing remaining ${formattedAmount} sUSDe`,
-    );
-  }
-
-  // Check 3 hours has passed since last withdrawal request
+  // 2. Check 3 hours has passed since last withdrawal request
   const lastRequestTime = await arm.lastRequestTimestamp();
   const currentTime = Math.floor(Date.now() / 1000);
   const timeSinceLastRequest = currentTime - Number(lastRequestTime);
@@ -69,8 +27,8 @@ const requestEthenaWithdrawals = async (options) => {
     return;
   }
 
-  // 4. Execution
-  log(`Requesting withdrawal for ${formattedAmount} sUSDe...`);
+  // 3. Execution
+  log(`Requesting withdrawal for ${formatUnits(withdrawAmount)} sUSDe...`);
   const tx = await arm.connect(signer).requestBaseWithdrawal(withdrawAmount);
   await logTxDetails(tx, "requestEthenaWithdrawal");
 };

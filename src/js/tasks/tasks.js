@@ -145,9 +145,15 @@ subtask(
   "Request withdrawal of base asset (WETH/OS) from the Origin Vault",
 )
   .addOptionalParam(
+    "thresholdAmount",
+    "Minimum amount of base assets that will be withdrawn if liquidity is available in the ARM or active market",
+    100,
+    types.float,
+  )
+  .addOptionalParam(
     "minAmount",
-    "Minimum amount of oTokens that will be withdrawn",
-    2,
+    "Minimum amount of base assets that will be withdrawn if no liquidity is available in the ARM or active market",
+    0.03,
     types.float,
   )
   .setAction(async (taskArgs) => {
@@ -760,9 +766,15 @@ subtask(
     types.float,
   )
   .addOptionalParam(
+    "thresholdAmount",
+    "Minimum amount of base assets that will be withdrawn if liquidity is available in the ARM or active market",
+    120,
+    types.float,
+  )
+  .addOptionalParam(
     "minAmount",
-    "Minimum amount of stETH to withdraw.",
-    1,
+    "Minimum amount of base assets that will be withdrawn if no liquidity is available in the ARM or active market",
+    0.03,
     types.float,
   )
   .addOptionalParam(
@@ -1018,9 +1030,15 @@ subtask(
     types.float,
   )
   .addOptionalParam(
+    "thresholdAmount",
+    "Minimum amount of base assets that will be withdrawn if liquidity is available in the ARM or active market",
+    12,
+    types.float,
+  )
+  .addOptionalParam(
     "minAmount",
-    "Minimum amount of eETH to withdraw. (default: 1 ETH)",
-    1,
+    "Minimum amount of base assets that will be withdrawn if no liquidity is available in the ARM or active market",
+    0.03,
     types.float,
   )
   .setAction(async (taskArgs) => {
@@ -1074,9 +1092,15 @@ subtask(
     types.float,
   )
   .addOptionalParam(
+    "thresholdAmount",
+    "Minimum amount of base assets that will be withdrawn if liquidity is available in the ARM or active market",
+    1000,
+    types.float,
+  )
+  .addOptionalParam(
     "minAmount",
-    "Minimum amount of sUSDe to withdraw. (default: 1 sUSDe)",
-    1,
+    "Minimum amount of base assets that will be withdrawn if no liquidity is available in the ARM or active market",
+    100,
     types.float,
   )
   .setAction(async (taskArgs) => {

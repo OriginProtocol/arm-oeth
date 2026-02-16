@@ -28,7 +28,8 @@ const handler = async (event) => {
     signer,
     eeth,
     arm,
-    minAmount: 10,
+    minAmount: "0.03",
+    thresholdAmount: 10,
   });
 };
 
