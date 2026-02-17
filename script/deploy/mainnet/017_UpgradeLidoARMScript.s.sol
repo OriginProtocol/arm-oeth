@@ -15,8 +15,6 @@ import {AbstractDeployScript} from "script/deploy/helpers/AbstractDeployScript.s
 contract $017_UpgradeLidoARMScript is AbstractDeployScript("017_UpgradeLidoARMScript") {
     using GovHelper for GovProposal;
 
-    bool public override proposalExecuted = false;
-
     Proxy lidoARMProxy;
     Proxy capManProxy;
     LidoARM lidoARMImpl;
@@ -60,6 +58,10 @@ contract $017_UpgradeLidoARMScript is AbstractDeployScript("017_UpgradeLidoARMSc
 
     function _buildGovernanceProposal() internal override {
         govProposal.setDescription("Update Lido ARM");
-        govProposal.action(resolver.implementations("LIDO_ARM"), "upgradeTo(address)", abi.encode(address(lidoARMImpl)));
+        govProposal.action(
+            resolver.implementations("LIDO_ARM"),
+            "upgradeTo(address)",
+            abi.encode(resolver.implementations("LIDO_ARM_IMPL"))
+        );
     }
 }

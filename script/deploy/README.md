@@ -30,8 +30,8 @@ script/deploy/
 2. **DeployManager.run()** executes deployment scripts:
    - Loads existing deployment history into the Resolver
    - Reads scripts from the chain-specific folder (e.g., `mainnet/` or `sonic/`)
-   - Processes only the last N scripts (default: 2) to improve efficiency
-   - For each script: compiles, deploys, and executes via `_runDeployFile()`
+   - Skips fully completed scripts (deployed + governance executed) via timestamp metadata
+   - For each remaining script: compiles, deploys, and executes via `_runDeployFile()`
 
 3. **Each script** (inheriting from AbstractDeployScript):
    - Runs `_execute()` to deploy contracts
@@ -62,10 +62,20 @@ Format:
     { "name": "LIDO_ARM_IMPL", "implementation": "0x..." }
   ],
   "executions": [
-    { "name": "001_CoreMainnet", "timestamp": 1723685111 }
+    {
+      "name": "001_CoreMainnet",
+      "proposalId": 1,
+      "tsDeployment": 1723685111,
+      "tsGovernance": 1
+    }
   ]
 }
 ```
+
+Execution metadata fields:
+- `tsDeployment`: Block timestamp when the deployment script was executed
+- `proposalId`: Governance proposal ID (`0` = pending, `1` = no governance needed)
+- `tsGovernance`: Block timestamp when governance was executed (`0` = pending, `1` = no governance needed)
 
 ## Creating a New Deployment Script
 
@@ -89,9 +99,6 @@ contract $017_UpgradeLidoARM is AbstractDeployScript("017_UpgradeLidoARM") {
 
     // Set to true to skip this script
     bool public constant override skip = false;
-
-    // Set to true once governance proposal is executed on-chain
-    bool public constant override proposalExecuted = false;
 
     function _execute() internal override {
         // 1. Get previously deployed contracts
@@ -127,7 +134,6 @@ contract $017_UpgradeLidoARM is AbstractDeployScript("017_UpgradeLidoARM") {
 | `_buildGovernanceProposal()` | Define governance actions |
 | `_fork()` | Post-deployment verification (fork mode only) |
 | `skip()` | Return `true` to skip this script |
-| `proposalExecuted()` | Return `true` when governance is complete |
 
 ### 4. Resolver Usage
 
@@ -189,7 +195,7 @@ govProposal.action(
 
 ## Tips
 
-1. **Always check `skip` and `proposalExecuted`** - Set `proposalExecuted = true` once governance passes to prevent re-execution.
+1. **Governance is tracked via timestamps** - Once a governance proposal is executed, update `proposalId` and `tsGovernance` in the deployment JSON. The framework uses these to determine skip behavior.
 
 2. **Use descriptive contract names** - Names like `LIDO_ARM_IMPL` are clearer than `IMPL_V2`.
 
@@ -197,6 +203,8 @@ govProposal.action(
 
 4. **Scripts are processed in order** - Name files with numeric prefixes (001_, 002_, etc.).
 
-5. **Only the last N scripts run** - By default, only the 2 most recent scripts are processed. Older scripts are skipped if already in deployment history.
+5. **All scripts are evaluated** - Fully completed scripts (deployed + governance executed) are skipped automatically based on timestamp metadata. No manual `maxDeploymentFiles` tuning needed.
 
-6. **Reference the example** - See `mainnet/000_Example.s.sol` for a comprehensive template.
+6. **Historical fork replay** - Set `FORK_BLOCK_NUMBER_MAINNET` to a historical block and the framework will only replay deployments that existed at that point in time, skipping future ones.
+
+7. **Reference the example** - See `mainnet/000_Example.s.sol` for a comprehensive template.

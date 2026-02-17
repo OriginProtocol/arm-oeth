@@ -44,23 +44,33 @@
   "executions": [
     {
       "name": "001_DeployOriginARMProxyScript",
-      "timestamp": 1747110973
+      "proposalId": 1,
+      "tsDeployment": 1747110973,
+      "tsGovernance": 1
     },
     {
       "name": "002_DeployOriginARMScript",
-      "timestamp": 1747907433
+      "proposalId": 1,
+      "tsDeployment": 1747907433,
+      "tsGovernance": 1
     },
     {
       "name": "003_UpgradeOriginARMScriptScript",
-      "timestamp": 1748603225
+      "proposalId": 1,
+      "tsDeployment": 1748603225,
+      "tsGovernance": 1
     },
     {
       "name": "004_DeployPendleAdaptor",
-      "timestamp": 1755780926
+      "proposalId": 1,
+      "tsDeployment": 1755780926,
+      "tsGovernance": 1
     },
     {
       "name": "005_UpgradeOriginARMSetBufferScript",
-      "timestamp": 1755782543
+      "proposalId": 1,
+      "tsDeployment": 1755782543,
+      "tsGovernance": 1
     }
   ]
 }

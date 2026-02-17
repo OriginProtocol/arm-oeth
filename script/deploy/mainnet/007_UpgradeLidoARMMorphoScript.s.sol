@@ -14,8 +14,6 @@ import {GovHelper, GovProposal} from "script/deploy/helpers/GovHelper.sol";
 contract $007_UpgradeLidoARMMorphoScript is AbstractDeployScript("007_UpgradeLidoARMMorphoScript") {
     using GovHelper for GovProposal;
 
-    bool public override proposalExecuted = true;
-
     function _execute() internal override {
         // 1. Deploy new Lido implementation
         uint256 claimDelay = 10 minutes;

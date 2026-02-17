@@ -16,8 +16,6 @@ import {GovHelper, GovProposal} from "script/deploy/helpers/GovHelper.sol";
 contract $013_UpgradeOETHARMScript is AbstractDeployScript("013_UpgradeOETHARMScript") {
     using GovHelper for GovProposal;
 
-    bool public override proposalExecuted = true;
-
     function _execute() internal override {
         // 1. Deploy new Origin implementation
         uint256 claimDelay = 10 minutes;

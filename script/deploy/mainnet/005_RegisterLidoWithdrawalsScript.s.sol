@@ -12,8 +12,6 @@ import {GovHelper, GovProposal} from "script/deploy/helpers/GovHelper.sol";
 contract $005_RegisterLidoWithdrawalsScript is AbstractDeployScript("005_RegisterLidoWithdrawalsScript") {
     using GovHelper for GovProposal;
 
-    bool public override proposalExecuted = true;
-
     function _execute() internal override {
         // 1. Deploy new Lido ARM implementation
         uint256 claimDelay = 10 minutes;

@@ -15,8 +15,6 @@ import {Abstract4626MarketWrapper} from "contracts/markets/Abstract4626MarketWra
 import {AbstractDeployScript} from "script/deploy/helpers/AbstractDeployScript.s.sol";
 
 contract $011_DeployEtherFiARMScript is AbstractDeployScript("011_DeployEtherFiARMScript") {
-    bool public override proposalExecuted = true;
-
     function _execute() internal override {
         // 1. Deploy new ARM proxy contract
         Proxy armProxy = new Proxy();
