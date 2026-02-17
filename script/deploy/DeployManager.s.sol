@@ -8,7 +8,7 @@ import {VmSafe} from "forge-std/Vm.sol";
 // Helpers
 import {Logger} from "script/deploy/helpers/Logger.sol";
 import {AbstractDeployScript} from "script/deploy/helpers/AbstractDeployScript.s.sol";
-import {State, Execution, Contract, Root} from "script/deploy/helpers/DeploymentTypes.sol";
+import {State, Execution, Contract, Root, NO_GOVERNANCE} from "script/deploy/helpers/DeploymentTypes.sol";
 
 // Script Base
 import {Base} from "script/deploy/Base.s.sol";
@@ -173,8 +173,7 @@ contract DeployManager is Base {
         // Script was already deployed - check governance status
         uint256 proposalId = resolver.proposalIds(deployFileName);
 
-        // proposalId == 1: no governance needed, fully complete
-        if (proposalId == 1) return;
+        if (proposalId == NO_GOVERNANCE) return;
 
         // proposalId == 0: governance pending (not yet submitted)
         if (proposalId == 0) {
@@ -199,14 +198,14 @@ contract DeployManager is Base {
 
     /// @notice Checks if a deployment file can be entirely skipped.
     /// @dev A file can be skipped if it's in the execution history AND:
-    ///      - No governance needed (proposalId == 1), OR
+    ///      - No governance needed (proposalId == NO_GOVERNANCE), OR
     ///      - Governance was executed (tsGovernance != 0) AND at/before current block
     /// @param scriptName The unique name of the deployment script
     /// @return True if the file can be skipped (no need to compile/deploy)
     function _canSkipDeployFile(string memory scriptName) internal view returns (bool) {
         if (!resolver.executionExists(scriptName)) return false;
         uint256 proposalId = resolver.proposalIds(scriptName);
-        if (proposalId == 1) return true;
+        if (proposalId == NO_GOVERNANCE) return true;
         uint256 tsGovernance = resolver.tsGovernances(scriptName);
         return tsGovernance != 0 && block.timestamp >= tsGovernance;
     }
@@ -237,7 +236,7 @@ contract DeployManager is Base {
 
             // Adjust tsGovernance: if governance happened after current block, treat as pending
             uint256 tsGovernance = exec.tsGovernance;
-            if (tsGovernance > 1 && tsGovernance > block.timestamp) {
+            if (tsGovernance > NO_GOVERNANCE && tsGovernance > block.timestamp) {
                 tsGovernance = 0;
             }
 

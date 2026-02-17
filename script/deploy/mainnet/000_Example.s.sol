@@ -6,10 +6,14 @@ pragma solidity 0.8.23;
 // This file demonstrates all features of the deployment framework.
 // Use it as a template when creating new deployment scripts.
 //
-// Naming Convention:
+// Naming Convention (IMPORTANT: all three MUST match or deployment silently breaks):
 //   - File: NNN_DescriptiveName.sol (e.g., 015_UpgradeEthenaARM.sol)
 //   - Contract: Same as file name, prefixed with $ (e.g., $015_UpgradeEthenaARM)
 //   - Constructor arg: Same as contract name without $ (e.g., "015_UpgradeEthenaARM")
+//
+//   DeployManager constructs the artifact path as: out/{name}.s.sol/${name}.json
+//   If the file name, contract name, or constructor arg drift, the script will
+//   either fail to load or track execution under the wrong name.
 //
 // Execution Modes:
 //   - FORK_TEST: Simulates deployment on fork, runs governance simulation

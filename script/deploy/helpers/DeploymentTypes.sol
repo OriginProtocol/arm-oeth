@@ -36,6 +36,16 @@ enum State {
     REAL_DEPLOYING
 }
 
+// ==================== Constants ==================== //
+
+// Sentinel value indicating no governance is needed for a deployment script.
+// Used for both proposalId and tsGovernance fields in Execution records.
+uint256 constant NO_GOVERNANCE = 1;
+
+// Default value indicating governance is pending (not yet submitted/executed).
+// This is the default uint256 value (0). Named for readability.
+uint256 constant GOVERNANCE_PENDING = 0;
+
 // ==================== Resolver Data Structures ==================== //
 
 /// @notice Records a deployment script execution for history tracking.

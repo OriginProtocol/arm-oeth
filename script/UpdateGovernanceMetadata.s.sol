@@ -5,7 +5,14 @@ pragma solidity 0.8.23;
 import {Script, console} from "forge-std/Script.sol";
 
 // Types (read-only reuse)
-import {Root, Execution, Contract, State} from "script/deploy/helpers/DeploymentTypes.sol";
+import {
+    Root,
+    Execution,
+    Contract,
+    State,
+    NO_GOVERNANCE,
+    GOVERNANCE_PENDING
+} from "script/deploy/helpers/DeploymentTypes.sol";
 import {IGovernance} from "script/deploy/helpers/GovHelper.sol";
 import {Resolver} from "script/deploy/helpers/Resolver.sol";
 import {AbstractDeployScript} from "script/deploy/helpers/AbstractDeployScript.s.sol";
@@ -45,10 +52,10 @@ contract UpdateGovernanceMetadata is Script {
         for (uint256 i = 0; i < root.executions.length; i++) {
             Execution memory exec = root.executions[i];
 
-            // Case A: proposalId == 0 -> governance pending, find proposalId
-            if (exec.proposalId == 0) {
+            // Case A: proposalId == GOVERNANCE_PENDING -> governance pending, find proposalId
+            if (exec.proposalId == GOVERNANCE_PENDING) {
                 uint256 proposalId = _findProposalId(exec);
-                if (proposalId > 1) {
+                if (proposalId > NO_GOVERNANCE) {
                     console.log("Found proposalId for %s: %s", exec.name, proposalId);
                     root.executions[i].proposalId = proposalId;
                     updated = true;
@@ -62,8 +69,8 @@ contract UpdateGovernanceMetadata is Script {
                     console.log("Proposal not yet submitted for %s, skipping", exec.name);
                 }
             }
-            // Case B: proposalId > 1 && tsGovernance == 0 -> find execution timestamp
-            else if (exec.proposalId > 1 && exec.tsGovernance == 0) {
+            // Case B: proposalId > NO_GOVERNANCE && tsGovernance == GOVERNANCE_PENDING -> find execution timestamp
+            else if (exec.proposalId > NO_GOVERNANCE && exec.tsGovernance == GOVERNANCE_PENDING) {
                 uint256 ts = _findExecutionTimestamp(exec.proposalId, exec.tsDeployment);
                 if (ts > 0) {
                     console.log("Found execution timestamp for %s: %s", exec.name, ts);
@@ -114,7 +121,7 @@ contract UpdateGovernanceMetadata is Script {
         vm.revertToState(snapshotId);
 
         // Verify the proposal actually exists on-chain
-        if (proposalId > 1 && governance.proposalSnapshot(proposalId) > 0) {
+        if (proposalId > NO_GOVERNANCE && governance.proposalSnapshot(proposalId) > 0) {
             return proposalId;
         }
 

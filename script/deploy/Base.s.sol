@@ -96,12 +96,7 @@ abstract contract Base {
     ///      The chain names should match the directory names in script/deploy/
     ///      (e.g., "mainnet" for chain ID 1, "sonic" for chain ID 146).
     constructor() {
-        // Production chains
         chainNames[1] = "Ethereum Mainnet";
         chainNames[146] = "Sonic Mainnet";
-        chainNames[8453] = "Base Mainnet";
-
-        // Development/Testing
-        chainNames[31337] = "Anvil";
     }
 }

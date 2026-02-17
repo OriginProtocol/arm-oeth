@@ -1,15 +1,17 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.23;
 
-// Foundry
-import {Vm} from "forge-std/Vm.sol";
-import "forge-std/console.sol";
-
 // Helpers
 import {Logger} from "script/deploy/helpers/Logger.sol";
 import {Resolver} from "script/deploy/helpers/Resolver.sol";
 import {GovHelper} from "script/deploy/helpers/GovHelper.sol";
-import {State, Contract, GovProposal} from "script/deploy/helpers/DeploymentTypes.sol";
+import {
+    State,
+    Contract,
+    GovProposal,
+    NO_GOVERNANCE,
+    GOVERNANCE_PENDING
+} from "script/deploy/helpers/DeploymentTypes.sol";
 
 // Script Base
 import {Base} from "script/deploy/Base.s.sol";
@@ -196,16 +198,15 @@ abstract contract AbstractDeployScript is Base {
 
     /// @notice Records execution with governance metadata.
     /// @dev Must be called AFTER _buildGovernanceProposal() so we know if governance is needed.
-    ///      If no governance actions, uses sentinel values (proposalId=1, tsGovernance=1).
-    ///      If governance actions exist, sets proposalId=0, tsGovernance=0 (pending).
+    ///      If no governance actions, uses NO_GOVERNANCE sentinel for proposalId and tsGovernance.
+    ///      If governance actions exist, both default to GOVERNANCE_PENDING (0).
     function _recordExecution() internal virtual {
         uint256 proposalId;
         uint256 tsGovernance;
         if (govProposal.actions.length == 0) {
-            proposalId = 1; // sentinel: no governance needed
-            tsGovernance = 1; // sentinel: no governance needed
+            proposalId = NO_GOVERNANCE;
+            tsGovernance = NO_GOVERNANCE;
         }
-        // else both remain 0 (governance pending)
         resolver.addExecution(name, block.timestamp, proposalId, tsGovernance);
     }
 

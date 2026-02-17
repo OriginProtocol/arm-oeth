@@ -240,8 +240,8 @@ library GovHelper {
         // ===== Stage 2: Wait for Voting Period =====
         if (state == IGovernance.ProposalState.Pending) {
             log.info("Waiting for voting period...");
-            // Fast-forward past the voting delay (~1 day / ~7200 blocks)
-            vm.roll(block.number + 7300);
+            // Fast-forward past the voting delay
+            vm.roll(block.number + governance.votingDelay() + 1);
             vm.warp(block.timestamp + 1 minutes);
 
             state = governance.state(proposalId);
@@ -294,24 +294,6 @@ library GovHelper {
             log.error("Unexpected proposal state");
             revert("Unexpected proposal state");
         }
-    }
-
-    // ==================== Utility Functions ==================== //
-
-    /// @notice Converts a proposal state enum to a human-readable string.
-    /// @dev Useful for logging and debugging proposal state transitions.
-    /// @param state The proposal state to convert
-    /// @return The string representation of the state
-    function _proposalStateToString(IGovernance.ProposalState state) private pure returns (string memory) {
-        if (state == IGovernance.ProposalState.Pending) return "Pending";
-        if (state == IGovernance.ProposalState.Active) return "Active";
-        if (state == IGovernance.ProposalState.Canceled) return "Canceled";
-        if (state == IGovernance.ProposalState.Defeated) return "Defeated";
-        if (state == IGovernance.ProposalState.Succeeded) return "Succeeded";
-        if (state == IGovernance.ProposalState.Queued) return "Queued";
-        if (state == IGovernance.ProposalState.Expired) return "Expired";
-        if (state == IGovernance.ProposalState.Executed) return "Executed";
-        return "Unknown";
     }
 }
 

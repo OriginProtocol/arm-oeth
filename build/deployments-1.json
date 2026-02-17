@@ -95,14 +95,6 @@
     {
       "implementation": "0xbcae2Eb1cc47F137D8B2D351B0E0ea8DdA4C6184",
       "name": "PENDLE_ORIGIN_ARM_SY"
-    },
-    {
-      "implementation": "0x8b941d833A740bcFd9Cee5B873FFbB8EbAdA6EF0",
-      "name": "COUNTER"
-    },
-    {
-      "implementation": "0xfA01FE78bBD1ade8064C34FE537BA2E2670B2198",
-      "name": "COUNTER"
     }
   ],
   "executions": [
