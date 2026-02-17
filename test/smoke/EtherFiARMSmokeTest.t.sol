@@ -3,7 +3,7 @@ pragma solidity ^0.8.23;
 
 import {AbstractSmokeTest} from "./AbstractSmokeTest.sol";
 
-import {IERC20, IEETHWithdrawalNFT} from "contracts/Interfaces.sol";
+import {IERC20, IERC4626, IEETHWithdrawalNFT} from "contracts/Interfaces.sol";
 import {EtherFiARM} from "contracts/EtherFiARM.sol";
 import {CapManager} from "contracts/CapManager.sol";
 import {Proxy} from "contracts/Proxy.sol";
@@ -18,6 +18,7 @@ contract Fork_EtherFiARM_Smoke_Test is AbstractSmokeTest {
     EtherFiARM etherFiARM;
     CapManager capManager;
     IEETHWithdrawalNFT etherfiWithdrawalNFT;
+    IERC4626 morphoMarket;
     address operator;
 
     function setUp() public override {
@@ -34,6 +35,7 @@ contract Fork_EtherFiARM_Smoke_Test is AbstractSmokeTest {
         etherFiARM = EtherFiARM(payable(resolver.implementations("ETHER_FI_ARM")));
         capManager = CapManager(resolver.implementations("ETHER_FI_ARM_CAP_MAN"));
         etherfiWithdrawalNFT = IEETHWithdrawalNFT(Mainnet.ETHERFI_WITHDRAWAL_NFT);
+        morphoMarket = IERC4626(deployManager.getDeployment("MORPHO_MARKET_ETHERFI"));
 
         vm.prank(etherFiARM.owner());
         etherFiARM.setOwner(Mainnet.TIMELOCK);
@@ -250,5 +252,79 @@ contract Fork_EtherFiARM_Smoke_Test is AbstractSmokeTest {
         uint256[] memory requestIdArray = new uint256[](1);
         requestIdArray[0] = requestId;
         etherFiARM.claimEtherFiWithdrawals(requestIdArray);
+    }
+
+    /* Lending Market Allocation Tests */
+
+    function test_allocate_to_lending_market() external {
+        // Add and set the active market to the Morpho market
+        vm.startPrank(Mainnet.TIMELOCK);
+        if (!etherFiARM.supportedMarkets(address(morphoMarket))) {
+            address[] memory markets = new address[](1);
+            markets[0] = address(morphoMarket);
+            etherFiARM.addMarkets(markets);
+        }
+        etherFiARM.setActiveMarket(address(morphoMarket));
+        vm.stopPrank();
+
+        // Deal WETH to the ARM
+        deal(address(weth), address(etherFiARM), 100 ether);
+
+        uint256 armWethBefore = weth.balanceOf(address(etherFiARM));
+        uint256 marketBalanceBefore = morphoMarket.maxWithdraw(address(etherFiARM));
+
+        // Set buffer to 0% so all liquidity goes to the lending market
+        vm.prank(Mainnet.ARM_RELAYER);
+        etherFiARM.setARMBuffer(0);
+
+        // Allocate liquidity to the lending market
+        vm.prank(Mainnet.ARM_RELAYER);
+        (, int256 actualDelta) = etherFiARM.allocate();
+
+        uint256 armWethAfter = weth.balanceOf(address(etherFiARM));
+        uint256 marketBalanceAfter = morphoMarket.maxWithdraw(address(etherFiARM));
+
+        // Verify liquidity moved to the lending market
+        assertGt(actualDelta, 0, "Actual delta should be positive (deposited to market)");
+        assertLt(armWethAfter, armWethBefore, "ARM WETH balance should decrease");
+        assertGt(marketBalanceAfter, marketBalanceBefore, "Market balance should increase");
+    }
+
+    function test_allocate_from_lending_market() external {
+        // Add and set the active market to the Morpho market
+        vm.startPrank(Mainnet.TIMELOCK);
+        if (!etherFiARM.supportedMarkets(address(morphoMarket))) {
+            address[] memory markets = new address[](1);
+            markets[0] = address(morphoMarket);
+            etherFiARM.addMarkets(markets);
+        }
+        etherFiARM.setActiveMarket(address(morphoMarket));
+        vm.stopPrank();
+
+        // Deal WETH to the ARM and allocate to market with buffer at 0%
+        deal(address(weth), address(etherFiARM), 100 ether);
+        vm.prank(Mainnet.ARM_RELAYER);
+        etherFiARM.setARMBuffer(0);
+        vm.prank(Mainnet.ARM_RELAYER);
+        etherFiARM.allocate();
+
+        uint256 armWethBefore = weth.balanceOf(address(etherFiARM));
+        uint256 marketBalanceBefore = morphoMarket.maxWithdraw(address(etherFiARM));
+
+        // Set buffer to 100% so liquidity comes back from the lending market
+        vm.prank(Mainnet.ARM_RELAYER);
+        etherFiARM.setARMBuffer(1e18);
+
+        // Allocate liquidity from the lending market
+        vm.prank(Mainnet.ARM_RELAYER);
+        (, int256 actualDelta) = etherFiARM.allocate();
+
+        uint256 armWethAfter = weth.balanceOf(address(etherFiARM));
+        uint256 marketBalanceAfter = morphoMarket.maxWithdraw(address(etherFiARM));
+
+        // Verify liquidity moved from the lending market (as much as available)
+        assertLt(actualDelta, 0, "Actual delta should be negative (withdrawn from market)");
+        assertGt(armWethAfter, armWethBefore, "ARM WETH balance should increase");
+        assertLe(marketBalanceAfter, marketBalanceBefore, "Market balance should decrease or stay same");
     }
 }

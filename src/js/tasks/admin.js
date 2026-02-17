@@ -30,16 +30,25 @@ async function allocate({
   threshold,
   execute = true,
   maxGasPrice: maxGasPriceGwei = 10,
+  // V1 on sonic everywhere else V2
+  armContractVersion = "v2",
 }) {
   if (await limitGasPrice(signer, maxGasPriceGwei)) {
     log("Skipping allocation due to high gas price");
     return;
   }
 
-  // 1. Call the allocate static call to get the return values
-  // Returned value is a tuple of two int256 values
   let liquidityDelta;
-  [, liquidityDelta] = await arm.allocate.staticCall();
+  if (armContractVersion === "v1") {
+    // The old implementation returns only liquidityDelta
+    liquidityDelta = await arm.allocate.staticCall();
+  } else if (armContractVersion === "v2") {
+    // 1. Call the allocate static call to get the return values
+    // Returned value is a tuple of two int256 values
+    [, liquidityDelta] = await arm.allocate.staticCall();
+  } else {
+    throw new Error("Invalid ARM contract version");
+  }
 
   const thresholdBN = parseUnits((threshold || "10").toString(), 18);
   if (liquidityDelta < thresholdBN && liquidityDelta > -thresholdBN) {

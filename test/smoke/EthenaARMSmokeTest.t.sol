@@ -208,6 +208,7 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
         _swapExactTokensForTokens(susde, usde, 0.998e36, 100 ether);
 
         // Operator requests an Ethena withdrawal
+        skip(ethenaARM.DELAY_REQUEST() + 1);
         vm.prank(Mainnet.ARM_RELAYER);
         ethenaARM.requestBaseWithdrawal(10 ether);
     }
@@ -217,6 +218,7 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
         _swapExactTokensForTokens(susde, usde, 0.998e36, 100 ether);
 
         // Owner requests an Ethena withdrawal
+        skip(ethenaARM.DELAY_REQUEST() + 1);
         vm.prank(Mainnet.TIMELOCK);
         ethenaARM.requestBaseWithdrawal(10 ether);
     }
@@ -227,6 +229,7 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
 
         // Owner requests an Ethena withdrawal
         uint256 nextUnstakerIndex = ethenaARM.nextUnstakerIndex();
+        skip(ethenaARM.DELAY_REQUEST() + 1);
         vm.prank(Mainnet.TIMELOCK);
         ethenaARM.requestBaseWithdrawal(10 ether);
 
