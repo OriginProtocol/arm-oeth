@@ -32,6 +32,7 @@ contract Fork_OriginARM_Smoke_Test is AbstractSmokeTest {
 
         proxy = Proxy(payable(resolver.implementations("OETH_ARM")));
         originARM = OriginARM(resolver.implementations("OETH_ARM"));
+        morphoMarket = IERC4626(resolver.implementations("MORPHO_MARKET_ORIGIN"));
 
         _dealWETH(address(originARM), 100 ether);
         _dealOETH(address(originARM), 100 ether);

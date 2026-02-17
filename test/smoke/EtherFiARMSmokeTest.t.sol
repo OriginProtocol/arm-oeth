@@ -35,7 +35,7 @@ contract Fork_EtherFiARM_Smoke_Test is AbstractSmokeTest {
         etherFiARM = EtherFiARM(payable(resolver.implementations("ETHER_FI_ARM")));
         capManager = CapManager(resolver.implementations("ETHER_FI_ARM_CAP_MAN"));
         etherfiWithdrawalNFT = IEETHWithdrawalNFT(Mainnet.ETHERFI_WITHDRAWAL_NFT);
-        morphoMarket = IERC4626(deployManager.getDeployment("MORPHO_MARKET_ETHERFI"));
+        morphoMarket = IERC4626(resolver.implementations("MORPHO_MARKET_ETHERFI"));
 
         vm.prank(etherFiARM.owner());
         etherFiARM.setOwner(Mainnet.TIMELOCK);

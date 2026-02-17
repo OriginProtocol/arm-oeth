@@ -193,6 +193,12 @@
       "proposalId": 31708125563490321189508956336526281463837110092407433451282139238539907004461,
       "tsDeployment": 1767616727,
       "tsGovernance": 1768078823
+    },
+    {
+      "name": "017_DeployNewMorphoMarketForEtherFiARM",
+      "proposalId": 1,
+      "tsDeployment": 1770197063,
+      "tsGovernance": 1
     }
   ]
 }
