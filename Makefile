@@ -112,11 +112,11 @@ simulate-deploys:
 simulate-sonic-deploys:
 	@forge script script/deploy/DeployManager.sol --fork-url $(SONIC_URL) -vvvv
 
-# Usage : make verify file=src/contracts/Proxy.sol addr=0xCED...
+# Usage : make match file=src/contracts/Proxy.sol addr=0xCED...
 SHELL := /bin/bash
 match:
 	@if [ -z "$(file)" ] || [ -z "$(addr)" ]; then \
-		echo "Usage: make verify file=<path> addr=<address>"; \
+		echo "Usage: make match file=<path> addr=<address>"; \
 		exit 1; \
 	fi
 	@name=$$(basename $(file) .sol); \

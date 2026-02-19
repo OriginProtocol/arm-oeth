@@ -1,6 +1,7 @@
 const { ApolloClient, InMemoryCache, gql } = require("@apollo/client/core");
-const { formatUnits, parseUnits } = require("ethers");
+const { parseUnits } = require("ethers");
 
+const { baseWithdrawAmount } = require("./liquidityAutomation");
 const { logTxDetails } = require("../utils/txLogger");
 
 const log = require("../utils/logger")("task:etherfiQueue");
@@ -8,23 +9,12 @@ const log = require("../utils/logger")("task:etherfiQueue");
 const uri = "https://origin.squids.live/ops-squid/graphql";
 
 const requestEtherFiWithdrawals = async (options) => {
-  const { signer, eeth, arm, amount, minAmount } = options;
+  const { signer, arm, amount } = options;
 
   const withdrawAmount = amount
     ? parseUnits(amount.toString())
-    : await eeth.balanceOf(arm.getAddress());
-  log(`${formatUnits(withdrawAmount)} eETH withdraw amount`);
-
-  const minAmountBI = parseUnits(minAmount.toString());
-
-  if (!amount && withdrawAmount <= minAmountBI) {
-    console.log(
-      `withdraw amount of ${formatUnits(
-        withdrawAmount,
-      )} eETH is below ${minAmount} so not withdrawing`,
-    );
-    return;
-  }
+    : await baseWithdrawAmount(options);
+  if (!withdrawAmount || withdrawAmount === 0n) return;
 
   const tx = await arm.connect(signer).requestEtherFiWithdrawal(withdrawAmount);
 

@@ -28,7 +28,8 @@ const handler = async (event) => {
     signer,
     susde,
     arm,
-    minAmount: 1000,
+    minAmount: "100",
+    thresholdAmount: 1000,
   });
 };
 

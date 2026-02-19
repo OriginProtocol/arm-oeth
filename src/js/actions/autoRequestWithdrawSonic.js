@@ -1,7 +1,7 @@
 const { Defender } = require("@openzeppelin/defender-sdk");
 const { ethers } = require("ethers");
 
-const { autoRequestWithdraw } = require("../tasks/liquidity");
+const { autoRequestWithdraw } = require("../tasks/liquidityAutomation");
 const { sonic } = require("../utils/addresses");
 const erc20Abi = require("../../abis/ERC20.json");
 const armAbi = require("../../abis/OriginARM.json");
@@ -28,7 +28,8 @@ const handler = async (event) => {
     signer,
     asset,
     arm,
-    minAmount: 5000,
+    minAmount: 300,
+    thresholdAmount: 10000,
     confirm: true,
   });
 };

@@ -57,8 +57,9 @@ const actions = [
   "allocateOETH",
   "allocateSonic",
   "setOSSiloPriceAction",
-  "setPrices",
+  "setPricesLido",
   "setPricesEtherFi",
+  "setPricesEthena",
   "setPricesOETH",
 ];
 
