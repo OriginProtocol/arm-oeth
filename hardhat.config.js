@@ -10,11 +10,11 @@ require("./src/js/tasks/tasks");
 module.exports = {
   networks: {
     mainnet: {
-      url: `${process.env.PROVIDER_URL}`,
+      url: `${process.env.MAINNET_URL}`,
     },
     hardhat: {
       forking: {
-        url: `${process.env.PROVIDER_URL}`,
+        url: `${process.env.MAINNET_URL}`,
         ...(process.env.BLOCK_NUMBER
           ? { blockNumber: process.env.BLOCK_NUMBER }
           : {}),

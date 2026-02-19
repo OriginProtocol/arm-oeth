@@ -8,7 +8,6 @@ import {EtherFiARM} from "contracts/EtherFiARM.sol";
 import {CapManager} from "contracts/CapManager.sol";
 import {Proxy} from "contracts/Proxy.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
-import {console} from "forge-std/console.sol";
 
 contract Fork_EtherFiARM_Smoke_Test is AbstractSmokeTest {
     IERC20 BAD_TOKEN = IERC20(makeAddr("bad token"));
@@ -22,20 +21,21 @@ contract Fork_EtherFiARM_Smoke_Test is AbstractSmokeTest {
     IERC4626 morphoMarket;
     address operator;
 
-    function setUp() public {
-        weth = IERC20(resolver.resolve("WETH"));
-        eeth = IERC20(resolver.resolve("EETH"));
-        operator = resolver.resolve("OPERATOR");
+    function setUp() public override {
+        super.setUp();
+        weth = IERC20(Mainnet.WETH);
+        eeth = IERC20(Mainnet.EETH);
+        operator = Mainnet.ARM_RELAYER;
 
         vm.label(address(weth), "WETH");
         vm.label(address(eeth), "eETH");
         vm.label(address(operator), "OPERATOR");
 
-        armProxy = Proxy(payable(deployManager.getDeployment("ETHER_FI_ARM")));
-        etherFiARM = EtherFiARM(payable(deployManager.getDeployment("ETHER_FI_ARM")));
-        capManager = CapManager(deployManager.getDeployment("ETHER_FI_ARM_CAP_MAN"));
+        armProxy = Proxy(payable(resolver.resolve("ETHER_FI_ARM")));
+        etherFiARM = EtherFiARM(payable(resolver.resolve("ETHER_FI_ARM")));
+        capManager = CapManager(resolver.resolve("ETHER_FI_ARM_CAP_MAN"));
         etherfiWithdrawalNFT = IEETHWithdrawalNFT(Mainnet.ETHERFI_WITHDRAWAL_NFT);
-        morphoMarket = IERC4626(deployManager.getDeployment("MORPHO_MARKET_ETHERFI"));
+        morphoMarket = IERC4626(resolver.resolve("MORPHO_MARKET_ETHERFI"));
 
         vm.prank(etherFiARM.owner());
         etherFiARM.setOwner(Mainnet.TIMELOCK);
@@ -155,8 +155,6 @@ contract Fork_EtherFiARM_Smoke_Test is AbstractSmokeTest {
         }
         // Approve the ARM to transfer the input token of the swap.
         inToken.approve(address(etherFiARM), expectedIn + 10000);
-        console.log("Approved Lido ARM to spend %d", inToken.allowance(address(this), address(etherFiARM)));
-        console.log("In token balance: %d", inToken.balanceOf(address(this)));
 
         uint256 startIn = inToken.balanceOf(address(this));
         uint256 startOut = outToken.balanceOf(address(this));

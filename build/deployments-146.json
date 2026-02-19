@@ -1,21 +1,76 @@
 {
-    "executions": {
-        "001_DeployOriginARMProxyScript": 1747110973,
-        "002_DeployOriginARMScript": 1747907433,
-        "003_UpgradeOriginARMScriptScript": 1748603225,
-        "004_DeployPendleAdaptor": 1755780926,
-        "005_UpgradeOriginARMSetBufferScript": 1755782543
+  "contracts": [
+    {
+      "implementation": "0x08876C0F5a80c1a43A6396b13A881A26F4b6Adfe",
+      "name": "HARVESTER"
     },
-    "contracts": {
-        "HARVESTER": "0x08876C0F5a80c1a43A6396b13A881A26F4b6Adfe",
-        "HARVESTER_IMPL": "0x216778933480b724eC18FAE67304F833f2a5F470",
-        "ORIGIN_ARM": "0x2F872623d1E1Af5835b08b0E49aAd2d81d649D30",
-        "ORIGIN_ARM_CAP_IMPL": "0xB05e625e8a688883B13ed2AedAdC42669a76907A",
-        "ORIGIN_ARM_CAP_MAN": "0x38B654d7859dab79935c9CF99267392c06D254cF",
-        "ORIGIN_ARM_IMPL": "0x7874d61360d78eC13aC4184B4921ACb8D2383586",
-        "ORIGIN_ARM_ZAPPER": "0xcb8199AB7F8b7D97885FBDfb1f0ABc044f403C18",
-        "PENDLE_ORIGIN_ARM_SY": "0xF81829f40D3ce77288deEb1a69b219E2d915e64d",
-        "SILO_VARLAMORE_S_MARKET": "0x248Dbbc31F2D7675775DB4A9308a98444DaBaECf",
-        "SILO_VARLAMORE_S_MARKET_IMPL": "0xB536CC987804FFdDF4F4C9dF749FD497eC33A104"
+    {
+      "implementation": "0x216778933480b724eC18FAE67304F833f2a5F470",
+      "name": "HARVESTER_IMPL"
+    },
+    {
+      "implementation": "0x2F872623d1E1Af5835b08b0E49aAd2d81d649D30",
+      "name": "ORIGIN_ARM"
+    },
+    {
+      "implementation": "0xB05e625e8a688883B13ed2AedAdC42669a76907A",
+      "name": "ORIGIN_ARM_CAP_IMPL"
+    },
+    {
+      "implementation": "0x38B654d7859dab79935c9CF99267392c06D254cF",
+      "name": "ORIGIN_ARM_CAP_MAN"
+    },
+    {
+      "implementation": "0x7874d61360d78eC13aC4184B4921ACb8D2383586",
+      "name": "ORIGIN_ARM_IMPL"
+    },
+    {
+      "implementation": "0xcb8199AB7F8b7D97885FBDfb1f0ABc044f403C18",
+      "name": "ORIGIN_ARM_ZAPPER"
+    },
+    {
+      "implementation": "0xF81829f40D3ce77288deEb1a69b219E2d915e64d",
+      "name": "PENDLE_ORIGIN_ARM_SY"
+    },
+    {
+      "implementation": "0x248Dbbc31F2D7675775DB4A9308a98444DaBaECf",
+      "name": "SILO_VARLAMORE_S_MARKET"
+    },
+    {
+      "implementation": "0xB536CC987804FFdDF4F4C9dF749FD497eC33A104",
+      "name": "SILO_VARLAMORE_S_MARKET_IMPL"
     }
+  ],
+  "executions": [
+    {
+      "name": "001_DeployOriginARMProxyScript",
+      "proposalId": 1,
+      "tsDeployment": 1747110973,
+      "tsGovernance": 1
+    },
+    {
+      "name": "002_DeployOriginARMScript",
+      "proposalId": 1,
+      "tsDeployment": 1747907433,
+      "tsGovernance": 1
+    },
+    {
+      "name": "003_UpgradeOriginARMScriptScript",
+      "proposalId": 1,
+      "tsDeployment": 1748603225,
+      "tsGovernance": 1
+    },
+    {
+      "name": "004_DeployPendleAdaptor",
+      "proposalId": 1,
+      "tsDeployment": 1755780926,
+      "tsGovernance": 1
+    },
+    {
+      "name": "005_UpgradeOriginARMSetBufferScript",
+      "proposalId": 1,
+      "tsDeployment": 1755782543,
+      "tsGovernance": 1
+    }
+  ]
 }
