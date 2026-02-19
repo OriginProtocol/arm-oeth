@@ -199,6 +199,18 @@
       "proposalId": 1,
       "tsDeployment": 1770197063,
       "tsGovernance": 1
+    }, 
+    {
+      "name": "018_DeployNewMorphoMarketForLidoARM",
+      "proposalId": 0,
+      "tsDeployment": 1770716663,
+      "tsGovernance": 0
+    },
+    {
+      "name": "019_DeployPendleAdaptor_EtherFi", 
+      "proposalId": 1,
+      "tsDeployment": 1770793835,
+      "tsGovernance": 1
     }
   ]
 }
