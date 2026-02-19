@@ -212,7 +212,7 @@ contract DeployManager is Base {
 
     /// @notice Loads deployment history from JSON file into the Resolver.
     /// @dev Called at the start of run() to populate the Resolver with:
-    ///      - Previously deployed contract addresses (for lookups via resolver.implementations())
+    ///      - Previously deployed contract addresses (for lookups via resolver.resolve())
     ///      - Previously executed script names (to avoid re-running deployments)
     ///      Filters out entries where tsDeployment > block.timestamp (future deployments).
     ///      Adjusts tsGovernance to 0 if it's in the future (governance not yet executed at fork point).
@@ -222,7 +222,7 @@ contract DeployManager is Base {
         Root memory root = abi.decode(vm.parseJson(deployment), (Root));
 
         // Load all deployed contract addresses into the Resolver
-        // This allows scripts to lookup addresses via resolver.implementations("CONTRACT_NAME")
+        // This allows scripts to lookup addresses via resolver.resolve("CONTRACT_NAME")
         for (uint256 i = 0; i < root.contracts.length; i++) {
             resolver.addContract(root.contracts[i].name, root.contracts[i].implementation);
         }

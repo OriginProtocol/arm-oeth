@@ -18,7 +18,7 @@ contract $002_DeployOriginARMScript is AbstractDeployScript("002_DeployOriginARM
     Proxy originARMProxy;
 
     function _execute() internal override {
-        originARMProxy = Proxy(payable(resolver.implementations("ORIGIN_ARM")));
+        originARMProxy = Proxy(payable(resolver.resolve("ORIGIN_ARM")));
 
         // 1. Deploy proxy for the CapManager
         Proxy capManProxy = new Proxy();

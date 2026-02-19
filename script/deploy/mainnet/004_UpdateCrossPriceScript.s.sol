@@ -13,6 +13,6 @@ contract $004_UpdateCrossPriceMainnetScript is AbstractDeployScript("004_UpdateC
 
         uint256 newCrossPrice = 0.9999 * 1e36;
 
-        govProposal.action(resolver.implementations("LIDO_ARM"), "setCrossPrice(uint256)", abi.encode(newCrossPrice));
+        govProposal.action(resolver.resolve("LIDO_ARM"), "setCrossPrice(uint256)", abi.encode(newCrossPrice));
     }
 }

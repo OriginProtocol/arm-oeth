@@ -26,8 +26,8 @@ contract $015_UpgradeEthenaARMScript is AbstractDeployScript("015_UpgradeEthenaA
     }
 
     function _fork() internal override {
-        vm.startPrank(Proxy(payable(resolver.implementations("ETHENA_ARM"))).owner());
-        Proxy(payable(resolver.implementations("ETHENA_ARM"))).upgradeTo(address(armImpl));
+        vm.startPrank(Proxy(payable(resolver.resolve("ETHENA_ARM"))).owner());
+        Proxy(payable(resolver.resolve("ETHENA_ARM"))).upgradeTo(address(armImpl));
         vm.stopPrank();
     }
 }

@@ -28,8 +28,8 @@ contract $012_UpgradeEtherFiARMScript is AbstractDeployScript("012_UpgradeEtherF
     }
 
     function _fork() internal override {
-        vm.startPrank(Proxy(payable(resolver.implementations("ETHER_FI_ARM"))).owner());
-        Proxy(payable(resolver.implementations("ETHER_FI_ARM"))).upgradeTo(address(etherFiARMImpl));
+        vm.startPrank(Proxy(payable(resolver.resolve("ETHER_FI_ARM"))).owner());
+        Proxy(payable(resolver.resolve("ETHER_FI_ARM"))).upgradeTo(address(etherFiARMImpl));
         vm.stopPrank();
     }
 }

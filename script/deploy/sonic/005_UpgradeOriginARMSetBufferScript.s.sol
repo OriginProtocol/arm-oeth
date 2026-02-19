@@ -23,7 +23,7 @@ contract $005_UpgradeOriginARMSetBufferScript is AbstractDeployScript("005_Upgra
     }
 
     function _fork() internal override {
-        Proxy originARMProxy = Proxy(payable(resolver.implementations("ORIGIN_ARM")));
+        Proxy originARMProxy = Proxy(payable(resolver.resolve("ORIGIN_ARM")));
 
         vm.startPrank(Sonic.TIMELOCK);
 

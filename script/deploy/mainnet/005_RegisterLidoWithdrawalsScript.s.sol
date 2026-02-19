@@ -24,8 +24,8 @@ contract $005_RegisterLidoWithdrawalsScript is AbstractDeployScript("005_Registe
 
         bytes memory callData = abi.encodeWithSignature("registerLidoWithdrawalRequests()");
 
-        bytes memory proxyData = abi.encode(resolver.implementations("LIDO_ARM_IMPL"), callData);
+        bytes memory proxyData = abi.encode(resolver.resolve("LIDO_ARM_IMPL"), callData);
 
-        govProposal.action(resolver.implementations("LIDO_ARM"), "upgradeToAndCall(address,bytes)", proxyData);
+        govProposal.action(resolver.resolve("LIDO_ARM"), "upgradeToAndCall(address,bytes)", proxyData);
     }
 }

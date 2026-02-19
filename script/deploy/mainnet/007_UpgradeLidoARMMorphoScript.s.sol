@@ -37,23 +37,21 @@ contract $007_UpgradeLidoARMMorphoScript is AbstractDeployScript("007_UpgradeLid
         govProposal.setDescription("Update Lido ARM to Morpho Market");
 
         govProposal.action(
-            resolver.implementations("LIDO_ARM"),
-            "upgradeTo(address)",
-            abi.encode(resolver.implementations("LIDO_ARM_IMPL"))
+            resolver.resolve("LIDO_ARM"), "upgradeTo(address)", abi.encode(resolver.resolve("LIDO_ARM_IMPL"))
         );
 
         address[] memory markets = new address[](1);
-        markets[0] = resolver.implementations("MORPHO_MARKET_MEVCAPITAL");
-        govProposal.action(resolver.implementations("LIDO_ARM"), "addMarkets(address[])", abi.encode(markets));
+        markets[0] = resolver.resolve("MORPHO_MARKET_MEVCAPITAL");
+        govProposal.action(resolver.resolve("LIDO_ARM"), "addMarkets(address[])", abi.encode(markets));
 
         govProposal.action(
-            resolver.implementations("LIDO_ARM"),
+            resolver.resolve("LIDO_ARM"),
             "setActiveMarket(address)",
-            abi.encode(resolver.implementations("MORPHO_MARKET_MEVCAPITAL"))
+            abi.encode(resolver.resolve("MORPHO_MARKET_MEVCAPITAL"))
         );
 
         govProposal.action(
-            resolver.implementations("LIDO_ARM"),
+            resolver.resolve("LIDO_ARM"),
             "setARMBuffer(uint256)",
             abi.encode(0.2e18) // 20% buffer
         );

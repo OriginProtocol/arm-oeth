@@ -72,7 +72,7 @@ contract $000_Example is AbstractDeployScript("000_Example") {
     ///      All transactions here will be executed by the deployer address.
     ///
     ///      Guidelines:
-    ///      - Use resolver.implementations("NAME") to get previously deployed addresses
+    ///      - Use resolver.resolve("NAME") to get previously deployed addresses
     ///      - Use _recordDeployment("NAME", address) to register new contracts
     ///      - Keep deployment logic simple; governance actions go in _buildGovernanceProposal()
     ///      - Contract names should be UPPER_SNAKE_CASE (e.g., "LIDO_ARM_IMPL")
@@ -81,8 +81,8 @@ contract $000_Example is AbstractDeployScript("000_Example") {
         // Use the Resolver to look up contracts deployed by previous scripts.
         // This enables multi-script deployments where later scripts reference earlier ones.
 
-        address lidoArmProxy = resolver.implementations("LIDO_ARM");
-        address capManager = resolver.implementations("CAP_MANAGER");
+        address lidoArmProxy = resolver.resolve("LIDO_ARM");
+        address capManager = resolver.resolve("CAP_MANAGER");
 
         // You can also use Mainnet constants for external protocol addresses
         address weth = Mainnet.WETH;
@@ -102,7 +102,7 @@ contract $000_Example is AbstractDeployScript("000_Example") {
         // ===== Step 3: Register Deployed Contracts =====
         // Call _recordDeployment() for each contract that should be:
         // - Saved to the deployments JSON file
-        // - Available to subsequent scripts via resolver.implementations()
+        // - Available to subsequent scripts via resolver.resolve()
         // - Logged for visibility
 
         _recordDeployment("LIDO_ARM_IMPL", address(newImplementation));
@@ -139,11 +139,11 @@ contract $000_Example is AbstractDeployScript("000_Example") {
         // - data: ABI-encoded parameters (use abi.encode())
 
         // Example 1: Upgrade a proxy to new implementation
-        address lidoArmProxy = resolver.implementations("LIDO_ARM");
+        address lidoArmProxy = resolver.resolve("LIDO_ARM");
         govProposal.action(lidoArmProxy, "upgradeTo(address)", abi.encode(address(newImplementation)));
 
         // Example 2: Set a configuration value
-        // address capManager = resolver.implementations("CAP_MANAGER");
+        // address capManager = resolver.resolve("CAP_MANAGER");
         // govProposal.action(
         //     capManager,
         //     "setTotalAssetsCap(uint248)",
@@ -180,7 +180,7 @@ contract $000_Example is AbstractDeployScript("000_Example") {
     ///      You can use vm.prank() here for additional test interactions.
     function _fork() internal override {
         // ===== Retrieve Deployed Contracts =====
-        // address lidoArmProxy = resolver.implementations("LIDO_ARM");
+        // address lidoArmProxy = resolver.resolve("LIDO_ARM");
         // LidoARM arm = LidoARM(payable(lidoArmProxy));
 
         // ===== Verify Upgrade Was Successful =====

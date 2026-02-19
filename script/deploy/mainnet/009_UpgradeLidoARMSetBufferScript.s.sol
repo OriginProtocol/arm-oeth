@@ -23,11 +23,9 @@ contract $009_UpgradeLidoARMSetBufferScript is AbstractDeployScript("009_Upgrade
         govProposal.setDescription("Update Lido ARM to allow operator to setBuffer()");
 
         govProposal.action(
-            resolver.implementations("LIDO_ARM"),
-            "upgradeTo(address)",
-            abi.encode(resolver.implementations("LIDO_ARM_IMPL"))
+            resolver.resolve("LIDO_ARM"), "upgradeTo(address)", abi.encode(resolver.resolve("LIDO_ARM_IMPL"))
         );
 
-        govProposal.action(resolver.implementations("LIDO_ARM"), "setCapManager(address)", abi.encode(address(0)));
+        govProposal.action(resolver.resolve("LIDO_ARM"), "setCapManager(address)", abi.encode(address(0)));
     }
 }

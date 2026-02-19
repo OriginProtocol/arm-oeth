@@ -17,7 +17,7 @@ contract $003_UpgradeOriginARMScript is AbstractDeployScript("003_UpgradeOriginA
     SiloMarket public silo_Varlamore_S_MarketImpl;
 
     function _execute() internal override {
-        Proxy originARMProxy = Proxy(payable(resolver.implementations("ORIGIN_ARM")));
+        Proxy originARMProxy = Proxy(payable(resolver.resolve("ORIGIN_ARM")));
 
         // 1. Deploy the SonicHarvester implementation
         harvesterImpl = new SonicHarvester(Sonic.WS);
@@ -38,9 +38,9 @@ contract $003_UpgradeOriginARMScript is AbstractDeployScript("003_UpgradeOriginA
     }
 
     function _fork() internal override {
-        Proxy harvesterProxy = Proxy(payable(resolver.implementations("HARVESTER")));
-        Proxy originARMProxy = Proxy(payable(resolver.implementations("ORIGIN_ARM")));
-        Proxy silo_Varlamore_S_MarketProxy = Proxy(payable(resolver.implementations("SILO_VARLAMORE_S_MARKET")));
+        Proxy harvesterProxy = Proxy(payable(resolver.resolve("HARVESTER")));
+        Proxy originARMProxy = Proxy(payable(resolver.resolve("ORIGIN_ARM")));
+        Proxy silo_Varlamore_S_MarketProxy = Proxy(payable(resolver.resolve("SILO_VARLAMORE_S_MARKET")));
 
         vm.startPrank(Sonic.ADMIN);
 

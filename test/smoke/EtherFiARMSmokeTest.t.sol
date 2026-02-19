@@ -31,11 +31,11 @@ contract Fork_EtherFiARM_Smoke_Test is AbstractSmokeTest {
         vm.label(address(eeth), "eETH");
         vm.label(address(operator), "OPERATOR");
 
-        armProxy = Proxy(payable(resolver.implementations("ETHER_FI_ARM")));
-        etherFiARM = EtherFiARM(payable(resolver.implementations("ETHER_FI_ARM")));
-        capManager = CapManager(resolver.implementations("ETHER_FI_ARM_CAP_MAN"));
+        armProxy = Proxy(payable(resolver.resolve("ETHER_FI_ARM")));
+        etherFiARM = EtherFiARM(payable(resolver.resolve("ETHER_FI_ARM")));
+        capManager = CapManager(resolver.resolve("ETHER_FI_ARM_CAP_MAN"));
         etherfiWithdrawalNFT = IEETHWithdrawalNFT(Mainnet.ETHERFI_WITHDRAWAL_NFT);
-        morphoMarket = IERC4626(resolver.implementations("MORPHO_MARKET_ETHERFI"));
+        morphoMarket = IERC4626(resolver.resolve("MORPHO_MARKET_ETHERFI"));
 
         vm.prank(etherFiARM.owner());
         etherFiARM.setOwner(Mainnet.TIMELOCK);

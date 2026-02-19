@@ -102,7 +102,7 @@ contract $017_UpgradeLidoARM is AbstractDeployScript("017_UpgradeLidoARM") {
 
     function _execute() internal override {
         // 1. Get previously deployed contracts
-        address proxy = resolver.implementations("LIDO_ARM");
+        address proxy = resolver.resolve("LIDO_ARM");
 
         // 2. Deploy new contracts
         MyImpl impl = new MyImpl();
@@ -114,8 +114,8 @@ contract $017_UpgradeLidoARM is AbstractDeployScript("017_UpgradeLidoARM") {
     function _buildGovernanceProposal() internal override {
         govProposal.setDescription("Upgrade LidoARM");
 
-        address proxy = resolver.implementations("LIDO_ARM");
-        address impl = resolver.implementations("LIDO_ARM_IMPL");
+        address proxy = resolver.resolve("LIDO_ARM");
+        address impl = resolver.resolve("LIDO_ARM_IMPL");
 
         govProposal.action(proxy, "upgradeTo(address)", abi.encode(impl));
     }
@@ -139,7 +139,7 @@ contract $017_UpgradeLidoARM is AbstractDeployScript("017_UpgradeLidoARM") {
 
 ```solidity
 // Get a previously deployed contract address
-address proxy = resolver.implementations("LIDO_ARM");
+address proxy = resolver.resolve("LIDO_ARM");
 
 // Register a newly deployed contract
 _recordDeployment("MY_CONTRACT", address(myContract));

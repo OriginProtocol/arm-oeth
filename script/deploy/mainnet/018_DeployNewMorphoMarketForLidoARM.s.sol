@@ -36,21 +36,19 @@ contract $018_DeployNewMorphoMarketForLidoARM is AbstractDeployScript("018_Deplo
 
         // 2. Add the new MorphoMarket to the Lido ARM
         address[] memory marketsToAdd = new address[](1);
-        marketsToAdd[0] = resolver.implementations("MORPHO_MARKET_LIDO");
-        govProposal.action(resolver.implementations("LIDO_ARM"), "addMarkets(address[])", abi.encode(marketsToAdd));
+        marketsToAdd[0] = resolver.resolve("MORPHO_MARKET_LIDO");
+        govProposal.action(resolver.resolve("LIDO_ARM"), "addMarkets(address[])", abi.encode(marketsToAdd));
 
         // 3. Set the new MorphoMarket as the active market for the Lido ARM
         govProposal.action(
-            resolver.implementations("LIDO_ARM"),
-            "setActiveMarket(address)",
-            abi.encode(resolver.implementations("MORPHO_MARKET_LIDO"))
+            resolver.resolve("LIDO_ARM"), "setActiveMarket(address)", abi.encode(resolver.resolve("MORPHO_MARKET_LIDO"))
         );
 
         // 4. Remove the old MorphoMarket from the Lido ARM
         govProposal.action(
-            resolver.implementations("LIDO_ARM"),
+            resolver.resolve("LIDO_ARM"),
             "removeMarket(address)",
-            abi.encode(resolver.implementations("MORPHO_MARKET_MEVCAPITAL"))
+            abi.encode(resolver.resolve("MORPHO_MARKET_MEVCAPITAL"))
         );
     }
 }

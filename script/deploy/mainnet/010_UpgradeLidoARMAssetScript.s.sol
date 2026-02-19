@@ -29,21 +29,19 @@ contract $010_UpgradeLidoARMAssetScript is AbstractDeployScript("010_UpgradeLido
 
         // 1. Upgrade LidoARM to new implementation
         govProposal.action(
-            resolver.implementations("LIDO_ARM"),
-            "upgradeTo(address)",
-            abi.encode(resolver.implementations("LIDO_ARM_IMPL"))
+            resolver.resolve("LIDO_ARM"), "upgradeTo(address)", abi.encode(resolver.resolve("LIDO_ARM_IMPL"))
         );
 
         // 2. Upgrade MorphoMarket to new implementation
         govProposal.action(
-            resolver.implementations("MORPHO_MARKET_MEVCAPITAL"),
+            resolver.resolve("MORPHO_MARKET_MEVCAPITAL"),
             "upgradeTo(address)",
-            abi.encode(resolver.implementations("MORPHO_MARKET_MEVCAPITAL_IMP"))
+            abi.encode(resolver.resolve("MORPHO_MARKET_MEVCAPITAL_IMP"))
         );
 
         // 3. Set the MerkleDistributor address in the MorphoMarket
         govProposal.action(
-            resolver.implementations("MORPHO_MARKET_MEVCAPITAL"),
+            resolver.resolve("MORPHO_MARKET_MEVCAPITAL"),
             "setMerkleDistributor(address)",
             abi.encode(Mainnet.MERKLE_DISTRIBUTOR)
         );

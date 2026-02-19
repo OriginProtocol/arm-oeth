@@ -11,7 +11,7 @@ contract $019_DeployPendleAdaptor_EtherFi is AbstractDeployScript("019_DeployPen
     function _execute() internal override {
         // 1. Deploy PendleOriginARMSY
         PendleOriginARMSY sy =
-            new PendleOriginARMSY("SY EtherFi ARM", "SY-ARM-WETH-eETH", resolver.implementations("ETHER_FI_ARM"));
+            new PendleOriginARMSY("SY EtherFi ARM", "SY-ARM-WETH-eETH", resolver.resolve("ETHER_FI_ARM"));
         _recordDeployment("PENDLE_ETHERFI_ARM_SY", address(sy));
     }
 }

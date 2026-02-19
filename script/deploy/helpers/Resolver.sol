@@ -52,7 +52,7 @@ contract Resolver {
     // Quick lookup for deployed contract addresses by name
     // Key: contract name (e.g., "LIDO_ARM", "ETHENA_ARM_IMPL")
     // Value: deployed address
-    mapping(string => address) public implementations;
+    mapping(string => address) private implementations;
 
     // ==================== Events ==================== //
 
@@ -134,6 +134,17 @@ contract Resolver {
     /// @return Array of all Execution structs (name + timestamp)
     function getExecutions() external view returns (Execution[] memory) {
         return executions;
+    }
+
+    /// @notice Resolves a contract address by name, reverting if not found.
+    /// @dev Use this instead of accessing the implementations mapping directly to catch typos
+    ///      and missing registrations early with a descriptive error message.
+    /// @param name The identifier for the contract (e.g., "LIDO_ARM", "ETHENA_ARM_IMPL")
+    /// @return The deployed contract address
+    function resolve(string memory name) external view returns (address) {
+        address addr = implementations[name];
+        require(addr != address(0), string.concat("Resolver: unknown contract \"", name, "\""));
+        return addr;
     }
 
     // ==================== State Management ==================== //

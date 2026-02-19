@@ -225,12 +225,12 @@ abstract contract AbstractDeployScript is Base {
     /// @notice Main deployment logic - MUST be implemented by child contracts.
     /// @dev Override this to define your deployment steps.
     ///      Use _recordDeployment() to register each deployed contract.
-    ///      Use resolver.implementations("NAME") to get previously deployed addresses.
+    ///      Use resolver.resolve("NAME") to get previously deployed addresses.
     ///
     ///      Example:
     ///      ```
     ///      function _execute() internal override {
-    ///          address proxy = resolver.implementations("MY_PROXY");
+    ///          address proxy = resolver.resolve("MY_PROXY");
     ///          MyImpl impl = new MyImpl();
     ///          _recordDeployment("MY_IMPL", address(impl));
     ///      }
@@ -246,9 +246,9 @@ abstract contract AbstractDeployScript is Base {
     ///      function _buildGovernanceProposal() internal override {
     ///          govProposal.setDescription("Upgrade MyContract");
     ///          govProposal.action(
-    ///              resolver.implementations("MY_PROXY"),
+    ///              resolver.resolve("MY_PROXY"),
     ///              "upgradeTo(address)",
-    ///              abi.encode(resolver.implementations("MY_IMPL"))
+    ///              abi.encode(resolver.resolve("MY_IMPL"))
     ///          );
     ///      }
     ///      ```

@@ -30,10 +30,10 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
         vm.label(address(steth), "stETH");
         vm.label(address(operator), "OPERATOR");
 
-        proxy = Proxy(payable(resolver.implementations("LIDO_ARM")));
-        lidoARM = LidoARM(payable(resolver.implementations("LIDO_ARM")));
-        capManager = CapManager(resolver.implementations("LIDO_ARM_CAP_MAN"));
-        morphoMarket = IERC4626(resolver.implementations("MORPHO_MARKET_MEVCAPITAL"));
+        proxy = Proxy(payable(resolver.resolve("LIDO_ARM")));
+        lidoARM = LidoARM(payable(resolver.resolve("LIDO_ARM")));
+        capManager = CapManager(resolver.resolve("LIDO_ARM_CAP_MAN"));
+        morphoMarket = IERC4626(resolver.resolve("MORPHO_MARKET_MEVCAPITAL"));
 
         // Only fuzz from this address. Big speedup on fork.
         targetSender(address(this));

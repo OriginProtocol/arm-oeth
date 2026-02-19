@@ -30,9 +30,9 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
         vm.label(address(susde), "SUSDE");
         vm.label(address(operator), "OPERATOR");
 
-        armProxy = Proxy(payable(resolver.implementations("ETHENA_ARM")));
-        ethenaARM = EthenaARM(payable(resolver.implementations("ETHENA_ARM")));
-        capManager = CapManager(resolver.implementations("ETHENA_ARM_CAP_MAN"));
+        armProxy = Proxy(payable(resolver.resolve("ETHENA_ARM")));
+        ethenaARM = EthenaARM(payable(resolver.resolve("ETHENA_ARM")));
+        capManager = CapManager(resolver.resolve("ETHENA_ARM_CAP_MAN"));
 
         vm.prank(ethenaARM.owner());
         ethenaARM.setOwner(Mainnet.TIMELOCK);
