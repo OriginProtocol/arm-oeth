@@ -18,7 +18,7 @@ jobs:
       - name: Run governance metadata update
         env:
           MAINNET_URL: ${{ secrets.MAINNET_URL }}
-        run: forge build && forge script script/UpdateGovernanceMetadata.s.sol --fork-url $MAINNET_URL -vvvv
+        run: forge build && forge script script/automation/UpdateGovernanceMetadata.s.sol --fork-url $MAINNET_URL -vvvv
 
       - name: Commit and push if changed
         run: |

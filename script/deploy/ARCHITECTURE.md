@@ -53,7 +53,6 @@ script/deploy/
 │   ├── GovHelper.sol                    # Governance proposal building, encoding, simulation
 │   ├── Logger.sol                       # ANSI-styled console logging
 │   ├── Resolver.sol                     # Contract address registry (vm.etched singleton)
-│   └── find_gov_prop_execution_timestamp.sh  # FFI helper for on-chain event queries
 ├── mainnet/                             # Ethereum Mainnet scripts (001_, 002_, ...)
 │   └── 000_Example.s.sol               # Reference template (skip = true)
 └── sonic/                               # Sonic chain scripts
@@ -360,7 +359,7 @@ After a deployment, the JSON file initially has `proposalId = 0` and `tsGovernan
 
 ### UpdateGovernanceMetadata.s.sol
 
-`script/UpdateGovernanceMetadata.s.sol` is a standalone Forge script (not part of `DeployManager`) that updates `build/deployments-1.json`:
+`script/automation/UpdateGovernanceMetadata.s.sol` is a standalone Forge script (not part of `DeployManager`) that updates `build/deployments-1.json`:
 
 **Case A — `proposalId == 0` (pending):**
 1. Deploys the original script via `vm.deployCode()`
@@ -376,7 +375,7 @@ After a deployment, the JSON file initially has `proposalId = 0` and `tsGovernan
 
 ### find_gov_prop_execution_timestamp.sh
 
-`helpers/find_gov_prop_execution_timestamp.sh` is called via FFI (Foundry's `vm.ffi()`) to query on-chain events:
+`script/automation/find_gov_prop_execution_timestamp.sh` is called via FFI (Foundry's `vm.ffi()`) to query on-chain events:
 
 1. Takes `proposalId`, `rpc_url`, `governor_address`, and `tsDeployment` as arguments
 2. Converts the deployment timestamp to a block number via `cast find-block`
@@ -392,7 +391,7 @@ After a deployment, the JSON file initially has `proposalId = 0` and `tsGovernan
 - **Trigger:** Also available via `workflow_dispatch`
 - **Steps:**
   1. Setup environment (Foundry + Soldeer)
-  2. `forge build && forge script script/UpdateGovernanceMetadata.s.sol --fork-url $MAINNET_URL -vvvv`
+  2. `forge build && forge script script/automation/UpdateGovernanceMetadata.s.sol --fork-url $MAINNET_URL -vvvv`
   3. If `build/deployments-*.json` changed, auto-commit and push
 
 This creates a hands-off workflow: deploy contracts → submit governance proposal manually → CI detects the proposal ID and eventual execution timestamp automatically.

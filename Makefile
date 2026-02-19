@@ -140,7 +140,7 @@ simulate:
 
 update-deployments:
 	forge build
-	@forge script script/UpdateGovernanceMetadata.s.sol --fork-url $(MAINNET_URL) -vvvv
+	@forge script script/automation/UpdateGovernanceMetadata.s.sol --fork-url $(MAINNET_URL) -vvvv
 
 # ╔══════════════════════════════════════════════════════════════════════════════╗
 # ║                                  VERIFY                                      ║
