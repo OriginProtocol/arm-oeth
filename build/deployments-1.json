@@ -65,6 +65,14 @@
       "name": "MORPHO_MARKET_ETHERFI"
     },
     {
+      "implementation": "0xB7CeFE4CB483Be80C2963D3D9Edb991e69ff39cf",
+      "name": "MORPHO_MARKET_LIDO"
+    },
+    {
+      "implementation": "0xa52cC5aDFE6C638cE31694eAFfD8F993A0324f22",
+      "name": "MORPHO_MARKET_LIDO_IMPL"
+    },
+    {
       "implementation": "0x2a1b59870f7806E60dF58415B0C220C096f57658",
       "name": "MORPHO_MARKET_ETHERFI_IMPL"
     },
@@ -199,15 +207,15 @@
       "proposalId": 1,
       "tsDeployment": 1770197063,
       "tsGovernance": 1
-    }, 
-    {
-      "name": "018_DeployNewMorphoMarketForLidoARM",
-      "proposalId": 0,
-      "tsDeployment": 1770716663,
-      "tsGovernance": 0
     },
     {
-      "name": "019_DeployPendleAdaptor_EtherFi", 
+      "name": "018_DeployNewMorphoMarketForLidoARM",
+      "proposalId": 104193745767957728487777538680481562234753615557563590994770579038567345820296,
+      "tsDeployment": 1770716663,
+      "tsGovernance": 1771230167
+    },
+    {
+      "name": "019_DeployPendleAdaptor_EtherFi",
       "proposalId": 1,
       "tsDeployment": 1770793835,
       "tsGovernance": 1
