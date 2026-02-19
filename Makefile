@@ -120,10 +120,6 @@ deploy-testnet:
 	forge build
 	@forge script $(DEPLOY_SCRIPT) --rpc-url $(TESTNET_URL) --broadcast --slow --unlocked -vvvv
 
-deploy-holesky:
-	forge build
-	@forge script $(DEPLOY_SCRIPT) --rpc-url $(HOLESKY_URL) $(DEPLOY_BASE) --verify -vvv
-
 deploy-sonic:
 	forge build
 	@forge script $(DEPLOY_SCRIPT) --rpc-url $(SONIC_URL) $(DEPLOY_BASE) --verify -vvv
@@ -185,5 +181,5 @@ frame:
 
 .PHONY: test test-base test-unit test-fork test-smoke test-invariants \
         coverage coverage-html gas snapshot \
-        deploy-mainnet deploy-local deploy-testnet deploy-holesky deploy-sonic simulate \
+        deploy-mainnet deploy-local deploy-testnet deploy-sonic simulate \
         update-deployments match clean clean-crytic clean-all install frame
