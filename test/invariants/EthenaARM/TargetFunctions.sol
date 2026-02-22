@@ -594,7 +594,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         }
 
         vm.prank(operator);
-        arm.claimBaseWithdrawals(unstaker);
+        arm.claimBaseWithdrawals(uint8(selectedIndex));
 
         // Remove selectedIndex from unstakerIndices, without preserving order
         unstakerIndices[randomAddressIndex % unstakerIndices.length] = unstakerIndices[unstakerIndices.length - 1];
@@ -824,7 +824,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         // Fast forward time to allow claiming all previous base withdrawals
         vm.warp(block.timestamp + 7 days);
         for (uint256 i; i < unstakerIndices.length; i++) {
-            arm.claimBaseWithdrawals(arm.unstakers(uint8(unstakerIndices[i])));
+            arm.claimBaseWithdrawals(uint8(unstakerIndices[i]));
         }
 
         // 2. Request base withdrawal of the remaining sUSDe
@@ -839,7 +839,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         if (susdeBalance > 0) {
             // Fast forward time to allow claiming the last base withdrawal
             vm.warp(block.timestamp + 7 days);
-            arm.claimBaseWithdrawals(arm.unstakers(uint8(nextIndex)));
+            arm.claimBaseWithdrawals(uint8(nextIndex));
         }
         require(susde.balanceOf(address(arm)) == 0, "ARM still has sUSDe balance");
 
