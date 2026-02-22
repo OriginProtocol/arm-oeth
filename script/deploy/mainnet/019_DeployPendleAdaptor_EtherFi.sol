@@ -17,7 +17,7 @@ contract DeployPendleAdaptorEtherFi is AbstractDeployScript {
     GovProposal public govProposal;
 
     string public constant override DEPLOY_NAME = "019_DeployPendleAdaptor_EtherFi";
-    bool public constant override proposalExecuted = false;
+    bool public constant override proposalExecuted = true;
 
     function _execute() internal override {
         console.log("Deploy:", DEPLOY_NAME);

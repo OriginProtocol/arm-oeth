@@ -20,7 +20,7 @@ contract DeployNewMorphoMarketForLidoARM is AbstractDeployScript {
     GovProposal public govProposal;
 
     string public constant override DEPLOY_NAME = "018_DeployNewMorphoMarketForLidoARM";
-    bool public constant override proposalExecuted = false;
+    bool public constant override proposalExecuted = true;
 
     function _execute() internal override {
         console.log("Deploy:", DEPLOY_NAME);
