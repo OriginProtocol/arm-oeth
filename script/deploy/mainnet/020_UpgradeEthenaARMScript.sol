@@ -13,7 +13,7 @@ import {Mainnet} from "contracts/utils/Addresses.sol";
 import {GovProposal, GovSixHelper} from "contracts/utils/GovSixHelper.sol";
 import {AbstractDeployScript} from "../AbstractDeployScript.sol";
 
-contract UpgradeEthenaARMScript is AbstractDeployScript {
+contract UpgradeEthenaARMScript2 is AbstractDeployScript {
     using GovSixHelper for GovProposal;
 
     GovProposal public govProposal;
