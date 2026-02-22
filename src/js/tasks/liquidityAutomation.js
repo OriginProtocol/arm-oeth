@@ -1,4 +1,4 @@
-const { formatUnits, parseUnits } = require("ethers");
+const { ethers, formatUnits, parseUnits } = require("ethers");
 const dayjs = require("dayjs");
 const utc = require("dayjs/plugin/utc");
 
@@ -10,32 +10,20 @@ const log = require("../utils/logger")("task:liquidity");
 // Extend Day.js with the UTC plugin
 dayjs.extend(utc);
 
-const autoRequestWithdraw = async ({
-  signer,
-  baseAsset,
-  arm,
-  minAmount,
-  confirm,
-}) => {
-  const symbol = await baseAsset.symbol();
-  const assetBalance = await baseAsset.balanceOf(await arm.getAddress());
-  log(`${formatUnits(assetBalance)} ${symbol} in ARM`);
+const autoRequestWithdraw = async (options) => {
+  const { amount, arm, signer } = options;
 
-  const minAmountBI = parseUnits(minAmount.toString(), 18);
+  const withdrawAmount = amount
+    ? parseUnits(amount.toString())
+    : await baseWithdrawAmount(options);
+  if (!withdrawAmount || withdrawAmount === 0n) return;
 
-  if (assetBalance <= minAmountBI) {
-    console.log(
-      `${formatUnits(
-        assetBalance,
-      )} ${symbol} is below ${minAmount} so not withdrawing`,
-    );
-    return;
-  }
+  log(
+    `About to request withdrawal of ${formatUnits(withdrawAmount)} base assets`,
+  );
 
-  log(`About to request ${formatUnits(assetBalance)} ${symbol} withdrawal`);
-
-  const tx = await arm.connect(signer).requestOriginWithdrawal(assetBalance);
-  await logTxDetails(tx, "requestOriginWithdrawal", confirm);
+  const tx = await arm.connect(signer).requestOriginWithdrawal(withdrawAmount);
+  await logTxDetails(tx, "requestOriginWithdrawal");
 };
 
 const autoClaimWithdraw = async ({

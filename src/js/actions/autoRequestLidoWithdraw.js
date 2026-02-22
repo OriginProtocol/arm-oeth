@@ -28,7 +28,7 @@ const handler = async (event) => {
     signer,
     steth,
     arm,
-    minAmount: "0.03",
+    minAmount: "0.1",
     thresholdAmount: 120,
     maxAmount: 300,
   });

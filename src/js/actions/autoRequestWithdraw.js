@@ -3,7 +3,6 @@ const { ethers } = require("ethers");
 
 const { autoRequestWithdraw } = require("../tasks/liquidityAutomation");
 const { mainnet } = require("../utils/addresses");
-const erc20Abi = require("../../abis/ERC20.json");
 const oethARMAbi = require("../../abis/OethARM.json");
 
 // Entrypoint for the Autotask
@@ -21,16 +20,13 @@ const handler = async (event) => {
   );
 
   // References to contracts
-  const baseAsset = new ethers.Contract(mainnet.OETHProxy, erc20Abi, signer);
   const arm = new ethers.Contract(mainnet.OethARM, oethARMAbi, signer);
 
   await autoRequestWithdraw({
     signer,
-    baseAsset,
     arm,
-    minAmount: "0.03",
+    minAmount: "0.1",
     thresholdAmount: 10,
-    confirm: true,
   });
 };
 
