@@ -145,6 +145,7 @@ library GovSixHelper {
 
         if (state == IGovernance.ProposalState.Executed) {
             // Skipping executed proposal
+            vm.stopPrank();
             return;
         }
 
