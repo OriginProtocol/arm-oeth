@@ -33,6 +33,12 @@ async function allocate({
   // V1 on sonic everywhere else V2
   armContractVersion = "v2",
 }) {
+  const activeMarketAddress = await arm.activeMarket();
+  if (activeMarketAddress === ethers.ZeroAddress) {
+    log(`No active lending market, skipping allocation`);
+    return;
+  }
+
   if (await limitGasPrice(signer, maxGasPriceGwei)) {
     log("Skipping allocation due to high gas price");
     return;
@@ -51,39 +57,49 @@ async function allocate({
   }
 
   const thresholdBN = parseUnits((threshold || "10").toString(), 18);
-  if (liquidityDelta < thresholdBN && liquidityDelta > -thresholdBN) {
+  const withinThreshold =
+    liquidityDelta < thresholdBN && liquidityDelta > -thresholdBN;
+
+  // If the delta is positive and within threshold, skip
+  if (withinThreshold && liquidityDelta >= 0n) {
     log(
-      `Only ${formatUnits(
-        liquidityDelta,
-      )} liquidity delta, skipping allocation as threshold is ${formatUnits(
-        thresholdBN,
-      )}`,
+      `Only ${formatUnits(liquidityDelta)} liquidity delta, skipping allocation as threshold is ${formatUnits(thresholdBN)}`,
     );
     return;
   }
 
-  // if the liquidity delta is negative, check if there is any liquidity in the lending market
-  if (liquidityDelta < 0) {
-    // Get the active market wrapper contract
-    const activeMarketAddress = await arm.activeMarket();
-    if (activeMarketAddress !== ethers.ZeroAddress) {
-      const activeMarket = new ethers.Contract(
-        activeMarketAddress,
-        ["function maxWithdraw(address) external view returns (uint256)"],
-        signer,
-      );
+  // If the delta is negative, check if there is a small amount left in the market and drain it if so
+  if (liquidityDelta < 0n) {
+    // Get the amount of liquidity available in the active market
+    const activeMarket = new ethers.Contract(
+      activeMarketAddress,
+      ["function maxWithdraw(address) external view returns (uint256)"],
+      signer,
+    );
+    const availableAssets = await activeMarket.maxWithdraw(
+      await arm.getAddress(),
+    );
 
-      // Check there is liquidity available to withdraw from the lending market
-      const availableAssets = await activeMarket.maxWithdraw(
-        await arm.getAddress(),
+    // If liquidity delta is within threshold but there are still more than threshold assets available in the market, skip
+    if (withinThreshold && availableAssets > thresholdBN) {
+      log(
+        `Only ${formatUnits(liquidityDelta)} liquidity delta and ${formatUnits(availableAssets)} available assets > ${formatUnits(thresholdBN)} threshold, skipping allocation`,
       );
-      if (availableAssets < parseUnits("0.01", 18)) {
-        log(
-          `Only ${formatUnits(availableAssets)} liquidity available in the active lending market, skipping allocation`,
-        );
-        return;
-      }
+      return;
     }
+
+    // Skip if transferring a small amount as its not gas efficient
+    if (availableAssets < parseUnits("0.1", 18)) {
+      log(
+        `Only ${formatUnits(availableAssets)} liquidity available in the active lending market, skipping allocation`,
+      );
+      return;
+    }
+
+    // Either the delta is above threshold or there is a small amount left in the market
+    log(
+      `Only ${formatUnits(availableAssets)} available in the active lending market, proceeding with allocation to drain remaining liquidity`,
+    );
   }
 
   log(
@@ -151,7 +167,6 @@ async function setARMBuffer({ arm, signer, buffer }) {
   const tx = await arm.connect(signer).setARMBuffer(bufferBN, { gasLimit });
   await logTxDetails(tx, "setARMBuffer");
 }
-
 module.exports = {
   allocate,
   collectFees,

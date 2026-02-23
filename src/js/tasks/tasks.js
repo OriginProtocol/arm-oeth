@@ -14,7 +14,7 @@ const {
   swapLido,
   lidoWithdrawStatus,
 } = require("./lido");
-const { setPrices } = require("./lidoMorphoPrices");
+const { setPrices } = require("./armPrices");
 const { allocate, collectFees, setARMBuffer } = require("./admin");
 const {
   collectRewards,
@@ -145,9 +145,15 @@ subtask(
   "Request withdrawal of base asset (WETH/OS) from the Origin Vault",
 )
   .addOptionalParam(
+    "thresholdAmount",
+    "Minimum amount of base assets that will be withdrawn if liquidity is available in the ARM or active market",
+    100,
+    types.float,
+  )
+  .addOptionalParam(
     "minAmount",
-    "Minimum amount of oTokens that will be withdrawn",
-    2,
+    "Minimum amount of base assets that will be withdrawn if no liquidity is available in the ARM or active market",
+    0.03,
     types.float,
   )
   .setAction(async (taskArgs) => {
@@ -732,7 +738,8 @@ subtask("setPrices", "Update Lido ARM's swap prices")
 
     // Get the MorphoMarketWrapper contract
     const market =
-      activeMarketAddress === ethers.ZeroAddress
+      // Ethena uses Aave, not Morpho
+      activeMarketAddress === ethers.ZeroAddress || taskArgs.arm === "Ethena"
         ? undefined
         : await hre.ethers.getContractAt(
             ["function market() external view returns (address)"],
@@ -740,7 +747,9 @@ subtask("setPrices", "Update Lido ARM's swap prices")
             signer,
           );
 
-    await setPrices({ ...taskArgs, signer, arm: armContract, market });
+    const wrapped = taskArgs.arm === "Ethena";
+
+    await setPrices({ ...taskArgs, signer, arm: armContract, market, wrapped });
   });
 task("setPrices").setAction(async (_, __, runSuper) => {
   return runSuper();
@@ -757,9 +766,15 @@ subtask(
     types.float,
   )
   .addOptionalParam(
+    "thresholdAmount",
+    "Minimum amount of base assets that will be withdrawn if liquidity is available in the ARM or active market",
+    120,
+    types.float,
+  )
+  .addOptionalParam(
     "minAmount",
-    "Minimum amount of stETH to withdraw.",
-    1,
+    "Minimum amount of base assets that will be withdrawn if no liquidity is available in the ARM or active market",
+    0.03,
     types.float,
   )
   .addOptionalParam(
@@ -1015,9 +1030,15 @@ subtask(
     types.float,
   )
   .addOptionalParam(
+    "thresholdAmount",
+    "Minimum amount of base assets that will be withdrawn if liquidity is available in the ARM or active market",
+    12,
+    types.float,
+  )
+  .addOptionalParam(
     "minAmount",
-    "Minimum amount of eETH to withdraw. (default: 1 ETH)",
-    1,
+    "Minimum amount of base assets that will be withdrawn if no liquidity is available in the ARM or active market",
+    0.03,
     types.float,
   )
   .setAction(async (taskArgs) => {
@@ -1071,9 +1092,15 @@ subtask(
     types.float,
   )
   .addOptionalParam(
+    "thresholdAmount",
+    "Minimum amount of base assets that will be withdrawn if liquidity is available in the ARM or active market",
+    1000,
+    types.float,
+  )
+  .addOptionalParam(
     "minAmount",
-    "Minimum amount of sUSDe to withdraw. (default: 1 sUSDe)",
-    1,
+    "Minimum amount of base assets that will be withdrawn if no liquidity is available in the ARM or active market",
+    100,
     types.float,
   )
   .setAction(async (taskArgs) => {
@@ -1193,7 +1220,7 @@ subtask("snap", "Take a snapshot of the an ARM")
     undefined,
     types.int,
   )
-  .addOptionalParam("oneInch", "Include 1Inch prices", true, types.boolean)
+  .addOptionalParam("oneInch", "Include 1Inch prices", false, types.boolean)
   .addOptionalParam("kyber", "Include Kyber prices", true, types.boolean)
   .setAction(snap);
 task("snap").setAction(async (_, __, runSuper) => {
@@ -1210,8 +1237,14 @@ subtask("snapLido", "Take a snapshot of the Lido ARM")
   .addOptionalParam("amount", "Swap quantity", 100, types.int)
   .addOptionalParam("oneInch", "Include 1Inch prices", true, types.boolean)
   .addOptionalParam("kyber", "Include Kyber prices", true, types.boolean)
-  .addOptionalParam("curve", "Include Curve prices", true, types.boolean)
-  .addOptionalParam("uniswap", "Include Uniswap V3 prices", true, types.boolean)
+  .addOptionalParam("curve", "Include Curve prices", false, types.boolean)
+  .addOptionalParam(
+    "uniswap",
+    "Include Uniswap V3 prices",
+    false,
+    types.boolean,
+  )
+  .addOptionalParam("fluid", "Include FluidDex prices", false, types.boolean)
   .addOptionalParam(
     "queue",
     "Include ARM withdrawal queue data",
@@ -1221,13 +1254,12 @@ subtask("snapLido", "Take a snapshot of the Lido ARM")
   .addOptionalParam(
     "lido",
     "Include Lido withdrawal queue data",
-    true,
+    false,
     types.boolean,
   )
   .addOptionalParam("user", "Include user data", false, types.boolean)
   .addOptionalParam("cap", "Include cap limit data", false, types.boolean)
   .addOptionalParam("gas", "Include gas costs", false, types.boolean)
-  .addOptionalParam("fluid", "Include FluidDex prices", true, types.boolean)
   .setAction(snapLido);
 task("snapLido").setAction(async (_, __, runSuper) => {
   return runSuper();

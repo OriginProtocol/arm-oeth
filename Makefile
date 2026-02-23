@@ -147,11 +147,11 @@ update-deployments:
 # ╚══════════════════════════════════════════════════════════════════════════════╝
 
 # Compare local contract with deployed bytecode
-# Usage: make verify-match file=src/contracts/Proxy.sol addr=0xCED...
+# Usage: make match file=src/contracts/Proxy.sol addr=0xCED...
 SHELL := /bin/bash
 match:
 	@if [ -z "$(file)" ] || [ -z "$(addr)" ]; then \
-		echo "Usage: make verify-match file=<path> addr=<address>"; \
+		echo "Usage: make match file=<path> addr=<address>"; \
 		exit 1; \
 	fi
 	@name=$$(basename $(file) .sol); \

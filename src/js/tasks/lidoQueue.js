@@ -1,29 +1,20 @@
 const { formatUnits, parseUnits } = require("ethers");
+const { baseWithdrawAmount } = require("./liquidityAutomation");
 
 const { logTxDetails } = require("../utils/txLogger");
 
 const log = require("../utils/logger")("task:lidoQueue");
 
 const requestLidoWithdrawals = async (options) => {
-  const { signer, steth, arm, amount, minAmount, maxAmount } = options;
+  const { amount, signer, arm, maxAmount } = options;
 
+  // Get stETH withdrawal amount
   const withdrawAmount = amount
     ? parseUnits(amount.toString())
-    : await steth.balanceOf(arm.getAddress());
-  log(`${formatUnits(withdrawAmount)} stETH withdraw amount`);
+    : await baseWithdrawAmount(options);
+  if (!withdrawAmount || withdrawAmount === 0n) return;
 
-  const minAmountBI = parseUnits(minAmount.toString());
   const maxAmountBI = parseUnits(maxAmount.toString());
-
-  if (!amount && withdrawAmount <= minAmountBI) {
-    console.log(
-      `withdraw amount of ${formatUnits(
-        withdrawAmount,
-      )} stETH is below ${minAmount} so not withdrawing`,
-    );
-    return;
-  }
-
   const requestAmounts = [];
   let remainingAmount = withdrawAmount;
   while (remainingAmount > 0) {
