@@ -20,18 +20,19 @@ contract Fork_OriginARM_Smoke_Test is AbstractSmokeTest {
     IERC4626 morphoMarket;
     address operator;
 
-    function setUp() public {
-        oeth = IERC20(resolver.resolve("OETH"));
-        weth = IERC20(resolver.resolve("WETH"));
-        operator = resolver.resolve("OPERATOR");
+    function setUp() public override {
+        super.setUp();
+        oeth = IERC20(Mainnet.OETH);
+        weth = IERC20(Mainnet.WETH);
+        operator = Mainnet.ARM_RELAYER;
 
         vm.label(address(weth), "WETH");
         vm.label(address(oeth), "OETH");
         vm.label(address(operator), "OPERATOR");
 
-        proxy = Proxy(payable(deployManager.getDeployment("OETH_ARM")));
-        originARM = OriginARM(deployManager.getDeployment("OETH_ARM"));
-        morphoMarket = IERC4626(deployManager.getDeployment("MORPHO_MARKET_ORIGIN"));
+        proxy = Proxy(payable(resolver.resolve("OETH_ARM")));
+        originARM = OriginARM(resolver.resolve("OETH_ARM"));
+        morphoMarket = IERC4626(resolver.resolve("MORPHO_MARKET_ORIGIN"));
 
         _dealWETH(address(originARM), 100 ether);
         _dealOETH(address(originARM), 100 ether);
