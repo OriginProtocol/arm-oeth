@@ -4,84 +4,71 @@ on:
     types: [opened, reopened, synchronize]
   push:
     branches:
-      - 'main'
+      - main
+  schedule:
+    # Daily at 6:00 AM UTC
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+    # Manual trigger from GitHub UI
 
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  # increasing available memory for node reduces issues with ganache crashing
+  # Increase available memory for node to reduce ganache crashes
   # https://nodejs.org/api/cli.html#cli_max_old_space_size_size_in_megabytes
   NODE_OPTIONS: --max_old_space_size=4096
 
 jobs:
-  ####################################################
-  ### LINTER
-  ####################################################
+  # ╔══════════════════════════════════════════════════════════════════════════════╗
+  # ║                                  LINTER                                      ║
+  # ╚══════════════════════════════════════════════════════════════════════════════╝
   lint:
     name: Contracts Linter
     runs-on: ubuntu-latest
+    # Skip on scheduled runs (only need to lint on actual code changes)
+    if: github.event_name != 'schedule'
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-
-      - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: "stable"
-      
-      - name: Show Forge version
-        run: forge --version
+      - name: Setup environment
+        uses: ./.github/actions/setup
 
       - name: Run Linter
         run: forge fmt --check
 
-  ####################################################
-  ### BUILD
-  ####################################################
-  build: 
+  # ╔══════════════════════════════════════════════════════════════════════════════╗
+  # ║                                   BUILD                                      ║
+  # ╚══════════════════════════════════════════════════════════════════════════════╝
+  build:
     name: Contracts Build
     runs-on: ubuntu-latest
+    # Skip on scheduled runs
+    if: github.event_name != 'schedule'
     steps:
       - uses: actions/checkout@v4
+      - name: Setup environment
+        uses: ./.github/actions/setup
         with:
-          submodules: recursive
+          install-yarn: 'true'
 
-      - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: "stable"
-      
-      - name: Show Forge version
-        run: forge --version
+      - name: Compile all contracts
+        run: forge build
 
-      - name: Install Dependencies
-        run: 	forge soldeer install && yarn install
+      - name: Ensure contract sizes are within limits
+        run: forge build --sizes --skip "test/**" --skip "script/**" --skip "*/forge-std/*"
 
-      - name: Compile contracts with Forge
-        run: forge build --sizes --skip Fuzzer
-
-      #- name: Compile contracts with Hardhat
-      #  run: npx hardhat compile
-
-  ####################################################
-  ### CONCRETE TESTS
-  ####################################################
+  # ╔══════════════════════════════════════════════════════════════════════════════╗
+  # ║                              CONCRETE TESTS                                  ║
+  # ╚══════════════════════════════════════════════════════════════════════════════╝
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest
-      
+    # Skip on scheduled runs
+    if: github.event_name != 'schedule'
     steps:
       - uses: actions/checkout@v4
+      - name: Setup environment
+        uses: ./.github/actions/setup
         with:
-          submodules: recursive
-
-      - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: "stable"
-
-      - name: Install Dependencies
-        run: 	forge soldeer install && yarn install
+          install-yarn: 'true'
 
       - name: Run unit tests
         run: forge test --summary --fail-fast --show-progress --mp 'test/unit/**'
@@ -90,22 +77,15 @@ jobs:
     name: Fork Tests
     runs-on: ubuntu-latest
     env:
-      PROVIDER_URL: ${{ secrets.PROVIDER_URL }}
+      MAINNET_URL: ${{ secrets.MAINNET_URL }}
       FLY_API_KEY: ${{ secrets.FLY_API_KEY }}
       SONIC_URL: ${{ secrets.SONIC_URL }}
-      
     steps:
       - uses: actions/checkout@v4
+      - name: Setup environment
+        uses: ./.github/actions/setup
         with:
-          submodules: recursive
-
-      - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: "stable"
-
-      - name: Install Dependencies
-        run: 	forge soldeer install && yarn install
+          install-yarn: 'true'
 
       - name: Run fork tests
         run: forge test --summary --fail-fast --show-progress --mp 'test/fork/**'
@@ -114,48 +94,38 @@ jobs:
     name: Smoke Tests
     runs-on: ubuntu-latest
     env:
-      PROVIDER_URL: ${{ secrets.PROVIDER_URL }}
+      MAINNET_URL: ${{ secrets.MAINNET_URL }}
       FLY_API_KEY: ${{ secrets.FLY_API_KEY }}
       SONIC_URL: ${{ secrets.SONIC_URL }}
-      
     steps:
       - uses: actions/checkout@v4
+      - name: Setup environment
+        uses: ./.github/actions/setup
         with:
-          submodules: recursive
-
-      - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: "stable"
-
-      - name: Install Dependencies
-        run: 	forge soldeer install && yarn install
+          install-yarn: 'true'
 
       - name: Run smoke tests
-        run: forge test --summary --fail-fast --show-progress --mp 'test/smoke/**'
+        run: forge build && forge test --summary --fail-fast --show-progress --mp 'test/smoke/**'
 
-  ####################################################
-  ### FUZZ TESTS
-  ####################################################
+  # ╔══════════════════════════════════════════════════════════════════════════════╗
+  # ║                              INVARIANT TESTS                                 ║
+  # ╚══════════════════════════════════════════════════════════════════════════════╝
+  # Profile selection:
+  #   - ci:   schedule, workflow_dispatch, push to main
+  #   - lite: pull_request, push to feature branches
+
   invariant-tests-OriginARM:
     name: Invariant Tests - OriginARM
     runs-on: ubuntu-latest
+    env:
+      FOUNDRY_PROFILE: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'ci' || 'lite' }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: recursive
+      - name: Setup environment
+        uses: ./.github/actions/setup
 
-      - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: "stable"
-
-      - name: Install Dependencies
-        run: 	forge soldeer install
-              
-      - name: Run invariant tests (OriginARM)
+      - name: Run invariant tests (OriginARM) [${{ env.FOUNDRY_PROFILE }}]
         run: |
-          FOUNDRY_PROFILE=ci \
           FOUNDRY_INVARIANT_FAIL_ON_REVERT=true \
           FOUNDRY_MATCH_CONTRACT=FuzzerFoundry_OriginARM \
           forge test --summary --fail-fast --show-progress
@@ -163,22 +133,15 @@ jobs:
   invariant-tests-LidoARM:
     name: Invariant Tests - LidoARM
     runs-on: ubuntu-latest
+    env:
+      FOUNDRY_PROFILE: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'ci' || 'lite' }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: recursive
+      - name: Setup environment
+        uses: ./.github/actions/setup
 
-      - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: "stable"
-
-      - name: Install Dependencies
-        run: 	forge soldeer install
-              
-      - name: Run invariant tests (LidoARM)
+      - name: Run invariant tests (LidoARM) [${{ env.FOUNDRY_PROFILE }}]
         run: |
-          FOUNDRY_PROFILE=ci \
           FOUNDRY_INVARIANT_FAIL_ON_REVERT=false \
           FOUNDRY_MATCH_CONTRACT=FuzzerFoundry_LidoARM \
           forge test --summary --fail-fast --show-progress
@@ -186,44 +149,41 @@ jobs:
   invariant-tests-EthenaARM:
     name: Invariant Tests - EthenaARM
     runs-on: ubuntu-latest
+    env:
+      FOUNDRY_PROFILE: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'ci' || 'lite' }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: recursive
+      - name: Setup environment
+        uses: ./.github/actions/setup
 
-      - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: "stable"
-
-      - name: Install Dependencies
-        run: 	forge soldeer install
-
-      - name: Run invariant tests (EthenaARM)
+      - name: Run invariant tests (EthenaARM) [${{ env.FOUNDRY_PROFILE }}]
         run: |
-          FOUNDRY_PROFILE=ci \
           FOUNDRY_INVARIANT_FAIL_ON_REVERT=true \
           FOUNDRY_MATCH_CONTRACT=FuzzerFoundry_EthenaARM \
           forge test --summary --fail-fast --show-progress
 
+      # Medusa fuzzing (only on full runs)
       - name: Setup Go
+        if: env.FOUNDRY_PROFILE == 'ci'
         uses: actions/setup-go@v5
         with:
           go-version: '1.21'
 
       - name: Set up Python
+        if: env.FOUNDRY_PROFILE == 'ci'
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10' 
+          python-version: '3.10'
 
       - name: Install Crytic Compile
+        if: env.FOUNDRY_PROFILE == 'ci'
         run: pip install crytic-compile
 
       - name: Install Medusa from Source
+        if: env.FOUNDRY_PROFILE == 'ci'
         run: go install github.com/crytic/medusa@latest
 
       - name: Run Medusa
+        if: env.FOUNDRY_PROFILE == 'ci'
         working-directory: test/invariants/EthenaARM/
         run: medusa fuzz --timeout 1800 --seq-len 500 --fail-fast
-        
-  

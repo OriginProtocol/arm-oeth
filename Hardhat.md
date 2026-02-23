@@ -5,8 +5,8 @@
 1. Start a local Anvil node forked from the latest block
 
 ```
-export PROVIDER_URL=
-anvil --fork-url="$PROVIDER_URL"
+export MAINNET_URL=
+anvil --fork-url="$MAINNET_URL"
 ```
 
 2. In a separate terminal, run the `requestWithdraw` task against the local fork.
@@ -46,7 +46,7 @@ yarn hardhat requestWithdraw --help
 1. Start a local Anvil node forked from the latest block
 
 ```
-anvil --fork-url="$PROVIDER_URL"
+anvil --fork-url="$MAINNET_URL"
 ```
 
 2. In a separate terminal, run the `autoClaimWithdraw` task against the local fork.

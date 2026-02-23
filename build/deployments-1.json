@@ -1,53 +1,230 @@
 {
-    "executions": {
-        "001_CoreMainnet": 1723685111,
-        "002_UpgradeMainnet": 1726812322,
-        "003_UpgradeLidoARMScript": 1729073099,
-        "004_UpdateCrossPriceScript": 1739872139,
-        "005_RegisterLidoWithdrawalsScript": 1743500783,
-        "006_ChangeFeeCollector": 1751894483,
-        "007_UpgradeLidoARMMorphoScript": 1754407511,
-        "008_DeployPendleAdaptor": 1755770279,
-        "009_UpgradeLidoARMSetBufferScript": 1755692363,
-        "010_UpgradeLidoARMAssetScript": 1764755147,
-        "011_DeployEtherFiARMScript": 1761812927,
-        "012_UpgradeEtherFiARMScript": 1763557643,
-        "013_UpgradeOETHARMScript": 1765353455,
-        "014_DeployEthenaARMScript": 1764664655,
-        "015_UpgradeEthenaARMScript": 1766319523,
-        "016_UpdateLidoARMCrossPriceScript": 1767616727,
-        "017_DeployNewMorphoMarketForEtherFiARM": 1770197063,
-        "018_DeployNewMorphoMarketForLidoARM": 1770716663,
-        "019_DeployPendleAdaptor_EtherFi": 1770793835,
-        "020_UpgradeEthenaARMScript": 1771799051
+  "contracts": [
+    {
+      "implementation": "0xE11EDbd5AE4Fa434Af7f8D7F03Da1742996e7Ab2",
+      "name": "ARM_ZAPPER"
     },
-    "contracts": {
-        "ARM_ZAPPER": "0xE11EDbd5AE4Fa434Af7f8D7F03Da1742996e7Ab2",
-        "ETHENA_ARM": "0xCEDa2d856238aA0D12f6329de20B9115f07C366d",
-        "ETHENA_ARM_CAP_IMPL": "0x7073F39ae371962C2469D72f01f907375bB11E08",
-        "ETHENA_ARM_CAP_MAN": "0x687AFB5A52A15122fD5FC54A8B52cfd58346fb0C",
-        "ETHENA_ARM_IMPL": "0xFB9d740577db685E11AA5ffF28CBcD1063f34943",
-        "ETHERFI_ARM_IMPL": "0x69b98667134EeE3eBF75799dacBCd604E28709ab",
-        "ETHER_FI_ARM": "0xfB0A3CF9B019BFd8827443d131b235B3E0FC58d2",
-        "ETHER_FI_ARM_CAP_IMPL": "0xe27720Fc3f3707D47015e274D81a99e5B0800472",
-        "ETHER_FI_ARM_CAP_MAN": "0xf2A18F7330141Ec737EB73A0A5Ea8E4d7e9bE7ec",
-        "ETHER_FI_ARM_IMPL": "0x00B53CEE151c043CBe4bbFe4cfD2938Cb4fabCEB",
-        "LIDO_ARM": "0x85B78AcA6Deae198fBF201c82DAF6Ca21942acc6",
-        "LIDO_ARM_CAP_IMPL": "0x8506486813d025C5935dF481E450e27D2e483dc9",
-        "LIDO_ARM_CAP_MAN": "0xf54ebff575f699d281645c6F14Fe427dFFE629CF",
-        "LIDO_ARM_IMPL": "0xC0297a0E39031F09406F0987C9D9D41c5dfbc3df",
-        "LIDO_ARM_ZAPPER": "0x01F30B7358Ba51f637d1aa05D9b4A60f76DAD680",
-        "MORPHO_MARKET_ETHERFI": "0xe776485B4A12d50503aF40DBEa519671318472Ed",
-        "MORPHO_MARKET_ETHERFI_IMPL": "0x20DC48008D4CC8988C7027bbd38e5ad6766e1d5D",
-        "MORPHO_MARKET_LIDO": "0xB7CeFE4CB483Be80C2963D3D9Edb991e69ff39cf",
-        "MORPHO_MARKET_LIDO_IMPL": "0xa52cC5aDFE6C638cE31694eAFfD8F993A0324f22",
-        "MORPHO_MARKET_MEVCAPITAL": "0x29c4Bb7B1eBcc53e8CBd16480B5bAe52C69806D3",
-        "MORPHO_MARKET_MEVCAPITAL_IMP": "0x90c7ABC962f96de171ee395A242D2Ff794D0a04c",
-        "MORPHO_MARKET_ORIGIN": "0x0ad39D67404aE36Fe476eFDDE1306a5414383544",
-        "MORPHO_MARKET_ORIGIN_IMPL": "0x2ea9D1827973813D77aA8f35BD23cb1F1311A648",
-        "OETH_ARM": "0x6bac785889A4127dB0e0CeFEE88E0a9F1Aaf3cC7",
-        "OETH_ARM_IMPL": "0x9A2be51E45Eec98F75b3e6e1b334246c94663641",
-        "PENDLE_ETHERFI_ARM_SY": "0x3362070B3727b3beE5196bFf0772543f41d4e1F1",
-        "PENDLE_ORIGIN_ARM_SY": "0xbcae2Eb1cc47F137D8B2D351B0E0ea8DdA4C6184"
+    {
+      "implementation": "0xCEDa2d856238aA0D12f6329de20B9115f07C366d",
+      "name": "ETHENA_ARM"
+    },
+    {
+      "implementation": "0x7073F39ae371962C2469D72f01f907375bB11E08",
+      "name": "ETHENA_ARM_CAP_IMPL"
+    },
+    {
+      "implementation": "0x687AFB5A52A15122fD5FC54A8B52cfd58346fb0C",
+      "name": "ETHENA_ARM_CAP_MAN"
+    },
+    {
+      "implementation": "0xFB9d740577db685E11AA5ffF28CBcD1063f34943",
+      "name": "ETHENA_ARM_IMPL"
+    },
+    {
+      "implementation": "0x69b98667134EeE3eBF75799dacBCd604E28709ab",
+      "name": "ETHERFI_ARM_IMPL"
+    },
+    {
+      "implementation": "0xfB0A3CF9B019BFd8827443d131b235B3E0FC58d2",
+      "name": "ETHER_FI_ARM"
+    },
+    {
+      "implementation": "0xe27720Fc3f3707D47015e274D81a99e5B0800472",
+      "name": "ETHER_FI_ARM_CAP_IMPL"
+    },
+    {
+      "implementation": "0xf2A18F7330141Ec737EB73A0A5Ea8E4d7e9bE7ec",
+      "name": "ETHER_FI_ARM_CAP_MAN"
+    },
+    {
+      "implementation": "0x00B53CEE151c043CBe4bbFe4cfD2938Cb4fabCEB",
+      "name": "ETHER_FI_ARM_IMPL"
+    },
+    {
+      "implementation": "0x85B78AcA6Deae198fBF201c82DAF6Ca21942acc6",
+      "name": "LIDO_ARM"
+    },
+    {
+      "implementation": "0x8506486813d025C5935dF481E450e27D2e483dc9",
+      "name": "LIDO_ARM_CAP_IMPL"
+    },
+    {
+      "implementation": "0xf54ebff575f699d281645c6F14Fe427dFFE629CF",
+      "name": "LIDO_ARM_CAP_MAN"
+    },
+    {
+      "implementation": "0xC0297a0E39031F09406F0987C9D9D41c5dfbc3df",
+      "name": "LIDO_ARM_IMPL"
+    },
+    {
+      "implementation": "0x01F30B7358Ba51f637d1aa05D9b4A60f76DAD680",
+      "name": "LIDO_ARM_ZAPPER"
+    },
+    {
+      "implementation": "0x8Cf42b82fFFa3E7714D62a2cA223acBeC1Eef095",
+      "name": "MORPHO_MARKET_ETHERFI"
+    },
+    {
+      "implementation": "0xB7CeFE4CB483Be80C2963D3D9Edb991e69ff39cf",
+      "name": "MORPHO_MARKET_LIDO"
+    },
+    {
+      "implementation": "0xa52cC5aDFE6C638cE31694eAFfD8F993A0324f22",
+      "name": "MORPHO_MARKET_LIDO_IMPL"
+    },
+    {
+      "implementation": "0x2a1b59870f7806E60dF58415B0C220C096f57658",
+      "name": "MORPHO_MARKET_ETHERFI_IMPL"
+    },
+    {
+      "implementation": "0x29c4Bb7B1eBcc53e8CBd16480B5bAe52C69806D3",
+      "name": "MORPHO_MARKET_MEVCAPITAL"
+    },
+    {
+      "implementation": "0x90c7ABC962f96de171ee395A242D2Ff794D0a04c",
+      "name": "MORPHO_MARKET_MEVCAPITAL_IMP"
+    },
+    {
+      "implementation": "0x0ad39D67404aE36Fe476eFDDE1306a5414383544",
+      "name": "MORPHO_MARKET_ORIGIN"
+    },
+    {
+      "implementation": "0x2ea9D1827973813D77aA8f35BD23cb1F1311A648",
+      "name": "MORPHO_MARKET_ORIGIN_IMPL"
+    },
+    {
+      "implementation": "0x6bac785889A4127dB0e0CeFEE88E0a9F1Aaf3cC7",
+      "name": "OETH_ARM"
+    },
+    {
+      "implementation": "0x9A2be51E45Eec98F75b3e6e1b334246c94663641",
+      "name": "OETH_ARM_IMPL"
+    },
+    {
+      "implementation": "0xbcae2Eb1cc47F137D8B2D351B0E0ea8DdA4C6184",
+      "name": "PENDLE_ORIGIN_ARM_SY"
     }
+  ],
+  "executions": [
+    {
+      "name": "001_CoreMainnet",
+      "proposalId": 1,
+      "tsDeployment": 1723685111,
+      "tsGovernance": 1
+    },
+    {
+      "name": "002_UpgradeMainnet",
+      "proposalId": 1,
+      "tsDeployment": 1726812322,
+      "tsGovernance": 1
+    },
+    {
+      "name": "003_UpgradeLidoARMScript",
+      "proposalId": 1,
+      "tsDeployment": 1729073099,
+      "tsGovernance": 1
+    },
+    {
+      "name": "004_UpdateCrossPriceScript",
+      "proposalId": 35014690349432723957288190501753589450218643401938485181692293616657480917203,
+      "tsDeployment": 1739872607,
+      "tsGovernance": 1741006739
+    },
+    {
+      "name": "005_RegisterLidoWithdrawalsScript",
+      "proposalId": 64044440920440270085747261797126167860462634313138171523652997655161275965731,
+      "tsDeployment": 1743500783,
+      "tsGovernance": 1744160999
+    },
+    {
+      "name": "006_ChangeFeeCollector",
+      "proposalId": 109363689626229981205538511015089771588377155562499137759609037731650725632486,
+      "tsDeployment": 1751894483,
+      "tsGovernance": 1752344483
+    },
+    {
+      "name": "007_UpgradeLidoARMMorphoScript",
+      "proposalId": 59265604807181750059374521697037203647325806747129712398293966379088988710865,
+      "tsDeployment": 1754407535,
+      "tsGovernance": 1755065999
+    },
+    {
+      "name": "008_DeployPendleAdaptor",
+      "proposalId": 1,
+      "tsDeployment": 1755770303,
+      "tsGovernance": 1
+    },
+    {
+      "name": "009_UpgradeLidoARMSetBufferScript",
+      "proposalId": 102890619681967819838810828305071236237724717056692746223348120761300245862771,
+      "tsDeployment": 1755692387,
+      "tsGovernance": 1756300859
+    },
+    {
+      "name": "010_UpgradeLidoARMAssetScript",
+      "proposalId": 37708940508805836655115654926134468712278199739053834927259119548435770049054,
+      "tsDeployment": 1764755207,
+      "tsGovernance": 1765250063
+    },
+    {
+      "name": "011_DeployEtherFiARMScript",
+      "proposalId": 1,
+      "tsDeployment": 1761812927,
+      "tsGovernance": 1
+    },
+    {
+      "name": "012_UpgradeEtherFiARMScript",
+      "proposalId": 1,
+      "tsDeployment": 1763557643,
+      "tsGovernance": 1
+    },
+    {
+      "name": "013_UpgradeOETHARMScript",
+      "proposalId": 13037237308267442172275484225525115297039100275207017031248147012600338883646,
+      "tsDeployment": 1765353455,
+      "tsGovernance": 1765977443
+    },
+    {
+      "name": "014_DeployEthenaARMScript",
+      "proposalId": 1,
+      "tsDeployment": 1764664655,
+      "tsGovernance": 1
+    },
+    {
+      "name": "015_UpgradeEthenaARMScript",
+      "proposalId": 1,
+      "tsDeployment": 1766319523,
+      "tsGovernance": 1
+    },
+    {
+      "name": "016_UpgradeLidoARMCrossPriceScript",
+      "proposalId": 31708125563490321189508956336526281463837110092407433451282139238539907004461,
+      "tsDeployment": 1767616727,
+      "tsGovernance": 1768078823
+    },
+    {
+      "name": "017_DeployNewMorphoMarketForEtherFiARM",
+      "proposalId": 1,
+      "tsDeployment": 1770197063,
+      "tsGovernance": 1
+    },
+    {
+      "name": "018_DeployNewMorphoMarketForLidoARM",
+      "proposalId": 104193745767957728487777538680481562234753615557563590994770579038567345820296,
+      "tsDeployment": 1770716663,
+      "tsGovernance": 1771230167
+    },
+    {
+      "name": "019_DeployPendleAdaptor_EtherFi",
+      "proposalId": 1,
+      "tsDeployment": 1770793835,
+      "tsGovernance": 1
+    }, 
+    {
+      "name": "020_UpgradeEthenaARMScript",
+      "proposalId": 1,
+      "tsDeployment": 1771799051,
+      "tsGovernance": 1
+    }
+  ]
 }
