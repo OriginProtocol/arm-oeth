@@ -198,19 +198,36 @@ abstract contract AbstractDeployScript is Base {
 
     /// @notice Records execution with governance metadata.
     /// @dev Must be called AFTER _buildGovernanceProposal() so we know if governance is needed.
-    ///      If no governance actions, uses NO_GOVERNANCE sentinel for proposalId and tsGovernance.
+    ///      If no governance actions, uses NO_GOVERNANCE for proposalId and GOVERNANCE_PENDING (0)
+    ///      for tsGovernance. This means fork tests will compile the script and call runFork()
+    ///      on every run. The _fork() implementation should be idempotent (check on-chain state
+    ///      before acting) so this is safe but adds minor overhead.
+    ///
+    ///      For scripts that have NO pending manual actions, manually set tsGovernance to
+    ///      NO_GOVERNANCE (1) in the deployment JSON to skip compilation entirely in fork tests.
+    ///      This is the recommended default once all on-chain actions are confirmed.
+    ///
     ///      If governance actions exist, both default to GOVERNANCE_PENDING (0).
     function _recordExecution() internal virtual {
         uint256 proposalId;
         uint256 tsGovernance;
         if (govProposal.actions.length == 0) {
             proposalId = NO_GOVERNANCE;
-            tsGovernance = NO_GOVERNANCE;
         }
         resolver.addExecution(name, block.timestamp, proposalId, tsGovernance);
     }
 
     // ==================== Virtual Hooks (Override in Child Contracts) ==================== //
+
+    /// @notice Runs only the fork-specific logic for already-deployed scripts.
+    /// @dev Called by DeployManager when a script is already recorded in the
+    ///      deployment history but has pending manual actions (tsGovernance == 0).
+    ///      Unlike run(), this does NOT call _execute() or _buildGovernanceProposal().
+    function runFork() external {
+        state = resolver.getState();
+        log = state != State.FORK_TEST || forcedLog;
+        _fork();
+    }
 
     /// @notice Hook for post-deployment fork testing logic.
     /// @dev Override this to run additional logic after deployment in fork mode.
@@ -219,7 +236,13 @@ abstract contract AbstractDeployScript is Base {
     ///      - Verifying state after governance proposal simulation
     ///      - Integration testing with other contracts
     ///
-    ///      Only called when state is FORK_TEST or FORK_DEPLOYING.
+    ///      Called in two scenarios:
+    ///      1. During run() for fresh deployments (state variables from _execute() are available)
+    ///      2. Via runFork() for already-deployed scripts (state variables are NOT available)
+    ///
+    ///      IMPORTANT: _fork() may be called without _execute() (via runFork()), so
+    ///      always use resolver.resolve() to look up contract addresses instead of
+    ///      relying on state variables set in _execute().
     function _fork() internal virtual {}
 
     /// @notice Main deployment logic - MUST be implemented by child contracts.

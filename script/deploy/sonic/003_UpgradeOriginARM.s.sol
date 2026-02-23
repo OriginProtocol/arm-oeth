@@ -42,19 +42,22 @@ contract $003_UpgradeOriginARMScript is AbstractDeployScript("003_UpgradeOriginA
         Proxy originARMProxy = Proxy(payable(resolver.resolve("ORIGIN_ARM")));
         Proxy silo_Varlamore_S_MarketProxy = Proxy(payable(resolver.resolve("SILO_VARLAMORE_S_MARKET")));
 
+        // Skip if already upgraded on-chain
+        if (originARMProxy.implementation() == resolver.resolve("ORIGIN_ARM_IMPL")) return;
+
         vm.startPrank(Sonic.ADMIN);
 
         // 1. Upgrade SonicHarvester Proxy to the new implementation
-        harvesterProxy.upgradeTo(address(harvesterImpl));
+        harvesterProxy.upgradeTo(resolver.resolve("HARVESTER_IMPL"));
 
         // 2. Upgrade OriginARM Proxy to the new implementation
-        originARMProxy.upgradeTo(address(originARMImpl));
+        originARMProxy.upgradeTo(resolver.resolve("ORIGIN_ARM_IMPL"));
 
         vm.stopPrank();
 
         vm.prank(Sonic.TIMELOCK);
 
         // 3. Upgrade SiloMarket Proxy to the new implementation
-        silo_Varlamore_S_MarketProxy.upgradeTo(address(silo_Varlamore_S_MarketImpl));
+        silo_Varlamore_S_MarketProxy.upgradeTo(resolver.resolve("SILO_VARLAMORE_S_MARKET_IMPL"));
     }
 }
