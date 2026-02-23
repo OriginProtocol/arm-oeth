@@ -1,50 +1,32 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
-// Foundry imports
-import {console} from "forge-std/console.sol";
-
-// Contract imports
+// Contract
 import {IWETH} from "contracts/Interfaces.sol";
 import {Proxy} from "contracts/Proxy.sol";
+import {Mainnet} from "contracts/utils/Addresses.sol";
+import {ZapperARM} from "contracts/ZapperARM.sol";
 import {EtherFiARM} from "contracts/EtherFiARM.sol";
 import {CapManager} from "contracts/CapManager.sol";
-import {Mainnet} from "contracts/utils/Addresses.sol";
 import {MorphoMarket} from "contracts/markets/MorphoMarket.sol";
-import {ZapperARM} from "contracts/ZapperARM.sol";
 import {Abstract4626MarketWrapper} from "contracts/markets/Abstract4626MarketWrapper.sol";
 
-// Deployment imports
-import {GovProposal, GovSixHelper} from "contracts/utils/GovSixHelper.sol";
-import {AbstractDeployScript} from "../AbstractDeployScript.sol";
+// Deployment
+import {AbstractDeployScript} from "script/deploy/helpers/AbstractDeployScript.s.sol";
 
-contract DeployEtherFiARMScript is AbstractDeployScript {
-    using GovSixHelper for GovProposal;
-
-    GovProposal public govProposal;
-
-    string public constant override DEPLOY_NAME = "011_DeployEtherFiARMScript";
-    bool public constant override proposalExecuted = true;
-
-    Proxy morphoMarketProxy;
-    EtherFiARM etherFiARMImpl;
-    MorphoMarket morphoMarket;
-
+contract $011_DeployEtherFiARMScript is AbstractDeployScript("011_DeployEtherFiARMScript") {
     function _execute() internal override {
-        console.log("Deploy:", DEPLOY_NAME);
-        console.log("------------");
-
         // 1. Deploy new ARM proxy contract
         Proxy armProxy = new Proxy();
-        _recordDeploy("ETHER_FI_ARM", address(armProxy));
+        _recordDeployment("ETHER_FI_ARM", address(armProxy));
 
         // 2. Deploy proxy for the CapManager
         Proxy capManProxy = new Proxy();
-        _recordDeploy("ETHER_FI_ARM_CAP_MAN", address(capManProxy));
+        _recordDeployment("ETHER_FI_ARM_CAP_MAN", address(capManProxy));
 
         // 3. Deploy CapManager implementation
         CapManager capManagerImpl = new CapManager(address(armProxy));
-        _recordDeploy("ETHER_FI_ARM_CAP_IMPL", address(capManagerImpl));
+        _recordDeployment("ETHER_FI_ARM_CAP_IMPL", address(capManagerImpl));
 
         // 4. Initialize Proxy with CapManager implementation and set the owner to the deployer for now
         bytes memory capManData = abi.encodeWithSignature("initialize(address)", Mainnet.ARM_RELAYER);
@@ -62,8 +44,8 @@ contract DeployEtherFiARMScript is AbstractDeployScript {
         capManProxy.setOwner(Mainnet.GOV_MULTISIG);
 
         // 6. Deploy new Ether.Fi implementation
-        uint256 claimDelay = tenderlyTestnet ? 1 minutes : 10 minutes;
-        etherFiARMImpl = new EtherFiARM(
+        uint256 claimDelay = 10 minutes;
+        EtherFiARM etherFiARMImpl = new EtherFiARM(
             Mainnet.EETH,
             Mainnet.WETH,
             Mainnet.ETHERFI_WITHDRAWAL,
@@ -72,7 +54,7 @@ contract DeployEtherFiARMScript is AbstractDeployScript {
             1e18, // allocateThreshold
             Mainnet.ETHERFI_WITHDRAWAL_NFT
         );
-        _recordDeploy("ETHER_FI_ARM_IMPL", address(etherFiARMImpl));
+        _recordDeployment("ETHER_FI_ARM_IMPL", address(etherFiARMImpl));
 
         // 7. Give the deployer a tiny amount of WETH for the initialization
         // This can be skipped if the deployer already has WETH
@@ -91,20 +73,18 @@ contract DeployEtherFiARMScript is AbstractDeployScript {
         );
         armProxy.initialize(address(etherFiARMImpl), deployer, armData);
 
-        console.log("Initialized Ether.Fi ARM");
-
         // 9. Deploy a Zapper that can work with different ARMs on mainnet
         ZapperARM zapper = new ZapperARM(Mainnet.WETH);
         zapper.setOwner(Mainnet.STRATEGIST);
-        _recordDeploy("ARM_ZAPPER", address(zapper));
+        _recordDeployment("ARM_ZAPPER", address(zapper));
 
         // 10. Deploy MorphoMarket proxy
-        morphoMarketProxy = new Proxy();
-        _recordDeploy("MORPHO_MARKET_ETHERFI", address(morphoMarketProxy));
+        Proxy morphoMarketProxy = new Proxy();
+        _recordDeployment("MORPHO_MARKET_ETHERFI", address(morphoMarketProxy));
 
         // 11. Deploy MorphoMarket
-        morphoMarket = new MorphoMarket(address(armProxy), Mainnet.MORPHO_MARKET_ETHERFI);
-        _recordDeploy("MORPHO_MARKET_ETHERFI_IMPL", address(morphoMarket));
+        MorphoMarket morphoMarket = new MorphoMarket(address(armProxy), Mainnet.MORPHO_MARKET_ETHERFI);
+        _recordDeployment("MORPHO_MARKET_ETHERFI_IMPL", address(morphoMarket));
 
         // 12. Initialize MorphoMarket proxy with the implementation, Timelock as owner
         bytes memory data = abi.encodeWithSelector(
@@ -129,7 +109,5 @@ contract DeployEtherFiARMScript is AbstractDeployScript {
 
         // 17. Transfer ownership of ARM to the 5/8 multisig
         armProxy.setOwner(Mainnet.GOV_MULTISIG);
-
-        console.log("Finished deploying", DEPLOY_NAME);
     }
 }

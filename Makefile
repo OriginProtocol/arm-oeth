@@ -3,116 +3,151 @@
 .EXPORT_ALL_VARIABLES:
 MAKEFLAGS += --no-print-directory
 
-default:
-	forge fmt && forge build
+# ╔══════════════════════════════════════════════════════════════════════════════╗
+# ║                                 VARIABLES                                    ║
+# ╚══════════════════════════════════════════════════════════════════════════════╝
 
-# Always keep Forge up to date
+DEPLOY_SCRIPT   := script/deploy/DeployManager.s.sol
+DEPLOY_BASE     := --account deployerKey --sender $(DEPLOYER_ADDRESS) --broadcast --slow
+
+# ╔══════════════════════════════════════════════════════════════════════════════╗
+# ║                                  DEFAULT                                     ║
+# ╚══════════════════════════════════════════════════════════════════════════════╝
+
+default:
+	forge fmt
+	forge build
+
 install:
-	foundryup
+	foundryup --version stable
 	forge soldeer install
 	yarn install
 
+# ╔══════════════════════════════════════════════════════════════════════════════╗
+# ║                                   CLEAN                                      ║
+# ╚══════════════════════════════════════════════════════════════════════════════╝
+
 clean:
-	@rm -rf broadcast cache out
+	rm -rf broadcast cache out
+	find build -name '*fork*' -delete 2>/dev/null || true
 
-# Remove every "crytic-export" directory anywhere in the project
 clean-crytic:
-	@find . -type d -name crytic-export -exec rm -rf '{}' +
+	find . -type d -name crytic-export -exec rm -rf '{}' +
 
-clean-all: 
-	@rm -rf broadcast cache out dependencies node_modules soldeer.lock yarn.lock .lcov.info lcov.info pruned artifacts cache hardhat-node_modules
-	@$(MAKE) clean-crytic
+clean-all: clean clean-crytic
+	rm -rf dependencies node_modules soldeer.lock yarn.lock lcov.info coverage artifacts hardhat-node_modules
 
+# ╔══════════════════════════════════════════════════════════════════════════════╗
+# ║                                   TESTS                                      ║
+# ╚══════════════════════════════════════════════════════════════════════════════╝
 
-gas:
-	@forge test --gas-report
-
-# Generate gas snapshots for all your test functions
-snapshot:
-	@forge snapshot
-
-# Tests
-test-std:
+# Base test command
+test-base:
 	forge test --summary --fail-fast --show-progress -vvv
 
+# Run all tests (excluding fuzzers by default)
 test:
-	@FOUNDRY_NO_MATCH_CONTRACT=Fuzzer $(MAKE) test-std
+	FOUNDRY_NO_MATCH_CONTRACT=Fuzzer $(MAKE) test-base
 
+# Run tests matching a function name: make test-f-testSwap
 test-f-%:
-	@FOUNDRY_MATCH_TEST=$* $(MAKE) test-std
+	FOUNDRY_MATCH_TEST=$* $(MAKE) test-base
 
+# Run tests matching a contract name: make test-c-LidoARM
 test-c-%:
-	@FOUNDRY_MATCH_CONTRACT=$* $(MAKE) test-std
+	FOUNDRY_MATCH_CONTRACT=$* $(MAKE) test-base
 
-test-all:
-	@$(MAKE) test-std
-
-test-invariant-lido:
-	@FOUNDRY_INVARIANT_FAIL_ON_REVERT=false FOUNDRY_MATCH_CONTRACT=FuzzerFoundry_LidoARM $(MAKE) test-std
-
-test-invariant-origin:
-	@FOUNDRY_INVARIANT_FAIL_ON_REVERT=true FOUNDRY_MATCH_CONTRACT=FuzzerFoundry_OriginARM $(MAKE) test-std
-
-test-invariant-ethena:
-	@FOUNDRY_INVARIANT_FAIL_ON_REVERT=true FOUNDRY_MATCH_CONTRACT=FuzzerFoundry_EthenaARM $(MAKE) test-std
-
-test-invariants:
-	@$(MAKE) test-invariant-lido && $(MAKE) test-invariant-origin && $(MAKE) test-invariant-ethena
-
+# Run tests by category
 test-unit:
-	@FOUNDRY_MATCH_PATH='test/unit/**' $(MAKE) test-std
+	FOUNDRY_MATCH_PATH='test/unit/**' $(MAKE) test-base
 
 test-fork:
-	@FOUNDRY_MATCH_PATH='test/fork/**' $(MAKE) test-std
+	FOUNDRY_MATCH_PATH='test/fork/**' $(MAKE) test-base
 
 test-smoke:
-	@FOUNDRY_MATCH_PATH='test/smoke/**' $(MAKE) test-std
+	forge build
+	FOUNDRY_MATCH_PATH='test/smoke/**' $(MAKE) test-base
 
+# ╔══════════════════════════════════════════════════════════════════════════════╗
+# ║                              INVARIANT TESTS                                 ║
+# ╚══════════════════════════════════════════════════════════════════════════════╝
 
-# Coverage
+# Run a single invariant test: make test-invariant-lido
+test-invariant-%:
+	$(eval FAIL_ON_REVERT := $(if $(filter lido,$*),false,true))
+	$(eval CONTRACT := $(shell echo $* | awk '{print toupper(substr($$0,1,1)) substr($$0,2)}')ARM)
+	FOUNDRY_INVARIANT_FAIL_ON_REVERT=$(FAIL_ON_REVERT) FOUNDRY_MATCH_CONTRACT=FuzzerFoundry_$(CONTRACT) $(MAKE) test-base
+
+# Run all invariant tests
+test-invariants:
+	$(MAKE) test-invariant-lido
+	$(MAKE) test-invariant-origin
+	$(MAKE) test-invariant-ethena
+
+# ╔══════════════════════════════════════════════════════════════════════════════╗
+# ║                                 COVERAGE                                     ║
+# ╚══════════════════════════════════════════════════════════════════════════════╝
+
 coverage:
-	@forge coverage --report lcov
+	forge coverage --report lcov
 
-coverage-html:
-	@make coverage
-	@genhtml ./lcov.info.pruned -o report --branch-coverage --output-dir ./coverage
+coverage-html: coverage
+	genhtml ./lcov.info -o coverage --branch-coverage
 
-# Run a script
-simulate-s-%:
-	@forge script script/deploy/$*.sol --fork-url $(PROVIDER_URL) -vvvvv
+# ╔══════════════════════════════════════════════════════════════════════════════╗
+# ║                                   GAS                                        ║
+# ╚══════════════════════════════════════════════════════════════════════════════╝
 
-simulate-sonic-s-%:
-	@forge script script/deploy/$*.sol --fork-url $(SONIC_URL) -vvvvv
+gas:
+	forge test --gas-report
 
-run-s-%:
-	@forge script script/deploy/$*.sol --rpc-url $(PROVIDER_URL) --account deployerKey --sender $(DEPLOYER_ADDRESS) --broadcast --slow --verify -vvvvv
+snapshot:
+	forge snapshot
 
-run-sonic-s-%:
-	@forge script script/deploy/$*.sol --rpc-url $(SONIC_URL) --account deployerKey --sender $(DEPLOYER_ADDRESS) --broadcast --slow --verify -vvvvv
+# ╔══════════════════════════════════════════════════════════════════════════════╗
+# ║                                  DEPLOY                                      ║
+# ╚══════════════════════════════════════════════════════════════════════════════╝
 
-# Deploy scripts
-deploy:
-	@forge script script/deploy/DeployManager.sol --rpc-url $(PROVIDER_URL) --account deployerKey --sender $(DEPLOYER_ADDRESS) --broadcast --slow --verify -vvvv
+deploy-mainnet:
+	forge build
+	@forge script $(DEPLOY_SCRIPT) --rpc-url $(MAINNET_URL) $(DEPLOY_BASE) --verify -vvvv
 
 deploy-local:
-	@forge script script/deploy/DeployManager.sol --rpc-url $(LOCAL_URL) --account deployerKey --sender $(DEPLOYER_ADDRESS) --broadcast --slow -vvvv
+	forge build
+	@forge script $(DEPLOY_SCRIPT) --rpc-url $(LOCAL_URL) $(DEPLOY_BASE) -vvvv
 
 deploy-testnet:
-	@forge script script/deploy/DeployManager.sol --rpc-url $(TESTNET_URL) --broadcast --slow --unlocked -vvvv
-
-deploy-holesky:
-	@forge script script/deploy/DeployManager.sol --rpc-url $(HOLESKY_URL) --account deployerKey --sender $(DEPLOYER_ADDRESS) --broadcast --slow --verify -vvv
+	forge build
+	@forge script $(DEPLOY_SCRIPT) --rpc-url $(TESTNET_URL) --broadcast --slow --unlocked -vvvv
 
 deploy-sonic:
-	@forge script script/deploy/DeployManager.sol --rpc-url $(SONIC_URL) --account deployerKey --sender $(DEPLOYER_ADDRESS) --broadcast --slow --verify -vvv
+	forge build
+	@forge script $(DEPLOY_SCRIPT) --rpc-url $(SONIC_URL) $(DEPLOY_BASE) --verify -vvv
 
-simulate-deploys:
-	@forge script script/deploy/DeployManager.sol --fork-url $(PROVIDER_URL) -vvvv
+# ╔══════════════════════════════════════════════════════════════════════════════╗
+# ║                                 SIMULATE                                     ║
+# ╚══════════════════════════════════════════════════════════════════════════════╝
 
-simulate-sonic-deploys:
-	@forge script script/deploy/DeployManager.sol --fork-url $(SONIC_URL) -vvvv
+# Simulate deployment: make simulate (mainnet) or make simulate NETWORK=sonic
+NETWORK ?= mainnet
+simulate:
+	forge build
+	@forge script $(DEPLOY_SCRIPT) --fork-url $(if $(filter sonic,$(NETWORK)),$(SONIC_URL),$(MAINNET_URL)) -vvvv
 
-# Usage : make match file=src/contracts/Proxy.sol addr=0xCED...
+# ╔══════════════════════════════════════════════════════════════════════════════╗
+# ║                            UPDATE DEPLOYMENTS                                ║
+# ╚══════════════════════════════════════════════════════════════════════════════╝
+
+update-deployments:
+	forge build
+	@forge script script/automation/UpdateGovernanceMetadata.s.sol --fork-url $(MAINNET_URL) -vvvv
+
+# ╔══════════════════════════════════════════════════════════════════════════════╗
+# ║                                  VERIFY                                      ║
+# ╚══════════════════════════════════════════════════════════════════════════════╝
+
+# Compare local contract with deployed bytecode
+# Usage: make match file=src/contracts/Proxy.sol addr=0xCED...
 SHELL := /bin/bash
 match:
 	@if [ -z "$(file)" ] || [ -z "$(addr)" ]; then \
@@ -124,6 +159,27 @@ match:
 	&& printf "✅ Success: Local contract %-20s matches deployment at $(addr)\n" "$$name" \
 	|| printf "❌ Failure: Local contract %-20s differs from deployment at $(addr)\n" "$$name"
 
+# ╔══════════════════════════════════════════════════════════════════════════════╗
+# ║                                  UTILS                                       ║
+# ╚══════════════════════════════════════════════════════════════════════════════╝
 
-# Override default `test` and `coverage` targets
-.PHONY: test coverage match
+# Print a frame with centered text: make frame text="SECTION NAME"
+frame:
+	@if [ -z "$(text)" ]; then echo "Usage: make frame text=\"SECTION NAME\""; exit 1; fi
+	@awk -v t="$(text)" 'BEGIN { \
+		w=78; \
+		printf "// ╔"; for(i=0;i<w;i++) printf "═"; print "╗"; \
+		pad=int((w-length(t))/2); \
+		printf "// ║"; for(i=0;i<pad;i++) printf " "; printf "%s", t; \
+		for(i=0;i<w-pad-length(t);i++) printf " "; print "║"; \
+		printf "// ╚"; for(i=0;i<w;i++) printf "═"; print "╝"; \
+	}'
+
+# ╔══════════════════════════════════════════════════════════════════════════════╗
+# ║                                  PHONY                                       ║
+# ╚══════════════════════════════════════════════════════════════════════════════╝
+
+.PHONY: test test-base test-unit test-fork test-smoke test-invariants \
+        coverage coverage-html gas snapshot \
+        deploy-mainnet deploy-local deploy-testnet deploy-sonic simulate \
+        update-deployments match clean clean-crytic clean-all install frame

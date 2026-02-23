@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
-import {console} from "forge-std/console.sol";
-
 library Common {
     address public constant ZERO = address(0);
 }
@@ -118,90 +116,4 @@ library Sonic {
 
     // Magpie aggregator - MagpieRouterV3_1
     address public constant MAGPIE_ROUTER = 0xc325856e5585823aaC0D1Fd46c35c608D95E65A9;
-}
-
-contract AddressResolver {
-    // Chain ids of different networks
-    uint256 public constant MAINNET = 1;
-    uint256 public constant HOLESKY = 17000;
-    uint256 public constant BASE = 8453;
-    uint256 public constant ARBITRUM = 42161;
-    uint256 public constant SONIC = 146;
-
-    mapping(uint256 => mapping(string => address)) internal resolver;
-
-    error UnresolvedAddress(uint256 chainId, string name);
-
-    constructor() {
-        ///// Mainnet //////
-
-        // Governance
-        resolver[MAINNET]["GOVERNOR"] = Mainnet.TIMELOCK;
-        resolver[MAINNET]["GOVERNANCE"] = Mainnet.GOVERNOR_SIX;
-        resolver[MAINNET]["GOV_MULTISIG"] = Mainnet.GOV_MULTISIG;
-        resolver[MAINNET]["OPERATOR"] = Mainnet.OETH_RELAYER;
-
-        // Tokens
-        resolver[MAINNET]["OETH"] = Mainnet.OETH;
-        resolver[MAINNET]["WETH"] = Mainnet.WETH;
-        resolver[MAINNET]["EETH"] = Mainnet.EETH;
-        resolver[MAINNET]["WEETH"] = Mainnet.WEETH;
-        resolver[MAINNET]["STETH"] = Mainnet.STETH;
-        resolver[MAINNET]["WSTETH"] = Mainnet.WSTETH;
-
-        // Contracts
-        resolver[MAINNET]["OETH_VAULT"] = Mainnet.OETH_VAULT;
-        resolver[MAINNET]["OETH_ARM"] = Mainnet.OETH_ARM;
-        resolver[MAINNET]["LIDO_ARM"] = Mainnet.LIDO_ARM;
-
-        // Test accounts
-        resolver[MAINNET]["DEPLOYER"] = address(0x1001);
-        resolver[MAINNET]["WHALE_OETH"] = 0xA7c82885072BADcF3D0277641d55762e65318654;
-
-        ///// Holesky //////
-        // Governance
-        resolver[HOLESKY]["GOVERNOR"] = Holesky.RELAYER;
-        resolver[HOLESKY]["OPERATOR"] = Holesky.RELAYER;
-
-        // Tokens
-        resolver[HOLESKY]["OETH"] = Holesky.OETH;
-        resolver[HOLESKY]["WETH"] = Holesky.WETH;
-
-        // Contracts
-        resolver[HOLESKY]["OETH_VAULT"] = Holesky.OETH_VAULT;
-        resolver[HOLESKY]["OETH_ARM"] = Mainnet.OETH_ARM;
-
-        // Test accounts
-        resolver[HOLESKY]["DEPLOYER"] = Holesky.INITIAL_DEPLOYER;
-
-        ///// Sonic //////
-        // Governance
-        resolver[SONIC]["GOVERNOR"] = Sonic.TIMELOCK;
-        resolver[SONIC]["OPERATOR"] = Sonic.RELAYER;
-
-        // Tokens
-        resolver[SONIC]["OS"] = Sonic.OS;
-        resolver[SONIC]["WS"] = Sonic.WS;
-        resolver[SONIC]["WOS"] = Sonic.WOS;
-
-        // Contracts
-        resolver[SONIC]["OS_VAULT"] = Sonic.OS_VAULT;
-        resolver[SONIC]["ORIGIN_ARM"] = Sonic.ORIGIN_ARM;
-        resolver[SONIC]["SILO_WOS_S_MARKET"] = Sonic.SILO_OS;
-
-        // Test accounts
-        resolver[SONIC]["DEPLOYER"] = Sonic.INITIAL_DEPLOYER;
-    }
-
-    function resolve(string memory name) public view returns (address resolved) {
-        uint256 chainId = block.chainid == 31337 ? 1 : block.chainid;
-        resolved = resolver[chainId][name];
-
-        if (resolved == address(0)) {
-            console.log("Failed to resolve address for %s on chain %d", name, chainId);
-            revert UnresolvedAddress(chainId, name);
-        }
-
-        // console.log("Resolve %s on chain %d to %s", name, chainId, resolved);
-    }
 }
