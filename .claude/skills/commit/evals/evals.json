@@ -1,0 +1,51 @@
+{
+  "skill_name": "commit",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "commit it",
+      "expected_output": "A git commit is created with a Conventional Commit message, files are staged individually, formatters run on relevant files only, Co-Authored-By question is asked",
+      "files": [],
+      "expectations": [
+        "The skill checks git status first and verifies the repo is not in merge/rebase state",
+        "The skill runs git diff and git diff --cached to understand changes",
+        "The skill checks which file types changed before running formatters",
+        "The skill only runs forge fmt if .sol files are among the changes",
+        "The skill only runs yarn lint/prettier if JS files under src/js/ changed",
+        "Files are staged individually with git add <file>, not git add -A or git add .",
+        "The skill skips .env files and warns the user if detected",
+        "The commit message follows Conventional Commits format: type(scope): description",
+        "The commit message description is imperative mood, lowercase, no period, under 72 chars",
+        "The skill asks about Co-Authored-By trailer and push in a single question",
+        "The commit uses a HEREDOC for proper formatting",
+        "git status is run after the commit to verify success"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "commit this",
+      "expected_output": "When there are no changes, the skill detects this and stops with a clear message instead of attempting to commit",
+      "files": [],
+      "expectations": [
+        "The skill runs git status to check for changes",
+        "When no changes are detected, the skill informs the user with a clear message",
+        "The skill does NOT attempt to run formatters when there's nothing to commit",
+        "The skill does NOT attempt to stage files when there's nothing to commit",
+        "The skill stops early without asking about Co-Authored-By or push"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "commit it, no co-author, and push",
+      "expected_output": "The skill creates a commit without the Co-Authored-By trailer and pushes to remote, respecting the user's inline preferences without asking redundant questions",
+      "files": [],
+      "expectations": [
+        "The skill recognizes the user wants no Co-Authored-By trailer from the prompt",
+        "The skill recognizes the user wants to push from the prompt",
+        "The commit is created WITHOUT the Co-Authored-By trailer",
+        "After successful commit, the skill pushes without asking again",
+        "The skill uses git push -u origin <branch> if no upstream is set"
+      ]
+    }
+  ]
+}
