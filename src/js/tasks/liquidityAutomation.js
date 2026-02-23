@@ -86,7 +86,7 @@ const baseWithdrawAmount = async (options) => {
     ["function balanceOf(address) external view returns (uint256)"],
     signer,
   );
-  const withdrawAmount = await baseAsset.balanceOf(arm.getAddress());
+  const withdrawAmount = await baseAsset.balanceOf(await arm.getAddress());
   log(`${formatUnits(withdrawAmount)} withdraw amount`);
 
   // Exit if less than the minimum withdrawal amount
