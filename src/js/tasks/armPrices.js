@@ -81,6 +81,9 @@ const setPrices = async (options) => {
         midPrice: parseUnits(midPrice.toString(), 18),
       };
     } else {
+      if (curve && arm !== "Lido")
+        throw new Error(`Curve prices only available for Lido`);
+
       // 2.1 Get latest market prices if no midPrice is provided
       referencePrices = inch
         ? // 2.1.b Otherwise, get prices from 1Inch
