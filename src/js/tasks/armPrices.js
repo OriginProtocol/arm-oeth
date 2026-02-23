@@ -12,7 +12,7 @@ const {
   rangeBuyPrice,
 } = require("../utils/pricing");
 
-const log = require("../utils/logger")("task:lido");
+const log = require("../utils/logger")("task:prices");
 
 /**
  *
