@@ -24,11 +24,14 @@ const parseDeployedAddress = async (name) => {
     // Parse the JSON data
     const deploymentData = JSON.parse(data);
 
-    if (!deploymentData?.contracts[name]) {
+    const contract = deploymentData?.contracts?.find(
+      (c) => c.name === name,
+    );
+    if (!contract) {
       throw new Error(`Failed to find deployed address for ${name}.`);
     }
 
-    return deploymentData.contracts[name];
+    return contract.implementation;
   } catch (err) {
     throw new Error(
       `Failed to parse deployed contract "${name}" from "${fileName}".`,
