@@ -113,7 +113,7 @@ docs(skill): add commit automation skill
 ### 6. Confirm and Commit
 
 Before asking anything, check the user's original message for preferences they already stated:
-- **Co-Authored-By**: Look for "no co-author", "without co-author", "skip trailer", etc. Default: include trailer.
+- **Co-Authored-By**: Look for "with co-author", "add trailer", "include co-author", etc. Default: no trailer.
 - **Push**: Look for "and push", "push it", "push too", etc. Default: don't push.
 
 If both preferences are clear from the prompt, present the commit message and proceed without asking:
@@ -122,7 +122,7 @@ If both preferences are clear from the prompt, present the commit message and pr
 > ```
 > type(scope): description
 > ```
-> Committing without Co-Authored-By trailer and pushing as requested.
+> Committing with Co-Authored-By trailer and pushing as requested.
 
 If preferences are NOT clear, present the message and ask only about what's unspecified:
 
@@ -130,26 +130,26 @@ If preferences are NOT clear, present the message and ask only about what's unsp
 > ```
 > type(scope): description
 > ```
-> Include Co-Authored-By trailer? Push after commit?
+> Push after commit?
 
-Defaults: include trailer, don't push.
+Defaults: no trailer, don't push.
 
 Create the commit using a HEREDOC:
 
-**With trailer (default):**
+**Without trailer (default):**
+```bash
+git commit -m "$(cat <<'EOF'
+type(scope): description
+EOF
+)"
+```
+
+**With trailer:**
 ```bash
 git commit -m "$(cat <<'EOF'
 type(scope): description
 
 Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
-EOF
-)"
-```
-
-**Without trailer:**
-```bash
-git commit -m "$(cat <<'EOF'
-type(scope): description
 EOF
 )"
 ```
