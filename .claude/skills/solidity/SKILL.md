@@ -5,7 +5,7 @@ description: "Security-first Solidity review, writing, and vulnerability scannin
 
 # Solidity Security & Code Quality
 
-Three specialized agents for Solidity work: **reviewer** (security audit), **writer** (secure code generation), and **scanner** (vulnerability pattern matching). For small tasks — quick questions, single-line fixes, Solidity syntax — handle inline without spawning agents.
+Four specialized agents for Solidity work: **audit-lead** (multi-contract system audit), **reviewer** (single-contract security review), **writer** (secure code generation), and **scanner** (vulnerability pattern matching). For small tasks — quick questions, single-line fixes, Solidity syntax — handle inline without spawning agents.
 
 ## Philosophy
 
@@ -18,8 +18,22 @@ Three specialized agents for Solidity work: **reviewer** (security audit), **wri
 
 Determine which agent to spawn based on the user's intent:
 
+### Audit Mode
+**Triggers**: "full audit", "system audit", "audit the whole system", "audit all contracts", "multi-contract audit", audit of a directory or multiple files, or any request involving security review of 3+ contracts as a system
+
+→ Spawn `agents/audit-lead.md`
+- Audit-lead maps the system architecture first
+- Dispatches reviewer agents per contract module
+- Dispatches scanner for known vulnerability patterns
+- Performs cross-contract analysis (trust boundaries, composability, value flow)
+- Loads `references/audit-report-template.md` at report generation
+- If working in the ARM repo, also loads `references/arm-project.md`
+- Returns consolidated professional audit report
+
+**Distinguishing from Review Mode**: Review Mode handles 1-2 contracts in focused scope. Audit Mode handles an entire system — it discovers scope, maps dependencies, and finds cross-contract vulnerabilities. If the user says "review ContractX.sol", use Review Mode. If the user says "audit the system" or "review all contracts in this directory", use Audit Mode.
+
 ### Review Mode
-**Triggers**: "review", "audit", "check security", "look for vulnerabilities", PR touching `.sol` files, or "is this safe"
+**Triggers**: "review", "audit" (single contract), "check security", "look for vulnerabilities", PR touching `.sol` files, or "is this safe"
 
 → Spawn `agents/reviewer.md`
 - Reviewer loads `references/security-checklist.md`
@@ -46,6 +60,23 @@ Determine which agent to spawn based on the user's intent:
 **Triggers**: Quick Solidity questions, syntax help, single-line fixes, "what does X do", gas optimization tips
 
 → Handle directly in SKILL.md without spawning agents. Use the rules below.
+
+## Audit Workflow (Summary)
+
+The audit-lead follows a 10-step orchestration process (full detail in `agents/audit-lead.md`):
+
+1. **Scope discovery** — read all contracts, build inventory table
+2. **Dependency mapping** — inheritance tree, call graph, shared state map
+3. **Risk-based prioritization** — classify contracts into high/medium/low risk tiers
+4. **Dispatch per-contract reviews** — spawn reviewer agents per module (parallel if subagents available)
+5. **Cross-contract analysis** — trust boundaries, inconsistent assumptions, composability risks, upgrade risks, value flow completeness
+6. **Finding consolidation** — deduplicate across agents, correlate related findings
+7. **Severity re-assessment** — re-rate with full system context (upgrades and downgrades)
+8. **Systemic observations** — patterns, strengths, and concerns across the codebase
+9. **Recommendations** — immediate, short-term, and long-term action items
+10. **Report generation** — produce report using `references/audit-report-template.md`
+
+> **Note**: The Audit Workflow is for multi-contract system audits. For single-contract reviews, see Review Mode below, which uses a focused 8-step process.
 
 ## Review Workflow (Summary)
 
@@ -126,6 +157,7 @@ Load references on-demand based on task:
 | Writing Solidity code | `references/code-standards.md` |
 | Working in ARM repo | `references/arm-project.md` (in addition to above) |
 | Vulnerability scanning | `references/vulnerabilities/index.md` → selective incident files |
+| Multi-contract system audit | `references/audit-report-template.md` + all references used by reviewer/scanner |
 | Quick question | Nothing extra — use inline knowledge |
 
 Never load all references at once. Each agent loads only what it needs.
