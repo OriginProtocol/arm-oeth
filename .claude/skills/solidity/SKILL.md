@@ -120,6 +120,14 @@ Validate all parameters at function entry — even for owner-only functions. Che
 ### Access Control
 Every external state-mutating function must have an access control modifier or explicit documentation of why it's permissionless.
 
+### Attacker-Deployed Contracts (Interface Impersonation)
+When a function accepts an address parameter, casts it to an interface, and calls it — the attacker controls the implementation. Never assume the called contract will behave like the "real" implementation. An attacker can deploy their own contract that:
+- Has a matching function signature but is a **no-op** (does nothing)
+- Returns success without performing the expected side effects (e.g., doesn't actually transfer tokens, doesn't consume external state)
+- Selectively executes some logic but skips critical parts
+
+This is especially dangerous when the calling function **reads state from contract A** (e.g., an external protocol) and **expects the called contract B** (the user-supplied address) **to consume/clear that state**. If B no-ops, the state in A persists unchanged, and the function can be called repeatedly — draining internal accounting variables to zero in a single transaction. Always verify: does the function's state modification depend on the external call actually doing what it's supposed to do? If the external call target is user-supplied, the answer must be "no" — the function must be safe regardless of what the called contract does.
+
 ### Rounding Direction
 Round in favor of the protocol (against the user). Document rounding direction in comments when it matters.
 

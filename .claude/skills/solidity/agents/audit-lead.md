@@ -164,6 +164,17 @@ Check for:
 - State changes in A that break invariants in B before B is notified
 - Donation attacks: sending tokens directly to a contract that uses
   `balanceOf(address(this))` instead of internal accounting
+- **Phantom consumption / interface impersonation**: Contract A has a
+  permissionless function that reads state from external protocol P,
+  modifies internal accounting, then calls a user-supplied address cast to
+  an interface expecting it to consume/clear the state in P. An attacker
+  deploys their own contract with a no-op implementation of that interface.
+  Since P's state is never consumed, the attacker calls A's function
+  repeatedly in one transaction, draining the internal accounting variable.
+  This is Critical when internal accounting feeds into totalAssets/share
+  price. Look for: (a) no access control, (b) address param cast to
+  interface, (c) state read from different contract than the one called,
+  (d) internal state modified based on that read.
 
 #### 5d. Upgrade and Initialization Risks
 - Can a proxy upgrade of Contract A break assumptions in Contract B?

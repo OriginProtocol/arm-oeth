@@ -20,6 +20,7 @@ Incident-based vulnerability database for the scanner agent. Each entry document
 | Flash Loans | bzx, euler-finance, harvest-finance | Same-block balance manipulation; donation attacks; share price manipulation via direct transfer |
 | Oracle Manipulation | mango-markets | Single-block price reads; spot price as oracle; self-referencing price feeds |
 | Access Control | parity-multisig, ronin-bridge, wormhole | Missing modifiers on state-changing functions; uninitialized ownership; proxy initialization gaps |
+| Phantom Consumption | phantom-consumption | Permissionless function + user-supplied address cast to interface + internal state decremented from external read + external state never consumed by no-op call = repeatable drain |
 | Delegatecall | parity-wallet-kill | Delegatecall to user-controlled or destroyable address; library with selfdestruct |
 | Vault Inflation | euler-finance | First depositor attack; totalAssets manipulable by direct transfer; no dead shares/minimum deposit |
 | Bridge / Cross-chain | wormhole, nomad-bridge | Signature verification bypass; merkle proof validation; trusted relayer compromise |
@@ -44,6 +45,7 @@ Incident-based vulnerability database for the scanner agent. Each entry document
 | 2022-10-11 | Mango Markets | Oracle Manipulation | $117M | `2022-10-11-mango-markets.md` |
 | 2023-03-13 | Euler Finance | Flash Loan / Vault | $197M | `2023-03-13-euler-finance.md` |
 | 2023-07-30 | Curve / Vyper | Reentrancy | $70M | `2023-07-30-curve-vyper.md` |
+| 2025-01-01 | Generic Pattern | Phantom Consumption | Variable | `2025-01-01-phantom-consumption.md` |
 
 ---
 
@@ -110,11 +112,13 @@ Use this mapping to determine which categories to check for a given codebase:
 | ERC-4626 vault / share-based | Vault Inflation, Flash Loans, Precision/Rounding |
 | AMM / swap / DEX | Flash Loans, Oracle Manipulation, Frontrunning/MEV, Reentrancy |
 | Lending / borrowing | Flash Loans, Oracle Manipulation, Reentrancy, Precision/Rounding |
-| Withdrawal queue / async | Reentrancy, Precision/Rounding, Access Control |
+| Withdrawal queue / async | Reentrancy, Precision/Rounding, Access Control, Phantom Consumption |
 | Bridge / cross-chain | Bridge/Cross-chain, Access Control |
 | Governance / voting | Governance, Flash Loans |
 | Oracle consumer | Oracle Manipulation, Flash Loans |
 | Uses external calls | Reentrancy, Delegatecall |
+| Casts user-supplied address to interface | Phantom Consumption, Access Control |
+| Reads state from contract A, calls contract B | Phantom Consumption |
 | Upgradeable proxy | Access Control, Delegatecall |
 | Accepts native ETH | Reentrancy, Precision/Rounding |
 | Callback-capable tokens | Reentrancy |

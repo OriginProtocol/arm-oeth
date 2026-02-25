@@ -116,6 +116,9 @@ Use checklist IDs (e.g., V1, F6, D3) when referencing findings in review reports
 - **X6** — What if the call consumes all forwarded gas?
 - **X7** — Could massive return data cause out-of-gas?
 - **X8** — Don't assume `success` means the function exists (phantom functions)
+- **X9** — If a function casts a user-supplied address to an interface and calls it, can an attacker deploy a contract with a no-op implementation of that function? If so, what happens to internal accounting? (interface impersonation)
+- **X10** — If a function reads state from external contract A and then calls user-supplied contract B expecting B to consume/clear that state in A — what happens if B no-ops? Does the state in A persist, making the function repeatable? (unconsumed external state)
+- **X11** — For any permissionless function that decrements/modifies internal state based on external reads: can it be called repeatedly in one transaction with the same input if the external state is never consumed? (repeatable accounting drain)
 
 ## Static Calls
 
@@ -161,6 +164,8 @@ Use checklist IDs (e.g., V1, F6, D3) when referencing findings in review reports
 - **D9** — Token decimal range documented (min/max supported)
 - **D10** — Raw balance not used for share price / earnings calculation
 - **D11** — If contract holds approvals, no arbitrary calls from user input
+- **D12** — If a function modifies accounting based on external state reads but delegates the "cleanup" to a user-supplied address, can the cleanup be skipped? (phantom consumption attack). Example: function reads `protocol.balances(helper)`, decrements internal tracker, then calls `helper.withdraw()` — but if `helper` is attacker-deployed and `withdraw()` is a no-op, the protocol balance is never consumed and the function can be called again
+- **D13** — For any permissionless function accepting an address parameter: trace the full call chain. If the address is cast to an interface and called, can an attacker satisfy that interface with a malicious implementation? What are the consequences for internal state?
 
 ## Signature Security (Extended)
 

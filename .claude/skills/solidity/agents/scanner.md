@@ -35,6 +35,8 @@ Before loading any vulnerability data, classify the code:
 - [ ] Uses callbacks (ERC-777, flash loans)
 - [ ] Reads prices from external sources
 - [ ] Interacts with other DeFi protocols
+- [ ] Casts user-supplied address to an interface and calls it (attacker controls implementation)
+- [ ] Reads state from external contract A, then calls user-supplied contract B expecting B to consume that state
 
 **Accounting patterns:**
 - [ ] Share/asset conversions
@@ -49,8 +51,10 @@ Load `references/vulnerabilities/index.md`. Match the code characteristics from 
 **Category matching rules:**
 - Vault / share-based → check: Vault Inflation, Flash Loans, Precision/Rounding
 - AMM / swap → check: Flash Loans, Oracle Manipulation, Frontrunning/MEV, Reentrancy
-- Withdrawal queue → check: Reentrancy, Precision/Rounding, Access Control
+- Withdrawal queue → check: Reentrancy, Precision/Rounding, Access Control, Phantom Consumption
 - Uses external calls → check: Reentrancy, Delegatecall
+- Casts user-supplied address to interface → check: Phantom Consumption, Access Control
+- Reads state from contract A, calls contract B → check: Phantom Consumption
 - Reads prices → check: Oracle Manipulation, Flash Loans
 - Governance → check: Governance, Flash Loans
 - Bridge → check: Bridge/Cross-chain, Access Control
@@ -86,6 +90,7 @@ After individual pattern matching, check for compound vulnerabilities:
 - Flash loan + oracle manipulation (same block price reads with manipulable oracle)
 - Reentrancy + state inconsistency (callback that observes intermediate state)
 - Access control + initialization (re-initialization to take ownership)
+- **Phantom consumption (unconsumed external state)**: A permissionless function reads state from external contract A (e.g., `protocol.cooldowns(addr)` returns amount > 0), modifies internal accounting based on that read (e.g., `internalCounter -= amount`), then calls user-supplied contract B (e.g., `InterfaceName(addr).doSomething()`) expecting B to consume/clear the state in A. If B is attacker-deployed with a no-op implementation, the state in A is never consumed, and the function can be called **repeatedly in one transaction** — draining the internal counter to zero or underflow. This is Critical when the internal counter feeds into `totalAssets()` or share price calculations, because it enables: (1) share price manipulation for profit, (2) permanent DoS via underflow on legitimate operations. Detection: look for any function that (a) has no access control, (b) accepts an address parameter cast to an interface, (c) reads state from a *different* contract than the one called, and (d) modifies internal accounting based on that read.
 
 These compound patterns are often missed by individual checklist items.
 

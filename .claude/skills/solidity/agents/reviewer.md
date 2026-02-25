@@ -89,6 +89,7 @@ Flag any function where:
 - State changes happen after external calls (reentrancy risk)
 - Preconditions can be bypassed via specific parameter values
 - Events don't match the actual state change
+- **The function accepts an address parameter, casts it to an interface, and calls it** — an attacker can deploy their own contract with a no-op or malicious implementation of that interface. For each such function, ask: "What if the called contract does nothing?" If the function modifies internal state (e.g., decrements a counter) based on a read from a *different* external contract, and relies on the *called* contract to consume/invalidate that external state — a no-op implementation makes the attack repeatable. The external state persists, so the function can be called again and again in one transaction, draining the internal accounting variable to zero. This is a Critical-severity pattern when it affects accounting that feeds into share price or totalAssets calculations.
 
 ### Step 6: Security Checklist Scan
 
