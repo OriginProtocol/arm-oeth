@@ -1,124 +1,143 @@
-# Vulnerability Database Index
+# Vulnerability Pattern Database
 
-Incident-based vulnerability database for the scanner agent. Each entry documents a real-world exploit with the vulnerable pattern, detection heuristic, and mitigation.
+Pattern-based vulnerability database distilled from 95+ real-world DeFi exploits (2025). Each file documents a generalized attack pattern with detection heuristics, vulnerable code examples, and proof from actual incidents.
 
 **How to use this index:**
-1. Classify the code's characteristics (vault, AMM, bridge, etc.)
-2. Match against the category table below to find relevant vulnerability types
-3. Load only the incident files matching those categories
-4. Compare each incident's detection heuristic against the code under review
+1. Identify the code's characteristics (vault, AMM, oracle-consumer, etc.)
+2. Match against the Code Characteristic table below to find relevant patterns
+3. Load only the matching pattern files (keep to 3-5 patterns per review)
+4. Walk each pattern's detection heuristic checklist against the code under review
 
-**Adding new incidents:** Create a file named `YYYY-MM-DD-protocol.md` in this directory following the template at the bottom of this file, then add it to both tables below.
-
----
-
-## By Category
-
-| Category | Incidents | Key Detection Patterns |
-|----------|-----------|----------------------|
-| Reentrancy | the-dao, cream-finance, curve-vyper | State modified after external call; callback-capable tokens (ERC-777, ERC-4626); read-only reentrancy via view functions |
-| Flash Loans | bzx, euler-finance, harvest-finance | Same-block balance manipulation; donation attacks; share price manipulation via direct transfer |
-| Oracle Manipulation | mango-markets | Single-block price reads; spot price as oracle; self-referencing price feeds |
-| Access Control | parity-multisig, ronin-bridge, wormhole | Missing modifiers on state-changing functions; uninitialized ownership; proxy initialization gaps |
-| Phantom Consumption | phantom-consumption | Permissionless function + user-supplied address cast to interface + internal state decremented from external read + external state never consumed by no-op call = repeatable drain |
-| Delegatecall | parity-wallet-kill | Delegatecall to user-controlled or destroyable address; library with selfdestruct |
-| Vault Inflation | euler-finance | First depositor attack; totalAssets manipulable by direct transfer; no dead shares/minimum deposit |
-| Bridge / Cross-chain | wormhole, nomad-bridge | Signature verification bypass; merkle proof validation; trusted relayer compromise |
-| Governance | beanstalk | Flash loan + governance voting; same-block proposal + vote; no vote lock period |
-| Precision / Rounding | (various — check in context) | Division before multiplication; rounding direction favoring attacker; dust amount exploitation |
-| Frontrunning / MEV | (various — check in context) | Missing slippage protection; no deadline parameter; sandwich-vulnerable swaps |
-
-## Chronological
-
-| Date | Protocol | Category | Amount Lost | File |
-|------|----------|----------|-------------|------|
-| 2016-06-17 | The DAO | Reentrancy | $60M | `2016-06-17-the-dao.md` |
-| 2017-07-19 | Parity Multisig | Access Control | $31M | `2017-07-19-parity-multisig.md` |
-| 2017-11-06 | Parity Wallet | Delegatecall | $280M (frozen) | `2017-11-06-parity-wallet-kill.md` |
-| 2020-02-15 | bZx | Flash Loan | $350K | `2020-02-15-bzx.md` |
-| 2020-10-26 | Harvest Finance | Flash Loan / Oracle | $34M | `2020-10-26-harvest-finance.md` |
-| 2021-10-27 | Cream Finance | Reentrancy | $130M | `2021-10-27-cream-finance.md` |
-| 2022-02-02 | Wormhole | Access Control / Bridge | $326M | `2022-02-02-wormhole.md` |
-| 2022-03-23 | Ronin Bridge | Access Control | $624M | `2022-03-23-ronin-bridge.md` |
-| 2022-04-17 | Beanstalk | Governance | $182M | `2022-04-17-beanstalk.md` |
-| 2022-08-01 | Nomad Bridge | Bridge / Merkle | $190M | `2022-08-01-nomad-bridge.md` |
-| 2022-10-11 | Mango Markets | Oracle Manipulation | $117M | `2022-10-11-mango-markets.md` |
-| 2023-03-13 | Euler Finance | Flash Loan / Vault | $197M | `2023-03-13-euler-finance.md` |
-| 2023-07-30 | Curve / Vyper | Reentrancy | $70M | `2023-07-30-curve-vyper.md` |
-| 2025-01-01 | Generic Pattern | Phantom Consumption | Variable | `2025-01-01-phantom-consumption.md` |
+**Context budget:** index (~200 lines) + 3-5 patterns (~450-750 lines) = ~650-950 lines.
 
 ---
 
-## Incident File Template
+## Code Characteristic → Pattern Lookup
 
-Use this template when adding new incidents. Save as `YYYY-MM-DD-protocol.md` in this directory.
+Primary lookup table. Match the code under review to its characteristics, then load the listed patterns.
+
+| Code Characteristic | Load These Patterns |
+|---------------------|-------------------|
+| ERC-4626 vault / share-based | [share-price-inflation], [precision-rounding], [flash-loan-amplification] |
+| AMM / swap / DEX | [price-manipulation], [flash-loan-amplification], [slippage-protection-missing], [reentrancy] |
+| Lending / borrowing | [oracle-exploitation], [insolvency-check-bypass], [flash-loan-amplification], [precision-rounding] |
+| Withdrawal queue / async redemption | [logic-flaw-state-transition], [phantom-consumption], [reentrancy], [access-control-missing] |
+| Oracle consumer | [oracle-exploitation], [price-manipulation], [flash-loan-amplification] |
+| Proxy / upgradeable | [storage-collision], [access-control-missing] |
+| Accepts arbitrary calldata | [arbitrary-calldata], [access-control-missing] |
+| Fee-on-transfer / deflationary tokens | [deflationary-token-bugs], [precision-rounding] |
+| Staking / reward distribution | [reward-calculation-errors], [precision-rounding], [flash-loan-amplification] |
+| Signature-gated operations | [signature-validation], [access-control-missing] |
+| Holds approvals for users | [arbitrary-calldata], [access-control-missing] |
+| External call to user-supplied address | [phantom-consumption], [reentrancy], [arbitrary-calldata] |
+| Reads state from contract A, calls contract B | [phantom-consumption] |
+| Native ETH handling | [reentrancy], [slippage-protection-missing] |
+| Governance / voting | [flash-loan-amplification], [access-control-missing] |
+
+### ARM-Specific Mapping
+
+For ARM contracts (vault + AMM + withdrawal queue + proxy + oracle-consumer), always load:
+- [access-control-missing] — proxy initialization, operator functions
+- [logic-flaw-state-transition] — withdrawal queue state machine, claim/redeem flows
+- [precision-rounding] — share price calculation, fee computation, price scaling
+- [price-manipulation] — dual pricing, cross-price, trade rate manipulation
+- [share-price-inflation] — first depositor, donation attacks on LP shares
+
+---
+
+## Pattern Summary
+
+| Pattern | Severity | 2025 Incidents | Largest Loss | File |
+|---------|----------|---------------|-------------|------|
+| [Access Control Missing](./access-control-missing.md) | Critical | 19 | $12M | `access-control-missing.md` |
+| [Logic Flaw / State Transition](./logic-flaw-state-transition.md) | Critical | 19 | ~$104M | `logic-flaw-state-transition.md` |
+| [Price Manipulation](./price-manipulation.md) | High | 14 | $2M | `price-manipulation.md` |
+| [Precision / Rounding](./precision-rounding.md) | High | 3 | $120M | `precision-rounding.md` |
+| [Share Price Inflation](./share-price-inflation.md) | Critical | 2 | $41M | `share-price-inflation.md` |
+| [Oracle Exploitation](./oracle-exploitation.md) | High | 4 | $1M | `oracle-exploitation.md` |
+| [Arbitrary Calldata](./arbitrary-calldata.md) | Critical | 4 | $4.5M | `arbitrary-calldata.md` |
+| [Insolvency Check Bypass](./insolvency-check-bypass.md) | High | 3 | $1.8M | `insolvency-check-bypass.md` |
+| [Reentrancy](./reentrancy.md) | High | 3 | 137.9 BNB | `reentrancy.md` |
+| [Deflationary Token Bugs](./deflationary-token-bugs.md) | Medium | 4 | ~590k USDT | `deflationary-token-bugs.md` |
+| [Flash Loan Amplification](./flash-loan-amplification.md) | High | cross-cutting | — | `flash-loan-amplification.md` |
+| [Phantom Consumption](./phantom-consumption.md) | Critical | 1 | Variable | `phantom-consumption.md` |
+| [Reward Calculation Errors](./reward-calculation-errors.md) | Medium | 6 | $32k | `reward-calculation-errors.md` |
+| [Slippage Protection Missing](./slippage-protection-missing.md) | High | 3 | $442k | `slippage-protection-missing.md` |
+| [Signature Validation](./signature-validation.md) | High | 1 | $50k | `signature-validation.md` |
+| [Storage Collision](./storage-collision.md) | Critical | 1 | $353.8k | `storage-collision.md` |
+
+---
+
+## Cross-Reference: Checklist IDs
+
+Maps security-checklist.md IDs to relevant vulnerability patterns.
+
+| Checklist IDs | Pattern |
+|--------------|---------|
+| F6, F9, X3, X4 | [reentrancy] |
+| F9, F16, F17 | [access-control-missing] |
+| D3, D4, D5, O1-O7 | [oracle-exploitation], [price-manipulation] |
+| FL1, FL2, FL3, FL5 | [flash-loan-amplification], [share-price-inflation] |
+| MEV1, MEV2 | [slippage-protection-missing] |
+| C24, C47, D10 | [precision-rounding] |
+| D2, FL2 | [share-price-inflation] |
+| D8 | [deflationary-token-bugs] |
+| D11 | [arbitrary-calldata] |
+| D12, D13, X9, X10, X11 | [phantom-consumption] |
+| SIG1-SIG7, C10, C11 | [signature-validation] |
+| C7 | [storage-collision] |
+
+---
+
+## Adding New Patterns
+
+1. Create `pattern-name.md` following the template below
+2. Add entry to Pattern Summary table above
+3. Add code characteristics to the lookup table
+4. Cross-reference with security-checklist.md IDs
+
+### Pattern File Template
 
 ```markdown
----
-date: YYYY-MM-DD
-protocol: Protocol Name
-chain: Ethereum / Arbitrum / etc.
-amount_lost: $XXM
-category: Primary Category / Secondary Category
-severity: Critical
-recovered: Yes / No / Partial ($XM)
----
+# {Pattern Name}
 
-# Protocol Name (Month Year)
+{Summary paragraph: what, why dangerous, typical impact.}
 
-## Summary
-One paragraph: what happened, who was affected, immediate impact.
+**Severity**: Critical / High / Medium
+**Checklist IDs**: F9, D3, etc. (from security-checklist.md)
+**Code Characteristics**: vault, AMM, oracle-consumer, etc.
 
 ## Root Cause
-Technical explanation of the vulnerability. Focus on the specific code pattern
-that was exploitable, not the full attack transaction sequence.
+{2-3 paragraphs, generalized.}
 
 ## Vulnerable Code Pattern
-```solidity
-// Simplified, generalized pattern showing the vulnerability
-// Not the actual protocol code — a pattern others can match against
-function vulnerableFunction(uint256 amount) external {
-    // Explain what's wrong with inline comments
-}
-` ` `
+` ``solidity
+// VULNERABLE — {label}
+` ``
+
+### Variants
+{2-3 code variations of the same root pattern}
 
 ## Detection Heuristic
-What to look for in code to spot this pattern:
-- [ ] Heuristic check 1
-- [ ] Heuristic check 2
-- [ ] Heuristic check 3
-- [ ] Heuristic check 4
+- [ ] Condition 1
+- [ ] Condition 2
+If all met: {Severity}. If partial: investigate further.
 
 ## Fix / Mitigation
-How to prevent this vulnerability:
-- Mitigation 1 (with code example if helpful)
-- Mitigation 2
-- Mitigation 3
+1. {Fix with code example}
 
-## References
-- [Post-mortem or analysis link]
-- [Audit report if available]
-- [Transaction hash if public]
+## Proof (2025 Incidents)
+| Protocol | Date | Loss | Variant | PoC |
+|----------|------|------|---------|-----|
+
+## Related Patterns
+- [pattern-name](./pattern-name.md) — relationship
 ```
 
 ---
 
-## Category → Code Characteristic Mapping
+## Coverage Notes
 
-Use this mapping to determine which categories to check for a given codebase:
+**Excluded from database** (~7 incidents): rug pulls (trust/social issue, not code vulnerability), phishing/social engineering, weak randomness (niche, not DeFi-specific). These are operational/trust failures, not auditable code patterns.
 
-| Code Characteristic | Check These Categories |
-|--------------------|----------------------|
-| ERC-4626 vault / share-based | Vault Inflation, Flash Loans, Precision/Rounding |
-| AMM / swap / DEX | Flash Loans, Oracle Manipulation, Frontrunning/MEV, Reentrancy |
-| Lending / borrowing | Flash Loans, Oracle Manipulation, Reentrancy, Precision/Rounding |
-| Withdrawal queue / async | Reentrancy, Precision/Rounding, Access Control, Phantom Consumption |
-| Bridge / cross-chain | Bridge/Cross-chain, Access Control |
-| Governance / voting | Governance, Flash Loans |
-| Oracle consumer | Oracle Manipulation, Flash Loans |
-| Uses external calls | Reentrancy, Delegatecall |
-| Casts user-supplied address to interface | Phantom Consumption, Access Control |
-| Reads state from contract A, calls contract B | Phantom Consumption |
-| Upgradeable proxy | Access Control, Delegatecall |
-| Accepts native ETH | Reentrancy, Precision/Rounding |
-| Callback-capable tokens | Reentrancy |
+**Cross-cutting pattern**: [flash-loan-amplification] is not a standalone vulnerability but an amplifier. It appears alongside price manipulation, share inflation, oracle exploitation, and rounding errors. Always check it when any of those patterns are flagged.
