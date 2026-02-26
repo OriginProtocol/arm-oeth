@@ -246,6 +246,35 @@ contract Unit_Concrete_OriginARM_Deposit_Test_ is Unit_Shared_Test {
         originARM.deposit(DEFAULT_AMOUNT);
     }
 
+    /// @notice Attacker deposit is blocked when the ARM is insolvent due to a partial WETH loss.
+    /// Scenario (Immunefi #67167):
+    ///   1. Alice deposits and immediately requests a full redeem.
+    ///   2. While Alice waits to claim, the ARM suffers a 10% loss (e.g., lending market slashing).
+    ///   3. An attacker tries to deposit to dilute Alice's claim — blocked by the insolvent guard.
+    /// Without the guard, the attacker would acquire nearly all shares at the floored price and
+    /// capture Alice's remaining WETH when Alice's claim pays min(request.assets, convertToAssets).
+    function test_RevertWhen_Deposit_Because_Insolvent_WithSmallLoss()
+        public
+        deposit(alice, DEFAULT_AMOUNT)
+        requestRedeemAll(alice)
+    {
+        // Simulate a 10% loss on Alice's deposit (e.g., lending market slashing).
+        // rawTotal = MIN_TOTAL_SUPPLY + 0.9 * DEFAULT_AMOUNT < outstanding = DEFAULT_AMOUNT → insolvent
+        uint256 wethAfterLoss = MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT * 9 / 10;
+        deal(address(weth), address(originARM), wethAfterLoss);
+
+        assertEq(originARM.totalAssets(), MIN_TOTAL_SUPPLY, "totalAssets should be floored at MIN_TOTAL_SUPPLY");
+        assertGt(originARM.withdrawsQueued(), originARM.withdrawsClaimed(), "should have outstanding requests");
+
+        // Attacker (bob) attempts to deposit to dilute Alice's claim — must be blocked
+        deal(address(weth), bob, DEFAULT_AMOUNT);
+        vm.startPrank(bob);
+        weth.approve(address(originARM), DEFAULT_AMOUNT);
+        vm.expectRevert("ARM: insolvent");
+        originARM.deposit(DEFAULT_AMOUNT);
+        vm.stopPrank();
+    }
+
     /// @notice Deposit is allowed when there are outstanding requests but the ARM remains solvent.
     /// Documents the totalAssets() > MIN_TOTAL_SUPPLY branch of the insolvent guard.
     /// Alice deposits 2x and redeems 50%, leaving LP equity = MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT.
