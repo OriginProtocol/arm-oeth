@@ -230,11 +230,7 @@ contract Unit_Concrete_OriginARM_Deposit_Test_ is Unit_Shared_Test {
 
     /// @notice Deposit reverts when the ARM is insolvent (totalAssets floored to MIN_TOTAL_SUPPLY)
     /// and there are outstanding withdrawal requests (withdrawsQueued > withdrawsClaimed).
-    function test_RevertWhen_Deposit_Because_Insolvent()
-        public
-        deposit(alice, DEFAULT_AMOUNT)
-        requestRedeemAll(alice)
-    {
+    function test_RevertWhen_Deposit_Because_Insolvent() public deposit(alice, DEFAULT_AMOUNT) requestRedeemAll(alice) {
         // Drain all WETH → rawTotal (0) < outstanding (DEFAULT_AMOUNT) → insolvent
         deal(address(weth), address(originARM), 0);
 
@@ -282,6 +278,7 @@ contract Unit_Concrete_OriginARM_Deposit_Test_ is Unit_Shared_Test {
         public
         deposit(alice, DEFAULT_AMOUNT * 2)
         requestRedeem(alice, 5e17) // 50% of alice's shares → DEFAULT_AMOUNT queued
+
     {
         // rawTotal = MIN_TOTAL_SUPPLY + 2*DEFAULT_AMOUNT, outstanding = DEFAULT_AMOUNT
         // totalAssets() = MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT > MIN_TOTAL_SUPPLY → solvent
