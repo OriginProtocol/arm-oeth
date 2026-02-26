@@ -97,6 +97,22 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         lidoARM.deposit((DEFAULT_AMOUNT / 2) - MIN_TOTAL_SUPPLY + 1); // This should revert!
     }
 
+    function test_RevertWhen_Deposit_Because_Insolvent()
+        public
+        setTotalAssetsCap(DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY)
+        setLiquidityProviderCap(address(this), DEFAULT_AMOUNT)
+        depositInLidoARM(address(this), DEFAULT_AMOUNT)
+        requestRedeemFromLidoARM(address(this), DEFAULT_AMOUNT)
+    {
+        // Drain all WETH → rawTotal (0) < outstanding (DEFAULT_AMOUNT) → insolvent
+        deal(address(weth), address(lidoARM), 0);
+
+        assertEq(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY, "totalAssets should be floored at MIN_TOTAL_SUPPLY");
+
+        vm.expectRevert("ARM: insolvent");
+        lidoARM.deposit(DEFAULT_AMOUNT);
+    }
+
     //////////////////////////////////////////////////////
     /// --- PASSING TESTS
     //////////////////////////////////////////////////////
