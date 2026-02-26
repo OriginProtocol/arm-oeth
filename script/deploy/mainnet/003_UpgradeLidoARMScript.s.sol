@@ -56,11 +56,14 @@ contract $003_UpgradeLidoARMMainnetScript is AbstractDeployScript("003_UpgradeLi
     }
 
     function _fork() internal override {
-        vm.startPrank(Mainnet.ARM_MULTISIG);
+        Proxy lidoARMProxy_ = Proxy(payable(resolver.resolve("LIDO_ARM")));
+        address lidoARMImpl_ = resolver.resolve("LIDO_ARM_IMPL");
+        address capManProxy_ = resolver.resolve("LIDO_ARM_CAP_MAN");
 
-        if (lidoARMProxy == Proxy(payable(address(0)))) {
-            revert("Lido ARM proxy not found");
-        }
+        // Skip if already upgraded on-chain
+        if (lidoARMProxy_.implementation() == lidoARMImpl_) return;
+
+        vm.startPrank(Mainnet.ARM_MULTISIG);
 
         // remove all liquidity from the old AMM v1 contract
         uint256 wethLegacyBalance = IERC20(Mainnet.WETH).balanceOf(Mainnet.LIDO_ARM);
@@ -81,15 +84,15 @@ contract $003_UpgradeLidoARMMainnetScript is AbstractDeployScript("003_UpgradeLi
             Mainnet.ARM_RELAYER,
             2000, // 20% performance fee
             Mainnet.ARM_BUYBACK,
-            address(capManProxy)
+            capManProxy_
         );
 
         // Approve the Lido ARM proxy to spend WETH
-        IERC20(Mainnet.WETH).approve(address(lidoARMProxy), type(uint256).max);
+        IERC20(Mainnet.WETH).approve(address(lidoARMProxy_), type(uint256).max);
 
         // upgrade and initialize the Lido ARM
-        lidoARMProxy.upgradeToAndCall(address(lidoARMImpl), data);
-        lidoARM = LidoARM(payable(Mainnet.LIDO_ARM));
+        lidoARMProxy_.upgradeToAndCall(lidoARMImpl_, data);
+        LidoARM lidoARM_ = LidoARM(payable(Mainnet.LIDO_ARM));
 
         // Set the price that buy and sell prices can not cross
         LidoARM(payable(Mainnet.LIDO_ARM)).setCrossPrice(0.9998e36);
@@ -99,13 +102,11 @@ contract $003_UpgradeLidoARMMainnetScript is AbstractDeployScript("003_UpgradeLi
         LidoARM(payable(Mainnet.LIDO_ARM)).setPrices(0.99975e36, 0.9999e36);
 
         // transfer ownership of the Lido ARM proxy to the mainnet 5/8 multisig
-        lidoARMProxy.setOwner(Mainnet.GOV_MULTISIG);
+        lidoARMProxy_.setOwner(Mainnet.GOV_MULTISIG);
 
         // Deposit 10 WETH to the Lido ARM
-        lidoARM.deposit(10 ether);
+        lidoARM_.deposit(10 ether);
 
         vm.stopPrank();
     }
 }
-// "/Users/clement/Documents/Travail/Origin/2-SC/arm-oeth/out/016_UpdateLidoARMCrossPriceScript.sol/$016_UpdateLidoARMCrossPriceScript.json
-// "/Users/clement/Documents/Travail/Origin/2-SC/arm-oeth/out/016_UpdateLidoARMCrossPriceScript.sol/$016_UpgradeLidoARMCrossPriceScript.json

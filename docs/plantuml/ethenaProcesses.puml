@@ -51,7 +51,7 @@ note right: emit unstaker, base amount, liquid amount
 
 ... 7 day cooldown ...
 
-any -> arm : claimBaseWithdrawals(\n  unstaker)
+any -> arm : claimBaseWithdrawals(\n  unstakerIndex)
 activate arm
 
 arm -> mint : cooldowns(\n  unstaker)

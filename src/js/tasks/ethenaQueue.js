@@ -48,7 +48,7 @@ const fetchUnstakerStates = async (signer, addresses) => {
 
   // Promise.all executes all RPC calls simultaneously
   return Promise.all(
-    addresses.map(async (addr) => {
+    addresses.map(async (addr, index) => {
       const [cooldownEnd, underlyingAmount] = await contract.cooldowns(addr);
       const amountStr = formatUnits(underlyingAmount, 18);
       const isBalancePositive = underlyingAmount > 0;
@@ -69,6 +69,7 @@ const fetchUnstakerStates = async (signer, addresses) => {
 
       return {
         address: addr,
+        index, // Index in the unstakers array
         rawAmount: underlyingAmount, // Keep BigNumber for calculations
         amount: amountStr, // String for display
         hasBalance: isBalancePositive,
@@ -128,7 +129,7 @@ const claimEthenaWithdrawals = async (options) => {
     for (const item of claimable) {
       log(` - Processing claim for: ${item.address} (${item.amount} USDe)`);
       try {
-        const tx = await arm.connect(signer).claimBaseWithdrawals(item.address);
+        const tx = await arm.connect(signer).claimBaseWithdrawals(item.index);
         await logTxDetails(tx, `claimEthenaWithdrawal for ${item.address}`);
       } catch (err) {
         log(`Error claiming for ${item.address}: ${err.message}`);

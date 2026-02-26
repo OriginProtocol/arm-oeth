@@ -17,7 +17,7 @@
       "name": "ETHENA_ARM_CAP_MAN"
     },
     {
-      "implementation": "0x11E6bEe1662a2E2B20A7163CC33334fa1cf19979",
+      "implementation": "0xFB9d740577db685E11AA5ffF28CBcD1063f34943",
       "name": "ETHENA_ARM_IMPL"
     },
     {
@@ -218,6 +218,12 @@
       "name": "019_DeployPendleAdaptor_EtherFi",
       "proposalId": 1,
       "tsDeployment": 1770793835,
+      "tsGovernance": 1
+    }, 
+    {
+      "name": "020_UpgradeEthenaARMScript",
+      "proposalId": 1,
+      "tsDeployment": 1771799051,
       "tsGovernance": 1
     }
   ]

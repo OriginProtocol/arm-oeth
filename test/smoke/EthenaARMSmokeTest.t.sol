@@ -236,9 +236,8 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
         skip(7 days);
 
         // Claim the withdrawal
-        address unstaker = ethenaARM.unstakers(nextUnstakerIndex);
         vm.prank(Mainnet.ARM_RELAYER);
-        ethenaARM.claimBaseWithdrawals(unstaker);
+        ethenaARM.claimBaseWithdrawals(uint8(nextUnstakerIndex));
     }
 
     // Allocate to market

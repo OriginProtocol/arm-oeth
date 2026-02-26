@@ -19,22 +19,30 @@ contract Fork_Concrete_EthenaARM_ClaimBaseWithdrawals_Test_ is Fork_Shared_Test 
         ethenaARM.requestBaseWithdrawal(AMOUNT_IN);
 
         uint256 amountOut = susde.convertToAssets(AMOUNT_IN);
-        address unstakerAddress = ethenaARM.unstakers(ethenaARM.nextUnstakerIndex() - 1);
+        uint8 unstakerIndex = ethenaARM.nextUnstakerIndex() - 1;
+        address unstakerAddress = ethenaARM.unstakers(unstakerIndex);
         skip(7 days + 1);
 
         vm.expectEmit({emitter: address(ethenaARM)});
         emit EthenaARM.ClaimBaseWithdrawals(unstakerAddress, amountOut);
-        ethenaARM.claimBaseWithdrawals(unstakerAddress);
+        ethenaARM.claimBaseWithdrawals(unstakerIndex);
     }
 
     //////////////////////////////////////////////////////
     /// --- REVERT TESTS
     //////////////////////////////////////////////////////
     function test_RevertWhen_ClaimBaseWithdrawals_NoCooldownAmount() public {
-        address unstakerAddress = ethenaARM.unstakers(0);
-
         vm.expectRevert("EthenaARM: No cooldown amount");
-        ethenaARM.claimBaseWithdrawals(unstakerAddress);
+        ethenaARM.claimBaseWithdrawals(0);
+    }
+
+    function test_RevertWhen_ClaimBaseWithdrawals_InvalidUnstakerIndex() public {
+        address[42] memory emptyUnstakers;
+        vm.prank(ethenaARM.owner());
+        ethenaARM.setUnstakers(emptyUnstakers);
+
+        vm.expectRevert("EthenaARM: Invalid unstaker");
+        ethenaARM.claimBaseWithdrawals(0);
     }
 
     function test_RevertWhen_ClaimBaseWithdrawals_InvalidUnstaker() public {
