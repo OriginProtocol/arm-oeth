@@ -31,6 +31,8 @@ contract CapManager is Initializable, OwnableOperable {
 
     constructor(address _arm) {
         arm = _arm;
+
+        _setOwner(address(0)); // Revoke owner for implementation contract at deployment
     }
 
     function initialize(address _operator) external initializer {
