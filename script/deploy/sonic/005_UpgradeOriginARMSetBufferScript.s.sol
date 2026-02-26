@@ -24,11 +24,15 @@ contract $005_UpgradeOriginARMSetBufferScript is AbstractDeployScript("005_Upgra
 
     function _fork() internal override {
         Proxy originARMProxy = Proxy(payable(resolver.resolve("ORIGIN_ARM")));
+        address impl = resolver.resolve("ORIGIN_ARM_IMPL");
+
+        // Skip if already upgraded on-chain
+        if (originARMProxy.implementation() == impl) return;
 
         vm.startPrank(Sonic.TIMELOCK);
 
         // 1. Upgrade OriginARM Proxy to the new implementation
-        originARMProxy.upgradeTo(address(originARMImpl));
+        originARMProxy.upgradeTo(impl);
 
         // 2. Kill cap manager
         OriginARM(address(originARMProxy)).setCapManager(address(0));

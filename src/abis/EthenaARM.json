@@ -817,9 +817,9 @@
     {
         "inputs": [
             {
-                "internalType": "address",
-                "name": "unstaker",
-                "type": "address"
+                "internalType": "uint8",
+                "name": "unstakerIndex",
+                "type": "uint8"
             }
         ],
         "name": "claimBaseWithdrawals",

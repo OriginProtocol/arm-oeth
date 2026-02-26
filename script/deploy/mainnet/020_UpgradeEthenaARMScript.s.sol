@@ -1,24 +1,23 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
-// Contract
+// Contract imports
 import {Proxy} from "contracts/Proxy.sol";
-import {Mainnet} from "contracts/utils/Addresses.sol";
 import {EthenaARM} from "contracts/EthenaARM.sol";
+import {Mainnet} from "contracts/utils/Addresses.sol";
 
 // Deployment
 import {AbstractDeployScript} from "script/deploy/helpers/AbstractDeployScript.s.sol";
 
-contract $015_UpgradeEthenaARMScript is AbstractDeployScript("015_UpgradeEthenaARMScript") {
+contract $020_UpgradeEthenaARMScript is AbstractDeployScript("020_UpgradeEthenaARMScript") {
     EthenaARM armImpl;
 
     function _execute() internal override {
         // 1. Deploy new ARM implementation
-        uint256 claimDelay = 10 minutes;
         armImpl = new EthenaARM(
             Mainnet.USDE,
             Mainnet.SUSDE,
-            claimDelay,
+            10 minutes, // claimDelay
             1e18, // minSharesToRedeem
             100e18 // allocateThreshold
         );
@@ -37,4 +36,3 @@ contract $015_UpgradeEthenaARMScript is AbstractDeployScript("015_UpgradeEthenaA
         vm.stopPrank();
     }
 }
-

@@ -173,7 +173,20 @@ contract DeployManager is Base {
         // Script was already deployed - check governance status
         uint256 proposalId = resolver.proposalIds(deployFileName);
 
-        if (proposalId == NO_GOVERNANCE) return;
+        if (proposalId == NO_GOVERNANCE) {
+            // Scripts reach here when tsGovernance == 0 (pending manual actions like
+            // multisig proxy upgrades). Scripts with tsGovernance == NO_GOVERNANCE (1)
+            // are already skipped by _canSkipDeployFile for speed.
+            // The _fork() implementation should be idempotent — checking on-chain state
+            // (e.g., proxy.implementation()) before acting, so it's safe to call repeatedly.
+            bool isSimulation = state == State.FORK_TEST || state == State.FORK_DEPLOYING;
+            if (isSimulation) {
+                log.section(string.concat("Running fork: ", deployFileName));
+                deployFile.runFork();
+                log.endSection();
+            }
+            return;
+        }
 
         // proposalId == 0: governance pending (not yet submitted)
         if (proposalId == 0) {
@@ -197,15 +210,20 @@ contract DeployManager is Base {
     }
 
     /// @notice Checks if a deployment file can be entirely skipped.
-    /// @dev A file can be skipped if it's in the execution history AND:
-    ///      - No governance needed (proposalId == NO_GOVERNANCE), OR
-    ///      - Governance was executed (tsGovernance != 0) AND at/before current block
+    /// @dev A file can be skipped if it's in the execution history AND
+    ///      tsGovernance is non-zero and at/before the current block.
+    ///      This covers:
+    ///      - NO_GOVERNANCE scripts with tsGovernance == NO_GOVERNANCE (1): fully done, skip for speed
+    ///      - Governance scripts with tsGovernance set to execution timestamp: fully done
+    ///      Scripts with tsGovernance == 0 are NOT skipped, as they have pending actions
+    ///      (governance proposals or manual actions like multisig upgrades).
+    ///      Their _fork() should be idempotent (check on-chain state before acting).
+    ///      Once all on-chain actions are confirmed, set tsGovernance to NO_GOVERNANCE (1)
+    ///      in the deployment JSON to avoid unnecessary compilation in future fork tests.
     /// @param scriptName The unique name of the deployment script
     /// @return True if the file can be skipped (no need to compile/deploy)
     function _canSkipDeployFile(string memory scriptName) internal view returns (bool) {
         if (!resolver.executionExists(scriptName)) return false;
-        uint256 proposalId = resolver.proposalIds(scriptName);
-        if (proposalId == NO_GOVERNANCE) return true;
         uint256 tsGovernance = resolver.tsGovernances(scriptName);
         return tsGovernance != 0 && block.timestamp >= tsGovernance;
     }

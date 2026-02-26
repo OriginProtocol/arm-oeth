@@ -105,8 +105,10 @@ contract EthenaARM is Initializable, AbstractARM {
 
     /// @notice Claim all the USDe that is now claimable from the Staked USDe contract.
     /// Reverts with `InvalidCooldown` from the Staked USDe contract if the cooldown period has not yet passed.
-    function claimBaseWithdrawals(address unstaker) external {
-        UserCooldown memory cooldown = susde.cooldowns(address(unstaker));
+    function claimBaseWithdrawals(uint8 unstakerIndex) external {
+        address unstaker = unstakers[unstakerIndex];
+        require(unstaker != address(0), "EthenaARM: Invalid unstaker");
+        UserCooldown memory cooldown = susde.cooldowns(unstaker);
         require(cooldown.underlyingAmount > 0, "EthenaARM: No cooldown amount");
 
         liquidityAmountInCooldown -= cooldown.underlyingAmount;
