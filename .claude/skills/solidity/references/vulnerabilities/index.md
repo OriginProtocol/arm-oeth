@@ -18,10 +18,10 @@ Primary lookup table. Match the code under review to its characteristics, then l
 
 | Code Characteristic | Load These Patterns |
 |---------------------|-------------------|
-| ERC-4626 vault / share-based | [share-price-inflation], [precision-rounding], [flash-loan-amplification] |
+| ERC-4626 vault / share-based | [share-price-inflation], [precision-rounding], [flash-loan-amplification], [insolvency-deposit-dilution] |
 | AMM / swap / DEX | [price-manipulation], [flash-loan-amplification], [slippage-protection-missing], [reentrancy] |
 | Lending / borrowing | [oracle-exploitation], [insolvency-check-bypass], [flash-loan-amplification], [precision-rounding] |
-| Withdrawal queue / async redemption | [logic-flaw-state-transition], [phantom-consumption], [reentrancy], [access-control-missing] |
+| Withdrawal queue / async redemption | [logic-flaw-state-transition], [phantom-consumption], [reentrancy], [access-control-missing], [insolvency-deposit-dilution] |
 | Oracle consumer | [oracle-exploitation], [price-manipulation], [flash-loan-amplification] |
 | Proxy / upgradeable | [storage-collision], [access-control-missing] |
 | Accepts arbitrary calldata | [arbitrary-calldata], [access-control-missing] |
@@ -42,6 +42,7 @@ For ARM contracts (vault + AMM + withdrawal queue + proxy + oracle-consumer), al
 - [precision-rounding] — share price calculation, fee computation, price scaling
 - [price-manipulation] — dual pricing, cross-price, trade rate manipulation
 - [share-price-inflation] — first depositor, donation attacks on LP shares
+- [insolvency-deposit-dilution] — deposit during insolvency to dilute pending claims
 
 ---
 
@@ -65,6 +66,7 @@ For ARM contracts (vault + AMM + withdrawal queue + proxy + oracle-consumer), al
 | [Slippage Protection Missing](./slippage-protection-missing.md) | High | 3 | $442k | `slippage-protection-missing.md` |
 | [Signature Validation](./signature-validation.md) | High | 1 | $50k | `signature-validation.md` |
 | [Storage Collision](./storage-collision.md) | Critical | 1 | $353.8k | `storage-collision.md` |
+| [Insolvency Deposit Dilution](./insolvency-deposit-dilution.md) | Critical | 1 | ~80%+ LP principal | `insolvency-deposit-dilution.md` |
 
 ---
 
@@ -84,6 +86,7 @@ Maps security-checklist.md IDs to relevant vulnerability patterns.
 | D8 | [deflationary-token-bugs] |
 | D11 | [arbitrary-calldata] |
 | D12, D13, X9, X10, X11 | [phantom-consumption] |
+| D14, D15, D16 | [insolvency-deposit-dilution] |
 | SIG1-SIG7, C10, C11 | [signature-validation] |
 | C7 | [storage-collision] |
 

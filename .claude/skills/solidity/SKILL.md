@@ -139,6 +139,7 @@ For each contract, attempt these attack strategies:
 6. **Privilege escalation** — can a lower-privileged role perform higher-privileged actions through any code path?
 7. **Oracle/price manipulation** — can any price or exchange rate be manipulated within a single transaction?
 8. **Interface impersonation** — where user-supplied addresses are cast to interfaces, what happens if the implementation is a no-op or malicious?
+9. **Adversarial state modeling** — for every permissionless entry point (deposit, swap, claim, liquidate), model what happens when the system is in an extreme but realistic state: insolvency (assets < obligations), zero liquidity, max utilization, post-slashing, post-depeg. The attacker does not need to create the extreme state — they wait for or observe a natural event, then exploit the state. Specifically for vaults: if `totalAssets()` has a floor, can an attacker deposit during insolvency to acquire cheap shares and dilute pending claims?
 
 ### Self-Correction Rule
 

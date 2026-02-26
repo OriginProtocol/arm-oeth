@@ -166,6 +166,9 @@ Use checklist IDs (e.g., V1, F6, D3) when referencing findings in review reports
 - **D11** — If contract holds approvals, no arbitrary calls from user input
 - **D12** — If a function modifies accounting based on external state reads but delegates the "cleanup" to a user-supplied address, can the cleanup be skipped? (phantom consumption attack). Example: function reads `protocol.balances(helper)`, decrements internal tracker, then calls `helper.withdraw()` — but if `helper` is attacker-deployed and `withdraw()` is a no-op, the protocol balance is never consumed and the function can be called again
 - **D13** — For any permissionless function accepting an address parameter: trace the full call chain. If the address is cast to an interface and called, can an attacker satisfy that interface with a malicious implementation? What are the consequences for internal state?
+- **D14** — If `totalAssets()` has a floor or minimum value: is `deposit()` / `mint()` still callable when the floor is active? What share price does the depositor receive at the floor? Can they acquire a dominant share position cheaply and dilute existing claims? (insolvency deposit dilution)
+- **D15** — For systems with withdrawal queues: does the claim payout (`min(requested, currentShareValue)`) diverge from the claim accounting (`withdrawsClaimed += requested`)? During extreme dilution, the payout approaches zero while accounting clears the full obligation — freeing assets for the diluter
+- **D16** — For every permissionless entry point (`deposit`, `swap`, `claim`): model what happens when the system is in an extreme but realistic state (insolvency, zero liquidity, max utilization). The attacker doesn't need to create the extreme state — they wait for natural events (slashing, depeg, market loss) then exploit the state
 
 ## Signature Security (Extended)
 
