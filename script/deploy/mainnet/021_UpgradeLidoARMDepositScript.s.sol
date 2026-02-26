@@ -9,7 +9,7 @@ import {Mainnet} from "contracts/utils/Addresses.sol";
 import {AbstractDeployScript} from "script/deploy/helpers/AbstractDeployScript.s.sol";
 import {GovHelper, GovProposal} from "script/deploy/helpers/GovHelper.sol";
 
-contract $020_UpgradeLidoARMScript is AbstractDeployScript("020_UpgradeLidoARMScript") {
+contract $021_UpgradeLidoARMDepositScript is AbstractDeployScript("021_UpgradeLidoARMDepositScript") {
     using GovHelper for GovProposal;
 
     function _execute() internal override {
@@ -17,8 +17,9 @@ contract $020_UpgradeLidoARMScript is AbstractDeployScript("020_UpgradeLidoARMSc
         uint256 claimDelay = 10 minutes;
         uint256 minSharesToRedeem = 1e7;
         int256 allocateThreshold = 1e18;
-        LidoARM lidoARMImpl =
-            new LidoARM(Mainnet.STETH, Mainnet.WETH, Mainnet.LIDO_WITHDRAWAL, claimDelay, minSharesToRedeem, allocateThreshold);
+        LidoARM lidoARMImpl = new LidoARM(
+            Mainnet.STETH, Mainnet.WETH, Mainnet.LIDO_WITHDRAWAL, claimDelay, minSharesToRedeem, allocateThreshold
+        );
         _recordDeployment("LIDO_ARM_IMPL", address(lidoARMImpl));
     }
 

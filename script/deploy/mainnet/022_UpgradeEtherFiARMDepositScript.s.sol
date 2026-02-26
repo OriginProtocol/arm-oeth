@@ -9,7 +9,7 @@ import {Mainnet} from "contracts/utils/Addresses.sol";
 // Deployment
 import {AbstractDeployScript} from "script/deploy/helpers/AbstractDeployScript.s.sol";
 
-contract $021_UpgradeEtherFiARMScript is AbstractDeployScript("021_UpgradeEtherFiARMScript") {
+contract $022_UpgradeEtherFiARMDepositScript is AbstractDeployScript("022_UpgradeEtherFiARMDepositScript") {
     EtherFiARM etherFiARMImpl;
 
     function _execute() internal override {

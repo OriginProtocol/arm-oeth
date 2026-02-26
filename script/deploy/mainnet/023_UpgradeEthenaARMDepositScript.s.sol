@@ -9,7 +9,7 @@ import {Mainnet} from "contracts/utils/Addresses.sol";
 // Deployment
 import {AbstractDeployScript} from "script/deploy/helpers/AbstractDeployScript.s.sol";
 
-contract $022_UpgradeEthenaARMScript is AbstractDeployScript("022_UpgradeEthenaARMScript") {
+contract $023_UpgradeEthenaARMDepositScript is AbstractDeployScript("023_UpgradeEthenaARMDepositScript") {
     EthenaARM armImpl;
 
     function _execute() internal override {
