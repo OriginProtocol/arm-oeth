@@ -550,6 +550,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
     /// @dev Internal logic for depositing liquidity assets in exchange for liquidity provider (LP) shares.
     function _deposit(uint256 assets, address receiver) internal returns (uint256 shares) {
+        // Do not allow deposits if the ARM can not meet all its withdrawal obligations.
+        require(totalAssets() > MIN_TOTAL_SUPPLY || withdrawsQueued == withdrawsClaimed, "ARM: insolvent");
+
         // Calculate the amount of shares to mint after the performance fees have been accrued
         // which reduces the available assets, and before new assets are deposited.
         shares = convertToShares(assets);
@@ -717,6 +720,11 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
         // total assets should only go up from the initial deposit amount that is burnt
         // but in case of something unforeseen, return at least MIN_TOTAL_SUPPLY.
+        // An example scenario that will return MIN_TOTAL_SUPPLY is:
+        // First LP deposits and then requests a redeem of all their ARM shares.
+        // While waiting to claim their request, the ARM suffer a loss of assets. eg lending market loss.
+        // When they claim their request, the newAvailableAssets will be zero as
+        // the ARM assets will be less than the outstanding withdrawal request that was calculated before the loss.
         if (fees + MIN_TOTAL_SUPPLY >= newAvailableAssets) return MIN_TOTAL_SUPPLY;
 
         // Remove the performance fee from the available assets
