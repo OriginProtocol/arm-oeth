@@ -72,6 +72,17 @@
     "inputs": [
       {
         "internalType": "uint256",
+        "name": "fees",
+        "type": "uint256"
+      }
+    ],
+    "name": "FeesTooHigh",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
         "name": "allowedSlippageBps",
         "type": "uint256"
       }
@@ -638,6 +649,11 @@
       {
         "internalType": "uint256",
         "name": "fromAssetAmount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "fees",
         "type": "uint256"
       },
       {
