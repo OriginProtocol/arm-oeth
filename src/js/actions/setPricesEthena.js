@@ -22,30 +22,26 @@ const handler = async (event) => {
   // References to contracts
   const arm = new ethers.Contract(mainnet.ethenaARM, armAbi, signer);
 
-  try {
-    await setPrices({
-      signer,
-      arm,
-      // sellPrice: 0.9998,
-      // buyPrice: 0.9997,
-      maxSellPrice: 0.9999,
-      minSellPrice: 0.9997,
-      maxBuyPrice: 0.999,
-      minBuyPrice: 0.995,
-      // inch: true,
-      // curve: true,
-      kyber: true,
-      amount: 2000,
-      tolerance: 0.3,
-      fee: 2,
-      offset: 0.4,
-      priceOffset: true,
-      blockTag: "latest",
-      wrapped: true,
-    });
-  } catch (error) {
-    console.error(error);
-  }
+  await setPrices({
+    signer,
+    arm,
+    // sellPrice: 0.9998,
+    // buyPrice: 0.9997,
+    maxSellPrice: 0.9999,
+    minSellPrice: 0.9997,
+    maxBuyPrice: 0.999,
+    minBuyPrice: 0.995,
+    // inch: true,
+    // curve: true,
+    kyber: true,
+    amount: 2000,
+    tolerance: 0.3,
+    fee: 2,
+    offset: 0.4,
+    priceOffset: true,
+    blockTag: "latest",
+    wrapped: true,
+  });
 };
 
 module.exports = { handler };
