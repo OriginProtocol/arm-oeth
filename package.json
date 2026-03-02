@@ -4,8 +4,8 @@
   "description": "Automated Redemption Manager (ARM) for Origin ETH (OETH)",
   "scripts": {
     "lint": "eslint \"src/**/*.js\"",
-    "prettier": "prettier --write \"*.js\" \"src/js/**/*.js\"",
-    "prettier:check": "prettier -c \"src/js/**/*.js\"",
+    "prettier": "prettier --write \"*.js\" \"src/js/**/*.js\" \"src/abis/**/*.json\"",
+    "prettier:check": "prettier -c \"src/js/**/*.js\" \"src/abis/**/*.json\"",
     "test": "forge test --fork-url=$MAINNET_URL --gas-report",
     "snap": "npx hardhat snap --network mainnet --amount 100"
   },
