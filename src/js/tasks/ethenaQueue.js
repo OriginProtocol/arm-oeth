@@ -127,13 +127,11 @@ const claimEthenaWithdrawals = async (options) => {
 
     // Sequential execution for Transactions is safer to avoid nonce errors
     for (const item of claimable) {
-      log(` - Processing claim for: ${item.address} (${item.amount} USDe)`);
-      try {
-        const tx = await arm.connect(signer).claimBaseWithdrawals(item.index);
-        await logTxDetails(tx, `claimEthenaWithdrawal for ${item.address}`);
-      } catch (err) {
-        log(`Error claiming for ${item.address}: ${err.message}`);
-      }
+      log(
+        ` - Processing claim for index ${item.index}, ${item.amount} USDe and address ${item.address}`,
+      );
+      const tx = await arm.connect(signer).claimBaseWithdrawals(item.index);
+      await logTxDetails(tx, `claimEthenaWithdrawal for ${item.address}`);
     }
   } else {
     log("No ready USDe withdrawal requests found.");
