@@ -36,6 +36,7 @@ library Mainnet {
     address public constant SIUSD = 0xDBDC1Ef57537E34680B898E1FEBD3D68c7389bCB;
     address public constant IUSD = 0x48f9e38f3070AD8945DFEae3FA70987722E3D89c;
     address public constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+    address public constant OUSD = 0x2A8e1E676Ec238d8A992307B495b45B3fEAa5e86;
 
     // Contracts
     address public constant OETH_VAULT = 0x39254033945AA2E4809Cc2977E7087BEE48bd7Ab;
