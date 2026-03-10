@@ -43,6 +43,8 @@ contract Abstract4626MarketWrapper is Initializable, Ownable {
         market = _market;
 
         asset = IERC4626(_market).asset();
+
+        _setOwner(address(0)); // Revoke owner for implementation contract at deployment
     }
 
     /// @notice Initialize the proxy contract with the Harvester address.
