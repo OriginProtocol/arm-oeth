@@ -228,6 +228,72 @@ contract Unit_Concrete_OriginARM_Deposit_Test_ is Unit_Shared_Test {
         );
     }
 
+    /// @notice Deposit reverts when the ARM is insolvent (totalAssets floored to MIN_TOTAL_SUPPLY)
+    /// and there are outstanding withdrawal requests (withdrawsQueued > withdrawsClaimed).
+    function test_RevertWhen_Deposit_Because_Insolvent() public deposit(alice, DEFAULT_AMOUNT) requestRedeemAll(alice) {
+        // Drain all WETH → rawTotal (0) < outstanding (DEFAULT_AMOUNT) → insolvent
+        deal(address(weth), address(originARM), 0);
+
+        assertEq(originARM.totalAssets(), MIN_TOTAL_SUPPLY, "totalAssets should be floored at MIN_TOTAL_SUPPLY");
+        assertGt(originARM.withdrawsQueued(), originARM.withdrawsClaimed(), "should have outstanding requests");
+
+        vm.expectRevert("ARM: insolvent");
+        vm.prank(alice);
+        originARM.deposit(DEFAULT_AMOUNT);
+    }
+
+    /// @notice Attacker deposit is blocked when the ARM is insolvent due to a partial WETH loss.
+    /// Scenario (Immunefi #67167):
+    ///   1. Alice deposits and immediately requests a full redeem.
+    ///   2. While Alice waits to claim, the ARM suffers a 10% loss (e.g., lending market slashing).
+    ///   3. An attacker tries to deposit to dilute Alice's claim — blocked by the insolvent guard.
+    /// Without the guard, the attacker would acquire nearly all shares at the floored price and
+    /// capture Alice's remaining WETH when Alice's claim pays min(request.assets, convertToAssets).
+    function test_RevertWhen_Deposit_Because_Insolvent_WithSmallLoss()
+        public
+        deposit(alice, DEFAULT_AMOUNT)
+        requestRedeemAll(alice)
+    {
+        // Simulate a 10% loss on Alice's deposit (e.g., lending market slashing).
+        // rawTotal = MIN_TOTAL_SUPPLY + 0.9 * DEFAULT_AMOUNT < outstanding = DEFAULT_AMOUNT → insolvent
+        uint256 wethAfterLoss = MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT * 9 / 10;
+        deal(address(weth), address(originARM), wethAfterLoss);
+
+        assertEq(originARM.totalAssets(), MIN_TOTAL_SUPPLY, "totalAssets should be floored at MIN_TOTAL_SUPPLY");
+        assertGt(originARM.withdrawsQueued(), originARM.withdrawsClaimed(), "should have outstanding requests");
+
+        // Attacker (bob) attempts to deposit to dilute Alice's claim — must be blocked
+        deal(address(weth), bob, DEFAULT_AMOUNT);
+        vm.startPrank(bob);
+        weth.approve(address(originARM), DEFAULT_AMOUNT);
+        vm.expectRevert("ARM: insolvent");
+        originARM.deposit(DEFAULT_AMOUNT);
+        vm.stopPrank();
+    }
+
+    /// @notice Deposit is allowed when there are outstanding requests but the ARM remains solvent.
+    /// Documents the totalAssets() > MIN_TOTAL_SUPPLY branch of the insolvent guard.
+    /// Alice deposits 2x and redeems 50%, leaving LP equity = MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT.
+    function test_Deposit_When_SolventWithOutstandingRequests()
+        public
+        deposit(alice, DEFAULT_AMOUNT * 2)
+        requestRedeem(alice, 5e17) // 50% of alice's shares → DEFAULT_AMOUNT queued
+
+    {
+        // rawTotal = MIN_TOTAL_SUPPLY + 2*DEFAULT_AMOUNT, outstanding = DEFAULT_AMOUNT
+        // totalAssets() = MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT > MIN_TOTAL_SUPPLY → solvent
+        assertGt(originARM.totalAssets(), MIN_TOTAL_SUPPLY, "should be solvent with LP equity");
+        assertGt(originARM.withdrawsQueued(), originARM.withdrawsClaimed(), "should have outstanding requests");
+
+        deal(address(weth), bob, DEFAULT_AMOUNT);
+        vm.startPrank(bob);
+        weth.approve(address(originARM), DEFAULT_AMOUNT);
+        originARM.deposit(DEFAULT_AMOUNT);
+        vm.stopPrank();
+
+        assertGt(originARM.balanceOf(bob), 0, "bob should have received shares");
+    }
+
     function test_Deposit_ForSomeoneElse() public {
         // Expected values
         uint256 expectedShares = originARM.convertToShares(DEFAULT_AMOUNT);
