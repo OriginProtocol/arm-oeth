@@ -399,14 +399,23 @@ const get1InchRouteHops = (protocols) => {
 const format1InchRouteLeg = async (hop, index) => {
   const fromToken = await formatRouteToken(hop?.fromToken);
   const toToken = await formatRouteToken(hop?.toToken);
+  const partNumber =
+    typeof hop?.part === "number"
+      ? hop.part
+      : typeof hop?.part === "string"
+        ? Number(hop.part)
+        : null;
+  const hideSplit = hop?.isSubsequentHop && partNumber === 100;
   const splitText =
-    typeof hop?.part === "number" || typeof hop?.part === "string"
+    hideSplit
+      ? ""
+      : typeof hop?.part === "number" || typeof hop?.part === "string"
       ? `${hop.part}%`
       : "n/a";
-  const detailsIndent = hop?.isSubsequentHop ? "    " : "";
   const protocols = formatOneInchProtocolSummary(hop?.protocols);
+  const splitPrefix = hideSplit ? "      " : `${splitText.padStart(5)} `;
 
-  return `  ${index}. ${detailsIndent}${splitText.padStart(8)} ${fromToken} -> ${toToken} via ${protocols}`;
+  return `  ${index}.${splitPrefix}${fromToken} -> ${toToken} via ${protocols}`;
 };
 
 const log1InchRouteSummary = async (quote, sideLabel) => {
@@ -543,83 +552,156 @@ const toBigIntOrNull = (value) => {
   }
 };
 
-const formatKyberRouteLeg = async (
-  swap,
-  totalIn,
-  totalInDecimals,
-  index,
-  isSubsequentHop,
-) => {
-  let splitText = "n/a";
-  const swapTokenInAddress = getTokenAddress(swap?.tokenIn);
-  let swapTokenInDecimals = null;
-  if (swapTokenInAddress) {
-    swapTokenInDecimals = await resolveTokenDecimals(swapTokenInAddress);
-  }
-
-  const normalizedSwapAmount = scaleAmountTo18(
-    swap?.swapAmount,
-    swapTokenInDecimals,
-  );
-  const normalizedTotalIn = scaleAmountTo18(totalIn, totalInDecimals);
-  if (
-    normalizedSwapAmount !== null &&
-    normalizedTotalIn !== null &&
-    normalizedTotalIn > 0n
-  ) {
-    const splitBps = (normalizedSwapAmount * 10000n) / normalizedTotalIn;
-    splitText = `${formatUnits(splitBps, 2)}%`;
-  }
-
-  const tokenIn = await formatRouteToken(swap?.tokenIn);
-  const tokenOut = await formatRouteToken(swap?.tokenOut);
-
-  const exchange = swap?.exchange ?? "unknown-exchange";
-  const pool = swap?.pool ?? "unknown-pool";
-  const poolText =
-    typeof pool === "string" ? shortAddress(pool) : "unknown-pool";
-
-  const detailsIndent = isSubsequentHop ? "    " : "";
-  return `  ${index}. ${detailsIndent}${splitText.padStart(8)} ${tokenIn} -> ${tokenOut} via ${exchange} (${poolText})`;
-};
-
-const getKyberRouteSwaps = (route) => {
+const flattenKyberRouteSwaps = (route) => {
   if (!Array.isArray(route)) return [];
 
   const swaps = [];
   for (const leg of route) {
     if (Array.isArray(leg)) {
-      for (let i = 0; i < leg.length; i += 1) {
-        const swap = leg[i];
-        if (swap && typeof swap === "object") {
-          swaps.push({ swap, isSubsequentHop: i > 0 });
-        }
-      }
+      swaps.push(...leg.filter((swap) => swap && typeof swap === "object"));
       continue;
     }
-
     if (Array.isArray(leg?.swaps)) {
-      for (let i = 0; i < leg.swaps.length; i += 1) {
-        const swap = leg.swaps[i];
-        if (swap && typeof swap === "object") {
-          swaps.push({ swap, isSubsequentHop: i > 0 });
-        }
-      }
+      swaps.push(
+        ...leg.swaps.filter((swap) => swap && typeof swap === "object"),
+      );
       continue;
     }
-
     if (leg && typeof leg === "object") {
-      swaps.push({ swap: leg, isSubsequentHop: false });
+      swaps.push(leg);
     }
   }
   return swaps;
 };
 
+const normalizeAddress = (value) =>
+  typeof value === "string" ? value.toLowerCase() : null;
+
+const chooseKyberNextSwap = (currentSwap, candidates) => {
+  if (candidates.length === 0) return null;
+  if (candidates.length === 1) return candidates[0];
+
+  const currentOutAmount = toBigIntOrNull(currentSwap?.amountOut);
+  if (currentOutAmount === null) return candidates[0];
+
+  let best = candidates[0];
+  let bestDelta = null;
+  for (const candidate of candidates) {
+    const candidateInAmount = toBigIntOrNull(candidate?.swapAmount);
+    if (candidateInAmount === null) continue;
+
+    const delta =
+      candidateInAmount > currentOutAmount
+        ? candidateInAmount - currentOutAmount
+        : currentOutAmount - candidateInAmount;
+    if (bestDelta === null || delta < bestDelta) {
+      best = candidate;
+      bestDelta = delta;
+    }
+  }
+
+  return best;
+};
+
+const getKyberRouteLanes = (quote) => {
+  const allSwaps = flattenKyberRouteSwaps(quote?.route);
+  if (allSwaps.length === 0) return [];
+
+  const quoteTokenIn = normalizeAddress(quote?.tokenIn);
+  const quoteTokenOut = normalizeAddress(quote?.tokenOut);
+  const rootSwaps = allSwaps.filter(
+    (swap) => normalizeAddress(swap?.tokenIn) === quoteTokenIn,
+  );
+  if (rootSwaps.length === 0) {
+    return allSwaps.map((swap) => [swap]);
+  }
+
+  const lanes = [];
+  for (const rootSwap of rootSwaps) {
+    const lane = [rootSwap];
+    const usedTokens = new Set([
+      normalizeAddress(rootSwap?.tokenIn),
+      normalizeAddress(rootSwap?.tokenOut),
+    ]);
+    let currentSwap = rootSwap;
+
+    for (let depth = 0; depth < 8; depth += 1) {
+      const currentOutToken = normalizeAddress(currentSwap?.tokenOut);
+      if (!currentOutToken || currentOutToken === quoteTokenOut) break;
+
+      const candidates = allSwaps.filter(
+        (swap) =>
+          swap !== currentSwap && normalizeAddress(swap?.tokenIn) === currentOutToken,
+      );
+      const nextSwap = chooseKyberNextSwap(currentSwap, candidates);
+      if (!nextSwap) break;
+
+      const nextOutToken = normalizeAddress(nextSwap?.tokenOut);
+      if (nextOutToken && usedTokens.has(nextOutToken)) break;
+
+      lane.push(nextSwap);
+      if (nextOutToken) usedTokens.add(nextOutToken);
+      currentSwap = nextSwap;
+    }
+
+    lanes.push(lane);
+  }
+
+  return lanes;
+};
+
+const formatKyberLaneSplit = async (lane, totalIn, totalInDecimals) => {
+  const firstSwap = lane[0];
+  const laneTokenInAddress = getTokenAddress(firstSwap?.tokenIn);
+  const laneTokenInDecimals = laneTokenInAddress
+    ? await resolveTokenDecimals(laneTokenInAddress)
+    : null;
+  const normalizedLaneIn = scaleAmountTo18(
+    firstSwap?.swapAmount,
+    laneTokenInDecimals,
+  );
+  const normalizedTotalIn = scaleAmountTo18(totalIn, totalInDecimals);
+  if (
+    normalizedLaneIn === null ||
+    normalizedTotalIn === null ||
+    normalizedTotalIn <= 0n
+  ) {
+    return "n/a";
+  }
+
+  const splitBps = (normalizedLaneIn * 10000n) / normalizedTotalIn;
+  return `${formatUnits(splitBps, 2)}%`;
+};
+
+const formatKyberSwapHop = async (swap) => {
+  const tokenIn = await formatRouteToken(swap?.tokenIn);
+  const tokenOut = await formatRouteToken(swap?.tokenOut);
+  const exchange = swap?.exchange ?? "unknown-exchange";
+  return `${tokenIn} -> ${tokenOut} via ${exchange}`;
+};
+
+const formatKyberRouteLane = async ({
+  lane,
+  totalIn,
+  totalInDecimals,
+  index,
+}) => {
+  const splitText = await formatKyberLaneSplit(lane, totalIn, totalInDecimals);
+  const lines = [];
+  lines.push(
+    `  ${index}. ${splitText.padStart(6)} ${await formatKyberSwapHop(lane[0])}`,
+  );
+  for (let i = 1; i < lane.length; i += 1) {
+    lines.push(`             ${await formatKyberSwapHop(lane[i])}`);
+  }
+  return lines;
+};
+
 const logKyberRouteSummary = async (quote, sideLabel) => {
   console.log(`\nKyber ${sideLabel} route:`);
 
-  const routeSwaps = getKyberRouteSwaps(quote?.route);
-  if (routeSwaps.length === 0) {
+  const lanes = getKyberRouteLanes(quote);
+  if (lanes.length === 0) {
     console.log("  route unavailable");
     return;
   }
@@ -628,17 +710,16 @@ const logKyberRouteSummary = async (quote, sideLabel) => {
   const totalInDecimals = totalInTokenAddress
     ? await resolveTokenDecimals(totalInTokenAddress)
     : null;
-  for (let i = 0; i < routeSwaps.length; i += 1) {
-    const { swap, isSubsequentHop } = routeSwaps[i];
-    console.log(
-      await formatKyberRouteLeg(
-        swap,
-        quote?.amountIn,
-        totalInDecimals,
-        i + 1,
-        isSubsequentHop,
-      ),
-    );
+  for (let i = 0; i < lanes.length; i += 1) {
+    const laneLines = await formatKyberRouteLane({
+      lane: lanes[i],
+      totalIn: quote?.amountIn,
+      totalInDecimals,
+      index: i + 1,
+    });
+    for (const line of laneLines) {
+      console.log(line);
+    }
   }
 };
 
