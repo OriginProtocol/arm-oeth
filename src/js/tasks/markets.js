@@ -1,4 +1,4 @@
-const { formatUnits, parseUnits } = require("ethers");
+const { formatUnits, isAddress, parseUnits } = require("ethers");
 
 const addresses = require("../utils/addresses");
 const { get1InchPrices } = require("../utils/1Inch");
@@ -293,23 +293,101 @@ const KYBER_ROUTE_TOKENS = {
   [addresses.mainnet.wstETH.toLowerCase()]: "wstETH",
   [addresses.mainnet.eETH.toLowerCase()]: "eETH",
   [addresses.mainnet.weETH.toLowerCase()]: "weETH",
+  [addresses.mainnet.sUSDe.toLowerCase()]: "sUSDe",
+  [addresses.mainnet.USDe.toLowerCase()]: "USDe",
+  [addresses.mainnet.USDC.toLowerCase()]: "USDC",
+  [addresses.mainnet.USDT.toLowerCase()]: "USDT",
 };
 
-const formatRouteToken = (token) => {
+const tokenSymbolCache = new Map(Object.entries(KYBER_ROUTE_TOKENS));
+const tokenDecimalsCache = new Map();
+
+const scaleAmountTo18 = (amount, decimals) => {
+  if (amount === null || amount === undefined) return null;
+  const parsedAmount = toBigIntOrNull(amount);
+  if (parsedAmount === null) return null;
+
+  if (decimals === 18) return parsedAmount;
+  if (decimals > 18) {
+    return parsedAmount / 10n ** BigInt(decimals - 18);
+  }
+  return parsedAmount * 10n ** BigInt(18 - decimals);
+};
+
+const resolveTokenSymbol = async (tokenAddress) => {
+  const normalizedAddress = tokenAddress.toLowerCase();
+  if (tokenSymbolCache.has(normalizedAddress)) {
+    return tokenSymbolCache.get(normalizedAddress);
+  }
+
+  let symbol = shortAddress(tokenAddress);
+  try {
+    const token = await ethers.getContractAt(
+      ["function symbol() external view returns (string)"],
+      tokenAddress,
+    );
+    const tokenSymbol = await token.symbol();
+    if (typeof tokenSymbol === "string" && tokenSymbol.length > 0) {
+      symbol = tokenSymbol;
+    }
+  } catch {
+    // Use short address fallback when symbol lookup fails.
+  }
+
+  tokenSymbolCache.set(normalizedAddress, symbol);
+  return symbol;
+};
+
+const resolveTokenDecimals = async (tokenAddress) => {
+  const normalizedAddress = tokenAddress.toLowerCase();
+  if (tokenDecimalsCache.has(normalizedAddress)) {
+    return tokenDecimalsCache.get(normalizedAddress);
+  }
+
+  let decimals = null;
+  try {
+    const token = await ethers.getContractAt(
+      ["function decimals() external view returns (uint8)"],
+      tokenAddress,
+    );
+    decimals = Number(await token.decimals());
+  } catch {
+    // Keep null if token decimals cannot be fetched.
+  }
+
+  tokenDecimalsCache.set(normalizedAddress, decimals);
+  return decimals;
+};
+
+const formatRouteToken = async (token) => {
   if (typeof token === "string") {
-    const normalizedToken = token.toLowerCase();
-    const symbol = KYBER_ROUTE_TOKENS[normalizedToken];
-    return symbol || shortAddress(token);
+    if (!isAddress(token)) {
+      return token;
+    }
+    return resolveTokenSymbol(token);
   }
   if (token && typeof token === "object") {
     if (typeof token.symbol === "string" && token.symbol.length > 0) {
       return token.symbol;
     }
     if (typeof token.address === "string") {
-      return shortAddress(token.address);
+      return formatRouteToken(token.address);
     }
   }
   return "unknown-token";
+};
+
+const getTokenAddress = (token) => {
+  if (typeof token === "string" && isAddress(token)) return token;
+  if (
+    token &&
+    typeof token === "object" &&
+    typeof token.address === "string" &&
+    isAddress(token.address)
+  ) {
+    return token.address;
+  }
+  return null;
 };
 
 const toBigIntOrNull = (value) => {
@@ -322,23 +400,44 @@ const toBigIntOrNull = (value) => {
   }
 };
 
-const formatKyberRouteLeg = (swap, totalIn, index) => {
-  const swapAmount = toBigIntOrNull(swap?.swapAmount);
+const formatKyberRouteLeg = async (
+  swap,
+  totalIn,
+  totalInDecimals,
+  index,
+  isSubsequentHop,
+) => {
   let splitText = "n/a";
-  if (swapAmount !== null && totalIn !== null && totalIn > 0n) {
-    const splitBps = (swapAmount * 10000n) / totalIn;
+  const swapTokenInAddress = getTokenAddress(swap?.tokenIn);
+  let swapTokenInDecimals = null;
+  if (swapTokenInAddress) {
+    swapTokenInDecimals = await resolveTokenDecimals(swapTokenInAddress);
+  }
+
+  const normalizedSwapAmount = scaleAmountTo18(
+    swap?.swapAmount,
+    swapTokenInDecimals,
+  );
+  const normalizedTotalIn = scaleAmountTo18(totalIn, totalInDecimals);
+  if (
+    normalizedSwapAmount !== null &&
+    normalizedTotalIn !== null &&
+    normalizedTotalIn > 0n
+  ) {
+    const splitBps = (normalizedSwapAmount * 10000n) / normalizedTotalIn;
     splitText = `${formatUnits(splitBps, 2)}%`;
   }
 
-  const tokenIn = formatRouteToken(swap?.tokenIn);
-  const tokenOut = formatRouteToken(swap?.tokenOut);
+  const tokenIn = await formatRouteToken(swap?.tokenIn);
+  const tokenOut = await formatRouteToken(swap?.tokenOut);
 
   const exchange = swap?.exchange ?? "unknown-exchange";
   const pool = swap?.pool ?? "unknown-pool";
   const poolText =
     typeof pool === "string" ? shortAddress(pool) : "unknown-pool";
 
-  return `  ${index}. ${splitText.padStart(8)} ${tokenIn} -> ${tokenOut} via ${exchange} (${poolText})`;
+  const detailsIndent = isSubsequentHop ? "    " : "";
+  return `  ${index}. ${detailsIndent}${splitText.padStart(8)} ${tokenIn} -> ${tokenOut} via ${exchange} (${poolText})`;
 };
 
 const getKyberRouteSwaps = (route) => {
@@ -347,25 +446,33 @@ const getKyberRouteSwaps = (route) => {
   const swaps = [];
   for (const leg of route) {
     if (Array.isArray(leg)) {
-      for (const swap of leg) {
-        if (swap && typeof swap === "object") swaps.push(swap);
+      for (let i = 0; i < leg.length; i += 1) {
+        const swap = leg[i];
+        if (swap && typeof swap === "object") {
+          swaps.push({ swap, isSubsequentHop: i > 0 });
+        }
       }
       continue;
     }
 
     if (Array.isArray(leg?.swaps)) {
-      for (const swap of leg.swaps) {
-        if (swap && typeof swap === "object") swaps.push(swap);
+      for (let i = 0; i < leg.swaps.length; i += 1) {
+        const swap = leg.swaps[i];
+        if (swap && typeof swap === "object") {
+          swaps.push({ swap, isSubsequentHop: i > 0 });
+        }
       }
       continue;
     }
 
-    if (leg && typeof leg === "object") swaps.push(leg);
+    if (leg && typeof leg === "object") {
+      swaps.push({ swap: leg, isSubsequentHop: false });
+    }
   }
   return swaps;
 };
 
-const logKyberRouteSummary = (quote, sideLabel) => {
+const logKyberRouteSummary = async (quote, sideLabel) => {
   console.log(`\nKyber ${sideLabel} route:`);
 
   const routeSwaps = getKyberRouteSwaps(quote?.route);
@@ -374,10 +481,21 @@ const logKyberRouteSummary = (quote, sideLabel) => {
     return;
   }
 
-  const totalIn = toBigIntOrNull(quote?.amountIn);
+  const totalInTokenAddress = getTokenAddress(quote?.tokenIn);
+  const totalInDecimals = totalInTokenAddress
+    ? await resolveTokenDecimals(totalInTokenAddress)
+    : null;
   for (let i = 0; i < routeSwaps.length; i += 1) {
-    const swap = routeSwaps[i];
-    console.log(formatKyberRouteLeg(swap, totalIn, i + 1));
+    const { swap, isSubsequentHop } = routeSwaps[i];
+    console.log(
+      await formatKyberRouteLeg(
+        swap,
+        quote?.amountIn,
+        totalInDecimals,
+        i + 1,
+        isSubsequentHop,
+      ),
+    );
   }
 };
 
@@ -397,8 +515,8 @@ const logKyberPrices = async (options, armPrices) => {
     marketName: "Kyber",
   });
 
-  logKyberRouteSummary(marketPrices.buyQuote, "buy");
-  logKyberRouteSummary(marketPrices.sellQuote, "sell");
+  await logKyberRouteSummary(marketPrices.buyQuote, "buy");
+  await logKyberRouteSummary(marketPrices.sellQuote, "sell");
 
   if (armPrices === undefined) return marketPrices;
 
