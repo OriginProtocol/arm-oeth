@@ -86,8 +86,23 @@ const rangeBuyPrice = (targetBuyPrice, minBuyPrice, maxBuyPrice) => {
   return targetBuyPrice;
 };
 
+const convertReth = async (rethAmount, signer) => {
+  const reth = new ethers.Contract(
+    "0xae78736Cd615f374D3085123A210448E74Fc6393",
+    ["function getEthValue(uint256) external view returns (uint256)"],
+    signer,
+  );
+  const assetAmount = await reth.getEthValue(
+    parseUnits(rethAmount.toString(), 18),
+  );
+  const assetPrice =
+    (assetAmount * parseUnits("1")) / parseUnits(rethAmount.toString(), 18);
+  return assetPrice;
+};
+
 module.exports = {
   convertToAsset,
   rangeSellPrice,
   rangeBuyPrice,
+  convertReth,
 };

@@ -9,7 +9,7 @@ const { getSigner } = require("../utils/signers");
 const { getFluidSpotPrices } = require("../utils/fluid");
 const { mainnet } = require("../utils/addresses");
 const { resolveAddress } = require("../utils/assets");
-const { convertToAsset } = require("../utils/pricing");
+const { convertToAsset, convertReth } = require("../utils/pricing");
 
 const log = require("../utils/logger")("task:markets");
 
@@ -33,9 +33,12 @@ const snapMarket = async ({
   let wrapPrice;
   if (wrapped) {
     const signer = await getSigner();
-    // Assume the wrapped base asset is ERC-4626
-    wrapPrice = await convertToAsset(baseAddress, amount, signer);
-
+    if (base.toUpperCase() === "RETH") {
+      wrapPrice = await convertReth(amount, signer);
+    } else {
+      // Assume the wrapped base asset is ERC-4626
+      wrapPrice = await convertToAsset(baseAddress, amount, signer);
+    }
     console.log(
       `\nWrapped price: ${formatUnits(wrapPrice, 18)} ${base}/${liquid}`,
     );
@@ -278,6 +281,106 @@ const log1InchPrices = async (options, armPrices) => {
   return marketPrices;
 };
 
+const shortAddress = (value) => {
+  if (typeof value !== "string" || !value.startsWith("0x") || value.length < 10)
+    return value;
+  return `${value.slice(0, 6)}...${value.slice(-4)}`;
+};
+
+const KYBER_ROUTE_TOKENS = {
+  [addresses.mainnet.WETH.toLowerCase()]: "WETH",
+  [addresses.mainnet.stETH.toLowerCase()]: "stETH",
+  [addresses.mainnet.wstETH.toLowerCase()]: "wstETH",
+  [addresses.mainnet.eETH.toLowerCase()]: "eETH",
+  [addresses.mainnet.weETH.toLowerCase()]: "weETH",
+};
+
+const formatRouteToken = (token) => {
+  if (typeof token === "string") {
+    const normalizedToken = token.toLowerCase();
+    const symbol = KYBER_ROUTE_TOKENS[normalizedToken];
+    return symbol || shortAddress(token);
+  }
+  if (token && typeof token === "object") {
+    if (typeof token.symbol === "string" && token.symbol.length > 0) {
+      return token.symbol;
+    }
+    if (typeof token.address === "string") {
+      return shortAddress(token.address);
+    }
+  }
+  return "unknown-token";
+};
+
+const toBigIntOrNull = (value) => {
+  if (typeof value === "bigint") return value;
+  if (typeof value !== "string" && typeof value !== "number") return null;
+  try {
+    return BigInt(value);
+  } catch {
+    return null;
+  }
+};
+
+const formatKyberRouteLeg = (swap, totalIn, index) => {
+  const swapAmount = toBigIntOrNull(swap?.swapAmount);
+  let splitText = "n/a";
+  if (swapAmount !== null && totalIn !== null && totalIn > 0n) {
+    const splitBps = (swapAmount * 10000n) / totalIn;
+    splitText = `${formatUnits(splitBps, 2)}%`;
+  }
+
+  const tokenIn = formatRouteToken(swap?.tokenIn);
+  const tokenOut = formatRouteToken(swap?.tokenOut);
+
+  const exchange = swap?.exchange ?? "unknown-exchange";
+  const pool = swap?.pool ?? "unknown-pool";
+  const poolText =
+    typeof pool === "string" ? shortAddress(pool) : "unknown-pool";
+
+  return `  ${index}. ${splitText.padStart(8)} ${tokenIn} -> ${tokenOut} via ${exchange} (${poolText})`;
+};
+
+const getKyberRouteSwaps = (route) => {
+  if (!Array.isArray(route)) return [];
+
+  const swaps = [];
+  for (const leg of route) {
+    if (Array.isArray(leg)) {
+      for (const swap of leg) {
+        if (swap && typeof swap === "object") swaps.push(swap);
+      }
+      continue;
+    }
+
+    if (Array.isArray(leg?.swaps)) {
+      for (const swap of leg.swaps) {
+        if (swap && typeof swap === "object") swaps.push(swap);
+      }
+      continue;
+    }
+
+    if (leg && typeof leg === "object") swaps.push(leg);
+  }
+  return swaps;
+};
+
+const logKyberRouteSummary = (quote, sideLabel) => {
+  console.log(`\nKyber ${sideLabel} route:`);
+
+  const routeSwaps = getKyberRouteSwaps(quote?.route);
+  if (routeSwaps.length === 0) {
+    console.log("  route unavailable");
+    return;
+  }
+
+  const totalIn = toBigIntOrNull(quote?.amountIn);
+  for (let i = 0; i < routeSwaps.length; i += 1) {
+    const swap = routeSwaps[i];
+    console.log(formatKyberRouteLeg(swap, totalIn, i + 1));
+  }
+};
+
 const logKyberPrices = async (options, armPrices) => {
   const { amount, assets, wrapPrice } = options;
 
@@ -293,6 +396,9 @@ const logKyberPrices = async (options, armPrices) => {
     armPrices,
     marketName: "Kyber",
   });
+
+  logKyberRouteSummary(marketPrices.buyQuote, "buy");
+  logKyberRouteSummary(marketPrices.sellQuote, "sell");
 
   if (armPrices === undefined) return marketPrices;
 
