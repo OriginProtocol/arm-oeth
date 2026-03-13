@@ -267,6 +267,9 @@ const log1InchPrices = async (options, armPrices) => {
     marketName: "1Inch",
   });
 
+  await log1InchRouteSummary(marketPrices.buyQuote, "buy");
+  await log1InchRouteSummary(marketPrices.sellQuote, "sell");
+
   if (armPrices === undefined) return marketPrices;
 
   console.log(
@@ -281,6 +284,139 @@ const log1InchPrices = async (options, armPrices) => {
   return marketPrices;
 };
 
+const formatOneInchProtocolSummary = (protocols) => {
+  if (!Array.isArray(protocols) || protocols.length === 0) {
+    return "unknown-protocol";
+  }
+
+  return protocols
+    .map((protocol) => {
+      const name = protocol?.name ?? "unknown";
+      const part = protocol?.part;
+      const partText =
+        typeof part === "number" || typeof part === "string"
+          ? ` ${part}%`
+          : "";
+      return `${name}${partText}`;
+    })
+    .join(", ");
+};
+
+const get1InchHopKey = (fromToken, hop) => {
+  const normalizedFromToken =
+    typeof fromToken === "string" ? fromToken.toLowerCase() : "unknown-from";
+  const normalizedToToken =
+    typeof hop?.dst === "string" ? hop.dst.toLowerCase() : "unknown-to";
+  const part = hop?.part ?? "unknown-part";
+  const protocolKey = Array.isArray(hop?.protocols)
+    ? hop.protocols
+        .map((protocol) => `${protocol?.name ?? "unknown"}:${protocol?.part ?? "n/a"}`)
+        .join("|")
+    : "unknown-protocols";
+
+  return `${normalizedFromToken}->${normalizedToToken}:${part}:${protocolKey}`;
+};
+
+const get1InchRouteHops = (protocols) => {
+  if (!Array.isArray(protocols)) return [];
+
+  const dedupedRouteHops = [];
+  const seenHopKeys = new Set();
+
+  for (const routeNode of protocols) {
+    const fromToken = routeNode?.token;
+    if (!Array.isArray(routeNode?.hops)) continue;
+
+    for (const hop of routeNode.hops) {
+      if (!hop || typeof hop !== "object") continue;
+      const hopKey = get1InchHopKey(fromToken, hop);
+      if (seenHopKeys.has(hopKey)) continue;
+      dedupedRouteHops.push({
+        fromToken,
+        toToken: hop.dst,
+        part: hop.part,
+        protocols: hop.protocols,
+      });
+      seenHopKeys.add(hopKey);
+    }
+  }
+
+  if (dedupedRouteHops.length === 0) return [];
+
+  const rootToken =
+    typeof protocols[0]?.token === "string" ? protocols[0].token.toLowerCase() : null;
+  const orderedRouteHops = [];
+  const used = new Set();
+
+  const appendWithChildren = (parentIndex, isSubsequentHop) => {
+    if (used.has(parentIndex)) return;
+    used.add(parentIndex);
+
+    const parentHop = dedupedRouteHops[parentIndex];
+    orderedRouteHops.push({
+      ...parentHop,
+      isSubsequentHop,
+    });
+
+    if (typeof parentHop.toToken !== "string") return;
+    const parentToToken = parentHop.toToken.toLowerCase();
+
+    for (let i = 0; i < dedupedRouteHops.length; i += 1) {
+      if (used.has(i)) continue;
+      const childFromToken =
+        typeof dedupedRouteHops[i].fromToken === "string"
+          ? dedupedRouteHops[i].fromToken.toLowerCase()
+          : null;
+      if (childFromToken === parentToToken) {
+        appendWithChildren(i, true);
+      }
+    }
+  };
+
+  for (let i = 0; i < dedupedRouteHops.length; i += 1) {
+    const fromToken =
+      typeof dedupedRouteHops[i].fromToken === "string"
+        ? dedupedRouteHops[i].fromToken.toLowerCase()
+        : null;
+    if (rootToken !== null && fromToken === rootToken) {
+      appendWithChildren(i, false);
+    }
+  }
+
+  for (let i = 0; i < dedupedRouteHops.length; i += 1) {
+    appendWithChildren(i, false);
+  }
+
+  return orderedRouteHops;
+};
+
+const format1InchRouteLeg = async (hop, index) => {
+  const fromToken = await formatRouteToken(hop?.fromToken);
+  const toToken = await formatRouteToken(hop?.toToken);
+  const splitText =
+    typeof hop?.part === "number" || typeof hop?.part === "string"
+      ? `${hop.part}%`
+      : "n/a";
+  const detailsIndent = hop?.isSubsequentHop ? "    " : "";
+  const protocols = formatOneInchProtocolSummary(hop?.protocols);
+
+  return `  ${index}. ${detailsIndent}${splitText.padStart(8)} ${fromToken} -> ${toToken} via ${protocols}`;
+};
+
+const log1InchRouteSummary = async (quote, sideLabel) => {
+  console.log(`\n1Inch ${sideLabel} route:`);
+  const routeHops = get1InchRouteHops(quote?.protocols);
+
+  if (routeHops.length === 0) {
+    console.log("  route unavailable");
+    return;
+  }
+
+  for (let i = 0; i < routeHops.length; i += 1) {
+    console.log(await format1InchRouteLeg(routeHops[i], i + 1));
+  }
+};
+
 const shortAddress = (value) => {
   if (typeof value !== "string" || !value.startsWith("0x") || value.length < 10)
     return value;
@@ -288,6 +424,7 @@ const shortAddress = (value) => {
 };
 
 const KYBER_ROUTE_TOKENS = {
+  [addresses.ETH.toLowerCase()]: "WETH",
   [addresses.mainnet.WETH.toLowerCase()]: "WETH",
   [addresses.mainnet.stETH.toLowerCase()]: "stETH",
   [addresses.mainnet.wstETH.toLowerCase()]: "wstETH",
