@@ -22,6 +22,7 @@ const snapMarket = async ({
   fee1Inch,
   oneInch,
   kyber,
+  route,
 }) => {
   const baseAddress = await resolveAddress(base.toUpperCase());
   const liquidAddress = await resolveAddress(liquid.toUpperCase());
@@ -56,6 +57,7 @@ const snapMarket = async ({
       pair,
       chainId,
       wrapPrice,
+      route,
     });
 
     if (days) {
@@ -70,6 +72,7 @@ const snapMarket = async ({
       assets,
       pair,
       wrapPrice,
+      route,
     });
 
     if (days) {
@@ -253,6 +256,7 @@ const logMarketPrices = async ({
 
 const log1InchPrices = async (options, armPrices) => {
   const { amount, assets, fee, chainId, wrapPrice } = options;
+  const route = options.route ?? true;
 
   const marketPrices = await get1InchPrices(amount, assets, fee, chainId);
 
@@ -267,8 +271,10 @@ const log1InchPrices = async (options, armPrices) => {
     marketName: "1Inch",
   });
 
-  await log1InchRouteSummary(marketPrices.buyQuote, "buy");
-  await log1InchRouteSummary(marketPrices.sellQuote, "sell");
+  if (route) {
+    await log1InchRouteSummary(marketPrices.buyQuote, "buy");
+    await log1InchRouteSummary(marketPrices.sellQuote, "sell");
+  }
 
   if (armPrices === undefined) return marketPrices;
 
@@ -638,6 +644,7 @@ const logKyberRouteSummary = async (quote, sideLabel) => {
 
 const logKyberPrices = async (options, armPrices) => {
   const { amount, assets, wrapPrice } = options;
+  const route = options.route ?? true;
 
   const marketPrices = await getKyberPrices(amount, assets);
 
@@ -652,8 +659,10 @@ const logKyberPrices = async (options, armPrices) => {
     marketName: "Kyber",
   });
 
-  await logKyberRouteSummary(marketPrices.buyQuote, "buy");
-  await logKyberRouteSummary(marketPrices.sellQuote, "sell");
+  if (route) {
+    await logKyberRouteSummary(marketPrices.buyQuote, "buy");
+    await logKyberRouteSummary(marketPrices.sellQuote, "sell");
+  }
 
   if (armPrices === undefined) return marketPrices;
 

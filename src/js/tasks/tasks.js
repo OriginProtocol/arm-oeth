@@ -1194,6 +1194,7 @@ subtask("snapMarket", "Take a market snapshot of prices")
   .addOptionalParam("oneInch", "Include 1Inch prices", true, types.boolean)
   .addOptionalParam("fee1Inch", "1Inch infrastructure fee", 10, types.int)
   .addOptionalParam("kyber", "Include Kyber prices", true, types.boolean)
+  .addOptionalParam("route", "Include swap route details", true, types.boolean)
   .setAction(snapMarket);
 task("snapMarket").setAction(async (_, __, runSuper) => {
   return runSuper();
@@ -1222,6 +1223,7 @@ subtask("snap", "Take a snapshot of the an ARM")
   )
   .addOptionalParam("oneInch", "Include 1Inch prices", false, types.boolean)
   .addOptionalParam("kyber", "Include Kyber prices", true, types.boolean)
+  .addOptionalParam("route", "Include swap route details", true, types.boolean)
   .setAction(snap);
 task("snap").setAction(async (_, __, runSuper) => {
   return runSuper();
@@ -1237,6 +1239,7 @@ subtask("snapLido", "Take a snapshot of the Lido ARM")
   .addOptionalParam("amount", "Swap quantity", 100, types.int)
   .addOptionalParam("oneInch", "Include 1Inch prices", true, types.boolean)
   .addOptionalParam("kyber", "Include Kyber prices", true, types.boolean)
+  .addOptionalParam("route", "Include swap route details", true, types.boolean)
   .addOptionalParam("curve", "Include Curve prices", false, types.boolean)
   .addOptionalParam(
     "uniswap",

@@ -68,6 +68,7 @@ const snapLido = async ({
   curve,
   oneInch,
   kyber,
+  route,
   uniswap,
   gas,
   queue,
@@ -79,7 +80,14 @@ const snapLido = async ({
   const blockTag = await getBlock(block);
   console.log(`\nSnapshot at block ${blockTag}\n`);
   const signer = await getSigner();
-  const commonOptions = { amount, blockTag, pair: "stETH/ETH", gas, signer };
+  const commonOptions = {
+    amount,
+    blockTag,
+    pair: "stETH/ETH",
+    gas,
+    signer,
+    route,
+  };
 
   const lidoARM = await resolveArmContract("Lido");
   const capManagerAddress = await parseDeployedAddress("LIDO_ARM_CAP_MAN");

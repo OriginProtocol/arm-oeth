@@ -56,7 +56,16 @@ const withdrawRequestStatus = async ({ id, arm, vault }) => {
   }
 };
 
-const snap = async ({ arm, block, days, gas, amount, oneInch, kyber }) => {
+const snap = async ({
+  arm,
+  block,
+  days,
+  gas,
+  amount,
+  oneInch,
+  kyber,
+  route,
+}) => {
   const armContract = await resolveArmContract(arm);
 
   const { chainId } = await ethers.provider.getNetwork();
@@ -110,7 +119,7 @@ const snap = async ({ arm, block, days, gas, amount, oneInch, kyber }) => {
     const fee = arm === "Lido" ? 10n : 30n;
 
     await log1InchPrices(
-      { amount, assets, fee, pair, chainId, wrapPrice },
+      { amount, assets, fee, pair, chainId, wrapPrice, route },
       armPrices,
     );
 
@@ -121,7 +130,7 @@ const snap = async ({ arm, block, days, gas, amount, oneInch, kyber }) => {
 
   if (kyber && chainId !== 146) {
     // Kyber does not support Sonic
-    await logKyberPrices({ amount, assets, pair, wrapPrice }, armPrices);
+    await logKyberPrices({ amount, assets, pair, wrapPrice, route }, armPrices);
   }
 };
 
