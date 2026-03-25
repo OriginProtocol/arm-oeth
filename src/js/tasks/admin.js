@@ -2,12 +2,12 @@ const { formatUnits, parseUnits } = require("ethers");
 const { ethers } = require("ethers");
 const erc20Abi = require("../../abis/ERC20.json");
 
-const { logTxDetails } = require("../utils/txLogger");
-
 const log = require("../utils/logger")("task:admin");
 
-async function limitGasPrice(signer, maxGasPriceGwei) {
-  const { gasPrice } = await signer.provider.getFeeData();
+const SKIP = { shouldExecute: false };
+
+async function limitGasPrice(provider, maxGasPriceGwei) {
+  const { gasPrice } = await provider.getFeeData();
   const maxGasPrice = parseUnits(maxGasPriceGwei.toString(), "gwei");
 
   if (gasPrice > maxGasPrice) {
@@ -26,9 +26,8 @@ async function limitGasPrice(signer, maxGasPriceGwei) {
 
 async function allocate({
   arm,
-  signer,
+  provider,
   threshold,
-  execute = true,
   maxGasPrice: maxGasPriceGwei = 10,
   // V1 on sonic everywhere else V2
   armContractVersion = "v2",
@@ -36,12 +35,12 @@ async function allocate({
   const activeMarketAddress = await arm.activeMarket();
   if (activeMarketAddress === ethers.ZeroAddress) {
     log(`No active lending market, skipping allocation`);
-    return;
+    return SKIP;
   }
 
-  if (await limitGasPrice(signer, maxGasPriceGwei)) {
+  if (await limitGasPrice(provider, maxGasPriceGwei)) {
     log("Skipping allocation due to high gas price");
-    return;
+    return SKIP;
   }
 
   let liquidityDelta;
@@ -65,7 +64,7 @@ async function allocate({
     log(
       `Only ${formatUnits(liquidityDelta)} liquidity delta, skipping allocation as threshold is ${formatUnits(thresholdBN)}`,
     );
-    return;
+    return SKIP;
   }
 
   // If the delta is negative, check if there is a small amount left in the market and drain it if so
@@ -74,7 +73,7 @@ async function allocate({
     const activeMarket = new ethers.Contract(
       activeMarketAddress,
       ["function maxWithdraw(address) external view returns (uint256)"],
-      signer,
+      provider,
     );
     const availableAssets = await activeMarket.maxWithdraw(
       await arm.getAddress(),
@@ -85,7 +84,7 @@ async function allocate({
       log(
         `Only ${formatUnits(liquidityDelta)} liquidity delta and ${formatUnits(availableAssets)} available assets > ${formatUnits(thresholdBN)} threshold, skipping allocation`,
       );
-      return;
+      return SKIP;
     }
 
     // Skip if transferring a small amount as its not gas efficient
@@ -93,7 +92,7 @@ async function allocate({
       log(
         `Only ${formatUnits(availableAssets)} liquidity available in the active lending market, skipping allocation`,
       );
-      return;
+      return SKIP;
     }
 
     // Either the delta is above threshold or there is a small amount left in the market
@@ -108,17 +107,12 @@ async function allocate({
     )} to/from the active lending market`,
   );
 
-  if (execute) {
-    // Add 10% buffer to gas limit
-    let gasLimit = await arm.connect(signer).allocate.estimateGas();
-    gasLimit = (gasLimit * 11n) / 10n;
-
-    const tx = await arm.connect(signer).allocate({ gasLimit });
-    await logTxDetails(tx, "allocate");
-  }
+  const target = await arm.getAddress();
+  const calldata = arm.interface.encodeFunctionData("allocate");
+  return { shouldExecute: true, target, calldata };
 }
 
-async function collectFees({ arm, signer }) {
+async function collectFees({ arm, provider }) {
   // Get the amount of fees to be collected
   const fees = await arm.feesAccrued();
   const queued = await arm.withdrawsQueued();
@@ -129,7 +123,7 @@ async function collectFees({ arm, signer }) {
   const liquidityAsset = new ethers.Contract(
     liquidityAssetAddress,
     erc20Abi,
-    signer,
+    provider,
   );
   const liquidityBalance = await liquidityAsset.balanceOf(
     await arm.getAddress(),
@@ -138,34 +132,30 @@ async function collectFees({ arm, signer }) {
   log(`Liquidity available in ARM: ${formatUnits(liquidityAvailable)}`);
 
   if (fees > liquidityAvailable) {
-    console.log(
+    log(
       `Not enough liquidity to collect ${formatUnits(fees)} in fees. The ARM only has ${formatUnits(liquidityAvailable)} available.`,
     );
-    return;
+    return SKIP;
   }
 
-  // Add 10% buffer to gas limit
-  let gasLimit = await arm.connect(signer).collectFees.estimateGas();
-  gasLimit = (gasLimit * 11n) / 10n;
-
   log(`About to collect ${formatUnits(fees)} ARM fees`);
-  const tx = await arm.connect(signer).collectFees({ gasLimit });
-  await logTxDetails(tx, "collectFees");
+
+  const target = await arm.getAddress();
+  const calldata = arm.interface.encodeFunctionData("collectFees");
+  return { shouldExecute: true, target, calldata };
 }
 
-async function setARMBuffer({ arm, signer, buffer }) {
+async function setARMBuffer({ arm, buffer }) {
   if (buffer > 1) {
     throw new Error("Buffer value cannot be greater than 1");
   }
   const bufferBN = parseUnits((buffer || "0").toString(), 18);
 
-  // Add 10% buffer to gas limit
-  let gasLimit = await arm.connect(signer).setARMBuffer.estimateGas(bufferBN);
-  gasLimit = (gasLimit * 11n) / 10n;
-
   log(`About to set ARM buffer to ${formatUnits(bufferBN)}`);
-  const tx = await arm.connect(signer).setARMBuffer(bufferBN, { gasLimit });
-  await logTxDetails(tx, "setARMBuffer");
+
+  const target = await arm.getAddress();
+  const calldata = arm.interface.encodeFunctionData("setARMBuffer", [bufferBN]);
+  return { shouldExecute: true, target, calldata };
 }
 module.exports = {
   allocate,
