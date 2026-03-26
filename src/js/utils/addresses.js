@@ -21,7 +21,10 @@ addresses.mainnet.stETH = "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84";
 addresses.mainnet.wstETH = "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0";
 addresses.mainnet.eETH = "0x35fA164735182de50811E8e2E824cFb9B6118ac2";
 addresses.mainnet.weETH = "0xcd5fe23c85820f7b72d0926fc9b05b43e359b7ee";
+addresses.mainnet.USDe = "0x4c9EDD5852cd905f086C759E8383e09bff1E68B3";
 addresses.mainnet.sUSDe = "0x9D39A5DE30e57443BfF2A8307A4256c8797A3497";
+addresses.mainnet.USDC = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
+addresses.mainnet.USDT = "0xdAC17F958D2ee523a2206206994597C13D831ec7";
 
 addresses.mainnet.OethARM = "0x6bac785889A4127dB0e0CeFEE88E0a9F1Aaf3cC7";
 addresses.mainnet.lidoARM = "0x85B78AcA6Deae198fBF201c82DAF6Ca21942acc6";
