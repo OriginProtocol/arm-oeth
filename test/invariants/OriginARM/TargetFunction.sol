@@ -58,6 +58,8 @@ abstract contract TargetFunction is Properties {
     using MathComparisons for uint256;
 
     function handler_deposit(uint8 seed, uint88 amount) public {
+        vm.assume(originARM.totalAssets() > 1e12 || originARM.withdrawsQueued() == originARM.withdrawsClaimed());
+
         // Get a random user from the list of lps
         address user = getRandomLPs(seed);
 
