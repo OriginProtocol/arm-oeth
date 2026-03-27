@@ -13,7 +13,7 @@
 ' white - 3rd Party
 ' end legend
 
-title "Ether.fi\nAutomated Redemption Manager (ARM)\nContract Dependencies"
+title "Ether.fi (eETH)\nAutomated Redemption Manager (ARM)\nContract Dependencies"
 
 
 object "ZapperARM" as zap <<Origin>> #$originColor {
@@ -34,11 +34,11 @@ object "Withdrawal\nQueue" as wq <<EtherFi>><<Proxy>> #$thirdPartyColor {
 }
 
 object "Morpho Market" as morphoMarket <<Origin>><<Proxy>> #$originColor {
-    assets: WETH
+    asset: WETH
 }
 
-object "Gauntlet WETH Core" as metaMorpho <<Morpho>> #$thirdPartyColor {
-    assets: WETH
+object "Yearn WETH ARM Vault" as morpho <<Morpho>> #$thirdPartyColor {
+    asset: WETH
 }
 
 zap ..> arm
@@ -46,6 +46,6 @@ arm <.> capMan
 arm ...> rm
 arm ...> wq
 arm ..> morphoMarket
-morphoMarket ..> metaMorpho
+morphoMarket ..> morpho
 
 @enduml
