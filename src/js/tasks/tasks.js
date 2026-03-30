@@ -73,6 +73,7 @@ const {
 const { upgradeProxy } = require("./proxy");
 const { flyTradeQuote, flyTradeTx } = require("../utils/fly");
 const { setOperator } = require("./governance");
+const { tenderlySync, tenderlyUpload } = require("./tenderly");
 
 const { setOSSiloPrice } = require("./osSiloPrice");
 
@@ -1309,6 +1310,21 @@ subtask("updateAction", "Upload a Defender Actions")
   .addParam("file", "Path to the file to upload", undefined, types.string)
   .setAction(updateAction);
 task("updateAction").setAction(async (_, __, runSuper) => {
+  return runSuper();
+});
+
+subtask(
+  "tenderlySync",
+  "Fetches all contracts from deployment descriptors and uploads them to Tenderly if they are not there yet.",
+).setAction(tenderlySync);
+task("tenderlySync").setAction(async (_, __, runSuper) => {
+  return runSuper();
+});
+
+subtask("tenderlyUpload", "Uploads a contract to Tenderly.")
+  .addParam("name", "The contract's name", undefined, types.string)
+  .setAction(tenderlyUpload);
+task("tenderlyUpload").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
 
