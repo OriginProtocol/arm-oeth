@@ -13,7 +13,7 @@
 ' white - 3rd Party
 ' end legend
 
-title "Origin OETH Automated Redemption Manager (ARM) Contract Dependencies"
+title "Origin Ether (OETH)\nAutomated Redemption Manager (ARM)\nContract Dependencies"
 
 
 object "ZapperARM" as zap <<Origin>> #$originColor {
@@ -29,16 +29,16 @@ object "OETHVault" as oethVault <<Origin>><<Proxy>> #$thirdPartyColor {
 }
 
 object "Morpho Market" as morphoMarket <<Origin>><<Proxy>> #$originColor {
-    assets: WETH
+    asset: WETH
 }
 
-object "Yearn OG WETH" as metaMorpho <<Morpho>> #$thirdPartyColor {
-    assets: WETH
+object "Yearn WETH ARM Vault" as morpho <<Morpho>> #$thirdPartyColor {
+    asset: WETH
 }
 
 zap ..> arm
 arm ..> oethVault
 arm ..> morphoMarket
-morphoMarket ..> metaMorpho
+morphoMarket ..> morpho
 
 @enduml
