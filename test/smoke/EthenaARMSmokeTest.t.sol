@@ -51,7 +51,7 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
         assertEq(ethenaARM.liquidityAsset(), Mainnet.USDE, "liquidity asset");
         assertEq(ethenaARM.asset(), Mainnet.USDE, "ERC-4626 asset");
         assertEq(ethenaARM.claimDelay(), 10 minutes, "claim delay");
-        assertEq(ethenaARM.crossPrice(), 0.9995e36, "cross price");
+        assertEq(ethenaARM.crossPrice(), 0.99996e36, "cross price");
 
         assertEq(capManager.accountCapEnabled(), true, "account cap enabled");
         assertEq(capManager.totalAssetsCap(), 100000 ether, "total assets cap");
@@ -72,10 +72,10 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
 
     function test_swap_exact_usde_for_susde() external {
         // trader buys sUSDe and sells USDe, the ARM sells sUSDe at a
-        // 0.5 bps discount
-        _swapExactTokensForTokens(usde, susde, 0.99995e36, 10 ether);
-        // 1 bps discount
-        _swapExactTokensForTokens(usde, susde, 0.9999e36, 100 ether);
+        // 0.3 bps discount
+        _swapExactTokensForTokens(usde, susde, 0.99997e36, 10 ether);
+        // 0.4 bps discount
+        _swapExactTokensForTokens(usde, susde, 0.99996e36, 100 ether);
     }
 
     function test_swapTokensForExactTokens() external {
@@ -111,7 +111,7 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
             expectedOut = IStakedUSDe(address(susde)).convertToAssets(expectedOut);
 
             vm.prank(Mainnet.ARM_RELAYER);
-            uint256 sellPrice = price < 0.9997e36 ? 0.9999e36 : price + 2e32;
+            uint256 sellPrice = price < 0.9997e36 ? 0.99996e36 : price + 2e32;
             ethenaARM.setPrices(price, sellPrice);
         }
         // Approve the ARM to transfer the input token of the swap.
@@ -148,7 +148,7 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
             expectedIn = IStakedUSDe(address(susde)).convertToShares(amountOut) * 1e36 / price + 3;
 
             vm.prank(Mainnet.ARM_RELAYER);
-            uint256 sellPrice = price < 0.9997e36 ? 0.9999e36 : price + 2e32;
+            uint256 sellPrice = price < 0.9997e36 ? 0.99996e36 : price + 2e32;
             ethenaARM.setPrices(price, sellPrice);
         }
         // Approve the ARM to transfer the input token of the swap.
@@ -242,7 +242,7 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
 
     // Allocate to market
     function test_allocate_AAVEMarket_withoutYield() external {
-        _swapExactTokensForTokens(usde, susde, 0.9999e36, 1_000 ether);
+        _swapExactTokensForTokens(usde, susde, 0.99996e36, 1_000 ether);
 
         vm.prank(Mainnet.ARM_RELAYER);
         ethenaARM.setARMBuffer(5000); // 50%
@@ -256,7 +256,7 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
     }
 
     function test_allocate_AAVEMarket_withYield() external {
-        _swapExactTokensForTokens(usde, susde, 0.9999e36, 1_000 ether);
+        _swapExactTokensForTokens(usde, susde, 0.99996e36, 1_000 ether);
 
         vm.prank(Mainnet.ARM_RELAYER);
         ethenaARM.setARMBuffer(5000); // 50%
