@@ -67,6 +67,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
     // ║                              ✦✦✦ ETHENA ARM ✦✦✦                              ║
     // ╚══════════════════════════════════════════════════════════════════════════════╝
     function targetARMDeposit(uint88 amount, uint256 randomAddressIndex) external ensureExchangeRateIncrease {
+        vm.assume(arm.totalAssets() > 1e12 || arm.withdrawsQueued() == arm.withdrawsClaimed());
         // Select a random user from makers
         address user = makers[randomAddressIndex % MAKERS_COUNT];
 
