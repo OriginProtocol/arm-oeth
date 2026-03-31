@@ -300,9 +300,7 @@ const formatOneInchProtocolSummary = (protocols) => {
       const name = protocol?.name ?? "unknown";
       const part = protocol?.part;
       const partText =
-        typeof part === "number" || typeof part === "string"
-          ? ` ${part}%`
-          : "";
+        typeof part === "number" || typeof part === "string" ? ` ${part}%` : "";
       return `${name}${partText}`;
     })
     .join(", ");
@@ -316,7 +314,10 @@ const get1InchHopKey = (fromToken, hop) => {
   const part = hop?.part ?? "unknown-part";
   const protocolKey = Array.isArray(hop?.protocols)
     ? hop.protocols
-        .map((protocol) => `${protocol?.name ?? "unknown"}:${protocol?.part ?? "n/a"}`)
+        .map(
+          (protocol) =>
+            `${protocol?.name ?? "unknown"}:${protocol?.part ?? "n/a"}`,
+        )
         .join("|")
     : "unknown-protocols";
 
@@ -350,7 +351,9 @@ const get1InchRouteHops = (protocols) => {
   if (dedupedRouteHops.length === 0) return [];
 
   const rootToken =
-    typeof protocols[0]?.token === "string" ? protocols[0].token.toLowerCase() : null;
+    typeof protocols[0]?.token === "string"
+      ? protocols[0].token.toLowerCase()
+      : null;
   const orderedRouteHops = [];
   const used = new Set();
 
@@ -406,10 +409,9 @@ const format1InchRouteLeg = async (hop, index) => {
         ? Number(hop.part)
         : null;
   const hideSplit = hop?.isSubsequentHop && partNumber === 100;
-  const splitText =
-    hideSplit
-      ? ""
-      : typeof hop?.part === "number" || typeof hop?.part === "string"
+  const splitText = hideSplit
+    ? ""
+    : typeof hop?.part === "number" || typeof hop?.part === "string"
       ? `${hop.part}%`
       : "n/a";
   const protocols = formatOneInchProtocolSummary(hop?.protocols);
@@ -631,7 +633,8 @@ const getKyberRouteLanes = (quote) => {
 
       const candidates = allSwaps.filter(
         (swap) =>
-          swap !== currentSwap && normalizeAddress(swap?.tokenIn) === currentOutToken,
+          swap !== currentSwap &&
+          normalizeAddress(swap?.tokenIn) === currentOutToken,
       );
       const nextSwap = chooseKyberNextSwap(currentSwap, candidates);
       if (!nextSwap) break;

@@ -71,6 +71,8 @@ contract Fork_Concrete_Harvester_Swap_Test_ is Fork_Shared_Test {
     }
 
     function test_RevertWhen_Swap_Because_InvalidToAsset() public ensureKeyEnvVarExists {
+        // This test is currently skipped as FlyTrade quote failing with "Routes were not found"
+        vm.skip(true);
         bytes memory data = getFlyTradeQuote({
             from: "OS",
             to: "SILO",

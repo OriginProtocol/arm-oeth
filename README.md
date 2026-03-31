@@ -250,7 +250,7 @@ make deploy-testnet
 In the `.env` file, set `DEPLOYER_ADDRESS` (should match the privateKey you registered wit `cast wallet import deployerKey`), `ETHERSCAN_API_KEY` and `MAINNET_URL` to the mainnet values.
 
 ```bash
-make deploy
+make deploy-mainnet
 ```
 
 ### Sonic
