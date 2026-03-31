@@ -1,38 +1,24 @@
-const { Defender } = require("@openzeppelin/defender-sdk");
-const { ethers } = require("ethers");
+import { ethers } from "ethers";
 
-const { claimLidoWithdrawals } = require("../tasks/lidoQueue");
-const { mainnet } = require("../utils/addresses");
-const lidoWithdrawalQueueAbi = require("../../abis/LidoWithdrawQueue.json");
-const lidoARMAbi = require("../../abis/LidoARM.json");
+import { action } from "../lib/action";
+import { claimLidoWithdrawals } from "../lidoQueue";
+import { mainnet } from "../../utils/addresses";
+const lidoARMAbi = require("../../../abis/LidoARM.json");
+const lidoWithdrawQueueAbi = require("../../../abis/LidoWithdrawQueue.json");
 
-// Entrypoint for the Defender Action
-const handler = async (event) => {
-  // Initialize defender relayer provider and signer
-  const client = new Defender(event);
-  const provider = client.relaySigner.getProvider({ ethersVersion: "v6" });
-  const signer = await client.relaySigner.getSigner(provider, {
-    speed: "fastest",
-    ethersVersion: "v6",
-  });
+action({
+  name: "autoClaimLidoWithdraw",
+  description: "Claim Lido withdrawals from Lido ARM",
+  chains: [1],
+  run: async ({ signer, log }) => {
+    const arm = new ethers.Contract(mainnet.lidoARM, lidoARMAbi, signer);
+    const withdrawalQueue = new ethers.Contract(
+      mainnet.lidoWithdrawalQueue,
+      lidoWithdrawQueueAbi,
+      signer
+    );
 
-  console.log(
-    `DEBUG env var in handler before being set: "${process.env.DEBUG}"`,
-  );
-
-  // References to contracts
-  const arm = new ethers.Contract(mainnet.lidoARM, lidoARMAbi, signer);
-  const withdrawalQueue = new ethers.Contract(
-    mainnet.lidoWithdrawalQueue,
-    lidoWithdrawalQueueAbi,
-    signer,
-  );
-
-  await claimLidoWithdrawals({
-    signer,
-    arm,
-    withdrawalQueue,
-  });
-};
-
-module.exports = { handler };
+    log.info("Claiming Lido withdrawals");
+    await claimLidoWithdrawals({ signer, arm, withdrawalQueue });
+  },
+});

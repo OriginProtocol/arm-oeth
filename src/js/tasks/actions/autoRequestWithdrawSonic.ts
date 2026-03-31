@@ -1,33 +1,23 @@
-const { Defender } = require("@openzeppelin/defender-sdk");
-const { ethers } = require("ethers");
+import { ethers } from "ethers";
 
-const { autoRequestWithdraw } = require("../tasks/liquidityAutomation");
-const { sonic } = require("../utils/addresses");
-const armAbi = require("../../abis/OriginARM.json");
+import { action } from "../lib/action";
+import { autoRequestWithdraw } from "../liquidityAutomation";
+import { sonic } from "../../utils/addresses";
+const armAbi = require("../../../abis/OriginARM.json");
 
-// Entrypoint for the Autotask
-const handler = async (event) => {
-  // Initialize defender relayer provider and signer
-  const client = new Defender(event);
-  const provider = client.relaySigner.getProvider({ ethersVersion: "v6" });
-  const signer = await client.relaySigner.getSigner(provider, {
-    speed: "fastest",
-    ethersVersion: "v6",
-  });
+action({
+  name: "autoRequestWithdrawSonic",
+  description: "Request withdrawals from Origin ARM on Sonic",
+  chains: [146],
+  run: async ({ signer, log }) => {
+    const arm = new ethers.Contract(sonic.OriginARM, armAbi, signer);
 
-  console.log(
-    `DEBUG env var in handler before being set: "${process.env.DEBUG}"`,
-  );
-
-  // References to contracts
-  const arm = new ethers.Contract(sonic.OriginARM, armAbi, signer);
-
-  await autoRequestWithdraw({
-    signer,
-    arm,
-    minAmount: "300",
-    thresholdAmount: 10000,
-  });
-};
-
-module.exports = { handler };
+    log.info("Requesting withdrawals from Origin ARM on Sonic");
+    await autoRequestWithdraw({
+      signer,
+      arm,
+      minAmount: "300",
+      thresholdAmount: 10000,
+    });
+  },
+});

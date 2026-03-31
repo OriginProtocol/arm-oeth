@@ -1,47 +1,33 @@
-const { Defender } = require("@openzeppelin/defender-sdk");
-const { ethers } = require("ethers");
+import { ethers } from "ethers";
 
-const { setPrices } = require("../tasks/armPrices");
-const { mainnet } = require("../utils/addresses");
-const armAbi = require("../../abis/EthenaARM.json");
+import { action } from "../lib/action";
+import { setPrices } from "../armPrices";
+import { mainnet } from "../../utils/addresses";
+const ethenaARMAbi = require("../../../abis/EthenaARM.json");
 
-// Entrypoint for the Defender Action
-const handler = async (event) => {
-  // Initialize defender relayer provider and signer
-  const client = new Defender(event);
-  const provider = client.relaySigner.getProvider({ ethersVersion: "v6" });
-  const signer = await client.relaySigner.getSigner(provider, {
-    speed: "fastest",
-    ethersVersion: "v6",
-  });
+action({
+  name: "setPricesEthena",
+  description: "Set prices for Ethena ARM",
+  chains: [1],
+  run: async ({ signer, log }) => {
+    const arm = new ethers.Contract(mainnet.ethenaARM, ethenaARMAbi, signer);
 
-  console.log(
-    `DEBUG env var in handler before being set: "${process.env.DEBUG}"`,
-  );
-
-  // References to contracts
-  const arm = new ethers.Contract(mainnet.ethenaARM, armAbi, signer);
-
-  await setPrices({
-    signer,
-    arm,
-    // sellPrice: 0.9998,
-    // buyPrice: 0.9997,
-    maxSellPrice: 0.99999,
-    minSellPrice: 0.99996,
-    maxBuyPrice: 0.999,
-    minBuyPrice: 0.995,
-    // inch: true,
-    // curve: true,
-    kyber: true,
-    amount: 2000,
-    tolerance: 0.3,
-    fee: 2,
-    offset: 0.4,
-    priceOffset: true,
-    blockTag: "latest",
-    wrapped: true,
-  });
-};
-
-module.exports = { handler };
+    log.info("Setting prices for Ethena ARM");
+    await setPrices({
+      signer,
+      arm,
+      maxSellPrice: 0.99999,
+      minSellPrice: 0.99996,
+      maxBuyPrice: 0.999,
+      minBuyPrice: 0.995,
+      kyber: true,
+      amount: 2000,
+      tolerance: 0.3,
+      fee: 2,
+      offset: 0.4,
+      priceOffset: true,
+      blockTag: "latest",
+      wrapped: true,
+    });
+  },
+});

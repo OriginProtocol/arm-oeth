@@ -1,30 +1,18 @@
-const { Defender } = require("@openzeppelin/defender-sdk");
-const { ethers } = require("ethers");
-const { claimEthenaWithdrawals } = require("../tasks/ethenaQueue");
-const { mainnet } = require("../utils/addresses");
-const ethenaARMAbi = require("../../abis/EthenaARM.json");
+import { ethers } from "ethers";
 
-// Entrypoint for the Defender Action
-const handler = async (event) => {
-  // Initialize defender relayer provider and signer
-  const client = new Defender(event);
-  const provider = client.relaySigner.getProvider({ ethersVersion: "v6" });
-  const signer = await client.relaySigner.getSigner(provider, {
-    speed: "fastest",
-    ethersVersion: "v6",
-  });
+import { action } from "../lib/action";
+import { claimEthenaWithdrawals } from "../ethenaQueue";
+import { mainnet } from "../../utils/addresses";
+const ethenaARMAbi = require("../../../abis/EthenaARM.json");
 
-  console.log(
-    `DEBUG env var in handler before being set: "${process.env.DEBUG}"`,
-  );
+action({
+  name: "autoClaimEthenaWithdraw",
+  description: "Claim Ethena withdrawals from Ethena ARM",
+  chains: [1],
+  run: async ({ signer, log }) => {
+    const arm = new ethers.Contract(mainnet.ethenaARM, ethenaARMAbi, signer);
 
-  // References to contracts
-  const arm = new ethers.Contract(mainnet.ethenaARM, ethenaARMAbi, signer);
-
-  await claimEthenaWithdrawals({
-    signer,
-    arm,
-  });
-};
-
-module.exports = { handler };
+    log.info("Claiming Ethena withdrawals");
+    await claimEthenaWithdrawals({ signer, arm });
+  },
+});

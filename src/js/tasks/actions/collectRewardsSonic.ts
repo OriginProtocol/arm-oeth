@@ -1,33 +1,26 @@
-const { Defender } = require("@openzeppelin/defender-sdk");
-const { ethers } = require("ethers");
+import { ethers } from "ethers";
 
-const { collectRewards } = require("../tasks/sonicHarvest");
-const { sonic } = require("../utils/addresses");
-const harvesterAbi = require("../../abis/SonicHarvester.json");
+import { action } from "../lib/action";
+import { collectRewards } from "../sonicHarvest";
+import { sonic } from "../../utils/addresses";
+const harvesterAbi = require("../../../abis/SonicHarvester.json");
 
-// Entrypoint for the Defender Action
-const handler = async (event) => {
-  // Initialize defender relayer provider and signer
-  const client = new Defender(event);
-  const provider = client.relaySigner.getProvider({ ethersVersion: "v6" });
-  const signer = await client.relaySigner.getSigner(provider, {
-    speed: "fastest",
-    ethersVersion: "v6",
-  });
+action({
+  name: "collectRewardsSonic",
+  description: "Collect rewards from Sonic harvester",
+  chains: [146],
+  run: async ({ signer, log }) => {
+    const harvester = new ethers.Contract(
+      sonic.harvester,
+      harvesterAbi,
+      signer
+    );
 
-  console.log(
-    `DEBUG env var in handler before being set: "${process.env.DEBUG}"`,
-  );
-
-  const harvester = new ethers.Contract(sonic.harvester, harvesterAbi, signer);
-
-  await collectRewards({
-    signer,
-    harvester,
-    strategies: [sonic.siloVarlamoreMarket],
-  });
-
-  // TODO do Silo, beS and wOS swaps with FlyTrade
-};
-
-module.exports = { handler };
+    log.info("Collecting rewards from Sonic harvester");
+    await collectRewards({
+      signer,
+      harvester,
+      strategies: [sonic.siloVarlamoreMarket],
+    });
+  },
+});

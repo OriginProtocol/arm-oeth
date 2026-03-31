@@ -1,34 +1,24 @@
-const { Defender } = require("@openzeppelin/defender-sdk");
-const { ethers } = require("ethers");
+import { ethers } from "ethers";
 
-const { allocate } = require("../tasks/admin");
-const { sonic } = require("../utils/addresses");
-const armAbi = require("../../abis/OriginARM.json");
+import { action } from "../lib/action";
+import { allocate } from "../admin";
+import { sonic } from "../../utils/addresses";
+const armAbi = require("../../../abis/OriginARM.json");
 
-// Entrypoint for the Defender Action
-const handler = async (event) => {
-  // Initialize defender relayer provider and signer
-  const client = new Defender(event);
-  const provider = client.relaySigner.getProvider({ ethersVersion: "v6" });
-  const signer = await client.relaySigner.getSigner(provider, {
-    speed: "fastest",
-    ethersVersion: "v6",
-  });
+action({
+  name: "allocateSonic",
+  description: "Allocate liquidity for Origin ARM on Sonic",
+  chains: [146],
+  run: async ({ signer, log }) => {
+    const arm = new ethers.Contract(sonic.OriginARM, armAbi, signer);
 
-  console.log(
-    `DEBUG env var in handler before being set: "${process.env.DEBUG}"`,
-  );
-
-  // References to contracts
-  const arm = new ethers.Contract(sonic.OriginARM, armAbi, signer);
-
-  await allocate({
-    signer,
-    arm,
-    threshold: 10000,
-    maxGasPrice: 500,
-    armContractVersion: "v1",
-  });
-};
-
-module.exports = { handler };
+    log.info("Allocating liquidity for Origin ARM on Sonic");
+    await allocate({
+      signer,
+      arm,
+      threshold: 10000,
+      maxGasPrice: 500,
+      armContractVersion: "v1",
+    });
+  },
+});
