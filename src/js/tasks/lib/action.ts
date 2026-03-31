@@ -1,4 +1,4 @@
-import type { ethers } from "ethers";
+import type { Signer } from "ethers";
 import { subtask, task } from "hardhat/config";
 import type { ConfigurableTaskDefinition } from "hardhat/types";
 import type { Logger } from "winston";
@@ -7,7 +7,7 @@ import { getSigner } from "../../utils/signers";
 import logger, { flushLogger } from "./logger";
 
 export interface ActionContext {
-  signer: ethers.Signer;
+  signer: Signer;
   chainId: number;
   networkName: string;
   log: Logger;
@@ -43,24 +43,24 @@ export function action(config: ActionConfig) {
 
     log.info("Starting");
 
-    const signer = await getSigner();
-    const network = await signer.provider!.getNetwork();
-    const chainId = Number(network.chainId);
-    const networkName = CHAIN_NAMES[chainId] ?? `unknown-${chainId}`;
-
-    if (chains && !chains.includes(chainId)) {
-      const valid = chains
-        .map((id) => `${CHAIN_NAMES[id] ?? id} (${id})`)
-        .join(", ");
-      throw new Error(
-        `${name} only supports ${valid}, not ${networkName} (${chainId})`
-      );
-    }
-
-    log.info(`Running on ${networkName} (${chainId})`);
-
     try {
+      const signer = await getSigner();
+      const network = await signer.provider!.getNetwork();
+      const chainId = Number(network.chainId);
+      const networkName = CHAIN_NAMES[chainId] ?? `unknown-${chainId}`;
+
+      if (chains && !chains.includes(chainId)) {
+        const valid = chains
+          .map((id) => `${CHAIN_NAMES[id] ?? id} (${id})`)
+          .join(", ");
+        throw new Error(
+          `${name} only supports ${valid}, not ${networkName} (${chainId})`
+        );
+      }
+
+      log.info(`Running on ${networkName} (${chainId})`);
       await run({ signer, chainId, networkName, log, args: taskArgs });
+
       const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
       log.info(`Completed in ${elapsed}s`);
     } catch (err: any) {

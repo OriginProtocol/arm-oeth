@@ -13,8 +13,7 @@
     "types": ["node"]
   },
   "include": [
-    "src/js/tasks/actions/**/*.ts",
-    "src/js/tasks/lib/**/*.ts",
+    "src/js/**/*.ts",
     "cron/cron-supervisor.ts",
     "cron/render-crontab.ts"
   ],

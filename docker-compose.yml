@@ -9,7 +9,6 @@ services:
       - MAINNET_URL=${MAINNET_URL:-}
       - SONIC_URL=${SONIC_URL:-}
       - HOLESKY_URL=${HOLESKY_URL:-}
-      - HARDHAT_NETWORK=${HARDHAT_NETWORK:-mainnet}
       - ACTION_API_BEARER_TOKEN=${ACTION_API_BEARER_TOKEN:-test-token}
       - LOKI_URL=${LOKI_URL:-}
       - LOKI_USER=${LOKI_USER:-}

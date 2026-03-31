@@ -20,6 +20,14 @@ RUN mkdir -p /root/.ssh \
 
 RUN git config --global url."https://github.com/".insteadOf "git@github.com:"
 
+# Install Foundry and symlink binaries to /usr/local/bin so they're available
+# in all shell modes (login shells reset PATH, dropping ~/.foundry/bin).
+RUN curl -L https://foundry.paradigm.xyz | bash \
+  && /root/.foundry/bin/foundryup \
+  && ln -s /root/.foundry/bin/forge /usr/local/bin/forge \
+  && ln -s /root/.foundry/bin/cast /usr/local/bin/cast \
+  && ln -s /root/.foundry/bin/anvil /usr/local/bin/anvil
+
 ARG TARGETARCH
 ENV SUPERCRONIC_URL=https://github.com/aptible/supercronic/releases/download/v0.2.39/supercronic-linux-${TARGETARCH} \
   SUPERCRONIC=supercronic-linux-${TARGETARCH}
@@ -47,8 +55,7 @@ COPY . .
 
 ENV MAINNET_URL="" \
   SONIC_URL="" \
-  HOLESKY_URL="" \
-  HARDHAT_NETWORK=""
+  HOLESKY_URL=""
 
 RUN chmod +x /app/cron/cron-entrypoint.sh
 
