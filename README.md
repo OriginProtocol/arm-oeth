@@ -279,6 +279,20 @@ forge verify-contract 0x6bac785889A4127dB0e0CeFEE88E0a9F1Aaf3cC7 Proxy
 forge verify-contract --chain 146 --etherscan-api-key $SONICSCAN_API_KEY 0x2F872623d1E1Af5835b08b0E49aAd2d81d649D30 Proxy
 ```
 
+### Tenderly Upload
+
+To upload a deployed contract to Tenderly, set `TENDERLY_ACCESS_TOKEN` in your
+environment.
+
+```bash
+# Sync all deployment aliases from the current chain's deployment file
+yarn hardhat tenderlySync --network mainnet
+yarn hardhat tenderlySync --network sonic
+
+# Upload a deployment alias from the current chain's deployment file
+yarn hardhat tenderlyUpload --network sonic --name ORIGIN_ARM
+```
+
 ## Open Zeppelin Defender
 
 [Open Zeppelin Defender v2](https://docs.openzeppelin.com/defender/v2/) is used to manage the Operations account and automate AMM operational jobs like managing liquidity.
