@@ -6,6 +6,30 @@ const { ethereumAddress, privateKey } = require("./regex");
 
 const log = require("./logger")("utils:signers");
 
+// KMS configuration
+const DEFAULT_KMS_RELAYER_ID = "mrk-248128595151466bb7f7b9a56501a98f";
+const AWS_KMS_REGION = "us-east-1";
+
+const hasAwsKmsCredentials = () => {
+  return (
+    !!process.env.AWS_ACCESS_KEY_ID && !!process.env.AWS_SECRET_ACCESS_KEY
+  );
+};
+
+const getKmsSigner = async () => {
+  const { DirectKmsTransactionSigner } = require("@lastdotnet/purrikey");
+  const relayerId = process.env.KMS_RELAYER_ID || DEFAULT_KMS_RELAYER_ID;
+  const signer = new DirectKmsTransactionSigner(
+    relayerId,
+    hre.ethers.provider,
+    AWS_KMS_REGION,
+  );
+  log(
+    `Using KMS signer ${await signer.getAddress()} from relayer-id "${relayerId}"`,
+  );
+  return signer;
+};
+
 /**
  * Signer factory that gets a signer for a hardhat test or task
  * If address is passed, use that address as signer.
@@ -30,6 +54,10 @@ async function getSigner(address = undefined) {
     const wallet = new Wallet(pk, hre.ethers.provider);
     log(`Using signer ${await wallet.getAddress()} from private key`);
     return wallet;
+  }
+
+  if (hasAwsKmsCredentials()) {
+    return await getKmsSigner();
   }
 
   if (process.env.IMPERSONATE) {

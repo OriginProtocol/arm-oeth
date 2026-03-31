@@ -2,6 +2,21 @@
 
 require("dotenv").config();
 
+require("ts-node").register({
+  transpileOnly: true,
+  // Use inline compilerOptions instead of tsconfig.json to avoid
+  // interfering with ESM-only packages.
+  skipProject: true,
+  compilerOptions: {
+    module: "CommonJS",
+    target: "ES2020",
+    esModuleInterop: true,
+    allowSyntheticDefaultImports: true,
+    resolveJsonModule: true,
+    strict: false,
+  },
+});
+
 require("@nomicfoundation/hardhat-ethers");
 require("@nomicfoundation/hardhat-foundry");
 
@@ -53,6 +68,17 @@ internalTask(TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS).setAction(
 );
 
 require("./src/js/tasks/tasks");
+
+// Auto-load TypeScript action files
+const fs = require("fs");
+const actionsDir = path.join(__dirname, "src/js/tasks/actions");
+if (fs.existsSync(actionsDir)) {
+  for (const file of fs.readdirSync(actionsDir)) {
+    if (file.endsWith(".ts")) {
+      require(path.join(actionsDir, file));
+    }
+  }
+}
 
 module.exports = {
   networks: {

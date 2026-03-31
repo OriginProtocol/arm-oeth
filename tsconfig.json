@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "strict": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "allowJs": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "outDir": "dist",
+    "types": ["node"]
+  },
+  "include": [
+    "src/js/tasks/actions/**/*.ts",
+    "src/js/tasks/lib/**/*.ts",
+    "cron/cron-supervisor.ts",
+    "cron/render-crontab.ts"
+  ],
+  "exclude": ["node_modules", "dist"]
+}

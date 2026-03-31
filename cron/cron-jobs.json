@@ -1,0 +1,166 @@
+{
+  "jobs": [
+    {
+      "name": "healthcheck",
+      "schedule": "*/5 * * * *",
+      "enabled": true,
+      "command": "cd /app && npx hardhat healthcheck"
+    },
+    {
+      "name": "mainnet_auto_request_withdraw",
+      "schedule": "2 * * * *",
+      "enabled": false,
+      "command": "cd /app && npx hardhat autoRequestWithdraw --network mainnet"
+    },
+    {
+      "name": "mainnet_auto_claim_withdraw",
+      "schedule": "7 * * * *",
+      "enabled": false,
+      "command": "cd /app && npx hardhat autoClaimWithdraw --network mainnet"
+    },
+    {
+      "name": "mainnet_auto_request_lido_withdraw",
+      "schedule": "12 * * * *",
+      "enabled": false,
+      "command": "cd /app && npx hardhat autoRequestLidoWithdraw --network mainnet"
+    },
+    {
+      "name": "mainnet_auto_claim_lido_withdraw",
+      "schedule": "17 * * * *",
+      "enabled": false,
+      "command": "cd /app && npx hardhat autoClaimLidoWithdraw --network mainnet"
+    },
+    {
+      "name": "mainnet_auto_request_etherfi_withdraw",
+      "schedule": "22 * * * *",
+      "enabled": false,
+      "command": "cd /app && npx hardhat autoRequestEtherFiWithdraw --network mainnet"
+    },
+    {
+      "name": "mainnet_auto_claim_etherfi_withdraw",
+      "schedule": "27 * * * *",
+      "enabled": false,
+      "command": "cd /app && npx hardhat autoClaimEtherFiWithdraw --network mainnet"
+    },
+    {
+      "name": "mainnet_auto_request_ethena_withdraw",
+      "schedule": "32 * * * *",
+      "enabled": false,
+      "command": "cd /app && npx hardhat autoRequestEthenaWithdraw --network mainnet"
+    },
+    {
+      "name": "mainnet_auto_claim_ethena_withdraw",
+      "schedule": "37 * * * *",
+      "enabled": false,
+      "command": "cd /app && npx hardhat autoClaimEthenaWithdraw --network mainnet"
+    },
+    {
+      "name": "mainnet_collect_oeth_fees",
+      "schedule": "3 0 * * *",
+      "enabled": false,
+      "command": "cd /app && npx hardhat collectOETHFees --network mainnet"
+    },
+    {
+      "name": "mainnet_collect_lido_fees",
+      "schedule": "8 0 * * *",
+      "enabled": false,
+      "command": "cd /app && npx hardhat collectLidoFees --network mainnet"
+    },
+    {
+      "name": "mainnet_collect_etherfi_fees",
+      "schedule": "13 0 * * *",
+      "enabled": false,
+      "command": "cd /app && npx hardhat collectEtherFiFees --network mainnet"
+    },
+    {
+      "name": "mainnet_collect_ethena_fees",
+      "schedule": "18 0 * * *",
+      "enabled": false,
+      "command": "cd /app && npx hardhat collectEthenaFees --network mainnet"
+    },
+    {
+      "name": "mainnet_allocate_oeth",
+      "schedule": "42 * * * *",
+      "enabled": false,
+      "command": "cd /app && npx hardhat allocateOETH --network mainnet"
+    },
+    {
+      "name": "mainnet_allocate_lido",
+      "schedule": "47 * * * *",
+      "enabled": false,
+      "command": "cd /app && npx hardhat allocateLido --network mainnet"
+    },
+    {
+      "name": "mainnet_allocate_etherfi",
+      "schedule": "52 * * * *",
+      "enabled": false,
+      "command": "cd /app && npx hardhat allocateEtherFi --network mainnet"
+    },
+    {
+      "name": "mainnet_allocate_ethena",
+      "schedule": "57 * * * *",
+      "enabled": false,
+      "command": "cd /app && npx hardhat allocateEthena --network mainnet"
+    },
+    {
+      "name": "mainnet_set_prices_oeth",
+      "schedule": "*/10 * * * *",
+      "enabled": false,
+      "command": "cd /app && npx hardhat setPricesOETH --network mainnet"
+    },
+    {
+      "name": "mainnet_set_prices_lido",
+      "schedule": "1,11,21,31,41,51 * * * *",
+      "enabled": false,
+      "command": "cd /app && npx hardhat setPricesLido --network mainnet"
+    },
+    {
+      "name": "mainnet_set_prices_etherfi",
+      "schedule": "2,12,22,32,42,52 * * * *",
+      "enabled": false,
+      "command": "cd /app && npx hardhat setPricesEtherFi --network mainnet"
+    },
+    {
+      "name": "mainnet_set_prices_ethena",
+      "schedule": "3,13,23,33,43,53 * * * *",
+      "enabled": false,
+      "command": "cd /app && npx hardhat setPricesEthena --network mainnet"
+    },
+    {
+      "name": "sonic_auto_request_withdraw",
+      "schedule": "5 * * * *",
+      "enabled": false,
+      "command": "cd /app && npx hardhat autoRequestWithdrawSonic --network sonic"
+    },
+    {
+      "name": "sonic_auto_claim_withdraw",
+      "schedule": "10 * * * *",
+      "enabled": false,
+      "command": "cd /app && npx hardhat autoClaimWithdrawSonic --network sonic"
+    },
+    {
+      "name": "sonic_collect_fees",
+      "schedule": "23 0 * * *",
+      "enabled": false,
+      "command": "cd /app && npx hardhat collectFeesSonic --network sonic"
+    },
+    {
+      "name": "sonic_allocate",
+      "schedule": "15 * * * *",
+      "enabled": false,
+      "command": "cd /app && npx hardhat allocateSonic --network sonic"
+    },
+    {
+      "name": "sonic_set_os_silo_price",
+      "schedule": "4,14,24,34,44,54 * * * *",
+      "enabled": false,
+      "command": "cd /app && npx hardhat setOSSiloPriceAction --network sonic"
+    },
+    {
+      "name": "sonic_collect_rewards",
+      "schedule": "28 0 * * *",
+      "enabled": false,
+      "command": "cd /app && npx hardhat collectRewardsSonic --network sonic"
+    }
+  ]
+}
