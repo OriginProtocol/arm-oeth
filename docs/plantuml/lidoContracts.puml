@@ -13,7 +13,7 @@
 ' white - 3rd Party
 ' end legend
 
-title "Lido Automated Redemption Manager (ARM) Contract Dependencies"
+title "Lido (stETH)\nAutomated Redemption Manager (ARM)\nContract Dependencies"
 
 
 object "ZapperLidoARM" as zap <<Origin>> #$originColor {
@@ -31,23 +31,18 @@ object "WithdrawalQueueERC721" as lidoQ <<Lido>><<Proxy>> #$thirdPartyColor {
     assets: stETH, WETH
 }
 
-object "Morpho Strategy" as morphoStrategy <<Origin>><<Proxy>> #$originColor {
-    assets: wETH
+object "Morpho Market" as morphoMarket <<Origin>><<Proxy>> #$originColor {
+    asset: WETH
 }
 
-object "MEV Capital Vault" as metaMorpho <<Morpho>><<MetaMorpho>> #$thirdPartyColor {
-    assets: wETH
-}
-
-object "Morpho Blue" as morphoBlue <<Morpho>> #$thirdPartyColor {
-    assets: wETH
+object "Yearn WETH ARM Vault" as morpho <<Morpho>> #$thirdPartyColor {
+    asset: WETH
 }
 
 zap <..> arm
 arm <.> capMan
 arm ..> lidoQ
-arm ..> morphoStrategy
-morphoStrategy ..> metaMorpho
-metaMorpho ..> morphoBlue
+arm ..> morphoMarket
+morphoMarket ..> morpho
 
 @enduml

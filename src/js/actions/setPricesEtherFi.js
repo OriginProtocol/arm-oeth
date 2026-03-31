@@ -28,7 +28,7 @@ const handler = async (event) => {
     // sellPrice: 0.9998,
     // buyPrice: 0.9997,
     maxSellPrice: 1.0,
-    minSellPrice: 0.9998,
+    minSellPrice: 0.99996,
     maxBuyPrice: 0.9996,
     minBuyPrice: 0.9985,
     // inch: true,

@@ -55,7 +55,7 @@ contract Fork_EtherFiARM_Smoke_Test is AbstractSmokeTest {
         assertEq(etherFiARM.liquidityAsset(), Mainnet.WETH, "liquidity asset");
         assertEq(etherFiARM.asset(), Mainnet.WETH, "ERC-4626 asset");
         assertEq(etherFiARM.claimDelay(), 10 minutes, "claim delay");
-        assertEq(etherFiARM.crossPrice(), 0.9998e36, "cross price");
+        assertEq(etherFiARM.crossPrice(), 0.99996e36, "cross price");
 
         assertEq(capManager.accountCapEnabled(), true, "account cap enabled");
         assertEq(capManager.totalAssetsCap(), 1000 ether, "total assets cap");
@@ -76,10 +76,10 @@ contract Fork_EtherFiARM_Smoke_Test is AbstractSmokeTest {
 
     function test_swap_exact_weth_for_eeth() external {
         // trader buys eETH and sells WETH, the ARM sells eETH at a
-        // 0.5 bps discount
-        _swapExactTokensForTokens(weth, eeth, 0.99995e36, 10 ether);
-        // 1 bps discount
-        _swapExactTokensForTokens(weth, eeth, 0.9999e36, 100 ether);
+        // 0.3 bps discount
+        _swapExactTokensForTokens(weth, eeth, 0.99997e36, 10 ether);
+        // 0.4 bps discount
+        _swapExactTokensForTokens(weth, eeth, 0.99996e36, 100 ether);
     }
 
     function test_swapTokensForExactTokens() external {
@@ -113,7 +113,7 @@ contract Fork_EtherFiARM_Smoke_Test is AbstractSmokeTest {
             expectedOut = amountIn * price / 1e36;
 
             vm.prank(Mainnet.ARM_RELAYER);
-            uint256 sellPrice = price < 0.9997e36 ? 0.9999e36 : price + 2e32;
+            uint256 sellPrice = price < 0.9997e36 ? 0.99996e36 : price + 2e32;
             etherFiARM.setPrices(price, sellPrice);
         }
         // Approve the ARM to transfer the input token of the swap.
@@ -150,7 +150,7 @@ contract Fork_EtherFiARM_Smoke_Test is AbstractSmokeTest {
             expectedIn = amountOut * 1e36 / price + 3;
 
             vm.prank(Mainnet.ARM_RELAYER);
-            uint256 sellPrice = price < 0.9997e36 ? 0.9999e36 : price + 2e32;
+            uint256 sellPrice = price < 0.9997e36 ? 0.99996e36 : price + 2e32;
             etherFiARM.setPrices(price, sellPrice);
         }
         // Approve the ARM to transfer the input token of the swap.
