@@ -4,8 +4,8 @@ import { action } from "../lib/action";
 import { setOSSiloPrice } from "../osSiloPrice";
 
 action({
-  name: "setOSSiloPriceAction",
-  description: "Set OS/Silo price on Sonic ARM",
+  name: "setPricesSonic",
+  description: "Set prices on Sonic ARM",
   chains: [146],
   run: async ({ signer, log }) => {
     const armAddress = "0x2F872623d1E1Af5835b08b0E49aAd2d81d649D30";
