@@ -22,5 +22,7 @@ https://defender.openzeppelin.com/#/actions/automatic/acfbb7d6-5ea6-4ffc-a758-fa
 https://defender.openzeppelin.com/#/actions/automatic/b362885c-a023-4fb5-8c04-1c33147465eb
 https://defender.openzeppelin.com/#/actions/automatic/c010fb76-ea63-409d-9981-69322d27993a
 https://defender.openzeppelin.com/#/actions/automatic/ffcfc580-7b0a-42ed-a4f2-3f0a3add9779
+https://defender.openzeppelin.com/#/actions/automatic/f92ea662-fc34-433b-8beb-b34e9ab74685
+https://defender.openzeppelin.com/#/actions/automatic/7a0cb2c9-11c2-41dd-bcd0-d7c2dbda6af6
 
 Every ARM defender action used compiled code - so likely all the actions we have in here are all that we need.

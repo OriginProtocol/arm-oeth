@@ -8,13 +8,13 @@
     },
     {
       "name": "mainnet_auto_request_withdraw",
-      "schedule": "2 * * * *",
+      "schedule": "5 */3 * * *",
       "enabled": false,
       "command": "cd /app && npx hardhat autoRequestWithdraw --network mainnet"
     },
     {
       "name": "mainnet_auto_claim_withdraw",
-      "schedule": "7 * * * *",
+      "schedule": "20 */3 * * *",
       "enabled": false,
       "command": "cd /app && npx hardhat autoClaimWithdraw --network mainnet"
     },
@@ -134,8 +134,8 @@
     },
     {
       "name": "sonic_auto_claim_withdraw",
-      "schedule": "10 * * * *",
-      "enabled": false,
+      "schedule": "58 */2 * * *",
+      "enabled": true,
       "command": "cd /app && npx hardhat autoClaimWithdrawSonic --network sonic"
     },
     {
@@ -146,8 +146,8 @@
     },
     {
       "name": "sonic_allocate",
-      "schedule": "15 * * * *",
-      "enabled": false,
+      "schedule": "1,31 * * * *",
+      "enabled": true,
       "command": "cd /app && npx hardhat allocateSonic --network sonic"
     },
     {
