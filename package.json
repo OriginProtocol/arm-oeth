@@ -6,6 +6,7 @@
     "lint": "eslint \"src/**/*.js\"",
     "prettier": "prettier --write \"*.js\" \"src/js/**/*.js\" \"src/abis/**/*.json\"",
     "prettier:check": "prettier -c \"src/js/**/*.js\" \"src/abis/**/*.json\"",
+    "typecheck": "tsc --noEmit",
     "test": "forge test --fork-url=$MAINNET_URL --gas-report",
     "snap": "npx hardhat snap --network mainnet --amount 100"
   },
@@ -37,6 +38,10 @@
     "node-fetch": "^2.6.7",
     "prettier": "^3.6.2",
     "rollup": "^4.9.1",
-    "rollup-plugin-visualizer": "^5.12.0"
+    "rollup-plugin-visualizer": "^5.12.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.0",
+    "winston": "^3.17.0",
+    "winston-loki": "^6.1.3"
   }
 }
