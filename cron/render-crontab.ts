@@ -1,8 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
 
-const DEFAULT_CONFIG_PATH =
-  process.env.CRON_CONFIG_PATH || "./cron/cron-jobs.json";
+import cronConfig from "./cron-jobs";
+
 const DEFAULT_OUTPUT_PATH = process.env.CRON_OUTPUT_PATH || "./cron/cronjob";
 
 export class RenderCrontabError extends Error {}
@@ -59,24 +59,15 @@ function assertCronConfig(data: any): asserts data is CronConfig {
   }
 }
 
-export function loadCronConfig(configPath = DEFAULT_CONFIG_PATH): CronConfig {
-  let parsed: any;
-  try {
-    parsed = JSON.parse(fs.readFileSync(configPath, "utf8"));
-  } catch (e: any) {
-    throw new RenderCrontabError(
-      `failed to read or parse config "${configPath}": ${e.message}`
-    );
-  }
-  assertCronConfig(parsed);
-  return parsed;
+export function loadCronConfig(): CronConfig {
+  assertCronConfig(cronConfig);
+  return cronConfig;
 }
 
 export function renderCrontab({
-  configPath = DEFAULT_CONFIG_PATH,
   outputPath = DEFAULT_OUTPUT_PATH,
 } = {}) {
-  const config = loadCronConfig(configPath);
+  const config = loadCronConfig();
   const enabledJobs = config.jobs.filter((job) => job.enabled);
   if (enabledJobs.length === 0) {
     throw new RenderCrontabError("config has zero enabled jobs");
