@@ -1349,7 +1349,25 @@ subtask("flyTradeQuote", "Get a Fly quote for a swap")
   .setAction(async (taskArgs) => {
     const amount = parseUnits(taskArgs.amount.toString(), 18);
 
-    await flyTradeQuote({ ...taskArgs, amount });
+    try {
+      await flyTradeQuote({ ...taskArgs, amount });
+    } catch (err) {
+      // If the upstream FlyTrade API returned Cloudflare error 525 (SSL
+      // handshake failure between Cloudflare and the origin server), emit a
+      // sentinel hex so the FFI caller in Solidity can vm.skip the test
+      // rather than fail on flaky external infrastructure. Any other error
+      // is rethrown unchanged.
+      let cur = err;
+      while (cur) {
+        if (cur?.response?.status === 525) {
+          // Sentinel must match the constant in test/fork/Harvester/shared/Helpers.sol
+          console.log("0xc10ad11ae525");
+          return;
+        }
+        cur = cur.cause;
+      }
+      throw err;
+    }
   });
 task("flyTradeQuote").setAction(async (_, __, runSuper) => {
   return runSuper();
