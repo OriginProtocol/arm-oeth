@@ -1,14 +1,12 @@
-const { ApolloClient, InMemoryCache, gql } = require("@apollo/client/core");
+const { gql } = require("@apollo/client/core");
 
+const { createApolloClient } = require("./apollo");
 const log = require("./logger")("utils:os:staking");
 
 const uri = "https://origin.squids.live/origin-squid/graphql";
 
 const outstandingValidatorWithdrawalRequests = async () => {
-  const client = new ApolloClient({
-    uri,
-    cache: new InMemoryCache(),
-  });
+  const client = createApolloClient(uri);
 
   log(`About to get outstanding undelegate requests from the Sonic validators`);
 
