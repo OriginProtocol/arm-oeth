@@ -48,8 +48,6 @@ runs:
     - name: Install pnpm
       if: inputs.install-pnpm == 'true'
       uses: pnpm/action-setup@v4
-      with:
-        version: 9
 
     - name: Setup Node.js
       if: inputs.install-pnpm == 'true'
