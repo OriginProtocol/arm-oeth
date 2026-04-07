@@ -15,7 +15,7 @@ Automated Redemption Manager (ARM) by Origin Protocol. Solidity smart contracts 
 ## Build & Test Commands
 
 ```bash
-make install          # foundryup + soldeer + yarn
+make install          # foundryup + soldeer + pnpm
 make                  # forge fmt && forge build
 make test             # All tests except Fuzzer, with --fail-fast -vvv
 make test-c-TestName  # Run specific test contract
@@ -28,7 +28,7 @@ make gas              # Gas report
 make coverage         # LCOV coverage report
 ```
 
-Linting: `forge fmt --check` (Solidity), `yarn lint` (JS), `yarn prettier:check` (JS)
+Linting: `forge fmt --check` (Solidity), `pnpm lint` (JS), `pnpm prettier:check` (JS)
 
 ## Environment Setup
 
@@ -76,7 +76,7 @@ All ARMs are deployed behind `Proxy.sol` (EIP-1967) for upgradeability.
 - **`src/js/tasks/`** - Hardhat tasks for admin operations.
 - **`src/js/utils/`** - Shared utilities (1Inch/Kyber integration, address parsing, pricing helpers).
 
-Actions are bundled via: `yarn rollup -c src/js/actions/rollup.config.cjs`
+Actions are bundled via: `pnpm rollup -c src/js/actions/rollup.config.cjs`
 
 ## Deployment
 
