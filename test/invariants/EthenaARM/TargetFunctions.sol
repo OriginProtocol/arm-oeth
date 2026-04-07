@@ -527,23 +527,24 @@ abstract contract TargetFunctions is Setup, StdUtils {
 
         // Ensure time delay has passed
         uint32 lastRequestTimestamp = arm.lastRequestTimestamp();
-        if (block.timestamp < lastRequestTimestamp + 3 hours) {
+        uint256 requestDelay = arm.DELAY_REQUEST();
+        if (block.timestamp < lastRequestTimestamp + requestDelay) {
             if (isConsoleAvailable) {
                 console.log(
                     StdStyle.yellow(
                         string(
                             abi.encodePacked(
                                 ">>> Time jump:\t Fast forwarded to: ",
-                                vm.toString(lastRequestTimestamp + 3 hours),
+                                vm.toString(lastRequestTimestamp + requestDelay),
                                 "  (+ ",
-                                vm.toString((lastRequestTimestamp + 3 hours) - block.timestamp),
+                                vm.toString((lastRequestTimestamp + requestDelay) - block.timestamp),
                                 "s)"
                             )
                         )
                     )
                 );
             }
-            vm.warp(lastRequestTimestamp + 3 hours);
+            vm.warp(lastRequestTimestamp + requestDelay);
         }
 
         vm.prank(operator);
