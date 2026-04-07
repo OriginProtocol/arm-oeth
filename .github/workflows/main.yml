@@ -47,7 +47,7 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup
         with:
-          install-yarn: 'true'
+          install-pnpm: 'true'
 
       - name: Compile all contracts
         run: forge build
@@ -68,7 +68,7 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup
         with:
-          install-yarn: 'true'
+          install-pnpm: 'true'
 
       - name: Run unit tests
         run: forge test --summary --fail-fast --show-progress --mp 'test/unit/**'
@@ -85,7 +85,7 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup
         with:
-          install-yarn: 'true'
+          install-pnpm: 'true'
 
       - name: Run fork tests
         run: forge test --summary --fail-fast --show-progress --mp 'test/fork/**'
@@ -102,7 +102,7 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup
         with:
-          install-yarn: 'true'
+          install-pnpm: 'true'
 
       - name: Run smoke tests
         run: forge build && forge test --summary --fail-fast --show-progress --mp 'test/smoke/**'

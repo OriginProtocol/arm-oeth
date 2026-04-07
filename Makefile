@@ -21,7 +21,7 @@ default:
 install:
 	foundryup --version stable
 	forge soldeer install
-	yarn install
+	pnpm install
 
 # ╔══════════════════════════════════════════════════════════════════════════════╗
 # ║                                   CLEAN                                      ║
@@ -35,7 +35,7 @@ clean-crytic:
 	find . -type d -name crytic-export -exec rm -rf '{}' +
 
 clean-all: clean clean-crytic
-	rm -rf dependencies node_modules soldeer.lock yarn.lock lcov.info coverage artifacts hardhat-node_modules
+	rm -rf dependencies node_modules soldeer.lock pnpm-lock.yaml lcov.info coverage artifacts hardhat-node_modules
 
 # ╔══════════════════════════════════════════════════════════════════════════════╗
 # ║                                   TESTS                                      ║
