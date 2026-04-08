@@ -86,7 +86,7 @@ abstract contract AbstractMultiAssetARM is OwnableOperable, ERC20Upgradeable {
     uint256 public armBuffer;
 
     address[] internal supportedBaseAssets;
-    mapping(address asset => BaseAssetConfig) internal baseAssetConfigs;
+    mapping(address asset => BaseAssetConfig) public baseAssetConfigs;
     mapping(address asset => uint256 indexPlusOne) internal supportedBaseAssetIndex;
 
     uint256[34] private _gap;
@@ -331,10 +331,10 @@ abstract contract AbstractMultiAssetARM is OwnableOperable, ERC20Upgradeable {
     }
 
     function _getSwapBaseAsset(address inToken, address outToken) internal view returns (address baseAsset, bool inIsLiquidity) {
-        if (inToken == liquidityAsset && isSupportedBaseAsset(outToken)) {
+        if (inToken == liquidityAsset && baseAssetConfigs[outToken].supported) {
             return (outToken, true);
         }
-        if (outToken == liquidityAsset && isSupportedBaseAsset(inToken)) {
+        if (outToken == liquidityAsset && baseAssetConfigs[inToken].supported) {
             return (inToken, false);
         }
         revert("ARM: Invalid swap assets");
@@ -345,7 +345,7 @@ abstract contract AbstractMultiAssetARM is OwnableOperable, ERC20Upgradeable {
     /// @return liquidityReserve Unreserved liquidity asset balance held by the ARM.
     /// @return baseReserve Base asset balance held by the ARM.
     function getReserves(address baseAsset) external view returns (uint256 liquidityReserve, uint256 baseReserve) {
-        require(isSupportedBaseAsset(baseAsset), "ARM: unsupported asset");
+        require(baseAssetConfigs[baseAsset].supported, "ARM: unsupported asset");
 
         uint256 outstandingWithdrawals = withdrawsQueued - withdrawsClaimed;
         uint256 liquidityBalance = IERC20(liquidityAsset).balanceOf(address(this));
@@ -353,33 +353,10 @@ abstract contract AbstractMultiAssetARM is OwnableOperable, ERC20Upgradeable {
         baseReserve = IERC20(baseAsset).balanceOf(address(this));
     }
 
-    /// @notice Checks whether a base asset is supported by the ARM.
-    /// @param baseAsset Asset to inspect.
-    /// @return supported True if the asset is currently supported.
-    function isSupportedBaseAsset(address baseAsset) public view returns (bool) {
-        return baseAssetConfigs[baseAsset].supported;
-    }
-
     /// @notice Returns the full list of supported base assets.
     /// @return Array of supported base asset addresses.
     function getSupportedBaseAssets() external view returns (address[] memory) {
         return supportedBaseAssets;
-    }
-
-    /// @notice Returns the full stored configuration for a supported base asset.
-    /// @param baseAsset Asset to inspect.
-    /// @return Base asset configuration.
-    function getBaseAssetConfig(address baseAsset) external view returns (BaseAssetConfig memory) {
-        return baseAssetConfigs[baseAsset];
-    }
-
-    /// @notice Returns the buy and sell prices for a supported base asset.
-    /// @param baseAsset Asset to inspect.
-    /// @return buyPrice Price the ARM pays when buying the base asset.
-    /// @return sellPrice Price the ARM charges when selling the base asset.
-    function getPrices(address baseAsset) external view returns (uint256 buyPrice, uint256 sellPrice) {
-        BaseAssetConfig memory config = _requireSupportedBaseAsset(baseAsset);
-        return (config.buyPrice, config.sellPrice);
     }
 
     /// @notice Adds a new supported base asset and its async redeem vault.
@@ -394,11 +371,13 @@ abstract contract AbstractMultiAssetARM is OwnableOperable, ERC20Upgradeable {
     {
         require(baseAsset != address(0), "ARM: invalid asset");
         require(vault != address(0), "ARM: invalid vault");
-        require(!isSupportedBaseAsset(baseAsset), "ARM: asset already supported");
+        require(!baseAssetConfigs[baseAsset].supported, "ARM: asset already supported");
         require(IERC20(baseAsset).decimals() == liquidityAssetDecimals, "ARM: invalid asset decimals");
         require(IAsyncRedeemVault(vault).asset() == liquidityAsset, "ARM: invalid vault asset");
-
-        _validatePrices(buyPrice, sellPrice, crossPrice);
+        require(crossPrice >= PRICE_SCALE - MAX_CROSS_PRICE_DEVIATION, "ARM: cross price too low");
+        require(crossPrice <= PRICE_SCALE, "ARM: cross price too high");
+        require(sellPrice >= crossPrice, "ARM: sell price too low");
+        require(buyPrice < crossPrice, "ARM: buy price too high");
 
         supportedBaseAssets.push(baseAsset);
         supportedBaseAssetIndex[baseAsset] = supportedBaseAssets.length;
@@ -856,16 +835,5 @@ abstract contract AbstractMultiAssetARM is OwnableOperable, ERC20Upgradeable {
     function _requireSupportedBaseAssetStorage(address baseAsset) internal view returns (BaseAssetConfig storage config) {
         config = baseAssetConfigs[baseAsset];
         require(config.supported, "ARM: unsupported asset");
-    }
-
-    /// @notice Validates a base asset buy/sell/cross price set.
-    /// @param buyPrice Proposed buy price.
-    /// @param sellPrice Proposed sell price.
-    /// @param crossPrice Proposed cross price.
-    function _validatePrices(uint256 buyPrice, uint256 sellPrice, uint256 crossPrice) internal pure {
-        require(crossPrice >= PRICE_SCALE - MAX_CROSS_PRICE_DEVIATION, "ARM: cross price too low");
-        require(crossPrice <= PRICE_SCALE, "ARM: cross price too high");
-        require(sellPrice >= crossPrice, "ARM: sell price too low");
-        require(buyPrice < crossPrice, "ARM: buy price too high");
     }
 }

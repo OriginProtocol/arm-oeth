@@ -42,6 +42,26 @@ contract CentrifugeARMTest is Test {
     address internal alice;
     address internal bob;
 
+    function _config(address asset) internal view returns (AbstractMultiAssetARM.BaseAssetConfig memory config) {
+        (
+            bool supported,
+            address vault,
+            uint256 buyPrice,
+            uint256 sellPrice,
+            uint256 crossPrice,
+            uint256 requestedVaultShares
+        ) = rwaARM.baseAssetConfigs(asset);
+
+        config = AbstractMultiAssetARM.BaseAssetConfig({
+            supported: supported,
+            vault: vault,
+            buyPrice: buyPrice,
+            sellPrice: sellPrice,
+            crossPrice: crossPrice,
+            requestedVaultShares: requestedVaultShares
+        });
+    }
+
     function setUp() public {
         deployer = makeAddr("deployer");
         governor = makeAddr("governor");
@@ -111,7 +131,8 @@ contract CentrifugeARMTest is Test {
         assertEq(assets[0], address(rwa1), "wrong first asset");
         assertEq(assets[1], address(rwa2), "wrong second asset");
         assertEq(rwaARM.asset(), address(usdc), "wrong liquidity asset");
-        assertTrue(rwaARM.isSupportedBaseAsset(address(rwa1)), "asset not supported");
+        AbstractMultiAssetARM.BaseAssetConfig memory config = _config(address(rwa1));
+        assertTrue(config.supported, "asset not supported");
     }
 
     function test_RevertWhen_AddBaseAsset_WithMismatchedDecimals() public {
@@ -124,14 +145,14 @@ contract CentrifugeARMTest is Test {
         vm.prank(operator);
         rwaARM.setPrices(address(rwa1), 0.996e36, 1.0005e36);
 
-        (uint256 buyPrice, uint256 sellPrice) = rwaARM.getPrices(address(rwa1));
-        assertEq(buyPrice, 0.996e36, "wrong buy price");
-        assertEq(sellPrice, 1.0005e36, "wrong sell price");
+        AbstractMultiAssetARM.BaseAssetConfig memory config = _config(address(rwa1));
+        assertEq(config.buyPrice, 0.996e36, "wrong buy price");
+        assertEq(config.sellPrice, 1.0005e36, "wrong sell price");
 
         vm.prank(governor);
         rwaARM.setCrossPrice(address(rwa1), 0.999e36);
 
-        AbstractMultiAssetARM.BaseAssetConfig memory config = rwaARM.getBaseAssetConfig(address(rwa1));
+        config = _config(address(rwa1));
         assertEq(config.crossPrice, 0.999e36, "wrong cross price");
     }
 
@@ -215,7 +236,7 @@ contract CentrifugeARMTest is Test {
         vm.prank(operator);
         rwaARM.requestVaultRedeem(address(rwa1), 40 * RAW_UNIT);
 
-        AbstractMultiAssetARM.BaseAssetConfig memory config = rwaARM.getBaseAssetConfig(address(rwa1));
+        AbstractMultiAssetARM.BaseAssetConfig memory config = _config(address(rwa1));
         assertEq(config.requestedVaultShares, 40 * RAW_UNIT, "wrong requested shares");
         assertEq(rwa1.balanceOf(address(rwaARM)), 60 * RAW_UNIT, "wrong on hand shares");
 
@@ -224,7 +245,7 @@ contract CentrifugeARMTest is Test {
         vm.prank(operator);
         uint256 assetsOut = rwaARM.claimVaultRedeem(address(rwa1), 25 * RAW_UNIT);
 
-        config = rwaARM.getBaseAssetConfig(address(rwa1));
+        config = _config(address(rwa1));
         assertEq(assetsOut, 25 * RAW_UNIT, "wrong assets out");
         assertEq(config.requestedVaultShares, 15 * RAW_UNIT, "wrong remaining requested shares");
         assertEq(usdc.balanceOf(address(rwaARM)), MIN_TOTAL_SUPPLY + 25 * RAW_UNIT, "wrong liquidity balance");
@@ -255,7 +276,8 @@ contract CentrifugeARMTest is Test {
         vm.prank(governor);
         rwaARM.removeBaseAsset(address(rwa1));
 
-        assertFalse(rwaARM.isSupportedBaseAsset(address(rwa1)), "asset still supported");
+        AbstractMultiAssetARM.BaseAssetConfig memory config = _config(address(rwa1));
+        assertFalse(config.supported, "asset still supported");
     }
 
     function test_Allocate_OnlyTouchesLiquidityMarket() public {
