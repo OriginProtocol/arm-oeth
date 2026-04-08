@@ -9,8 +9,10 @@ import {Mainnet} from "contracts/utils/Addresses.sol";
 import {AbstractDeployScript} from "script/deploy/helpers/AbstractDeployScript.s.sol";
 import {GovHelper, GovProposal} from "script/deploy/helpers/GovHelper.sol";
 
-contract $021_UpgradeLidoARMDepositScript is AbstractDeployScript("021_UpgradeLidoARMDepositScript") {
+contract $025_UpgradeLidoARMDepositScript is AbstractDeployScript("025_UpgradeLidoARMDepositScript") {
     using GovHelper for GovProposal;
+
+    bool public constant override skip = true;
 
     function _execute() internal override {
         // 1. Deploy new LidoARM implementation
