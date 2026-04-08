@@ -34,8 +34,38 @@ interface ICapManager {
     function postDepositHook(address liquidityProvider, uint256 assets) external;
 }
 
+/**
+ * @title Async Redeem Vault interface
+ * @notice Minimal async redeem surface used by the ARM for ERC-7540 style vault integrations.
+ * @dev ERC-7540 extends ERC-4626 with asynchronous request flows. This interface keeps the standard
+ * ERC-4626 accounting methods, such as `asset()`, `convertToShares()` and `convertToAssets()`,
+ * and adds the async `requestRedeem(...)` entrypoint that the ARM needs before later calling
+ * the inherited ERC-4626 `redeem(...)` claim path once shares are claimable.
+ */
 interface IAsyncRedeemVault is IERC4626 {
+    /**
+     * @notice Request asynchronous redemption of vault shares.
+     * @dev This follows the ERC-7540 async redeem flow where redemption is requested first and
+     * fulfilled later through `redeem(...)` once the request becomes claimable.
+     * @param shares Amount of vault shares to redeem asynchronously.
+     * @param controller Account that will later control the redeem claim.
+     * @param owner Account whose shares are being redeemed.
+     * @return requestId Optional request identifier returned by the vault implementation.
+     */
     function requestRedeem(uint256 shares, address controller, address owner) external returns (uint256 requestId);
+
+    /**
+     * @notice Returns the amount of shares currently claimable for an async redeem request flow.
+     * @dev This is included so off-chain tooling can query claimable redeem shares through the same
+     * minimal ERC-7540-style interface before calling `redeem(...)`.
+     * @param requestId Request identifier to inspect. Some vaults may ignore this and use aggregated claimability.
+     * @param controller Account that controls the redeem claim.
+     * @return claimableShares Amount of shares that can currently be redeemed.
+     */
+    function claimableRedeemRequest(uint256 requestId, address controller)
+        external
+        view
+        returns (uint256 claimableShares);
 }
 
 interface LegacyAMM {
