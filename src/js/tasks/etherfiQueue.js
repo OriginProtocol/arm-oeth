@@ -1,7 +1,8 @@
-const { ApolloClient, InMemoryCache, gql } = require("@apollo/client/core");
+const { gql } = require("@apollo/client/core");
 const { parseUnits } = require("ethers");
 
 const { baseWithdrawAmount } = require("./liquidityAutomation");
+const { createApolloClient } = require("../utils/apollo");
 const { logTxDetails } = require("../utils/txLogger");
 
 const log = require("../utils/logger")("task:etherfiQueue");
@@ -42,10 +43,7 @@ const claimEtherFiWithdrawals = async (options) => {
 };
 
 const claimableEtherFiRequests = async () => {
-  const client = new ApolloClient({
-    uri,
-    cache: new InMemoryCache(),
-  });
+  const client = createApolloClient(uri);
 
   log(`About to get claimable EtherFi withdrawal requests`);
 

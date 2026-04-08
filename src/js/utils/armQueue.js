@@ -1,15 +1,13 @@
-const { ApolloClient, InMemoryCache, gql } = require("@apollo/client/core");
+const { gql } = require("@apollo/client/core");
 const { formatUnits } = require("ethers");
 
+const { createApolloClient } = require("./apollo");
 const log = require("./logger")("utils:queue");
 
 const uri = "https://origin.squids.live/origin-squid/graphql";
 
 const outstandingWithdrawalAmount = async ({ withdrawer }) => {
-  const client = new ApolloClient({
-    uri,
-    cache: new InMemoryCache(),
-  });
+  const client = createApolloClient(uri);
 
   log(`About to get outstanding withdrawal requests for ${withdrawer}`);
 
@@ -58,10 +56,7 @@ const claimableRequests = async ({
   queuedAmountClaimable,
   claimCutoff,
 }) => {
-  const client = new ApolloClient({
-    uri,
-    cache: new InMemoryCache(),
-  });
+  const client = createApolloClient(uri);
 
   log(
     `About to get claimable withdrawal requests for withdrawer ${withdrawer} up to ${formatUnits(
