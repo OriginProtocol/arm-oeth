@@ -34,6 +34,10 @@ interface ICapManager {
     function postDepositHook(address liquidityProvider, uint256 assets) external;
 }
 
+interface IAsyncRedeemVault is IERC4626 {
+    function requestRedeem(uint256 shares, address controller, address owner) external returns (uint256 requestId);
+}
+
 interface LegacyAMM {
     function transferToken(address tokenOut, address to, uint256 amount) external;
 }
