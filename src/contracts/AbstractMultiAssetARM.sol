@@ -74,21 +74,33 @@ abstract contract AbstractMultiAssetARM is OwnableOperable, ERC20Upgradeable {
         uint128 shares;
     }
 
+    /// @notice Mapping of LP redeem request IDs to stored redeem request data.
     mapping(uint256 requestId => WithdrawalRequest) public withdrawalRequests;
 
+    /// @notice Performance fee rate measured in basis points.
     uint16 public fee;
+    /// @notice Available assets snapshot used to accrue performance fees net of LP deposits and redeems.
     int128 public lastAvailableAssets;
+    /// @notice Recipient of collected performance fees.
     address public feeCollector;
+    /// @notice Optional cap manager invoked after LP deposits.
     address public capManager;
 
+    /// @notice Lending market currently used for excess liquidity allocation.
     address public activeMarket;
+    /// @notice Set of lending markets approved for use by the ARM.
     mapping(address market => bool supported) public supportedMarkets;
+    /// @notice Fraction of available assets to keep on hand in the ARM, scaled by 1e18.
     uint256 public armBuffer;
 
+    /// @notice List of currently supported base assets.
     address[] internal supportedBaseAssets;
+    /// @notice Configuration for each supported base asset.
     mapping(address asset => BaseAssetConfig) public baseAssetConfigs;
+    /// @notice One-based index of each supported base asset in `supportedBaseAssets`.
     mapping(address asset => uint256 indexPlusOne) internal supportedBaseAssetIndex;
 
+    /// @dev Storage gap reserved for future upgrades.
     uint256[34] private _gap;
 
     /// @notice Emitted when a new base asset is added.
@@ -396,7 +408,8 @@ abstract contract AbstractMultiAssetARM is OwnableOperable, ERC20Upgradeable {
     /// @notice Removes a supported base asset once the ARM no longer holds meaningful exposure to it.
     /// @param baseAsset Base asset to remove.
     function removeBaseAsset(address baseAsset) external onlyOwner {
-        BaseAssetConfig memory config = _requireSupportedBaseAsset(baseAsset);
+        BaseAssetConfig memory config = baseAssetConfigs[baseAsset];
+        require(config.supported, "ARM: unsupported asset");
         require(IERC20(baseAsset).balanceOf(address(this)) < MIN_TOTAL_SUPPLY, "ARM: too many base assets");
         require(config.requestedVaultShares == 0, "ARM: pending vault redeems");
 
@@ -419,7 +432,8 @@ abstract contract AbstractMultiAssetARM is OwnableOperable, ERC20Upgradeable {
     /// @param buyPrice New buy price.
     /// @param sellPrice New sell price.
     function setPrices(address baseAsset, uint256 buyPrice, uint256 sellPrice) external onlyOperatorOrOwner {
-        BaseAssetConfig storage config = _requireSupportedBaseAssetStorage(baseAsset);
+        BaseAssetConfig storage config = baseAssetConfigs[baseAsset];
+        require(config.supported, "ARM: unsupported asset");
         require(sellPrice >= config.crossPrice, "ARM: sell price too low");
         require(buyPrice < config.crossPrice, "ARM: buy price too high");
 
@@ -433,7 +447,8 @@ abstract contract AbstractMultiAssetARM is OwnableOperable, ERC20Upgradeable {
     /// @param baseAsset Base asset whose cross price is being updated.
     /// @param newCrossPrice New cross price.
     function setCrossPrice(address baseAsset, uint256 newCrossPrice) external onlyOwner {
-        BaseAssetConfig storage config = _requireSupportedBaseAssetStorage(baseAsset);
+        BaseAssetConfig storage config = baseAssetConfigs[baseAsset];
+        require(config.supported, "ARM: unsupported asset");
         require(newCrossPrice >= PRICE_SCALE - MAX_CROSS_PRICE_DEVIATION, "ARM: cross price too low");
         require(newCrossPrice <= PRICE_SCALE, "ARM: cross price too high");
         require(config.sellPrice >= newCrossPrice, "ARM: sell price too low");
@@ -451,7 +466,8 @@ abstract contract AbstractMultiAssetARM is OwnableOperable, ERC20Upgradeable {
     /// @param baseAsset Base asset whose vault shares will be redeemed.
     /// @param shares Amount of vault shares to request for redemption.
     function requestVaultRedeem(address baseAsset, uint256 shares) external onlyOperatorOrOwner {
-        BaseAssetConfig storage config = _requireSupportedBaseAssetStorage(baseAsset);
+        BaseAssetConfig storage config = baseAssetConfigs[baseAsset];
+        require(config.supported, "ARM: unsupported asset");
         IAsyncRedeemVault(config.vault).requestRedeem(shares, address(this), address(this));
         config.requestedVaultShares += shares;
 
@@ -463,7 +479,8 @@ abstract contract AbstractMultiAssetARM is OwnableOperable, ERC20Upgradeable {
     /// @param shares Amount of requested shares to redeem.
     /// @return assets Liquidity asset amount received from the vault.
     function claimVaultRedeem(address baseAsset, uint256 shares) external onlyOperatorOrOwner returns (uint256 assets) {
-        BaseAssetConfig storage config = _requireSupportedBaseAssetStorage(baseAsset);
+        BaseAssetConfig storage config = baseAssetConfigs[baseAsset];
+        require(config.supported, "ARM: unsupported asset");
         require(shares <= config.requestedVaultShares, "ARM: redeem exceeds requested");
         assets = IAsyncRedeemVault(config.vault).redeem(shares, address(this), address(this));
         config.requestedVaultShares -= shares;
@@ -821,19 +838,4 @@ abstract contract AbstractMultiAssetARM is OwnableOperable, ERC20Upgradeable {
         emit ARMBufferUpdated(_armBuffer);
     }
 
-    /// @notice Loads and validates a supported base asset configuration.
-    /// @param baseAsset Base asset to load.
-    /// @return config Validated configuration.
-    function _requireSupportedBaseAsset(address baseAsset) internal view returns (BaseAssetConfig memory config) {
-        config = baseAssetConfigs[baseAsset];
-        require(config.supported, "ARM: unsupported asset");
-    }
-
-    /// @notice Loads and validates a supported base asset configuration from storage.
-    /// @param baseAsset Base asset to load.
-    /// @return config Validated storage configuration.
-    function _requireSupportedBaseAssetStorage(address baseAsset) internal view returns (BaseAssetConfig storage config) {
-        config = baseAssetConfigs[baseAsset];
-        require(config.supported, "ARM: unsupported asset");
-    }
 }
