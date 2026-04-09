@@ -12,6 +12,8 @@ import {GovHelper, GovProposal} from "script/deploy/helpers/GovHelper.sol";
 contract $024_UpgradeOETHARMDepositScript is AbstractDeployScript("024_UpgradeOETHARMDepositScript") {
     using GovHelper for GovProposal;
 
+    bool public constant override skip = true;
+
     function _execute() internal override {
         // 1. Deploy new OriginARM implementation
         uint256 claimDelay = 10 minutes;
