@@ -21,7 +21,7 @@ contract Unit_Concrete_OriginARM_CollectFees_Test_ is Unit_Shared_Test {
         donate(oeth, address(originARM), DEFAULT_AMOUNT)
         asRandomCaller
     {
-        vm.expectRevert("ARM: insufficient liquidity");
+        vm.expectRevert("ARM: Insufficient liquidity");
         originARM.collectFees();
     }
 

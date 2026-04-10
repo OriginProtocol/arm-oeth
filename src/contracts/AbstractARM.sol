@@ -380,18 +380,20 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         uint256 liquidityBalance = IERC20(liquidityAsset).balanceOf(address(this));
         uint256 outstandingWithdrawals = withdrawsQueued - withdrawsClaimed;
 
+        // If there is enough liquidity in the ARM to cover the swap after reserving liquidity for withdrawals
         if (amount + outstandingWithdrawals <= liquidityBalance) return;
 
-        require(withdrawFromMarketOnSwap, "ARM: Insufficient liquidity");
-
+        // Revert if can not withdraw from the active market on swap or if there is no active market
         address activeMarketMem = activeMarket;
-        require(activeMarketMem != address(0), "ARM: no active market");
+        require(withdrawFromMarketOnSwap && activeMarketMem != address(0), "ARM: Insufficient liquidity");
 
+        // Calculate how much needs to be withdrawn from the active market to cover the swap
         uint256 shortfall = amount + outstandingWithdrawals - liquidityBalance;
 
         // Optimistically withdraw the shortfall to avoid an extra maxWithdraw() call on expensive markets
         // such as Morpho, while still normalizing any failure to the ARM's liquidity error.
-        try IERC4626(activeMarketMem).withdraw(shortfall, address(this), address(this)) {} catch {
+        try IERC4626(activeMarketMem).withdraw(shortfall, address(this), address(this)) {}
+        catch {
             revert("ARM: Insufficient liquidity");
         }
     }
@@ -717,27 +719,6 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     ///         Asset amount functions
     ////////////////////////////////////////////////////
 
-    /// @dev Checks if there is enough liquidity asset (WETH) in the ARM is not reserved for the withdrawal queue.
-    // That is, the amount of liquidity assets (WETH) that is available to be swapped or collected as fees.
-    // If no outstanding withdrawals, no check will be done of the amount against the balance of the liquidity assets in the ARM.
-    // This is a gas optimization for swaps.
-    // The ARM can swap out liquidity assets (WETH) that has been accrued from the performance fee for the fee collector.
-    // There is no liquidity guarantee for the fee collector. If there is not enough liquidity assets (WETH) in
-    // the ARM to collect the accrued fees, then the fee collector will have to wait until there is enough liquidity assets.
-    function _requireLiquidityAvailable(uint256 amount) internal view {
-        // The amount of liquidity assets (WETH) that is still to be claimed in the withdrawal queue
-        uint256 outstandingWithdrawals = withdrawsQueued - withdrawsClaimed;
-
-        // Save gas on an external balanceOf call if there are no outstanding withdrawals
-        if (outstandingWithdrawals == 0) return;
-
-        // If there is not enough liquidity assets in the ARM to cover the outstanding withdrawals and the amount
-        require(
-            amount + outstandingWithdrawals <= IERC20(liquidityAsset).balanceOf(address(this)),
-            "ARM: Insufficient liquidity"
-        );
-    }
-
     /// @notice The total amount of assets in the ARM, active lending market and external withdrawal queue,
     /// less the liquidity assets reserved for the ARM's withdrawal queue and accrued fees.
     /// @return The total amount of assets in the ARM
@@ -878,14 +859,12 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
         if (fees == 0) return 0;
 
-        // Check there is enough liquidity assets (WETH) that are not reserved for the withdrawal queue
-        // to cover the fee being collected.
-        _requireLiquidityAvailable(fees);
-        // _requireLiquidityAvailable() is optimized for swaps so will not revert if there are no outstanding withdrawals.
-        // We need to check there is enough liquidity assets to cover the fees being collect from this ARM contract.
-        // We could try the transfer and let it revert if there are not enough assets, but there is no error message with
-        // a failed WETH transfer so we spend the extra gas to check and give a meaningful error message.
-        require(fees <= IERC20(liquidityAsset).balanceOf(address(this)), "ARM: insufficient liquidity");
+        uint256 liquidityBalance = IERC20(liquidityAsset).balanceOf(address(this));
+        uint256 outstandingWithdrawals = withdrawsQueued - withdrawsClaimed;
+
+        // There is no liquidity guarantee for the fee collector. If there is not enough liquidity assets
+        // in the ARM to cover both outstanding redeems and accrued fees, the collector has to wait.
+        require(fees + outstandingWithdrawals <= liquidityBalance, "ARM: Insufficient liquidity");
 
         IERC20(liquidityAsset).transfer(feeCollector, fees);
 

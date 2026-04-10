@@ -123,7 +123,7 @@ contract Unit_Concrete_OriginARM_SwapLiquidityFromMarket_Test_ is Unit_Shared_Te
         vm.startPrank(swapper);
         oeth.approve(address(originARM), type(uint256).max);
 
-        vm.expectRevert("ARM: no active market");
+        vm.expectRevert("ARM: Insufficient liquidity");
         originARM.swapTokensForExactTokens(oeth, weth, amountOut, type(uint256).max, swapper);
 
         vm.stopPrank();
