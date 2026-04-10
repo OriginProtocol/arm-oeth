@@ -20,7 +20,13 @@ contract $025_UpgradeLidoARMDepositScript is AbstractDeployScript("025_UpgradeLi
         uint256 minSharesToRedeem = 1e7;
         int256 allocateThreshold = 1e18;
         LidoARM lidoARMImpl = new LidoARM(
-            Mainnet.STETH, Mainnet.WETH, Mainnet.LIDO_WITHDRAWAL, claimDelay, minSharesToRedeem, allocateThreshold
+            Mainnet.STETH,
+            Mainnet.WETH,
+            Mainnet.LIDO_WITHDRAWAL,
+            claimDelay,
+            minSharesToRedeem,
+            allocateThreshold,
+            false
         );
         _recordDeployment("LIDO_ARM_IMPL", address(lidoARMImpl));
     }

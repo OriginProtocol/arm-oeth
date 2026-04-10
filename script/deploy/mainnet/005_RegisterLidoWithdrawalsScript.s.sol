@@ -15,7 +15,8 @@ contract $005_RegisterLidoWithdrawalsScript is AbstractDeployScript("005_Registe
     function _execute() internal override {
         // 1. Deploy new Lido ARM implementation
         uint256 claimDelay = 10 minutes;
-        LidoARM lidoARMImpl = new LidoARM(Mainnet.STETH, Mainnet.WETH, Mainnet.LIDO_WITHDRAWAL, claimDelay, 0, 0);
+        LidoARM lidoARMImpl =
+            new LidoARM(Mainnet.STETH, Mainnet.WETH, Mainnet.LIDO_WITHDRAWAL, claimDelay, 0, 0, false);
         _recordDeployment("LIDO_ARM_IMPL", address(lidoARMImpl));
     }
 

@@ -15,7 +15,8 @@ contract $009_UpgradeLidoARMSetBufferScript is AbstractDeployScript("009_Upgrade
     function _execute() internal override {
         // 1. Deploy new Lido implementation
         uint256 claimDelay = 10 minutes;
-        LidoARM lidoARMImpl = new LidoARM(Mainnet.STETH, Mainnet.WETH, Mainnet.LIDO_WITHDRAWAL, claimDelay, 1e7, 1e18);
+        LidoARM lidoARMImpl =
+            new LidoARM(Mainnet.STETH, Mainnet.WETH, Mainnet.LIDO_WITHDRAWAL, claimDelay, 1e7, 1e18, false);
         _recordDeployment("LIDO_ARM_IMPL", address(lidoARMImpl));
     }
 

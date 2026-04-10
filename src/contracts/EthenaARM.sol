@@ -44,8 +44,10 @@ contract EthenaARM is Initializable, AbstractARM {
         address _susde,
         uint256 _claimDelay,
         uint256 _minSharesToRedeem,
-        int256 _allocateThreshold
-    ) AbstractARM(_usde, _susde, _usde, _claimDelay, _minSharesToRedeem, _allocateThreshold) {
+        int256 _allocateThreshold,
+        bool _withdrawFromMarketOnSwap
+    ) AbstractARM(_usde, _susde, _usde, _claimDelay, _minSharesToRedeem, _allocateThreshold, _withdrawFromMarketOnSwap)
+    {
         usde = IERC20(_usde);
         susde = IStakedUSDe(_susde);
 

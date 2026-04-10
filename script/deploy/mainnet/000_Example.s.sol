@@ -93,7 +93,7 @@ contract $000_Example is AbstractDeployScript("000_Example") {
         // vm.broadcast (real) or vm.prank (fork).
 
         // Example: Deploy a new implementation contract
-        newImplementation = new LidoARM(steth, weth, Mainnet.LIDO_WITHDRAWAL, 10 minutes, 0, 0);
+        newImplementation = new LidoARM(steth, weth, Mainnet.LIDO_WITHDRAWAL, 10 minutes, 0, 0, false);
 
         // Example: Deploy a proxy with implementation
         // Proxy proxy = new Proxy();

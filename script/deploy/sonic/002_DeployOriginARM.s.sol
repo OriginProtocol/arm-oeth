@@ -41,7 +41,7 @@ contract $002_DeployOriginARMScript is AbstractDeployScript("002_DeployOriginARM
 
         // 6. Deploy new Origin ARM implementation
         uint256 claimDelay = 10 minutes;
-        OriginARM originARMImpl = new OriginARM(Sonic.OS, Sonic.WS, Sonic.OS_VAULT, claimDelay, 1e7, 1e18);
+        OriginARM originARMImpl = new OriginARM(Sonic.OS, Sonic.WS, Sonic.OS_VAULT, claimDelay, 1e7, 1e18, true);
         _recordDeployment("ORIGIN_ARM_IMPL", address(originARMImpl));
 
         // 7. Approve a little bit of wS to be transferred to the ARM proxy

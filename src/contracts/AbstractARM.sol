@@ -56,6 +56,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     IERC20 public immutable token1;
     /// @notice The delay before a withdrawal request can be claimed in seconds. eg 600 is 10 minutes.
     uint256 public immutable claimDelay;
+    /// @notice True if swaps that send out liquidity assets can withdraw a shortfall from the active market.
+    bool public immutable withdrawFromMarketOnSwap;
 
     ////////////////////////////////////////////////////
     ///             Storage Variables
@@ -158,7 +160,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         address _liquidityAsset,
         uint256 _claimDelay,
         uint256 _minSharesToRedeem,
-        int256 _allocateThreshold
+        int256 _allocateThreshold,
+        bool _withdrawFromMarketOnSwap
     ) {
         require(IERC20(_token0).decimals() == 18);
         require(IERC20(_token1).decimals() == 18);
@@ -178,6 +181,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
         require(_allocateThreshold >= 0, "invalid allocate threshold");
         allocateThreshold = _allocateThreshold;
+        withdrawFromMarketOnSwap = _withdrawFromMarketOnSwap;
     }
 
     /// @notice Initialize the contract.
@@ -365,9 +369,31 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @dev Ensure any liquidity assets reserved for the withdrawal queue are not used
     /// in swaps that send liquidity assets out of the ARM
     function _transferAsset(address asset, address to, uint256 amount) internal virtual {
-        if (asset == liquidityAsset) _requireLiquidityAvailable(amount);
+        if (asset == liquidityAsset) _ensureLiquidityAvailableForSwap(amount);
 
         IERC20(asset).transfer(to, amount);
+    }
+
+    /// @dev Ensure there is enough on-hand liquidity for a swap, withdrawing the shortfall from the active market
+    /// if enabled for this ARM deployment.
+    function _ensureLiquidityAvailableForSwap(uint256 amount) internal {
+        uint256 liquidityBalance = IERC20(liquidityAsset).balanceOf(address(this));
+        uint256 outstandingWithdrawals = withdrawsQueued - withdrawsClaimed;
+
+        if (amount + outstandingWithdrawals <= liquidityBalance) return;
+
+        require(withdrawFromMarketOnSwap, "ARM: Insufficient liquidity");
+
+        address activeMarketMem = activeMarket;
+        require(activeMarketMem != address(0), "ARM: no active market");
+
+        uint256 shortfall = amount + outstandingWithdrawals - liquidityBalance;
+
+        // Optimistically withdraw the shortfall to avoid an extra maxWithdraw() call on expensive markets
+        // such as Morpho, while still normalizing any failure to the ARM's liquidity error.
+        try IERC4626(activeMarketMem).withdraw(shortfall, address(this), address(this)) {} catch {
+            revert("ARM: Insufficient liquidity");
+        }
     }
 
     /// @dev Hook to transfer assets into the ARM contract
