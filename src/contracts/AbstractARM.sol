@@ -471,7 +471,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         return amount;
     }
 
-    /// @notice Get the available liquidity for a each token in the ARM.
+    /// @notice Get the available liquidity for each token in the ARM.
+    /// Includes liquidity withdrawable from the active market when swap-time market withdrawals are enabled.
     /// @return reserve0 The available liquidity for token0
     /// @return reserve1 The available liquidity for token1
     function getReserves() external view returns (uint256 reserve0, uint256 reserve1) {
@@ -480,9 +481,17 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
         uint256 liquidityAssetBalance = IERC20(liquidityAsset).balanceOf(address(this));
         uint256 baseAssetBalance = IERC20(baseAsset).balanceOf(address(this));
+        uint256 availableLiquidity = liquidityAssetBalance;
+
+        if (withdrawFromMarketOnSwap) {
+            address activeMarketMem = activeMarket;
+            if (activeMarketMem != address(0)) {
+                availableLiquidity += IERC4626(activeMarketMem).maxWithdraw(address(this));
+            }
+        }
 
         // Ensure there is no negative reserves when there are more outstanding withdrawals than liquidity assets in the ARM
-        reserve0 = outstandingWithdrawals > liquidityAssetBalance ? 0 : liquidityAssetBalance - outstandingWithdrawals;
+        reserve0 = outstandingWithdrawals > availableLiquidity ? 0 : availableLiquidity - outstandingWithdrawals;
         reserve1 = baseAssetBalance;
 
         // The previous assignment assumed token0 is be the liquidity asset.

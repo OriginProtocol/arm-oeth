@@ -42,6 +42,18 @@ contract Unit_Concrete_OriginARM_SwapLiquidityFromMarket_Test_ is Unit_Shared_Te
         assertFalse(disabledARM.withdrawFromMarketOnSwap(), "disabled ARM getter");
     }
 
+    function test_GetReserves_DoesNotIncludeMarketLiquidity_WhenDisabled()
+        public
+        addDisabledArmMarket()
+        depositIntoDisabledArm(alice, 2 * DEFAULT_AMOUNT)
+        setDisabledArmActiveMarket(address(market))
+    {
+        (uint256 reserve0, uint256 reserve1) = disabledARM.getReserves();
+
+        assertEq(reserve0, 0, "disabled ARM should only expose on-hand liquidity");
+        assertEq(reserve1, 0, "no base asset reserve");
+    }
+
     function test_SwapExactTokensForTokens_WithMarketShortfall_WithdrawsExactShortfall()
         public
         deposit(alice, 2 * DEFAULT_AMOUNT)
