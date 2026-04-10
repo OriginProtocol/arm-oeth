@@ -48,7 +48,10 @@ contract LidoARM is Initializable, AbstractARM {
         uint256 _minSharesToRedeem,
         int256 _allocateThreshold,
         bool _withdrawFromMarketOnSwap
-    ) AbstractARM(_weth, _steth, _weth, _claimDelay, _minSharesToRedeem, _allocateThreshold, _withdrawFromMarketOnSwap)
+    )
+        AbstractARM(
+            _weth, _steth, _weth, _claimDelay, _minSharesToRedeem, _allocateThreshold, _withdrawFromMarketOnSwap
+        )
     {
         steth = IERC20(_steth);
         weth = IWETH(_weth);

@@ -50,8 +50,7 @@ contract EtherFiARM is Initializable, AbstractARM, IERC721Receiver {
         int256 _allocateThreshold,
         bool _withdrawFromMarketOnSwap,
         address _etherfiWithdrawalNFT
-    ) AbstractARM(_weth, _eeth, _weth, _claimDelay, _minSharesToRedeem, _allocateThreshold, _withdrawFromMarketOnSwap)
-    {
+    ) AbstractARM(_weth, _eeth, _weth, _claimDelay, _minSharesToRedeem, _allocateThreshold, _withdrawFromMarketOnSwap) {
         eeth = IERC20(_eeth);
         weth = IWETH(_weth);
         etherfiWithdrawalQueue = IEETHWithdrawal(_etherfiWithdrawalQueue);

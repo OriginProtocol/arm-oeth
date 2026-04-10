@@ -16,7 +16,8 @@ contract Unit_Concrete_OriginARM_SwapLiquidityFromMarket_Test_ is Unit_Shared_Te
         vm.startPrank(deployer);
 
         Proxy disabledProxy = new Proxy();
-        OriginARM disabledImpl = new OriginARM(address(oeth), address(weth), address(vault), CLAIM_DELAY, 1e7, 1e18, false);
+        OriginARM disabledImpl =
+            new OriginARM(address(oeth), address(weth), address(vault), CLAIM_DELAY, 1e7, 1e18, false);
 
         deal(address(weth), deployer, 1e12);
         weth.approve(address(disabledProxy), 1e12);
@@ -25,7 +26,13 @@ contract Unit_Concrete_OriginARM_SwapLiquidityFromMarket_Test_ is Unit_Shared_Te
             address(disabledImpl),
             governor,
             abi.encodeWithSelector(
-                OriginARM.initialize.selector, "Origin ARM Disabled", "OARM-DIS", operator, DEFAULT_FEE, feeCollector, address(0)
+                OriginARM.initialize.selector,
+                "Origin ARM Disabled",
+                "OARM-DIS",
+                operator,
+                DEFAULT_FEE,
+                feeCollector,
+                address(0)
             )
         );
 
@@ -44,7 +51,7 @@ contract Unit_Concrete_OriginARM_SwapLiquidityFromMarket_Test_ is Unit_Shared_Te
 
     function test_GetReserves_DoesNotIncludeMarketLiquidity_WhenDisabled()
         public
-        addDisabledArmMarket()
+        addDisabledArmMarket
         depositIntoDisabledArm(alice, 2 * DEFAULT_AMOUNT)
         setDisabledArmActiveMarket(address(market))
     {
@@ -69,8 +76,7 @@ contract Unit_Concrete_OriginARM_SwapLiquidityFromMarket_Test_ is Unit_Shared_Te
         oeth.approve(address(originARM), amountIn);
 
         uint256 marketBalanceBefore = market.balanceOf(address(originARM));
-        uint256[] memory amounts =
-            originARM.swapExactTokensForTokens(oeth, weth, amountIn, expectedAmountOut, swapper);
+        uint256[] memory amounts = originARM.swapExactTokensForTokens(oeth, weth, amountIn, expectedAmountOut, swapper);
 
         vm.stopPrank();
 
@@ -94,8 +100,7 @@ contract Unit_Concrete_OriginARM_SwapLiquidityFromMarket_Test_ is Unit_Shared_Te
         oeth.approve(address(originARM), type(uint256).max);
 
         uint256 marketBalanceBefore = market.balanceOf(address(originARM));
-        uint256[] memory amounts =
-            originARM.swapTokensForExactTokens(oeth, weth, amountOut, type(uint256).max, swapper);
+        uint256[] memory amounts = originARM.swapTokensForExactTokens(oeth, weth, amountOut, type(uint256).max, swapper);
 
         vm.stopPrank();
 
@@ -168,7 +173,7 @@ contract Unit_Concrete_OriginARM_SwapLiquidityFromMarket_Test_ is Unit_Shared_Te
 
     function test_RevertWhen_DisabledArmSwapNeedsMarketLiquidity()
         public
-        addDisabledArmMarket()
+        addDisabledArmMarket
         depositIntoDisabledArm(alice, 2 * DEFAULT_AMOUNT)
         setDisabledArmActiveMarket(address(market))
     {
