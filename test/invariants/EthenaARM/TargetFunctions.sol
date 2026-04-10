@@ -311,8 +311,36 @@ abstract contract TargetFunctions is Setup, StdUtils {
         if (assume(maxCrossPrice >= minCrossPrice)) return;
         crossPrice = _bound(crossPrice, minCrossPrice, maxCrossPrice);
 
-        if (arm.crossPrice() > crossPrice) {
-            if (assume(susde.balanceOf(address(arm)) < 1e12)) return;
+        uint256 susdeBalance = susde.balanceOf(address(arm));
+        if (arm.crossPrice() > crossPrice && susdeBalance > 0) {
+            // If there is more than 100 susde in ARM, do nothing
+            if (assume(susdeBalance < 1e20)) return;
+
+            // If there is less than 100 susde in ARM, swap them all to usde, to avoid creating loss on ARM
+            // Mint too much USDe to be sure we can swap all sUSDe in ARM
+            MockERC20(address(usde)).mint(address(this), susdeBalance * 10);
+            usde.approve(address(arm), type(uint256).max);
+            uint256[] memory obtained = arm.swapTokensForExactTokens(
+                IERC20(address(usde)), IERC20(address(susde)), susdeBalance, type(uint256).max, address(this)
+            );
+
+            if (isConsoleAvailable) {
+                console.log(
+                    string(
+                        abi.encodePacked(
+                            ">>> ARM SetCPrice:\t ",
+                            vm.getLabel(address(this)),
+                            " swapped %18e USDe\t for %18e sUSDe\t to adjust cross price"
+                        )
+                    ),
+                    obtained[0],
+                    obtained[1]
+                );
+            }
+            require(susde.balanceOf(address(arm)) < 10, "ARM still has too much sUSDe after swap");
+
+            sumUSDeSwapIn += obtained[0];
+            sumSUSDeSwapOut += obtained[1];
         }
 
         vm.prank(governor);

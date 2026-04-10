@@ -106,6 +106,21 @@ library Math {
         }
     }
 
+    /// @notice Checks if a is approximately greater than or equal to b within a maximum relative difference (in WAD)
+    /// @param a The first value
+    /// @param b The second value
+    /// @param maxRelDeltaWAD The maximum allowed relative difference in WAD (1e18 = 100%)
+    /// @return True if a is approximately greater than or equal to b, false otherwise
+    function approxGteRel(uint256 a, uint256 b, uint256 maxRelDeltaWAD) internal pure returns (bool) {
+        if (a >= b) {
+            return true;
+        } else {
+            uint256 _absDiff = b - a;
+            uint256 relDiffWAD = (_absDiff * 1 ether) / b;
+            return relDiffWAD <= maxRelDeltaWAD;
+        }
+    }
+
     //////////////////////////////////////////////////////
     /// --- LESS THAN
     //////////////////////////////////////////////////////

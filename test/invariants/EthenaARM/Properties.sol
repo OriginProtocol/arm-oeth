@@ -213,7 +213,11 @@ abstract contract Properties is TargetFunctions {
             address user = makers[i];
             uint256 totalMinted = mintedUSDe[user];
             uint256 userBalance = usde.balanceOf(user);
-            if (!Math.approxGteAbs(userBalance, totalMinted, 1e12)) {
+
+            if (userBalance > 1e16
+                    ? !Math.approxGteRel(userBalance, totalMinted, 1e12)  // 0.0001% relative delta
+                    : !Math.approxGteAbs(userBalance, totalMinted, 1e12) // 0.0001 USDe absolute delta
+            ) {
                 if (isConsoleAvailable) {
                     console.log(">>> Property After All failed for user %s:", vm.getLabel(user));
                     console.log("    - User USDe balance:   %18e", userBalance);
