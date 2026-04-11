@@ -12,10 +12,6 @@
     "outDir": "dist",
     "types": ["node"]
   },
-  "include": [
-    "src/js/**/*.ts",
-    "cron/cron-supervisor.ts",
-    "cron/render-crontab.ts"
-  ],
+  "include": ["src/js/**/*.ts", "cron/**/*.ts"],
   "exclude": ["node_modules", "dist"]
 }

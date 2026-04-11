@@ -2,6 +2,12 @@ import { spawn } from "node:child_process";
 import { randomUUID, timingSafeEqual } from "node:crypto";
 import fs from "node:fs";
 import http from "node:http";
+import { flushLogger } from "../src/js/tasks/lib/logger";
+import {
+  emitActionExit,
+  emitActionStart,
+  emitSpawnFailure,
+} from "./log-events";
 import { type CronJob, renderCrontab } from "./render-crontab";
 
 // --- Configuration ---
@@ -11,7 +17,7 @@ const cronOutputPath = process.env.CRON_OUTPUT_PATH || "/app/cron/cronjob";
 const supercronicBin = process.env.SUPERCRONIC_BIN || "supercronic";
 const runHistoryLimit = Number.parseInt(
   process.env.ACTION_RUN_HISTORY_LIMIT || "500",
-  10
+  10,
 );
 const actionApiToken = process.env.ACTION_API_BEARER_TOKEN;
 const configuredActionWorkdir = process.env.ACTION_WORKDIR || "/app";
@@ -22,13 +28,13 @@ if (!Number.isInteger(port) || port < 1 || port > 65535) {
 }
 if (!actionApiToken || actionApiToken.trim().length === 0) {
   console.error(
-    "[cron-supervisor] ACTION_API_BEARER_TOKEN must be set and non-empty"
+    "[cron-supervisor] ACTION_API_BEARER_TOKEN must be set and non-empty",
   );
   process.exit(1);
 }
 if (!Number.isInteger(runHistoryLimit) || runHistoryLimit < 1) {
   console.error(
-    `[cron-supervisor] Invalid ACTION_RUN_HISTORY_LIMIT value "${process.env.ACTION_RUN_HISTORY_LIMIT}"`
+    `[cron-supervisor] Invalid ACTION_RUN_HISTORY_LIMIT value "${process.env.ACTION_RUN_HISTORY_LIMIT}"`,
   );
   process.exit(1);
 }
@@ -40,7 +46,7 @@ const actionWorkdir = fs.existsSync(configuredActionWorkdir)
 
 if (!fs.existsSync(configuredActionWorkdir)) {
   console.warn(
-    `[cron-supervisor] ACTION_WORKDIR "${configuredActionWorkdir}" does not exist, using "${actionWorkdir}" instead`
+    `[cron-supervisor] ACTION_WORKDIR "${configuredActionWorkdir}" does not exist, using "${actionWorkdir}" instead`,
   );
 }
 
@@ -50,7 +56,7 @@ function json(
   res: http.ServerResponse,
   statusCode: number,
   payload: any,
-  extraHeaders: Record<string, string> = {}
+  extraHeaders: Record<string, string> = {},
 ) {
   res.writeHead(statusCode, {
     "Content-Type": "application/json",
@@ -114,13 +120,13 @@ function initCron() {
 const { config: renderedConfig, enabledJobs } = initCron();
 
 console.log(
-  `[cron-supervisor] Generated ${enabledJobs.length} enabled cron jobs at ${cronOutputPath}`
+  `[cron-supervisor] Generated ${enabledJobs.length} enabled cron jobs at ${cronOutputPath}`,
 );
 console.log(`[cron-supervisor] Generated ${cronOutputPath}:`);
 console.log(fs.readFileSync(cronOutputPath, "utf8"));
 
 const jobsByName = new Map<string, CronJob>(
-  renderedConfig.jobs.map((job) => [job.name, job])
+  renderedConfig.jobs.map((job) => [job.name, job]),
 );
 
 // --- Action execution ---
@@ -129,14 +135,21 @@ function runAction(action: CronJob, run: ActionRun) {
   run.status = "running";
   run.startedAt = nowIso();
   run.command = action.command;
+  const startMs = Date.now();
 
   console.log(
-    `[cron-supervisor] Starting run ${run.runId} for action "${action.name}"`
+    `[cron-supervisor] Starting run ${run.runId} for action "${action.name}"`,
   );
+  emitActionStart({
+    action: action.name,
+    runId: run.runId,
+    schedule: action.schedule,
+    command: action.command,
+  });
 
   const child = spawn("/bin/sh", ["-lc", action.command], {
     cwd: actionWorkdir,
-    env: process.env,
+    env: { ...process.env, AUTOMATON_RUN_ID: run.runId },
     stdio: "inherit",
   });
   run.pid = child.pid ?? null;
@@ -148,8 +161,15 @@ function runAction(action: CronJob, run: ActionRun) {
     run.signal = null;
     run.error = err.message;
     console.error(
-      `[cron-supervisor] Run ${run.runId} failed to start: ${err.message}`
+      `[cron-supervisor] Run ${run.runId} failed to start: ${err.message}`,
     );
+    emitSpawnFailure({
+      action: action.name,
+      runId: run.runId,
+      durationMs: Date.now() - startMs,
+      errorMessage: err.message,
+    });
+    void flushLogger();
   });
 
   child.on("exit", (code, signal) => {
@@ -158,8 +178,16 @@ function runAction(action: CronJob, run: ActionRun) {
     run.signal = signal;
     run.status = code === 0 ? "succeeded" : "failed";
     console.log(
-      `[cron-supervisor] Run ${run.runId} for "${action.name}" finished with status=${run.status}, code=${code}, signal=${signal}`
+      `[cron-supervisor] Run ${run.runId} for "${action.name}" finished with status=${run.status}, code=${code}, signal=${signal}`,
     );
+    emitActionExit({
+      action: action.name,
+      runId: run.runId,
+      durationMs: Date.now() - startMs,
+      exitCode: code,
+      signal,
+    });
+    void flushLogger();
   });
 }
 
@@ -212,7 +240,7 @@ supercronic.on("exit", (code, signal) => {
   supercronicClosed = true;
   if (!shuttingDown) {
     console.error(
-      `[cron-supervisor] supercronic exited unexpectedly (code=${code}, signal=${signal})`
+      `[cron-supervisor] supercronic exited unexpectedly (code=${code}, signal=${signal})`,
     );
     process.exit(typeof code === "number" ? code : 1);
   }
@@ -262,7 +290,7 @@ const server = http.createServer((req, res) => {
 
   // Trigger action run
   const triggerMatch = url.pathname.match(
-    /^\/api\/v1\/actions\/([^/]+)\/runs$/
+    /^\/api\/v1\/actions\/([^/]+)\/runs$/,
   );
   if (method === "POST" && triggerMatch) {
     const run = triggerAction(decodeURIComponent(triggerMatch[1]));
@@ -279,7 +307,7 @@ const server = http.createServer((req, res) => {
         statusUrl,
         startedAt: run.startedAt,
       },
-      { Location: statusUrl }
+      { Location: statusUrl },
     );
   }
 
@@ -314,11 +342,16 @@ server.on("close", () => {
 
 // --- Graceful shutdown ---
 
-function shutdown(signal: string) {
+async function shutdown(signal: string) {
   if (shuttingDown) return;
   shuttingDown = true;
 
   console.log(`[cron-supervisor] Shutting down (signal=${signal})`);
+  try {
+    await flushLogger();
+  } catch (err: any) {
+    console.error(`[cron-supervisor] flushLogger failed: ${err?.message}`);
+  }
   server.close();
 
   if (supercronicAlive && supercronic.exitCode === null) {
@@ -331,8 +364,12 @@ function shutdown(signal: string) {
   setTimeout(() => process.exit(0), 12_000).unref();
 }
 
-process.on("SIGTERM", () => shutdown("SIGTERM"));
-process.on("SIGINT", () => shutdown("SIGINT"));
+process.on("SIGTERM", () => {
+  void shutdown("SIGTERM");
+});
+process.on("SIGINT", () => {
+  void shutdown("SIGINT");
+});
 
 server.listen(port, host, () => {
   console.log(`[cron-supervisor] API listening on ${host}:${port}`);
