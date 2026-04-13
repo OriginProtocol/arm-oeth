@@ -143,7 +143,7 @@ const cronConfig: CronConfig = {
     },
     {
       name: "sonic_auto_claim_withdraw",
-      schedule: "58 */2 * * *",
+      schedule: "10 * * * *",
       enabled: false,
       command: "cd /app && pnpm hardhat autoClaimWithdrawSonic --network sonic",
     },
