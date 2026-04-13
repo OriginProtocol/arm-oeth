@@ -30,6 +30,8 @@ make coverage         # LCOV coverage report
 
 Linting: `forge fmt --check` (Solidity), `pnpm lint` (JS), `pnpm prettier:check` (JS)
 
+When changing Solidity files, run `forge fmt` before finishing your work.
+
 ## Environment Setup
 
 Copy `.env.example` to `.env` and set `PROVIDER_URL` (Ethereum RPC) and `SONIC_URL` (Sonic RPC). Fork tests require these RPC endpoints.
