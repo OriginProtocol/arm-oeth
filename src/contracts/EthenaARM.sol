@@ -57,10 +57,10 @@ contract EthenaARM is Initializable, AbstractARM {
     /// @param _name The name of the liquidity provider (LP) token.
     /// @param _symbol The symbol of the liquidity provider (LP) token.
     /// @param _operator The address of the account that can request and claim withdrawals.
-    /// @param _fee The performance fee that is collected by the feeCollector measured in basis points (1/100th of a percent).
-    /// 10,000 = 100% performance fee
-    /// 1,500 = 15% performance fee
-    /// @param _feeCollector The account that can collect the performance fee
+    /// @param _fee The fee accrued on discounted base-asset buy swaps measured in basis points (1/100th of a percent).
+    /// 10,000 = 100% fee
+    /// 1,500 = 15% fee
+    /// @param _feeCollector The account that can collect the accrued swap fee
     /// @param _capManager The address of the CapManager contract
     function initialize(
         string calldata _name,

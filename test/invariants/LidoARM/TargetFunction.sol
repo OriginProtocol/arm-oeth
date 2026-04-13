@@ -294,7 +294,7 @@ abstract contract TargetFunction is Properties {
     }
 
     function handler_lastAvailableAsset() public view returns (int128) {
-        return lidoARM.lastAvailableAssets();
+        return deprecatedLastAvailableAssets(address(lidoARM));
     }
 
     ////////////////////////////////////////////////////

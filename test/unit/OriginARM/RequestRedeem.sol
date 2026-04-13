@@ -27,7 +27,6 @@ contract Unit_Concrete_OriginARM_RequestRedeem_Test_ is Unit_Shared_Test {
         uint256 expectedOETH = originARM.convertToAssets(expectedShares);
         uint256 requestIndex = originARM.nextWithdrawalIndex();
         uint128 queued = originARM.withdrawsQueued();
-        int128 lastAvailableAssets = originARM.lastAvailableAssets();
         uint256 previewRedeem = originARM.previewRedeem(DEFAULT_AMOUNT);
         assertEq(previewRedeem, expectedShares, "Preview redeem should match expected shares");
 
@@ -42,11 +41,7 @@ contract Unit_Concrete_OriginARM_RequestRedeem_Test_ is Unit_Shared_Test {
         (address withdrawer, bool claimed, uint256 requestTimestamp, uint256 amount, uint256 queued_, uint256 shares) =
             originARM.withdrawalRequests(0);
         // Assertions
-        assertEq(
-            originARM.lastAvailableAssets().toUint256(),
-            lastAvailableAssets.toUint256() - DEFAULT_AMOUNT,
-            "Last available assets should be updated"
-        );
+        assertEq(deprecatedLastAvailableAssets(address(originARM)).toUint256(), 0, "Deprecated field should stay zero");
         assertEq(originARM.withdrawsQueued(), queued + DEFAULT_AMOUNT, "Withdraws queued should be updated");
         assertEq(originARM.nextWithdrawalIndex(), requestIndex + 1, "Next withdrawal index should be updated");
         assertEq(withdrawer, alice, "Withdrawer should be Alice");

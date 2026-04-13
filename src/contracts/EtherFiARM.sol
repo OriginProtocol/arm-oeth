@@ -12,7 +12,7 @@ import {IERC20, IWETH, IEETHWithdrawal, IEETHWithdrawalNFT, IEETHRedemptionManag
  * @dev This implementation supports multiple Liquidity Providers (LPs) with single buy and sell prices.
  * It also integrates to a CapManager contract that caps the amount of assets a liquidity provider
  * can deposit and caps the ARM's total assets.
- * A performance fee is also collected on increases in the ARM's total assets.
+ * A fee is accrued on discounted base-asset buy swaps.
  * @author Origin Protocol Inc
  */
 contract EtherFiARM is Initializable, AbstractARM, IERC721Receiver {
@@ -63,10 +63,10 @@ contract EtherFiARM is Initializable, AbstractARM, IERC721Receiver {
     /// @param _name The name of the liquidity provider (LP) token.
     /// @param _symbol The symbol of the liquidity provider (LP) token.
     /// @param _operator The address of the account that can request and claim EtherFi withdrawals.
-    /// @param _fee The performance fee that is collected by the feeCollector measured in basis points (1/100th of a percent).
-    /// 10,000 = 100% performance fee
-    /// 1,500 = 15% performance fee
-    /// @param _feeCollector The account that can collect the performance fee
+    /// @param _fee The fee accrued on discounted base-asset buy swaps measured in basis points (1/100th of a percent).
+    /// 10,000 = 100% fee
+    /// 1,500 = 15% fee
+    /// @param _feeCollector The account that can collect the accrued swap fee
     /// @param _capManager The address of the CapManager contract
     function initialize(
         string calldata _name,
