@@ -22,5 +22,7 @@ action({
       harvester,
       strategies: [sonic.siloVarlamoreMarket],
     });
+
+    // TODO do Silo, beS and wOS swaps with FlyTrade
   },
 });

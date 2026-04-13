@@ -9,18 +9,6 @@ const cronConfig: CronConfig = {
       command: "cd /app && pnpm hardhat healthcheck",
     },
     {
-      name: "mainnet_auto_request_withdraw",
-      schedule: "5 */3 * * *",
-      enabled: false,
-      command: "cd /app && pnpm hardhat autoRequestWithdraw --network mainnet",
-    },
-    {
-      name: "mainnet_auto_claim_withdraw",
-      schedule: "20 */3 * * *",
-      enabled: false,
-      command: "cd /app && pnpm hardhat autoClaimWithdraw --network mainnet",
-    },
-    {
       name: "mainnet_auto_request_lido_withdraw",
       schedule: "29,58 12-23,0-8 * * *",
       enabled: false,
@@ -63,12 +51,6 @@ const cronConfig: CronConfig = {
         "cd /app && pnpm hardhat autoClaimEthenaWithdraw --network mainnet",
     },
     {
-      name: "mainnet_collect_oeth_fees",
-      schedule: "3 0 * * *",
-      enabled: false,
-      command: "cd /app && pnpm hardhat collectOETHFees --network mainnet",
-    },
-    {
       name: "mainnet_collect_lido_fees",
       schedule: "30 12 * * *",
       enabled: false,
@@ -87,12 +69,6 @@ const cronConfig: CronConfig = {
       command: "cd /app && pnpm hardhat collectEthenaFees --network mainnet",
     },
     {
-      name: "mainnet_allocate_oeth",
-      schedule: "42 * * * *",
-      enabled: false,
-      command: "cd /app && pnpm hardhat allocateOETH --network mainnet",
-    },
-    {
       name: "mainnet_allocate_lido",
       schedule: "38,08 * * * *",
       enabled: false,
@@ -109,12 +85,6 @@ const cronConfig: CronConfig = {
       schedule: "28 * * * *",
       enabled: false,
       command: "cd /app && pnpm hardhat allocateEthena --network mainnet",
-    },
-    {
-      name: "mainnet_set_prices_oeth",
-      schedule: "*/10 * * * *",
-      enabled: false,
-      command: "cd /app && pnpm hardhat setPricesOETH --network mainnet",
     },
     {
       name: "mainnet_set_prices_lido",
