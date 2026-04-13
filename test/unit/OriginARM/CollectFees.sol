@@ -9,8 +9,7 @@ contract Unit_Concrete_OriginARM_CollectFees_Test_ is Unit_Shared_Test {
         vm.startPrank(bob);
         deal(address(oeth), bob, 1_000 * DEFAULT_AMOUNT);
         oeth.approve(address(originARM), type(uint256).max);
-        uint256[] memory amounts =
-            originARM.swapTokensForExactTokens(oeth, weth, amountOut, type(uint256).max, bob);
+        uint256[] memory amounts = originARM.swapTokensForExactTokens(oeth, weth, amountOut, type(uint256).max, bob);
         vm.stopPrank();
 
         amountIn = amounts[0];

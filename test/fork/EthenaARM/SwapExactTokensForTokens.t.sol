@@ -89,8 +89,8 @@ contract Fork_Concrete_EthenaARM_swapExactTokensForTokens_Test_ is Fork_Shared_T
         // Precompute expected amount out
         uint256 traderate = ethenaARM.traderate1();
         uint256 expectedAmountOut = (susde.convertToAssets(AMOUNT_IN) * traderate) / 1e36;
-        uint256 expectedFee = (susde.convertToAssets(AMOUNT_IN) - expectedAmountOut) * ethenaARM.fee()
-            / ethenaARM.FEE_SCALE();
+        uint256 expectedFee =
+            (susde.convertToAssets(AMOUNT_IN) - expectedAmountOut) * ethenaARM.fee() / ethenaARM.FEE_SCALE();
 
         // Expected events
         vm.expectEmit({emitter: address(susde)});
