@@ -73,6 +73,12 @@ contract EthenaARM is Initializable, AbstractARM {
         _initARM(_operator, _name, _symbol, _fee, _feeCollector, _capManager);
     }
 
+    /// @notice Clears the legacy storage region reused for packed swap fee accrual.
+    /// This should be called via `upgradeToAndCall(...)` after legacy fees are collected.
+    function migrateFeesAccrued() external reinitializer(2) onlyOwner {
+        _migrateFeesAccrued();
+    }
+
     /// @notice Request a cooldown of USDe from Ethena's Staked USDe (sUSDe) contract.
     /// @dev Uses a round robin to select the next unstaker helper contract.
     /// @param baseAmount The amount of staked USDe (sUSDe) to withdraw.

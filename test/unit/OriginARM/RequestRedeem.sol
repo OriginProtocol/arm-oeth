@@ -41,7 +41,6 @@ contract Unit_Concrete_OriginARM_RequestRedeem_Test_ is Unit_Shared_Test {
         (address withdrawer, bool claimed, uint256 requestTimestamp, uint256 amount, uint256 queued_, uint256 shares) =
             originARM.withdrawalRequests(0);
         // Assertions
-        assertEq(deprecatedLastAvailableAssets(address(originARM)).toUint256(), 0, "Deprecated field should stay zero");
         assertEq(originARM.withdrawsQueued(), queued + DEFAULT_AMOUNT, "Withdraws queued should be updated");
         assertEq(originARM.nextWithdrawalIndex(), requestIndex + 1, "Next withdrawal index should be updated");
         assertEq(withdrawer, alice, "Withdrawer should be Alice");

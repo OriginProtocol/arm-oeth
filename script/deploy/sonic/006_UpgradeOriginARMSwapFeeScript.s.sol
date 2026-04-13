@@ -30,7 +30,7 @@ contract $006_UpgradeOriginARMSwapFeeScript is AbstractDeployScript("006_Upgrade
         vm.startPrank(proxy.owner());
         // Legacy fees must be collected before the proxy switches to the new swap-only fee logic.
         OriginARM(payable(address(proxy))).collectFees();
-        proxy.upgradeTo(impl);
+        proxy.upgradeToAndCall(impl, abi.encodeWithSelector(OriginARM.migrateFeesAccrued.selector));
         vm.stopPrank();
     }
 }

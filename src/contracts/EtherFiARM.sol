@@ -82,6 +82,12 @@ contract EtherFiARM is Initializable, AbstractARM, IERC721Receiver {
         eeth.approve(address(etherfiWithdrawalQueue), type(uint256).max);
     }
 
+    /// @notice Clears the legacy storage region reused for packed swap fee accrual.
+    /// This should be called via `upgradeToAndCall(...)` after legacy fees are collected.
+    function migrateFeesAccrued() external reinitializer(2) onlyOwner {
+        _migrateFeesAccrued();
+    }
+
     /**
      * @notice Request an eETH for ETH withdrawal.
      * Reference: https://etherfi.gitbook.io/etherfi/contracts-and-integrations/how-to

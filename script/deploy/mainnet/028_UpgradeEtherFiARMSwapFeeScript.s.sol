@@ -36,7 +36,13 @@ contract $028_UpgradeEtherFiARMSwapFeeScript is AbstractDeployScript("028_Upgrad
 
         address etherFiARMProxy = resolver.resolve("ETHER_FI_ARM");
         govProposal.action(etherFiARMProxy, "collectFees()", "");
-        govProposal.action(etherFiARMProxy, "upgradeTo(address)", abi.encode(resolver.resolve("ETHERFI_ARM_IMPL")));
+        govProposal.action(
+            etherFiARMProxy,
+            "upgradeToAndCall(address,bytes)",
+            abi.encode(
+                resolver.resolve("ETHERFI_ARM_IMPL"), abi.encodeWithSelector(EtherFiARM.migrateFeesAccrued.selector)
+            )
+        );
     }
 
     function _fork() internal override {
@@ -48,7 +54,7 @@ contract $028_UpgradeEtherFiARMSwapFeeScript is AbstractDeployScript("028_Upgrad
         vm.startPrank(proxy.owner());
         // Legacy fees must be collected before the proxy switches to the new swap-only fee logic.
         EtherFiARM(payable(address(proxy))).collectFees();
-        proxy.upgradeTo(impl);
+        proxy.upgradeToAndCall(impl, abi.encodeWithSelector(EtherFiARM.migrateFeesAccrued.selector));
         vm.stopPrank();
     }
 }

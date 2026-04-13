@@ -65,6 +65,12 @@ contract OriginARM is Initializable, AbstractARM {
         _initARM(_operator, _name, _symbol, _fee, _feeCollector, _capManager);
     }
 
+    /// @notice Clears the legacy storage region reused for packed swap fee accrual.
+    /// This should be called via `upgradeToAndCall(...)` after legacy fees are collected.
+    function migrateFeesAccrued() external reinitializer(2) onlyOwner {
+        _migrateFeesAccrued();
+    }
+
     /**
      * @notice Request a withdrawal of oTokens from the Origin Vault.
      * @param amount The amount of oTokens to withdraw from the Origin Vault.

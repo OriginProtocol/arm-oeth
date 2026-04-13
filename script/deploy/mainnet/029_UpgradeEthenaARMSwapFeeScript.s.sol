@@ -28,7 +28,13 @@ contract $029_UpgradeEthenaARMSwapFeeScript is AbstractDeployScript("029_Upgrade
 
         address ethenaARMProxy = resolver.resolve("ETHENA_ARM");
         govProposal.action(ethenaARMProxy, "collectFees()", "");
-        govProposal.action(ethenaARMProxy, "upgradeTo(address)", abi.encode(resolver.resolve("ETHENA_ARM_IMPL")));
+        govProposal.action(
+            ethenaARMProxy,
+            "upgradeToAndCall(address,bytes)",
+            abi.encode(
+                resolver.resolve("ETHENA_ARM_IMPL"), abi.encodeWithSelector(EthenaARM.migrateFeesAccrued.selector)
+            )
+        );
     }
 
     function _fork() internal override {
@@ -40,7 +46,7 @@ contract $029_UpgradeEthenaARMSwapFeeScript is AbstractDeployScript("029_Upgrade
         vm.startPrank(proxy.owner());
         // Legacy fees must be collected before the proxy switches to the new swap-only fee logic.
         EthenaARM(payable(address(proxy))).collectFees();
-        proxy.upgradeTo(impl);
+        proxy.upgradeToAndCall(impl, abi.encodeWithSelector(EthenaARM.migrateFeesAccrued.selector));
         vm.stopPrank();
     }
 }

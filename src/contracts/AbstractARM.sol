@@ -113,13 +113,11 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// 2,000 = 20% fee.
     /// 500 = 5% fee.
     uint16 public fee;
-    /// @notice Deprecated legacy state retained for storage compatibility.
-    /// This value is no longer used for fee accrual logic.
-    int128 private deprecated_lastAvailableAssets;
+    /// @notice Accrued swap fees denominated in the liquidity asset.
+    /// Stored in the legacy lastAvailableAssets slot and must be zeroed via the migration initializer on upgrade.
+    uint128 public feesAccrued;
     /// @notice The account or contract that can collect the accrued swap fee.
     address public feeCollector;
-    /// @notice Accrued swap fees denominated in the liquidity asset.
-    uint256 public feesAccrued;
     /// @notice The address of the CapManager contract used to manage the ARM's liquidity provider and total assets caps.
     address public capManager;
 
@@ -130,7 +128,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @notice Percentage of available liquid assets to keep in the ARM. 100% = 1e18.
     uint256 public armBuffer;
 
-    uint256[37] private _gap;
+    uint256[38] private _gap;
 
     ////////////////////////////////////////////////////
     ///                 Events
@@ -463,7 +461,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         // Discount amount = converted base value - liquid amount out.
         // For example, if the ARM buys stETH for 0.9998 WETH, then the discount is 0.0002 WETH.
         // Accrued fee = discount amount * fee percentage.
-        feesAccrued += (convertedAmountIn - amountOut) * fee / FEE_SCALE;
+        feesAccrued += uint128((convertedAmountIn - amountOut) * fee / FEE_SCALE);
     }
 
     /// @notice Get the available liquidity for a each token in the ARM.
@@ -874,6 +872,13 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         IERC20(liquidityAsset).transfer(feeCollector, fees);
 
         emit FeeCollected(feeCollector, fees);
+    }
+
+    /// @dev Clears the reused legacy storage region that now backs `feesAccrued`.
+    /// This must be called exactly once during proxy upgrade via `upgradeToAndCall(...)`
+    /// after any legacy fees have been collected under the previous implementation.
+    function _migrateFeesAccrued() internal {
+        feesAccrued = 0;
     }
 
     ////////////////////////////////////////////////////

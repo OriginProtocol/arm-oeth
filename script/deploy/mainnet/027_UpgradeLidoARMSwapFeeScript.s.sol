@@ -30,7 +30,11 @@ contract $027_UpgradeLidoARMSwapFeeScript is AbstractDeployScript("027_UpgradeLi
 
         address lidoARMProxy = resolver.resolve("LIDO_ARM");
         govProposal.action(lidoARMProxy, "collectFees()", "");
-        govProposal.action(lidoARMProxy, "upgradeTo(address)", abi.encode(resolver.resolve("LIDO_ARM_IMPL")));
+        govProposal.action(
+            lidoARMProxy,
+            "upgradeToAndCall(address,bytes)",
+            abi.encode(resolver.resolve("LIDO_ARM_IMPL"), abi.encodeWithSelector(LidoARM.migrateFeesAccrued.selector))
+        );
     }
 
     function _fork() internal override {
@@ -42,7 +46,7 @@ contract $027_UpgradeLidoARMSwapFeeScript is AbstractDeployScript("027_UpgradeLi
         vm.startPrank(proxy.owner());
         // Legacy fees must be collected before the proxy switches to the new swap-only fee logic.
         LidoARM(payable(address(proxy))).collectFees();
-        proxy.upgradeTo(impl);
+        proxy.upgradeToAndCall(impl, abi.encodeWithSelector(LidoARM.migrateFeesAccrued.selector));
         vm.stopPrank();
     }
 }
