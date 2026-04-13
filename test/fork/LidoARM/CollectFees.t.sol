@@ -49,19 +49,20 @@ contract Fork_Concrete_LidoARM_CollectFees_Test_ is Fork_Shared_Test_ {
     function test_CollectFees_Once() public {
         address feeCollector = lidoARM.feeCollector();
         (, uint256 fee) = _swapBaseForLiquidity(200 ether, 100 ether);
+        uint256 expectedCollectedFee = fee + 1;
 
         // Expected Events
         vm.expectEmit({emitter: address(weth)});
-        emit IERC20.Transfer(address(lidoARM), feeCollector, fee);
+        emit IERC20.Transfer(address(lidoARM), feeCollector, expectedCollectedFee);
         vm.expectEmit({emitter: address(lidoARM)});
-        emit AbstractARM.FeeCollected(feeCollector, fee);
+        emit AbstractARM.FeeCollected(feeCollector, expectedCollectedFee);
 
         // Main call
         uint256 claimedFee = lidoARM.collectFees();
 
         // Assertions after
-        assertEq(claimedFee, fee);
-        assertEq(lidoARM.feesAccrued(), 0);
+        assertEq(claimedFee, expectedCollectedFee);
+        assertEq(lidoARM.feesAccrued(), 1);
     }
 
     function test_CollectFees_Twice() public {
@@ -73,6 +74,6 @@ contract Fork_Concrete_LidoARM_CollectFees_Test_ is Fork_Shared_Test_ {
         uint256 claimedFee = lidoARM.collectFees();
 
         // Assertions after
-        assertEq(claimedFee, expectedFee);
+        assertEq(claimedFee, expectedFee + 1);
     }
 }

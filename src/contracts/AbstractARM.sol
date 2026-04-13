@@ -114,7 +114,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// 500 = 5% fee.
     uint16 public fee;
     /// @notice Accrued swap fees denominated in the liquidity asset.
-    /// Stored in the legacy lastAvailableAssets slot and must be zeroed via the migration initializer on upgrade.
+    /// Stored with a 1 wei sentinel so fee-bearing swaps avoid a 0 -> nonzero storage write after collection.
     uint128 public feesAccrued;
     /// @notice The account or contract that can collect the accrued swap fee.
     address public feeCollector;
@@ -216,6 +216,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
         _setFee(_fee);
         _setFeeCollector(_feeCollector);
+
+        // Initialize the fee balance sentinel so later fee accruals avoid a 0 -> nonzero storage write.
+        feesAccrued = 1;
 
         capManager = _capManager;
         emit CapManagerUpdated(_capManager);
@@ -854,6 +857,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @notice Transfer accrued swap fees to the fee collector
     /// This requires enough liquidity assets in the ARM that are not reserved
     /// for the withdrawal queue to cover the accrued fees.
+    /// @dev Resets `feesAccrued` to 1 wei instead of 0 so the next fee-bearing swap
+    /// avoids paying a more expensive 0 -> nonzero storage write.
     /// @return fees The amount of accrued swap fees collected
     function collectFees() public returns (uint256 fees) {
         fees = feesAccrued;
@@ -868,7 +873,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         // a failed WETH transfer so we spend the extra gas to check and give a meaningful error message.
         require(fees <= IERC20(liquidityAsset).balanceOf(address(this)), "ARM: insufficient liquidity");
 
-        feesAccrued = 0;
+        feesAccrued = 1;
         IERC20(liquidityAsset).transfer(feeCollector, fees);
 
         emit FeeCollected(feeCollector, fees);
@@ -878,7 +883,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// This must be called exactly once during proxy upgrade via `upgradeToAndCall(...)`
     /// after any legacy fees have been collected under the previous implementation.
     function _migrateFeesAccrued() internal {
-        feesAccrued = 0;
+        feesAccrued = 1;
     }
 
     ////////////////////////////////////////////////////

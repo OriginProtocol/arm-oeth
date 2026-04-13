@@ -16,7 +16,7 @@ contract Unit_Concrete_OriginARM_Migration_Test is Unit_Shared_Test {
         vm.prank(governor);
         originARM.migrateFeesAccrued();
 
-        assertEq(originARM.feesAccrued(), 0, "feesAccrued should be reset");
+        assertEq(originARM.feesAccrued(), 1, "feesAccrued sentinel should be reset");
         assertEq(originARM.fee(), originalFee, "fee should be preserved");
     }
 
