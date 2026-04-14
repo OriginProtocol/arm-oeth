@@ -38,4 +38,16 @@ contract Unit_Concrete_OriginARM_AvailableLiquidity_Test_ is Unit_Shared_Test {
         assertApproxEqRel(balance1, DEFAULT_AMOUNT / 2, 1e16); //
         assertEq(balance0, 0); // Because outstanding withdraw are 1 ether
     }
+
+    function test_AvailableLiquidity_IncludesWithdrawableMarketLiquidity_WhenEnabled()
+        public
+        deposit(alice, 2 * DEFAULT_AMOUNT)
+        addMarket(address(market))
+        setActiveMarket(address(market))
+    {
+        (uint256 balance0, uint256 balance1) = originARM.getReserves();
+
+        assertEq(balance0, 2 * DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY);
+        assertEq(balance1, 0);
+    }
 }

@@ -22,6 +22,7 @@ contract $012_UpgradeEtherFiARMScript is AbstractDeployScript("012_UpgradeEtherF
             claimDelay,
             1e7, // minSharesToRedeem
             1e18, // allocateThreshold
+            false,
             Mainnet.ETHERFI_WITHDRAWAL_NFT
         );
         _recordDeployment("ETHERFI_ARM_IMPL", address(etherFiARMImpl));

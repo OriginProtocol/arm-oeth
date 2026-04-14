@@ -18,7 +18,7 @@ contract $005_UpgradeOriginARMSetBufferScript is AbstractDeployScript("005_Upgra
         uint256 minSharesToRedeem = 1e7;
         int256 allocateThreshold = 1e18;
         originARMImpl =
-            new OriginARM(Sonic.OS, Sonic.WS, Sonic.OS_VAULT, claimDelay, minSharesToRedeem, allocateThreshold);
+            new OriginARM(Sonic.OS, Sonic.WS, Sonic.OS_VAULT, claimDelay, minSharesToRedeem, allocateThreshold, true);
         _recordDeployment("ORIGIN_ARM_IMPL", address(originARMImpl));
     }
 

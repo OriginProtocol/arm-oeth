@@ -105,7 +105,8 @@ abstract contract Setup is Base_Test_ {
             _susde: address(susde),
             _claimDelay: DEFAULT_CLAIM_DELAY,
             _minSharesToRedeem: DEFAULT_MIN_SHARES_TO_REDEEM,
-            _allocateThreshold: int256(DEFAULT_ALLOCATE_THRESHOLD)
+            _allocateThreshold: int256(DEFAULT_ALLOCATE_THRESHOLD),
+            _withdrawFromMarketOnSwap: true
         });
 
         // Initialization requires to transfer some USDe to the proxy from the deployer.

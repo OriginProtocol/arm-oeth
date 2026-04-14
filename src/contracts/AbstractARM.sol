@@ -56,6 +56,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     IERC20 public immutable token1;
     /// @notice The delay before a withdrawal request can be claimed in seconds. eg 600 is 10 minutes.
     uint256 public immutable claimDelay;
+    /// @notice True if swaps that send out liquidity assets can withdraw a shortfall from the active market.
+    bool public immutable withdrawFromMarketOnSwap;
 
     ////////////////////////////////////////////////////
     ///             Storage Variables
@@ -158,7 +160,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         address _liquidityAsset,
         uint256 _claimDelay,
         uint256 _minSharesToRedeem,
-        int256 _allocateThreshold
+        int256 _allocateThreshold,
+        bool _withdrawFromMarketOnSwap
     ) {
         require(IERC20(_token0).decimals() == 18);
         require(IERC20(_token1).decimals() == 18);
@@ -178,6 +181,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
         require(_allocateThreshold >= 0, "invalid allocate threshold");
         allocateThreshold = _allocateThreshold;
+        withdrawFromMarketOnSwap = _withdrawFromMarketOnSwap;
     }
 
     /// @notice Initialize the contract.
@@ -365,9 +369,33 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @dev Ensure any liquidity assets reserved for the withdrawal queue are not used
     /// in swaps that send liquidity assets out of the ARM
     function _transferAsset(address asset, address to, uint256 amount) internal virtual {
-        if (asset == liquidityAsset) _requireLiquidityAvailable(amount);
+        if (asset == liquidityAsset) _ensureLiquidityAvailableForSwap(amount);
 
         IERC20(asset).transfer(to, amount);
+    }
+
+    /// @dev Ensure there is enough on-hand liquidity for a swap, withdrawing the shortfall from the active market
+    /// if enabled for this ARM deployment.
+    function _ensureLiquidityAvailableForSwap(uint256 amount) internal {
+        uint256 liquidityBalance = IERC20(liquidityAsset).balanceOf(address(this));
+        uint256 outstandingWithdrawals = withdrawsQueued - withdrawsClaimed;
+
+        // If there is enough liquidity in the ARM to cover the swap after reserving liquidity for withdrawals
+        if (amount + outstandingWithdrawals <= liquidityBalance) return;
+
+        // Revert if can not withdraw from the active market on swap or if there is no active market
+        address activeMarketMem = activeMarket;
+        require(withdrawFromMarketOnSwap && activeMarketMem != address(0), "ARM: Insufficient liquidity");
+
+        // Calculate how much needs to be withdrawn from the active market to cover the swap
+        uint256 shortfall = amount + outstandingWithdrawals - liquidityBalance;
+
+        // Optimistically withdraw the shortfall to avoid an extra maxWithdraw() call on expensive markets
+        // such as Morpho, while still normalizing any failure to the ARM's liquidity error.
+        try IERC4626(activeMarketMem).withdraw(shortfall, address(this), address(this)) {}
+        catch {
+            revert("ARM: Insufficient liquidity");
+        }
     }
 
     /// @dev Hook to transfer assets into the ARM contract
@@ -443,7 +471,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         return amount;
     }
 
-    /// @notice Get the available liquidity for a each token in the ARM.
+    /// @notice Get the available liquidity for each token in the ARM.
+    /// Includes liquidity withdrawable from the active market when swap-time market withdrawals are enabled.
     /// @return reserve0 The available liquidity for token0
     /// @return reserve1 The available liquidity for token1
     function getReserves() external view returns (uint256 reserve0, uint256 reserve1) {
@@ -452,9 +481,17 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
         uint256 liquidityAssetBalance = IERC20(liquidityAsset).balanceOf(address(this));
         uint256 baseAssetBalance = IERC20(baseAsset).balanceOf(address(this));
+        uint256 availableLiquidity = liquidityAssetBalance;
+
+        if (withdrawFromMarketOnSwap) {
+            address activeMarketMem = activeMarket;
+            if (activeMarketMem != address(0)) {
+                availableLiquidity += IERC4626(activeMarketMem).maxWithdraw(address(this));
+            }
+        }
 
         // Ensure there is no negative reserves when there are more outstanding withdrawals than liquidity assets in the ARM
-        reserve0 = outstandingWithdrawals > liquidityAssetBalance ? 0 : liquidityAssetBalance - outstandingWithdrawals;
+        reserve0 = outstandingWithdrawals > availableLiquidity ? 0 : availableLiquidity - outstandingWithdrawals;
         reserve1 = baseAssetBalance;
 
         // The previous assignment assumed token0 is be the liquidity asset.
@@ -691,27 +728,6 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     ///         Asset amount functions
     ////////////////////////////////////////////////////
 
-    /// @dev Checks if there is enough liquidity asset (WETH) in the ARM is not reserved for the withdrawal queue.
-    // That is, the amount of liquidity assets (WETH) that is available to be swapped or collected as fees.
-    // If no outstanding withdrawals, no check will be done of the amount against the balance of the liquidity assets in the ARM.
-    // This is a gas optimization for swaps.
-    // The ARM can swap out liquidity assets (WETH) that has been accrued from the performance fee for the fee collector.
-    // There is no liquidity guarantee for the fee collector. If there is not enough liquidity assets (WETH) in
-    // the ARM to collect the accrued fees, then the fee collector will have to wait until there is enough liquidity assets.
-    function _requireLiquidityAvailable(uint256 amount) internal view {
-        // The amount of liquidity assets (WETH) that is still to be claimed in the withdrawal queue
-        uint256 outstandingWithdrawals = withdrawsQueued - withdrawsClaimed;
-
-        // Save gas on an external balanceOf call if there are no outstanding withdrawals
-        if (outstandingWithdrawals == 0) return;
-
-        // If there is not enough liquidity assets in the ARM to cover the outstanding withdrawals and the amount
-        require(
-            amount + outstandingWithdrawals <= IERC20(liquidityAsset).balanceOf(address(this)),
-            "ARM: Insufficient liquidity"
-        );
-    }
-
     /// @notice The total amount of assets in the ARM, active lending market and external withdrawal queue,
     /// less the liquidity assets reserved for the ARM's withdrawal queue and accrued fees.
     /// @return The total amount of assets in the ARM
@@ -852,14 +868,12 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
         if (fees == 0) return 0;
 
-        // Check there is enough liquidity assets (WETH) that are not reserved for the withdrawal queue
-        // to cover the fee being collected.
-        _requireLiquidityAvailable(fees);
-        // _requireLiquidityAvailable() is optimized for swaps so will not revert if there are no outstanding withdrawals.
-        // We need to check there is enough liquidity assets to cover the fees being collect from this ARM contract.
-        // We could try the transfer and let it revert if there are not enough assets, but there is no error message with
-        // a failed WETH transfer so we spend the extra gas to check and give a meaningful error message.
-        require(fees <= IERC20(liquidityAsset).balanceOf(address(this)), "ARM: insufficient liquidity");
+        uint256 liquidityBalance = IERC20(liquidityAsset).balanceOf(address(this));
+        uint256 outstandingWithdrawals = withdrawsQueued - withdrawsClaimed;
+
+        // There is no liquidity guarantee for the fee collector. If there is not enough liquidity assets
+        // in the ARM to cover both outstanding redeems and accrued fees, the collector has to wait.
+        require(fees + outstandingWithdrawals <= liquidityBalance, "ARM: Insufficient liquidity");
 
         IERC20(liquidityAsset).transfer(feeCollector, fees);
 

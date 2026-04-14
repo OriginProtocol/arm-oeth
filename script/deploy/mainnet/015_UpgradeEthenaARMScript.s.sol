@@ -20,7 +20,8 @@ contract $015_UpgradeEthenaARMScript is AbstractDeployScript("015_UpgradeEthenaA
             Mainnet.SUSDE,
             claimDelay,
             1e18, // minSharesToRedeem
-            100e18 // allocateThreshold
+            100e18, // allocateThreshold
+            true
         );
         _recordDeployment("ETHENA_ARM_IMPL", address(armImpl));
     }
@@ -37,4 +38,3 @@ contract $015_UpgradeEthenaARMScript is AbstractDeployScript("015_UpgradeEthenaA
         vm.stopPrank();
     }
 }
-
