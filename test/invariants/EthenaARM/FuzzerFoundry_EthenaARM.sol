@@ -22,7 +22,7 @@ contract FuzzerFoundry_EthenaARM is Properties, StdInvariant, StdAssertions {
         // --- Fuzzer configuration ---
         isLabelAvailable = true;
         isAssumeAvailable = true;
-        isConsoleAvailable = true;
+        isConsoleAvailable = false;
     }
 
     function setUp() public {
@@ -72,7 +72,7 @@ contract FuzzerFoundry_EthenaARM is Properties, StdInvariant, StdAssertions {
         assertTrue(propertyB(), "Property B failed");
     }
 
-    function invariantLP() public {
+    function invariantLP() public view {
         assertTrue(propertyC(), "Property C failed");
         assertTrue(propertyD(), "Property D failed");
         assertTrue(propertyE(), "Property E failed");
