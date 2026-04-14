@@ -22,7 +22,7 @@ contract FuzzerFoundry_EthenaARM is Properties, StdInvariant, StdAssertions {
         // --- Fuzzer configuration ---
         isLabelAvailable = true;
         isAssumeAvailable = true;
-        isConsoleAvailable = true;
+        isConsoleAvailable = false;
     }
 
     function setUp() public {
