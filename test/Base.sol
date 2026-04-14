@@ -29,6 +29,8 @@ import {IOriginVault} from "contracts/Interfaces.sol";
 /// @dev This contract should only be used as storage for common variables.
 /// @dev Helpers and other functions should be defined in a separate contract.
 abstract contract Base_Test_ is Test {
+    uint256 internal constant _FEE_STORAGE_SLOT = 56;
+
     //////////////////////////////////////////////////////
     /// --- CONTRACTS
     //////////////////////////////////////////////////////
@@ -147,5 +149,9 @@ abstract contract Base_Test_ is Test {
 
     function _labelNotNull(address _address, string memory _name) internal {
         if (_address != address(0)) vm.label(_address, _name);
+    }
+
+    function feeStorageSlot(address arm) internal view returns (bytes32 value) {
+        value = vm.load(arm, bytes32(_FEE_STORAGE_SLOT));
     }
 }

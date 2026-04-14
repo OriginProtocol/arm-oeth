@@ -310,10 +310,6 @@ abstract contract TargetFunction is Properties {
         return lidoARM.feesAccrued();
     }
 
-    function handler_lastAvailableAsset() public view returns (int128) {
-        return lidoARM.lastAvailableAssets();
-    }
-
     ////////////////////////////////////////////////////
     /// --- DONATION
     ////////////////////////////////////////////////////

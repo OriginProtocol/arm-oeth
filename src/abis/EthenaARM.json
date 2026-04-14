@@ -1089,19 +1089,6 @@
   },
   {
     "inputs": [],
-    "name": "lastAvailableAssets",
-    "outputs": [
-      {
-        "internalType": "int128",
-        "name": "",
-        "type": "int128"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
     "name": "lastRequestTimestamp",
     "outputs": [
       {

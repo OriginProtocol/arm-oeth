@@ -8,6 +8,8 @@ import {stdError} from "forge-std/StdError.sol";
 import {Fork_Shared_Test_} from "test/fork/shared/Shared.sol";
 
 contract Fork_Concrete_LidoARM_TotalAssets_Test_ is Fork_Shared_Test_ {
+    uint256 internal constant DISCOUNTED_PRICE = 9995e32; // 0.9995
+
     //////////////////////////////////////////////////////
     /// --- SETUP
     //////////////////////////////////////////////////////
@@ -24,6 +26,16 @@ contract Fork_Concrete_LidoARM_TotalAssets_Test_ is Fork_Shared_Test_ {
         weth.approve(address(lidoARM), type(uint256).max);
     }
 
+    function _swapBaseForLiquidity(uint256 amountIn) internal returns (uint256 amountOut, uint256 expectedFee) {
+        lidoARM.setPrices(DISCOUNTED_PRICE, 1001e33);
+        deal(address(steth), address(this), amountIn);
+        steth.approve(address(lidoARM), type(uint256).max);
+
+        uint256[] memory amounts = lidoARM.swapExactTokensForTokens(steth, weth, amountIn, 0, address(this));
+        amountOut = amounts[1];
+        expectedFee = (amountIn - amountOut) * lidoARM.fee() / lidoARM.FEE_SCALE();
+    }
+
     //////////////////////////////////////////////////////
     /// --- PASSING TEST
     //////////////////////////////////////////////////////
@@ -32,7 +44,7 @@ contract Fork_Concrete_LidoARM_TotalAssets_Test_ is Fork_Shared_Test_ {
     }
 
     function test_TotalAssets_AfterDeposit_NoAssetGainOrLoss() public depositInLidoARM(address(this), DEFAULT_AMOUNT) {
-        assertEq(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT);
+        assertEq(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT - 1);
     }
 
     function test_TotalAssets_AfterDeposit_WithAssetGain_InWETH()
@@ -43,10 +55,7 @@ contract Fork_Concrete_LidoARM_TotalAssets_Test_ is Fork_Shared_Test_ {
         uint256 assetGain = DEFAULT_AMOUNT / 2;
         deal(address(weth), address(lidoARM), weth.balanceOf(address(lidoARM)) + assetGain);
 
-        // Calculate Fees
-        uint256 fee = assetGain * 20 / 100; // 20% fee
-
-        assertEq(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT + assetGain - fee);
+        assertEq(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT + assetGain - 1);
     }
 
     function test_TotalAssets_AfterDeposit_WithAssetGain_InSTETH()
@@ -59,11 +68,8 @@ contract Fork_Concrete_LidoARM_TotalAssets_Test_ is Fork_Shared_Test_ {
         // We are sure that steth balance is empty, so we can deal directly final amount.
         deal(address(steth), address(lidoARM), assetGain);
 
-        // Calculate Fees
-        uint256 fee = assetGain * 20 / 100; // 20% fee
-
         assertApproxEqAbs(
-            lidoARM.totalAssets(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT + assetGain - fee, STETH_ERROR_ROUNDING
+            lidoARM.totalAssets(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT + assetGain - 1, STETH_ERROR_ROUNDING
         );
     }
 
@@ -75,7 +81,7 @@ contract Fork_Concrete_LidoARM_TotalAssets_Test_ is Fork_Shared_Test_ {
         uint256 assetLoss = DEFAULT_AMOUNT / 2;
         deal(address(weth), address(lidoARM), weth.balanceOf(address(lidoARM)) - assetLoss);
 
-        assertEq(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT - assetLoss);
+        assertEq(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT - assetLoss - 1);
     }
 
     function test_TotalAssets_AfterDeposit_WithAssetLoss_InSTETH()
@@ -89,7 +95,9 @@ contract Fork_Concrete_LidoARM_TotalAssets_Test_ is Fork_Shared_Test_ {
         uint256 assetLoss = swapAmount / 2;
         deal(address(steth), address(lidoARM), swapAmount / 2);
 
-        assertApproxEqAbs(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT - assetLoss, STETH_ERROR_ROUNDING);
+        assertApproxEqAbs(
+            lidoARM.totalAssets(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT - assetLoss - 1, STETH_ERROR_ROUNDING
+        );
     }
 
     function test_TotalAssets_After_WithdrawingFromLido() public {
@@ -110,17 +118,15 @@ contract Fork_Concrete_LidoARM_TotalAssets_Test_ is Fork_Shared_Test_ {
     }
 
     function test_TotalAssets_With_FeeAccrued_NotNull() public {
-        uint256 assetGain = DEFAULT_AMOUNT;
-        // Simulate asset gain
-        deal(address(weth), address(lidoARM), weth.balanceOf(address(lidoARM)) + assetGain);
-
-        // User deposit, this will trigger a fee calculation
         lidoARM.deposit(DEFAULT_AMOUNT);
+        deal(address(weth), address(lidoARM), 200 ether);
+        uint256 totalAssetsBefore = lidoARM.totalAssets();
 
-        // Assert fee accrued is not null
-        assertEq(lidoARM.feesAccrued(), assetGain * 20 / 100);
+        (uint256 amountOut, uint256 expectedFee) = _swapBaseForLiquidity(100 ether);
 
-        assertEq(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT + assetGain - assetGain * 20 / 100);
+        // Assert fee accrued on discounted swap only.
+        assertEq(lidoARM.feesAccrued(), expectedFee + 1);
+        assertApproxEqAbs(lidoARM.totalAssets(), totalAssetsBefore + 100 ether - amountOut - expectedFee - 1, 1);
     }
 
     function test_TotalAssets_When_ARMIsInsolvent()
