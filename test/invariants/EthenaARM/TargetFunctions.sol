@@ -750,8 +750,8 @@ abstract contract TargetFunctions is Setup, StdUtils {
                         )
                     )
                 );
-                vm.warp(lastDistribution + 8 hours);
             }
+            vm.warp(lastDistribution + 8 hours);
         }
 
         uint256 balance = usde.balanceOf(address(susde));
