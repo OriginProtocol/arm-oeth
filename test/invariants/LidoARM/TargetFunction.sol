@@ -2,7 +2,7 @@
 pragma solidity 0.8.23;
 
 // Interfaces
-import {IERC20} from "contracts/Interfaces.sol";
+import {IERC20, ILidoAsyncRedeemAdapter} from "contracts/Interfaces.sol";
 
 // Test imports
 import {Properties} from "test/invariants/LidoARM/Properties.sol";
@@ -177,7 +177,12 @@ abstract contract TargetFunction is Properties {
 
         // Prank Owner
         vm.prank(lidoARM.owner());
-        uint256[] memory newLidoWithdrawRequests = lidoARM.requestLidoWithdrawals(amounts);
+        uint256[] memory newLidoWithdrawRequests = new uint256[](amounts.length);
+        (, address adapterAddress,,,,) = lidoARM.baseAssetConfigs(address(steth));
+        ILidoAsyncRedeemAdapter adapter = ILidoAsyncRedeemAdapter(adapterAddress);
+        for (uint256 i = 0; i < amounts.length; ++i) {
+            newLidoWithdrawRequests[i] = adapter.requestWithdrawal(amounts[i], address(lidoARM), address(lidoARM));
+        }
 
         // Update state
         for (uint256 i = 0; i < newLidoWithdrawRequests.length; i++) {
@@ -199,13 +204,16 @@ abstract contract TargetFunction is Properties {
         }
 
         // As `claimLidoWithdrawals` doesn't send back the amount, we need to calculate it
-        uint256 outstandingBefore = lidoARM.lidoWithdrawalQueueAmount();
+        uint256 outstandingBefore = lidoQueueAmount();
 
         // Prank Owner
         vm.prank(lidoARM.owner());
-        lidoARM.claimLidoWithdrawals(requestToClaim, new uint256[](0));
+        (, address adapterAddress,,,,) = lidoARM.baseAssetConfigs(address(steth));
+        ILidoAsyncRedeemAdapter(adapterAddress).claimWithdrawal(
+            requestToClaim, new uint256[](requestToClaim.length), address(lidoARM), address(lidoARM)
+        );
 
-        uint256 outstandingAfter = lidoARM.lidoWithdrawalQueueAmount();
+        uint256 outstandingAfter = lidoQueueAmount();
         uint256 diff = outstandingBefore - outstandingAfter;
 
         // Remove it from the list
@@ -228,7 +236,7 @@ abstract contract TargetFunction is Properties {
     uint256 constant MAX_SELL_T1 = 1.02 * 1e36;
 
     function handler_setPrices(uint256 buyT1, uint256 sellT1) public {
-        uint256 crossPrice = lidoARM.crossPrice();
+        (, , , , uint256 crossPrice,) = lidoARM.baseAssetConfigs(address(steth));
 
         // Bound prices
         buyT1 = _bound(buyT1, MIN_BUY_T1, crossPrice - 1);
@@ -238,15 +246,14 @@ abstract contract TargetFunction is Properties {
         vm.prank(lidoARM.owner());
 
         // Set prices
-        lidoARM.setPrices(buyT1, sellT1);
+        lidoARM.setPrices(address(steth), buyT1, sellT1);
     }
 
     function handler_setCrossPrice(uint256 newCrossPrice) public {
         uint256 priceScale = lidoARM.PRICE_SCALE();
+        (, , uint256 buy, uint256 sell,,) = lidoARM.baseAssetConfigs(address(steth));
 
         // Bound new cross price
-        uint256 sell = priceScale ** 2 / lidoARM.traderate0();
-        uint256 buy = lidoARM.traderate1();
         newCrossPrice = _bound(
             newCrossPrice, max(priceScale - lidoARM.MAX_CROSS_PRICE_DEVIATION(), buy) + 1, min(priceScale, sell)
         );
@@ -255,7 +262,7 @@ abstract contract TargetFunction is Properties {
         vm.prank(lidoARM.owner());
 
         // Set cross price
-        lidoARM.setCrossPrice(newCrossPrice);
+        lidoARM.setCrossPrice(address(steth), newCrossPrice);
     }
 
     function handler_setFee(uint256 performanceFee) public {
@@ -327,9 +334,12 @@ abstract contract TargetFunction is Properties {
 
         // Prank Owner
         vm.prank(lidoARM.owner());
-        lidoARM.claimLidoWithdrawals(lidoWithdrawRequests, new uint256[](0));
+        (, address adapterAddress,,,,) = lidoARM.baseAssetConfigs(address(steth));
+        ILidoAsyncRedeemAdapter(adapterAddress).claimWithdrawal(
+            lidoWithdrawRequests, new uint256[](lidoWithdrawRequests.length), address(lidoARM), address(lidoARM)
+        );
 
-        require(lidoARM.lidoWithdrawalQueueAmount() == 0, "FINALIZE_FAILED");
+        require(lidoQueueAmount() == 0, "FINALIZE_FAILED");
     }
 
     function sweepAllStETH() public {

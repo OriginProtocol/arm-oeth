@@ -85,8 +85,8 @@ abstract contract Modifiers is Helpers {
 
     /// @notice Set the stETH/WETH swap prices on the LidoARM contract.
     modifier setPrices(uint256 buyPrice, uint256 crossPrice, uint256 sellPrice) {
-        lidoARM.setCrossPrice(crossPrice);
-        lidoARM.setPrices(buyPrice, sellPrice);
+        lidoARM.setCrossPrice(address(steth), crossPrice);
+        lidoARM.setPrices(address(steth), buyPrice, sellPrice);
         _;
     }
 
@@ -201,7 +201,7 @@ abstract contract Modifiers is Helpers {
         vm.stopPrank();
 
         vm.prank(lidoARM.owner());
-        lidoARM.requestLidoWithdrawals(amounts);
+        requestStethWithdrawals(amounts);
 
         if (mode == VmSafe.CallerMode.Prank) {
             vm.prank(_address, _origin);
@@ -217,7 +217,8 @@ abstract contract Modifiers is Helpers {
         (VmSafe.CallerMode mode, address _address, address _origin) = vm.readCallers();
         vm.stopPrank();
 
-        MockCall.mockCallLidoFindCheckpointHints();
+        MockLidoWithdraw mocklidoWithdraw = new MockLidoWithdraw(adapterOf(address(steth)));
+        MockCall.mockCallLidoFindCheckpointHints(address(mocklidoWithdraw));
 
         if (mode == VmSafe.CallerMode.Prank) {
             vm.prank(_address, _origin);
@@ -246,11 +247,13 @@ abstract contract Modifiers is Helpers {
 
     function _mockFunctionClaimWithdrawOnLidoARM(uint256 amount) internal {
         // Deploy fake lido withdraw contract
-        MockLidoWithdraw mocklidoWithdraw = new MockLidoWithdraw(address(lidoARM));
+        MockLidoWithdraw mocklidoWithdraw = new MockLidoWithdraw(adapterOf(address(steth)));
         // Give ETH to the ETH Sender contract
         vm.deal(address(mocklidoWithdraw.ethSender()), amount);
         // Mock all the call to the fake lido withdraw contract
         MockCall.mockCallLidoClaimWithdrawals(address(mocklidoWithdraw));
+        MockCall.mockCallLidoGetWithdrawalStatus(address(mocklidoWithdraw));
+        MockCall.mockCallLidoFindCheckpointHints(address(mocklidoWithdraw));
     }
 
     /// @notice Skip time by a given delay.

@@ -20,12 +20,10 @@ contract $005_RegisterLidoWithdrawalsScript is AbstractDeployScript("005_Registe
     }
 
     function _buildGovernanceProposal() internal override {
-        govProposal.setDescription("Upgrade Lido ARM and register Lido withdrawal requests");
+        govProposal.setDescription("Upgrade Lido ARM");
 
-        bytes memory callData = abi.encodeWithSignature("registerLidoWithdrawalRequests()");
-
-        bytes memory proxyData = abi.encode(resolver.resolve("LIDO_ARM_IMPL"), callData);
-
-        govProposal.action(resolver.resolve("LIDO_ARM"), "upgradeToAndCall(address,bytes)", proxyData);
+        govProposal.action(
+            resolver.resolve("LIDO_ARM"), "upgradeTo(address)", abi.encode(resolver.resolve("LIDO_ARM_IMPL"))
+        );
     }
 }

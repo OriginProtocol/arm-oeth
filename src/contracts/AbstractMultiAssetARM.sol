@@ -6,7 +6,7 @@ import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 import {OwnableOperable} from "./OwnableOperable.sol";
-import {IAsyncRedeemVault, IERC20, ICapManager} from "./Interfaces.sol";
+import {IAsyncRedeemAdapter, IERC20, ICapManager} from "./Interfaces.sol";
 
 /**
  * @title Generic multi-asset Automated Redemption Manager (ARM)
@@ -39,15 +39,15 @@ abstract contract AbstractMultiAssetARM is OwnableOperable, ERC20Upgradeable {
     struct BaseAssetConfig {
         /// @notice Whether the base asset is currently supported.
         bool supported;
-        /// @notice Async vault used to convert the base asset back into the liquidity asset.
-        address vault;
+        /// @notice Async redeem adapter used to convert the base asset back into the liquidity asset.
+        address adapter;
         /// @notice Price the ARM pays when buying the base asset, scaled to 36 decimals.
         uint256 buyPrice;
         /// @notice Price the ARM charges when selling the base asset, scaled to 36 decimals.
         uint256 sellPrice;
         /// @notice Anchor price used for accounting and price-cross validation, scaled to 36 decimals.
         uint256 crossPrice;
-        /// @notice Total requested vault shares that have not yet been claimed back as liquidity.
+        /// @notice Total requested adapter shares that have not yet been claimed back as liquidity.
         uint256 requestedVaultShares;
     }
 
@@ -104,7 +104,7 @@ abstract contract AbstractMultiAssetARM is OwnableOperable, ERC20Upgradeable {
     uint256[34] private _gap;
 
     /// @notice Emitted when a new base asset is added.
-    event BaseAssetAdded(address indexed asset, address indexed vault, uint256 buyPrice, uint256 sellPrice, uint256 crossPrice);
+    event BaseAssetAdded(address indexed asset, address indexed adapter, uint256 buyPrice, uint256 sellPrice, uint256 crossPrice);
     /// @notice Emitted when a base asset is removed.
     event BaseAssetRemoved(address indexed asset);
     /// @notice Emitted when a base asset's buy and sell prices are updated.
@@ -138,9 +138,9 @@ abstract contract AbstractMultiAssetARM is OwnableOperable, ERC20Upgradeable {
     /// @notice Emitted after a lending market allocation or withdrawal attempt.
     event Allocated(address indexed market, int256 targetLiquidityDelta, int256 actualLiquidityDelta);
     /// @notice Emitted when vault shares are submitted for async redemption.
-    event VaultRedeemRequested(address indexed asset, address indexed vault, uint256 shares);
+    event VaultRedeemRequested(address indexed asset, address indexed adapter, uint256 shares);
     /// @notice Emitted when previously requested vault shares are claimed back as liquidity.
-    event VaultRedeemClaimed(address indexed asset, address indexed vault, uint256 shares, uint256 assets);
+    event VaultRedeemClaimed(address indexed asset, address indexed adapter, uint256 shares, uint256 assets);
 
     /// @param _liquidityAsset Shared asset used for LP accounting and as the swap quote asset.
     /// @param _claimDelay Delay in seconds before LP redeem requests can be claimed.
@@ -312,10 +312,10 @@ abstract contract AbstractMultiAssetARM is OwnableOperable, ERC20Upgradeable {
         BaseAssetConfig memory config = baseAssetConfigs[baseAsset];
 
         if (inIsLiquidity) {
-            uint256 convertedAmountIn = IAsyncRedeemVault(config.vault).convertToShares(amountIn);
+            uint256 convertedAmountIn = IAsyncRedeemAdapter(config.adapter).convertToShares(amountIn);
             amountOut = convertedAmountIn * PRICE_SCALE / config.sellPrice;
         } else {
-            uint256 convertedAmountIn = IAsyncRedeemVault(config.vault).convertToAssets(amountIn);
+            uint256 convertedAmountIn = IAsyncRedeemAdapter(config.adapter).convertToAssets(amountIn);
             amountOut = convertedAmountIn * config.buyPrice / PRICE_SCALE;
         }
 
@@ -331,10 +331,10 @@ abstract contract AbstractMultiAssetARM is OwnableOperable, ERC20Upgradeable {
         BaseAssetConfig memory config = baseAssetConfigs[baseAsset];
 
         if (inIsLiquidity) {
-            uint256 convertedAmountOut = IAsyncRedeemVault(config.vault).convertToAssets(amountOut);
+            uint256 convertedAmountOut = IAsyncRedeemAdapter(config.adapter).convertToAssets(amountOut);
             amountIn = ((convertedAmountOut * config.sellPrice) / PRICE_SCALE) + 3;
         } else {
-            uint256 convertedAmountOut = IAsyncRedeemVault(config.vault).convertToShares(amountOut);
+            uint256 convertedAmountOut = IAsyncRedeemAdapter(config.adapter).convertToShares(amountOut);
             amountIn = ((convertedAmountOut * PRICE_SCALE) / config.buyPrice) + 3;
         }
 
@@ -371,21 +371,21 @@ abstract contract AbstractMultiAssetARM is OwnableOperable, ERC20Upgradeable {
         return supportedBaseAssets;
     }
 
-    /// @notice Adds a new supported base asset and its async redeem vault.
+    /// @notice Adds a new supported base asset and its async redeem adapter.
     /// @param baseAsset New base asset to support.
-    /// @param vault Async vault used to redeem the base asset into the liquidity asset.
+    /// @param adapter Async adapter used to redeem the base asset into the liquidity asset.
     /// @param buyPrice Initial buy price for the base asset.
     /// @param sellPrice Initial sell price for the base asset.
     /// @param crossPrice Initial cross price for the base asset.
-    function addBaseAsset(address baseAsset, address vault, uint256 buyPrice, uint256 sellPrice, uint256 crossPrice)
+    function addBaseAsset(address baseAsset, address adapter, uint256 buyPrice, uint256 sellPrice, uint256 crossPrice)
         external
         onlyOwner
     {
         require(baseAsset != address(0), "ARM: invalid asset");
-        require(vault != address(0), "ARM: invalid vault");
+        require(adapter != address(0), "ARM: invalid adapter");
         require(!baseAssetConfigs[baseAsset].supported, "ARM: asset already supported");
         require(IERC20(baseAsset).decimals() == liquidityAssetDecimals, "ARM: invalid asset decimals");
-        require(IAsyncRedeemVault(vault).asset() == liquidityAsset, "ARM: invalid vault asset");
+        require(IAsyncRedeemAdapter(adapter).asset() == liquidityAsset, "ARM: invalid adapter asset");
         require(crossPrice >= PRICE_SCALE - MAX_CROSS_PRICE_DEVIATION, "ARM: cross price too low");
         require(crossPrice <= PRICE_SCALE, "ARM: cross price too high");
         require(sellPrice >= crossPrice, "ARM: sell price too low");
@@ -393,16 +393,17 @@ abstract contract AbstractMultiAssetARM is OwnableOperable, ERC20Upgradeable {
 
         supportedBaseAssets.push(baseAsset);
         supportedBaseAssetIndex[baseAsset] = supportedBaseAssets.length;
+        IERC20(baseAsset).approve(adapter, type(uint256).max);
         baseAssetConfigs[baseAsset] = BaseAssetConfig({
             supported: true,
-            vault: vault,
+            adapter: adapter,
             buyPrice: buyPrice,
             sellPrice: sellPrice,
             crossPrice: crossPrice,
             requestedVaultShares: 0
         });
 
-        emit BaseAssetAdded(baseAsset, vault, buyPrice, sellPrice, crossPrice);
+        emit BaseAssetAdded(baseAsset, adapter, buyPrice, sellPrice, crossPrice);
     }
 
     /// @notice Removes a supported base asset once the ARM no longer holds meaningful exposure to it.
@@ -462,30 +463,46 @@ abstract contract AbstractMultiAssetARM is OwnableOperable, ERC20Upgradeable {
         emit CrossPriceUpdated(baseAsset, newCrossPrice);
     }
 
-    /// @notice Requests async redemption of base asset vault shares into the liquidity asset.
-    /// @param baseAsset Base asset whose vault shares will be redeemed.
+    /// @notice Requests async redemption of base asset adapter shares into the liquidity asset.
+    /// @param baseAsset Base asset whose adapter shares will be redeemed.
     /// @param shares Amount of vault shares to request for redemption.
     function requestVaultRedeem(address baseAsset, uint256 shares) external onlyOperatorOrOwner {
-        BaseAssetConfig storage config = baseAssetConfigs[baseAsset];
-        require(config.supported, "ARM: unsupported asset");
-        IAsyncRedeemVault(config.vault).requestRedeem(shares, address(this), address(this));
-        config.requestedVaultShares += shares;
-
-        emit VaultRedeemRequested(baseAsset, config.vault, shares);
+        _requestAdapterRedeem(baseAsset, shares);
     }
 
-    /// @notice Claims previously requested async vault redemptions back into liquidity.
-    /// @param baseAsset Base asset whose vault request is being claimed.
+    /// @notice Claims previously requested async adapter redemptions back into liquidity.
+    /// @param baseAsset Base asset whose adapter request is being claimed.
     /// @param shares Amount of requested shares to redeem.
     /// @return assets Liquidity asset amount received from the vault.
     function claimVaultRedeem(address baseAsset, uint256 shares) external onlyOperatorOrOwner returns (uint256 assets) {
+        assets = _claimAdapterRedeem(baseAsset, shares);
+    }
+
+    /// @notice Requests async redemption of base-asset shares through the configured adapter.
+    /// @param baseAsset Base asset whose adapter shares will be redeemed.
+    /// @param shares Amount of shares to request for redemption.
+    /// @return requestId Identifier returned by the adapter.
+    function _requestAdapterRedeem(address baseAsset, uint256 shares) internal returns (uint256 requestId) {
+        BaseAssetConfig storage config = baseAssetConfigs[baseAsset];
+        require(config.supported, "ARM: unsupported asset");
+        requestId = IAsyncRedeemAdapter(config.adapter).requestRedeem(shares, address(this), address(this));
+        config.requestedVaultShares += shares;
+
+        emit VaultRedeemRequested(baseAsset, config.adapter, shares);
+    }
+
+    /// @notice Claims previously requested adapter redemptions back into liquidity.
+    /// @param baseAsset Base asset whose adapter request is being claimed.
+    /// @param shares Amount of requested shares to redeem.
+    /// @return assets Liquidity asset amount received from the adapter.
+    function _claimAdapterRedeem(address baseAsset, uint256 shares) internal returns (uint256 assets) {
         BaseAssetConfig storage config = baseAssetConfigs[baseAsset];
         require(config.supported, "ARM: unsupported asset");
         require(shares <= config.requestedVaultShares, "ARM: redeem exceeds requested");
-        assets = IAsyncRedeemVault(config.vault).redeem(shares, address(this), address(this));
+        assets = IAsyncRedeemAdapter(config.adapter).redeem(shares, address(this), address(this));
         config.requestedVaultShares -= shares;
 
-        emit VaultRedeemClaimed(baseAsset, config.vault, shares, assets);
+        emit VaultRedeemClaimed(baseAsset, config.adapter, shares, assets);
     }
 
     /// @notice Preview the LP shares that would be minted for a liquidity deposit.
@@ -644,11 +661,11 @@ abstract contract AbstractMultiAssetARM is OwnableOperable, ERC20Upgradeable {
         for (uint256 i = 0; i < supportedAssetsLength; ++i) {
             address assetAddr = supportedBaseAssets[i];
             BaseAssetConfig memory config = baseAssetConfigs[assetAddr];
-            IAsyncRedeemVault vault = IAsyncRedeemVault(config.vault);
+            IAsyncRedeemAdapter adapter = IAsyncRedeemAdapter(config.adapter);
 
-            uint256 onHandAssets = vault.convertToAssets(IERC20(assetAddr).balanceOf(address(this)));
+            uint256 onHandAssets = adapter.convertToAssets(IERC20(assetAddr).balanceOf(address(this)));
             assets += onHandAssets * config.crossPrice / PRICE_SCALE;
-            assets += vault.convertToAssets(config.requestedVaultShares);
+            assets += adapter.convertToAssets(config.requestedVaultShares);
         }
 
         address activeMarketMem = activeMarket;

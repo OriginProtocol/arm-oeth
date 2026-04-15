@@ -32,12 +32,15 @@ contract Fork_Concrete_LidoARM_SwapTokensForExactTokens_Test is Fork_Shared_Test
         lidoARM.collectFees();
     }
 
+    function _buySellPrices() internal view returns (uint256 buyPrice, uint256 sellPrice) {
+        (, , buyPrice, sellPrice,,) = lidoARM.baseAssetConfigs(address(steth));
+    }
+
     //////////////////////////////////////////////////////
     /// --- REVERTING TESTS
     //////////////////////////////////////////////////////
     function test_RevertWhen_SwapTokensForExactTokens_Because_InvalidTokenOut1() public {
-        lidoARM.token0();
-        vm.expectRevert("ARM: Invalid out token");
+        vm.expectRevert("ARM: Invalid swap assets");
         lidoARM.swapTokensForExactTokens(
             steth, // inToken
             badToken, // outToken
@@ -48,7 +51,7 @@ contract Fork_Concrete_LidoARM_SwapTokensForExactTokens_Test is Fork_Shared_Test
     }
 
     function test_RevertWhen_SwapTokensForExactTokens_Because_InvalidTokenOut0() public {
-        vm.expectRevert("ARM: Invalid out token");
+        vm.expectRevert("ARM: Invalid swap assets");
         lidoARM.swapTokensForExactTokens(
             weth, // inToken
             badToken, // outToken
@@ -59,7 +62,7 @@ contract Fork_Concrete_LidoARM_SwapTokensForExactTokens_Test is Fork_Shared_Test
     }
 
     function test_RevertWhen_SwapTokensForExactTokens_Because_InvalidTokenIn() public {
-        vm.expectRevert("ARM: Invalid in token");
+        vm.expectRevert("ARM: Invalid swap assets");
         lidoARM.swapTokensForExactTokens(
             badToken, // inToken
             steth, // outToken
@@ -70,7 +73,7 @@ contract Fork_Concrete_LidoARM_SwapTokensForExactTokens_Test is Fork_Shared_Test
     }
 
     function test_RevertWhen_SwapTokensForExactTokens_Because_BothInvalidTokens() public {
-        vm.expectRevert("ARM: Invalid in token");
+        vm.expectRevert("ARM: Invalid swap assets");
         lidoARM.swapTokensForExactTokens(
             badToken, // inToken
             badToken, // outToken
@@ -192,8 +195,8 @@ contract Fork_Concrete_LidoARM_SwapTokensForExactTokens_Test is Fork_Shared_Test
         uint256 balanceSTETHBeforeARM = steth.balanceOf(address(lidoARM));
 
         // Get maximum amount of WETH to send to the ARM
-        uint256 traderates0 = lidoARM.traderate0();
-        uint256 amountIn = (amountOut * 1e36 / traderates0) + 3;
+        (, uint256 sellPrice) = _buySellPrices();
+        uint256 amountIn = (amountOut * sellPrice / 1e36) + 3;
 
         // Expected events: Already checked in fuzz tests
 
@@ -239,8 +242,8 @@ contract Fork_Concrete_LidoARM_SwapTokensForExactTokens_Test is Fork_Shared_Test
         uint256 balanceSTETHBeforeARM = steth.balanceOf(address(lidoARM));
 
         // Get maximum amount of stETH to send to the ARM
-        uint256 traderates1 = lidoARM.traderate1();
-        uint256 amountIn = (amountOut * 1e36 / traderates1) + 3;
+        (uint256 buyPrice,) = _buySellPrices();
+        uint256 amountIn = (amountOut * 1e36 / buyPrice) + 3;
 
         // Expected events: Already checked in fuzz tests
 
@@ -327,7 +330,7 @@ contract Fork_Concrete_LidoARM_SwapTokensForExactTokens_Test is Fork_Shared_Test
         // Use random sell price between 1 and 1.02 for the stETH/WETH price,
         // The buy price doesn't matter as it is not used in this test.
         price = _bound(price, MIN_PRICE1, MAX_PRICE1);
-        lidoARM.setPrices(MIN_PRICE0, price);
+        lidoARM.setPrices(address(steth), MIN_PRICE0, price);
 
         // Set random amount of WETH in the ARM
         wethReserveGrowth = _bound(wethReserveGrowth, 0, INITIAL_BALANCE / 100);
@@ -411,7 +414,7 @@ contract Fork_Concrete_LidoARM_SwapTokensForExactTokens_Test is Fork_Shared_Test
         // Use random stETH/WETH buy price between 0.98 and 1,
         // sell price doesn't matter as it is not used in this test.
         price = _bound(price, MIN_PRICE0, MAX_PRICE0);
-        lidoARM.setPrices(price, MAX_PRICE1);
+        lidoARM.setPrices(address(steth), price, MAX_PRICE1);
 
         // Set random amount of WETH growth in the ARM
         wethReserveGrowth = _bound(wethReserveGrowth, 0, INITIAL_BALANCE / 100);

@@ -35,24 +35,40 @@ interface ICapManager {
 }
 
 /**
- * @title Async Redeem Vault interface
- * @notice Minimal async redeem surface used by the ARM for ERC-7540 style vault integrations.
- * @dev ERC-7540 extends ERC-4626 with asynchronous request flows. This interface keeps the standard
- * ERC-4626 accounting methods, such as `asset()`, `convertToShares()` and `convertToAssets()`,
- * and adds the async `requestRedeem(...)` entrypoint that the ARM needs before later calling
- * the inherited ERC-4626 `redeem(...)` claim path once shares are claimable.
+ * @title Async Redeem Adapter interface
+ * @notice Minimal ARM-facing subset of the ERC-7540/ERC-4626 redeem flow.
+ * @dev Implementations may be true vaults or vault-shaped adapters. The ARM treats the adapter's
+ * share unit as the configured base asset and the adapter's asset as the ARM liquidity asset.
  */
-interface IAsyncRedeemVault is IERC4626 {
+interface IAsyncRedeemAdapter {
+    /// @notice Returns the liquidity asset address used by the ARM.
+    function asset() external view returns (address);
+
+    /// @notice Converts base-asset shares into liquidity assets.
+    function convertToAssets(uint256 shares) external view returns (uint256 assetsOut);
+
+    /// @notice Converts liquidity assets into base-asset shares.
+    function convertToShares(uint256 assetsIn) external view returns (uint256 sharesOut);
+
     /**
      * @notice Request asynchronous redemption of vault shares.
      * @dev This follows the ERC-7540 async redeem flow where redemption is requested first and
      * fulfilled later through `redeem(...)` once the request becomes claimable.
-     * @param shares Amount of vault shares to redeem asynchronously.
+     * @param shares Amount of adapter shares to redeem asynchronously.
      * @param controller Account that will later control the redeem claim.
      * @param owner Account whose shares are being redeemed.
-     * @return requestId Optional request identifier returned by the vault implementation.
+     * @return requestId Optional request identifier returned by the adapter implementation.
      */
     function requestRedeem(uint256 shares, address controller, address owner) external returns (uint256 requestId);
+
+    /**
+     * @notice Claims previously requested redemptions into the liquidity asset.
+     * @param shares Amount of previously requested shares to claim.
+     * @param receiver Account receiving the liquidity assets.
+     * @param controller Account that controls the pending redemption request.
+     * @return assetsOut Amount of liquidity assets returned to `receiver`.
+     */
+    function redeem(uint256 shares, address receiver, address controller) external returns (uint256 assetsOut);
 
     /**
      * @notice Returns the amount of shares currently claimable for an async redeem request flow.
@@ -66,6 +82,18 @@ interface IAsyncRedeemVault is IERC4626 {
         external
         view
         returns (uint256 claimableShares);
+}
+
+/**
+ * @title Lido async redeem adapter interface
+ * @notice Extension used by `LidoARM` to interoperate with Lido queue request IDs directly.
+ */
+interface ILidoAsyncRedeemAdapter is IAsyncRedeemAdapter {
+    function requestWithdrawal(uint256 shares, address controller, address owner) external returns (uint256 requestId);
+    function claimWithdrawal(uint256[] calldata requestIds, uint256[] calldata hintIds, address receiver, address controller)
+        external
+        returns (uint256 assetsOut, uint256 sharesClaimed);
+    function requestAssets(uint256 requestId) external view returns (uint256 assets);
 }
 
 interface LegacyAMM {
@@ -148,6 +176,13 @@ interface ISTETH is IERC20 {
 
     // function() external payable;
     function submit(address _referral) external payable returns (uint256);
+}
+
+interface IWstETH is IERC20 {
+    function wrap(uint256 stETHAmount) external returns (uint256 wstETHAmount);
+    function unwrap(uint256 wstETHAmount) external returns (uint256 stETHAmount);
+    function getStETHByWstETH(uint256 wstETHAmount) external view returns (uint256 stETHAmount);
+    function getWstETHByStETH(uint256 stETHAmount) external view returns (uint256 wstETHAmount);
 }
 
 interface IStETHWithdrawal {

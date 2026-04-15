@@ -103,7 +103,8 @@ contract Fork_Concrete_LidoARM_TotalAssets_Test_ is Fork_Shared_Test_ {
         // Request a redeem on Lido
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = swapAmount;
-        lidoARM.requestLidoWithdrawals(amounts);
+        vm.prank(lidoARM.owner());
+        requestStethVaultRedeems(amounts);
 
         // Check total assets after withdrawal is the same as before
         assertApproxEqAbs(lidoARM.totalAssets(), totalAssetsBefore, STETH_ERROR_ROUNDING);

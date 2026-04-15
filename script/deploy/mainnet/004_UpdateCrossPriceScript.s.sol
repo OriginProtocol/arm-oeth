@@ -4,6 +4,7 @@ pragma solidity 0.8.23;
 // Deployment
 import {AbstractDeployScript} from "script/deploy/helpers/AbstractDeployScript.s.sol";
 import {GovHelper, GovProposal} from "script/deploy/helpers/GovHelper.sol";
+import {Mainnet} from "contracts/utils/Addresses.sol";
 
 contract $004_UpdateCrossPriceMainnetScript is AbstractDeployScript("004_UpdateCrossPriceScript") {
     using GovHelper for GovProposal;
@@ -13,6 +14,8 @@ contract $004_UpdateCrossPriceMainnetScript is AbstractDeployScript("004_UpdateC
 
         uint256 newCrossPrice = 0.9999 * 1e36;
 
-        govProposal.action(resolver.resolve("LIDO_ARM"), "setCrossPrice(uint256)", abi.encode(newCrossPrice));
+        govProposal.action(
+            resolver.resolve("LIDO_ARM"), "setCrossPrice(address,uint256)", abi.encode(Mainnet.STETH, newCrossPrice)
+        );
     }
 }

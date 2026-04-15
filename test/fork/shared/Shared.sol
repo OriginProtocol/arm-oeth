@@ -9,6 +9,8 @@ import {Proxy} from "contracts/Proxy.sol";
 import {LidoARM} from "contracts/LidoARM.sol";
 import {CapManager} from "contracts/CapManager.sol";
 import {ZapperLidoARM} from "contracts/ZapperLidoARM.sol";
+import {StETHAsyncRedeemAdapter} from "contracts/adapters/StETHAsyncRedeemAdapter.sol";
+import {WstETHAsyncRedeemAdapter} from "contracts/adapters/WstETHAsyncRedeemAdapter.sol";
 
 // Interfaces
 import {IERC20} from "contracts/Interfaces.sol";
@@ -116,6 +118,12 @@ abstract contract Fork_Shared_Test_ is Modifiers {
         capManager.setTotalAssetsCap(100 ether);
 
         // --- Deploy LidoARM implementation ---
+        StETHAsyncRedeemAdapter stethAdapter =
+            new StETHAsyncRedeemAdapter(address(lidoProxy), address(weth), address(steth), Mainnet.LIDO_WITHDRAWAL);
+        WstETHAsyncRedeemAdapter wstethAdapter = new WstETHAsyncRedeemAdapter(
+            address(lidoProxy), address(weth), address(steth), address(wsteth), Mainnet.LIDO_WITHDRAWAL
+        );
+
         // Deploy LidoARM implementation.
         LidoARM lidoImpl = new LidoARM(address(steth), address(weth), Mainnet.LIDO_WITHDRAWAL, 10 minutes, 0, 0);
 
@@ -139,8 +147,12 @@ abstract contract Fork_Shared_Test_ is Modifiers {
         // Set the Proxy as the LidoARM.
         lidoARM = LidoARM(payable(address(lidoProxy)));
 
+        lidoARM.addBaseAsset(address(steth), address(stethAdapter), 0.998e36, 1e36, 1e36);
+        lidoARM.addBaseAsset(address(wsteth), address(wstethAdapter), 0.998e36, 1e36, 1e36);
+
         // set prices
-        lidoARM.setPrices(992 * 1e33, 1001 * 1e33);
+        lidoARM.setPrices(address(steth), 992 * 1e33, 1001 * 1e33);
+        lidoARM.setPrices(address(wsteth), 992 * 1e33, 1001 * 1e33);
 
         // --- Deploy ZapperLidoARM ---
         zapperLidoARM = new ZapperLidoARM(address(weth), address(lidoProxy));

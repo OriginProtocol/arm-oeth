@@ -1,12 +1,29 @@
-const { formatUnits, parseUnits } = require("ethers");
+const { ethers, formatUnits, parseUnits } = require("ethers");
 const { baseWithdrawAmount } = require("./liquidityAutomation");
+const { mainnet } = require("../utils/addresses");
 
 const { logTxDetails } = require("../utils/txLogger");
 
 const log = require("../utils/logger")("task:lidoQueue");
 
+const lidoAsyncRedeemAdapterAbi = [
+  "function requestWithdrawal(uint256 shares, address controller, address owner) returns (uint256 requestId)",
+  "function claimWithdrawal(uint256[] requestIds, uint256[] hintIds, address receiver, address controller) returns (uint256 assetsOut, uint256 sharesClaimed)",
+];
+
+const getAdapterAddress = async (arm, asset) => {
+  const config = await arm.baseAssetConfigs(asset);
+  return config.adapter ?? config[1];
+};
+
 const requestLidoWithdrawals = async (options) => {
   const { amount, signer, arm, maxAmount } = options;
+  const adapterAddress = await getAdapterAddress(arm, mainnet.stETH);
+  const adapter = new ethers.Contract(
+    adapterAddress,
+    lidoAsyncRedeemAdapterAbi,
+    signer,
+  );
 
   // Get stETH withdrawal amount
   const withdrawAmount = amount
@@ -29,13 +46,30 @@ const requestLidoWithdrawals = async (options) => {
     );
   }
 
-  const tx = await arm.connect(signer).requestLidoWithdrawals(requestAmounts);
+  const txs = [];
+  for (const requestAmount of requestAmounts) {
+    txs.push(
+      await adapter.requestWithdrawal(
+        requestAmount,
+        await arm.getAddress(),
+        await arm.getAddress(),
+      ),
+    );
+  }
 
-  await logTxDetails(tx, "requestLidoWithdrawals");
+  for (const tx of txs) {
+    await logTxDetails(tx, "requestLidoWithdrawals");
+  }
 };
 
 const claimLidoWithdrawals = async (options) => {
   const { signer, arm, withdrawalQueue, id } = options;
+  const adapterAddress = await getAdapterAddress(arm, mainnet.stETH);
+  const adapter = new ethers.Contract(
+    adapterAddress,
+    lidoAsyncRedeemAdapterAbi,
+    signer,
+  );
 
   const finalizedIds = [];
 
@@ -91,9 +125,13 @@ const claimLidoWithdrawals = async (options) => {
     log(
       `About to claim ${sortedFinalizedIds.length} withdrawal requests with\nids: ${sortedFinalizedIds}\nhints: ${hintIds}`,
     );
-    const tx = await arm
-      .connect(signer)
-      .claimLidoWithdrawals(sortedFinalizedIds, hintIds.toArray());
+    const armAddress = await arm.getAddress();
+    const tx = await adapter.claimWithdrawal(
+      sortedFinalizedIds,
+      hintIds.toArray(),
+      armAddress,
+      armAddress,
+    );
     await logTxDetails(tx, "claim Lido withdraws");
   } else {
     log("No finalized Lido withdrawal requests to claim");

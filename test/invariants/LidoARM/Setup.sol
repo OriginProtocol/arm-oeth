@@ -8,11 +8,14 @@ import {Base_Test_} from "test/Base.sol";
 import {Proxy} from "contracts/Proxy.sol";
 import {LidoARM} from "contracts/LidoARM.sol";
 import {CapManager} from "contracts/CapManager.sol";
+import {StETHAsyncRedeemAdapter} from "contracts/adapters/StETHAsyncRedeemAdapter.sol";
+import {WstETHAsyncRedeemAdapter} from "contracts/adapters/WstETHAsyncRedeemAdapter.sol";
 import {WETH} from "@solmate/tokens/WETH.sol";
 
 // Mocks
 import {MockSTETH} from "./mocks/MockSTETH.sol";
 import {MockLidoWithdraw} from "./mocks/MockLidoWithdraw.sol";
+import {MockWstETH} from "./mocks/MockWstETH.sol";
 
 // Interfaces
 import {IERC20} from "contracts/Interfaces.sol";
@@ -89,6 +92,7 @@ abstract contract Setup is Base_Test_ {
 
         // STETH
         steth = IERC20(address(new MockSTETH()));
+        wsteth = IERC20(address(new MockWstETH(address(steth))));
 
         // Lido Withdraw
         lidoWithdraw = address(new MockLidoWithdraw(address(steth)));
@@ -130,6 +134,11 @@ abstract contract Setup is Base_Test_ {
     }
 
     function _deployLidoARM() private {
+        StETHAsyncRedeemAdapter stethAdapter =
+            new StETHAsyncRedeemAdapter(address(lidoProxy), address(weth), address(steth), lidoWithdraw);
+        WstETHAsyncRedeemAdapter wstethAdapter =
+            new WstETHAsyncRedeemAdapter(address(lidoProxy), address(weth), address(steth), address(wsteth), lidoWithdraw);
+
         // Deploy LidoARM implementation.
         LidoARM lidoImpl = new LidoARM(address(steth), address(weth), lidoWithdraw, 10 minutes, 0, 0);
 
@@ -151,6 +160,11 @@ abstract contract Setup is Base_Test_ {
 
         // Set the Proxy as the LidoARM.
         lidoARM = LidoARM(payable(address(lidoProxy)));
+
+        lidoARM.addBaseAsset(address(steth), address(stethAdapter), 0.998e36, 1e36, 1e36);
+        lidoARM.addBaseAsset(address(wsteth), address(wstethAdapter), 0.998e36, 1e36, 1e36);
+        lidoARM.setPrices(address(steth), 0.998e36, 1e36);
+        lidoARM.setPrices(address(wsteth), 0.998e36, 1e36);
     }
 
     function min(uint256 a, uint256 b) public pure returns (uint256) {

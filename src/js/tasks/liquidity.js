@@ -1,6 +1,7 @@
 const { formatUnits, parseUnits } = require("ethers");
 const dayjs = require("dayjs");
 const utc = require("dayjs/plugin/utc");
+const { mainnet } = require("../utils/addresses");
 
 const { getBlock } = require("../utils/block");
 const { resolveArmContract } = require("../utils/addressParser");
@@ -18,6 +19,38 @@ const { logTxDetails } = require("../utils/txLogger");
 const { getSigner } = require("../utils/signers");
 
 const log = require("../utils/logger")("task:liquidity");
+
+const lidoAsyncRedeemAdapterAbi = [
+  "function requestAssets(uint256) view returns (uint256)",
+];
+
+const queuedLidoAmount = async (adapterAddress, blockTag) => {
+  const stEthWithdrawQueue = await ethers.getContractAt(
+    "IStETHWithdrawal",
+    mainnet.LIDO_WITHDRAWAL,
+  );
+  const adapter = new ethers.Contract(
+    adapterAddress,
+    lidoAsyncRedeemAdapterAbi,
+    ethers.provider,
+  );
+  const requestIds = await stEthWithdrawQueue.getWithdrawalRequests(
+    adapterAddress,
+    { blockTag },
+  );
+
+  let queued = 0n;
+  for (const requestId of requestIds) {
+    queued += await adapter.requestAssets(requestId, { blockTag });
+  }
+
+  return queued;
+};
+
+const getAdapterAddress = async (armContract, asset) => {
+  const config = await armContract.baseAssetConfigs(asset);
+  return config.adapter ?? config[1];
+};
 
 // Extend Day.js with the UTC plugin
 dayjs.extend(utc);
@@ -94,7 +127,10 @@ const snap = async ({
             : "OETH/WETH";
   const assets = {
     liquid: await armContract.liquidityAsset(),
-    base: await armContract.baseAsset(),
+    base:
+      arm === "Lido"
+        ? (await armContract.getSupportedBaseAssets())[0]
+        : await armContract.baseAsset(),
   };
 
   let wrapPrice;
@@ -151,7 +187,10 @@ const logLiquidity = async ({ block, arm }) => {
     blockTag,
   });
 
-  const baseAddress = await armContract.baseAsset();
+  const baseAddress =
+    arm === "Lido"
+      ? (await armContract.getSupportedBaseAssets())[0]
+      : await armContract.baseAsset();
   const baseAsset = await ethers.getContractAt("IERC20Metadata", baseAddress);
   const baseSymbol = await baseAsset.symbol();
   const baseBalance = await baseAsset.balanceOf(armAddress, { blockTag });
@@ -163,9 +202,18 @@ const logLiquidity = async ({ block, arm }) => {
       withdrawer: armAddress,
     });
   } else if (arm === "Lido") {
-    baseWithdraws = await armContract.lidoWithdrawalQueueAmount({
-      blockTag,
-    });
+    const stethAdapterAddress = await getAdapterAddress(
+      armContract,
+      mainnet.stETH,
+    );
+    const wstethAdapterAddress = await getAdapterAddress(
+      armContract,
+      mainnet.wstETH,
+    );
+    baseWithdraws = await queuedLidoAmount(stethAdapterAddress, blockTag);
+    if (wstethAdapterAddress !== ethers.ZeroAddress) {
+      baseWithdraws += await queuedLidoAmount(wstethAdapterAddress, blockTag);
+    }
   } else if (arm === "EtherFi") {
     baseWithdraws = await armContract.etherfiWithdrawalQueueAmount({
       blockTag,

@@ -54,7 +54,7 @@ contract FuzzerFoundry_LidoARM is TargetFunction {
 
         // Set prices, start with almost 1:1
         vm.prank(lidoARM.owner());
-        lidoARM.setPrices(1e36 - 1, 1e36);
+        lidoARM.setPrices(address(steth), 1e36 - 1, 1e36);
 
         // --- Setup Fuzzer target ---
         // Setup target

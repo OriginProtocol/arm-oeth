@@ -24,6 +24,37 @@ const { logWithdrawalQueue } = require("./liquidity");
 
 const log = require("../utils/logger")("task:lido");
 
+const lidoAsyncRedeemAdapterAbi = [
+  "function requestAssets(uint256) view returns (uint256)",
+];
+
+const queuedLidoAmount = async (adapterAddress, blockTag) => {
+  const stEthWithdrawQueue = await hre.ethers.getContractAt(
+    "IStETHWithdrawal",
+    addresses.mainnet.LIDO_WITHDRAWAL,
+  );
+  const adapter = await ethers.getContractAt(
+    lidoAsyncRedeemAdapterAbi,
+    adapterAddress,
+  );
+  const requestIds = await stEthWithdrawQueue.getWithdrawalRequests(
+    adapterAddress,
+    { blockTag },
+  );
+
+  let queued = 0n;
+  for (const requestId of requestIds) {
+    queued += await adapter.requestAssets(requestId, { blockTag });
+  }
+
+  return queued;
+};
+
+const getAdapterAddress = async (arm, asset) => {
+  const config = await arm.baseAssetConfigs(asset);
+  return config.adapter ?? config[1];
+};
+
 const lidoWithdrawStatus = async ({ block, id }) => {
   const blockTag = await getBlock(block);
   const lidoWithdrawalQueueAddress = await parseAddress("LIDO_WITHDRAWAL");
@@ -249,9 +280,14 @@ const logAssets = async (arm, blockTag) => {
   }
 
   const liquiditySteth = await steth.balanceOf(arm.getAddress(), { blockTag });
-  const liquidityLidoWithdraws = await arm.lidoWithdrawalQueueAmount({
+  const stethAdapter = await ethers.getContractAt(
+    lidoAsyncRedeemAdapterAbi,
+    await getAdapterAddress(arm, addresses.mainnet.stETH),
+  );
+  const liquidityLidoWithdraws = await queuedLidoAmount(
+    await stethAdapter.getAddress(),
     blockTag,
-  });
+  );
 
   const total =
     liquidityWeth +

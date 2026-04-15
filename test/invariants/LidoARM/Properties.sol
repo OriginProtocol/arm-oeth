@@ -2,7 +2,8 @@
 pragma solidity 0.8.23;
 
 // Interfaces
-import {IERC20} from "contracts/Interfaces.sol";
+import {IERC20, ILidoAsyncRedeemAdapter, IStETHWithdrawal} from "contracts/Interfaces.sol";
+import {Mainnet} from "contracts/utils/Addresses.sol";
 
 // Test imports
 import {Utils} from "./Utils.sol";
@@ -56,7 +57,7 @@ abstract contract Properties is Setup, Utils {
     // Invariant M: ∑feesCollected == feeCollector.balance
 
     // --- Lido Liquidity Management properties ---
-    // Invariant A: lidoWithdrawalQueueAmount == ∑lidoRequestRedeem.assets
+    // Invariant A: queued stETH in adapters == ∑lidoRequestRedeem.assets
     // Invariant B: address(arm).balance == 0
 
     ////////////////////////////////////////////////////
@@ -153,7 +154,7 @@ abstract contract Properties is Setup, Utils {
     /// --- LIDO LIQUIDITY MANAGMENT
     ////////////////////////////////////////////////////
     function property_llm_A() public view returns (bool) {
-        return eq(lidoARM.lidoWithdrawalQueueAmount(), sum_steth_lido_requested - sum_weth_lido_redeem);
+        return eq(lidoQueueAmount(), sum_steth_lido_requested - sum_weth_lido_redeem);
     }
 
     function property_llm_B() public view returns (bool) {
@@ -172,7 +173,8 @@ abstract contract Properties is Setup, Utils {
     }
 
     function price(IERC20 token) public view returns (uint256) {
-        return token == lidoARM.token0() ? lidoARM.traderate0() : lidoARM.traderate1();
+        (, , uint256 buyPrice, uint256 sellPrice,,) = lidoARM.baseAssetConfigs(address(steth));
+        return token == weth ? sellPrice : buyPrice;
     }
 
     function sumOfUserShares() public view returns (uint256) {
@@ -185,5 +187,23 @@ abstract contract Properties is Setup, Utils {
         sum_shares += lidoARM.balanceOf(address(0xdEaD));
 
         return sum_shares;
+    }
+
+    function lidoQueueAmount() public view returns (uint256 amount) {
+        (, address stethAdapter,,,,) = lidoARM.baseAssetConfigs(address(steth));
+        if (stethAdapter != address(0)) {
+            uint256[] memory requestIds = IStETHWithdrawal(Mainnet.LIDO_WITHDRAWAL).getWithdrawalRequests(stethAdapter);
+            for (uint256 i = 0; i < requestIds.length; ++i) {
+                amount += ILidoAsyncRedeemAdapter(stethAdapter).requestAssets(requestIds[i]);
+            }
+        }
+
+        (, address wstethAdapter,,,,) = lidoARM.baseAssetConfigs(address(wsteth));
+        if (wstethAdapter != address(0)) {
+            uint256[] memory requestIds = IStETHWithdrawal(Mainnet.LIDO_WITHDRAWAL).getWithdrawalRequests(wstethAdapter);
+            for (uint256 i = 0; i < requestIds.length; ++i) {
+                amount += ILidoAsyncRedeemAdapter(wstethAdapter).requestAssets(requestIds[i]);
+            }
+        }
     }
 }

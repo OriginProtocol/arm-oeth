@@ -45,7 +45,7 @@ contract CentrifugeARMTest is Test {
     function _config(address asset) internal view returns (AbstractMultiAssetARM.BaseAssetConfig memory config) {
         (
             bool supported,
-            address vault,
+            address adapter,
             uint256 buyPrice,
             uint256 sellPrice,
             uint256 crossPrice,
@@ -54,7 +54,7 @@ contract CentrifugeARMTest is Test {
 
         config = AbstractMultiAssetARM.BaseAssetConfig({
             supported: supported,
-            vault: vault,
+            adapter: adapter,
             buyPrice: buyPrice,
             sellPrice: sellPrice,
             crossPrice: crossPrice,

@@ -95,11 +95,11 @@ contract $003_UpgradeLidoARMMainnetScript is AbstractDeployScript("003_UpgradeLi
         LidoARM lidoARM_ = LidoARM(payable(Mainnet.LIDO_ARM));
 
         // Set the price that buy and sell prices can not cross
-        LidoARM(payable(Mainnet.LIDO_ARM)).setCrossPrice(0.9998e36);
+        LidoARM(payable(Mainnet.LIDO_ARM)).setCrossPrice(Mainnet.STETH, 0.9998e36);
 
         // Set the buy price with a 2.5 basis point discount.
         // The sell price has a 1 basis point discount.
-        LidoARM(payable(Mainnet.LIDO_ARM)).setPrices(0.99975e36, 0.9999e36);
+        LidoARM(payable(Mainnet.LIDO_ARM)).setPrices(Mainnet.STETH, 0.99975e36, 0.9999e36);
 
         // transfer ownership of the Lido ARM proxy to the mainnet 5/8 multisig
         lidoARMProxy_.setOwner(Mainnet.GOV_MULTISIG);
