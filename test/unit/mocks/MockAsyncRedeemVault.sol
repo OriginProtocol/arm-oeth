@@ -22,9 +22,9 @@ contract MockAsyncRedeemVault is MockERC20 {
         pricePerShare = _pricePerShare;
     }
 
-    function setClaimableRedeemShares(address controller, uint256 shares) external {
-        require(shares <= pendingRedeemShares[controller], "claimable > pending");
-        claimableRedeemShares[controller] = shares;
+    function setClaimableRedeemShares(address account, uint256 shares) external {
+        require(shares <= pendingRedeemShares[account], "claimable > pending");
+        claimableRedeemShares[account] = shares;
     }
 
     function convertToAssets(uint256 shares) public view returns (uint256 assetsOut) {
@@ -35,23 +35,23 @@ contract MockAsyncRedeemVault is MockERC20 {
         shares = assetsIn * (10 ** decimals) / pricePerShare;
     }
 
-    function requestRedeem(uint256 shares, address controller, address owner) external returns (uint256 requestId) {
-        require(controller == owner, "controller != owner");
-        require(msg.sender == controller, "not controller");
-
-        burn(owner, shares);
-        pendingRedeemShares[controller] += shares;
-        requestId = pendingRedeemShares[controller];
+    function requestRedeem(uint256 shares) external returns (uint256 requestedShares) {
+        burn(msg.sender, shares);
+        pendingRedeemShares[msg.sender] += shares;
+        requestedShares = shares;
     }
 
-    function redeem(uint256 shares, address receiver, address controller) external returns (uint256 assetsOut) {
-        require(msg.sender == controller, "not controller");
-        require(claimableRedeemShares[controller] >= shares, "insufficient claimable");
+    function claimableRedeem() external view returns (uint256 claimableShares) {
+        claimableShares = claimableRedeemShares[msg.sender];
+    }
 
-        claimableRedeemShares[controller] -= shares;
-        pendingRedeemShares[controller] -= shares;
+    function redeem(uint256 shares) external returns (uint256 assetsOut) {
+        require(claimableRedeemShares[msg.sender] >= shares, "insufficient claimable");
+
+        claimableRedeemShares[msg.sender] -= shares;
+        pendingRedeemShares[msg.sender] -= shares;
 
         assetsOut = convertToAssets(shares);
-        asset.transfer(receiver, assetsOut);
+        asset.transfer(msg.sender, assetsOut);
     }
 }

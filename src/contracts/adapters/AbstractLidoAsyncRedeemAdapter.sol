@@ -45,18 +45,16 @@ abstract contract AbstractLidoAsyncRedeemAdapter is ILidoAsyncRedeemAdapter {
 
     function convertToShares(uint256 assetsIn) public view virtual returns (uint256 sharesOut);
 
-    function requestRedeem(uint256 shares, address controller, address owner) external returns (uint256 requestId) {
-        requestId = requestWithdrawal(shares, controller, owner);
+    function requestRedeem(uint256 shares) external returns (uint256 requestedShares) {
+        requestWithdrawal(shares);
+        requestedShares = shares;
     }
 
-    function requestWithdrawal(uint256 shares, address controller, address owner)
-        public
-        returns (uint256 requestId)
-    {
-        _onlyARM(controller, owner);
+    function requestWithdrawal(uint256 shares) public returns (uint256 requestId) {
+        _onlyARM();
         require(shares > 0, "Adapter: zero shares");
 
-        uint256 assetsOut = _pullSharesAndConvertToSteth(owner, shares);
+        uint256 assetsOut = _pullSharesAndConvertToSteth(arm, shares);
         uint256[] memory amounts = _splitAmounts(assetsOut);
         uint256[] memory shareSplits = _splitShares(shares, amounts, assetsOut);
         uint256[] memory requestIds = lidoWithdrawalQueue.requestWithdrawals(amounts, address(this));
@@ -73,32 +71,35 @@ abstract contract AbstractLidoAsyncRedeemAdapter is ILidoAsyncRedeemAdapter {
         requestId = requestIds[requestIds.length - 1];
     }
 
-    function redeem(uint256 shares, address receiver, address controller) external returns (uint256 assetsOut) {
-        _onlyController(controller);
+    function redeem(uint256 shares) external returns (uint256 assetsOut) {
+        _onlyARM();
 
         (uint256[] memory requestIds, uint256[] memory hintIds, uint256 sharesClaimed,) = _claimableRequests(shares);
         require(sharesClaimed == shares, "Adapter: redeem exceeds claimable");
-        (assetsOut,) = _claimRequests(requestIds, hintIds, receiver);
+        (assetsOut,) = _claimRequests(requestIds, hintIds, msg.sender);
     }
 
-    function claimWithdrawal(uint256[] calldata requestIds, uint256[] calldata hintIds, address receiver, address controller)
+    function claimWithdrawal(uint256[] calldata requestIds, uint256[] calldata hintIds)
         external
         returns (uint256 assetsOut, uint256 sharesClaimed)
     {
-        _onlyController(controller);
-        (assetsOut, sharesClaimed) = _claimRequests(requestIds, hintIds, receiver);
+        _onlyARM();
+        (assetsOut, sharesClaimed) = _claimRequests(requestIds, hintIds, arm);
     }
 
-    function claimableRedeemRequest(uint256 requestId, address controller) external view returns (uint256 claimableShares) {
-        if (controller != arm) return 0;
-        if (requestShares[requestId] == 0) return 0;
+    function claimableRedeem() external view returns (uint256 claimableShares) {
+        uint256 pendingCount = pendingRequestIds.length - nextPendingIndex;
+        if (pendingCount == 0) return 0;
 
-        uint256[] memory requestIds = new uint256[](1);
-        requestIds[0] = requestId;
+        uint256[] memory outstandingIds = new uint256[](pendingCount);
+        for (uint256 i = 0; i < pendingCount; ++i) {
+            outstandingIds[i] = pendingRequestIds[nextPendingIndex + i];
+        }
 
-        IStETHWithdrawal.WithdrawalRequestStatus[] memory statuses = lidoWithdrawalQueue.getWithdrawalStatus(requestIds);
-        if (statuses[0].owner == address(this) && statuses[0].isFinalized && !statuses[0].isClaimed) {
-            return requestShares[requestId];
+        IStETHWithdrawal.WithdrawalRequestStatus[] memory statuses = lidoWithdrawalQueue.getWithdrawalStatus(outstandingIds);
+        for (uint256 i = 0; i < statuses.length; ++i) {
+            if (statuses[i].owner != address(this) || statuses[i].isClaimed || !statuses[i].isFinalized) break;
+            claimableShares += requestShares[outstandingIds[i]];
         }
     }
 
@@ -222,15 +223,8 @@ abstract contract AbstractLidoAsyncRedeemAdapter is ILidoAsyncRedeemAdapter {
         }
     }
 
-    function _onlyARM(address controller, address owner) internal view {
+    function _onlyARM() internal view {
         require(_isAuthorizedCaller(), "Adapter: only ARM");
-        require(controller == arm, "Adapter: invalid controller");
-        require(owner == arm, "Adapter: invalid owner");
-    }
-
-    function _onlyController(address controller) internal view {
-        require(_isAuthorizedCaller(), "Adapter: only ARM");
-        require(controller == arm, "Adapter: invalid controller");
     }
 
     function _isAuthorizedCaller() internal view returns (bool) {

@@ -108,7 +108,7 @@ abstract contract Helpers is Base_Test_ {
         requestIds = new uint256[](amounts.length);
         ILidoAsyncRedeemAdapter adapter = ILidoAsyncRedeemAdapter(adapterOf(address(steth)));
         for (uint256 i = 0; i < amounts.length; ++i) {
-            requestIds[i] = adapter.requestWithdrawal(amounts[i], address(lidoARM), address(lidoARM));
+            requestIds[i] = adapter.requestWithdrawal(amounts[i]);
         }
     }
 
@@ -126,9 +126,7 @@ abstract contract Helpers is Base_Test_ {
         returns (uint256 assetsOut, uint256 sharesClaimed)
     {
         (assetsOut, sharesClaimed) =
-            ILidoAsyncRedeemAdapter(adapterOf(address(steth))).claimWithdrawal(
-                requestIds, hintIds, address(lidoARM), address(lidoARM)
-            );
+            ILidoAsyncRedeemAdapter(adapterOf(address(steth))).claimWithdrawal(requestIds, hintIds);
     }
 
     function claimStethVaultRedeem(uint256 shares) public returns (uint256 assetsOut) {

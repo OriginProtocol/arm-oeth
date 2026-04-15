@@ -7,8 +7,8 @@ const { logTxDetails } = require("../utils/txLogger");
 const log = require("../utils/logger")("task:lidoQueue");
 
 const lidoAsyncRedeemAdapterAbi = [
-  "function requestWithdrawal(uint256 shares, address controller, address owner) returns (uint256 requestId)",
-  "function claimWithdrawal(uint256[] requestIds, uint256[] hintIds, address receiver, address controller) returns (uint256 assetsOut, uint256 sharesClaimed)",
+  "function requestWithdrawal(uint256 shares) returns (uint256 requestId)",
+  "function claimWithdrawal(uint256[] requestIds, uint256[] hintIds) returns (uint256 assetsOut, uint256 sharesClaimed)",
 ];
 
 const getAdapterAddress = async (arm, asset) => {
@@ -48,13 +48,7 @@ const requestLidoWithdrawals = async (options) => {
 
   const txs = [];
   for (const requestAmount of requestAmounts) {
-    txs.push(
-      await adapter.requestWithdrawal(
-        requestAmount,
-        await arm.getAddress(),
-        await arm.getAddress(),
-      ),
-    );
+    txs.push(await adapter.requestWithdrawal(requestAmount));
   }
 
   for (const tx of txs) {
@@ -125,13 +119,7 @@ const claimLidoWithdrawals = async (options) => {
     log(
       `About to claim ${sortedFinalizedIds.length} withdrawal requests with\nids: ${sortedFinalizedIds}\nhints: ${hintIds}`,
     );
-    const armAddress = await arm.getAddress();
-    const tx = await adapter.claimWithdrawal(
-      sortedFinalizedIds,
-      hintIds.toArray(),
-      armAddress,
-      armAddress,
-    );
+    const tx = await adapter.claimWithdrawal(sortedFinalizedIds, hintIds.toArray());
     await logTxDetails(tx, "claim Lido withdraws");
   } else {
     log("No finalized Lido withdrawal requests to claim");

@@ -481,11 +481,10 @@ abstract contract AbstractMultiAssetARM is OwnableOperable, ERC20Upgradeable {
     /// @notice Requests async redemption of base-asset shares through the configured adapter.
     /// @param baseAsset Base asset whose adapter shares will be redeemed.
     /// @param shares Amount of shares to request for redemption.
-    /// @return requestId Identifier returned by the adapter.
-    function _requestAdapterRedeem(address baseAsset, uint256 shares) internal returns (uint256 requestId) {
+    function _requestAdapterRedeem(address baseAsset, uint256 shares) internal returns (uint256 requestedShares) {
         BaseAssetConfig storage config = baseAssetConfigs[baseAsset];
         require(config.supported, "ARM: unsupported asset");
-        requestId = IAsyncRedeemAdapter(config.adapter).requestRedeem(shares, address(this), address(this));
+        requestedShares = IAsyncRedeemAdapter(config.adapter).requestRedeem(shares);
         config.requestedVaultShares += shares;
 
         emit VaultRedeemRequested(baseAsset, config.adapter, shares);
@@ -499,7 +498,7 @@ abstract contract AbstractMultiAssetARM is OwnableOperable, ERC20Upgradeable {
         BaseAssetConfig storage config = baseAssetConfigs[baseAsset];
         require(config.supported, "ARM: unsupported asset");
         require(shares <= config.requestedVaultShares, "ARM: redeem exceeds requested");
-        assets = IAsyncRedeemAdapter(config.adapter).redeem(shares, address(this), address(this));
+        assets = IAsyncRedeemAdapter(config.adapter).redeem(shares);
         config.requestedVaultShares -= shares;
 
         emit VaultRedeemClaimed(baseAsset, config.adapter, shares, assets);

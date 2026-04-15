@@ -36,9 +36,10 @@ interface ICapManager {
 
 /**
  * @title Async Redeem Adapter interface
- * @notice Minimal ARM-facing subset of the ERC-7540/ERC-4626 redeem flow.
- * @dev Implementations may be true vaults or vault-shaped adapters. The ARM treats the adapter's
- * share unit as the configured base asset and the adapter's asset as the ARM liquidity asset.
+ * @notice Minimal ARM-facing async redeem interface for supported base assets.
+ * @dev Implementations may be true vaults or vault-shaped adapters. In this interface, `shares`
+ * refer to the configured base-asset redeemable unit, not ARM LP shares. `asset()` is the ARM's
+ * liquidity asset and redeemed assets are always returned to `msg.sender`.
  */
 interface IAsyncRedeemAdapter {
     /// @notice Returns the liquidity asset address used by the ARM.
@@ -51,37 +52,24 @@ interface IAsyncRedeemAdapter {
     function convertToShares(uint256 assetsIn) external view returns (uint256 sharesOut);
 
     /**
-     * @notice Request asynchronous redemption of vault shares.
-     * @dev This follows the ERC-7540 async redeem flow where redemption is requested first and
-     * fulfilled later through `redeem(...)` once the request becomes claimable.
+     * @notice Request asynchronous redemption of adapter shares owned by the ARM.
      * @param shares Amount of adapter shares to redeem asynchronously.
-     * @param controller Account that will later control the redeem claim.
-     * @param owner Account whose shares are being redeemed.
-     * @return requestId Optional request identifier returned by the adapter implementation.
+     * @return requestedShares Amount of shares accepted for redemption.
      */
-    function requestRedeem(uint256 shares, address controller, address owner) external returns (uint256 requestId);
+    function requestRedeem(uint256 shares) external returns (uint256 requestedShares);
 
     /**
-     * @notice Claims previously requested redemptions into the liquidity asset.
+     * @notice Returns the aggregate amount of adapter shares currently claimable.
+     * @return claimableShares Amount of adapter shares that can currently be redeemed.
+     */
+    function claimableRedeem() external view returns (uint256 claimableShares);
+
+    /**
+     * @notice Claims previously requested redemptions into the liquidity asset for `msg.sender`.
      * @param shares Amount of previously requested shares to claim.
-     * @param receiver Account receiving the liquidity assets.
-     * @param controller Account that controls the pending redemption request.
-     * @return assetsOut Amount of liquidity assets returned to `receiver`.
+     * @return assetsOut Amount of liquidity assets returned to `msg.sender`.
      */
-    function redeem(uint256 shares, address receiver, address controller) external returns (uint256 assetsOut);
-
-    /**
-     * @notice Returns the amount of shares currently claimable for an async redeem request flow.
-     * @dev This is included so off-chain tooling can query claimable redeem shares through the same
-     * minimal ERC-7540-style interface before calling `redeem(...)`.
-     * @param requestId Request identifier to inspect. Some vaults may ignore this and use aggregated claimability.
-     * @param controller Account that controls the redeem claim.
-     * @return claimableShares Amount of shares that can currently be redeemed.
-     */
-    function claimableRedeemRequest(uint256 requestId, address controller)
-        external
-        view
-        returns (uint256 claimableShares);
+    function redeem(uint256 shares) external returns (uint256 assetsOut);
 }
 
 /**
@@ -89,8 +77,8 @@ interface IAsyncRedeemAdapter {
  * @notice Extension used by `LidoARM` to interoperate with Lido queue request IDs directly.
  */
 interface ILidoAsyncRedeemAdapter is IAsyncRedeemAdapter {
-    function requestWithdrawal(uint256 shares, address controller, address owner) external returns (uint256 requestId);
-    function claimWithdrawal(uint256[] calldata requestIds, uint256[] calldata hintIds, address receiver, address controller)
+    function requestWithdrawal(uint256 shares) external returns (uint256 requestId);
+    function claimWithdrawal(uint256[] calldata requestIds, uint256[] calldata hintIds)
         external
         returns (uint256 assetsOut, uint256 sharesClaimed);
     function requestAssets(uint256 requestId) external view returns (uint256 assets);

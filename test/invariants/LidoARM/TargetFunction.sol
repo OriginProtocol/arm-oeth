@@ -181,7 +181,7 @@ abstract contract TargetFunction is Properties {
         (, address adapterAddress,,,,) = lidoARM.baseAssetConfigs(address(steth));
         ILidoAsyncRedeemAdapter adapter = ILidoAsyncRedeemAdapter(adapterAddress);
         for (uint256 i = 0; i < amounts.length; ++i) {
-            newLidoWithdrawRequests[i] = adapter.requestWithdrawal(amounts[i], address(lidoARM), address(lidoARM));
+            newLidoWithdrawRequests[i] = adapter.requestWithdrawal(amounts[i]);
         }
 
         // Update state
@@ -209,9 +209,7 @@ abstract contract TargetFunction is Properties {
         // Prank Owner
         vm.prank(lidoARM.owner());
         (, address adapterAddress,,,,) = lidoARM.baseAssetConfigs(address(steth));
-        ILidoAsyncRedeemAdapter(adapterAddress).claimWithdrawal(
-            requestToClaim, new uint256[](requestToClaim.length), address(lidoARM), address(lidoARM)
-        );
+        ILidoAsyncRedeemAdapter(adapterAddress).claimWithdrawal(requestToClaim, new uint256[](requestToClaim.length));
 
         uint256 outstandingAfter = lidoQueueAmount();
         uint256 diff = outstandingBefore - outstandingAfter;
@@ -336,7 +334,7 @@ abstract contract TargetFunction is Properties {
         vm.prank(lidoARM.owner());
         (, address adapterAddress,,,,) = lidoARM.baseAssetConfigs(address(steth));
         ILidoAsyncRedeemAdapter(adapterAddress).claimWithdrawal(
-            lidoWithdrawRequests, new uint256[](lidoWithdrawRequests.length), address(lidoARM), address(lidoARM)
+            lidoWithdrawRequests, new uint256[](lidoWithdrawRequests.length)
         );
 
         require(lidoQueueAmount() == 0, "FINALIZE_FAILED");

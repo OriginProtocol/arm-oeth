@@ -26,7 +26,7 @@ contract Fork_Concrete_LidoARM_RequestLidoWithdrawals_Test_ is Fork_Shared_Test_
         ILidoAsyncRedeemAdapter stethAdapter = ILidoAsyncRedeemAdapter(adapterOf(address(steth)));
 
         vm.expectRevert("Adapter: only ARM");
-        stethAdapter.requestWithdrawal(DEFAULT_AMOUNT, address(lidoARM), address(lidoARM));
+        stethAdapter.requestWithdrawal(DEFAULT_AMOUNT);
     }
 
     function test_RevertWhen_RequestLidoWithdrawals_Because_BalanceExceeded() public asOperator {
@@ -36,7 +36,7 @@ contract Fork_Concrete_LidoARM_RequestLidoWithdrawals_Test_ is Fork_Shared_Test_
         ILidoAsyncRedeemAdapter stethAdapter = ILidoAsyncRedeemAdapter(adapterOf(address(steth)));
 
         vm.expectRevert("BALANCE_EXCEEDED");
-        stethAdapter.requestWithdrawal(DEFAULT_AMOUNT, address(lidoARM), address(lidoARM));
+        stethAdapter.requestWithdrawal(DEFAULT_AMOUNT);
     }
 
     //////////////////////////////////////////////////////
