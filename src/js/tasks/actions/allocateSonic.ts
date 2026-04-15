@@ -3,7 +3,8 @@ import { ethers } from "ethers";
 import { action } from "../lib/action";
 import { allocate } from "../admin";
 import { sonic } from "../../utils/addresses";
-const armAbi = require("../../../abis/OriginARM.json");
+// Sonic still uses the old ARM contract version
+const armAbi = require("../../../abis/OriginARMV1.json");
 
 action({
   name: "allocateSonic",

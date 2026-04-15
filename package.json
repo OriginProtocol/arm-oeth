@@ -18,6 +18,7 @@
   "devDependencies": {
     "@apollo/client": "^3.11.4",
     "@ethersproject/providers": "^5.7.2",
+    "@lastdotnet/purrikey": "github:OriginProtocol/purrikey#3d10b79b567c52c0c37e630800dae6c7059bd9b8",
     "@nomicfoundation/hardhat-ethers": "3.0.7",
     "@nomicfoundation/hardhat-foundry": "^1.1.1",
     "@nomicfoundation/hardhat-network-helpers": "^1.0.10",

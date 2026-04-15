@@ -4,7 +4,7 @@ import { action } from "../lib/action";
 import { setOSSiloPrice } from "../osSiloPrice";
 
 action({
-  name: "setPricesSonic",
+  name: "setOSSiloPriceAction",
   description: "Set prices on Sonic ARM",
   chains: [146],
   run: async ({ signer, log }) => {
@@ -31,10 +31,10 @@ action({
       activeMarket === ethers.ZeroAddress
         ? undefined
         : new ethers.Contract(
-            activeMarket,
-            ["function market() external view returns (address)"],
-            signer
-          );
+          activeMarket,
+          ["function market() external view returns (address)"],
+          signer
+        );
 
     // Get the WS and OS token contracts
     const wSAddress = await arm.token0();
@@ -72,12 +72,13 @@ action({
       oS,
       vault,
       blockTag: "latest",
-      marketPremium: 1,
-      lendPremium: 200,
-      tolerance: 0.3,
+      marketPremium: 1, // basis points. Negative value reduces the price
+      lendPremium: 200, // basis points added to lending APY (100 = 1%)
+      tolerance: 0.3, // basis points
       market: "1inch",
       minSwapAmount: parseUnits("16000", 18),
       minBuyPrice: 0.99,
+      // maxBuyPrice: 0.995,
     });
   },
 });

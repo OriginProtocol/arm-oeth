@@ -10,9 +10,10 @@ A sibling Automaton with the same shape and log schema lives in the `origin-doll
 |---|---|
 | `cron/cron-jobs.ts` | Job registry — `name`, `schedule` (5-field cron), `enabled`, `command`. Single source of truth. |
 | `cron/render-crontab.ts` | Validates the registry (unique names, valid schedules) and writes the supercronic crontab file. |
-| `cron/cron-supervisor.ts` | Express HTTP server + supercronic child process. Spawns jobs, tracks runs in memory, exposes `/api/v1/actions`, `/api/v1/actions/:name/runs`, `/api/v1/runs/:id`, `/healthz`. **Owns the canonical Loki run-lifecycle events.** |
+| `cron/cron-supervisor.ts` | Boots supercronic + HTTP API server. Exposes `/api/v1/actions`, `/api/v1/actions/:name/runs`, `/api/v1/runs/:id`, `/healthz`. |
+| `cron/api.ts` | HTTP server, auth, run tracking for on-demand action triggers. |
 | `cron/cron-entrypoint.sh` | Container entrypoint — boots the supervisor under `ts-node`. |
-| `src/js/tasks/lib/action.ts` | Wrapper used by every hardhat task. Inherits `AUTOMATON_RUN_ID` from the supervisor, attaches it to a child logger, and emits `action.error` (with stack) on failure. |
+| `src/js/tasks/lib/action.ts` | Wrapper used by every hardhat task. Generates a `run_id` (UUID), emits `action.start`, `action.success`, and `action.error` events to Loki. |
 | `src/js/tasks/lib/logger.ts` | Winston + winston-loki. Promotes `action`, `event`, `source` to Loki labels. |
 
 ## Adding / enabling / disabling a job
@@ -31,8 +32,6 @@ Required env vars:
 - `PROVIDER_URL`, `SONIC_URL` — RPC endpoints (same as the rest of the repo)
 - `LOKI_URL`, `LOKI_USER`, `LOKI_API_KEY` — optional; if unset, logs only go to stdout
 - `ACTION_API_BEARER_TOKEN` — required to start the supervisor (auth for `/api/v1/*`)
-- `AUTOMATON_RUN_ID` — set automatically by the supervisor when spawning a job; can be set manually when running a single task standalone if you want it correlated in Loki
-
 Run a single action without the supervisor:
 ```
 npx hardhat <actionName> --network mainnet
@@ -45,9 +44,15 @@ ACTION_API_BEARER_TOKEN=dev npx ts-node cron/cron-supervisor.ts
 
 ## Observability
 
-Every scheduled invocation produces exactly one `action.start` and exactly one terminal event (`action.success` or `action.failure`) from the supervisor, plus an `action.error` (with stack, chain, network) from the task wrapper if it threw. All four events share a `run_id` for correlation.
+Each action generates its own `run_id` (UUID) and emits structured events via the winston/Loki logger in `src/js/tasks/lib/action.ts`:
 
-See [`docs/automaton-observability.md`](../docs/automaton-observability.md) for the field schema, the LogQL cookbook, and the recipe for debugging a single failed run end-to-end.
+- `action.start` — emitted after resolving the signer and chain, before running the action
+- `action.success` — emitted on successful completion, includes `duration_ms`
+- `action.error` — emitted on failure, includes `duration_ms`, `error_name`, `error_message`, `error_stack`
+
+All events for a single run share the same `run_id` for correlation in Grafana.
+
+See [`docs/automaton-observability.md`](../docs/automaton-observability.md) for the field schema and LogQL cookbook.
 
 ## Future: Prometheus
 
