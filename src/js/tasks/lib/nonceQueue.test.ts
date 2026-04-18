@@ -12,6 +12,14 @@
  */
 
 import { Pool } from "pg";
+import type { Logger } from "winston";
+
+const mockLog = {
+  info: () => {},
+  warn: () => {},
+  error: () => {},
+  child: () => mockLog,
+} as unknown as Logger;
 
 if (!process.env.DATABASE_URL) {
   console.error(
@@ -83,7 +91,7 @@ async function test() {
     results[results.length - 1].endMs = Date.now();
   });
 
-  const wrapped1 = wrapWithNonceQueue(signer1, 1);
+  const wrapped1 = wrapWithNonceQueue(signer1, 1, mockLog);
 
   for (let i = 0; i < 3; i++) {
     await wrapped1.sendTransaction({ to: "0xbbbb", data: "0x" });
@@ -113,8 +121,8 @@ async function test() {
     results[results.length - 1].endMs = Date.now();
   });
 
-  const wrapped2a = wrapWithNonceQueue(signer2a, 1);
-  const wrapped2b = wrapWithNonceQueue(signer2b, 1);
+  const wrapped2a = wrapWithNonceQueue(signer2a, 1, mockLog);
+  const wrapped2b = wrapWithNonceQueue(signer2b, 1, mockLog);
 
   const p1 = wrapped2a.sendTransaction({ to: "0xbbbb", data: "0x" });
   // Small delay so both connections are open and racing for the lock
@@ -161,8 +169,8 @@ async function test() {
     results.push({ id: 2, nonce, startMs: Date.now(), endMs: 0 });
   });
 
-  const wrappedMainnet = wrapWithNonceQueue(signer3a, 1);
-  const wrappedSonic = wrapWithNonceQueue(signer3b, 146);
+  const wrappedMainnet = wrapWithNonceQueue(signer3a, 1, mockLog);
+  const wrappedSonic = wrapWithNonceQueue(signer3b, 146, mockLog);
 
   await wrappedMainnet.sendTransaction({ to: "0xbbbb", data: "0x" });
   await wrappedSonic.sendTransaction({ to: "0xbbbb", data: "0x" });
@@ -191,7 +199,7 @@ async function test() {
     }
   });
 
-  const wrappedFail = wrapWithNonceQueue(signerFail, 1);
+  const wrappedFail = wrapWithNonceQueue(signerFail, 1, mockLog);
 
   try {
     await wrappedFail.sendTransaction({ to: "0xbbbb", data: "0x" });

@@ -8,7 +8,7 @@ export function requireEnv(name: string): string {
 
 export function optionalEnv(
   name: string,
-  fallback?: string
+  fallback?: string,
 ): string | undefined {
   return process.env[name] ?? fallback;
 }

@@ -33,7 +33,7 @@ function assertCronConfig(data: any): asserts data is CronConfig {
     }
     if (typeof job.name !== "string" || !job.name.trim()) {
       throw new RenderCrontabError(
-        `jobs[${i}].name must be a non-empty string`
+        `jobs[${i}].name must be a non-empty string`,
       );
     }
     if (names.has(job.name)) {
@@ -45,7 +45,7 @@ function assertCronConfig(data: any): asserts data is CronConfig {
       job.schedule.trim().split(/\s+/).length !== 5
     ) {
       throw new RenderCrontabError(
-        `jobs[${i}].schedule must be a valid 5-field cron expression`
+        `jobs[${i}].schedule must be a valid 5-field cron expression`,
       );
     }
     if (typeof job.enabled !== "boolean") {
@@ -53,7 +53,7 @@ function assertCronConfig(data: any): asserts data is CronConfig {
     }
     if (typeof job.command !== "string" || !job.command.trim()) {
       throw new RenderCrontabError(
-        `jobs[${i}].command must be a non-empty string`
+        `jobs[${i}].command must be a non-empty string`,
       );
     }
   }
@@ -64,9 +64,7 @@ export function loadCronConfig(): CronConfig {
   return cronConfig;
 }
 
-export function renderCrontab({
-  outputPath = DEFAULT_OUTPUT_PATH,
-} = {}) {
+export function renderCrontab({ outputPath = DEFAULT_OUTPUT_PATH } = {}) {
   const config = loadCronConfig();
   const enabledJobs = config.jobs.filter((job) => job.enabled);
   if (enabledJobs.length === 0) {
@@ -89,7 +87,7 @@ if (require.main === module) {
   try {
     const result = renderCrontab();
     console.log(
-      `[render-crontab] wrote ${result.enabledJobs.length} enabled jobs to ${result.outputPath}`
+      `[render-crontab] wrote ${result.enabledJobs.length} enabled jobs to ${result.outputPath}`,
     );
   } catch (e: any) {
     console.error(`[render-crontab] ${e.message}`);

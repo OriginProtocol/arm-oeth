@@ -12,7 +12,7 @@ const consoleFormat = format.combine(
     const prefix = action ? `[${action}] ` : "";
     const extra = Object.keys(rest).length ? ` ${JSON.stringify(rest)}` : "";
     return `${timestamp} ${level}: ${prefix}${message}${extra}`;
-  })
+  }),
 );
 
 const logTransports: InstanceType<
@@ -41,7 +41,7 @@ if (lokiUrl) {
         }
         return info;
       })(),
-      format.json()
+      format.json(),
     ),
     replaceTimestamp: true,
     batching: true,

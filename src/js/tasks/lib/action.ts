@@ -52,7 +52,7 @@ export function createActionHandler(
       const rawSigner = await getSigner();
       const network = await rawSigner.provider!.getNetwork();
       chainId = Number(network.chainId);
-      const signer = wrapWithNonceQueue(rawSigner, chainId);
+      const signer = wrapWithNonceQueue(rawSigner, chainId, log);
       networkName = CHAIN_NAMES[chainId] ?? `unknown-${chainId}`;
 
       log.info(`Running on ${networkName} (${chainId})`, {

@@ -1,10 +1,29 @@
 import type { Pool, PoolClient } from "pg";
 import type { Signer, TransactionResponse } from "ethers";
-
-const log = require("../../utils/logger")("utils:nonceQueue");
+import type { Logger } from "winston";
+import {
+  isNonceMismatchError,
+  recoverNonceFromChain,
+  submitNonceQueuedTransaction,
+} from "./nonceQueueTxLifecycle";
 
 let pool: Pool | null = null;
 let tableEnsurePromise: Promise<void> | null = null;
+
+function getNonceQueueLockTimeoutSeconds(log: Logger): number {
+  const value = process.env.NONCE_QUEUE_LOCK_TIMEOUT_S;
+  if (!value) return 0;
+
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed < 0) {
+    log.warn(
+      `Invalid NONCE_QUEUE_LOCK_TIMEOUT_S="${value}" (expected integer >= 0). Falling back to 0 (wait forever).`,
+    );
+    return 0;
+  }
+
+  return parsed;
+}
 
 export function getNoncePool(): Pool | null {
   if (!process.env.DATABASE_URL) return null;
@@ -44,6 +63,7 @@ async function ensureNonceRow(
   signerAddress: string,
   chainId: number,
   getOnChainNonce: () => Promise<number>,
+  log: Logger,
 ): Promise<void> {
   const { rows } = await client.query(
     "SELECT 1 FROM nonce_queue WHERE signer_address = $1 AND chain_id = $2",
@@ -51,9 +71,12 @@ async function ensureNonceRow(
   );
   if (rows.length === 0) {
     const onChainNonce = await getOnChainNonce();
-    log(
-      `Initializing nonce row: address=${signerAddress} chain=${chainId} nonce=${onChainNonce}`,
-    );
+    log.info("Initializing nonce row", {
+      event: "nonce.init",
+      signer_address: signerAddress,
+      chain_id: chainId,
+      nonce: onChainNonce,
+    });
     await client.query(
       `INSERT INTO nonce_queue (signer_address, chain_id, nonce)
        VALUES ($1, $2, $3)
@@ -63,12 +86,12 @@ async function ensureNonceRow(
   }
 }
 
-function isNonceMismatchError(err: any): boolean {
+function isLockTimeoutError(err: any): boolean {
   const msg = (err?.message ?? "").toLowerCase();
   return (
-    msg.includes("nonce too low") ||
-    msg.includes("nonce has already been used") ||
-    msg.includes("replacement transaction underpriced")
+    err?.code === "55P03" ||
+    msg.includes("lock timeout") ||
+    msg.includes("canceling statement due to lock timeout")
   );
 }
 
@@ -77,16 +100,30 @@ async function withNonceLock<T>(
   signerAddress: string,
   chainId: number,
   getOnChainNonce: () => Promise<number>,
+  log: Logger,
   fn: (nonce: number) => Promise<T>,
   maxRetries = 3,
 ): Promise<T> {
   await ensureNonceTable(p);
+  const meta = { signer_address: signerAddress, chain_id: chainId };
 
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     const client = await p.connect();
+    const lockTimeoutSeconds = getNonceQueueLockTimeoutSeconds(log);
     try {
       await client.query("BEGIN");
-      await ensureNonceRow(client, signerAddress, chainId, getOnChainNonce);
+      if (lockTimeoutSeconds > 0) {
+        await client.query("SELECT set_config('lock_timeout', $1, true)", [
+          `${lockTimeoutSeconds}s`,
+        ]);
+      }
+      await ensureNonceRow(
+        client,
+        signerAddress,
+        chainId,
+        getOnChainNonce,
+        log,
+      );
 
       const { rows } = await client.query(
         "SELECT nonce FROM nonce_queue WHERE signer_address = $1 AND chain_id = $2 FOR UPDATE",
@@ -94,9 +131,11 @@ async function withNonceLock<T>(
       );
       const nonce: number = rows[0].nonce;
 
-      log(
-        `Acquired nonce lock: address=${signerAddress} chain=${chainId} nonce=${nonce}`,
-      );
+      log.info("Acquired nonce lock", {
+        event: "nonce.lock.acquired",
+        ...meta,
+        nonce,
+      });
 
       const result = await fn(nonce);
 
@@ -106,31 +145,46 @@ async function withNonceLock<T>(
       );
       await client.query("COMMIT");
 
-      log(
-        `Released nonce lock: address=${signerAddress} chain=${chainId} nonce=${nonce} → ${nonce + 1}`,
-      );
+      log.info("Released nonce lock", {
+        event: "nonce.lock.released",
+        ...meta,
+        nonce,
+        next_nonce: nonce + 1,
+      });
 
       return result;
     } catch (err: any) {
       await client.query("ROLLBACK").catch(() => {});
 
+      if (isLockTimeoutError(err)) {
+        const configuredTimeout =
+          lockTimeoutSeconds > 0
+            ? `${lockTimeoutSeconds}s`
+            : "Postgres default";
+        log.warn("Nonce lock timeout", {
+          event: "nonce.lock.timeout",
+          ...meta,
+          timeout: configuredTimeout,
+        });
+      }
+
       if (isNonceMismatchError(err)) {
-        log(
-          `Nonce mismatch (attempt ${attempt + 1}/${maxRetries}), recovering from chain…`,
+        log.warn(
+          `Nonce mismatch (attempt ${attempt + 1}/${maxRetries}), recovering from chain`,
+          {
+            event: "nonce.mismatch",
+            ...meta,
+            attempt: attempt + 1,
+            max_retries: maxRetries,
+          },
         );
-        const onChainNonce = await getOnChainNonce();
-        const recovery = await p.connect();
-        try {
-          await recovery.query(
-            "UPDATE nonce_queue SET nonce = $1, updated_at = NOW() WHERE signer_address = $2 AND chain_id = $3",
-            [onChainNonce, signerAddress, chainId],
-          );
-          log(
-            `Recovered nonce from chain: address=${signerAddress} chain=${chainId} nonce=${onChainNonce}`,
-          );
-        } finally {
-          recovery.release();
-        }
+        await recoverNonceFromChain({
+          pool: p,
+          signerAddress,
+          chainId,
+          getOnChainNonce,
+          log,
+        });
         if (attempt < maxRetries - 1) continue;
       }
 
@@ -157,7 +211,11 @@ export function _resetForTesting() {
  *
  * If DATABASE_URL is not set, the signer is returned unmodified.
  */
-export function wrapWithNonceQueue(signer: Signer, chainId: number): Signer {
+export function wrapWithNonceQueue(
+  signer: Signer,
+  chainId: number,
+  log: Logger,
+): Signer {
   const p = getNoncePool();
   if (!p) return signer;
 
@@ -174,13 +232,17 @@ export function wrapWithNonceQueue(signer: Signer, chainId: number): Signer {
       signerAddress,
       chainId,
       getOnChainNonce,
+      log,
       async (nonce) => {
-        const response = await originalSendTransaction({
-          ...transaction,
+        return submitNonceQueuedTransaction({
+          sendTransaction: originalSendTransaction,
+          provider: signer.provider ?? undefined,
+          transaction,
           nonce,
+          signerAddress,
+          chainId,
+          log,
         });
-        await response.wait();
-        return response;
       },
     );
   };
