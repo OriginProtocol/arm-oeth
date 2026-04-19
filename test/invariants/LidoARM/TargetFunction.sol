@@ -178,7 +178,7 @@ abstract contract TargetFunction is Properties {
         // Prank Owner
         vm.prank(lidoARM.owner());
         uint256[] memory newLidoWithdrawRequests = new uint256[](amounts.length);
-        (, address adapterAddress,,,,) = lidoARM.baseAssetConfigs(address(steth));
+        (,, address adapterAddress,,,,) = lidoARM.baseAssetConfigs(address(steth));
         ILidoAsyncRedeemAdapter adapter = ILidoAsyncRedeemAdapter(adapterAddress);
         for (uint256 i = 0; i < amounts.length; ++i) {
             newLidoWithdrawRequests[i] = adapter.requestWithdrawal(amounts[i]);
@@ -208,7 +208,7 @@ abstract contract TargetFunction is Properties {
 
         // Prank Owner
         vm.prank(lidoARM.owner());
-        (, address adapterAddress,,,,) = lidoARM.baseAssetConfigs(address(steth));
+        (,, address adapterAddress,,,,) = lidoARM.baseAssetConfigs(address(steth));
         ILidoAsyncRedeemAdapter(adapterAddress).claimWithdrawal(requestToClaim, new uint256[](requestToClaim.length));
 
         uint256 outstandingAfter = lidoQueueAmount();
@@ -234,7 +234,7 @@ abstract contract TargetFunction is Properties {
     uint256 constant MAX_SELL_T1 = 1.02 * 1e36;
 
     function handler_setPrices(uint256 buyT1, uint256 sellT1) public {
-        (, , , , uint256 crossPrice,) = lidoARM.baseAssetConfigs(address(steth));
+        (, , , , , uint256 crossPrice,) = lidoARM.baseAssetConfigs(address(steth));
 
         // Bound prices
         buyT1 = _bound(buyT1, MIN_BUY_T1, crossPrice - 1);
@@ -249,7 +249,7 @@ abstract contract TargetFunction is Properties {
 
     function handler_setCrossPrice(uint256 newCrossPrice) public {
         uint256 priceScale = lidoARM.PRICE_SCALE();
-        (, , uint256 buy, uint256 sell,,) = lidoARM.baseAssetConfigs(address(steth));
+        (, , , uint256 buy, uint256 sell, , ) = lidoARM.baseAssetConfigs(address(steth));
 
         // Bound new cross price
         newCrossPrice = _bound(
@@ -332,7 +332,7 @@ abstract contract TargetFunction is Properties {
 
         // Prank Owner
         vm.prank(lidoARM.owner());
-        (, address adapterAddress,,,,) = lidoARM.baseAssetConfigs(address(steth));
+        (,, address adapterAddress,,,,) = lidoARM.baseAssetConfigs(address(steth));
         ILidoAsyncRedeemAdapter(adapterAddress).claimWithdrawal(
             lidoWithdrawRequests, new uint256[](lidoWithdrawRequests.length)
         );

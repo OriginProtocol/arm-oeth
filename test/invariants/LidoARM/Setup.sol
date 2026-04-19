@@ -161,7 +161,7 @@ abstract contract Setup is Base_Test_ {
         // Set the Proxy as the LidoARM.
         lidoARM = LidoARM(payable(address(lidoProxy)));
 
-        lidoARM.addBaseAsset(address(steth), address(stethAdapter), 0.998e36, 1e36, 1e36);
+        lidoARM.addBaseAsset(address(steth), address(stethAdapter), 0.998e36, 1e36, 1e36, true);
         lidoARM.addBaseAsset(address(wsteth), address(wstethAdapter), 0.998e36, 1e36, 1e36);
         lidoARM.setPrices(address(steth), 0.998e36, 1e36);
         lidoARM.setPrices(address(wsteth), 0.998e36, 1e36);

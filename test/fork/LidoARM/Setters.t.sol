@@ -140,7 +140,7 @@ contract Fork_Concrete_LidoARM_Setters_Test_ is Fork_Shared_Test_ {
         lidoARM.setPrices(address(steth), 99999e31, 1004 * 1e33);
         lidoARM.setPrices(address(steth), 992 * 1e33, 2000 * 1e33);
 
-        (, , uint256 buyPrice, uint256 sellPrice,,) = lidoARM.baseAssetConfigs(address(steth));
+        (, , , uint256 buyPrice, uint256 sellPrice, , ) = lidoARM.baseAssetConfigs(address(steth));
         uint256 priceScale = lidoARM.PRICE_SCALE();
         assertEq(priceScale * priceScale / sellPrice, 500 * 1e33);
         assertEq(buyPrice, 992 * 1e33);

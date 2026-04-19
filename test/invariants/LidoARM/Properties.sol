@@ -173,7 +173,7 @@ abstract contract Properties is Setup, Utils {
     }
 
     function price(IERC20 token) public view returns (uint256) {
-        (, , uint256 buyPrice, uint256 sellPrice,,) = lidoARM.baseAssetConfigs(address(steth));
+        (, , , uint256 buyPrice, uint256 sellPrice, , ) = lidoARM.baseAssetConfigs(address(steth));
         return token == weth ? sellPrice : buyPrice;
     }
 
@@ -190,7 +190,7 @@ abstract contract Properties is Setup, Utils {
     }
 
     function lidoQueueAmount() public view returns (uint256 amount) {
-        (, address stethAdapter,,,,) = lidoARM.baseAssetConfigs(address(steth));
+        (,, address stethAdapter, , , , ) = lidoARM.baseAssetConfigs(address(steth));
         if (stethAdapter != address(0)) {
             uint256[] memory requestIds = IStETHWithdrawal(Mainnet.LIDO_WITHDRAWAL).getWithdrawalRequests(stethAdapter);
             for (uint256 i = 0; i < requestIds.length; ++i) {
@@ -198,7 +198,7 @@ abstract contract Properties is Setup, Utils {
             }
         }
 
-        (, address wstethAdapter,,,,) = lidoARM.baseAssetConfigs(address(wsteth));
+        (,, address wstethAdapter, , , , ) = lidoARM.baseAssetConfigs(address(wsteth));
         if (wstethAdapter != address(0)) {
             uint256[] memory requestIds = IStETHWithdrawal(Mainnet.LIDO_WITHDRAWAL).getWithdrawalRequests(wstethAdapter);
             for (uint256 i = 0; i < requestIds.length; ++i) {

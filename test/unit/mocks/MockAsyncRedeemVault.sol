@@ -7,6 +7,8 @@ import {MockERC20} from "dependencies/solmate-6.7.0/src/test/utils/mocks/MockERC
 contract MockAsyncRedeemVault is MockERC20 {
     IERC20 public immutable asset;
     uint256 public pricePerShare;
+    bool public revertOnConvertToAssets;
+    bool public revertOnConvertToShares;
 
     mapping(address controller => uint256 shares) public pendingRedeemShares;
     mapping(address controller => uint256 shares) public claimableRedeemShares;
@@ -27,11 +29,21 @@ contract MockAsyncRedeemVault is MockERC20 {
         claimableRedeemShares[account] = shares;
     }
 
+    function setRevertOnConvertToAssets(bool shouldRevert) external {
+        revertOnConvertToAssets = shouldRevert;
+    }
+
+    function setRevertOnConvertToShares(bool shouldRevert) external {
+        revertOnConvertToShares = shouldRevert;
+    }
+
     function convertToAssets(uint256 shares) public view returns (uint256 assetsOut) {
+        require(!revertOnConvertToAssets, "convertToAssets disabled");
         assetsOut = shares * pricePerShare / (10 ** decimals);
     }
 
     function convertToShares(uint256 assetsIn) public view returns (uint256 shares) {
+        require(!revertOnConvertToShares, "convertToShares disabled");
         shares = assetsIn * (10 ** decimals) / pricePerShare;
     }
 

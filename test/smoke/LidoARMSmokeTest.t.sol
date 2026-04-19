@@ -53,7 +53,7 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
         assertEq(lidoARM.liquidityAsset(), Mainnet.WETH, "liquidity asset");
         assertEq(lidoARM.asset(), Mainnet.WETH, "ERC-4626 asset");
         assertEq(lidoARM.claimDelay(), 10 minutes, "claim delay");
-        (, , , , uint256 crossPrice,) = lidoARM.baseAssetConfigs(Mainnet.STETH);
+        (, , , , , uint256 crossPrice, ) = lidoARM.baseAssetConfigs(Mainnet.STETH);
         assertEq(crossPrice, 0.99996e36, "cross price");
 
         assertEq(capManager.accountCapEnabled(), false, "account cap enabled");
@@ -206,13 +206,13 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
     }
 
     function test_stethAdapterConfig() external view {
-        (, address stethAdapter,,,,) = lidoARM.baseAssetConfigs(Mainnet.STETH);
+        (,, address stethAdapter, , , , ) = lidoARM.baseAssetConfigs(Mainnet.STETH);
         assertTrue(stethAdapter != address(0), "stETH adapter");
         assertEq(ILidoAsyncRedeemAdapter(stethAdapter).asset(), Mainnet.WETH, "adapter asset");
     }
 
     function test_lidoWithdrawalRequests() external view {
-        (, address stethAdapter,,,,) = lidoARM.baseAssetConfigs(Mainnet.STETH);
+        (,, address stethAdapter, , , , ) = lidoARM.baseAssetConfigs(Mainnet.STETH);
         uint256[] memory requestIds = IStETHWithdrawal(Mainnet.LIDO_WITHDRAWAL).getWithdrawalRequests(stethAdapter);
         // Get the status of all the withdrawal requests. eg amount, owner, claimed status
         IStETHWithdrawal.WithdrawalRequestStatus[] memory statuses =

@@ -44,6 +44,7 @@ contract CentrifugeARMTest is Test {
 
     function _config(address asset) internal view returns (AbstractMultiAssetARM.BaseAssetConfig memory config) {
         (
+            bool peggedToLiquidityAsset,
             bool supported,
             address adapter,
             uint256 buyPrice,
@@ -53,6 +54,7 @@ contract CentrifugeARMTest is Test {
         ) = rwaARM.baseAssetConfigs(asset);
 
         config = AbstractMultiAssetARM.BaseAssetConfig({
+            peggedToLiquidityAsset: peggedToLiquidityAsset,
             supported: supported,
             adapter: adapter,
             buyPrice: buyPrice,
@@ -249,6 +251,36 @@ contract CentrifugeARMTest is Test {
         assertEq(assetsOut, 25 * RAW_UNIT, "wrong assets out");
         assertEq(config.requestedVaultShares, 15 * RAW_UNIT, "wrong remaining requested shares");
         assertEq(usdc.balanceOf(address(rwaARM)), MIN_TOTAL_SUPPLY + 25 * RAW_UNIT, "wrong liquidity balance");
+    }
+
+    function test_PeggedAsset_SkipsAdapterConvertCalls() public {
+        MockAsyncRedeemVault pegged = new MockAsyncRedeemVault(IERC20(address(usdc)), "Pegged", "PEG", 6);
+
+        vm.prank(governor);
+        rwaARM.addBaseAsset(address(pegged), address(pegged), 0.999e36, 1e36, 1e36, true);
+
+        pegged.setRevertOnConvertToAssets(true);
+        pegged.setRevertOnConvertToShares(true);
+
+        pegged.mint(address(rwaARM), 100 * RAW_UNIT);
+        usdc.mint(alice, 100 * RAW_UNIT);
+        pegged.mint(alice, 100 * RAW_UNIT);
+
+        vm.startPrank(alice);
+        pegged.approve(address(rwaARM), type(uint256).max);
+        usdc.approve(address(rwaARM), type(uint256).max);
+
+        uint256[] memory baseToLiquidity =
+            rwaARM.swapExactTokensForTokens(IERC20(address(pegged)), IERC20(address(usdc)), 10 * RAW_UNIT, 0, alice);
+        uint256[] memory liquidityToBase =
+            rwaARM.swapExactTokensForTokens(IERC20(address(usdc)), IERC20(address(pegged)), 10 * RAW_UNIT, 0, alice);
+        vm.stopPrank();
+
+        uint256 totalAssets = rwaARM.totalAssets();
+
+        assertEq(baseToLiquidity[1], 9_990_000, "wrong pegged base->liq output");
+        assertEq(liquidityToBase[1], 10 * RAW_UNIT, "wrong pegged liq->base output");
+        assertGt(totalAssets, MIN_TOTAL_SUPPLY, "pegged total assets not valued");
     }
 
     function test_RemoveBaseAsset_BlockedUntilBalancesAndRequestsClear() public {

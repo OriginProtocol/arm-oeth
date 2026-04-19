@@ -147,7 +147,7 @@ abstract contract Fork_Shared_Test_ is Modifiers {
         // Set the Proxy as the LidoARM.
         lidoARM = LidoARM(payable(address(lidoProxy)));
 
-        lidoARM.addBaseAsset(address(steth), address(stethAdapter), 0.998e36, 1e36, 1e36);
+        lidoARM.addBaseAsset(address(steth), address(stethAdapter), 0.998e36, 1e36, 1e36, true);
         lidoARM.addBaseAsset(address(wsteth), address(wstethAdapter), 0.998e36, 1e36, 1e36);
 
         // set prices

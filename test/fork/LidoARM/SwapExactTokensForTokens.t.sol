@@ -33,7 +33,7 @@ contract Fork_Concrete_LidoARM_SwapExactTokensForTokens_Test is Fork_Shared_Test
     }
 
     function _buySellPrices() internal view returns (uint256 buyPrice, uint256 sellPrice) {
-        (, , buyPrice, sellPrice,,) = lidoARM.baseAssetConfigs(address(steth));
+        (, , , buyPrice, sellPrice, , ) = lidoARM.baseAssetConfigs(address(steth));
     }
 
     //////////////////////////////////////////////////////

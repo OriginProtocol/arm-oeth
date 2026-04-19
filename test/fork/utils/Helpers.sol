@@ -8,7 +8,7 @@ import {Mainnet} from "contracts/utils/Addresses.sol";
 
 abstract contract Helpers is Base_Test_ {
     function adapterOf(address asset) public view returns (address adapter) {
-        (, adapter,,,,) = lidoARM.baseAssetConfigs(asset);
+        (,, adapter,,,,) = lidoARM.baseAssetConfigs(asset);
     }
 
     function adapterQueuedAmount(address adapter) public view returns (uint256 amount) {

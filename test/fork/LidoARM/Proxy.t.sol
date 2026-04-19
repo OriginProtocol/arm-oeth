@@ -55,7 +55,7 @@ contract Fork_Concrete_LidoARM_Proxy_Test_ is Fork_Shared_Test_ {
         assertEq(lidoARM.owner(), owner);
 
         // Ensure the storage was preserved through the upgrade.
-        (bool supported, address adapter,,,,) = lidoARM.baseAssetConfigs(Mainnet.STETH);
+        (, bool supported, address adapter, , , , ) = lidoARM.baseAssetConfigs(Mainnet.STETH);
         assertTrue(supported);
         assertNotEq(adapter, address(0));
     }

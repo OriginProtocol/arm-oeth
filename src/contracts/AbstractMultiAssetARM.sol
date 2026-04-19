@@ -37,6 +37,8 @@ abstract contract AbstractMultiAssetARM is OwnableOperable, ERC20Upgradeable {
 
     /// @notice Configuration and accounting state for a supported base asset.
     struct BaseAssetConfig {
+        /// @notice Whether quote/accounting conversions can be treated as 1:1 with the liquidity asset.
+        bool peggedToLiquidityAsset;
         /// @notice Whether the base asset is currently supported.
         bool supported;
         /// @notice Async redeem adapter used to convert the base asset back into the liquidity asset.
@@ -312,10 +314,10 @@ abstract contract AbstractMultiAssetARM is OwnableOperable, ERC20Upgradeable {
         BaseAssetConfig memory config = baseAssetConfigs[baseAsset];
 
         if (inIsLiquidity) {
-            uint256 convertedAmountIn = IAsyncRedeemAdapter(config.adapter).convertToShares(amountIn);
+            uint256 convertedAmountIn = _convertToShares(config, amountIn);
             amountOut = convertedAmountIn * PRICE_SCALE / config.sellPrice;
         } else {
-            uint256 convertedAmountIn = IAsyncRedeemAdapter(config.adapter).convertToAssets(amountIn);
+            uint256 convertedAmountIn = _convertToAssets(config, amountIn);
             amountOut = convertedAmountIn * config.buyPrice / PRICE_SCALE;
         }
 
@@ -331,10 +333,10 @@ abstract contract AbstractMultiAssetARM is OwnableOperable, ERC20Upgradeable {
         BaseAssetConfig memory config = baseAssetConfigs[baseAsset];
 
         if (inIsLiquidity) {
-            uint256 convertedAmountOut = IAsyncRedeemAdapter(config.adapter).convertToAssets(amountOut);
+            uint256 convertedAmountOut = _convertToAssets(config, amountOut);
             amountIn = ((convertedAmountOut * config.sellPrice) / PRICE_SCALE) + 3;
         } else {
-            uint256 convertedAmountOut = IAsyncRedeemAdapter(config.adapter).convertToShares(amountOut);
+            uint256 convertedAmountOut = _convertToShares(config, amountOut);
             amountIn = ((convertedAmountOut * PRICE_SCALE) / config.buyPrice) + 3;
         }
 
@@ -381,6 +383,35 @@ abstract contract AbstractMultiAssetARM is OwnableOperable, ERC20Upgradeable {
         external
         onlyOwner
     {
+        _addBaseAsset(baseAsset, adapter, buyPrice, sellPrice, crossPrice, false);
+    }
+
+    /// @notice Adds a new supported base asset and optionally flags it as pegged 1:1 with the liquidity asset.
+    /// @param baseAsset New base asset to support.
+    /// @param adapter Async adapter used to redeem the base asset into the liquidity asset.
+    /// @param buyPrice Initial buy price for the base asset.
+    /// @param sellPrice Initial sell price for the base asset.
+    /// @param crossPrice Initial cross price for the base asset.
+    /// @param peggedToLiquidityAsset Whether quote/accounting conversions can be treated as 1:1.
+    function addBaseAsset(
+        address baseAsset,
+        address adapter,
+        uint256 buyPrice,
+        uint256 sellPrice,
+        uint256 crossPrice,
+        bool peggedToLiquidityAsset
+    ) external onlyOwner {
+        _addBaseAsset(baseAsset, adapter, buyPrice, sellPrice, crossPrice, peggedToLiquidityAsset);
+    }
+
+    function _addBaseAsset(
+        address baseAsset,
+        address adapter,
+        uint256 buyPrice,
+        uint256 sellPrice,
+        uint256 crossPrice,
+        bool peggedToLiquidityAsset
+    ) internal {
         require(baseAsset != address(0), "ARM: invalid asset");
         require(adapter != address(0), "ARM: invalid adapter");
         require(!baseAssetConfigs[baseAsset].supported, "ARM: asset already supported");
@@ -400,7 +431,8 @@ abstract contract AbstractMultiAssetARM is OwnableOperable, ERC20Upgradeable {
             buyPrice: buyPrice,
             sellPrice: sellPrice,
             crossPrice: crossPrice,
-            requestedVaultShares: 0
+            requestedVaultShares: 0,
+            peggedToLiquidityAsset: peggedToLiquidityAsset
         });
 
         emit BaseAssetAdded(baseAsset, adapter, buyPrice, sellPrice, crossPrice);
@@ -660,11 +692,9 @@ abstract contract AbstractMultiAssetARM is OwnableOperable, ERC20Upgradeable {
         for (uint256 i = 0; i < supportedAssetsLength; ++i) {
             address assetAddr = supportedBaseAssets[i];
             BaseAssetConfig memory config = baseAssetConfigs[assetAddr];
-            IAsyncRedeemAdapter adapter = IAsyncRedeemAdapter(config.adapter);
-
-            uint256 onHandAssets = adapter.convertToAssets(IERC20(assetAddr).balanceOf(address(this)));
+            uint256 onHandAssets = _convertToAssets(config, IERC20(assetAddr).balanceOf(address(this)));
             assets += onHandAssets * config.crossPrice / PRICE_SCALE;
-            assets += adapter.convertToAssets(config.requestedVaultShares);
+            assets += _convertToAssets(config, config.requestedVaultShares);
         }
 
         address activeMarketMem = activeMarket;
@@ -693,6 +723,16 @@ abstract contract AbstractMultiAssetARM is OwnableOperable, ERC20Upgradeable {
     /// @return assetsOut Equivalent liquidity asset amount.
     function convertToAssets(uint256 shares) public view returns (uint256 assetsOut) {
         assetsOut = shares * totalAssets() / totalSupply();
+    }
+
+    function _convertToAssets(BaseAssetConfig memory config, uint256 shares) internal view returns (uint256 assetsOut) {
+        if (config.peggedToLiquidityAsset) return shares;
+        assetsOut = IAsyncRedeemAdapter(config.adapter).convertToAssets(shares);
+    }
+
+    function _convertToShares(BaseAssetConfig memory config, uint256 assetsIn) internal view returns (uint256 sharesOut) {
+        if (config.peggedToLiquidityAsset) return assetsIn;
+        sharesOut = IAsyncRedeemAdapter(config.adapter).convertToShares(assetsIn);
     }
 
     /// @notice Sets the performance fee rate.
