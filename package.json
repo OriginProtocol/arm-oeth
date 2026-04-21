@@ -44,8 +44,6 @@
     "typescript": "^5.7.0"
   },
   "dependencies": {
-    "@automaton/client": "github:OriginProtocol/automaton#path:packages/client",
-    "@types/pg": "^8.20.0",
-    "pg": "^8.20.0"
+    "@automaton/client": "github:OriginProtocol/automaton#path:packages/client"
   }
 }
