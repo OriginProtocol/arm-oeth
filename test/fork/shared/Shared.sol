@@ -140,7 +140,7 @@ abstract contract Fork_Shared_Test_ is Modifiers {
         lidoARM = LidoARM(payable(address(lidoProxy)));
 
         // set prices
-        lidoARM.setPrices(992 * 1e33, 1001 * 1e33);
+        lidoARM.setPrices(992 * 1e33, 1001 * 1e33, type(uint256).max, type(uint256).max);
 
         // --- Deploy ZapperLidoARM ---
         zapperLidoARM = new ZapperLidoARM(address(weth), address(lidoProxy));

@@ -114,6 +114,9 @@ abstract contract Fork_Shared_Test is Base_Test_ {
         // Deposit some usde in the ARM
         ethenaARM.deposit(10_000 ether);
 
+        vm.prank(operator);
+        ethenaARM.setPrices(0.9992e36, 0.9999e36, type(uint256).max, type(uint256).max);
+
         // Swap usde to susde using ARM to have some susde balance
         ethenaARM.swapExactTokensForTokens(IERC20(address(susde)), usde, 5_000 ether, 0, address(this));
 

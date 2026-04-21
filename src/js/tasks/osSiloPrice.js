@@ -1,4 +1,4 @@
-const { formatUnits, parseUnits } = require("ethers");
+const { MaxUint256, formatUnits, parseUnits } = require("ethers");
 
 const { abs } = require("../utils/maths");
 const { getLendingMarketRate } = require("../utils/silo");
@@ -177,7 +177,12 @@ const setOSSiloPrice = async (options) => {
     log("Updating ARM prices...");
     const tx = await arm
       .connect(signer)
-      .setPrices(targetBuyPrice.toString(), targetSellPrice.toString());
+      .setPrices(
+        targetBuyPrice.toString(),
+        targetSellPrice.toString(),
+        MaxUint256,
+        MaxUint256,
+      );
 
     await logTxDetails(tx, "setOSSiloPrice");
   }

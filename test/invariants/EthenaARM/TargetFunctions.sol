@@ -282,7 +282,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         buyPrice = uint120(_bound(buyPrice, 0.9e36, crossPrice - 1)); // -> min traderate1 -> 0.9e36
 
         vm.prank(operator);
-        arm.setPrices(buyPrice, sellPrice);
+        arm.setPrices(buyPrice, sellPrice, type(uint256).max, type(uint256).max);
 
         if (isConsoleAvailable) {
             console.log(

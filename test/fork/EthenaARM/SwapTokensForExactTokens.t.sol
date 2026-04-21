@@ -113,6 +113,25 @@ contract Fork_Concrete_EthenaARM_swapTokensForExactTokens_Test_ is Fork_Shared_T
         assertEq(usdeBalanceAfter, usdeBalanceBefore + AMOUNT_OUT, "USDe balance should have increased");
     }
 
+    function test_swapTokensForExactTokens_USDE_To_SUSDE_ConsumesConvertedSellLiquidity() public {
+        uint256 susdeAmountOut = 100 ether;
+        uint256 sellLiquidity = susde.convertToAssets(susdeAmountOut);
+        uint256 sellPrice = 1e72 / ethenaARM.traderate0();
+        uint256 expectedAmountIn = ((sellLiquidity * 1e36) / ethenaARM.traderate0()) + 3;
+
+        vm.prank(operator);
+        ethenaARM.setPrices(ethenaARM.traderate1(), sellPrice, type(uint256).max, sellLiquidity);
+
+        ethenaARM.swapTokensForExactTokens(
+            usde, IERC20(address(susde)), susdeAmountOut, expectedAmountIn, address(this)
+        );
+
+        assertEq(ethenaARM.sellLiquidityRemaining(), 0, "sell liquidity remaining");
+
+        vm.expectRevert(bytes("ARM: Insufficient liquidity"));
+        ethenaARM.swapTokensForExactTokens(usde, IERC20(address(susde)), 1, type(uint256).max, address(this));
+    }
+
     //////////////////////////////////////////////////////
     /// --- REVERTING TESTS
     //////////////////////////////////////////////////////

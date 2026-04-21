@@ -36,19 +36,19 @@ contract Unit_Concrete_OriginARM_Setters_Test_ is Unit_Shared_Test {
 
     function test_RevertWhen_SetPrices_Because_NotOperator() public asNotOperatorNorGovernor {
         vm.expectRevert("ARM: Only operator or owner can call this function.");
-        originARM.setPrices(0, 0);
+        originARM.setPrices(0, 0, 0, 0);
     }
 
     function test_RevertWhen_SetPrices_Because_SellPriceTooLow() public asOperator {
         uint256 crossPrice = originARM.crossPrice();
         vm.expectRevert("ARM: sell price too low");
-        originARM.setPrices(0, crossPrice - 1);
+        originARM.setPrices(0, crossPrice - 1, 0, 0);
     }
 
     function test_RevertWhen_SetPrices_Because_BuyPriceTooHigh() public asOperator {
         uint256 crossPrice = originARM.crossPrice();
         vm.expectRevert("ARM: buy price too high");
-        originARM.setPrices(crossPrice, crossPrice);
+        originARM.setPrices(crossPrice, crossPrice, 0, 0);
     }
 
     function test_RevertWhen_SetCrossPrice_Because_NotGovernor() public asNotGovernor {
@@ -88,7 +88,7 @@ contract Unit_Concrete_OriginARM_Setters_Test_ is Unit_Shared_Test {
         originARM.setCrossPrice(priceScale - maxCrossPriceDeviation);
 
         // Set sellT1 to the minimum value (crossPrice - 1)
-        originARM.setPrices(0, originARM.crossPrice());
+        originARM.setPrices(0, originARM.crossPrice(), type(uint256).max, type(uint256).max);
 
         // Now we have enough space between PRICE_SCALE and sellT1 to set the cross price to a wrong value
         uint256 sellT1 = priceScale ** 2 / originARM.traderate0();
@@ -106,7 +106,7 @@ contract Unit_Concrete_OriginARM_Setters_Test_ is Unit_Shared_Test {
 
         // Set sellT1 to the maximul value (PRICE_SCALE) and buyT1 to the minimum value (crossPrice - 1)
         uint256 crossPrice = originARM.crossPrice();
-        originARM.setPrices(crossPrice - 1, priceScale);
+        originARM.setPrices(crossPrice - 1, priceScale, type(uint256).max, type(uint256).max);
 
         // Now we have enough space between PRICE_SCALE and buyT1 to set the cross price to a wrong value
         vm.expectRevert("ARM: buy price too high");
@@ -200,18 +200,43 @@ contract Unit_Concrete_OriginARM_Setters_Test_ is Unit_Shared_Test {
         uint256 crossPrice = originARM.crossPrice();
         uint256 newSellPrice = crossPrice;
         uint256 newBuyPrice = crossPrice - 1;
+        uint256 newBuyLiquidity = 5 ether;
+        uint256 newSellLiquidity = 7 ether;
         assertNotEq(originARM.traderate0(), priceScale ** 2 / newSellPrice, "Identical sell price");
         assertNotEq(originARM.traderate1(), newBuyPrice, "Identical buy price");
+        assertNotEq(originARM.buyLiquidityRemaining(), newBuyLiquidity, "Identical buy liquidity");
+        assertNotEq(originARM.sellLiquidityRemaining(), newSellLiquidity, "Identical sell liquidity");
 
         // Expected event
         vm.expectEmit(address(originARM));
         emit AbstractARM.TraderateChanged(priceScale ** 2 / newSellPrice, newBuyPrice);
 
-        originARM.setPrices(newBuyPrice, newSellPrice);
+        originARM.setPrices(newBuyPrice, newSellPrice, newBuyLiquidity, newSellLiquidity);
 
         // Assertions
         assertEq(originARM.traderate0(), priceScale ** 2 / newSellPrice, "Wrong sell price");
         assertEq(originARM.traderate1(), newBuyPrice, "Wrong buy price");
+        assertEq(originARM.buyLiquidityRemaining(), newBuyLiquidity, "Wrong buy liquidity");
+        assertEq(originARM.sellLiquidityRemaining(), newSellLiquidity, "Wrong sell liquidity");
+    }
+
+    function test_SetPrices_ResetsRemainingLiquidity() public asOperator {
+        uint256 crossPrice = originARM.crossPrice();
+
+        originARM.setPrices(crossPrice - 1, crossPrice, 3 ether, 4 ether);
+
+        deal(address(oeth), alice, 2 ether);
+        vm.startPrank(alice);
+        oeth.approve(address(originARM), type(uint256).max);
+        originARM.swapExactTokensForTokens(oeth, weth, 1 ether, 0, alice);
+        vm.stopPrank();
+
+        assertEq(originARM.buyLiquidityRemaining(), 2 ether + 1, "Buy liquidity not consumed");
+
+        originARM.setPrices(crossPrice - 2, crossPrice, 8 ether, 9 ether);
+
+        assertEq(originARM.buyLiquidityRemaining(), 8 ether, "Buy liquidity not reset");
+        assertEq(originARM.sellLiquidityRemaining(), 9 ether, "Sell liquidity not reset");
     }
 
     function test_SetCrossPrice_Below() public asGovernor {

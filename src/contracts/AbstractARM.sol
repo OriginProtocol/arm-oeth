@@ -121,8 +121,12 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     address public activeMarket;
     /// @notice Lending markets that can be used by the ARM.
     mapping(address market => bool supported) public supportedMarkets;
+    /// @notice Remaining liquidity-asset-denominated amount the ARM can buy at the current buy price.
+    uint256 public buyLiquidityRemaining;
+    /// @notice Remaining liquidity-asset-denominated amount the ARM can sell at the current sell price.
+    uint256 public sellLiquidityRemaining;
 
-    uint256[39] private _gap;
+    uint256[37] private _gap;
 
     ////////////////////////////////////////////////////
     ///                 Events
@@ -368,9 +372,6 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         virtual
         returns (uint256 amountOut)
     {
-        // Convert base asset to liquid asset or vice versa if needed
-        uint256 convertedAmountIn = _convert(address(inToken), amountIn);
-
         uint256 price;
         if (inToken == token0) {
             require(outToken == token1, "ARM: Invalid out token");
@@ -381,7 +382,14 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         } else {
             revert("ARM: Invalid in token");
         }
+
+        // Convert base asset to liquid asset or vice versa if needed
+        uint256 convertedAmountIn = _convert(address(inToken), amountIn);
         amountOut = convertedAmountIn * price / PRICE_SCALE;
+
+        bool isBuySide = address(outToken) == liquidityAsset;
+        uint256 liquidityAmount = isBuySide ? amountOut : convertedAmountIn;
+        _consumeLiquidityLimit(isBuySide, liquidityAmount);
 
         // Transfer the input tokens from the caller to this ARM contract
         _transferAssetFrom(address(inToken), msg.sender, address(this), amountIn);
@@ -395,9 +403,6 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         virtual
         returns (uint256 amountIn)
     {
-        // Convert base asset to liquid asset or vice versa if needed
-        uint256 convertedAmountOut = _convert(address(outToken), amountOut);
-
         uint256 price;
         if (inToken == token0) {
             require(outToken == token1, "ARM: Invalid out token");
@@ -408,6 +413,14 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         } else {
             revert("ARM: Invalid in token");
         }
+
+        // Convert base asset to liquid asset or vice versa if needed
+        uint256 convertedAmountOut = _convert(address(outToken), amountOut);
+
+        bool isBuySide = address(outToken) == liquidityAsset;
+        uint256 liquidityAmount = isBuySide ? amountOut : convertedAmountOut;
+        _consumeLiquidityLimit(isBuySide, liquidityAmount);
+
         // always round in our favor
         // +1 for truncation when dividing integers
         // +2 to cover stETH transfers being up to 2 wei short of the requested transfer amount
@@ -418,6 +431,17 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
         // Transfer the output tokens to the recipient
         _transferAsset(address(outToken), to, amountOut);
+    }
+
+    function _consumeLiquidityLimit(bool isBuySide, uint256 liquidityAmount) internal {
+        uint256 remaining = isBuySide ? buyLiquidityRemaining : sellLiquidityRemaining;
+        require(liquidityAmount <= remaining, "ARM: Insufficient liquidity");
+
+        if (isBuySide) {
+            buyLiquidityRemaining = remaining - liquidityAmount;
+        } else {
+            sellLiquidityRemaining = remaining - liquidityAmount;
+        }
     }
 
     /// @dev Convert between base asset and liquidity asset if needed.
@@ -462,13 +486,18 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
      * @param sellT1 The price the ARM sells Token 1 (stETH) to the Trader, denominated in Token 0 (WETH), scaled to 36 decimals.
      * From the Trader's perspective, this is the buy price.
      */
-    function setPrices(uint256 buyT1, uint256 sellT1) external onlyOperatorOrOwner {
+    function setPrices(uint256 buyT1, uint256 sellT1, uint256 buyAmount, uint256 sellAmount)
+        external
+        onlyOperatorOrOwner
+    {
         // Ensure buy price is always below past sell prices
         require(sellT1 >= crossPrice, "ARM: sell price too low");
         require(buyT1 < crossPrice, "ARM: buy price too high");
 
         traderate0 = PRICE_SCALE * PRICE_SCALE / sellT1; // quote (t0) -> base (t1); eg WETH -> stETH
         traderate1 = buyT1; // base (t1) -> quote (t0). eg stETH -> WETH
+        buyLiquidityRemaining = buyAmount;
+        sellLiquidityRemaining = sellAmount;
 
         emit TraderateChanged(traderate0, traderate1);
     }

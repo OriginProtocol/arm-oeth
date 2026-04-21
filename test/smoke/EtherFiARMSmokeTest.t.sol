@@ -103,7 +103,7 @@ contract Fork_EtherFiARM_Smoke_Test is AbstractSmokeTest {
             expectedOut = amountIn * 1e36 / price;
 
             vm.prank(Mainnet.ARM_RELAYER);
-            etherFiARM.setPrices(price - 2e32, price);
+            etherFiARM.setPrices(price - 2e32, price, type(uint256).max, type(uint256).max);
         } else {
             // Trader is selling eETH and buying WETH
             // the ARM is buying eETH and selling WETH
@@ -114,7 +114,7 @@ contract Fork_EtherFiARM_Smoke_Test is AbstractSmokeTest {
 
             vm.prank(Mainnet.ARM_RELAYER);
             uint256 sellPrice = price < 0.9997e36 ? 0.99996e36 : price + 2e32;
-            etherFiARM.setPrices(price, sellPrice);
+            etherFiARM.setPrices(price, sellPrice, type(uint256).max, type(uint256).max);
         }
         // Approve the ARM to transfer the input token of the swap.
         inToken.approve(address(etherFiARM), amountIn);
@@ -139,7 +139,7 @@ contract Fork_EtherFiARM_Smoke_Test is AbstractSmokeTest {
             expectedIn = amountOut * price / 1e36;
 
             vm.prank(Mainnet.ARM_RELAYER);
-            etherFiARM.setPrices(price - 2e32, price);
+            etherFiARM.setPrices(price - 2e32, price, type(uint256).max, type(uint256).max);
         } else {
             // Trader is selling eETH and buying WETH
             // the ARM is buying eETH and selling WETH
@@ -151,7 +151,7 @@ contract Fork_EtherFiARM_Smoke_Test is AbstractSmokeTest {
 
             vm.prank(Mainnet.ARM_RELAYER);
             uint256 sellPrice = price < 0.9997e36 ? 0.99996e36 : price + 2e32;
-            etherFiARM.setPrices(price, sellPrice);
+            etherFiARM.setPrices(price, sellPrice, type(uint256).max, type(uint256).max);
         }
         // Approve the ARM to transfer the input token of the swap.
         inToken.approve(address(etherFiARM), expectedIn + 10000);

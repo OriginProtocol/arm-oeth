@@ -335,7 +335,7 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
     {
         // set stETH/WETH buy price to 1
         lidoARM.setCrossPrice(1e36);
-        lidoARM.setPrices(1e36 - 1, 1e36);
+        lidoARM.setPrices(1e36 - 1, 1e36, type(uint256).max, type(uint256).max);
 
         assertEq(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT, "total assets before swap");
         assertEq(lidoARM.lastAvailableAssets(), int256(MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT), "last available before swap");

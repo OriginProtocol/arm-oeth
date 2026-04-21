@@ -160,7 +160,7 @@ contract $000_Example is AbstractDeployScript("000_Example") {
         // Example 4: Multiple parameter function
         // govProposal.action(
         //     targetAddress,
-        //     "setPrices(uint256,uint256)",
+        //     "setPrices(uint256,uint256,uint256,uint256)",
         //     abi.encode(minPrice, maxPrice)
         // );
     }

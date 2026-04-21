@@ -99,7 +99,7 @@ contract $003_UpgradeLidoARMMainnetScript is AbstractDeployScript("003_UpgradeLi
 
         // Set the buy price with a 2.5 basis point discount.
         // The sell price has a 1 basis point discount.
-        LidoARM(payable(Mainnet.LIDO_ARM)).setPrices(0.99975e36, 0.9999e36);
+        LidoARM(payable(Mainnet.LIDO_ARM)).setPrices(0.99975e36, 0.9999e36, type(uint256).max, type(uint256).max);
 
         // transfer ownership of the Lido ARM proxy to the mainnet 5/8 multisig
         lidoARMProxy_.setOwner(Mainnet.GOV_MULTISIG);

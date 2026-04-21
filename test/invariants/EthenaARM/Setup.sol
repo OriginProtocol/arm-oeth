@@ -252,7 +252,7 @@ abstract contract Setup is Base_Test_ {
         vm.prank(governor);
         arm.setCrossPrice(0.9998e36);
         vm.prank(operator);
-        arm.setPrices(0.9992e36, 0.9999e36);
+        arm.setPrices(0.9992e36, 0.9999e36, type(uint256).max, type(uint256).max);
         address[] memory markets = new address[](1);
         markets[0] = address(market);
         vm.prank(governor);

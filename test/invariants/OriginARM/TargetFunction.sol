@@ -197,7 +197,7 @@ abstract contract TargetFunction is Properties {
 
         // Main call
         vm.prank(governor);
-        originARM.setPrices(buyPrice, sellPrice);
+        originARM.setPrices(buyPrice, sellPrice, type(uint256).max, type(uint256).max);
     }
 
     function handler_setCrossPrice(uint120 newCrossPrice) public {
@@ -484,7 +484,7 @@ abstract contract TargetFunction is Properties {
 
         // - Set the prices to 1:1
         vm.prank(governor);
-        originARM.setPrices(0, PRICE_SCALE);
+        originARM.setPrices(0, PRICE_SCALE, type(uint256).max, type(uint256).max);
 
         // - Swap all the OS on ARM to WS
         deal(address(ws), makeAddr("swapper"), type(uint120).max);

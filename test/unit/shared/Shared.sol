@@ -112,6 +112,6 @@ abstract contract Unit_Shared_Test is Base_Test_, Modifiers {
 
         // set prices
         vm.prank(governor);
-        originARM.setPrices(992 * 1e33, 1001 * 1e33);
+        originARM.setPrices(992 * 1e33, 1001 * 1e33, type(uint256).max, type(uint256).max);
     }
 }
