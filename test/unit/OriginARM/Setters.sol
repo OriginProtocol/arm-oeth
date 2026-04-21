@@ -34,16 +34,6 @@ contract Unit_Concrete_OriginARM_Setters_Test_ is Unit_Shared_Test {
         originARM.setCapManager(address(0));
     }
 
-    function test_RevertWhen_SetARMBuffer_Because_NotGovernorNorOperator() public asRandomCaller {
-        vm.expectRevert("ARM: Only operator or owner can call this function.");
-        originARM.setARMBuffer(0);
-    }
-
-    function test_RevertWhen_SetARMBuffer_Because_Above1e18() public asGovernor {
-        vm.expectRevert("ARM: invalid arm buffer");
-        originARM.setARMBuffer(1e18 + 1);
-    }
-
     function test_RevertWhen_SetPrices_Because_NotOperator() public asNotOperatorNorGovernor {
         vm.expectRevert("ARM: Only operator or owner can call this function.");
         originARM.setPrices(0, 0);
@@ -203,18 +193,6 @@ contract Unit_Concrete_OriginARM_Setters_Test_ is Unit_Shared_Test {
 
         originARM.setCapManager(newCapManager);
         assertEq(originARM.capManager(), newCapManager, "Wrong cap manager");
-    }
-
-    function test_SetARMBuffer() public asGovernor {
-        uint256 newBuffer = originARM.armBuffer() + 1;
-        assertNotEq(originARM.armBuffer(), newBuffer, "Wrong buffer");
-
-        // Expected event
-        vm.expectEmit(address(originARM));
-        emit AbstractARM.ARMBufferUpdated(newBuffer);
-
-        originARM.setARMBuffer(newBuffer);
-        assertEq(originARM.armBuffer(), newBuffer, "Wrong buffer");
     }
 
     function test_SetPrices() public asOperator {

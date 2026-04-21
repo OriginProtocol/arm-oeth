@@ -29,16 +29,13 @@ contract OriginARM is Initializable, AbstractARM {
     /// @param _vault The address of the Origin Vault
     /// @param _claimDelay The delay in seconds before a user can claim a redeem from the request
     /// @param _minSharesToRedeem The minimum amount of shares to redeem from the active lending market
-    /// @param _allocateThreshold The minimum amount of liquidity assets in excess of the ARM buffer before
-    /// the ARM can allocate to a active lending market.
     constructor(
         address _otoken,
         address _liquidityAsset,
         address _vault,
         uint256 _claimDelay,
-        uint256 _minSharesToRedeem,
-        int256 _allocateThreshold
-    ) AbstractARM(_liquidityAsset, _otoken, _liquidityAsset, _claimDelay, _minSharesToRedeem, _allocateThreshold) {
+        uint256 _minSharesToRedeem
+    ) AbstractARM(_liquidityAsset, _otoken, _liquidityAsset, _claimDelay, _minSharesToRedeem) {
         vault = _vault;
 
         _disableInitializers();

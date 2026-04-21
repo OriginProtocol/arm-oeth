@@ -46,7 +46,7 @@ contract $003_UpgradeLidoARMMainnetScript is AbstractDeployScript("003_UpgradeLi
 
         // 7. Deploy Lido implementation
         uint256 claimDelay = 10 minutes;
-        lidoARMImpl = new LidoARM(Mainnet.STETH, Mainnet.WETH, Mainnet.LIDO_WITHDRAWAL, claimDelay, 0, 0);
+        lidoARMImpl = new LidoARM(Mainnet.STETH, Mainnet.WETH, Mainnet.LIDO_WITHDRAWAL, claimDelay, 0);
         _recordDeployment("LIDO_ARM_IMPL", address(lidoARMImpl));
 
         // 8. Deploy the Zapper

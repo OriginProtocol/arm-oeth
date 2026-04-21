@@ -36,11 +36,12 @@ contract Unit_Concrete_OriginARM_TotalAssets_Test_ is Unit_Shared_Test {
         addMarket(address(market))
         setActiveMarket(address(market))
         deposit(alice, 1 ether)
-        setARMBuffer(0)
-        allocate
         simulateMarketLoss(address(market), 1 ether)
         requestRedeem(alice, 1 ether)
     {
+        vm.prank(operator);
+        originARM.allocate(int256(DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY));
+
         assertEq(originARM.totalAssets(), MIN_TOTAL_SUPPLY, "Wrong total assets");
     }
 

@@ -27,11 +27,9 @@ async function limitGasPrice(signer, maxGasPriceGwei) {
 async function allocate({
   arm,
   signer,
-  threshold,
+  targetLiquidityDelta,
   execute = true,
   maxGasPrice: maxGasPriceGwei = 10,
-  // V1 on sonic everywhere else V2
-  armContractVersion = "v2",
 }) {
   const activeMarketAddress = await arm.activeMarket();
   if (activeMarketAddress === ethers.ZeroAddress) {
@@ -44,76 +42,24 @@ async function allocate({
     return;
   }
 
-  let liquidityDelta;
-  if (armContractVersion === "v1") {
-    // The old implementation returns only liquidityDelta
-    liquidityDelta = await arm.allocate.staticCall();
-  } else if (armContractVersion === "v2") {
-    // 1. Call the allocate static call to get the return values
-    // Returned value is a tuple of two int256 values
-    [, liquidityDelta] = await arm.allocate.staticCall();
-  } else {
-    throw new Error("Invalid ARM contract version");
+  if (targetLiquidityDelta === undefined || targetLiquidityDelta === null) {
+    throw new Error("targetLiquidityDelta is required");
   }
 
-  const thresholdBN = parseUnits((threshold || "10").toString(), 18);
-  const withinThreshold =
-    liquidityDelta < thresholdBN && liquidityDelta > -thresholdBN;
-
-  // If the delta is positive and within threshold, skip
-  if (withinThreshold && liquidityDelta >= 0n) {
-    log(
-      `Only ${formatUnits(liquidityDelta)} liquidity delta, skipping allocation as threshold is ${formatUnits(thresholdBN)}`,
-    );
-    return;
-  }
-
-  // If the delta is negative, check if there is a small amount left in the market and drain it if so
-  if (liquidityDelta < 0n) {
-    // Get the amount of liquidity available in the active market
-    const activeMarket = new ethers.Contract(
-      activeMarketAddress,
-      ["function maxWithdraw(address) external view returns (uint256)"],
-      signer,
-    );
-    const availableAssets = await activeMarket.maxWithdraw(
-      await arm.getAddress(),
-    );
-
-    // If liquidity delta is within threshold but there are still more than threshold assets available in the market, skip
-    if (withinThreshold && availableAssets > thresholdBN) {
-      log(
-        `Only ${formatUnits(liquidityDelta)} liquidity delta and ${formatUnits(availableAssets)} available assets > ${formatUnits(thresholdBN)} threshold, skipping allocation`,
-      );
-      return;
-    }
-
-    // Skip if transferring a small amount as its not gas efficient
-    if (availableAssets < parseUnits("0.1", 18)) {
-      log(
-        `Only ${formatUnits(availableAssets)} liquidity available in the active lending market, skipping allocation`,
-      );
-      return;
-    }
-
-    // Either the delta is above threshold or there is a small amount left in the market
-    log(
-      `Only ${formatUnits(availableAssets)} available in the active lending market, proceeding with allocation to drain remaining liquidity`,
-    );
-  }
+  const targetLiquidityDeltaBN = parseUnits(targetLiquidityDelta.toString(), 18);
 
   log(
     `About to allocate ${formatUnits(
-      liquidityDelta,
+      targetLiquidityDeltaBN,
     )} to/from the active lending market`,
   );
 
   if (execute) {
     // Add 10% buffer to gas limit
-    let gasLimit = await arm.connect(signer).allocate.estimateGas();
+    let gasLimit = await arm.connect(signer).allocate.estimateGas(targetLiquidityDeltaBN);
     gasLimit = (gasLimit * 11n) / 10n;
 
-    const tx = await arm.connect(signer).allocate({ gasLimit });
+    const tx = await arm.connect(signer).allocate(targetLiquidityDeltaBN, { gasLimit });
     await logTxDetails(tx, "allocate");
   }
 }
@@ -153,22 +99,7 @@ async function collectFees({ arm, signer }) {
   await logTxDetails(tx, "collectFees");
 }
 
-async function setARMBuffer({ arm, signer, buffer }) {
-  if (buffer > 1) {
-    throw new Error("Buffer value cannot be greater than 1");
-  }
-  const bufferBN = parseUnits((buffer || "0").toString(), 18);
-
-  // Add 10% buffer to gas limit
-  let gasLimit = await arm.connect(signer).setARMBuffer.estimateGas(bufferBN);
-  gasLimit = (gasLimit * 11n) / 10n;
-
-  log(`About to set ARM buffer to ${formatUnits(bufferBN)}`);
-  const tx = await arm.connect(signer).setARMBuffer(bufferBN, { gasLimit });
-  await logTxDetails(tx, "setARMBuffer");
-}
 module.exports = {
   allocate,
   collectFees,
-  setARMBuffer,
 };

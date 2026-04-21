@@ -18,8 +18,7 @@ contract $020_UpgradeEthenaARMScript is AbstractDeployScript("020_UpgradeEthenaA
             Mainnet.USDE,
             Mainnet.SUSDE,
             10 minutes, // claimDelay
-            1e18, // minSharesToRedeem
-            100e18 // allocateThreshold
+            1e18 // minSharesToRedeem
         );
         _recordDeployment("ETHENA_ARM_IMPL", address(armImpl));
     }

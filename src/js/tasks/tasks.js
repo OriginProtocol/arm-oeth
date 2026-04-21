@@ -15,7 +15,7 @@ const {
   lidoWithdrawStatus,
 } = require("./lido");
 const { setPrices } = require("./armPrices");
-const { allocate, collectFees, setARMBuffer } = require("./admin");
+const { allocate, collectFees } = require("./admin");
 const {
   collectRewards,
   harvestRewards,
@@ -965,10 +965,10 @@ subtask("allocate", "Allocate to/from the active lending market")
     types.string,
   )
   .addOptionalParam(
-    "threshold",
-    "The liquidity delta before threshold before allocate is called",
+    "targetLiquidityDelta",
+    "Signed amount to move. Positive deposits to the active market, negative withdraws.",
     undefined,
-    types.float,
+    types.string,
   )
   .addOptionalParam(
     "maxGasPrice",
@@ -977,7 +977,7 @@ subtask("allocate", "Allocate to/from the active lending market")
     types.float,
   )
   .addOptionalParam("execute", "Execute the transaction", true, types.boolean)
-  .setAction(async ({ arm, threshold, execute, maxGasPrice }) => {
+  .setAction(async ({ arm, targetLiquidityDelta, execute, maxGasPrice }) => {
     const signer = await getSigner();
 
     const armContract = await resolveArmContract(arm);
@@ -985,36 +985,12 @@ subtask("allocate", "Allocate to/from the active lending market")
     await allocate({
       signer,
       arm: armContract,
-      threshold,
+      targetLiquidityDelta,
       maxGasPrice,
       execute,
     });
   });
 task("allocate").setAction(async (_, __, runSuper) => {
-  return runSuper();
-});
-
-subtask("setARMBuffer", "Set the ARM buffer percentage")
-  .addOptionalParam(
-    "arm",
-    "The name of the ARM. eg Lido, Origin, EtherFi or Ethena",
-    "Origin",
-    types.string,
-  )
-  .addOptionalParam(
-    "buffer",
-    "The new buffer value (eg 0.1 -> 10%)",
-    undefined,
-    types.float,
-  )
-  .setAction(async ({ arm, buffer }) => {
-    const signer = await getSigner();
-
-    const armContract = await resolveArmContract(arm);
-
-    await setARMBuffer({ signer, arm: armContract, buffer });
-  });
-task("setARMBuffer").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
 

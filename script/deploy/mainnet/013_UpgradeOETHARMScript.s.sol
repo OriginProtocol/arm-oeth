@@ -19,7 +19,7 @@ contract $013_UpgradeOETHARMScript is AbstractDeployScript("013_UpgradeOETHARMSc
     function _execute() internal override {
         // 1. Deploy new Origin implementation
         uint256 claimDelay = 10 minutes;
-        OriginARM originARMImpl = new OriginARM(Mainnet.OETH, Mainnet.WETH, Mainnet.OETH_VAULT, claimDelay, 1e7, 1e18);
+        OriginARM originARMImpl = new OriginARM(Mainnet.OETH, Mainnet.WETH, Mainnet.OETH_VAULT, claimDelay, 1e7);
         _recordDeployment("OETH_ARM_IMPL", address(originARMImpl));
 
         // 2. Deploy MorphoMarket proxy

@@ -51,7 +51,6 @@ contract $011_DeployEtherFiARMScript is AbstractDeployScript("011_DeployEtherFiA
             Mainnet.ETHERFI_WITHDRAWAL,
             claimDelay,
             1e7, // minSharesToRedeem
-            1e18, // allocateThreshold
             Mainnet.ETHERFI_WITHDRAWAL_NFT
         );
         _recordDeployment("ETHER_FI_ARM_IMPL", address(etherFiARMImpl));
@@ -105,7 +104,6 @@ contract $011_DeployEtherFiARMScript is AbstractDeployScript("011_DeployEtherFiA
         EtherFiARM(payable(address(armProxy))).setActiveMarket(address(morphoMarketProxy));
 
         // 16. Set ARM buffer to 20%
-        EtherFiARM(payable(address(armProxy))).setARMBuffer(0.2e18); // 20% buffer
 
         // 17. Transfer ownership of ARM to the 5/8 multisig
         armProxy.setOwner(Mainnet.GOV_MULTISIG);

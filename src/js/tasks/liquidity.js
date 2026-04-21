@@ -214,8 +214,6 @@ const logLiquidity = async ({ block, arm }) => {
 
   const totalAssets = await armContract.totalAssets({ blockTag });
   const accruedFees = await armContract.feesAccrued({ blockTag });
-  const buffer = await armContract.armBuffer({ blockTag });
-  const bufferPercent = (buffer * 10000n) / parseUnits("1");
 
   console.log(
     `${formatUnits(liquidityBalance, 18)} ${liquiditySymbol} ${formatUnits(
@@ -251,7 +249,6 @@ const logLiquidity = async ({ block, arm }) => {
 
   console.log(`${formatUnits(accruedFees, 18)} accrued fees`);
   console.log(`${formatUnits(totalAssets, 18)} total assets`);
-  console.log(`liquidity buffer ${formatUnits(bufferPercent, 2)}%`);
   console.log(`${formatUnits(morphoRewards, 18)} MORPHO rewards claimable`);
 
   return { total, liquidityBalance };

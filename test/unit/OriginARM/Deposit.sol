@@ -185,11 +185,11 @@ contract Unit_Concrete_OriginARM_Deposit_Test_ is Unit_Shared_Test {
     /// - fees are not null
     function test_Deposit_When_DefaultStrategyIsSet()
         public
-        setARMBuffer(1e18)
         addMarket(address(market))
         setActiveMarket(address(market))
     {
-        // Allocated as been call in the modifier
+        vm.prank(operator);
+        originARM.allocate(int256(MIN_TOTAL_SUPPLY));
 
         // Expected values
         uint256 expectedShares = originARM.convertToShares(DEFAULT_AMOUNT);

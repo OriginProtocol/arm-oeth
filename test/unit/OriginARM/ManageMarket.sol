@@ -34,7 +34,6 @@ contract Unit_Concrete_OriginARM_ManageMarket_Test_ is Unit_Shared_Test {
 
     function test_RevertWhen_AddMarkets_Because_MarketAlreadySupported()
         public
-        setARMBuffer(0)
         addMarket(address(market))
         setActiveMarket(address(market))
         asGovernor
@@ -216,21 +215,27 @@ contract Unit_Concrete_OriginARM_ManageMarket_Test_ is Unit_Shared_Test {
     function test_SetActiveMarket_WithPreviousMarket_NonEmpty_WithShares()
         public
         deposit(alice, DEFAULT_AMOUNT)
-        setARMBuffer(0)
         addMarket(address(market))
         setActiveMarket(address(market))
         addMarket(address(market2))
-        asGovernor
     {
+        vm.prank(operator);
+        originARM.allocate(int256(DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY));
+
         // Assertions before
         assertEq(originARM.activeMarket(), address(market));
+        assertEq(market2.balanceOf(address(originARM)), 0, "New market should start empty");
 
+        vm.startPrank(governor);
         vm.expectEmit(address(originARM));
         emit AbstractARM.ActiveMarketUpdated(address(market2));
         originARM.setActiveMarket(address(market2));
+        vm.stopPrank();
 
         // Assertions after
         assertEq(originARM.activeMarket(), address(market2));
+        assertEq(market.balanceOf(address(originARM)), 0, "Previous market should be redeemed");
+        assertEq(market2.balanceOf(address(originARM)), 0, "New market should not auto-allocate");
     }
 
     function test_SetActiveMarket_ToPreviousMarket()

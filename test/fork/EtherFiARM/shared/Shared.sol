@@ -75,9 +75,8 @@ abstract contract Fork_Shared_Test is Base_Test_ {
 
         // --- Deploy EtherFiARM implementation ---
         // Deploy EtherFiARM implementation.
-        EtherFiARM etherfiImpl = new EtherFiARM(
-            address(eeth), address(weth), Mainnet.ETHERFI_WITHDRAWAL, 10 minutes, 0, 0, Mainnet.ETHERFI_WITHDRAWAL_NFT
-        );
+        EtherFiARM etherfiImpl =
+            new EtherFiARM(address(eeth), address(weth), Mainnet.ETHERFI_WITHDRAWAL, 10 minutes, 0, Mainnet.ETHERFI_WITHDRAWAL_NFT);
 
         // Deployer will need WETH to initialize the ARM.
         deal(address(weth), deployer, 1e12);

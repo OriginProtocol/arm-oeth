@@ -39,12 +39,29 @@ const handler = async (event) => {
 
   // If any requests were claimed
   if (requestIds?.length > 0) {
+    const targetLiquidityDelta =
+      event.request?.body?.targetLiquidityDelta ??
+      event.targetLiquidityDelta ??
+      event.request?.body?.deltaAmount ??
+      event.deltaAmount ??
+      process.env.ALLOCATE_TARGET_LIQUIDITY_DELTA ??
+      process.env.ALLOCATE_DELTA_AMOUNT;
+
+    if (targetLiquidityDelta === undefined || targetLiquidityDelta === null) {
+      console.log("Skipping allocate after claim because no targetLiquidityDelta was provided");
+      return;
+    }
+
     // Add 10% buffer to gas limit
-    let gasLimit = await arm.connect(signer).allocate.estimateGas();
+    let gasLimit = await arm.connect(signer).allocate.estimateGas(
+      ethers.parseUnits(targetLiquidityDelta.toString(), 18),
+    );
     gasLimit = (gasLimit * 12n) / 10n;
 
     // Allocate any excess liquidity to the lending market
-    const tx = await arm.allocate({ gasLimit });
+    const tx = await arm.allocate(ethers.parseUnits(targetLiquidityDelta.toString(), 18), {
+      gasLimit,
+    });
     await logTxDetails(tx, "allocate");
   }
 };

@@ -35,7 +35,6 @@ abstract contract TargetFunction is Properties {
     // [x] SetFee
     // [x] CollectFees
     // [x] SetActiveMarket
-    // [x] SetARMBuffer
     // [x] RequestOriginWithdrawal
 
     // ╔══════════════════════════════════════════════════════════════════════════════╗
@@ -126,17 +125,6 @@ abstract contract TargetFunction is Properties {
         sum_ws_user_claimed += expectedAmount;
     }
 
-    function handler_setARMBuffer(uint64 pct) public {
-        pct = uint64(_bound(pct, 0, 10)) * 1e17;
-
-        // Console log data
-        if (CONSOLE_LOG) console.log("setARMBuffer() \t From: %s | \t Percen: %16e %", "Owner", pct);
-
-        // Main call
-        vm.prank(governor);
-        originARM.setARMBuffer(pct);
-    }
-
     function handler_setActiveMarket(uint8 seed) public {
         // Get a random market from the list of markets
         (address fromM, address toM) = getRandomMarket(seed);
@@ -152,24 +140,40 @@ abstract contract TargetFunction is Properties {
         originARM.setActiveMarket(toM);
     }
 
-    function handler_allocate() public {
+    function handler_allocate(uint256 amountSeed, bool withdraw) public {
         address market = originARM.activeMarket();
         vm.assume(market != address(0));
 
-        int256 delta = getLiquidityDelta();
-        if (delta > 0) {
+        uint256 maxAmount;
+        if (withdraw) {
+            maxAmount = IERC4626(market).maxWithdraw(address(originARM));
+        } else {
+            uint256 outstandingWithdrawals = originARM.withdrawsQueued() - originARM.withdrawsClaimed();
+            uint256 balance = ws.balanceOf(address(originARM));
+            maxAmount = outstandingWithdrawals > balance ? 0 : balance - outstandingWithdrawals;
+
             // As SiloMarket doesn't have previewDeposit function, we check it directly on the underlying market.
             if (market == address(siloMarket)) market = address(market2);
-
-            // Small edge case where due to donation, minted shares could be 0 which makes the call revert.
-            vm.assume(IERC4626(market).previewDeposit(uint256(delta)) > 0);
         }
+
+        uint256 amount = _bound(amountSeed, 0, maxAmount);
+        int256 delta = withdraw ? -int256(amount) : int256(amount);
+
+        if (!withdraw && amount > 0) {
+            // Small edge case where due to donation, minted shares could be 0 which makes the call revert.
+            vm.assume(IERC4626(market).previewDeposit(amount) > 0);
+        }
+
         // Console log data
-        if (CONSOLE_LOG) console.log("allocate() \t\t From: %s", "Owner");
+        if (CONSOLE_LOG) console.log(
+            "allocate() \t\t From: %s | \t Delta: %s",
+            "Operator",
+            faa(delta < 0 ? uint256(-delta) : uint256(delta))
+        );
 
         // Main call
-        vm.prank(governor);
-        originARM.allocate();
+        vm.prank(operator);
+        originARM.allocate(delta);
     }
 
     function handler_setPrices(uint256 buyPrice, uint256 sellPrice) public {
@@ -546,18 +550,6 @@ abstract contract TargetFunction is Properties {
             return ws.balanceOf(address(originARM)) - outstandingWithdrawals;
         }
         return 0;
-    }
-
-    function getLiquidityDelta() public view returns (int256) {
-        (uint256 availableAssets, uint256 outstandingWithdrawals) = getAvailableAssets();
-        if (availableAssets == 0) return 0;
-
-        int256 armLiquidity =
-            SafeCast.toInt256(ws.balanceOf(address(originARM))) - SafeCast.toInt256(outstandingWithdrawals);
-        uint256 armBuffer = originARM.armBuffer();
-        uint256 targetArmLiquidity = availableAssets * armBuffer / 1e18;
-
-        return armLiquidity - SafeCast.toInt256(targetArmLiquidity);
     }
 
     function getAvailableAssets() public view returns (uint256 availableAssets, uint256 outstandingWithdrawals) {
