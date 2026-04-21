@@ -225,6 +225,7 @@ contract Unit_Concrete_OriginARM_Setters_Test_ is Unit_Shared_Test {
 
         originARM.setPrices(crossPrice - 1, crossPrice, 3 ether, 4 ether);
 
+        deal(address(weth), address(originARM), 1 ether);
         deal(address(oeth), alice, 2 ether);
         vm.startPrank(alice);
         oeth.approve(address(originARM), type(uint256).max);
@@ -233,6 +234,7 @@ contract Unit_Concrete_OriginARM_Setters_Test_ is Unit_Shared_Test {
 
         assertEq(originARM.buyLiquidityRemaining(), 2 ether + 1, "Buy liquidity not consumed");
 
+        vm.prank(operator);
         originARM.setPrices(crossPrice - 2, crossPrice, 8 ether, 9 ether);
 
         assertEq(originARM.buyLiquidityRemaining(), 8 ether, "Buy liquidity not reset");

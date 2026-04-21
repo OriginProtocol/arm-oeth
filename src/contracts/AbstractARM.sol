@@ -22,6 +22,10 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     uint256 public constant MAX_CROSS_PRICE_DEVIATION = 20e32;
     /// @notice Scale of the prices.
     uint256 public constant PRICE_SCALE = 1e36;
+    /// @notice Scale of the allowed market swap deviation. 1 = 0.01 bps.
+    uint256 public constant MARKET_SWAP_DEVIATION_SCALE = 10_00_000;
+    /// @notice Maximum allowed deviation from _convert() for market swaps. 20 bps.
+    uint256 public constant MAX_ALLOWED_MARKET_SWAP_DEVIATION = 20_00;
     /// @notice The amount of shares that are minted to a dead address on initialization
     uint256 internal constant MIN_TOTAL_SUPPLY = 1e12;
     /// @notice The address with no known private key that the initial shares are minted to
@@ -125,8 +129,10 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     uint256 public buyLiquidityRemaining;
     /// @notice Remaining liquidity-asset-denominated amount the ARM can sell at the current sell price.
     uint256 public sellLiquidityRemaining;
+    /// @notice Allowed deviation from _convert() when validating operator market swaps.
+    uint256 public allowedMarketSwapDeviation;
 
-    uint256[37] private _gap;
+    uint256[36] private _gap;
 
     ////////////////////////////////////////////////////
     ///                 Events
@@ -147,6 +153,10 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     event MarketAdded(address indexed market);
     event MarketRemoved(address indexed market);
     event Allocated(address indexed market, int256 targetLiquidityDelta, int256 actualLiquidityDelta);
+    event AllowedMarketSwapDeviationUpdated(uint256 allowedMarketSwapDeviation);
+    event MarketSwap(
+        address indexed target, address indexed tokenIn, address indexed tokenOut, uint256 amountOut, uint256 amountIn
+    );
 
     constructor(
         address _token0,
@@ -224,6 +234,52 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     ////////////////////////////////////////////////////
     ///                 Swap Functions
     ////////////////////////////////////////////////////
+
+    /**
+     * @notice Transfer tokenOut out of the ARM to a swap callback target and verify enough tokenIn
+     * is returned back into the ARM.
+     * @param tokenIn The token that must be returned into the ARM.
+     * @param tokenOut The token that is transferred out of the ARM to fund the swap.
+     * @param amountOut The amount of tokenOut that is transferred to the callback target.
+     * @param target The callback target that receives tokenOut and returns tokenIn.
+     * @param data Arbitrary callback data for the target.
+     * @return amountIn The amount of tokenIn returned into the ARM.
+     */
+    function marketSwap(IERC20 tokenIn, IERC20 tokenOut, uint256 amountOut, address target, bytes calldata data)
+        external
+        onlyOperator
+        returns (uint256 amountIn)
+    {
+        require(target != address(0), "ARM: invalid target");
+
+        bool isBuyBase = address(tokenIn) == baseAsset && address(tokenOut) == liquidityAsset;
+        bool isSellBase = address(tokenIn) == liquidityAsset && address(tokenOut) == baseAsset;
+        require(isBuyBase || isSellBase, "ARM: invalid token pair");
+
+        uint256 expectedAmountIn = _convert(address(tokenOut), amountOut);
+        uint256 minAmountIn;
+        if (isBuyBase) {
+            minAmountIn =
+                expectedAmountIn * (MARKET_SWAP_DEVIATION_SCALE + allowedMarketSwapDeviation) / MARKET_SWAP_DEVIATION_SCALE;
+        } else {
+            minAmountIn =
+                expectedAmountIn * (MARKET_SWAP_DEVIATION_SCALE - allowedMarketSwapDeviation) / MARKET_SWAP_DEVIATION_SCALE;
+        }
+
+        if (address(tokenOut) == liquidityAsset) _requireLiquidityAvailable(amountOut);
+
+        uint256 balanceBefore = tokenIn.balanceOf(address(this));
+
+        tokenOut.transfer(target, amountOut);
+
+        (bool success,) = target.call(data);
+        require(success, "ARM: market swap failed");
+
+        amountIn = tokenIn.balanceOf(address(this)) - balanceBefore;
+        require(amountIn >= minAmountIn, "ARM: market swap return low");
+
+        emit MarketSwap(target, address(tokenIn), address(tokenOut), amountOut, amountIn);
+    }
 
     /**
      * @notice Swaps an exact amount of input tokens for as many output tokens as possible.
@@ -1031,5 +1087,15 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         capManager = _capManager;
 
         emit CapManagerUpdated(_capManager);
+    }
+
+    /// @notice Set the maximum allowed deviation from _convert() for market swaps.
+    /// @param newDeviation The allowed deviation scaled by MARKET_SWAP_DEVIATION_SCALE.
+    function setAllowedMarketSwapDeviation(uint256 newDeviation) external onlyOwner {
+        require(newDeviation <= MAX_ALLOWED_MARKET_SWAP_DEVIATION, "ARM: swap dev too high");
+
+        allowedMarketSwapDeviation = newDeviation;
+
+        emit AllowedMarketSwapDeviationUpdated(newDeviation);
     }
 }
