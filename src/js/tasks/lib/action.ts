@@ -1,8 +1,6 @@
-import { randomUUID } from "node:crypto";
 import type { Signer } from "ethers";
 import { subtask, task } from "hardhat/config";
 import type { ConfigurableTaskDefinition } from "hardhat/types";
-import type { Logger } from "winston";
 import {
   createDb,
   createPool,
@@ -11,7 +9,12 @@ import {
 } from "@automaton/client";
 
 import { getSigner as defaultGetSigner } from "../../utils/signers";
-import logger, { flushLogger } from "./logger";
+
+export interface Logger {
+  info(msg: unknown, ...rest: unknown[]): void;
+  warn(msg: unknown, ...rest: unknown[]): void;
+  error(msg: unknown, ...rest: unknown[]): void;
+}
 
 let dbInstance: Db | null = null;
 function getNonceDb(): Db | null {
@@ -49,6 +52,15 @@ const CHAIN_NAMES: Record<number, string> = {
   17000: "holesky",
 };
 
+function makeLog(name: string): Logger {
+  const prefix = `[${name}]`;
+  return {
+    info: (msg, ...rest) => console.log(prefix, msg, ...rest),
+    warn: (msg, ...rest) => console.warn(prefix, msg, ...rest),
+    error: (msg, ...rest) => console.error(prefix, msg, ...rest),
+  };
+}
+
 export function createActionHandler(
   config: ActionConfig,
   deps: ActionDeps = {},
@@ -57,8 +69,7 @@ export function createActionHandler(
   const getSigner = deps.getSigner ?? defaultGetSigner;
 
   return async (taskArgs: Record<string, any>) => {
-    const runId = randomUUID();
-    const log = logger.child({ action: name, run_id: runId });
+    const log = makeLog(name);
     const startTime = Date.now();
     let chainId: number | undefined;
     let networkName: string | undefined;
@@ -73,12 +84,7 @@ export function createActionHandler(
         : rawSigner;
       networkName = CHAIN_NAMES[chainId] ?? `unknown-${chainId}`;
 
-      log.info(`Running on ${networkName} (${chainId})`, {
-        event: "action.start",
-        source: "task",
-        chain_id: chainId,
-        network: networkName,
-      });
+      log.info(`Running on ${networkName} (${chainId})`);
 
       if (chains && !chains.includes(chainId)) {
         const valid = chains
@@ -92,28 +98,11 @@ export function createActionHandler(
       await run({ signer, chainId, networkName, log, args: taskArgs });
       log.info(
         `Completed in ${((Date.now() - startTime) / 1000).toFixed(1)}s`,
-        {
-          event: "action.success",
-          source: "task",
-          chain_id: chainId,
-          network: networkName,
-          duration_ms: Date.now() - startTime,
-        },
       );
     } catch (err: any) {
-      log.error(`${err?.name ?? "Error"}: ${err?.message ?? String(err)}`, {
-        event: "action.error",
-        source: "task",
-        chain_id: chainId,
-        network: networkName,
-        duration_ms: Date.now() - startTime,
-        error_name: err?.name ?? "Error",
-        error_message: err?.message ?? String(err),
-        error_stack: err?.stack,
-      });
+      log.error(`${err?.name ?? "Error"}: ${err?.message ?? String(err)}`);
+      if (err?.stack) log.error(err.stack);
       throw err;
-    } finally {
-      await flushLogger();
     }
   };
 }
