@@ -12,6 +12,8 @@ RUN apt-get update \
   build-essential \
   python3 \
   bsdutils \
+  nodejs \
+  npm \
   && rm -rf /var/lib/apt/lists/*
 
 RUN mkdir -p /root/.ssh \
