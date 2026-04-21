@@ -3,10 +3,25 @@ import type { Signer } from "ethers";
 import { subtask, task } from "hardhat/config";
 import type { ConfigurableTaskDefinition } from "hardhat/types";
 import type { Logger } from "winston";
+import {
+  createDb,
+  createPool,
+  type Db,
+  wrapSignerWithNonceQueueV6,
+} from "@automaton/client";
 
 import { getSigner as defaultGetSigner } from "../../utils/signers";
 import logger, { flushLogger } from "./logger";
-import { wrapWithNonceQueue } from "./nonceQueue";
+
+let dbInstance: Db | null = null;
+function getNonceDb(): Db | null {
+  if (!process.env.DATABASE_URL) return null;
+  if (!dbInstance) {
+    const pool = createPool({ connectionString: process.env.DATABASE_URL });
+    dbInstance = createDb(pool);
+  }
+  return dbInstance;
+}
 
 export interface ActionContext {
   signer: Signer;
@@ -52,7 +67,10 @@ export function createActionHandler(
       const rawSigner = await getSigner();
       const network = await rawSigner.provider!.getNetwork();
       chainId = Number(network.chainId);
-      const signer = wrapWithNonceQueue(rawSigner, chainId, log);
+      const db = getNonceDb();
+      const signer = db
+        ? wrapSignerWithNonceQueueV6(rawSigner, { db, log })
+        : rawSigner;
       networkName = CHAIN_NAMES[chainId] ?? `unknown-${chainId}`;
 
       log.info(`Running on ${networkName} (${chainId})`, {

@@ -1,7 +1,6 @@
-FROM node:20
+FROM oven/bun:1
 
 ENV DEBIAN_FRONTEND=noninteractive \
-  DEBUG=arm* \
   DEBUG_HIDE_DATE=true
 
 RUN apt-get update \
@@ -20,35 +19,11 @@ RUN mkdir -p /root/.ssh \
 
 RUN git config --global url."https://github.com/".insteadOf "git@github.com:"
 
-# Install Foundry and symlink binaries to /usr/local/bin so they're available
-# in all shell modes (login shells reset PATH, dropping ~/.foundry/bin).
-RUN curl -L https://foundry.paradigm.xyz | bash \
-  && /root/.foundry/bin/foundryup \
-  && ln -s /root/.foundry/bin/forge /usr/local/bin/forge \
-  && ln -s /root/.foundry/bin/cast /usr/local/bin/cast \
-  && ln -s /root/.foundry/bin/anvil /usr/local/bin/anvil
-
-ARG TARGETARCH
-ENV SUPERCRONIC_URL=https://github.com/aptible/supercronic/releases/download/v0.2.39/supercronic-linux-${TARGETARCH} \
-  SUPERCRONIC=supercronic-linux-${TARGETARCH}
-
-# sha1sums from https://github.com/aptible/supercronic/releases/tag/v0.2.39
-COPY <<'EOF' /tmp/supercronic-checksums.txt
-c98bbf82c5f648aaac8708c182cc83046fe48423  supercronic-linux-amd64
-5ef4ccc3d43f12d0f6c3763758bc37cc4e5af76e  supercronic-linux-arm64
-EOF
-
-RUN curl -fsSLO "$SUPERCRONIC_URL" \
-  && grep "$SUPERCRONIC" /tmp/supercronic-checksums.txt | sha1sum -c - \
-  && chmod +x "$SUPERCRONIC" \
-  && mv "$SUPERCRONIC" /usr/local/bin/supercronic \
-  && rm /tmp/supercronic-checksums.txt
-
 WORKDIR /app
 
 # Install dependencies first for better caching.
-COPY yarn.lock package.json ./
-RUN yarn install --frozen-lockfile
+COPY package.json pnpm-lock.yaml ./
+RUN npm install -g pnpm && pnpm install --frozen-lockfile
 
 # Copy the rest of the workspace.
 COPY . .
@@ -57,6 +32,4 @@ ENV MAINNET_URL="" \
   SONIC_URL="" \
   HOLESKY_URL=""
 
-RUN chmod +x /app/cron/cron-entrypoint.sh
-
-ENTRYPOINT ["/app/cron/cron-entrypoint.sh"]
+CMD ["bun", "run", "runner.ts"]

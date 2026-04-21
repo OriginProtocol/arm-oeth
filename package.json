@@ -46,6 +46,7 @@
     "winston-loki": "^6.1.3"
   },
   "dependencies": {
+    "@automaton/client": "github:OriginProtocol/automaton#path:packages/client",
     "@types/pg": "^8.20.0",
     "pg": "^8.20.0"
   }
