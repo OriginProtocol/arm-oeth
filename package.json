@@ -45,5 +45,10 @@
   },
   "dependencies": {
     "@automaton/client": "github:OriginProtocol/automaton#path:packages/client"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@lastdotnet/purrikey"
+    ]
   }
 }
