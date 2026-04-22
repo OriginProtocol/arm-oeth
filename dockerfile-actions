@@ -21,6 +21,12 @@ RUN mkdir -p /root/.ssh \
 
 RUN git config --global url."https://github.com/".insteadOf "git@github.com:"
 
+# Install Foundry (forge/cast/anvil) — required at hardhat config load time
+# because hardhat.config.js loads @nomicfoundation/hardhat-foundry.
+ENV PATH="/root/.foundry/bin:${PATH}"
+RUN curl -L https://foundry.paradigm.xyz | bash \
+  && /root/.foundry/bin/foundryup
+
 WORKDIR /app
 
 # Install dependencies first for better caching.
