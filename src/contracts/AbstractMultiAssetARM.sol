@@ -17,6 +17,10 @@ abstract contract AbstractMultiAssetARM is OwnableOperable, ERC20Upgradeable {
     uint256 public constant MAX_CROSS_PRICE_DEVIATION = 20e32;
     /// @notice Scale used for all ARM prices.
     uint256 public constant PRICE_SCALE = 1e36;
+    /// @notice Scale of the allowed market swap deviation. 1 = 0.01 bps.
+    uint256 public constant MARKET_SWAP_DEVIATION_SCALE = 10_00_000;
+    /// @notice Maximum allowed deviation from vault conversion pricing for market swaps. 20 bps.
+    uint256 public constant MAX_ALLOWED_MARKET_SWAP_DEVIATION = 20_00;
     /// @notice Minimum total supply permanently minted to the dead address to prevent donation attacks.
     uint256 internal constant MIN_TOTAL_SUPPLY = 1e12;
     /// @notice Address that receives the permanent minimum-share mint.
@@ -49,6 +53,10 @@ abstract contract AbstractMultiAssetARM is OwnableOperable, ERC20Upgradeable {
         uint256 crossPrice;
         /// @notice Total requested vault shares that have not yet been claimed back as liquidity.
         uint256 requestedVaultShares;
+        /// @notice Remaining liquidity-denominated amount the ARM can buy for this base asset.
+        uint256 buyLiquidityRemaining;
+        /// @notice Remaining liquidity-denominated amount the ARM can sell for this base asset.
+        uint256 sellLiquidityRemaining;
     }
 
     /// @notice Total LP redeem assets queued, including already claimed requests.
@@ -92,6 +100,8 @@ abstract contract AbstractMultiAssetARM is OwnableOperable, ERC20Upgradeable {
     mapping(address market => bool supported) public supportedMarkets;
     /// @notice Fraction of available assets to keep on hand in the ARM, scaled by 1e18.
     uint256 public armBuffer;
+    /// @notice Allowed deviation from vault conversion pricing when validating operator market swaps.
+    uint256 public allowedMarketSwapDeviation;
 
     /// @notice List of currently supported base assets.
     address[] internal supportedBaseAssets;
@@ -101,7 +111,7 @@ abstract contract AbstractMultiAssetARM is OwnableOperable, ERC20Upgradeable {
     mapping(address asset => uint256 indexPlusOne) internal supportedBaseAssetIndex;
 
     /// @dev Storage gap reserved for future upgrades.
-    uint256[34] private _gap;
+    uint256[33] private _gap;
 
     /// @notice Emitted when a new base asset is added.
     event BaseAssetAdded(address indexed asset, address indexed vault, uint256 buyPrice, uint256 sellPrice, uint256 crossPrice);
@@ -137,6 +147,12 @@ abstract contract AbstractMultiAssetARM is OwnableOperable, ERC20Upgradeable {
     event ARMBufferUpdated(uint256 armBuffer);
     /// @notice Emitted after a lending market allocation or withdrawal attempt.
     event Allocated(address indexed market, int256 targetLiquidityDelta, int256 actualLiquidityDelta);
+    /// @notice Emitted when the maximum market swap deviation is updated.
+    event AllowedMarketSwapDeviationUpdated(uint256 allowedMarketSwapDeviation);
+    /// @notice Emitted after an operator market swap rebalance.
+    event MarketSwap(
+        address indexed target, address indexed tokenIn, address indexed tokenOut, uint256 amountOut, uint256 amountIn
+    );
     /// @notice Emitted when vault shares are submitted for async redemption.
     event VaultRedeemRequested(address indexed asset, address indexed vault, uint256 shares);
     /// @notice Emitted when previously requested vault shares are claimed back as liquidity.
@@ -304,6 +320,52 @@ abstract contract AbstractMultiAssetARM is OwnableOperable, ERC20Upgradeable {
         IERC20(token).transferFrom(from, to, amount);
     }
 
+    /// @notice Transfer `tokenOut` to a swap target and verify enough `tokenIn` returns to the ARM.
+    /// @param tokenIn Token that must be returned to the ARM.
+    /// @param tokenOut Token funded out of the ARM.
+    /// @param amountOut Amount of `tokenOut` transferred to the target.
+    /// @param target Callback target that receives `tokenOut` and returns `tokenIn`.
+    /// @param data Arbitrary callback calldata forwarded to the target.
+    /// @return amountIn Amount of `tokenIn` returned into the ARM.
+    function marketSwap(IERC20 tokenIn, IERC20 tokenOut, uint256 amountOut, address target, bytes calldata data)
+        external
+        onlyOperator
+        returns (uint256 amountIn)
+    {
+        require(target != address(0), "ARM: invalid target");
+
+        (address baseAsset, bool inIsLiquidity) = _getSwapBaseAsset(address(tokenIn), address(tokenOut));
+        (uint256 minAmountIn, uint256 liquidityAmount) = _marketSwapRequirements(baseAsset, inIsLiquidity, amountOut);
+        _consumeLiquidityLimit(baseAsset, !inIsLiquidity, liquidityAmount);
+
+        uint256 balanceBefore = tokenIn.balanceOf(address(this));
+        _transferAsset(address(tokenOut), target, amountOut);
+
+        (bool success,) = target.call(data);
+        require(success, "ARM: market swap failed");
+
+        amountIn = tokenIn.balanceOf(address(this)) - balanceBefore;
+        require(amountIn >= minAmountIn, "ARM: market swap return low");
+
+        emit MarketSwap(target, address(tokenIn), address(tokenOut), amountOut, amountIn);
+    }
+
+    function _marketSwapRequirements(address baseAsset, bool inIsLiquidity, uint256 amountOut)
+        internal
+        view
+        returns (uint256 minAmountIn, uint256 liquidityAmount)
+    {
+        address vault = baseAssetConfigs[baseAsset].vault;
+        uint256 expectedAmountIn = inIsLiquidity
+            ? IAsyncRedeemVault(vault).convertToAssets(amountOut)
+            : IAsyncRedeemVault(vault).convertToShares(amountOut);
+
+        minAmountIn = inIsLiquidity
+            ? expectedAmountIn * (MARKET_SWAP_DEVIATION_SCALE - allowedMarketSwapDeviation) / MARKET_SWAP_DEVIATION_SCALE
+            : expectedAmountIn * (MARKET_SWAP_DEVIATION_SCALE + allowedMarketSwapDeviation) / MARKET_SWAP_DEVIATION_SCALE;
+        liquidityAmount = inIsLiquidity ? expectedAmountIn : amountOut;
+    }
+
     function _swapExactTokensForTokens(IERC20 inToken, IERC20 outToken, uint256 amountIn, address to)
         internal
         returns (uint256 amountOut)
@@ -314,9 +376,11 @@ abstract contract AbstractMultiAssetARM is OwnableOperable, ERC20Upgradeable {
         if (inIsLiquidity) {
             uint256 convertedAmountIn = IAsyncRedeemVault(config.vault).convertToShares(amountIn);
             amountOut = convertedAmountIn * PRICE_SCALE / config.sellPrice;
+            _consumeLiquidityLimit(baseAsset, false, amountIn);
         } else {
             uint256 convertedAmountIn = IAsyncRedeemVault(config.vault).convertToAssets(amountIn);
             amountOut = convertedAmountIn * config.buyPrice / PRICE_SCALE;
+            _consumeLiquidityLimit(baseAsset, true, amountOut);
         }
 
         _transferAssetFrom(address(inToken), msg.sender, address(this), amountIn);
@@ -332,9 +396,11 @@ abstract contract AbstractMultiAssetARM is OwnableOperable, ERC20Upgradeable {
 
         if (inIsLiquidity) {
             uint256 convertedAmountOut = IAsyncRedeemVault(config.vault).convertToAssets(amountOut);
+            _consumeLiquidityLimit(baseAsset, false, convertedAmountOut);
             amountIn = ((convertedAmountOut * config.sellPrice) / PRICE_SCALE) + 3;
         } else {
             uint256 convertedAmountOut = IAsyncRedeemVault(config.vault).convertToShares(amountOut);
+            _consumeLiquidityLimit(baseAsset, true, amountOut);
             amountIn = ((convertedAmountOut * PRICE_SCALE) / config.buyPrice) + 3;
         }
 
@@ -350,6 +416,18 @@ abstract contract AbstractMultiAssetARM is OwnableOperable, ERC20Upgradeable {
             return (inToken, false);
         }
         revert("ARM: Invalid swap assets");
+    }
+
+    function _consumeLiquidityLimit(address baseAsset, bool isBuySide, uint256 liquidityAmount) internal {
+        BaseAssetConfig storage config = baseAssetConfigs[baseAsset];
+        uint256 remaining = isBuySide ? config.buyLiquidityRemaining : config.sellLiquidityRemaining;
+        require(liquidityAmount <= remaining, "ARM: Insufficient liquidity");
+
+        if (isBuySide) {
+            config.buyLiquidityRemaining = remaining - liquidityAmount;
+        } else {
+            config.sellLiquidityRemaining = remaining - liquidityAmount;
+        }
     }
 
     /// @notice Returns current swap reserves for a supported base asset pair.
@@ -399,7 +477,9 @@ abstract contract AbstractMultiAssetARM is OwnableOperable, ERC20Upgradeable {
             buyPrice: buyPrice,
             sellPrice: sellPrice,
             crossPrice: crossPrice,
-            requestedVaultShares: 0
+            requestedVaultShares: 0,
+            buyLiquidityRemaining: type(uint256).max,
+            sellLiquidityRemaining: type(uint256).max
         });
 
         emit BaseAssetAdded(baseAsset, vault, buyPrice, sellPrice, crossPrice);
@@ -432,6 +512,25 @@ abstract contract AbstractMultiAssetARM is OwnableOperable, ERC20Upgradeable {
     /// @param buyPrice New buy price.
     /// @param sellPrice New sell price.
     function setPrices(address baseAsset, uint256 buyPrice, uint256 sellPrice) external onlyOperatorOrOwner {
+        _setPrices(baseAsset, buyPrice, sellPrice, type(uint256).max, type(uint256).max);
+    }
+
+    /// @notice Updates prices and remaining liquidity budgets for a supported base asset.
+    /// @param baseAsset Base asset whose config is being updated.
+    /// @param buyPrice New buy price.
+    /// @param sellPrice New sell price.
+    /// @param buyAmount New remaining liquidity-denominated buy budget.
+    /// @param sellAmount New remaining liquidity-denominated sell budget.
+    function setPrices(address baseAsset, uint256 buyPrice, uint256 sellPrice, uint256 buyAmount, uint256 sellAmount)
+        external
+        onlyOperatorOrOwner
+    {
+        _setPrices(baseAsset, buyPrice, sellPrice, buyAmount, sellAmount);
+    }
+
+    function _setPrices(address baseAsset, uint256 buyPrice, uint256 sellPrice, uint256 buyAmount, uint256 sellAmount)
+        internal
+    {
         BaseAssetConfig storage config = baseAssetConfigs[baseAsset];
         require(config.supported, "ARM: unsupported asset");
         require(sellPrice >= config.crossPrice, "ARM: sell price too low");
@@ -439,6 +538,8 @@ abstract contract AbstractMultiAssetARM is OwnableOperable, ERC20Upgradeable {
 
         config.buyPrice = buyPrice;
         config.sellPrice = sellPrice;
+        config.buyLiquidityRemaining = buyAmount;
+        config.sellLiquidityRemaining = sellAmount;
 
         emit PricesUpdated(baseAsset, buyPrice, sellPrice);
     }
@@ -836,6 +937,14 @@ abstract contract AbstractMultiAssetARM is OwnableOperable, ERC20Upgradeable {
         require(_armBuffer <= 1e18, "ARM: invalid arm buffer");
         armBuffer = _armBuffer;
         emit ARMBufferUpdated(_armBuffer);
+    }
+
+    /// @notice Sets the maximum allowed deviation from vault conversion pricing for market swaps.
+    /// @param newDeviation The allowed deviation scaled by MARKET_SWAP_DEVIATION_SCALE.
+    function setAllowedMarketSwapDeviation(uint256 newDeviation) external onlyOwner {
+        require(newDeviation <= MAX_ALLOWED_MARKET_SWAP_DEVIATION, "ARM: swap dev too high");
+        allowedMarketSwapDeviation = newDeviation;
+        emit AllowedMarketSwapDeviationUpdated(newDeviation);
     }
 
 }

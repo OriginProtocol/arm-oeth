@@ -10,6 +10,7 @@ import {SiloMarket} from "contracts/markets/SiloMarket.sol";
 import {Abstract4626MarketWrapper} from "contracts/markets/Abstract4626MarketWrapper.sol";
 import {AbstractMultiAssetARM} from "contracts/AbstractMultiAssetARM.sol";
 import {IERC20} from "contracts/Interfaces.sol";
+import {MockMarketSwapTarget} from "test/unit/mocks/MockMarketSwapTarget.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {MockERC20} from "dependencies/solmate-6.7.0/src/test/utils/mocks/MockERC20.sol";
 import {MockERC4626Market} from "test/unit/mocks/MockERC4626Market.sol";
@@ -34,6 +35,7 @@ contract CentrifugeARMTest is Test {
     MockAsyncRedeemVault internal rwa1;
     MockAsyncRedeemVault internal rwa2;
     MockAsyncRedeemVault internal badDecimalsVault;
+    MockMarketSwapTarget internal target;
 
     address internal deployer;
     address internal governor;
@@ -49,7 +51,9 @@ contract CentrifugeARMTest is Test {
             uint256 buyPrice,
             uint256 sellPrice,
             uint256 crossPrice,
-            uint256 requestedVaultShares
+            uint256 requestedVaultShares,
+            uint256 buyLiquidityRemaining,
+            uint256 sellLiquidityRemaining
         ) = rwaARM.baseAssetConfigs(asset);
 
         config = AbstractMultiAssetARM.BaseAssetConfig({
@@ -58,7 +62,9 @@ contract CentrifugeARMTest is Test {
             buyPrice: buyPrice,
             sellPrice: sellPrice,
             crossPrice: crossPrice,
-            requestedVaultShares: requestedVaultShares
+            requestedVaultShares: requestedVaultShares,
+            buyLiquidityRemaining: buyLiquidityRemaining,
+            sellLiquidityRemaining: sellLiquidityRemaining
         });
     }
 
@@ -75,6 +81,7 @@ contract CentrifugeARMTest is Test {
         rwa2 = new MockAsyncRedeemVault(IERC20(address(usdc)), "RWA Two", "RWA2", 6);
         badDecimalsVault = new MockAsyncRedeemVault(IERC20(address(usdc)), "Bad Decimals", "BAD", 18);
         market = IERC4626(address(new MockERC4626Market(IERC20(address(usdc)))));
+        target = new MockMarketSwapTarget();
 
         vm.startPrank(deployer);
 
@@ -143,11 +150,13 @@ contract CentrifugeARMTest is Test {
 
     function test_SetPricesAndCrossPrice_PerAsset() public {
         vm.prank(operator);
-        rwaARM.setPrices(address(rwa1), 0.996e36, 1.0005e36);
+        rwaARM.setPrices(address(rwa1), 0.996e36, 1.0005e36, 700 * RAW_UNIT, 900 * RAW_UNIT);
 
         AbstractMultiAssetARM.BaseAssetConfig memory config = _config(address(rwa1));
         assertEq(config.buyPrice, 0.996e36, "wrong buy price");
         assertEq(config.sellPrice, 1.0005e36, "wrong sell price");
+        assertEq(config.buyLiquidityRemaining, 700 * RAW_UNIT, "wrong buy liquidity");
+        assertEq(config.sellLiquidityRemaining, 900 * RAW_UNIT, "wrong sell liquidity");
 
         vm.prank(governor);
         rwaARM.setCrossPrice(address(rwa1), 0.999e36);
@@ -181,6 +190,147 @@ contract CentrifugeARMTest is Test {
 
         assertEq(firstSwap[1], 100 * RAW_UNIT, "wrong rwa1 output");
         assertApproxEqAbs(secondSwap[1], 99_900_099, 1, "wrong rwa2 output");
+    }
+
+    function test_RevertWhen_Swap_InsufficientPerAssetSellLiquidity() public {
+        rwa1.mint(address(rwaARM), 500 * RAW_UNIT);
+
+        vm.prank(operator);
+        rwaARM.setPrices(address(rwa1), 0.995e36, 1e36, type(uint256).max, 50 * RAW_UNIT);
+
+        usdc.mint(alice, 100 * RAW_UNIT);
+        vm.startPrank(alice);
+        usdc.approve(address(rwaARM), type(uint256).max);
+        vm.expectRevert("ARM: Insufficient liquidity");
+        rwaARM.swapExactTokensForTokens(IERC20(address(usdc)), IERC20(address(rwa1)), 100 * RAW_UNIT, 0, alice);
+        vm.stopPrank();
+    }
+
+    function test_Swap_ConsumesPerAssetLiquidityLimits_AndPriceResetRestoresThem() public {
+        rwa1.mint(address(rwaARM), 500 * RAW_UNIT);
+        usdc.mint(alice, 300 * RAW_UNIT);
+
+        vm.prank(operator);
+        rwaARM.setPrices(address(rwa1), 0.995e36, 1e36, 80 * RAW_UNIT, 150 * RAW_UNIT);
+
+        vm.startPrank(alice);
+        usdc.approve(address(rwaARM), type(uint256).max);
+        rwa1.approve(address(rwaARM), type(uint256).max);
+        rwaARM.swapExactTokensForTokens(IERC20(address(usdc)), IERC20(address(rwa1)), 60 * RAW_UNIT, 0, alice);
+        rwaARM.swapExactTokensForTokens(IERC20(address(rwa1)), IERC20(address(usdc)), 20 * RAW_UNIT, 0, alice);
+        vm.stopPrank();
+
+        AbstractMultiAssetARM.BaseAssetConfig memory config = _config(address(rwa1));
+        assertEq(config.sellLiquidityRemaining, 90 * RAW_UNIT, "wrong remaining sell liquidity");
+        assertEq(config.buyLiquidityRemaining, 60_100_000, "wrong remaining buy liquidity");
+
+        vm.prank(operator);
+        rwaARM.setPrices(address(rwa1), 0.996e36, 1.0005e36, 200 * RAW_UNIT, 300 * RAW_UNIT);
+
+        config = _config(address(rwa1));
+        assertEq(config.buyLiquidityRemaining, 200 * RAW_UNIT, "wrong reset buy liquidity");
+        assertEq(config.sellLiquidityRemaining, 300 * RAW_UNIT, "wrong reset sell liquidity");
+    }
+
+    function test_RevertWhen_MarketSwap_Because_InvalidTarget() public {
+        vm.prank(operator);
+        vm.expectRevert("ARM: invalid target");
+        rwaARM.marketSwap(IERC20(address(rwa1)), IERC20(address(usdc)), 10 * RAW_UNIT, address(0), "");
+    }
+
+    function test_RevertWhen_MarketSwap_Because_InvalidTokenPair() public {
+        vm.prank(operator);
+        vm.expectRevert("ARM: Invalid swap assets");
+        rwaARM.marketSwap(IERC20(address(rwa1)), IERC20(address(rwa2)), 10 * RAW_UNIT, address(target), "");
+    }
+
+    function test_RevertWhen_MarketSwap_Because_CallbackFailed() public {
+        usdc.mint(address(rwaARM), 100 * RAW_UNIT);
+
+        bytes memory data = abi.encodeWithSelector(MockMarketSwapTarget.revertSwap.selector);
+
+        vm.prank(operator);
+        vm.expectRevert("ARM: market swap failed");
+        rwaARM.marketSwap(IERC20(address(rwa1)), IERC20(address(usdc)), 10 * RAW_UNIT, address(target), data);
+    }
+
+    function test_RevertWhen_MarketSwap_Because_InsufficientReturnedAmount() public {
+        usdc.mint(address(rwaARM), 100 * RAW_UNIT);
+
+        bytes memory data = _fundTargetAndEncode(IERC20(address(rwa1)), 9_999_999);
+
+        vm.prank(operator);
+        vm.expectRevert("ARM: market swap return low");
+        rwaARM.marketSwap(IERC20(address(rwa1)), IERC20(address(usdc)), 10 * RAW_UNIT, address(target), data);
+    }
+
+    function test_RevertWhen_MarketSwap_Because_InsufficientSellLiquidity() public {
+        rwa1.mint(address(rwaARM), 100 * RAW_UNIT);
+
+        vm.prank(operator);
+        rwaARM.setPrices(address(rwa1), 0.995e36, 1e36, type(uint256).max, 5 * RAW_UNIT);
+
+        bytes memory data = _fundTargetAndEncode(IERC20(address(usdc)), 10 * RAW_UNIT);
+
+        vm.prank(operator);
+        vm.expectRevert("ARM: Insufficient liquidity");
+        rwaARM.marketSwap(IERC20(address(usdc)), IERC20(address(rwa1)), 10 * RAW_UNIT, address(target), data);
+    }
+
+    function test_MarketSwap_LiquidityIn_BaseOut() public {
+        rwa1.mint(address(rwaARM), 100 * RAW_UNIT);
+        bytes memory data = _fundTargetAndEncode(IERC20(address(usdc)), 10 * RAW_UNIT);
+
+        vm.prank(operator);
+        uint256 amountIn =
+            rwaARM.marketSwap(IERC20(address(usdc)), IERC20(address(rwa1)), 10 * RAW_UNIT, address(target), data);
+
+        AbstractMultiAssetARM.BaseAssetConfig memory config = _config(address(rwa1));
+        assertEq(amountIn, 10 * RAW_UNIT, "wrong amount in");
+        assertEq(config.sellLiquidityRemaining, type(uint256).max - 10 * RAW_UNIT, "wrong remaining sell liquidity");
+    }
+
+    function test_MarketSwap_BaseIn_LiquidityOut() public {
+        usdc.mint(address(rwaARM), 100 * RAW_UNIT);
+        bytes memory data = _fundTargetAndEncode(IERC20(address(rwa1)), 10 * RAW_UNIT);
+
+        vm.prank(operator);
+        uint256 amountIn =
+            rwaARM.marketSwap(IERC20(address(rwa1)), IERC20(address(usdc)), 10 * RAW_UNIT, address(target), data);
+
+        AbstractMultiAssetARM.BaseAssetConfig memory config = _config(address(rwa1));
+        assertEq(amountIn, 10 * RAW_UNIT, "wrong amount in");
+        assertEq(config.buyLiquidityRemaining, type(uint256).max - 10 * RAW_UNIT, "wrong remaining buy liquidity");
+    }
+
+    function test_MarketSwap_PassesAtExactThreshold() public {
+        uint256 deviation = 250;
+        uint256 amountOut = 100 * RAW_UNIT;
+        uint256 expectedAmountIn = amountOut;
+        uint256 minAmountIn =
+            expectedAmountIn * (rwaARM.MARKET_SWAP_DEVIATION_SCALE() + deviation) / rwaARM.MARKET_SWAP_DEVIATION_SCALE();
+
+        usdc.mint(address(rwaARM), amountOut);
+
+        vm.prank(governor);
+        rwaARM.setAllowedMarketSwapDeviation(deviation);
+
+        bytes memory data = _fundTargetAndEncode(IERC20(address(rwa1)), minAmountIn);
+
+        vm.prank(operator);
+        uint256 amountIn =
+            rwaARM.marketSwap(IERC20(address(rwa1)), IERC20(address(usdc)), amountOut, address(target), data);
+
+        assertEq(amountIn, minAmountIn, "wrong threshold amount in");
+    }
+
+    function test_SetAllowedMarketSwapDeviation() public {
+        uint256 newDeviation = 250;
+
+        vm.prank(governor);
+        rwaARM.setAllowedMarketSwapDeviation(newDeviation);
+
+        assertEq(rwaARM.allowedMarketSwapDeviation(), newDeviation, "wrong market swap deviation");
     }
 
     function test_TotalAssets_IncludesBaseBalancesAndRequestedVaultRedeems() public {
@@ -303,5 +453,10 @@ contract CentrifugeARMTest is Test {
 
         assertGt(IERC4626(address(siloMarket)).balanceOf(address(rwaARM)), 0, "market not funded");
         assertEq(rwa1.balanceOf(address(rwaARM)), 100 * RAW_UNIT, "base asset touched by allocation");
+    }
+
+    function _fundTargetAndEncode(IERC20 tokenIn, uint256 amountIn) internal returns (bytes memory data) {
+        deal(address(tokenIn), address(target), amountIn);
+        data = abi.encodeWithSelector(MockMarketSwapTarget.executeSwap.selector, address(tokenIn), address(rwaARM), amountIn);
     }
 }
