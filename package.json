@@ -44,7 +44,7 @@
     "typescript": "^5.7.0"
   },
   "dependencies": {
-    "@talos/client": "github:oplabs/talos#path:packages/client"
+    "@talos/client": "git+ssh://git@github.com/oplabs/talos.git#path:packages/client"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
