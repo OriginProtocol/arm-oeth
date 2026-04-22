@@ -293,7 +293,7 @@ yarn hardhat tenderlySync --network sonic
 yarn hardhat tenderlyUpload --network sonic --name ORIGIN_ARM
 ```
 
-## Automated Actions (Talos)
+## Automated Actions (Talos) 
 
 The `src/js/tasks/actions/*.ts` files are hardhat tasks that handle operational jobs (allocations, fee collection, withdrawal requests, etc.). In production they're driven by a container that imports [`@talos/client`](https://github.com/oplabs/talos):
 
