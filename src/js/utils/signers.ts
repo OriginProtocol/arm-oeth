@@ -1,11 +1,38 @@
 import { JsonRpcProvider, Signer, Wallet } from "ethers";
 import { Defender } from "@openzeppelin/defender-sdk";
 import * as hhHelpers from "@nomicfoundation/hardhat-network-helpers";
+import {
+  createDb,
+  createPool,
+  wrapSignerWithNonceQueueV6,
+} from "@talos/client";
 
 import { ethereumAddress, privateKey } from "./regex";
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const log = require("./logger")("utils:signers");
+
+// `@talos/client` ships without .d.ts so the ambient decl in
+// src/js/types/talos-client.d.ts types imports as `any`; the Db handle
+// is therefore typed loosely here but used opaquely.
+let dbInstance: unknown = null;
+function getNonceDb(): unknown {
+  if (!process.env.DATABASE_URL) return null;
+  if (!dbInstance) {
+    const pool = createPool({ connectionString: process.env.DATABASE_URL });
+    dbInstance = createDb(pool);
+  }
+  return dbInstance;
+}
+
+// Wrap a raw signer with the nonce-queue Proxy when DATABASE_URL is set.
+// Dev / fork runs (DATABASE_URL unset) get the raw signer, preserving
+// the gate invariant.
+function maybeWrap<S extends Signer>(rawSigner: S): S {
+  const db = getNonceDb();
+  if (!db) return rawSigner;
+  return wrapSignerWithNonceQueueV6(rawSigner, { db });
+}
 
 // Use `hre` global injected by Hardhat at runtime.
 declare const hre: {
@@ -111,11 +138,11 @@ export async function getSigner(address?: string): Promise<Signer> {
     }
     const wallet = new Wallet(pk, hre.ethers.provider);
     log(`Using signer ${await wallet.getAddress()} from private key`);
-    return wallet;
+    return maybeWrap(wallet);
   }
 
   if (hasAwsKmsCredentials()) {
-    return await getKmsSigner();
+    return maybeWrap(await getKmsSigner());
   }
 
   if (process.env.IMPERSONATE) {
@@ -133,7 +160,7 @@ export async function getSigner(address?: string): Promise<Signer> {
 
   // Defender Relayer
   if (process.env.DEFENDER_RELAYER_KEY && process.env.DEFENDER_RELAYER_SECRET) {
-    return await getDefenderSigner();
+    return maybeWrap(await getDefenderSigner());
   }
 
   const signers = await hre.ethers.getSigners();
