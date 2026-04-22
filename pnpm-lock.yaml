@@ -10,7 +10,7 @@ importers:
     dependencies:
       '@talos/client':
         specifier: git+ssh://git@github.com/oplabs/talos.git#path:packages/client
-        version: git+https://git@github.com:oplabs/talos.git#854cc43044ad222e83b7d1a3aa47453bae5bd475&path:packages/client(typescript@5.9.3)(zod@3.25.76)
+        version: git+https://git@github.com:oplabs/talos.git#a7fe5c066578582e49aa3cc23a455536c45c868f&path:packages/client(typescript@5.9.3)(zod@3.25.76)
     devDependencies:
       '@apollo/client':
         specifier: ^3.11.4
@@ -1024,8 +1024,8 @@ packages:
   '@solidity-parser/parser@0.18.0':
     resolution: {integrity: sha512-yfORGUIPgLck41qyN7nbwJRAx17/jAIXCTanHOJZhB6PJ1iAk/84b/xlsVKFSyNyLXIj0dhppoE0+CRws7wlzA==}
 
-  '@talos/client@git+https://git@github.com:oplabs/talos.git#854cc43044ad222e83b7d1a3aa47453bae5bd475&path:packages/client':
-    resolution: {commit: 854cc43044ad222e83b7d1a3aa47453bae5bd475, path: packages/client, repo: git@github.com:oplabs/talos.git, type: git}
+  '@talos/client@git+https://git@github.com:oplabs/talos.git#a7fe5c066578582e49aa3cc23a455536c45c868f&path:packages/client':
+    resolution: {commit: a7fe5c066578582e49aa3cc23a455536c45c868f, path: packages/client, repo: git@github.com:oplabs/talos.git, type: git}
     version: 0.0.1
 
   '@tsconfig/node10@1.0.12':
@@ -4507,7 +4507,7 @@ snapshots:
 
   '@solidity-parser/parser@0.18.0': {}
 
-  '@talos/client@git+https://git@github.com:oplabs/talos.git#854cc43044ad222e83b7d1a3aa47453bae5bd475&path:packages/client(typescript@5.9.3)(zod@3.25.76)':
+  '@talos/client@git+https://git@github.com:oplabs/talos.git#a7fe5c066578582e49aa3cc23a455536c45c868f&path:packages/client(typescript@5.9.3)(zod@3.25.76)':
     dependencies:
       '@hono/node-server': 1.19.14(hono@4.12.14)
       croner: 9.1.0
