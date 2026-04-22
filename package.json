@@ -44,7 +44,7 @@
     "typescript": "^5.7.0"
   },
   "dependencies": {
-    "@automaton/client": "github:OriginProtocol/automaton#path:packages/client"
+    "@talos/client": "github:oplabs/talos#path:packages/client"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

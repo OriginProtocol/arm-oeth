@@ -293,11 +293,11 @@ yarn hardhat tenderlySync --network sonic
 yarn hardhat tenderlyUpload --network sonic --name ORIGIN_ARM
 ```
 
-## Automated Actions (Automaton)
+## Automated Actions (Talos)
 
-The `src/js/tasks/actions/*.ts` files are hardhat tasks that handle operational jobs (allocations, fee collection, withdrawal requests, etc.). In production they're driven by a container that imports [`@automaton/client`](https://github.com/OriginProtocol/automaton):
+The `src/js/tasks/actions/*.ts` files are hardhat tasks that handle operational jobs (allocations, fee collection, withdrawal requests, etc.). In production they're driven by a container that imports [`@talos/client`](https://github.com/oplabs/talos):
 
-- **`runner.ts`** at repo root calls `runContainer({ product: "arm-oeth", workdir: "/app" })`. The library reads enabled schedules from the shared automaton Postgres, fires them via croner, and spawns each schedule's command as `pnpm hardhat <name> --network <chain>`.
+- **`runner.ts`** at repo root calls `runContainer({ product: "arm-oeth", workdir: "/app" })`. The library reads enabled schedules from the shared Talos Postgres, fires them via croner, and spawns each schedule's command as `pnpm hardhat <name> --network <chain>`.
 - **`migrations/seed_schedules.sql`** is a one-time seed of the `schedules` table mirroring the old `cron/cron-jobs.ts`.
 - **`src/js/tasks/lib/action.ts`** wraps the hardhat signer with `wrapSignerWithNonceQueueV6` from the library when `DATABASE_URL` is set. That routes `signer.sendTransaction` through Postgres row-locked nonce coordination.
 
