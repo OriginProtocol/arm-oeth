@@ -10,7 +10,7 @@ importers:
     dependencies:
       '@automaton/client':
         specifier: github:OriginProtocol/automaton#path:packages/client
-        version: https://codeload.github.com/OriginProtocol/automaton/tar.gz/e0ef5896a69923968bd4fea026eebc89714cdf12#path:packages/client(typescript@5.9.3)(zod@3.25.76)
+        version: https://codeload.github.com/OriginProtocol/automaton/tar.gz/21415b9e15c3f21bffcbac63c54407f93a8abaeb#path:packages/client(typescript@5.9.3)(zod@3.25.76)
     devDependencies:
       '@apollo/client':
         specifier: ^3.11.4
@@ -117,8 +117,8 @@ packages:
       subscriptions-transport-ws:
         optional: true
 
-  '@automaton/client@https://codeload.github.com/OriginProtocol/automaton/tar.gz/e0ef5896a69923968bd4fea026eebc89714cdf12#path:packages/client':
-    resolution: {path: packages/client, tarball: https://codeload.github.com/OriginProtocol/automaton/tar.gz/e0ef5896a69923968bd4fea026eebc89714cdf12}
+  '@automaton/client@https://codeload.github.com/OriginProtocol/automaton/tar.gz/21415b9e15c3f21bffcbac63c54407f93a8abaeb#path:packages/client':
+    resolution: {path: packages/client, tarball: https://codeload.github.com/OriginProtocol/automaton/tar.gz/21415b9e15c3f21bffcbac63c54407f93a8abaeb}
     version: 0.0.1
 
   '@aws-crypto/crc32@5.2.0':
@@ -1833,6 +1833,10 @@ packages:
     resolution: {integrity: sha512-0hJU9SCPvmMzIBdZFqNPXWa6dqh7WdH0cII9y+CyS8rG3nL48Bclra9HmKhVVUHyPWNH5Y7xDwAB7bfgSjkUMQ==}
     engines: {node: '>= 0.4'}
 
+  hasown@2.0.3:
+    resolution: {integrity: sha512-ej4AhfhfL2Q2zpMmLo7U1Uv9+PyhIZpgQLGT1F9miIGmiCJIoCgSmczFdrc97mWT4kVY72KA+WnnhJ5pghSvSg==}
+    engines: {node: '>= 0.4'}
+
   he@1.2.0:
     resolution: {integrity: sha512-F/1DnUGPopORZi0ni+CvrCgHQ5FyEAHRLSApuYWMmrbSwoN2Mn/7k+Gl38gJnR7yyDZk6WLXwiGod1JOWNDKGw==}
     hasBin: true
@@ -2924,7 +2928,7 @@ snapshots:
     transitivePeerDependencies:
       - '@types/react'
 
-  '@automaton/client@https://codeload.github.com/OriginProtocol/automaton/tar.gz/e0ef5896a69923968bd4fea026eebc89714cdf12#path:packages/client(typescript@5.9.3)(zod@3.25.76)':
+  '@automaton/client@https://codeload.github.com/OriginProtocol/automaton/tar.gz/21415b9e15c3f21bffcbac63c54407f93a8abaeb#path:packages/client(typescript@5.9.3)(zod@3.25.76)':
     dependencies:
       '@hono/node-server': 1.19.14(hono@4.12.14)
       croner: 9.1.0
@@ -5383,6 +5387,10 @@ snapshots:
     dependencies:
       function-bind: 1.1.2
 
+  hasown@2.0.3:
+    dependencies:
+      function-bind: 1.1.2
+
   he@1.2.0: {}
 
   hmac-drbg@1.0.1:
@@ -5494,7 +5502,7 @@ snapshots:
       call-bound: 1.0.4
       gopd: 1.2.0
       has-tostringtag: 1.0.2
-      hasown: 2.0.2
+      hasown: 2.0.3
 
   is-typed-array@1.1.15:
     dependencies:
