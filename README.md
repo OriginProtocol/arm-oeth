@@ -331,7 +331,7 @@ For this to work, a Defender Team API key with `Manage Actions` capabilities is 
 
 The following will set the Defender Team API key and bundle the Actions code ready for upload.
 
-```bash
+```bash 
 # Set the DEFENDER_TEAM_KEY and DEFENDER_TEAM_SECRET env vars in the .env file
 
 yarn rollup -c src/js/actions/rollup.config.cjs
