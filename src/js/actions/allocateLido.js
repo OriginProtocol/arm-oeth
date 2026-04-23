@@ -21,11 +21,18 @@ const handler = async (event) => {
 
   // References to contracts
   const arm = new ethers.Contract(mainnet.lidoARM, armAbi, signer);
+  const targetLiquidityDelta =
+    event.request?.body?.targetLiquidityDelta ??
+    event.targetLiquidityDelta ??
+    event.request?.body?.deltaAmount ??
+    event.deltaAmount ??
+    process.env.ALLOCATE_TARGET_LIQUIDITY_DELTA ??
+    process.env.ALLOCATE_DELTA_AMOUNT;
 
   await allocate({
     signer,
     arm,
-    threshold: 200,
+    targetLiquidityDelta,
     maxGasPrice: 5,
   });
 };

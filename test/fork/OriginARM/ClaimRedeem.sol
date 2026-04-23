@@ -32,12 +32,16 @@ contract Fork_Concrete_OriginARM_ClaimRedeem_Test_ is Fork_Shared_Test {
     function test_ClaimRedeem_WhenNotEnoughLiquidityInARM_ButEnoughInMarket()
         public
         setFee(0)
-        setARMBuffer(0)
         deposit(alice, DEFAULT_AMOUNT)
         addMarket(address(siloMarket))
         setActiveMarket(address(siloMarket))
-        requestRedeemAll(alice)
     {
+        vm.prank(operator);
+        originARM.allocate(int256(DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY));
+
+        vm.prank(alice);
+        originARM.requestRedeem(originARM.balanceOf(alice));
+
         // Assertions before claim
         assertEq(originARM.totalAssets(), MIN_TOTAL_SUPPLY, "totalAssets before");
         assertEq(ws.balanceOf(address(alice)), 0, "ws balance before");

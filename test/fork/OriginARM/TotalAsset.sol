@@ -13,12 +13,13 @@ contract Fork_Concrete_OriginARM_TotalAsset_Test_ is Fork_Shared_Test {
     function test_Fork_TotalAsset_When_HighUtilization()
         public
         setFee(0)
-        setARMBuffer(0)
         addMarket(address(market))
         setActiveMarket(address(market))
         deposit(alice, DEFAULT_AMOUNT)
-        allocate
     {
+        vm.prank(operator);
+        originARM.allocate(int256(DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY));
+
         uint256 totalAsset = originARM.totalAssets();
         uint256 claimableBefore = originARM.claimable();
         _marketUtilizedAt(1e18);

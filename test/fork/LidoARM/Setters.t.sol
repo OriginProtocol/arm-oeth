@@ -91,40 +91,40 @@ contract Fork_Concrete_LidoARM_Setters_Test_ is Fork_Shared_Test_ {
     function test_RevertWhen_SetPrices_Because_PriceRange_Operator() public asOperator {
         // buy price 1 basis points higher than 1.0
         vm.expectRevert("ARM: buy price too high");
-        lidoARM.setPrices(1.0001 * 1e36, 1.002 * 1e36);
+        lidoARM.setPrices(1.0001 * 1e36, 1.002 * 1e36, type(uint256).max, type(uint256).max);
 
         // sell price 11 basis points lower than 1.0
         vm.expectRevert("ARM: sell price too low");
-        lidoARM.setPrices(0.998 * 1e36, 0.9989 * 1e36);
+        lidoARM.setPrices(0.998 * 1e36, 0.9989 * 1e36, type(uint256).max, type(uint256).max);
 
         // Forgot to scale up to 36 decimals
         vm.expectRevert("ARM: sell price too low");
-        lidoARM.setPrices(1e18, 1e18);
+        lidoARM.setPrices(1e18, 1e18, type(uint256).max, type(uint256).max);
     }
 
     function test_RevertWhen_SetPrices_Because_PriceRange_Owner() public asLidoARMOwner {
         // buy price 1 basis points higher than 1.0
         vm.expectRevert("ARM: buy price too high");
-        lidoARM.setPrices(1.0001 * 1e36, 1.002 * 1e36);
+        lidoARM.setPrices(1.0001 * 1e36, 1.002 * 1e36, type(uint256).max, type(uint256).max);
 
         // sell price 11 basis points lower than 1.0
         vm.expectRevert("ARM: sell price too low");
-        lidoARM.setPrices(0.998 * 1e36, 0.9989 * 1e36);
+        lidoARM.setPrices(0.998 * 1e36, 0.9989 * 1e36, type(uint256).max, type(uint256).max);
     }
 
     function test_RevertWhen_SetPrices_Because_NotOwnerOrOperator() public asRandomAddress {
         vm.expectRevert("ARM: Only operator or owner can call this function.");
-        lidoARM.setPrices(0, 0);
+        lidoARM.setPrices(0, 0, 0, 0);
     }
 
     function test_RevertWhen_SetPrices_Because_SellPriceCannotCrossOneByMoreThanTenBps() public asOperator {
         vm.expectRevert("ARM: sell price too low");
-        lidoARM.setPrices(0.998 * 1e36, 0.9989 * 1e36);
+        lidoARM.setPrices(0.998 * 1e36, 0.9989 * 1e36, type(uint256).max, type(uint256).max);
     }
 
     function test_RevertWhen_SetPrices_Because_BuyPriceCannotCrossOneByMoreThanTenBps() public asOperator {
         vm.expectRevert("ARM: buy price too high");
-        lidoARM.setPrices(1.0011 * 1e36, 1.002 * 1e36);
+        lidoARM.setPrices(1.0011 * 1e36, 1.002 * 1e36, type(uint256).max, type(uint256).max);
     }
 
     //////////////////////////////////////////////////////
@@ -132,13 +132,13 @@ contract Fork_Concrete_LidoARM_Setters_Test_ is Fork_Shared_Test_ {
     //////////////////////////////////////////////////////
     function test_SetPrices_Operator() public asOperator {
         // sell price 2 basis points lower than 1.0
-        lidoARM.setPrices(9980e32, 99998e32);
+        lidoARM.setPrices(9980e32, 99998e32, type(uint256).max, type(uint256).max);
         // 2% of one basis point spread
-        lidoARM.setPrices(999999e30, 1000001e30);
+        lidoARM.setPrices(999999e30, 1000001e30, type(uint256).max, type(uint256).max);
 
-        lidoARM.setPrices(992 * 1e33, 1001 * 1e33);
-        lidoARM.setPrices(99999e31, 1004 * 1e33);
-        lidoARM.setPrices(992 * 1e33, 2000 * 1e33);
+        lidoARM.setPrices(992 * 1e33, 1001 * 1e33, type(uint256).max, type(uint256).max);
+        lidoARM.setPrices(99999e31, 1004 * 1e33, type(uint256).max, type(uint256).max);
+        lidoARM.setPrices(992 * 1e33, 2000 * 1e33, type(uint256).max, type(uint256).max);
 
         // Check the traderates
         assertEq(lidoARM.traderate0(), 500 * 1e33);

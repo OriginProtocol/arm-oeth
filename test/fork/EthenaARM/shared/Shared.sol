@@ -74,8 +74,7 @@ abstract contract Fork_Shared_Test is Base_Test_ {
             _usde: address(usde),
             _susde: address(susde),
             _claimDelay: 10 minutes,
-            _minSharesToRedeem: 1e7,
-            _allocateThreshold: 1 ether
+            _minSharesToRedeem: 1e7
         });
 
         // 2. Deploy Ethena ARM Proxy
@@ -114,6 +113,9 @@ abstract contract Fork_Shared_Test is Base_Test_ {
 
         // Deposit some usde in the ARM
         ethenaARM.deposit(10_000 ether);
+
+        vm.prank(operator);
+        ethenaARM.setPrices(0.9992e36, 0.9999e36, type(uint256).max, type(uint256).max);
 
         // Swap usde to susde using ARM to have some susde balance
         ethenaARM.swapExactTokensForTokens(IERC20(address(susde)), usde, 5_000 ether, 0, address(this));

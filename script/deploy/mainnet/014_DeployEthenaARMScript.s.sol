@@ -57,8 +57,7 @@ contract $014_DeployEthenaARMScript is AbstractDeployScript("014_DeployEthenaARM
             Mainnet.USDE,
             Mainnet.SUSDE,
             claimDelay,
-            1e18, // minSharesToRedeem
-            100e18 // allocateThreshold
+            1e18 // minSharesToRedeem
         );
         _recordDeployment("ETHENA_ARM_IMPL", address(armImpl));
 
@@ -90,7 +89,6 @@ contract $014_DeployEthenaARMScript is AbstractDeployScript("014_DeployEthenaARM
         // 11. Set Aave Market as the active market
         EthenaARM(payable(address(armProxy))).setActiveMarket(Mainnet.AAVE_USDE_VAULT);
         // 12. Set ARM buffer to 10%
-        EthenaARM(payable(address(armProxy))).setARMBuffer(0.1e18); // 10% buffer
 
         // 13. Deploy Unstakers
         address[MAX_UNSTAKERS] memory unstakers = _deployUnstakers();

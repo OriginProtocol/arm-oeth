@@ -67,13 +67,6 @@ contract Modifiers is Helpers {
         _;
     }
 
-    modifier setARMBuffer(uint256 buffer) {
-        vm.startPrank(governor);
-        originARM.setARMBuffer(buffer);
-        vm.stopPrank();
-        _;
-    }
-
     modifier setCapManager() {
         vm.startPrank(governor);
         originARM.setCapManager(address(capManager));
@@ -168,8 +161,10 @@ contract Modifiers is Helpers {
         _;
     }
 
-    modifier allocate() {
-        originARM.allocate();
+    modifier allocate(int256 targetLiquidityDelta) {
+        vm.startPrank(operator);
+        originARM.allocate(targetLiquidityDelta);
+        vm.stopPrank();
         _;
     }
 

@@ -15,7 +15,7 @@ const {
   lidoWithdrawStatus,
 } = require("./lido");
 const { setPrices } = require("./armPrices");
-const { allocate, collectFees, setARMBuffer } = require("./admin");
+const { allocate, collectFees } = require("./admin");
 const {
   collectRewards,
   harvestRewards,
@@ -51,6 +51,7 @@ const {
   setTotalAssetsCap,
 } = require("./liquidityProvider");
 const { swap } = require("./swap");
+const { marketSwap } = require("./marketSwap");
 const {
   tokenAllowance,
   tokenBalance,
@@ -109,6 +110,57 @@ subtask(
   )
   .setAction(swap);
 task("swap").setAction(async (_, __, runSuper) => {
+  return runSuper();
+});
+
+subtask(
+  "marketSwap",
+  "Execute an ARM marketSwap using a configured swap target and venue-specific route builder.",
+)
+  .addParam(
+    "arm",
+    "Name of the ARM. eg Lido, Origin, EtherFi, Ethena or Oeth",
+    "Lido",
+    types.string,
+  )
+  .addParam(
+    "venue",
+    "Venue builder to use. kyber, 1inch, curve or balancer",
+    undefined,
+    types.string,
+  )
+  .addParam(
+    "amountOut",
+    "Exact amount of tokenOut leaving the ARM",
+    undefined,
+    types.float,
+  )
+  .addOptionalParam(
+    "from",
+    "Symbol of the token leaving the ARM. Use exactly one of from or to.",
+    undefined,
+    types.string,
+  )
+  .addOptionalParam(
+    "to",
+    "Symbol of the token returning into the ARM. Use exactly one of from or to.",
+    undefined,
+    types.string,
+  )
+  .addOptionalParam(
+    "routeFile",
+    "Path to venue route JSON. Required for kyber, 1inch and balancer.",
+    undefined,
+    types.string,
+  )
+  .addOptionalParam(
+    "slippageBps",
+    "Venue-level slippage tolerance in basis points used to derive minAmountIn",
+    50,
+    types.int,
+  )
+  .setAction(marketSwap);
+task("marketSwap").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
 
@@ -965,10 +1017,10 @@ subtask("allocate", "Allocate to/from the active lending market")
     types.string,
   )
   .addOptionalParam(
-    "threshold",
-    "The liquidity delta before threshold before allocate is called",
+    "targetLiquidityDelta",
+    "Signed amount to move. Positive deposits to the active market, negative withdraws.",
     undefined,
-    types.float,
+    types.string,
   )
   .addOptionalParam(
     "maxGasPrice",
@@ -977,7 +1029,7 @@ subtask("allocate", "Allocate to/from the active lending market")
     types.float,
   )
   .addOptionalParam("execute", "Execute the transaction", true, types.boolean)
-  .setAction(async ({ arm, threshold, execute, maxGasPrice }) => {
+  .setAction(async ({ arm, targetLiquidityDelta, execute, maxGasPrice }) => {
     const signer = await getSigner();
 
     const armContract = await resolveArmContract(arm);
@@ -985,36 +1037,12 @@ subtask("allocate", "Allocate to/from the active lending market")
     await allocate({
       signer,
       arm: armContract,
-      threshold,
+      targetLiquidityDelta,
       maxGasPrice,
       execute,
     });
   });
 task("allocate").setAction(async (_, __, runSuper) => {
-  return runSuper();
-});
-
-subtask("setARMBuffer", "Set the ARM buffer percentage")
-  .addOptionalParam(
-    "arm",
-    "The name of the ARM. eg Lido, Origin, EtherFi or Ethena",
-    "Origin",
-    types.string,
-  )
-  .addOptionalParam(
-    "buffer",
-    "The new buffer value (eg 0.1 -> 10%)",
-    undefined,
-    types.float,
-  )
-  .setAction(async ({ arm, buffer }) => {
-    const signer = await getSigner();
-
-    const armContract = await resolveArmContract(arm);
-
-    await setARMBuffer({ signer, arm: armContract, buffer });
-  });
-task("setARMBuffer").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
 

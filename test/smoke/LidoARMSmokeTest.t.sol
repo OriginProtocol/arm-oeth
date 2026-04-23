@@ -99,7 +99,7 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
             expectedOut = amountIn * 1e36 / price;
 
             vm.prank(Mainnet.ARM_RELAYER);
-            lidoARM.setPrices(price - 2e32, price);
+            lidoARM.setPrices(price - 2e32, price, type(uint256).max, type(uint256).max);
         } else {
             // Trader is selling stETH and buying WETH
             // the ARM is buying stETH and selling WETH
@@ -110,7 +110,7 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
 
             vm.prank(Mainnet.ARM_RELAYER);
             uint256 sellPrice = price < 0.9997e36 ? 0.99996e36 : price + 2e32;
-            lidoARM.setPrices(price, sellPrice);
+            lidoARM.setPrices(price, sellPrice, type(uint256).max, type(uint256).max);
         }
         // Approve the ARM to transfer the input token of the swap.
         inToken.approve(address(lidoARM), amountIn);
@@ -135,7 +135,7 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
             expectedIn = amountOut * price / 1e36;
 
             vm.prank(Mainnet.ARM_RELAYER);
-            lidoARM.setPrices(price - 2e32, price);
+            lidoARM.setPrices(price - 2e32, price, type(uint256).max, type(uint256).max);
         } else {
             // Trader is selling stETH and buying WETH
             // the ARM is buying stETH and selling WETH
@@ -147,7 +147,7 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
 
             vm.prank(Mainnet.ARM_RELAYER);
             uint256 sellPrice = price < 0.9997e36 ? 0.99996e36 : price + 2e32;
-            lidoARM.setPrices(price, sellPrice);
+            lidoARM.setPrices(price, sellPrice, type(uint256).max, type(uint256).max);
         }
         // Approve the ARM to transfer the input token of the swap.
         inToken.approve(address(lidoARM), expectedIn + 10000);
@@ -248,13 +248,9 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
         uint256 armWethBefore = weth.balanceOf(address(lidoARM));
         uint256 marketBalanceBefore = morphoMarket.maxWithdraw(address(lidoARM));
 
-        // Set buffer to 0% so all liquidity goes to the lending market
-        vm.prank(Mainnet.ARM_RELAYER);
-        lidoARM.setARMBuffer(0);
-
         // Allocate liquidity to the lending market
         vm.prank(Mainnet.ARM_RELAYER);
-        (, int256 actualDelta) = lidoARM.allocate();
+        int256 actualDelta = lidoARM.allocate(100 ether);
 
         uint256 armWethAfter = weth.balanceOf(address(lidoARM));
         uint256 marketBalanceAfter = morphoMarket.maxWithdraw(address(lidoARM));
@@ -280,20 +276,14 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
         uint256 outstandingWithdrawals = lidoARM.withdrawsQueued() - lidoARM.withdrawsClaimed();
         deal(address(weth), address(lidoARM), outstandingWithdrawals + 100 ether);
         vm.prank(Mainnet.ARM_RELAYER);
-        lidoARM.setARMBuffer(0);
-        vm.prank(Mainnet.ARM_RELAYER);
-        lidoARM.allocate();
+        lidoARM.allocate(100 ether);
 
         uint256 armWethBefore = weth.balanceOf(address(lidoARM));
         uint256 marketBalanceBefore = morphoMarket.maxWithdraw(address(lidoARM));
 
-        // Set buffer to 100% so liquidity comes back from the lending market
-        vm.prank(Mainnet.ARM_RELAYER);
-        lidoARM.setARMBuffer(1e18);
-
         // Allocate liquidity from the lending market
         vm.prank(Mainnet.ARM_RELAYER);
-        (, int256 actualDelta) = lidoARM.allocate();
+        int256 actualDelta = lidoARM.allocate(-100 ether);
 
         uint256 armWethAfter = weth.balanceOf(address(lidoARM));
         uint256 marketBalanceAfter = morphoMarket.maxWithdraw(address(lidoARM));

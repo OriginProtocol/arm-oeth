@@ -100,7 +100,7 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
             expectedOut = IStakedUSDe(address(susde)).convertToShares(expectedOut);
 
             vm.prank(Mainnet.ARM_RELAYER);
-            ethenaARM.setPrices(0.99e36, price);
+            ethenaARM.setPrices(0.99e36, price, type(uint256).max, type(uint256).max);
         } else {
             // Trader is selling sUSDe and buying USDE
             // the ARM is buying sUSDe and selling USDE
@@ -112,7 +112,7 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
 
             vm.prank(Mainnet.ARM_RELAYER);
             uint256 sellPrice = price < 0.9997e36 ? 0.99996e36 : price + 2e32;
-            ethenaARM.setPrices(price, sellPrice);
+            ethenaARM.setPrices(price, sellPrice, type(uint256).max, type(uint256).max);
         }
         // Approve the ARM to transfer the input token of the swap.
         inToken.approve(address(ethenaARM), amountIn);
@@ -137,7 +137,7 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
             expectedIn = IStakedUSDe(address(susde)).convertToAssets(amountOut) * price / 1e36;
 
             vm.prank(Mainnet.ARM_RELAYER);
-            ethenaARM.setPrices(0.99e36, price);
+            ethenaARM.setPrices(0.99e36, price, type(uint256).max, type(uint256).max);
         } else {
             // Trader is selling sUSDe and buying USDE
             // the ARM is buying sUSDe and selling USDE
@@ -149,7 +149,7 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
 
             vm.prank(Mainnet.ARM_RELAYER);
             uint256 sellPrice = price < 0.9997e36 ? 0.99996e36 : price + 2e32;
-            ethenaARM.setPrices(price, sellPrice);
+            ethenaARM.setPrices(price, sellPrice, type(uint256).max, type(uint256).max);
         }
         // Approve the ARM to transfer the input token of the swap.
         inToken.approve(address(ethenaARM), expectedIn + 10000);
@@ -244,12 +244,11 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
     function test_allocate_AAVEMarket_withoutYield() external {
         _swapExactTokensForTokens(usde, susde, 0.99996e36, 1_000 ether);
 
-        vm.prank(Mainnet.ARM_RELAYER);
-        ethenaARM.setARMBuffer(5000); // 50%
         address activeMarket = ethenaARM.activeMarket();
 
         uint256 balanceBefore = IERC20(activeMarket).balanceOf(address(ethenaARM));
-        ethenaARM.allocate();
+        vm.prank(Mainnet.ARM_RELAYER);
+        ethenaARM.allocate(int256(usde.balanceOf(address(ethenaARM)) / 2));
         uint256 balanceAfter = IERC20(activeMarket).balanceOf(address(ethenaARM));
 
         assertGt(balanceAfter, balanceBefore, "Allocated amount");
@@ -258,12 +257,10 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
     function test_allocate_AAVEMarket_withYield() external {
         _swapExactTokensForTokens(usde, susde, 0.99996e36, 1_000 ether);
 
-        vm.prank(Mainnet.ARM_RELAYER);
-        ethenaARM.setARMBuffer(5000); // 50%
-
         // Allocate
         uint256 balanceBefore = usde.balanceOf(address(ethenaARM));
-        ethenaARM.allocate();
+        vm.prank(Mainnet.ARM_RELAYER);
+        ethenaARM.allocate(int256(balanceBefore / 2));
 
         // Simulate yield by transferring aUSDE to the active market
         address aUSDE = 0x4F5923Fc5FD4a93352581b38B7cD26943012DECF;

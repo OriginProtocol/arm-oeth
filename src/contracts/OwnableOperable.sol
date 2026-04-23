@@ -35,4 +35,9 @@ contract OwnableOperable is Ownable {
         require(msg.sender == operator || msg.sender == _owner(), "ARM: Only operator or owner can call this function.");
         _;
     }
+
+    modifier onlyOperator() {
+        require(msg.sender == operator, "ARM: Only operator can call this function.");
+        _;
+    }
 }

@@ -88,3 +88,5 @@ make simulate-sonic-deploys  # Dry run Sonic
 - Test base class: `test/Base.sol` with standard accounts (alice, bob, charlie) and shared setup
 - Dependencies managed by Soldeer (not npm) for Solidity libs
 - Prefer flat structure with early returns over deeply nested if/else blocks
+- New production contracts under `src/contracts/` should use `// SPDX-License-Identifier: BUSL-1.1`
+- Test-only contracts under `test/` should continue following the existing test license pattern unless there is a specific reason not to

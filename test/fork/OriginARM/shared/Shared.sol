@@ -87,7 +87,7 @@ abstract contract Fork_Shared_Test is Base_Test_, Modifiers {
         Proxy marketAdapterProxy = new Proxy();
 
         // --- Deploy OriginARM implementation
-        originARM = new OriginARM(address(os), address(ws), address(vault), CLAIM_DELAY, 1e7, 1e18);
+        originARM = new OriginARM(address(os), address(ws), address(vault), CLAIM_DELAY, 1e7);
 
         // --- Deploy SiloMarket implementation
         siloMarket = new SiloMarket(address(originARMProxy), Sonic.SILO_VARLAMORE_S_VAULT, Sonic.SILO_VARLAMORE_S_GAUGE);
@@ -124,6 +124,6 @@ abstract contract Fork_Shared_Test is Base_Test_, Modifiers {
 
         // set prices
         vm.prank(governor);
-        originARM.setPrices(992 * 1e33, 1001 * 1e33);
+        originARM.setPrices(992 * 1e33, 1001 * 1e33, type(uint256).max, type(uint256).max);
     }
 }

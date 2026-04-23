@@ -207,17 +207,6 @@ abstract contract TargetFunctions is Setup, StdUtils {
         }
     }
 
-    function targetARMSetARMBuffer(uint256 pct) external ensureExchangeRateIncrease {
-        pct = _bound(pct, 0, 100);
-
-        vm.prank(operator);
-        arm.setARMBuffer(pct * 1e16);
-
-        if (isConsoleAvailable) {
-            console.log(">>> ARM Buffer:\t Governor set ARM buffer to %s%", pct);
-        }
-    }
-
     function targetARMSetActiveMarket(bool isActive) external ensureExchangeRateIncrease {
         // If isActive is true it will `setActiveMarket` with MorphoMarket
         // else it will set it to address(0)
@@ -252,24 +241,28 @@ abstract contract TargetFunctions is Setup, StdUtils {
         }
     }
 
-    function targetARMAllocate() external ensureExchangeRateIncrease {
+    function targetARMAllocate(uint256 amountSeed, bool withdraw) external ensureExchangeRateIncrease {
         address currentMarket = arm.activeMarket();
         if (assume(currentMarket != address(0))) return;
 
-        (int256 targetLiquidityDelta, int256 actualLiquidityDelta) = arm.allocate();
+        uint256 maxAmount = withdraw ? market.maxWithdraw(address(arm)) : usde.balanceOf(address(arm));
+        uint256 amount = _bound(amountSeed, 0, maxAmount);
+        int256 requestedLiquidityDelta = withdraw ? -int256(amount) : int256(amount);
+
+        int256 actualLiquidityDelta = arm.allocate(requestedLiquidityDelta);
 
         if (isConsoleAvailable) {
             console.log(
                 string(
                     abi.encodePacked(
                         ">>> ARM Allocate:\t ARM allocated liquidity to active market. Target delta: ",
-                        targetLiquidityDelta < 0 ? "-" : "",
+                        requestedLiquidityDelta < 0 ? "-" : "",
                         "%18e USDe\t Actual delta: ",
                         actualLiquidityDelta < 0 ? "-" : "",
                         "%18e USDe"
                     )
                 ),
-                Math.abs(targetLiquidityDelta),
+                Math.abs(requestedLiquidityDelta),
                 Math.abs(actualLiquidityDelta)
             );
         }
@@ -289,7 +282,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         buyPrice = uint120(_bound(buyPrice, 0.9e36, crossPrice - 1)); // -> min traderate1 -> 0.9e36
 
         vm.prank(operator);
-        arm.setPrices(buyPrice, sellPrice);
+        arm.setPrices(buyPrice, sellPrice, type(uint256).max, type(uint256).max);
 
         if (isConsoleAvailable) {
             console.log(

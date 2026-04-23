@@ -1,1877 +1,218 @@
-[
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_usde",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "_susde",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_claimDelay",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_minSharesToRedeem",
-        "type": "uint256"
-      },
-      {
-        "internalType": "int256",
-        "name": "_allocateThreshold",
-        "type": "int256"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "constructor"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "spender",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "allowance",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "needed",
-        "type": "uint256"
-      }
-    ],
-    "name": "ERC20InsufficientAllowance",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "sender",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "balance",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "needed",
-        "type": "uint256"
-      }
-    ],
-    "name": "ERC20InsufficientBalance",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "approver",
-        "type": "address"
-      }
-    ],
-    "name": "ERC20InvalidApprover",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "receiver",
-        "type": "address"
-      }
-    ],
-    "name": "ERC20InvalidReceiver",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "sender",
-        "type": "address"
-      }
-    ],
-    "name": "ERC20InvalidSender",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "spender",
-        "type": "address"
-      }
-    ],
-    "name": "ERC20InvalidSpender",
-    "type": "error"
-  },
-  {
-    "inputs": [],
-    "name": "InvalidInitialization",
-    "type": "error"
-  },
-  {
-    "inputs": [],
-    "name": "NotInitializing",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint8",
-        "name": "bits",
-        "type": "uint8"
-      },
-      {
-        "internalType": "int256",
-        "name": "value",
-        "type": "int256"
-      }
-    ],
-    "name": "SafeCastOverflowedIntDowncast",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "int256",
-        "name": "value",
-        "type": "int256"
-      }
-    ],
-    "name": "SafeCastOverflowedIntToUint",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint8",
-        "name": "bits",
-        "type": "uint8"
-      },
-      {
-        "internalType": "uint256",
-        "name": "value",
-        "type": "uint256"
-      }
-    ],
-    "name": "SafeCastOverflowedUintDowncast",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "value",
-        "type": "uint256"
-      }
-    ],
-    "name": "SafeCastOverflowedUintToInt",
-    "type": "error"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "armBuffer",
-        "type": "uint256"
-      }
-    ],
-    "name": "ARMBufferUpdated",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "market",
-        "type": "address"
-      }
-    ],
-    "name": "ActiveMarketUpdated",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "previousAdmin",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "newAdmin",
-        "type": "address"
-      }
-    ],
-    "name": "AdminChanged",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "market",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "int256",
-        "name": "targetLiquidityDelta",
-        "type": "int256"
-      },
-      {
-        "indexed": false,
-        "internalType": "int256",
-        "name": "actualLiquidityDelta",
-        "type": "int256"
-      }
-    ],
-    "name": "Allocated",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "owner",
-        "type": "address"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "spender",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "value",
-        "type": "uint256"
-      }
-    ],
-    "name": "Approval",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "capManager",
-        "type": "address"
-      }
-    ],
-    "name": "CapManagerUpdated",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "unstaker",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "liquidityAmount",
-        "type": "uint256"
-      }
-    ],
-    "name": "ClaimBaseWithdrawals",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "crossPrice",
-        "type": "uint256"
-      }
-    ],
-    "name": "CrossPriceUpdated",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "owner",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "assets",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "shares",
-        "type": "uint256"
-      }
-    ],
-    "name": "Deposit",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "feeCollector",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "fee",
-        "type": "uint256"
-      }
-    ],
-    "name": "FeeCollected",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "newFeeCollector",
-        "type": "address"
-      }
-    ],
-    "name": "FeeCollectorUpdated",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "fee",
-        "type": "uint256"
-      }
-    ],
-    "name": "FeeUpdated",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "uint64",
-        "name": "version",
-        "type": "uint64"
-      }
-    ],
-    "name": "Initialized",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "market",
-        "type": "address"
-      }
-    ],
-    "name": "MarketAdded",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "market",
-        "type": "address"
-      }
-    ],
-    "name": "MarketRemoved",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "newAdmin",
-        "type": "address"
-      }
-    ],
-    "name": "OperatorChanged",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "withdrawer",
-        "type": "address"
-      },
-      {
-        "indexed": true,
-        "internalType": "uint256",
-        "name": "requestId",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "assets",
-        "type": "uint256"
-      }
-    ],
-    "name": "RedeemClaimed",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "withdrawer",
-        "type": "address"
-      },
-      {
-        "indexed": true,
-        "internalType": "uint256",
-        "name": "requestId",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "assets",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "queued",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "claimTimestamp",
-        "type": "uint256"
-      }
-    ],
-    "name": "RedeemRequested",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "unstaker",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "baseAmount",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "liquidityAmount",
-        "type": "uint256"
-      }
-    ],
-    "name": "RequestBaseWithdrawal",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "traderate0",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "traderate1",
-        "type": "uint256"
-      }
-    ],
-    "name": "TraderateChanged",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "from",
-        "type": "address"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "to",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "value",
-        "type": "uint256"
-      }
-    ],
-    "name": "Transfer",
-    "type": "event"
-  },
-  {
-    "inputs": [],
-    "name": "DELAY_REQUEST",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "FEE_SCALE",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "MAX_CROSS_PRICE_DEVIATION",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "MAX_UNSTAKERS",
-    "outputs": [
-      {
-        "internalType": "uint8",
-        "name": "",
-        "type": "uint8"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "PRICE_SCALE",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "activeMarket",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address[]",
-        "name": "_markets",
-        "type": "address[]"
-      }
-    ],
-    "name": "addMarkets",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "allocate",
-    "outputs": [
-      {
-        "internalType": "int256",
-        "name": "targetLiquidityDelta",
-        "type": "int256"
-      },
-      {
-        "internalType": "int256",
-        "name": "actualLiquidityDelta",
-        "type": "int256"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "allocateThreshold",
-    "outputs": [
-      {
-        "internalType": "int256",
-        "name": "",
-        "type": "int256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "owner",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "spender",
-        "type": "address"
-      }
-    ],
-    "name": "allowance",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "spender",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "value",
-        "type": "uint256"
-      }
-    ],
-    "name": "approve",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "armBuffer",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "asset",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "account",
-        "type": "address"
-      }
-    ],
-    "name": "balanceOf",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "baseAsset",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "capManager",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint8",
-        "name": "unstakerIndex",
-        "type": "uint8"
-      }
-    ],
-    "name": "claimBaseWithdrawals",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "claimDelay",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "requestId",
-        "type": "uint256"
-      }
-    ],
-    "name": "claimRedeem",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "assets",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "claimable",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "claimableAmount",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "collectFees",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "fees",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "shares",
-        "type": "uint256"
-      }
-    ],
-    "name": "convertToAssets",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "assets",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "assets",
-        "type": "uint256"
-      }
-    ],
-    "name": "convertToShares",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "shares",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "crossPrice",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "decimals",
-    "outputs": [
-      {
-        "internalType": "uint8",
-        "name": "",
-        "type": "uint8"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "assets",
-        "type": "uint256"
-      },
-      {
-        "internalType": "address",
-        "name": "receiver",
-        "type": "address"
-      }
-    ],
-    "name": "deposit",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "shares",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "assets",
-        "type": "uint256"
-      }
-    ],
-    "name": "deposit",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "shares",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "fee",
-    "outputs": [
-      {
-        "internalType": "uint16",
-        "name": "",
-        "type": "uint16"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "feeCollector",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "feesAccrued",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "fees",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "getReserves",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "reserve0",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "reserve1",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "string",
-        "name": "_name",
-        "type": "string"
-      },
-      {
-        "internalType": "string",
-        "name": "_symbol",
-        "type": "string"
-      },
-      {
-        "internalType": "address",
-        "name": "_operator",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_fee",
-        "type": "uint256"
-      },
-      {
-        "internalType": "address",
-        "name": "_feeCollector",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "_capManager",
-        "type": "address"
-      }
-    ],
-    "name": "initialize",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "lastAvailableAssets",
-    "outputs": [
-      {
-        "internalType": "int128",
-        "name": "",
-        "type": "int128"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "lastRequestTimestamp",
-    "outputs": [
-      {
-        "internalType": "uint32",
-        "name": "",
-        "type": "uint32"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "liquidityAmountInCooldown",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "liquidityAsset",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "minSharesToRedeem",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "name",
-    "outputs": [
-      {
-        "internalType": "string",
-        "name": "",
-        "type": "string"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "nextUnstakerIndex",
-    "outputs": [
-      {
-        "internalType": "uint8",
-        "name": "",
-        "type": "uint8"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "nextWithdrawalIndex",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "operator",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "owner",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "assets",
-        "type": "uint256"
-      }
-    ],
-    "name": "previewDeposit",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "shares",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "shares",
-        "type": "uint256"
-      }
-    ],
-    "name": "previewRedeem",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "assets",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_market",
-        "type": "address"
-      }
-    ],
-    "name": "removeMarket",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "baseAmount",
-        "type": "uint256"
-      }
-    ],
-    "name": "requestBaseWithdrawal",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "shares",
-        "type": "uint256"
-      }
-    ],
-    "name": "requestRedeem",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "requestId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "assets",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_armBuffer",
-        "type": "uint256"
-      }
-    ],
-    "name": "setARMBuffer",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_market",
-        "type": "address"
-      }
-    ],
-    "name": "setActiveMarket",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_capManager",
-        "type": "address"
-      }
-    ],
-    "name": "setCapManager",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "newCrossPrice",
-        "type": "uint256"
-      }
-    ],
-    "name": "setCrossPrice",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_fee",
-        "type": "uint256"
-      }
-    ],
-    "name": "setFee",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_feeCollector",
-        "type": "address"
-      }
-    ],
-    "name": "setFeeCollector",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "newOperator",
-        "type": "address"
-      }
-    ],
-    "name": "setOperator",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "newOwner",
-        "type": "address"
-      }
-    ],
-    "name": "setOwner",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "buyT1",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "sellT1",
-        "type": "uint256"
-      }
-    ],
-    "name": "setPrices",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address[42]",
-        "name": "_unstakers",
-        "type": "address[42]"
-      }
-    ],
-    "name": "setUnstakers",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "market",
-        "type": "address"
-      }
-    ],
-    "name": "supportedMarkets",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "supported",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "susde",
-    "outputs": [
-      {
-        "internalType": "contract IStakedUSDe",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "amountIn",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "amountOutMin",
-        "type": "uint256"
-      },
-      {
-        "internalType": "address[]",
-        "name": "path",
-        "type": "address[]"
-      },
-      {
-        "internalType": "address",
-        "name": "to",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "deadline",
-        "type": "uint256"
-      }
-    ],
-    "name": "swapExactTokensForTokens",
-    "outputs": [
-      {
-        "internalType": "uint256[]",
-        "name": "amounts",
-        "type": "uint256[]"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "contract IERC20",
-        "name": "inToken",
-        "type": "address"
-      },
-      {
-        "internalType": "contract IERC20",
-        "name": "outToken",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "amountIn",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "amountOutMin",
-        "type": "uint256"
-      },
-      {
-        "internalType": "address",
-        "name": "to",
-        "type": "address"
-      }
-    ],
-    "name": "swapExactTokensForTokens",
-    "outputs": [
-      {
-        "internalType": "uint256[]",
-        "name": "amounts",
-        "type": "uint256[]"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "amountOut",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "amountInMax",
-        "type": "uint256"
-      },
-      {
-        "internalType": "address[]",
-        "name": "path",
-        "type": "address[]"
-      },
-      {
-        "internalType": "address",
-        "name": "to",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "deadline",
-        "type": "uint256"
-      }
-    ],
-    "name": "swapTokensForExactTokens",
-    "outputs": [
-      {
-        "internalType": "uint256[]",
-        "name": "amounts",
-        "type": "uint256[]"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "contract IERC20",
-        "name": "inToken",
-        "type": "address"
-      },
-      {
-        "internalType": "contract IERC20",
-        "name": "outToken",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "amountOut",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "amountInMax",
-        "type": "uint256"
-      },
-      {
-        "internalType": "address",
-        "name": "to",
-        "type": "address"
-      }
-    ],
-    "name": "swapTokensForExactTokens",
-    "outputs": [
-      {
-        "internalType": "uint256[]",
-        "name": "amounts",
-        "type": "uint256[]"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "symbol",
-    "outputs": [
-      {
-        "internalType": "string",
-        "name": "",
-        "type": "string"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "token0",
-    "outputs": [
-      {
-        "internalType": "contract IERC20",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "token1",
-    "outputs": [
-      {
-        "internalType": "contract IERC20",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "totalAssets",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "totalSupply",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "traderate0",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "traderate1",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "to",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "value",
-        "type": "uint256"
-      }
-    ],
-    "name": "transfer",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "from",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "to",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "value",
-        "type": "uint256"
-      }
-    ],
-    "name": "transferFrom",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "name": "unstakers",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "usde",
-    "outputs": [
-      {
-        "internalType": "contract IERC20",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "requestId",
-        "type": "uint256"
-      }
-    ],
-    "name": "withdrawalRequests",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "withdrawer",
-        "type": "address"
-      },
-      {
-        "internalType": "bool",
-        "name": "claimed",
-        "type": "bool"
-      },
-      {
-        "internalType": "uint40",
-        "name": "claimTimestamp",
-        "type": "uint40"
-      },
-      {
-        "internalType": "uint128",
-        "name": "assets",
-        "type": "uint128"
-      },
-      {
-        "internalType": "uint128",
-        "name": "queued",
-        "type": "uint128"
-      },
-      {
-        "internalType": "uint128",
-        "name": "shares",
-        "type": "uint128"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "withdrawsClaimed",
-    "outputs": [
-      {
-        "internalType": "uint128",
-        "name": "",
-        "type": "uint128"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "withdrawsQueued",
-    "outputs": [
-      {
-        "internalType": "uint128",
-        "name": "",
-        "type": "uint128"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  }
-]
+
+╭-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------╮
+| Type        | Signature                                                                                          | Selector                                                           |
++=======================================================================================================================================================================================+
+| event       | ActiveMarketUpdated(address)                                                                       | 0xe9f5fe520e5763f721d470ecb21b23763a3b0b9e720070111b1b935c1107b065 |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| event       | AdminChanged(address,address)                                                                      | 0x7e644d79422f17c01e4894b5f4f588d331ebfa28653d42ae832dc59e38c9798f |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| event       | Allocated(address,int256,int256)                                                                   | 0x0538e1fc8a5bd2f2ae0c40c0a54b4208673263b92c883fe270768a5151346dfd |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| event       | Approval(address,address,uint256)                                                                  | 0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925 |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| event       | CapManagerUpdated(address)                                                                         | 0xb8fd9afc34c38fcd13b9a3b7646482eb1fddcefb40af2c70609972816eba3208 |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| event       | ClaimBaseWithdrawals(address,uint256)                                                              | 0x8528f5537e4b9fc69da2fa4d455c4e03a5cc2c5a05d8815c8c06a6242f56ad57 |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| event       | CrossPriceUpdated(uint256)                                                                         | 0x6f938e86fbdbe7829d0289b348cd9e528f2f17c705f469f4a17a0a2796e007d0 |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| event       | Deposit(address,uint256,uint256)                                                                   | 0x90890809c654f11d6e72a28fa60149770a0d11ec6c92319d6ceb2bb0a4ea1a15 |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| event       | FeeCollected(address,uint256)                                                                      | 0x06c5efeff5c320943d265dc4e5f1af95ad523555ce0c1957e367dda5514572df |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| event       | FeeCollectorUpdated(address)                                                                       | 0xe5693914d19c789bdee50a362998c0bc8d035a835f9871da5d51152f0582c34f |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| event       | FeeUpdated(uint256)                                                                                | 0x8c4d35e54a3f2ef1134138fd8ea3daee6a3c89e10d2665996babdf70261e2c76 |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| event       | Initialized(uint64)                                                                                | 0xc7f505b2f371ae2175ee4913f4499e1f2633a7b5936321eed1cdaeb6115181d2 |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| event       | MarketAdded(address)                                                                               | 0xbc600b1f03d316c479b49930c28e328809316458d5b5dacbb7419df5f6f89647 |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| event       | MarketRemoved(address)                                                                             | 0x59d7b1e52008dc342c9421dadfc773114b914a65682a4e4b53cf60a970df0d77 |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| event       | OperatorChanged(address)                                                                           | 0x4721129e0e676ed6a92909bb24e853ccdd63ad72280cc2e974e38e480e0e6e54 |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| event       | RedeemClaimed(address,uint256,uint256)                                                             | 0x36dd2c9b55f12509e3b5f4f4d765ddefc2776a28018b18da2335cf2ab93bb268 |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| event       | RedeemRequested(address,uint256,uint256,uint256,uint256)                                           | 0xc04c86cfd81036557541f9c68971ace59cbc9057ecab7d48874a6177ad117f4f |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| event       | RequestBaseWithdrawal(address,uint256,uint256)                                                     | 0x9910c447d600210d0328b2c6f5374d7acc58344b9ce5d9c97f5a2a90fa611956 |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| event       | TraderateChanged(uint256,uint256)                                                                  | 0xa2136948fd1e5333c2ee27c9e48848a560b693e6bbd18082623a738179ff2952 |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| event       | Transfer(address,address,uint256)                                                                  | 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| error       | ERC20InsufficientAllowance(address,uint256,uint256)                                                | 0xfb8f41b2                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| error       | ERC20InsufficientBalance(address,uint256,uint256)                                                  | 0xe450d38c                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| error       | ERC20InvalidApprover(address)                                                                      | 0xe602df05                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| error       | ERC20InvalidReceiver(address)                                                                      | 0xec442f05                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| error       | ERC20InvalidSender(address)                                                                        | 0x96c6fd1e                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| error       | ERC20InvalidSpender(address)                                                                       | 0x94280d62                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| error       | InvalidInitialization()                                                                            | 0xf92ee8a9                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| error       | NotInitializing()                                                                                  | 0xd7e6bcf8                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| error       | SafeCastOverflowedIntDowncast(uint8,int256)                                                        | 0x327269a7                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| error       | SafeCastOverflowedIntToUint(int256)                                                                | 0xa8ce4432                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| error       | SafeCastOverflowedUintDowncast(uint8,uint256)                                                      | 0x6dfcc650                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| error       | SafeCastOverflowedUintToInt(uint256)                                                               | 0x24775e06                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | DELAY_REQUEST() view returns (uint256)                                                             | 0x74e17388                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | FEE_SCALE() view returns (uint256)                                                                 | 0x8a5fddd8                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | MAX_CROSS_PRICE_DEVIATION() view returns (uint256)                                                 | 0x090b78c5                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | MAX_UNSTAKERS() view returns (uint8)                                                               | 0xc4c86d57                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | PRICE_SCALE() view returns (uint256)                                                               | 0xc33f59d3                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | activeMarket() view returns (address)                                                              | 0xce318c51                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | addMarkets(address[]) nonpayable                                                                   | 0xda40385d                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | allocate(int256) nonpayable returns (int256)                                                       | 0x5cb59589                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | allowance(address,address) view returns (uint256)                                                  | 0xdd62ed3e                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | approve(address,uint256) nonpayable returns (bool)                                                 | 0x095ea7b3                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | asset() view returns (address)                                                                     | 0x38d52e0f                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | balanceOf(address) view returns (uint256)                                                          | 0x70a08231                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | baseAsset() view returns (address)                                                                 | 0xcdf456e1                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | capManager() view returns (address)                                                                | 0x6d785a87                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | claimBaseWithdrawals(uint8) nonpayable                                                             | 0xd4e7d6b2                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | claimDelay() view returns (uint256)                                                                | 0x1c8ec299                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | claimRedeem(uint256) nonpayable returns (uint256)                                                  | 0xe46cf747                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | claimable() view returns (uint256)                                                                 | 0xaf38d757                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | collectFees() nonpayable returns (uint256)                                                         | 0xc8796572                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | convertToAssets(uint256) view returns (uint256)                                                    | 0x07a2d13a                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | convertToShares(uint256) view returns (uint256)                                                    | 0xc6e6f592                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | crossPrice() view returns (uint256)                                                                | 0xf5488330                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | decimals() view returns (uint8)                                                                    | 0x313ce567                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | deposit(uint256,address) nonpayable returns (uint256)                                              | 0x6e553f65                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | deposit(uint256) nonpayable returns (uint256)                                                      | 0xb6b55f25                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | fee() view returns (uint16)                                                                        | 0xddca3f43                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | feeCollector() view returns (address)                                                              | 0xc415b95c                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | feesAccrued() view returns (uint256)                                                               | 0x94db0595                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | getReserves() view returns (uint256,uint256)                                                       | 0x0902f1ac                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | initialize(string,string,address,uint256,address,address) nonpayable                               | 0xb3ddda2a                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | lastAvailableAssets() view returns (int128)                                                        | 0x2eb6328b                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | lastRequestTimestamp() view returns (uint32)                                                       | 0xf664a16e                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | liquidityAmountInCooldown() view returns (uint256)                                                 | 0x15780107                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | liquidityAsset() view returns (address)                                                            | 0x209b2bca                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | minSharesToRedeem() view returns (uint256)                                                         | 0x50d0ea39                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | name() view returns (string)                                                                       | 0x06fdde03                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | nextUnstakerIndex() view returns (uint8)                                                           | 0xa2bc8b68                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | nextWithdrawalIndex() view returns (uint256)                                                       | 0xbba9282e                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | operator() view returns (address)                                                                  | 0x570ca735                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | owner() view returns (address)                                                                     | 0x8da5cb5b                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | previewDeposit(uint256) view returns (uint256)                                                     | 0xef8b30f7                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | previewRedeem(uint256) view returns (uint256)                                                      | 0x4cdad506                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | removeMarket(address) nonpayable                                                                   | 0xdb913236                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | requestBaseWithdrawal(uint256) nonpayable                                                          | 0x8831223b                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | requestRedeem(uint256) nonpayable returns (uint256,uint256)                                        | 0xaa2f892d                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | setActiveMarket(address) nonpayable                                                                | 0xab710b24                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | setCapManager(address) nonpayable                                                                  | 0x0e608b30                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | setCrossPrice(uint256) nonpayable                                                                  | 0x30486f3c                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | setFee(uint256) nonpayable                                                                         | 0x69fe0e2d                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | setFeeCollector(address) nonpayable                                                                | 0xa42dce80                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | setOperator(address) nonpayable                                                                    | 0xb3ab15fb                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | setOwner(address) nonpayable                                                                       | 0x13af4035                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | setPrices(uint256,uint256,uint256,uint256) nonpayable                                              | 0xd8e86854                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | setUnstakers(address[42]) nonpayable                                                               | 0xdf744321                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | supportedMarkets(address) view returns (bool)                                                      | 0x20761fc4                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | susde() view returns (IStakedUSDe)                                                                 | 0x032988da                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | swapExactTokensForTokens(uint256,uint256,address[],address,uint256) nonpayable returns (uint256[]) | 0x38ed1739                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | swapExactTokensForTokens(IERC20,IERC20,uint256,uint256,address) nonpayable returns (uint256[])     | 0x6c08c57e                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | swapTokensForExactTokens(uint256,uint256,address[],address,uint256) nonpayable returns (uint256[]) | 0x8803dbee                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | swapTokensForExactTokens(IERC20,IERC20,uint256,uint256,address) nonpayable returns (uint256[])     | 0xf7d31809                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | symbol() view returns (string)                                                                     | 0x95d89b41                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | token0() view returns (IERC20)                                                                     | 0x0dfe1681                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | token1() view returns (IERC20)                                                                     | 0xd21220a7                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | totalAssets() view returns (uint256)                                                               | 0x01e1d114                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | totalSupply() view returns (uint256)                                                               | 0x18160ddd                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | traderate0() view returns (uint256)                                                                | 0x45059a6b                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | traderate1() view returns (uint256)                                                                | 0xcf1de5d8                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | transfer(address,uint256) nonpayable returns (bool)                                                | 0xa9059cbb                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | transferFrom(address,address,uint256) nonpayable returns (bool)                                    | 0x23b872dd                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | unstakers(uint256) view returns (address)                                                          | 0x9be64959                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | usde() view returns (IERC20)                                                                       | 0x0fd761e0                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | withdrawalRequests(uint256) view returns (address,bool,uint40,uint128,uint128,uint128)             | 0x937b2581                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | withdrawsClaimed() view returns (uint128)                                                          | 0x35ce81c4                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| function    | withdrawsQueued() view returns (uint128)                                                           | 0x6ec68625                                                         |
+|-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------|
+| constructor | constructor(address,address,uint256,uint256) nonpayable                                            |                                                                    |
+╰-------------+----------------------------------------------------------------------------------------------------+--------------------------------------------------------------------╯

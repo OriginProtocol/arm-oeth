@@ -17,7 +17,7 @@ contract $007_UpgradeLidoARMMorphoScript is AbstractDeployScript("007_UpgradeLid
     function _execute() internal override {
         // 1. Deploy new Lido implementation
         uint256 claimDelay = 10 minutes;
-        LidoARM lidoARMImpl = new LidoARM(Mainnet.STETH, Mainnet.WETH, Mainnet.LIDO_WITHDRAWAL, claimDelay, 1e7, 1e18);
+        LidoARM lidoARMImpl = new LidoARM(Mainnet.STETH, Mainnet.WETH, Mainnet.LIDO_WITHDRAWAL, claimDelay, 1e7);
         _recordDeployment("LIDO_ARM_IMPL", address(lidoARMImpl));
 
         // 2. Deploy MorphoMarket proxy
@@ -48,12 +48,6 @@ contract $007_UpgradeLidoARMMorphoScript is AbstractDeployScript("007_UpgradeLid
             resolver.resolve("LIDO_ARM"),
             "setActiveMarket(address)",
             abi.encode(resolver.resolve("MORPHO_MARKET_MEVCAPITAL"))
-        );
-
-        govProposal.action(
-            resolver.resolve("LIDO_ARM"),
-            "setARMBuffer(uint256)",
-            abi.encode(0.2e18) // 20% buffer
         );
     }
 }

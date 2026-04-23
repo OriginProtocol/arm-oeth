@@ -19,8 +19,7 @@ contract $026_UpgradeEthenaARMScript is AbstractDeployScript("026_UpgradeEthenaA
             Mainnet.USDE,
             Mainnet.SUSDE,
             claimDelay,
-            1e18, // minSharesToRedeem
-            100e18 // allocateThreshold
+            1e18 // minSharesToRedeem
         );
         _recordDeployment("ETHENA_ARM_IMPL", address(armImpl));
     }
@@ -37,4 +36,3 @@ contract $026_UpgradeEthenaARMScript is AbstractDeployScript("026_UpgradeEthenaA
         vm.stopPrank();
     }
 }
-

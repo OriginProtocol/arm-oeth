@@ -26,9 +26,7 @@ contract $003_UpgradeOriginARMScript is AbstractDeployScript("003_UpgradeOriginA
         // 2. Deploy new Origin ARM implementation
         uint256 claimDelay = 10 minutes;
         uint256 minSharesToRedeem = 1e7;
-        int256 allocateThreshold = 1e18;
-        originARMImpl =
-            new OriginARM(Sonic.OS, Sonic.WS, Sonic.OS_VAULT, claimDelay, minSharesToRedeem, allocateThreshold);
+        originARMImpl = new OriginARM(Sonic.OS, Sonic.WS, Sonic.OS_VAULT, claimDelay, minSharesToRedeem);
         _recordDeployment("ORIGIN_ARM_IMPL", address(originARMImpl));
 
         // 3. Deploy the Silo market implementation for the Varlamore S Vault

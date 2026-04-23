@@ -295,6 +295,35 @@ contract Fork_Concrete_LidoARM_SwapExactTokensForTokens_Test is Fork_Shared_Test
         assertEq(outputs[1], minAmount);
     }
 
+    function test_SwapExactTokensForTokens_WethToSteth_ConsumesSellLiquidityAndThenReverts() public {
+        uint256 amountIn = 1 ether;
+        uint256 sellPrice = 1e36;
+
+        lidoARM.setPrices(MIN_PRICE0, sellPrice, type(uint256).max, amountIn);
+
+        lidoARM.swapExactTokensForTokens(weth, steth, amountIn, amountIn, address(this));
+
+        assertEq(lidoARM.sellLiquidityRemaining(), 0, "sell liquidity remaining");
+
+        vm.expectRevert("ARM: Insufficient liquidity");
+        lidoARM.swapExactTokensForTokens(weth, steth, 1, 0, address(this));
+    }
+
+    function test_SwapExactTokensForTokens_StethToWeth_ConsumesBuyLiquidityAndThenReverts() public {
+        uint256 amountIn = 1 ether;
+        uint256 buyPrice = MIN_PRICE0;
+        uint256 amountOut = amountIn * buyPrice / 1e36;
+
+        lidoARM.setPrices(buyPrice, MAX_PRICE1, amountOut, type(uint256).max);
+
+        lidoARM.swapExactTokensForTokens(steth, weth, amountIn, amountOut, address(this));
+
+        assertEq(lidoARM.buyLiquidityRemaining(), 0, "buy liquidity remaining");
+
+        vm.expectRevert("ARM: Insufficient liquidity");
+        lidoARM.swapExactTokensForTokens(steth, weth, amountIn, 0, address(this));
+    }
+
     /// @notice If the buy and sell prices are very close together and the stETH transferred into
     /// the ARM is truncated, then there should be enough rounding protection against losing total assets.
     function test_SwapExactTokensForTokens_Steth_Transfer_Truncated()
@@ -349,7 +378,7 @@ contract Fork_Concrete_LidoARM_SwapExactTokensForTokens_Test is Fork_Shared_Test
         // the buy price doesn't matter as it is not used in this test.
         price = _bound(price, MIN_PRICE1, MAX_PRICE1);
         lidoARM.setCrossPrice(1e36);
-        lidoARM.setPrices(MIN_PRICE0, price);
+        lidoARM.setPrices(MIN_PRICE0, price, type(uint256).max, type(uint256).max);
 
         // Set random amount of stETH in the ARM
         stethReserveGrowth = _bound(stethReserveGrowth, 0, INITIAL_BALANCE / 100);
@@ -429,7 +458,7 @@ contract Fork_Concrete_LidoARM_SwapExactTokensForTokens_Test is Fork_Shared_Test
         // Use random stETH/WETH buy price between MIN_PRICE0 and MAX_PRICE0,
         // the sell price doesn't matter as it is not used in this test.
         price = _bound(price, MIN_PRICE0, MAX_PRICE0);
-        lidoARM.setPrices(price, MAX_PRICE1);
+        lidoARM.setPrices(price, MAX_PRICE1, type(uint256).max, type(uint256).max);
 
         // Set random amount of WETH growth in the ARM
         wethReserveGrowth = _bound(wethReserveGrowth, 0, INITIAL_BALANCE / 100);

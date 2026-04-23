@@ -16,8 +16,7 @@ contract $023_UpgradeEthenaARMDepositScript is AbstractDeployScript("023_Upgrade
         // 1. Deploy new EthenaARM implementation
         uint256 claimDelay = 10 minutes;
         uint256 minSharesToRedeem = 1e18;
-        int256 allocateThreshold = 100e18;
-        armImpl = new EthenaARM(Mainnet.USDE, Mainnet.SUSDE, claimDelay, minSharesToRedeem, allocateThreshold);
+        armImpl = new EthenaARM(Mainnet.USDE, Mainnet.SUSDE, claimDelay, minSharesToRedeem);
         _recordDeployment("ETHENA_ARM_IMPL", address(armImpl));
     }
 

@@ -72,7 +72,6 @@ contract Unit_Concrete_OriginARM_ClaimRedeem_Test_ is Unit_Shared_Test {
 
     function test_ClaimRedeem_WithActiveMarket_EnoughLiquidity()
         public
-        setARMBuffer(1e18)
         addMarket(address(market))
         setActiveMarket(address(market))
         requestRedeemAll(alice)
@@ -95,12 +94,15 @@ contract Unit_Concrete_OriginARM_ClaimRedeem_Test_ is Unit_Shared_Test {
 
     function test_ClaimRedeem_WithActiveMarket_NotEnoughLiquidity()
         public
-        setARMBuffer(0)
+        requestRedeemAll(alice)
         addMarket(address(market))
         setActiveMarket(address(market))
-        requestRedeemAll(alice)
-        timejump(CLAIM_DELAY)
     {
+        vm.prank(operator);
+        originARM.allocate(int256(DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY));
+
+        vm.warp(block.timestamp + CLAIM_DELAY);
+
         uint256 balanceBefore = weth.balanceOf(alice);
         // Alice claims her redeem
         vm.prank(alice);

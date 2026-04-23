@@ -18,9 +18,8 @@ contract $024_UpgradeOETHARMDepositScript is AbstractDeployScript("024_UpgradeOE
         // 1. Deploy new OriginARM implementation
         uint256 claimDelay = 10 minutes;
         uint256 minSharesToRedeem = 1e7;
-        int256 allocateThreshold = 1e18;
         OriginARM originARMImpl = new OriginARM(
-            Mainnet.OETH, Mainnet.WETH, Mainnet.OETH_VAULT, claimDelay, minSharesToRedeem, allocateThreshold
+            Mainnet.OETH, Mainnet.WETH, Mainnet.OETH_VAULT, claimDelay, minSharesToRedeem
         );
         _recordDeployment("OETH_ARM_IMPL", address(originARMImpl));
     }

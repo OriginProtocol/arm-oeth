@@ -79,10 +79,19 @@ const parseAddress = async (name) => {
     );
   }
 
-  // Find the variable in the library
-  const variable = library.subNodes.find(
-    (node) => node.variables[0].name === name,
+  const variableDeclarations = library.subNodes.filter(
+    (node) =>
+      node.type === "StateVariableDeclaration" &&
+      node.variables?.[0]?.name,
   );
+
+  // Prefer an exact symbol match, then fall back to case-insensitive matching
+  // so JS task symbols like stETH map to Solidity constants like STETH.
+  const variable =
+    variableDeclarations.find((node) => node.variables[0].name === name) ??
+    variableDeclarations.find(
+      (node) => node.variables[0].name.toLowerCase() === name.toLowerCase(),
+    );
 
   if (!variable) {
     throw new Error(

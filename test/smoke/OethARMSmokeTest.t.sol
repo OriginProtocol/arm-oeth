@@ -124,7 +124,7 @@ contract Fork_OriginARM_Smoke_Test is AbstractSmokeTest {
             expectedOut = amountIn * 1e36 / price;
 
             vm.prank(Mainnet.ARM_RELAYER);
-            originARM.setPrices(0.99e36, price);
+            originARM.setPrices(0.99e36, price, type(uint256).max, type(uint256).max);
         } else {
             // Trader is selling stETH and buying WETH
             // the ARM is buying stETH and selling WETH
@@ -134,7 +134,7 @@ contract Fork_OriginARM_Smoke_Test is AbstractSmokeTest {
             expectedOut = amountIn * price / 1e36;
 
             vm.prank(Mainnet.ARM_RELAYER);
-            originARM.setPrices(price, 1e36);
+            originARM.setPrices(price, 1e36, type(uint256).max, type(uint256).max);
         }
         // Approve the ARM to transfer the input token of the swap.
         inToken.approve(address(originARM), amountIn);
@@ -185,7 +185,7 @@ contract Fork_OriginARM_Smoke_Test is AbstractSmokeTest {
             expectedIn = amountOut * price / 1e36;
 
             vm.prank(Mainnet.ARM_RELAYER);
-            originARM.setPrices(0.99e36, price);
+            originARM.setPrices(0.99e36, price, type(uint256).max, type(uint256).max);
         } else {
             // Trader is selling stETH and buying WETH
             // the ARM is buying stETH and selling WETH
@@ -195,7 +195,7 @@ contract Fork_OriginARM_Smoke_Test is AbstractSmokeTest {
             expectedIn = amountOut * 1e36 / price + 3;
 
             vm.prank(Mainnet.ARM_RELAYER);
-            originARM.setPrices(price, 1e36);
+            originARM.setPrices(price, 1e36, type(uint256).max, type(uint256).max);
         }
         // Approve the ARM to transfer the input token of the swap.
         inToken.approve(address(originARM), expectedIn + 10000);
@@ -340,13 +340,9 @@ contract Fork_OriginARM_Smoke_Test is AbstractSmokeTest {
         uint256 armWethBefore = weth.balanceOf(address(originARM));
         uint256 marketBalanceBefore = morphoMarket.maxWithdraw(address(originARM));
 
-        // Set buffer to 0% so all liquidity goes to the lending market
-        vm.prank(Mainnet.ARM_RELAYER);
-        originARM.setARMBuffer(0);
-
         // Allocate liquidity to the lending market
         vm.prank(Mainnet.ARM_RELAYER);
-        (, int256 actualDelta) = originARM.allocate();
+        int256 actualDelta = originARM.allocate(100 ether);
 
         uint256 armWethAfter = weth.balanceOf(address(originARM));
         uint256 marketBalanceAfter = morphoMarket.maxWithdraw(address(originARM));
@@ -371,20 +367,14 @@ contract Fork_OriginARM_Smoke_Test is AbstractSmokeTest {
         // Deal WETH to the ARM and allocate to market with buffer at 0%
         deal(address(weth), address(originARM), 100 ether);
         vm.prank(Mainnet.ARM_RELAYER);
-        originARM.setARMBuffer(0);
-        vm.prank(Mainnet.ARM_RELAYER);
-        originARM.allocate();
+        originARM.allocate(100 ether);
 
         uint256 armWethBefore = weth.balanceOf(address(originARM));
         uint256 marketBalanceBefore = morphoMarket.maxWithdraw(address(originARM));
 
-        // Set buffer to 100% so liquidity comes back from the lending market
-        vm.prank(Mainnet.ARM_RELAYER);
-        originARM.setARMBuffer(1e18);
-
         // Allocate liquidity from the lending market
         vm.prank(Mainnet.ARM_RELAYER);
-        (, int256 actualDelta) = originARM.allocate();
+        int256 actualDelta = originARM.allocate(-100 ether);
 
         uint256 armWethAfter = weth.balanceOf(address(originARM));
         uint256 marketBalanceAfter = morphoMarket.maxWithdraw(address(originARM));

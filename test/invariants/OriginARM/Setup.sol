@@ -141,7 +141,7 @@ abstract contract Setup is Base_Test_ {
         // ---
         // --- 2. Deploy all implementations. ---
         // Deploy OriginARM implementation
-        originARM = new OriginARM(address(os), address(ws), address(vault), CLAIM_DELAY, 1e7, 1e18);
+        originARM = new OriginARM(address(os), address(ws), address(vault), CLAIM_DELAY, 1e7);
 
         // Deploy SiloMarket implementation
         siloMarket = new SiloMarket(address(originARMProxy), address(market2), makeAddr("fake gauge"));
@@ -236,7 +236,7 @@ abstract contract Setup is Base_Test_ {
         originARM.setCrossPrice(0.9999 * 1e36);
         // Set prices
         vm.prank(operator);
-        originARM.setPrices(MIN_BUY_PRICE, MAX_SELL_PRICE);
+        originARM.setPrices(MIN_BUY_PRICE, MAX_SELL_PRICE, type(uint256).max, type(uint256).max);
 
         // --- Setup Markets ---
         markets = new address[](2);
