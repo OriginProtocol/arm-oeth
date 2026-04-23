@@ -46,7 +46,10 @@ async function allocate({
     throw new Error("targetLiquidityDelta is required");
   }
 
-  const targetLiquidityDeltaBN = parseUnits(targetLiquidityDelta.toString(), 18);
+  const targetLiquidityDeltaBN = parseUnits(
+    targetLiquidityDelta.toString(),
+    18,
+  );
 
   log(
     `About to allocate ${formatUnits(
@@ -56,10 +59,14 @@ async function allocate({
 
   if (execute) {
     // Add 10% buffer to gas limit
-    let gasLimit = await arm.connect(signer).allocate.estimateGas(targetLiquidityDeltaBN);
+    let gasLimit = await arm
+      .connect(signer)
+      .allocate.estimateGas(targetLiquidityDeltaBN);
     gasLimit = (gasLimit * 11n) / 10n;
 
-    const tx = await arm.connect(signer).allocate(targetLiquidityDeltaBN, { gasLimit });
+    const tx = await arm
+      .connect(signer)
+      .allocate(targetLiquidityDeltaBN, { gasLimit });
     await logTxDetails(tx, "allocate");
   }
 }

@@ -51,6 +51,7 @@ const {
   setTotalAssetsCap,
 } = require("./liquidityProvider");
 const { swap } = require("./swap");
+const { marketSwap } = require("./marketSwap");
 const {
   tokenAllowance,
   tokenBalance,
@@ -109,6 +110,57 @@ subtask(
   )
   .setAction(swap);
 task("swap").setAction(async (_, __, runSuper) => {
+  return runSuper();
+});
+
+subtask(
+  "marketSwap",
+  "Execute an ARM marketSwap using a configured swap target and venue-specific route builder.",
+)
+  .addParam(
+    "arm",
+    "Name of the ARM. eg Lido, Origin, EtherFi, Ethena or Oeth",
+    "Lido",
+    types.string,
+  )
+  .addParam(
+    "venue",
+    "Venue builder to use. kyber, 1inch, curve or balancer",
+    undefined,
+    types.string,
+  )
+  .addParam(
+    "amountOut",
+    "Exact amount of tokenOut leaving the ARM",
+    undefined,
+    types.float,
+  )
+  .addOptionalParam(
+    "from",
+    "Symbol of the token leaving the ARM. Use exactly one of from or to.",
+    undefined,
+    types.string,
+  )
+  .addOptionalParam(
+    "to",
+    "Symbol of the token returning into the ARM. Use exactly one of from or to.",
+    undefined,
+    types.string,
+  )
+  .addOptionalParam(
+    "routeFile",
+    "Path to venue route JSON. Required for kyber, 1inch and balancer.",
+    undefined,
+    types.string,
+  )
+  .addOptionalParam(
+    "slippageBps",
+    "Venue-level slippage tolerance in basis points used to derive minAmountIn",
+    50,
+    types.int,
+  )
+  .setAction(marketSwap);
+task("marketSwap").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
 
