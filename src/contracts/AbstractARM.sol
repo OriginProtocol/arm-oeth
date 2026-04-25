@@ -712,8 +712,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         );
     }
 
-    /// @notice The total amount of assets in the ARM, active lending market and external withdrawal queue,
+    /// @notice The economic value of assets in the ARM, active lending market and external withdrawal queue,
     /// less the liquidity assets reserved for the ARM's withdrawal queue and accrued fees.
+    /// The active lending market is valued using ERC-4626 share conversion rather than current redeemable liquidity.
     /// @return The total amount of assets in the ARM
     function totalAssets() public view virtual returns (uint256) {
         (uint256 fees, uint256 newAvailableAssets) = _feesAccrued();
@@ -738,8 +739,10 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         return liquidityAsset;
     }
 
-    /// @dev Calculate the available assets which is the assets in the ARM, external withdrawal queue,
+    /// @dev Calculate the economic value of assets in the ARM, external withdrawal queue,
     /// and active lending market, less liquidity assets reserved for the ARM's withdrawal queue.
+    /// The active lending market is valued using convertToAssets() so market valuation remains
+    /// consistent across ERC-4626 implementations even when current redeemable liquidity differs.
     /// This does not exclude any accrued performance fees.
     function _availableAssets() internal view returns (uint256 availableAssets, uint256 outstandingWithdrawals) {
         // Convert the base assets in the ARM to the amount of liquidity assets
@@ -757,10 +760,10 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         if (activeMarketMem != address(0)) {
             // Get all the active lending market shares owned by this ARM contract
             uint256 allShares = IERC4626(activeMarketMem).balanceOf(address(this));
-            // Add all the assets in the active lending market.
-            // previewRedeem is used instead of maxWithdraw as maxWithdraw will return less if the market
-            // is highly utilized or has a temporary pause.
-            assets += IERC4626(activeMarketMem).previewRedeem(allShares);
+            // Add the economic value of assets in the active lending market.
+            // Liquidity-aware functions such as claimable() and _allocate() continue to use maxWithdraw,
+            // maxRedeem, withdraw and redeem when current liquidity matters.
+            assets += IERC4626(activeMarketMem).convertToAssets(allShares);
         }
 
         // The amount of liquidity assets, eg WETH, that is still to be claimed in the withdrawal queue
