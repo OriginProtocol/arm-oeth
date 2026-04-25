@@ -181,6 +181,8 @@ const logLiquidity = async ({ block, arm }) => {
   }
 
   let lendingMarketBalance = 0n;
+  let lendingMarketRedeemableBalance = 0n;
+  let lendingMarketMaxWithdraw = 0n;
   let morphoRewards = 0n;
   // TODO this can be removed after OETH is upgraded
   if (arm !== "Oeth") {
@@ -192,6 +194,12 @@ const logLiquidity = async ({ block, arm }) => {
     );
     const armShares = await market.balanceOf(armAddress, { blockTag });
     lendingMarketBalance = await market.convertToAssets(armShares, {
+      blockTag,
+    });
+    lendingMarketRedeemableBalance = await market.previewRedeem(armShares, {
+      blockTag,
+    });
+    lendingMarketMaxWithdraw = await market.maxWithdraw(armAddress, {
       blockTag,
     });
 
@@ -213,9 +221,15 @@ const logLiquidity = async ({ block, arm }) => {
     total == 0 ? 0 : (lendingMarketBalance * 10000n) / total;
 
   const totalAssets = await armContract.totalAssets({ blockTag });
+  const totalSupply = await armContract.totalSupply({ blockTag });
+  const assetPerShare = await armContract.convertToAssets(parseUnits("1"), {
+    blockTag,
+  });
   const accruedFees = await armContract.feesAccrued({ blockTag });
   const buffer = await armContract.armBuffer({ blockTag });
   const bufferPercent = (buffer * 10000n) / parseUnits("1");
+  const lendingMarketLiquidityShortfall =
+    lendingMarketBalance - lendingMarketRedeemableBalance;
 
   console.log(
     `${formatUnits(liquidityBalance, 18)} ${liquiditySymbol} ${formatUnits(
@@ -247,10 +261,24 @@ const logLiquidity = async ({ block, arm }) => {
       2,
     )}%`,
   );
+  console.log(
+    `${formatUnits(
+      lendingMarketRedeemableBalance,
+      18,
+    )} lending market previewRedeem`,
+  );
+  console.log(
+    `${formatUnits(lendingMarketMaxWithdraw, 18)} lending market maxWithdraw`,
+  );
+  console.log(
+    `${formatUnits(lendingMarketLiquidityShortfall, 18)} lending market liquidity shortfall`,
+  );
   console.log(`${formatUnits(total, 18)} raw total assets`);
 
   console.log(`${formatUnits(accruedFees, 18)} accrued fees`);
   console.log(`${formatUnits(totalAssets, 18)} total assets`);
+  console.log(`${formatUnits(totalSupply, 18)} total supply`);
+  console.log(`${formatUnits(assetPerShare, 18)} asset per share`);
   console.log(`liquidity buffer ${formatUnits(bufferPercent, 2)}%`);
   console.log(`${formatUnits(morphoRewards, 18)} MORPHO rewards claimable`);
 
