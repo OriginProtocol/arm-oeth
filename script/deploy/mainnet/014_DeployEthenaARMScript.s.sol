@@ -58,8 +58,7 @@ contract $014_DeployEthenaARMScript is AbstractDeployScript("014_DeployEthenaARM
             Mainnet.SUSDE,
             claimDelay,
             1e18, // minSharesToRedeem
-            100e18, // allocateThreshold
-            true
+            100e18 // allocateThreshold
         );
         _recordDeployment("ETHENA_ARM_IMPL", address(armImpl));
 

@@ -52,7 +52,6 @@ contract $011_DeployEtherFiARMScript is AbstractDeployScript("011_DeployEtherFiA
             claimDelay,
             1e7, // minSharesToRedeem
             1e18, // allocateThreshold
-            false,
             Mainnet.ETHERFI_WITHDRAWAL_NFT
         );
         _recordDeployment("ETHER_FI_ARM_IMPL", address(etherFiARMImpl));

@@ -8,59 +8,6 @@ import {IERC20} from "contracts/Interfaces.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 
 contract Unit_Concrete_OriginARM_SwapLiquidityFromMarket_Test_ is Unit_Shared_Test {
-    OriginARM internal disabledARM;
-
-    function setUp() public virtual override {
-        super.setUp();
-
-        vm.startPrank(deployer);
-
-        Proxy disabledProxy = new Proxy();
-        OriginARM disabledImpl =
-            new OriginARM(address(oeth), address(weth), address(vault), CLAIM_DELAY, 1e7, 1e18, false);
-
-        deal(address(weth), deployer, 1e12);
-        weth.approve(address(disabledProxy), 1e12);
-
-        disabledProxy.initialize(
-            address(disabledImpl),
-            governor,
-            abi.encodeWithSelector(
-                OriginARM.initialize.selector,
-                "Origin ARM Disabled",
-                "OARM-DIS",
-                operator,
-                DEFAULT_FEE,
-                feeCollector,
-                address(0)
-            )
-        );
-
-        vm.stopPrank();
-
-        disabledARM = OriginARM(address(disabledProxy));
-
-        vm.prank(governor);
-        disabledARM.setPrices(992 * 1e33, 1001 * 1e33);
-    }
-
-    function test_Getter_ReturnsConfiguredDeployTimeValue() public view {
-        assertTrue(originARM.withdrawFromMarketOnSwap(), "enabled ARM getter");
-        assertFalse(disabledARM.withdrawFromMarketOnSwap(), "disabled ARM getter");
-    }
-
-    function test_GetReserves_DoesNotIncludeMarketLiquidity_WhenDisabled()
-        public
-        addDisabledArmMarket
-        depositIntoDisabledArm(alice, 2 * DEFAULT_AMOUNT)
-        setDisabledArmActiveMarket(address(market))
-    {
-        (uint256 reserve0, uint256 reserve1) = disabledARM.getReserves();
-
-        assertEq(reserve0, 0, "disabled ARM should only expose on-hand liquidity");
-        assertEq(reserve1, 0, "no base asset reserve");
-    }
-
     function test_SwapExactTokensForTokens_WithMarketShortfall_WithdrawsExactShortfall()
         public
         deposit(alice, 2 * DEFAULT_AMOUNT)
@@ -171,25 +118,6 @@ contract Unit_Concrete_OriginARM_SwapLiquidityFromMarket_Test_ is Unit_Shared_Te
         vm.stopPrank();
     }
 
-    function test_RevertWhen_DisabledArmSwapNeedsMarketLiquidity()
-        public
-        addDisabledArmMarket
-        depositIntoDisabledArm(alice, 2 * DEFAULT_AMOUNT)
-        setDisabledArmActiveMarket(address(market))
-    {
-        address swapper = makeAddr("disabled swapper");
-        uint256 amountOut = DEFAULT_AMOUNT / 2;
-
-        deal(address(oeth), swapper, DEFAULT_AMOUNT);
-        vm.startPrank(swapper);
-        oeth.approve(address(disabledARM), type(uint256).max);
-
-        vm.expectRevert("ARM: Insufficient liquidity");
-        disabledARM.swapTokensForExactTokens(oeth, weth, amountOut, type(uint256).max, swapper);
-
-        vm.stopPrank();
-    }
-
     function test_SwapWithEnoughOnHandLiquidity_DoesNotTouchMarket()
         public
         deposit(alice, DEFAULT_AMOUNT)
@@ -210,28 +138,5 @@ contract Unit_Concrete_OriginARM_SwapLiquidityFromMarket_Test_ is Unit_Shared_Te
         vm.stopPrank();
 
         assertEq(market.balanceOf(address(originARM)), marketBalanceBefore, "market balance should not change");
-    }
-
-    modifier addDisabledArmMarket() {
-        address[] memory markets = new address[](1);
-        markets[0] = address(market);
-        vm.prank(governor);
-        disabledARM.addMarkets(markets);
-        _;
-    }
-
-    modifier setDisabledArmActiveMarket(address marketAddress) {
-        vm.prank(governor);
-        disabledARM.setActiveMarket(marketAddress);
-        _;
-    }
-
-    modifier depositIntoDisabledArm(address user, uint256 amount) {
-        vm.startPrank(user);
-        deal(address(weth), user, amount);
-        weth.approve(address(disabledARM), amount);
-        disabledARM.deposit(amount);
-        vm.stopPrank();
-        _;
     }
 }

@@ -46,8 +46,7 @@ contract Fork_Concrete_LidoARM_Proxy_Test_ is Fork_Shared_Test_ {
         address owner = Mainnet.TIMELOCK;
 
         // Deploy new implementation
-        LidoARM newImplementation =
-            new LidoARM(Mainnet.STETH, Mainnet.WETH, Mainnet.OETH_VAULT, 10 minutes, 0, 0, false);
+        LidoARM newImplementation = new LidoARM(Mainnet.STETH, Mainnet.WETH, Mainnet.OETH_VAULT, 10 minutes, 0, 0);
         lidoProxy.upgradeTo(address(newImplementation));
         assertEq(lidoProxy.implementation(), address(newImplementation));
 
@@ -64,8 +63,7 @@ contract Fork_Concrete_LidoARM_Proxy_Test_ is Fork_Shared_Test_ {
         address owner = Mainnet.TIMELOCK;
 
         // Deploy new implementation
-        LidoARM newImplementation =
-            new LidoARM(Mainnet.STETH, Mainnet.WETH, Mainnet.OETH_VAULT, 10 minutes, 0, 0, false);
+        LidoARM newImplementation = new LidoARM(Mainnet.STETH, Mainnet.WETH, Mainnet.OETH_VAULT, 10 minutes, 0, 0);
         bytes memory data = abi.encodeWithSignature("setOperator(address)", address(0x123));
 
         lidoProxy.upgradeToAndCall(address(newImplementation), data);

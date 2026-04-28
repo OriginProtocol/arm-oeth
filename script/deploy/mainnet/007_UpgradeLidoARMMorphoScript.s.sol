@@ -17,8 +17,7 @@ contract $007_UpgradeLidoARMMorphoScript is AbstractDeployScript("007_UpgradeLid
     function _execute() internal override {
         // 1. Deploy new Lido implementation
         uint256 claimDelay = 10 minutes;
-        LidoARM lidoARMImpl =
-            new LidoARM(Mainnet.STETH, Mainnet.WETH, Mainnet.LIDO_WITHDRAWAL, claimDelay, 1e7, 1e18, false);
+        LidoARM lidoARMImpl = new LidoARM(Mainnet.STETH, Mainnet.WETH, Mainnet.LIDO_WITHDRAWAL, claimDelay, 1e7, 1e18);
         _recordDeployment("LIDO_ARM_IMPL", address(lidoARMImpl));
 
         // 2. Deploy MorphoMarket proxy

@@ -75,8 +75,7 @@ abstract contract Fork_Shared_Test is Base_Test_ {
             _susde: address(susde),
             _claimDelay: 10 minutes,
             _minSharesToRedeem: 1e7,
-            _allocateThreshold: 1 ether,
-            _withdrawFromMarketOnSwap: true
+            _allocateThreshold: 1 ether
         });
 
         // 2. Deploy Ethena ARM Proxy

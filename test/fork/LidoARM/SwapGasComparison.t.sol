@@ -49,19 +49,8 @@ contract Fork_Concrete_LidoARM_SwapGasComparison_Test is Test {
         steth.approve(address(lidoARM), type(uint256).max);
     }
 
-    function test_Gas_UpgradedArm_EnoughLiquidity_FeatureDisabled() public {
-        _upgradeLidoArm(false);
-
-        (uint256 gasUsed, uint256 amountOut) = _measureSwap(amountInEnoughLiquidity);
-
-        emit log_named_uint("fork_block", block.number);
-        emit log_named_uint("amount_in_stETH", amountInEnoughLiquidity);
-        emit log_named_uint("amount_out_WETH", amountOut);
-        emit log_named_uint("gas_used", gasUsed);
-    }
-
-    function test_Gas_UpgradedArm_EnoughLiquidity_FeatureEnabled() public {
-        _upgradeLidoArm(true);
+    function test_Gas_UpgradedArm_EnoughLiquidity() public {
+        _upgradeLidoArm();
 
         (uint256 gasUsed, uint256 amountOut) = _measureSwap(amountInEnoughLiquidity);
 
@@ -81,7 +70,7 @@ contract Fork_Concrete_LidoARM_SwapGasComparison_Test is Test {
     }
 
     function test_Gas_UpgradedArm_NeedsMarketLiquidity() public {
-        _upgradeLidoArm(true);
+        _upgradeLidoArm();
 
         uint256 reserveBefore = reserveWeth;
         (uint256 gasUsed, uint256 amountOut) = _measureSwap(amountInNeedsMarketLiquidity);
@@ -96,15 +85,14 @@ contract Fork_Concrete_LidoARM_SwapGasComparison_Test is Test {
         emit log_named_uint("gas_used", gasUsed);
     }
 
-    function _upgradeLidoArm(bool withdrawFromMarketOnSwap) internal {
+    function _upgradeLidoArm() internal {
         LidoARM upgradedImpl = new LidoARM(
             Mainnet.STETH,
             Mainnet.WETH,
             Mainnet.LIDO_WITHDRAWAL,
             lidoARM.claimDelay(),
             lidoARM.minSharesToRedeem(),
-            lidoARM.allocateThreshold(),
-            withdrawFromMarketOnSwap
+            lidoARM.allocateThreshold()
         );
 
         vm.prank(lidoProxy.owner());

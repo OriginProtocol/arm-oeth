@@ -56,8 +56,6 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     IERC20 public immutable token1;
     /// @notice The delay before a withdrawal request can be claimed in seconds. eg 600 is 10 minutes.
     uint256 public immutable claimDelay;
-    /// @notice True if swaps that send out liquidity assets can withdraw a shortfall from the active market.
-    bool public immutable withdrawFromMarketOnSwap;
 
     ////////////////////////////////////////////////////
     ///             Storage Variables
@@ -160,8 +158,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         address _liquidityAsset,
         uint256 _claimDelay,
         uint256 _minSharesToRedeem,
-        int256 _allocateThreshold,
-        bool _withdrawFromMarketOnSwap
+        int256 _allocateThreshold
     ) {
         require(IERC20(_token0).decimals() == 18);
         require(IERC20(_token1).decimals() == 18);
@@ -181,7 +178,6 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
         require(_allocateThreshold >= 0, "invalid allocate threshold");
         allocateThreshold = _allocateThreshold;
-        withdrawFromMarketOnSwap = _withdrawFromMarketOnSwap;
     }
 
     /// @notice Initialize the contract.
@@ -375,7 +371,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     }
 
     /// @dev Ensure there is enough on-hand liquidity for a swap, withdrawing the shortfall from the active market
-    /// if enabled for this ARM deployment.
+    /// if one is configured.
     function _ensureLiquidityAvailableForSwap(uint256 amount) internal {
         uint256 liquidityBalance = IERC20(liquidityAsset).balanceOf(address(this));
         uint256 outstandingWithdrawals = withdrawsQueued - withdrawsClaimed;
@@ -383,9 +379,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         // If there is enough liquidity in the ARM to cover the swap after reserving liquidity for withdrawals
         if (amount + outstandingWithdrawals <= liquidityBalance) return;
 
-        // Revert if can not withdraw from the active market on swap or if there is no active market
+        // Revert if there is no active market configured to source the shortfall from
         address activeMarketMem = activeMarket;
-        require(withdrawFromMarketOnSwap && activeMarketMem != address(0), "ARM: Insufficient liquidity");
+        require(activeMarketMem != address(0), "ARM: Insufficient liquidity");
 
         // Calculate how much needs to be withdrawn from the active market to cover the swap
         uint256 shortfall = amount + outstandingWithdrawals - liquidityBalance;
@@ -472,7 +468,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     }
 
     /// @notice Get the available liquidity for each token in the ARM.
-    /// Includes liquidity withdrawable from the active market when swap-time market withdrawals are enabled.
+    /// Includes liquidity withdrawable from the active market.
     /// @return reserve0 The available liquidity for token0
     /// @return reserve1 The available liquidity for token1
     function getReserves() external view returns (uint256 reserve0, uint256 reserve1) {
@@ -482,12 +478,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         uint256 liquidityAssetBalance = IERC20(liquidityAsset).balanceOf(address(this));
         uint256 baseAssetBalance = IERC20(baseAsset).balanceOf(address(this));
         uint256 availableLiquidity = liquidityAssetBalance;
-
-        if (withdrawFromMarketOnSwap) {
-            address activeMarketMem = activeMarket;
-            if (activeMarketMem != address(0)) {
-                availableLiquidity += IERC4626(activeMarketMem).maxWithdraw(address(this));
-            }
+        address activeMarketMem = activeMarket;
+        if (activeMarketMem != address(0)) {
+            availableLiquidity += IERC4626(activeMarketMem).maxWithdraw(address(this));
         }
 
         // Ensure there is no negative reserves when there are more outstanding withdrawals than liquidity assets in the ARM

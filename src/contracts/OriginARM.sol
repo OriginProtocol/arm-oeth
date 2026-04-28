@@ -37,19 +37,8 @@ contract OriginARM is Initializable, AbstractARM {
         address _vault,
         uint256 _claimDelay,
         uint256 _minSharesToRedeem,
-        int256 _allocateThreshold,
-        bool _withdrawFromMarketOnSwap
-    )
-        AbstractARM(
-            _liquidityAsset,
-            _otoken,
-            _liquidityAsset,
-            _claimDelay,
-            _minSharesToRedeem,
-            _allocateThreshold,
-            _withdrawFromMarketOnSwap
-        )
-    {
+        int256 _allocateThreshold
+    ) AbstractARM(_liquidityAsset, _otoken, _liquidityAsset, _claimDelay, _minSharesToRedeem, _allocateThreshold) {
         vault = _vault;
 
         _disableInitializers();
