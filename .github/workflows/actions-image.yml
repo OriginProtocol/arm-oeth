@@ -3,7 +3,7 @@ name: Actions Image
 on:
   push:
     branches:
-      - automation
+      - talos
   workflow_dispatch:
 
 permissions:
