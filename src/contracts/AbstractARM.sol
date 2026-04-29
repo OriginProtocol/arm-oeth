@@ -362,17 +362,6 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         require(deadline >= block.timestamp, "ARM: Deadline expired");
     }
 
-    /// @dev Ensure any liquidity assets reserved for the withdrawal queue are not used
-    /// in swaps that send liquidity assets out of the ARM
-    /// @param _asset The asset being transferred out of the ARM in a swap.
-    /// @param to The recipient of the asset transfer.
-    /// @param amount The amount of the asset being transferred.
-    function _transferAsset(address _asset, address to, uint256 amount) internal virtual {
-        if (_asset == liquidityAsset) _ensureLiquidityAvailableForSwap(amount);
-
-        IERC20(_asset).transfer(to, amount);
-    }
-
     /// @dev Ensure there is enough on-hand liquidity for a swap, withdrawing the shortfall from the active market
     /// if one is configured and there is not enough liquidity in the ARM.
     /// @param amount The amount of liquidity assets being sent out of the ARM.
@@ -421,8 +410,11 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         // Transfer the input tokens from the caller to this ARM contract
         inToken.transferFrom(msg.sender, address(this), amountIn);
 
+        // Withdraw liquidity from the lending market if not enough in the ARM to cover the swap
+        // after reserving liquidity for withdrawals
+        if (outToken == IERC20(liquidityAsset)) _ensureLiquidityAvailableForSwap(amountOut);
         // Transfer the output tokens to the recipient
-        _transferAsset(address(outToken), to, amountOut);
+        outToken.transfer(to, amountOut);
     }
 
     function _swapTokensForExactTokens(IERC20 inToken, IERC20 outToken, uint256 amountOut, address to)
@@ -452,7 +444,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         inToken.transferFrom(msg.sender, address(this), amountIn);
 
         // Transfer the output tokens to the recipient
-        _transferAsset(address(outToken), to, amountOut);
+        if (outToken == IERC20(liquidityAsset)) _ensureLiquidityAvailableForSwap(amountOut);
+        outToken.transfer(to, amountOut);
     }
 
     /// @dev Convert between base asset and liquidity asset if needed.
