@@ -682,6 +682,18 @@ subtask("setPrices", "Update Lido ARM's swap prices")
     types.float,
   )
   .addOptionalParam(
+    "buyAmount",
+    "Liquidity asset amount the ARM can sell at the buy price before the cap resets",
+    undefined,
+    types.string,
+  )
+  .addOptionalParam(
+    "sellAmount",
+    "Base asset amount the ARM can sell at the sell price before the cap resets",
+    undefined,
+    types.string,
+  )
+  .addOptionalParam(
     "fee",
     "ARM swap fee in basis points if using mid price",
     1,
