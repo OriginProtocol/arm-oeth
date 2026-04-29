@@ -711,8 +711,30 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     ///         Asset amount functions
     ////////////////////////////////////////////////////
 
-    /// @notice The total amount of assets in the ARM, active lending market and external withdrawal queue,
+    /// @dev Checks if there is enough liquidity asset (WETH) in the ARM is not reserved for the withdrawal queue.
+    // That is, the amount of liquidity assets (WETH) that is available to be swapped or collected as fees.
+    // If no outstanding withdrawals, no check will be done of the amount against the balance of the liquidity assets in the ARM.
+    // This is a gas optimization for swaps.
+    // The ARM can swap out liquidity assets (WETH) that has been accrued from the performance fee for the fee collector.
+    // There is no liquidity guarantee for the fee collector. If there is not enough liquidity assets (WETH) in
+    // the ARM to collect the accrued fees, then the fee collector will have to wait until there is enough liquidity assets.
+    function _requireLiquidityAvailable(uint256 amount) internal view {
+        // The amount of liquidity assets (WETH) that is still to be claimed in the withdrawal queue
+        uint256 outstandingWithdrawals = withdrawsQueued - withdrawsClaimed;
+
+        // Save gas on an external balanceOf call if there are no outstanding withdrawals
+        if (outstandingWithdrawals == 0) return;
+
+        // If there is not enough liquidity assets in the ARM to cover the outstanding withdrawals and the amount
+        require(
+            amount + outstandingWithdrawals <= IERC20(liquidityAsset).balanceOf(address(this)),
+            "ARM: Insufficient liquidity"
+        );
+    }
+
+    /// @notice The economic value of assets in the ARM, active lending market and external withdrawal queue,
     /// less the liquidity assets reserved for the ARM's withdrawal queue and accrued fees.
+    /// The active lending market is valued using ERC-4626 share conversion rather than current redeemable liquidity.
     /// @return The total amount of assets in the ARM
     function totalAssets() public view virtual returns (uint256) {
         (uint256 fees, uint256 newAvailableAssets) = _feesAccrued();
@@ -737,8 +759,10 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         return liquidityAsset;
     }
 
-    /// @dev Calculate the available assets which is the assets in the ARM, external withdrawal queue,
+    /// @dev Calculate the economic value of assets in the ARM, external withdrawal queue,
     /// and active lending market, less liquidity assets reserved for the ARM's withdrawal queue.
+    /// The active lending market is valued using convertToAssets() so market valuation remains
+    /// consistent across ERC-4626 implementations even when current redeemable liquidity differs.
     /// This does not exclude any accrued performance fees.
     function _availableAssets() internal view returns (uint256 availableAssets, uint256 outstandingWithdrawals) {
         // Convert the base assets in the ARM to the amount of liquidity assets
@@ -756,10 +780,10 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         if (activeMarketMem != address(0)) {
             // Get all the active lending market shares owned by this ARM contract
             uint256 allShares = IERC4626(activeMarketMem).balanceOf(address(this));
-            // Add all the assets in the active lending market.
-            // previewRedeem is used instead of maxWithdraw as maxWithdraw will return less if the market
-            // is highly utilized or has a temporary pause.
-            assets += IERC4626(activeMarketMem).previewRedeem(allShares);
+            // Add the economic value of assets in the active lending market.
+            // Liquidity-aware functions such as claimable() and _allocate() continue to use maxWithdraw,
+            // maxRedeem, withdraw and redeem when current liquidity matters.
+            assets += IERC4626(activeMarketMem).convertToAssets(allShares);
         }
 
         // The amount of liquidity assets, eg WETH, that is still to be claimed in the withdrawal queue

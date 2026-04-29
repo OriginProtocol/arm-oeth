@@ -59,25 +59,21 @@ lint_on_build = false
 [fuzz]
 runs = 1_000
 
-[profile.lite.invariant]
-runs = 50
+[invariant]
+runs = 1_000
 depth = 100
 shrink_run_limit = 5_000
 show_metrics = true
 fail_on_revert = true
+corpus_dir = "test/invariants/.foundry-corpus"
 
-[profile.default.invariant]
-runs = 256
-depth = 500
-shrink_run_limit = 5_000
-show_metrics = true
-fail_on_revert = true
+[profile.lite.invariant]
+runs = 50
+depth = 20
 
 [profile.ci.invariant]
-runs = 1_000
-depth = 1_000
-shrink_run_limit = 5_000
-show_metrics = true
+runs = 50_000
+depth = 100
 
 [dependencies]
 solmate = "6.7.0"
