@@ -25,6 +25,7 @@ artifacts
 .gas-snapshot
 dependencies/
 soldeer.lock
+test/invariants/.foundry-corpus
 
 # Coverage
 lcov.info*
