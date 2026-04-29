@@ -364,10 +364,10 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
     /// @dev Ensure any liquidity assets reserved for the withdrawal queue are not used
     /// in swaps that send liquidity assets out of the ARM
-    function _transferAsset(address asset, address to, uint256 amount) internal virtual {
-        if (asset == liquidityAsset) _ensureLiquidityAvailableForSwap(amount);
+    function _transferAsset(address _asset, address to, uint256 amount) internal virtual {
+        if (_asset == liquidityAsset) _ensureLiquidityAvailableForSwap(amount);
 
-        IERC20(asset).transfer(to, amount);
+        IERC20(_asset).transfer(to, amount);
     }
 
     /// @dev Ensure there is enough on-hand liquidity for a swap, withdrawing the shortfall from the active market
@@ -395,8 +395,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     }
 
     /// @dev Hook to transfer assets into the ARM contract
-    function _transferAssetFrom(address asset, address from, address to, uint256 amount) internal virtual {
-        IERC20(asset).transferFrom(from, to, amount);
+    function _transferAssetFrom(address _asset, address from, address to, uint256 amount) internal virtual {
+        IERC20(_asset).transferFrom(from, to, amount);
     }
 
     function _swapExactTokensForTokens(IERC20 inToken, IERC20 outToken, uint256 amountIn, address to)
