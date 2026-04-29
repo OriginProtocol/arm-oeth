@@ -101,20 +101,43 @@ jobs:
           echo "✓ Pinned service image to $IMAGE."
 
       - name: Trigger Railway redeploy
-        if: success() && env.RAILWAY_API_TOKEN != ''
+        if: success() && env.RAILWAY_TOKEN != ''
         env:
-          # CLI parses the env var name to decide token type:
-          # RAILWAY_TOKEN → project token, RAILWAY_API_TOKEN → personal/team.
-          # The GitHub secret stays named RAILWAY_TOKEN; we just bind it under
-          # the API-token name so the CLI accepts our personal access token.
-          RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
           RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
           RAILWAY_SERVICE_ID: ${{ secrets.RAILWAY_SERVICE_ID }}
+          RAILWAY_ENVIRONMENT_ID: ${{ secrets.RAILWAY_ENVIRONMENT_ID }}
         run: |
+          set -euo pipefail
           # Fires the actual deploy. The previous step changed the source
           # to the SHA-tagged image but `serviceInstanceUpdate` alone does
           # not trigger a deployment — Railway needs an explicit poke.
-          npm i -g @railway/cli
-          railway link --project "$RAILWAY_PROJECT_ID"
-          railway service "$RAILWAY_SERVICE_ID"
-          railway deploy --yes
+          # Using GraphQL directly (same Bearer auth that worked above)
+          # rather than @railway/cli, which rejects personal access tokens.
+          payload=$(jq -n \
+            --arg projectId "$RAILWAY_PROJECT_ID" \
+            --arg environmentId "$RAILWAY_ENVIRONMENT_ID" \
+            --arg serviceId "$RAILWAY_SERVICE_ID" \
+            '{
+              query: "mutation($input: EnvironmentTriggersDeployInput!) { environmentTriggersDeploy(input: $input) }",
+              variables: {
+                input: {
+                  projectId: $projectId,
+                  environmentId: $environmentId,
+                  serviceId: $serviceId
+                }
+              }
+            }')
+
+          response=$(curl -fsSL -X POST https://backboard.railway.com/graphql/v2 \
+            -H "Authorization: Bearer $RAILWAY_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "$payload")
+
+          echo "$response"
+          if echo "$response" | jq -e '.errors' > /dev/null; then
+            echo "::error::Railway API returned errors — see response above" >&2
+            exit 1
+          fi
+
+          echo "✓ Triggered redeploy."
