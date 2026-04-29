@@ -110,4 +110,5 @@ jobs:
           # to the SHA-tagged image but `serviceInstanceUpdate` alone does
           # not trigger a deployment — Railway needs an explicit poke.
           npm i -g @railway/cli
-          railway deploy --service "$RAILWAY_SERVICE_ID" --yes
+          railway service "$RAILWAY_SERVICE_ID"
+          railway deploy --yes
