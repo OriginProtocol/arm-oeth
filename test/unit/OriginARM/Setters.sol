@@ -251,7 +251,7 @@ contract Unit_Concrete_OriginARM_Setters_Test_ is Unit_Shared_Test {
         deal(address(oeth), alice, 2 ether);
         vm.startPrank(alice);
         oeth.approve(address(originARM), type(uint256).max);
-        originARM.swapExactTokensForTokens(oeth, weth, 1 ether, 0, alice);
+        originARM.swapTokensForExactTokens(oeth, weth, 1 ether, type(uint256).max, alice);
         vm.stopPrank();
 
         assertEq(originARM.buyLiquidityRemaining(), 2 ether, "Buy liquidity not consumed");

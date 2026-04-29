@@ -408,7 +408,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         }
         amountOut = convertedAmountIn * price / PRICE_SCALE;
 
-        _consumeSwapLiquidityLimit(inToken, amountIn);
+        _consumeSwapLiquidityLimit(outToken, amountOut);
 
         // Transfer the input tokens from the caller to this ARM contract
         inToken.transferFrom(msg.sender, address(this), amountIn);
@@ -445,7 +445,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         // +2 to cover stETH transfers being up to 2 wei short of the requested transfer amount
         amountIn = ((convertedAmountOut * PRICE_SCALE) / price) + 3;
 
-        _consumeSwapLiquidityLimit(inToken, amountIn);
+        _consumeSwapLiquidityLimit(outToken, amountOut);
 
         // Transfer the input tokens from the caller to this ARM contract
         inToken.transferFrom(msg.sender, address(this), amountIn);
@@ -458,20 +458,20 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     }
 
     /// @dev Consume the remaining liquidity cap for the current swap direction.
-    /// Buy-side caps are denominated in base-asset input amounts and sell-side caps are denominated in
-    /// liquidity-asset input amounts.
-    /// @param inToken The token being sold into the ARM.
-    /// @param amountIn The amount of `inToken` being sold into the ARM.
-    function _consumeSwapLiquidityLimit(IERC20 inToken, uint256 amountIn) internal {
-        if (address(inToken) == baseAsset) {
-            uint256 remaining = buyLiquidityRemaining;
-            require(amountIn <= remaining, "ARM: Insufficient liquidity");
-            buyLiquidityRemaining = remaining - amountIn;
-        } else {
-            uint256 remaining = sellLiquidityRemaining;
-            require(amountIn <= remaining, "ARM: Insufficient liquidity");
-            sellLiquidityRemaining = remaining - amountIn;
-        }
+    /// Buy-side caps are denominated in liquidity-asset amounts and sell-side caps are denominated in
+    /// base-asset amounts.
+    /// @param outToken The token being bought from the ARM by the trader.
+    /// That is the token being sold by the ARM.
+    /// @param amountOut The amount of `outToken` being bought from the ARM by the trader.
+    /// That is the amount of tokens being sold by the ARM.
+    function _consumeSwapLiquidityLimit(IERC20 outToken, uint256 amountOut) internal {
+        bool isBuySide = address(outToken) == liquidityAsset;
+        uint256 remaining = isBuySide ? buyLiquidityRemaining : sellLiquidityRemaining;
+        require(amountOut <= remaining, "ARM: Insufficient liquidity");
+        remaining -= amountOut;
+
+        if (isBuySide) buyLiquidityRemaining = remaining;
+        else sellLiquidityRemaining = remaining;
     }
 
     /// @dev Convert between base asset and liquidity asset if needed.
@@ -544,6 +544,10 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
      * From the Trader's perspective, this is the sell price.
      * @param sellT1 The price the ARM sells Token 1 (stETH) to the Trader, denominated in Token 0 (WETH), scaled to 36 decimals.
      * From the Trader's perspective, this is the buy price.
+     * @param buyAmount The amount of liquidity asset that the ARM can sell at the buy price
+     * before the price needs to be updated.
+     * @param sellAmount The amount of base assets that the ARM can sell at the sell price
+     * before the price needs to be updated.
      */
     function setPrices(uint256 buyT1, uint256 sellT1, uint256 buyAmount, uint256 sellAmount)
         external
@@ -553,6 +557,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         require(sellT1 >= crossPrice, "ARM: sell price too low");
         require(buyT1 < crossPrice, "ARM: buy price too high");
 
+        // Write state to contract storage
         traderate0 = PRICE_SCALE * PRICE_SCALE / sellT1; // quote (t0) -> base (t1); eg WETH -> stETH
         traderate1 = buyT1; // base (t1) -> quote (t0). eg stETH -> WETH
         buyLiquidityRemaining = buyAmount;

@@ -81,7 +81,7 @@ contract LidoARM is Initializable, AbstractARM {
 
     /// @notice Clears the legacy storage region reused for packed swap fee accrual.
     /// This should be called via `upgradeToAndCall(...)` after legacy fees are collected.
-    function migrateFeesAccrued() external reinitializer(3) onlyOwner {
+    function migrateFeesAccrued() external onlyOwner {
         _migrateFeesAccrued();
     }
 
@@ -97,7 +97,7 @@ contract LidoARM is Initializable, AbstractARM {
         IStETHWithdrawal.WithdrawalRequestStatus[] memory statuses =
             IStETHWithdrawal(lidoWithdrawalQueue).getWithdrawalStatus(requestIds);
 
-        for (uint256 i = 0; i < requestIds.length; i++) {
+        for (uint256 i = 0; i < requestIds.length;) {
             // The following should always be true given the requestIds came from calling getWithdrawalRequests
             require(statuses[i].isClaimed == false, "LidoARM: already claimed");
             require(statuses[i].owner == address(this), "LidoARM: not owner");
@@ -105,6 +105,10 @@ contract LidoARM is Initializable, AbstractARM {
             // Store the amount of stETH of each Lido withdraw request
             lidoWithdrawalRequests[requestIds[i]] = statuses[i].amountOfStETH;
             totalAmountRequested += statuses[i].amountOfStETH;
+
+            unchecked {
+                ++i;
+            }
         }
 
         require(totalAmountRequested == lidoWithdrawalQueueAmount, "LidoARM: missing requests");
@@ -126,11 +130,15 @@ contract LidoARM is Initializable, AbstractARM {
 
         // Sum the total amount of stETH being withdraw
         uint256 totalAmountRequested = 0;
-        for (uint256 i = 0; i < amounts.length; i++) {
+        for (uint256 i = 0; i < amounts.length;) {
             totalAmountRequested += amounts[i];
 
             // Store the amount of each withdrawal request
             lidoWithdrawalRequests[requestIds[i]] = amounts[i];
+
+            unchecked {
+                ++i;
+            }
         }
 
         // Increase the Ether outstanding from the Lido Withdrawal Queue
@@ -155,7 +163,7 @@ contract LidoARM is Initializable, AbstractARM {
         // The amount of ETH claimed from the Lido Withdrawal Queue can be less than the requested amount
         // in the event of a mass slashing event of Lido validators.
         uint256 totalAmountRequested = 0;
-        for (uint256 i = 0; i < requestIds.length; i++) {
+        for (uint256 i = 0; i < requestIds.length;) {
             // Read the requested amount from storage
             uint256 requestAmount = lidoWithdrawalRequests[requestIds[i]];
 
@@ -164,6 +172,10 @@ contract LidoARM is Initializable, AbstractARM {
             require(requestAmount > 0, "LidoARM: invalid request");
 
             totalAmountRequested += requestAmount;
+
+            unchecked {
+                ++i;
+            }
         }
 
         // Store the reduced outstanding withdrawals from the Lido Withdrawal Queue

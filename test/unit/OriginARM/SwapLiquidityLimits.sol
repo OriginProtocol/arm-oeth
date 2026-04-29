@@ -4,7 +4,7 @@ pragma solidity 0.8.23;
 import {Unit_Shared_Test} from "test/unit/shared/Shared.sol";
 
 contract Unit_Concrete_OriginARM_SwapLiquidityLimits_Test_ is Unit_Shared_Test {
-    function test_SwapExactTokensForTokens_BuySide_ConsumesBaseAssetCap() public {
+    function test_SwapExactTokensForTokens_BuySide_ConsumesLiquidityAssetCap() public {
         uint256 buyCap = 3 ether;
         _setSwapCaps(buyCap, type(uint256).max);
 
@@ -12,14 +12,14 @@ contract Unit_Concrete_OriginARM_SwapLiquidityLimits_Test_ is Unit_Shared_Test {
         deal(address(oeth), alice, buyCap);
         vm.startPrank(alice);
         oeth.approve(address(originARM), type(uint256).max);
-        originARM.swapExactTokensForTokens(oeth, weth, 1 ether, 0, alice);
+        uint256[] memory amounts = originARM.swapExactTokensForTokens(oeth, weth, 1 ether, 0, alice);
         vm.stopPrank();
 
-        assertEq(originARM.buyLiquidityRemaining(), 2 ether, "buy cap not consumed");
+        assertEq(originARM.buyLiquidityRemaining(), buyCap - amounts[1], "buy cap not consumed");
         assertEq(originARM.sellLiquidityRemaining(), type(uint256).max, "sell cap changed");
     }
 
-    function test_SwapTokensForExactTokens_BuySide_ConsumesComputedInputCap() public {
+    function test_SwapTokensForExactTokens_BuySide_ConsumesExactOutputCap() public {
         uint256 buyCap = 3 ether;
         _setSwapCaps(buyCap, type(uint256).max);
 
@@ -30,10 +30,11 @@ contract Unit_Concrete_OriginARM_SwapLiquidityLimits_Test_ is Unit_Shared_Test {
         uint256[] memory amounts = originARM.swapTokensForExactTokens(oeth, weth, 1 ether, type(uint256).max, alice);
         vm.stopPrank();
 
-        assertEq(originARM.buyLiquidityRemaining(), buyCap - amounts[0], "buy cap not consumed by amount in");
+        assertEq(amounts[1], 1 ether, "wrong output");
+        assertEq(originARM.buyLiquidityRemaining(), buyCap - amounts[1], "buy cap not consumed by amount out");
     }
 
-    function test_SwapExactTokensForTokens_SellSide_ConsumesLiquidityAssetCap() public {
+    function test_SwapExactTokensForTokens_SellSide_ConsumesBaseAssetCap() public {
         uint256 sellCap = 4 ether;
         _setSwapCaps(type(uint256).max, sellCap);
 
@@ -41,14 +42,14 @@ contract Unit_Concrete_OriginARM_SwapLiquidityLimits_Test_ is Unit_Shared_Test {
         deal(address(weth), alice, sellCap);
         vm.startPrank(alice);
         weth.approve(address(originARM), type(uint256).max);
-        originARM.swapExactTokensForTokens(weth, oeth, 1 ether, 0, alice);
+        uint256[] memory amounts = originARM.swapExactTokensForTokens(weth, oeth, 1 ether, 0, alice);
         vm.stopPrank();
 
-        assertEq(originARM.sellLiquidityRemaining(), 3 ether, "sell cap not consumed");
+        assertEq(originARM.sellLiquidityRemaining(), sellCap - amounts[1], "sell cap not consumed");
         assertEq(originARM.buyLiquidityRemaining(), type(uint256).max, "buy cap changed");
     }
 
-    function test_SwapTokensForExactTokens_SellSide_ConsumesComputedInputCap() public {
+    function test_SwapTokensForExactTokens_SellSide_ConsumesExactOutputCap() public {
         uint256 sellCap = 4 ether;
         _setSwapCaps(type(uint256).max, sellCap);
 
@@ -59,7 +60,8 @@ contract Unit_Concrete_OriginARM_SwapLiquidityLimits_Test_ is Unit_Shared_Test {
         uint256[] memory amounts = originARM.swapTokensForExactTokens(weth, oeth, 1 ether, type(uint256).max, alice);
         vm.stopPrank();
 
-        assertEq(originARM.sellLiquidityRemaining(), sellCap - amounts[0], "sell cap not consumed by amount in");
+        assertEq(amounts[1], 1 ether, "wrong output");
+        assertEq(originARM.sellLiquidityRemaining(), sellCap - amounts[1], "sell cap not consumed by amount out");
     }
 
     function test_RevertWhen_BuySideSwapExceedsRemainingCap() public {
@@ -71,7 +73,7 @@ contract Unit_Concrete_OriginARM_SwapLiquidityLimits_Test_ is Unit_Shared_Test {
         oeth.approve(address(originARM), type(uint256).max);
 
         vm.expectRevert("ARM: Insufficient liquidity");
-        originARM.swapExactTokensForTokens(oeth, weth, 1 ether + 1, 0, alice);
+        originARM.swapTokensForExactTokens(oeth, weth, 1 ether + 1, type(uint256).max, alice);
 
         vm.stopPrank();
     }
@@ -85,7 +87,7 @@ contract Unit_Concrete_OriginARM_SwapLiquidityLimits_Test_ is Unit_Shared_Test {
         weth.approve(address(originARM), type(uint256).max);
 
         vm.expectRevert("ARM: Insufficient liquidity");
-        originARM.swapExactTokensForTokens(weth, oeth, 1 ether + 1, 0, alice);
+        originARM.swapTokensForExactTokens(weth, oeth, 1 ether + 1, type(uint256).max, alice);
 
         vm.stopPrank();
     }
