@@ -398,15 +398,6 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         }
     }
 
-    /// @dev Hook to transfer assets into the ARM contract
-    /// @param _asset The asset being transferred into the ARM in a swap.
-    /// @param from The address of the asset being transferred.
-    /// @param to The address to which the asset is being transferred.
-    /// @param amount The amount of the asset being transferred.
-    function _transferAssetFrom(address _asset, address from, address to, uint256 amount) internal virtual {
-        IERC20(_asset).transferFrom(from, to, amount);
-    }
-
     function _swapExactTokensForTokens(IERC20 inToken, IERC20 outToken, uint256 amountIn, address to)
         internal
         virtual
@@ -428,7 +419,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         amountOut = convertedAmountIn * price / PRICE_SCALE;
 
         // Transfer the input tokens from the caller to this ARM contract
-        _transferAssetFrom(address(inToken), msg.sender, address(this), amountIn);
+        inToken.transferFrom(msg.sender, address(this), amountIn);
 
         // Transfer the output tokens to the recipient
         _transferAsset(address(outToken), to, amountOut);
@@ -458,7 +449,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         amountIn = ((convertedAmountOut * PRICE_SCALE) / price) + 3;
 
         // Transfer the input tokens from the caller to this ARM contract
-        _transferAssetFrom(address(inToken), msg.sender, address(this), amountIn);
+        inToken.transferFrom(msg.sender, address(this), amountIn);
 
         // Transfer the output tokens to the recipient
         _transferAsset(address(outToken), to, amountOut);
