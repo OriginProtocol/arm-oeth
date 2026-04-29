@@ -101,9 +101,13 @@ jobs:
           echo "✓ Pinned service image to $IMAGE."
 
       - name: Trigger Railway redeploy
-        if: success() && env.RAILWAY_TOKEN != ''
+        if: success() && env.RAILWAY_API_TOKEN != ''
         env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          # CLI parses the env var name to decide token type:
+          # RAILWAY_TOKEN → project token, RAILWAY_API_TOKEN → personal/team.
+          # The GitHub secret stays named RAILWAY_TOKEN; we just bind it under
+          # the API-token name so the CLI accepts our personal access token.
+          RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
           RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
           RAILWAY_SERVICE_ID: ${{ secrets.RAILWAY_SERVICE_ID }}
         run: |
