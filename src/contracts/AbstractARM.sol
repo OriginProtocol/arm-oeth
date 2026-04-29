@@ -230,6 +230,13 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         emit CrossPriceUpdated(PRICE_SCALE);
     }
 
+    /// @dev Clears the reused legacy storage region that now backs `feesAccrued`.
+    /// This must be called exactly once during proxy upgrade via `upgradeToAndCall(...)`
+    /// after any legacy fees have been collected under the previous implementation.
+    function _migrateFeesAccrued() internal {
+        feeData.feesAccrued = 0;
+    }
+
     ////////////////////////////////////////////////////
     ///                 Swap Functions
     ////////////////////////////////////////////////////
@@ -934,13 +941,6 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         IERC20(liquidityAsset).transfer(feeCollector, fees);
 
         emit FeeCollected(feeCollector, fees);
-    }
-
-    /// @dev Clears the reused legacy storage region that now backs `feesAccrued`.
-    /// This must be called exactly once during proxy upgrade via `upgradeToAndCall(...)`
-    /// after any legacy fees have been collected under the previous implementation.
-    function _migrateFeesAccrued() internal {
-        feeData.feesAccrued = 0;
     }
 
     function fee() external view returns (uint16) {
