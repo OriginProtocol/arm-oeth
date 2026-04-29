@@ -17,6 +17,8 @@ contract Unit_Concrete_OriginARM_SwapLiquidityFromMarket_Test_ is Unit_Shared_Te
         address swapper = makeAddr("swapper");
         uint256 amountIn = DEFAULT_AMOUNT / 2;
         uint256 expectedAmountOut = amountIn * originARM.traderate1() / 1e36;
+        vm.prank(operator);
+        originARM.setPrices(992 * 1e33, 1001 * 1e33, amountIn, type(uint256).max);
 
         deal(address(oeth), swapper, amountIn);
         vm.startPrank(swapper);
@@ -31,6 +33,7 @@ contract Unit_Concrete_OriginARM_SwapLiquidityFromMarket_Test_ is Unit_Shared_Te
         assertEq(amounts[1], expectedAmountOut, "output amount");
         assertEq(weth.balanceOf(address(originARM)), 0, "no extra WETH should stay in ARM");
         assertEq(market.balanceOf(address(originARM)), marketBalanceBefore - expectedAmountOut, "market shortfall only");
+        assertEq(originARM.buyLiquidityRemaining(), 0, "buy cap not consumed");
     }
 
     function test_SwapTokensForExactTokens_WithMarketShortfall_WithdrawsExactShortfall()
@@ -41,6 +44,8 @@ contract Unit_Concrete_OriginARM_SwapLiquidityFromMarket_Test_ is Unit_Shared_Te
     {
         address swapper = makeAddr("swapper");
         uint256 amountOut = DEFAULT_AMOUNT / 2;
+        vm.prank(operator);
+        originARM.setPrices(992 * 1e33, 1001 * 1e33, DEFAULT_AMOUNT, type(uint256).max);
 
         deal(address(oeth), swapper, DEFAULT_AMOUNT);
         vm.startPrank(swapper);
@@ -54,6 +59,7 @@ contract Unit_Concrete_OriginARM_SwapLiquidityFromMarket_Test_ is Unit_Shared_Te
         assertEq(amounts[1], amountOut, "exact output");
         assertEq(weth.balanceOf(address(originARM)), 0, "no extra WETH should stay in ARM");
         assertEq(market.balanceOf(address(originARM)), marketBalanceBefore - amountOut, "market shortfall only");
+        assertEq(originARM.buyLiquidityRemaining(), DEFAULT_AMOUNT - amounts[0], "buy cap not consumed");
     }
 
     function test_SwapWithdrawFromMarket_PreservesQueuedRedeemLiquidity()

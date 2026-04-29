@@ -100,7 +100,7 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
             expectedOut = IStakedUSDe(address(susde)).convertToShares(expectedOut);
 
             vm.prank(Mainnet.ARM_RELAYER);
-            ethenaARM.setPrices(0.99e36, price);
+            ethenaARM.setPrices(0.99e36, price, type(uint256).max, type(uint256).max);
         } else {
             // Trader is selling sUSDe and buying USDE
             // the ARM is buying sUSDe and selling USDE
@@ -112,7 +112,7 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
 
             vm.prank(Mainnet.ARM_RELAYER);
             uint256 sellPrice = price < 0.9997e36 ? 0.99996e36 : price + 2e32;
-            ethenaARM.setPrices(price, sellPrice);
+            ethenaARM.setPrices(price, sellPrice, type(uint256).max, type(uint256).max);
         }
         // Approve the ARM to transfer the input token of the swap.
         inToken.approve(address(ethenaARM), amountIn);
@@ -137,7 +137,7 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
             expectedIn = IStakedUSDe(address(susde)).convertToAssets(amountOut) * price / 1e36;
 
             vm.prank(Mainnet.ARM_RELAYER);
-            ethenaARM.setPrices(0.99e36, price);
+            ethenaARM.setPrices(0.99e36, price, type(uint256).max, type(uint256).max);
         } else {
             // Trader is selling sUSDe and buying USDE
             // the ARM is buying sUSDe and selling USDE
@@ -149,7 +149,7 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
 
             vm.prank(Mainnet.ARM_RELAYER);
             uint256 sellPrice = price < 0.9997e36 ? 0.99996e36 : price + 2e32;
-            ethenaARM.setPrices(price, sellPrice);
+            ethenaARM.setPrices(price, sellPrice, type(uint256).max, type(uint256).max);
         }
         // Approve the ARM to transfer the input token of the swap.
         inToken.approve(address(ethenaARM), expectedIn + 10000);

@@ -129,8 +129,12 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     mapping(address market => bool supported) public supportedMarkets;
     /// @notice Percentage of available liquid assets to keep in the ARM. 100% = 1e18.
     uint256 public armBuffer;
+    /// @notice Remaining base-asset amount that can be sold into the ARM at the current buy price.
+    uint256 public buyLiquidityRemaining;
+    /// @notice Remaining liquidity-asset amount that can be sold into the ARM at the current sell price.
+    uint256 public sellLiquidityRemaining;
 
-    uint256[38] private _gap;
+    uint256[36] private _gap;
 
     ////////////////////////////////////////////////////
     ///                 Events
@@ -404,6 +408,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         }
         amountOut = convertedAmountIn * price / PRICE_SCALE;
 
+        _consumeSwapLiquidityLimit(inToken, amountIn);
+
         // Transfer the input tokens from the caller to this ARM contract
         inToken.transferFrom(msg.sender, address(this), amountIn);
 
@@ -439,6 +445,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         // +2 to cover stETH transfers being up to 2 wei short of the requested transfer amount
         amountIn = ((convertedAmountOut * PRICE_SCALE) / price) + 3;
 
+        _consumeSwapLiquidityLimit(inToken, amountIn);
+
         // Transfer the input tokens from the caller to this ARM contract
         inToken.transferFrom(msg.sender, address(this), amountIn);
 
@@ -447,6 +455,23 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         outToken.transfer(to, amountOut);
 
         _accrueSwapFee(inToken, outToken, amountIn, amountOut);
+    }
+
+    /// @dev Consume the remaining liquidity cap for the current swap direction.
+    /// Buy-side caps are denominated in base-asset input amounts and sell-side caps are denominated in
+    /// liquidity-asset input amounts.
+    /// @param inToken The token being sold into the ARM.
+    /// @param amountIn The amount of `inToken` being sold into the ARM.
+    function _consumeSwapLiquidityLimit(IERC20 inToken, uint256 amountIn) internal {
+        if (address(inToken) == baseAsset) {
+            uint256 remaining = buyLiquidityRemaining;
+            require(amountIn <= remaining, "ARM: Insufficient liquidity");
+            buyLiquidityRemaining = remaining - amountIn;
+        } else {
+            uint256 remaining = sellLiquidityRemaining;
+            require(amountIn <= remaining, "ARM: Insufficient liquidity");
+            sellLiquidityRemaining = remaining - amountIn;
+        }
     }
 
     /// @dev Convert between base asset and liquidity asset if needed.
@@ -520,13 +545,18 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
      * @param sellT1 The price the ARM sells Token 1 (stETH) to the Trader, denominated in Token 0 (WETH), scaled to 36 decimals.
      * From the Trader's perspective, this is the buy price.
      */
-    function setPrices(uint256 buyT1, uint256 sellT1) external onlyOperatorOrOwner {
+    function setPrices(uint256 buyT1, uint256 sellT1, uint256 buyAmount, uint256 sellAmount)
+        external
+        onlyOperatorOrOwner
+    {
         // Ensure buy price is always below past sell prices
         require(sellT1 >= crossPrice, "ARM: sell price too low");
         require(buyT1 < crossPrice, "ARM: buy price too high");
 
         traderate0 = PRICE_SCALE * PRICE_SCALE / sellT1; // quote (t0) -> base (t1); eg WETH -> stETH
         traderate1 = buyT1; // base (t1) -> quote (t0). eg stETH -> WETH
+        buyLiquidityRemaining = buyAmount;
+        sellLiquidityRemaining = sellAmount;
 
         emit TraderateChanged(traderate0, traderate1);
     }

@@ -236,7 +236,7 @@ abstract contract Setup is Base_Test_ {
         originARM.setCrossPrice(0.9999 * 1e36);
         // Set prices
         vm.prank(operator);
-        originARM.setPrices(MIN_BUY_PRICE, MAX_SELL_PRICE);
+        originARM.setPrices(MIN_BUY_PRICE, MAX_SELL_PRICE, type(uint256).max, type(uint256).max);
 
         // --- Setup Markets ---
         markets = new address[](2);

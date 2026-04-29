@@ -86,7 +86,7 @@ abstract contract Modifiers is Helpers {
     /// @notice Set the stETH/WETH swap prices on the LidoARM contract.
     modifier setPrices(uint256 buyPrice, uint256 crossPrice, uint256 sellPrice) {
         lidoARM.setCrossPrice(crossPrice);
-        lidoARM.setPrices(buyPrice, sellPrice);
+        lidoARM.setPrices(buyPrice, sellPrice, type(uint256).max, type(uint256).max);
         _;
     }
 

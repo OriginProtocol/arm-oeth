@@ -1,4 +1,4 @@
-const { formatUnits, parseUnits } = require("ethers");
+const { MaxUint256, formatUnits, parseUnits } = require("ethers");
 
 const addresses = require("../utils/addresses");
 const { abs } = require("../utils/maths");
@@ -53,6 +53,8 @@ const setPrices = async (options) => {
     priceOffset,
     dryrun,
     wrapped = false,
+    buyAmount = MaxUint256,
+    sellAmount = MaxUint256,
   } = options;
 
   // 1. Get current ARM prices
@@ -288,7 +290,7 @@ const setPrices = async (options) => {
 
     const tx = await arm
       .connect(signer)
-      .setPrices(targetBuyPrice, targetSellPrice);
+      .setPrices(targetBuyPrice, targetSellPrice, buyAmount, sellAmount);
 
     await logTxDetails(tx, "setPrices", options.confirm);
   } else {

@@ -40,7 +40,7 @@ contract Fork_Concrete_LidoARM_SetCrossPrice_Test_ is Fork_Shared_Test_ {
     }
 
     function test_RevertWhen_SetCrossPrice_Because_BuyPriceTooHigh() public {
-        lidoARM.setPrices(1e36 - 20e32 + 1, 1000 * 1e33 + 1);
+        lidoARM.setPrices(1e36 - 20e32 + 1, 1000 * 1e33 + 1, type(uint256).max, type(uint256).max);
         vm.expectRevert("ARM: buy price too high");
         lidoARM.setCrossPrice(1e36 - 20e32);
     }
@@ -49,11 +49,11 @@ contract Fork_Concrete_LidoARM_SetCrossPrice_Test_ is Fork_Shared_Test_ {
         // To make it revert we need to try to make cross price above the sell1.
         // But we need to keep cross price below 1e36!
         // So first we reduce buy and sell price to minimum values
-        lidoARM.setPrices(1e36 - 20e32, 1000 * 1e33 + 1);
+        lidoARM.setPrices(1e36 - 20e32, 1000 * 1e33 + 1, type(uint256).max, type(uint256).max);
         // This allow us to set a cross price below 1e36
         lidoARM.setCrossPrice(1e36 - 20e32 + 1);
         // Then we make both buy and sell price below the 1e36
-        lidoARM.setPrices(1e36 - 20e32, 1e36 - 20e32 + 1);
+        lidoARM.setPrices(1e36 - 20e32, 1e36 - 20e32 + 1, type(uint256).max, type(uint256).max);
 
         // Then we try to set cross price above the sell price
         vm.expectRevert("ARM: sell price too low");
