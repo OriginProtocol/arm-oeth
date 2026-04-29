@@ -467,17 +467,15 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         // The amount of liquidity assets (WETH) that is still to be claimed in the withdrawal queue
         uint256 outstandingWithdrawals = withdrawsQueued - withdrawsClaimed;
 
-        uint256 liquidityAssetBalance = IERC20(liquidityAsset).balanceOf(address(this));
-        uint256 baseAssetBalance = IERC20(baseAsset).balanceOf(address(this));
-        uint256 availableLiquidity = liquidityAssetBalance;
+        uint256 liquidityAssetsBalance = IERC20(liquidityAsset).balanceOf(address(this));
         address activeMarketMem = activeMarket;
         if (activeMarketMem != address(0)) {
-            availableLiquidity += IERC4626(activeMarketMem).maxWithdraw(address(this));
+            liquidityAssetsBalance += IERC4626(activeMarketMem).maxWithdraw(address(this));
         }
 
         // Ensure there is no negative reserves when there are more outstanding withdrawals than liquidity assets in the ARM
-        reserve0 = outstandingWithdrawals > availableLiquidity ? 0 : availableLiquidity - outstandingWithdrawals;
-        reserve1 = baseAssetBalance;
+        reserve0 = outstandingWithdrawals > liquidityAssetsBalance ? 0 : liquidityAssetsBalance - outstandingWithdrawals;
+        reserve1 = IERC20(baseAsset).balanceOf(address(this));
 
         // The previous assignment assumed token0 is be the liquidity asset.
         // If not, swap the reserves
