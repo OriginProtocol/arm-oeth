@@ -364,6 +364,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
     /// @dev Ensure any liquidity assets reserved for the withdrawal queue are not used
     /// in swaps that send liquidity assets out of the ARM
+    /// @param _asset The asset being transferred out of the ARM in a swap.
+    /// @param to The recipient of the asset transfer.
+    /// @param amount The amount of the asset being transferred.
     function _transferAsset(address _asset, address to, uint256 amount) internal virtual {
         if (_asset == liquidityAsset) _ensureLiquidityAvailableForSwap(amount);
 
@@ -371,7 +374,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     }
 
     /// @dev Ensure there is enough on-hand liquidity for a swap, withdrawing the shortfall from the active market
-    /// if one is configured.
+    /// if one is configured and there is not enough liquidity in the ARM.
+    /// @param amount The amount of liquidity assets being sent out of the ARM.
     function _ensureLiquidityAvailableForSwap(uint256 amount) internal {
         uint256 liquidityBalance = IERC20(liquidityAsset).balanceOf(address(this));
         uint256 outstandingWithdrawals = withdrawsQueued - withdrawsClaimed;
@@ -395,6 +399,10 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     }
 
     /// @dev Hook to transfer assets into the ARM contract
+    /// @param _asset The asset being transferred into the ARM in a swap.
+    /// @param from The address of the asset being transferred.
+    /// @param to The address to which the asset is being transferred.
+    /// @param amount The amount of the asset being transferred.
     function _transferAssetFrom(address _asset, address from, address to, uint256 amount) internal virtual {
         IERC20(_asset).transferFrom(from, to, amount);
     }
@@ -874,7 +882,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     }
 
     /// @notice Calculates the performance fees accrued since the last time fees were collected
-    /// @param fees The amount of performance fees accrued
+    /// @return fees The amount of performance fees accrued
     function feesAccrued() external view returns (uint256 fees) {
         (fees,) = _feesAccrued();
     }
