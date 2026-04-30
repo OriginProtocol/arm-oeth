@@ -4,6 +4,7 @@ import * as hhHelpers from "@nomicfoundation/hardhat-network-helpers";
 import {
   createDb,
   createPool,
+  wrapSignerWithDefenderRecorderV6,
   wrapSignerWithNonceQueueV6,
 } from "@talos/client";
 
@@ -157,7 +158,16 @@ export async function getSigner(address?: string): Promise<Signer> {
           "Either uncheck the Defender option on this action or configure the env vars.",
       );
     }
-    return maybeWrap(await getDefenderSigner());
+    // Defender's relayer manages nonce + gas + retries server-side, so
+    // the nonce-queue wrap is both broken (Defender can't sign offline)
+    // and unnecessary. The recorder wrapper instead inserts a single row
+    // into nonce_queue_transactions post-broadcast so the tx hash still
+    // shows up on talos's Transactions page linked to its run.
+    const signer = await getDefenderSigner();
+    const db = getNonceDb();
+    return db
+      ? wrapSignerWithDefenderRecorderV6(signer, { db })
+      : signer;
   }
 
   if (hasAwsKmsCredentials()) {
