@@ -8,7 +8,7 @@ import {Sonic} from "contracts/utils/Addresses.sol";
 import {AbstractDeployScript} from "script/deploy/helpers/AbstractDeployScript.s.sol";
 
 contract $006_UpgradeOriginARMSwapFeeScript is AbstractDeployScript("006_UpgradeOriginARMSwapFeeScript") {
-    bool public constant override skip = true;
+    bool public constant override skip = false;
 
     function _execute() internal override {
         uint256 claimDelay = 10 minutes;
@@ -26,8 +26,9 @@ contract $006_UpgradeOriginARMSwapFeeScript is AbstractDeployScript("006_Upgrade
         if (proxy.implementation() == impl) return;
 
         vm.startPrank(proxy.owner());
-        OriginARM(payable(address(proxy))).collectFees();
-        proxy.upgradeToAndCall(impl, abi.encodeWithSelector(OriginARM.migrateFeesAccrued.selector));
+        (bool success,) = address(proxy).call(abi.encodeWithSignature("collectFees()"));
+        require(success, "Collect fees failed");
+        proxy.upgradeTo(impl);
         vm.stopPrank();
     }
 }

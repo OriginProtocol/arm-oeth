@@ -11,7 +11,7 @@ import {GovHelper, GovProposal} from "script/deploy/helpers/GovHelper.sol";
 contract $028_UpgradeLidoARMSwapFeeScript is AbstractDeployScript("028_UpgradeLidoARMSwapFeeScript") {
     using GovHelper for GovProposal;
 
-    bool public constant override skip = true;
+    bool public constant override skip = false;
 
     function _execute() internal override {
         uint256 claimDelay = 10 minutes;
@@ -28,11 +28,7 @@ contract $028_UpgradeLidoARMSwapFeeScript is AbstractDeployScript("028_UpgradeLi
 
         address lidoARMProxy = resolver.resolve("LIDO_ARM");
         govProposal.action(lidoARMProxy, "collectFees()", "");
-        govProposal.action(
-            lidoARMProxy,
-            "upgradeToAndCall(address,bytes)",
-            abi.encode(resolver.resolve("LIDO_ARM_IMPL"), abi.encodeWithSelector(LidoARM.migrateFeesAccrued.selector))
-        );
+        govProposal.action(lidoARMProxy, "upgradeTo(address)", abi.encode(resolver.resolve("LIDO_ARM_IMPL")));
     }
 
     function _fork() internal override {
@@ -42,8 +38,10 @@ contract $028_UpgradeLidoARMSwapFeeScript is AbstractDeployScript("028_UpgradeLi
         if (proxy.implementation() == impl) return;
 
         vm.startPrank(proxy.owner());
-        LidoARM(payable(address(proxy))).collectFees();
-        proxy.upgradeToAndCall(impl, abi.encodeWithSelector(LidoARM.migrateFeesAccrued.selector));
+        // Use call instead of interface to avoid reverts from missing collectFees function in the current implementation
+        (bool success,) = address(proxy).call(abi.encodeWithSignature("collectFees()"));
+        require(success, "Collect fees failed");
+        proxy.upgradeTo(impl);
         vm.stopPrank();
     }
 }

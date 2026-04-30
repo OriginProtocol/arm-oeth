@@ -24,8 +24,6 @@ contract Fork_Concrete_LidoARM_Constructor_Test is Fork_Shared_Test_ {
         assertEq(lidoARM.feeCollector(), feeCollector);
         assertEq(lidoARM.fee(), 2000);
         assertEq(lidoARM.lastAvailableAssets(), int256(1e12));
-        assertEq(lidoARM.feesAccrued(), 0);
-        // the 20% performance fee is removed on initialization
         assertEq(lidoARM.totalAssets(), 1e12);
         assertEq(lidoARM.totalSupply(), 1e12);
         assertEq(weth.balanceOf(address(lidoARM)), 1e12);

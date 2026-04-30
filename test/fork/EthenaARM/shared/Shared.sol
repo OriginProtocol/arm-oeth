@@ -115,8 +115,21 @@ abstract contract Fork_Shared_Test is Base_Test_ {
         // Deposit some usde in the ARM
         ethenaARM.deposit(10_000 ether);
 
+        // Open up swap-direction liquidity caps so the helper swap below isn't blocked.
+        // Disable the swap fee here so the entire 5_000 sUSDe lands in the ARM (the
+        // immediate-fee path would otherwise siphon ~20% to the fee collector and
+        // starve the downstream tests that walk through MAX_UNSTAKERS).
+        vm.startPrank(ethenaARM.owner());
+        ethenaARM.setPrices(0.998e36, 1e36, type(uint256).max, type(uint256).max);
+        uint256 originalFee = ethenaARM.fee();
+        ethenaARM.setFee(0);
+        vm.stopPrank();
+
         // Swap usde to susde using ARM to have some susde balance
         ethenaARM.swapExactTokensForTokens(IERC20(address(susde)), usde, 5_000 ether, 0, address(this));
+
+        vm.prank(ethenaARM.owner());
+        ethenaARM.setFee(originalFee);
 
         vm.startPrank(ethenaARM.owner());
         ethenaARM.setUnstakers(_deployUnstakers());

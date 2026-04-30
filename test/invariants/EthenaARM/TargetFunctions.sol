@@ -502,31 +502,10 @@ abstract contract TargetFunctions is Setup, StdUtils {
         }
     }
 
-    function targetARMCollectFees() external ensureExchangeRateIncrease {
-        uint256 feesAccrued = arm.feesAccrued();
-        uint256 balance = usde.balanceOf(address(arm));
-        uint256 outstandingWithdrawals = arm.withdrawsQueued() - arm.withdrawsClaimed();
-        if (assume(balance >= feesAccrued + outstandingWithdrawals)) return;
-
-        uint256 feesCollected = arm.collectFees();
-
-        if (isConsoleAvailable) {
-            console.log(">>> ARM Collect:\t Governor collected %18e USDe in fees", feesCollected);
-        }
-        require(feesCollected == feesAccrued, "Fees collected mismatch");
-
-        sumUSDeFeesCollected += feesCollected;
-    }
+    /// @dev no-op stub: collectFees was removed when fees moved to immediate transfer in _accrueSwapFee.
+    function targetARMCollectFees() external ensureExchangeRateIncrease {}
 
     function targetARMSetFees(uint256 fee) external ensureExchangeRateIncrease {
-        // Ensure current fee can be collected
-        uint256 feesAccrued = arm.feesAccrued();
-        if (feesAccrued != 0) {
-            uint256 balance = usde.balanceOf(address(arm));
-            uint256 outstandingWithdrawals = arm.withdrawsQueued() - arm.withdrawsClaimed();
-            if (assume(balance >= feesAccrued + outstandingWithdrawals)) return;
-        }
-
         uint256 oldFee = arm.fee();
         // Bound fee to [0, 50%]
         fee = _bound(fee, 0, 50);
@@ -536,8 +515,6 @@ abstract contract TargetFunctions is Setup, StdUtils {
         if (isConsoleAvailable) {
             console.log(">>> ARM SetFees:\t Governor set ARM fee from %s% to %s%", oldFee / 100, fee);
         }
-
-        sumUSDeFeesCollected += feesAccrued;
     }
 
     function targetARMRequestBaseWithdrawal(uint88 amount) external ensureExchangeRateIncrease {
@@ -900,8 +877,5 @@ abstract contract TargetFunctions is Setup, StdUtils {
             vm.prank(user);
             arm.claimRedeem(i);
         }
-
-        // 6. Claim fees accrued.
-        arm.collectFees();
     }
 }

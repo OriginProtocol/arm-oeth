@@ -163,23 +163,21 @@ contract Unit_Concrete_OriginARM_Setters_Test_ is Unit_Shared_Test {
         assertEq(weth.balanceOf(originARM.feeCollector()), feeCollectorBalanceBefore, "Wrong fee collector balance");
     }
 
-    function test_SetFee_When_SomethingToClaim() public swapAllWETHForOETH swapAllOETHForWETH asGovernor {
-        // Swap one way and then the other way to have some fees to claim and liquidity to claim it.
+    function test_SetFee_DoesNotCollect() public swapAllWETHForOETH swapAllOETHForWETH asGovernor {
+        // Under the swap-fee model, setFee no longer settles any pending balance —
+        // fees are transferred immediately during qualifying swaps.
         uint256 newFee = originARM.fee() + 1;
         assertNotEq(originARM.fee(), newFee, "Wrong fee");
-        uint256 feeToCollect = originARM.feesAccrued();
         address feeCollector = originARM.feeCollector();
-        uint256 feeCollectorBalanceBefore = weth.balanceOf(feeCollector);
+        uint256 feeCollectorWethBefore = weth.balanceOf(feeCollector);
 
         // Expected event
-        vm.expectEmit(address(originARM));
-        emit AbstractARM.FeeCollected(feeCollector, feeToCollect);
         vm.expectEmit(address(originARM));
         emit AbstractARM.FeeUpdated(newFee);
 
         originARM.setFee(newFee);
         assertEq(originARM.fee(), newFee, "Wrong fee");
-        assertEq(weth.balanceOf(feeCollector), feeCollectorBalanceBefore + feeToCollect, "Wrong fee collector balance");
+        assertEq(weth.balanceOf(feeCollector), feeCollectorWethBefore, "feeCollector WETH unchanged");
     }
 
     function test_SetCapManager_ToNotZero() public asGovernor {

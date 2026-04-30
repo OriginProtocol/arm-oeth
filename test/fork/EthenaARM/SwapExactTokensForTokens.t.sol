@@ -84,13 +84,15 @@ contract Fork_Concrete_EthenaARM_swapExactTokensForTokens_Test_ is Fork_Shared_T
         // Record balances before swap
         uint256 usdeBalanceBefore = usde.balanceOf(address(this));
         uint256 susdeBalanceBefore = susde.balanceOf(address(this));
-        uint256 feesAccruedBefore = ethenaARM.feesAccrued();
+        address feeCollector = ethenaARM.feeCollector();
+        uint256 feeCollectorSusdeBefore = susde.balanceOf(feeCollector);
 
         // Precompute expected amount out
         uint256 traderate = ethenaARM.traderate1();
         uint256 expectedAmountOut = (susde.convertToAssets(AMOUNT_IN) * traderate) / 1e36;
-        uint256 expectedFee =
-            (susde.convertToAssets(AMOUNT_IN) - expectedAmountOut) * ethenaARM.fee() / ethenaARM.FEE_SCALE();
+        // Under the swap-fee model the fee is taken in the base asset (sUSDe) directly from amountIn,
+        // and transferred to the feeCollector during the swap.
+        uint256 expectedFee = AMOUNT_IN * ethenaARM.fee() / ethenaARM.FEE_SCALE();
 
         // Expected events
         vm.expectEmit({emitter: address(susde)});
@@ -112,7 +114,9 @@ contract Fork_Concrete_EthenaARM_swapExactTokensForTokens_Test_ is Fork_Shared_T
         assertEq(usdeBalanceAfter, usdeBalanceBefore + expectedAmountOut, "USDe balance should have increased");
         assertEq(susdeBalanceBefore, susdeBalanceAfter + AMOUNT_IN, "SUSDe balance should have decreased");
         assertEq(
-            ethenaARM.feesAccrued() - feesAccruedBefore, expectedFee, "Fees accrued should match converted discount"
+            susde.balanceOf(feeCollector) - feeCollectorSusdeBefore,
+            expectedFee,
+            "Fee transferred to feeCollector in sUSDe"
         );
     }
 

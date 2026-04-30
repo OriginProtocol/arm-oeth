@@ -53,7 +53,8 @@ contract Unit_Concrete_OriginARM_TotalAssets_Test_ is Unit_Shared_Test {
         // Simulate a loss on the ARM
         deal(address(weth), address(originARM), 0);
 
-        assertEq(originARM.totalAssets(), MIN_TOTAL_SUPPLY, "Wrong total assets");
+        // When raw assets are below outstanding withdrawals, totalAssets clamps to 0
+        assertEq(originARM.totalAssets(), 0, "Wrong total assets");
     }
 
     function test_TotalAssets_UsesConvertToAssets_When_PreviewRedeem_IsLiquidityConstrained()

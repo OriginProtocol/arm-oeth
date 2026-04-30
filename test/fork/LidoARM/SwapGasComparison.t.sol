@@ -97,6 +97,13 @@ contract Fork_Concrete_LidoARM_SwapGasComparison_Test is Test {
 
         vm.prank(lidoProxy.owner());
         lidoProxy.upgradeTo(address(upgradedImpl));
+
+        // The new impl introduces buy/sell liquidity caps that default to 0; refresh them
+        // by re-applying the current traderates so swaps below aren't blocked.
+        uint256 buyT1 = lidoARM.traderate1();
+        uint256 sellT1 = PRICE_SCALE * PRICE_SCALE / lidoARM.traderate0();
+        vm.prank(lidoARM.owner());
+        lidoARM.setPrices(buyT1, sellT1, type(uint256).max, type(uint256).max);
     }
 
     function _measureSwap(uint256 amountIn) internal returns (uint256 gasUsed, uint256 amountOut) {

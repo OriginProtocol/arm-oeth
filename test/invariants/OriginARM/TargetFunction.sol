@@ -324,34 +324,16 @@ abstract contract TargetFunction is Properties {
             : (sum_ws_swapIn += outputs[0], sum_os_swapOut += outputs[1]);
     }
 
-    function handler_collectFees() public {
-        // Ensure there is enough liquidity to claim fees
-        uint256 feesAccrued = originARM.feesAccrued();
-        vm.assume(feesAccrued <= getLiquidityAvailable(address(ws)));
-
-        // Console log data
-        if (CONSOLE_LOG) console.log("collectFees() \t From: Owner | \t Amount: %s ", faa(feesAccrued));
-
-        // Main call
-        vm.prank(governor);
-        uint256 fees = originARM.collectFees();
-
-        sum_feesCollected += fees;
-    }
+    /// @dev no-op stub: collectFees was removed when fees moved to immediate transfer in _accrueSwapFee.
+    function handler_collectFees() public {}
 
     function handler_setFee(uint16 feePct) public {
-        // Ensure there is enough liquidity to claim fees
-        uint256 feesAccrued = originARM.feesAccrued();
-        vm.assume(feesAccrued <= getLiquidityAvailable(address(ws)));
-
         feePct = uint16(_bound(feePct, 0, 50)) * 100; // 0% - 50%
 
         if (CONSOLE_LOG) console.log("setFee() \t\t From: Owner | \t Percen: %2e %", feePct);
 
         vm.prank(governor);
         originARM.setFee(feePct);
-
-        sum_feesCollected += feesAccrued;
     }
 
     function handler_requestOriginWithdrawal(uint128 amount) public {
@@ -513,9 +495,6 @@ abstract contract TargetFunction is Properties {
                 vm.stopPrank();
             }
         }
-
-        // - Claim fees
-        originARM.collectFees();
 
         // - Ensure everything is empty
         // No more OS in the ARM

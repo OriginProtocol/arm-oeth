@@ -21,7 +21,12 @@ contract Unit_Concrete_OriginARM_AvailableLiquidity_Test_ is Unit_Shared_Test {
         assertEq(balance1, 0);
     }
 
-    function test_AvailableLiquidity_AfterDepositAndSwap() public deposit(alice, DEFAULT_AMOUNT) swapAllWETHForOETH {
+    function test_AvailableLiquidity_AfterDepositAndSwap()
+        public
+        setFee(0)
+        deposit(alice, DEFAULT_AMOUNT)
+        swapAllWETHForOETH
+    {
         (uint256 balance0, uint256 balance1) = originARM.getReserves();
         assertEq(balance0, 0);
         assertApproxEqRel(balance1, DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, 1e16);
@@ -29,6 +34,7 @@ contract Unit_Concrete_OriginARM_AvailableLiquidity_Test_ is Unit_Shared_Test {
 
     function test_AvailableLiquidity_AfterDepositSwapRequest()
         public
+        setFee(0)
         deposit(alice, DEFAULT_AMOUNT)
         swapWETHForOETH(DEFAULT_AMOUNT / 2)
         requestRedeemAll(alice)

@@ -63,18 +63,14 @@ contract Unit_Concrete_OriginARM_Deposit_Test_ is Unit_Shared_Test {
     /// - assetIncrease is not null
     /// - totalAssets is approx MIN_TOTAL_SUPPLY
     /// - lastAvailableAssets is MIN_TOTAL_SUPPLY
-    /// - fees are not null
-    function test_Deposit_When_NoWETH() public {
+    function test_Deposit_When_NoWETH() public setFee(0) {
         // A swap happen before
         vm.startPrank(bob);
         deal(address(oeth), bob, 1_000 * DEFAULT_AMOUNT);
         oeth.approve(address(originARM), type(uint256).max);
         originARM.swapTokensForExactTokens(oeth, weth, 1e12, type(uint256).max, bob);
         vm.stopPrank();
-        uint256 accruedFees = originARM.feesAccrued();
         assertEq(weth.balanceOf(address(originARM)), 0, "WETH balance should be 0");
-        assertGt(originARM.fee(), 0, "Fee should be greater than 0");
-        assertGt(accruedFees, 0, "Fees should be accrued");
         assertGt(originARM.totalAssets(), MIN_TOTAL_SUPPLY, "Total assets should be > MIN_TOTAL_SUPPLY");
 
         // Expected values
@@ -89,7 +85,6 @@ contract Unit_Concrete_OriginARM_Deposit_Test_ is Unit_Shared_Test {
         // Alice deposits 1 WETH
         vm.prank(alice);
         originARM.deposit(DEFAULT_AMOUNT);
-        assertEq(accruedFees, originARM.feesAccrued(), "Fees should be accrued");
     }
 
     /// @notice Test under the following assumptions:
@@ -102,18 +97,14 @@ contract Unit_Concrete_OriginARM_Deposit_Test_ is Unit_Shared_Test {
     /// - assetIncrease is not null
     /// - totalAssets is approx MIN_TOTAL_SUPPLY
     /// - lastAvailableAssets is MIN_TOTAL_SUPPLY
-    /// - fees are not null
-    function test_Deposit_When_HalfWETHOETH() public {
+    function test_Deposit_When_HalfWETHOETH() public setFee(0) {
         // A swap happen before
         vm.startPrank(bob);
         deal(address(oeth), bob, 1_000 * DEFAULT_AMOUNT);
         oeth.approve(address(originARM), type(uint256).max);
         originARM.swapTokensForExactTokens(oeth, weth, 1e12 / 2, type(uint256).max, bob);
         vm.stopPrank();
-        uint256 accruedFees = originARM.feesAccrued();
         assertEq(weth.balanceOf(address(originARM)), 1e12 / 2, "WETH balance should be 1e12/2");
-        assertGt(originARM.fee(), 0, "Fee should be greater than 0");
-        assertGt(accruedFees, 0, "Fees should be accrued");
         assertGt(originARM.totalAssets(), MIN_TOTAL_SUPPLY, "Total assets should be > MIN_TOTAL_SUPPLY");
 
         // Expected values
@@ -128,7 +119,6 @@ contract Unit_Concrete_OriginARM_Deposit_Test_ is Unit_Shared_Test {
         // Alice deposits 1 WETH
         vm.prank(alice);
         originARM.deposit(DEFAULT_AMOUNT);
-        assertEq(accruedFees, originARM.feesAccrued(), "Fees should be accrued");
     }
 
     /// @notice Test under the following assumptions:
@@ -142,7 +132,7 @@ contract Unit_Concrete_OriginARM_Deposit_Test_ is Unit_Shared_Test {
     /// - totalAssets is approx MIN_TOTAL_SUPPLY
     /// - lastAvailableAssets is MIN_TOTAL_SUPPLY / 2
     /// - fees are not null
-    function test_Deposit_When_VaultWithdrawalAmount_IsNotNull() public {
+    function test_Deposit_When_VaultWithdrawalAmount_IsNotNull() public setFee(0) {
         // First there is a swap to convert WETH in OETH
         vm.startPrank(bob);
         deal(address(oeth), bob, 1_000 * DEFAULT_AMOUNT);
@@ -228,13 +218,13 @@ contract Unit_Concrete_OriginARM_Deposit_Test_ is Unit_Shared_Test {
         );
     }
 
-    /// @notice Deposit reverts when the ARM is insolvent (totalAssets floored to MIN_TOTAL_SUPPLY)
+    /// @notice Deposit reverts when the ARM is insolvent (totalAssets clamps to 0)
     /// and there are outstanding withdrawal requests (withdrawsQueued > withdrawsClaimed).
     function test_RevertWhen_Deposit_Because_Insolvent() public deposit(alice, DEFAULT_AMOUNT) requestRedeemAll(alice) {
         // Drain all WETH → rawTotal (0) < outstanding (DEFAULT_AMOUNT) → insolvent
         deal(address(weth), address(originARM), 0);
 
-        assertEq(originARM.totalAssets(), MIN_TOTAL_SUPPLY, "totalAssets should be floored at MIN_TOTAL_SUPPLY");
+        assertEq(originARM.totalAssets(), 0, "totalAssets should clamp to 0");
         assertGt(originARM.withdrawsQueued(), originARM.withdrawsClaimed(), "should have outstanding requests");
 
         vm.expectRevert("ARM: insolvent");
@@ -259,7 +249,7 @@ contract Unit_Concrete_OriginARM_Deposit_Test_ is Unit_Shared_Test {
         uint256 wethAfterLoss = MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT * 9 / 10;
         deal(address(weth), address(originARM), wethAfterLoss);
 
-        assertEq(originARM.totalAssets(), MIN_TOTAL_SUPPLY, "totalAssets should be floored at MIN_TOTAL_SUPPLY");
+        assertEq(originARM.totalAssets(), 0, "totalAssets should clamp to 0");
         assertGt(originARM.withdrawsQueued(), originARM.withdrawsClaimed(), "should have outstanding requests");
 
         // Attacker (bob) attempts to deposit to dilute Alice's claim — must be blocked
