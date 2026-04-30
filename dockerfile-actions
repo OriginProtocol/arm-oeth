@@ -1,4 +1,12 @@
 # syntax=docker/dockerfile:1.7
+
+# Foundry binaries (forge/cast/anvil) — pulled from the official image
+# at a digest pin instead of curl-pipe-bash from foundry.paradigm.xyz.
+# Replaces the previous `curl … | bash` install (security/M-011).
+# Bump by re-resolving `ghcr.io/foundry-rs/foundry:stable` and updating
+# the digest below; review the published Foundry release notes.
+FROM ghcr.io/foundry-rs/foundry@sha256:043752653d5be351c71709091b3db97c4421c907eb40ea294195e7f532aadf46 AS foundry
+
 FROM oven/bun:1
 
 ENV DEBIAN_FRONTEND=noninteractive \
@@ -27,14 +35,11 @@ RUN groupadd -r runner && useradd -r -g runner -m -d /home/runner runner
 RUN mkdir -p /root/.ssh \
   && ssh-keyscan -t ed25519,rsa github.com >> /root/.ssh/known_hosts
 
-# Install Foundry (forge/cast/anvil) — required at hardhat config load time
-# because hardhat.config.js loads @nomicfoundation/hardhat-foundry. Bins
-# copied to /usr/local/bin so the non-root runner user can exec them
-# (foundryup installs to /root/.foundry/bin which is unreachable post-USER).
-RUN curl -L https://foundry.paradigm.xyz | bash \
-  && /root/.foundry/bin/foundryup \
-  && cp /root/.foundry/bin/* /usr/local/bin/ \
-  && chmod 0755 /usr/local/bin/forge /usr/local/bin/cast /usr/local/bin/anvil
+# Foundry (forge/cast/anvil) — required at hardhat config load time
+# because hardhat.config.js loads @nomicfoundation/hardhat-foundry.
+# Pulled from the digest-pinned `foundry` builder stage at the top of
+# this Dockerfile. /usr/local/bin keeps them on PATH after USER switch.
+COPY --from=foundry /usr/local/bin/forge /usr/local/bin/cast /usr/local/bin/anvil /usr/local/bin/
 
 WORKDIR /app
 
