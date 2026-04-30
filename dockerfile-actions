@@ -19,14 +19,22 @@ RUN apt-get update \
   npm \
   && rm -rf /var/lib/apt/lists/*
 
+# security/M-012: create a non-root runtime user. Build/install steps
+# stay as root so the apt+pnpm caches and SSH-keyed deps work; we
+# chown /app and switch USER just before CMD.
+RUN groupadd -r runner && useradd -r -g runner -m -d /home/runner runner
+
 RUN mkdir -p /root/.ssh \
   && ssh-keyscan -t ed25519,rsa github.com >> /root/.ssh/known_hosts
 
 # Install Foundry (forge/cast/anvil) — required at hardhat config load time
-# because hardhat.config.js loads @nomicfoundation/hardhat-foundry.
-ENV PATH="/root/.foundry/bin:${PATH}"
+# because hardhat.config.js loads @nomicfoundation/hardhat-foundry. Bins
+# copied to /usr/local/bin so the non-root runner user can exec them
+# (foundryup installs to /root/.foundry/bin which is unreachable post-USER).
 RUN curl -L https://foundry.paradigm.xyz | bash \
-  && /root/.foundry/bin/foundryup
+  && /root/.foundry/bin/foundryup \
+  && cp /root/.foundry/bin/* /usr/local/bin/ \
+  && chmod 0755 /usr/local/bin/forge /usr/local/bin/cast /usr/local/bin/anvil
 
 WORKDIR /app
 
@@ -40,8 +48,13 @@ RUN --mount=type=ssh \
 # Copy the rest of the workspace.
 COPY . .
 
+# Hand /app over to the runtime user. After this, all reads/writes by
+# the runner process are as `runner`, not root. Closes security/M-012.
+RUN chown -R runner:runner /app
+
 ENV MAINNET_URL="" \
   SONIC_URL="" \
   HOLESKY_URL=""
 
+USER runner
 CMD ["bun", "run", "runner.ts"]
