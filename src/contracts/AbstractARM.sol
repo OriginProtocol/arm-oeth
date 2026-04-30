@@ -219,14 +219,14 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         traderate1 = PRICE_SCALE - MAX_CROSS_PRICE_DEVIATION;
         emit TraderateChanged(traderate0, traderate1);
 
+        crossPrice = PRICE_SCALE;
+        emit CrossPriceUpdated(PRICE_SCALE);
+
         _setFee(_fee);
         _setFeeCollector(_feeCollector);
 
         capManager = _capManager;
         emit CapManagerUpdated(_capManager);
-
-        crossPrice = PRICE_SCALE;
-        emit CrossPriceUpdated(PRICE_SCALE);
     }
 
     ////////////////////////////////////////////////////
@@ -557,6 +557,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         // Ensure buy price is always below past sell prices
         require(sellT1 >= crossPrice, "ARM: sell price too low");
         require(buyT1 < crossPrice, "ARM: buy price too high");
+        // Ensure the fee can never exceed 50% of the buy-side spread
+        _requireFeeBelowHalfSpread(fee, crossPrice, buyT1);
 
         // Write state to contract storage
         traderate0 = PRICE_SCALE * PRICE_SCALE / sellT1; // quote (t0) -> base (t1); eg WETH -> stETH
@@ -587,6 +589,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         require(PRICE_SCALE * PRICE_SCALE / traderate0 >= newCrossPrice, "ARM: sell price too low");
         // The existing buy price must be less than the new cross price
         require(traderate1 < newCrossPrice, "ARM: buy price too high");
+        // Ensure the fee can never exceed 50% of the buy-side spread
+        _requireFeeBelowHalfSpread(fee, newCrossPrice, traderate1);
 
         // If the cross price is being lowered, there can not be a significant amount of base assets in the ARM. eg stETH.
         // This prevents the ARM making a loss when the base asset is sold at a lower price than it was bought
@@ -873,10 +877,26 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
     function _setFee(uint256 _fee) internal {
         require(_fee <= FEE_SCALE / 2, "ARM: fee too high");
+        // Ensure the fee can never exceed 50% of the buy-side spread
+        _requireFeeBelowHalfSpread(_fee, crossPrice, traderate1);
 
         fee = SafeCast.toUint16(_fee);
 
         emit FeeUpdated(_fee);
+    }
+
+    /// @dev Enforces that `_fee` is at most 50% of the buy-side spread between
+    /// `_crossPrice` and `_traderate1`. The buy-side spread is the LP profit per unit of
+    /// base asset bought by the ARM, expressed in liquidity-asset terms:
+    /// `spread = _crossPrice - _traderate1`.
+    /// The fee taken on a swap is `amountIn * _fee / FEE_SCALE` of base asset, whose value
+    /// in liquidity asset is `amountIn * _traderate1 / PRICE_SCALE * _fee / FEE_SCALE`.
+    /// Equivalently, expressed in base-asset terms, fee = `amountIn * _fee / FEE_SCALE` and
+    /// spread per unit of base = `(_crossPrice - _traderate1) / _crossPrice`.
+    /// Requiring `fee <= 0.5 * spread` (in base-asset terms) gives:
+    /// `_traderate1 * FEE_SCALE <= _crossPrice * (FEE_SCALE - 2 * _fee)`.
+    function _requireFeeBelowHalfSpread(uint256 _fee, uint256 _crossPrice, uint256 _traderate1) internal pure {
+        require(_traderate1 * FEE_SCALE <= _crossPrice * (FEE_SCALE - 2 * _fee), "ARM: fee exceeds half spread");
     }
 
     function _setFeeCollector(address _feeCollector) internal {
