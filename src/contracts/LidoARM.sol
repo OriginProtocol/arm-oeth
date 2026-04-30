@@ -79,12 +79,6 @@ contract LidoARM is Initializable, AbstractARM {
         steth.approve(address(lidoWithdrawalQueue), type(uint256).max);
     }
 
-    /// @notice Clears the legacy storage region reused for packed swap fee accrual.
-    /// This should be called via `upgradeToAndCall(...)` after legacy fees are collected.
-    function migrateFeesAccrued() external onlyOwner {
-        _migrateFeesAccrued();
-    }
-
     /**
      * @notice Register the Lido withdrawal requests to the ARM contract.
      * This can only be called once by the contract Owner.

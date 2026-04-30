@@ -108,16 +108,15 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @notice Mapping of withdrawal request indices to the user withdrawal request data.
     mapping(uint256 requestId => WithdrawalRequest) public withdrawalRequests;
 
-    struct FeeData {
-        uint16 fee;
-        uint128 feesAccrued;
-    }
-
-    /// @notice Fee charged on discounted base-asset buy swaps measured in basis points (1/100th of a percent).
-    /// 10,000 = 100% fee.
-    /// 2,000 = 20% fee.
-    /// 500 = 5% fee.
-    FeeData internal feeData;
+    /// @notice Performance fee that is collected by the feeCollector measured in basis points (1/100th of a percent).
+    /// 10,000 = 100% performance fee
+    /// 2,000 = 20% performance fee
+    /// 500 = 5% performance fee
+    uint16 public fee;
+    /// @notice The available assets the last time the performance fees were collected and adjusted
+    /// for liquidity assets (WETH) deposited and redeemed.
+    /// This can be negative if there were asset gains and then all the liquidity providers redeemed.
+    int128 public _deprecated_lastAvailableAssets;
     /// @notice The account or contract that can collect the accrued swap fee.
     address public feeCollector;
     /// @notice The address of the CapManager contract used to manage the ARM's liquidity provider and total assets caps.
@@ -228,13 +227,6 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
         crossPrice = PRICE_SCALE;
         emit CrossPriceUpdated(PRICE_SCALE);
-    }
-
-    /// @dev Clears the reused legacy storage region that now backs `feesAccrued`.
-    /// This must be called exactly once during proxy upgrade via `upgradeToAndCall(...)`
-    /// after any legacy fees have been collected under the previous implementation.
-    function _migrateFeesAccrued() internal {
-        feeData.feesAccrued = 0;
     }
 
     ////////////////////////////////////////////////////
@@ -426,7 +418,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         // Transfer the output tokens to the recipient
         outToken.transfer(to, amountOut);
 
-        _accrueSwapFee(inToken, outToken, amountIn, amountOut);
+        _accrueSwapFee(inToken, amountIn);
     }
 
     function _swapTokensForExactTokens(IERC20 inToken, IERC20 outToken, uint256 amountOut, address to)
@@ -461,7 +453,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         if (outToken == IERC20(liquidityAsset)) _ensureLiquidityAvailableForSwap(amountOut);
         outToken.transfer(to, amountOut);
 
-        _accrueSwapFee(inToken, outToken, amountIn, amountOut);
+        _accrueSwapFee(inToken, amountIn);
     }
 
     /// @dev Consume the remaining liquidity cap for the current swap direction.
@@ -492,30 +484,32 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         return amount;
     }
 
-    /**
-     * @dev Accrues a fee only when the ARM buys the base asset with the liquidity asset at a discount.
-     * The fee is measured in liquidity-asset terms as a percentage of the discount captured on the swap:
-     * `(_convert(baseAsset, amountIn) - amountOut) * fee / FEE_SCALE`.
-     * No fee is accrued when the ARM sells the base asset or when the executed swap is at or above par.
-     * @param inToken The token sent into the ARM by the swapper.
-     * @param outToken The token sent out from the ARM to the swapper.
-     * @param amountIn The amount of base asset received by the ARM.
-     * @param amountOut The amount of liquidity asset paid out by the ARM.
-     */
-    function _accrueSwapFee(IERC20 inToken, IERC20 outToken, uint256 amountIn, uint256 amountOut) internal {
+    /// @dev Charges a swap fee only when the ARM buys the base asset from the swapper.
+    /// The fee is transferred to the `feeCollector` immediately on every qualifying swap rather than
+    /// being accumulated in storage and collected later. This keeps the general logic simple: no
+    /// running `feesAccrued` balance to track, no separate `collectFees()` call to coordinate, and
+    /// `totalAssets()` does not need to net out outstanding fees.
+    /// The fee is taken directly in the base asset (the token just received from the swapper) rather
+    /// than being converted to the liquidity asset. This avoids an extra conversion / internal swap
+    /// on the fee path, again to keep the general logic simple. The fee is a flat percentage of the
+    /// incoming base-asset amount: `amountIn * fee / FEE_SCALE`.
+    /// No fee is charged when the ARM sells the base asset.
+    /// @param inToken The token sent into the ARM by the swapper.
+    /// @param amountIn The amount of `inToken` received by the ARM.
+    function _accrueSwapFee(IERC20 inToken, uint256 amountIn) internal {
         // Return if not buying the base asset
-        if (address(inToken) != baseAsset || address(outToken) != liquidityAsset) return;
+        if (address(inToken) != baseAsset) return;
 
-        FeeData memory feeDataMem = feeData;
-        if (feeDataMem.fee == 0) return;
+        // Calculate the amount of fees to take in baseAsset terms
+        uint256 fees = amountIn * fee / FEE_SCALE;
 
-        // Convert the base amount in to liquidity asset terms for fee calculation
-        uint256 convertedAmountIn = _convert(address(inToken), amountIn);
-        if (convertedAmountIn <= amountOut) return;
+        // Fees can be 0 for two reasons:
+        // 1) The fee is set to 0.
+        // 2) Rounding causes the fee to be 0 even when the fee is nonzero.
+        if (fees == 0) return;
 
-        // Fee is the percentage of the swap discount
-        feeData.feesAccrued =
-            feeDataMem.feesAccrued + uint128((convertedAmountIn - amountOut) * feeDataMem.fee / FEE_SCALE);
+        // Transfer the fees to the fee collector
+        inToken.transfer(feeCollector, fees);
     }
 
     /// @notice Get the available liquidity for each token in the ARM.
@@ -799,35 +793,6 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// The active lending market is valued using ERC-4626 share conversion rather than current redeemable liquidity.
     /// @return The total amount of assets in the ARM
     function totalAssets() public view virtual returns (uint256) {
-        (uint256 newAvailableAssets,) = _availableAssets();
-
-        // total assets should only go up from the initial deposit amount that is burnt
-        // but in case of something unforeseen, return at least MIN_TOTAL_SUPPLY.
-        // An example scenario that will return MIN_TOTAL_SUPPLY is:
-        // First LP deposits and then requests a redeem of all their ARM shares.
-        // While waiting to claim their request, the ARM suffer a loss of assets. eg lending market loss.
-        // When they claim their request, the newAvailableAssets will be zero as
-        // the ARM assets will be less than the outstanding withdrawal request that was calculated before the loss.
-        uint256 feesAccruedMem = feeData.feesAccrued;
-        if (feesAccruedMem + MIN_TOTAL_SUPPLY >= newAvailableAssets) return MIN_TOTAL_SUPPLY;
-
-        // Remove accrued swap fees from the available assets.
-        return newAvailableAssets - feesAccruedMem;
-    }
-
-    /// @notice The liquidity asset used for deposits and redeems. eg WETH or wS
-    /// Used for compatibility with ERC-4626
-    /// @return The address of the liquidity asset
-    function asset() external view virtual returns (address) {
-        return liquidityAsset;
-    }
-
-    /// @dev Calculate the economic value of assets in the ARM, external withdrawal queue,
-    /// and active lending market, less liquidity assets reserved for the ARM's withdrawal queue.
-    /// The active lending market is valued using convertToAssets() so market valuation remains
-    /// consistent across ERC-4626 implementations even when current redeemable liquidity differs.
-    /// This does not exclude any accrued swap fees.
-    function _availableAssets() internal view returns (uint256 availableAssets, uint256 outstandingWithdrawals) {
         // Convert the base assets in the ARM to the amount of liquidity assets
         uint256 baseConvertedToLiquid = _convert(baseAsset, IERC20(baseAsset).balanceOf(address(this)));
 
@@ -850,16 +815,19 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         }
 
         // The amount of liquidity assets, eg WETH, that is still to be claimed in the withdrawal queue
-        outstandingWithdrawals = withdrawsQueued - withdrawsClaimed;
+        uint256 outstandingWithdrawals = withdrawsQueued - withdrawsClaimed;
 
-        // If the ARM becomes insolvent enough that the available assets in the ARM and external withdrawal queue
+        // 1. If the ARM becomes insolvent enough that the available assets in the ARM and external withdrawal queue
         // is less than the outstanding withdrawals and accrued fees.
-        if (assets < outstandingWithdrawals) {
-            return (0, outstandingWithdrawals);
-        }
+        // 2. Need to remove the liquidity assets that have been reserved for the withdrawal queue
+        return assets < outstandingWithdrawals ? 0 : (assets - outstandingWithdrawals);
+    }
 
-        // Need to remove the liquidity assets that have been reserved for the withdrawal queue
-        availableAssets = assets - outstandingWithdrawals;
+    /// @notice The liquidity asset used for deposits and redeems. eg WETH or wS
+    /// Used for compatibility with ERC-4626
+    /// @return The address of the liquidity asset
+    function asset() external view virtual returns (address) {
+        return liquidityAsset;
     }
 
     /// @dev Hook for calculating the amount of liquidity assets in an external withdrawal queue like Lido or OETH.
@@ -906,10 +874,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     function _setFee(uint256 _fee) internal {
         require(_fee <= FEE_SCALE / 2, "ARM: fee too high");
 
-        // Collect any accrued swap fees up to this point using the old fee.
-        collectFees();
-
-        feeData.fee = SafeCast.toUint16(_fee);
+        fee = SafeCast.toUint16(_fee);
 
         emit FeeUpdated(_fee);
     }
@@ -922,39 +887,10 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         emit FeeCollectorUpdated(_feeCollector);
     }
 
-    /// @notice Transfer accrued swap fees to the fee collector
-    /// This requires enough liquidity assets in the ARM that are not reserved
-    /// for the withdrawal queue to cover the accrued fees.
-    /// @return fees The amount of accrued swap fees collected
-    function collectFees() public returns (uint256 fees) {
-        fees = feeData.feesAccrued;
-        if (fees == 0) return 0;
-
-        // Check there is enough liquidity assets that are not reserved for the withdrawal queue
-        // to cover the fee being collected.
-        _requireLiquidityAvailable(fees);
-        // _requireLiquidityAvailable() is optimized for swaps so will not revert if there are no outstanding withdrawals.
-        // We need to check there is enough liquidity assets to cover the fees being collected from this ARM contract.
-        require(fees <= IERC20(liquidityAsset).balanceOf(address(this)), "ARM: insufficient liquidity");
-
-        feeData.feesAccrued = 0;
-        IERC20(liquidityAsset).transfer(feeCollector, fees);
-
-        emit FeeCollected(feeCollector, fees);
-    }
-
-    function fee() external view returns (uint16) {
-        return feeData.fee;
-    }
-
     /// @notice Deprecated compatibility getter kept for older tests and integrations.
     /// Returns the current total assets after accrued swap fees are excluded.
     function lastAvailableAssets() external view returns (int128) {
         return SafeCast.toInt128(SafeCast.toInt256(totalAssets()));
-    }
-
-    function feesAccrued() external view returns (uint128) {
-        return feeData.feesAccrued;
     }
 
     ////////////////////////////////////////////////////
@@ -1049,10 +985,13 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     }
 
     function _allocate() internal returns (int256 targetLiquidityDelta, int256 actualLiquidityDelta) {
-        (uint256 availableAssets, uint256 outstandingWithdrawals) = _availableAssets();
+        uint256 availableAssets = totalAssets();
         if (availableAssets == 0) return (0, 0);
+
         uint256 targetArmLiquidity = availableAssets * armBuffer / 1e18;
 
+        // The amount of liquidity assets, eg WETH, that is still to be claimed in the withdrawal queue
+        uint256 outstandingWithdrawals = withdrawsQueued - withdrawsClaimed;
         // The current liquidity available in swap is the liquidity asset balance less
         // any outstanding withdrawals from the ARM's withdrawal queue
         int256 currentArmLiquidity = SafeCast.toInt256(IERC20(liquidityAsset).balanceOf(address(this)))
