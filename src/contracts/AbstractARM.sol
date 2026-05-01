@@ -27,8 +27,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @notice The address with no known private key that the initial shares are minted to
     address internal constant DEAD_ACCOUNT = 0x000000000000000000000000000000000000dEaD;
     /// @notice The scale of the swap fee.
-    /// 10,000 = 100% fee.
-    uint256 public constant FEE_SCALE = 10000;
+    /// 1 ether = 100% fee.
+    uint256 public constant FEE_SCALE = 1 ether;
 
     ////////////////////////////////////////////////////
     ///             Immutable Variables
@@ -109,14 +109,10 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     mapping(uint256 requestId => WithdrawalRequest) public withdrawalRequests;
 
     /// @notice Performance fee that is collected by the feeCollector measured in basis points (1/100th of a percent).
-    /// 10,000 = 100% performance fee
-    /// 2,000 = 20% performance fee
-    /// 500 = 5% performance fee
-    uint16 public fee;
-    /// @notice The available assets the last time the performance fees were collected and adjusted
-    /// for liquidity assets (WETH) deposited and redeemed.
-    /// This can be negative if there were asset gains and then all the liquidity providers redeemed.
-    int128 public _deprecated_lastAvailableAssets;
+    /// 1 ether = 100% performance fee
+    /// 0.2 ether = 20% performance fee
+    /// 0.05 ether = 5% performance fee
+    uint144 public fee;
     /// @notice The account or contract that can collect the accrued swap fee.
     address public feeCollector;
     /// @notice The address of the CapManager contract used to manage the ARM's liquidity provider and total assets caps.
@@ -880,7 +876,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         // Ensure the fee can never exceed 50% of the buy-side spread
         _requireFeeBelowHalfSpread(_fee, crossPrice, traderate1);
 
-        fee = SafeCast.toUint16(_fee);
+        fee = SafeCast.toUint144(_fee);
 
         emit FeeUpdated(_fee);
     }
