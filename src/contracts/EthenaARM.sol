@@ -13,7 +13,7 @@ import {IERC20, IStakedUSDe, UserCooldown} from "./Interfaces.sol";
  */
 contract EthenaARM is Initializable, AbstractARM {
     /// @notice The delay before a new unstake request can be made
-    uint256 public constant DELAY_REQUEST = 3 hours;
+    uint256 public constant DELAY_REQUEST = 30 minutes;
     /// @notice The maximum number of unstaker helper contracts
     uint8 public constant MAX_UNSTAKERS = 42;
     /// @notice The address of Ethena's synthetic dollar token (USDe)

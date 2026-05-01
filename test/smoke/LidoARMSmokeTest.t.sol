@@ -33,7 +33,7 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
         proxy = Proxy(payable(resolver.resolve("LIDO_ARM")));
         lidoARM = LidoARM(payable(resolver.resolve("LIDO_ARM")));
         capManager = CapManager(resolver.resolve("LIDO_ARM_CAP_MAN"));
-        morphoMarket = IERC4626(resolver.resolve("MORPHO_MARKET_MEVCAPITAL"));
+        morphoMarket = IERC4626(resolver.resolve("MORPHO_MARKET_LIDO"));
 
         // Only fuzz from this address. Big speedup on fork.
         targetSender(address(this));
@@ -241,8 +241,9 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
         lidoARM.setActiveMarket(address(morphoMarket));
         vm.stopPrank();
 
-        // Deal WETH to the ARM
-        deal(address(weth), address(lidoARM), 100 ether);
+        // Deal enough WETH to cover the outstanding withdrawal queue plus extra to deposit
+        uint256 outstandingWithdrawals = lidoARM.withdrawsQueued() - lidoARM.withdrawsClaimed();
+        deal(address(weth), address(lidoARM), outstandingWithdrawals + 100 ether);
 
         uint256 armWethBefore = weth.balanceOf(address(lidoARM));
         uint256 marketBalanceBefore = morphoMarket.maxWithdraw(address(lidoARM));
@@ -275,8 +276,9 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
         lidoARM.setActiveMarket(address(morphoMarket));
         vm.stopPrank();
 
-        // Deal WETH to the ARM and allocate to market with buffer at 0%
-        deal(address(weth), address(lidoARM), 100 ether);
+        // Deal enough WETH to cover the outstanding withdrawal queue plus extra to deposit
+        uint256 outstandingWithdrawals = lidoARM.withdrawsQueued() - lidoARM.withdrawsClaimed();
+        deal(address(weth), address(lidoARM), outstandingWithdrawals + 100 ether);
         vm.prank(Mainnet.ARM_RELAYER);
         lidoARM.setARMBuffer(0);
         vm.prank(Mainnet.ARM_RELAYER);

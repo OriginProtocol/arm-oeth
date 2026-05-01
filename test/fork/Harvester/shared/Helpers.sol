@@ -33,6 +33,15 @@ abstract contract Helpers is Base_Test_ {
         inputs[16] = vm.toString(recipient);
         bytes memory response = vm.ffi(inputs);
 
+        // The flyTradeQuote hardhat task emits this sentinel when the upstream
+        // FlyTrade API returns Cloudflare error 525 (SSL handshake failure).
+        // In that case, skip the test instead of failing on flaky external
+        // infrastructure. Any other upstream error still surfaces as an FFI
+        // revert and fails the test.
+        if (keccak256(response) == keccak256(hex"c10ad11ae525")) {
+            vm.skip(true);
+        }
+
         return abi.decode(response, (bytes));
     }
 }

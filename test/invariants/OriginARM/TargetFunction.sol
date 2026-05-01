@@ -214,7 +214,21 @@ abstract contract TargetFunction is Properties {
 
         newCrossPrice = uint120(_bound(newCrossPrice, lowerBound, upperBound));
 
-        if (originARM.crossPrice() > newCrossPrice) vm.assume(os.balanceOf(address(originARM)) <= MIN_TOTAL_SUPPLY);
+        uint256 osBalance = os.balanceOf(address(originARM));
+        if (originARM.crossPrice() > newCrossPrice && osBalance > 0) {
+            // If there is more than 100 OS in ARM, do nothing
+            vm.assume(osBalance < 1e20);
+
+            // If there is less than 100 OS in ARM, swap them all to WS, to avoid creating loss on ARM
+            deal(address(ws), address(this), osBalance * 10);
+            ws.approve(address(originARM), type(uint256).max);
+            uint256[] memory outputs =
+                originARM.swapTokensForExactTokens(ws, os, osBalance, type(uint256).max, address(this));
+            require(os.balanceOf(address(originARM)) < 10, "ARM still has too much OS after swap");
+
+            sum_ws_swapIn += outputs[0];
+            sum_os_swapOut += outputs[1];
+        }
 
         // Console log data
         if (CONSOLE_LOG) {

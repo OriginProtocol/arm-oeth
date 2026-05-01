@@ -14,13 +14,13 @@ const requestEthenaWithdrawals = async (options) => {
     : await baseWithdrawAmount(options);
   if (!withdrawAmount || withdrawAmount === 0n) return;
 
-  // 2. Check 3 hours has passed since last withdrawal request
+  // 2. Check the contract request delay has passed since the last withdrawal request
   const lastRequestTime = await arm.lastRequestTimestamp();
+  const requestDelay = Number(await arm.DELAY_REQUEST());
   const currentTime = Math.floor(Date.now() / 1000);
   const timeSinceLastRequest = currentTime - Number(lastRequestTime);
-  const THREE_HOURS = 3 * 60 * 60;
-  if (timeSinceLastRequest < THREE_HOURS) {
-    const timeLeft = THREE_HOURS - timeSinceLastRequest;
+  if (timeSinceLastRequest < requestDelay) {
+    const timeLeft = requestDelay - timeSinceLastRequest;
     log(
       `Skipping: Last withdrawal request was only ${timeSinceLastRequest} seconds ago; need to wait another ${timeLeft} seconds`,
     );
