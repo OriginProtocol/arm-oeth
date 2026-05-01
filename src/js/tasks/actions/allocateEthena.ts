@@ -16,7 +16,7 @@ action({
     await allocate({
       signer,
       arm,
-      threshold: 5000,
+      threshold: 500,
       maxGasPrice: 5,
     });
   },
