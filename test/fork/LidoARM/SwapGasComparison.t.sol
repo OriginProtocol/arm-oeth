@@ -18,6 +18,8 @@ contract Fork_Concrete_LidoARM_SwapGasComparison_Test is Test {
     IERC20 internal weth;
     IERC20 internal steth;
 
+    string private checkpointLabel;
+    uint256 private checkpointGasLeft = 1; // Start the slot warm.
     uint256 internal reserveWeth;
     uint256 internal traderate1;
     address internal activeMarket;
@@ -47,42 +49,36 @@ contract Fork_Concrete_LidoARM_SwapGasComparison_Test is Test {
 
         _fundSteth(amountInNeedsMarketLiquidity);
         steth.approve(address(lidoARM), type(uint256).max);
+        // to toggle if the gas measurement includes the upgrade or not, comment out the next line to measure the current deployed ARM vs the upgraded ARM.
+        //_upgradeLidoArm();
+
+    }
+
+    function startMeasuringGas(string memory label) internal virtual {
+        checkpointLabel = label;
+
+        checkpointGasLeft = gasleft();
+    }
+
+    function stopMeasuringGas() internal virtual {
+        uint256 checkpointGasLeft2 = gasleft();
+
+        // Subtract 100 to account for the warm SLOAD in startMeasuringGas.
+        uint256 gasDelta = checkpointGasLeft - checkpointGasLeft2 - 100;
+
+        emit log_named_uint(string(abi.encodePacked(checkpointLabel, " Gas")), gasDelta);
     }
 
     function test_Gas_UpgradedArm_EnoughLiquidity() public {
-        _upgradeLidoArm();
-
-        (uint256 gasUsed, uint256 amountOut) = _measureSwap(amountInEnoughLiquidity);
-
-        emit log_named_uint("fork_block", block.number);
-        emit log_named_uint("amount_in_stETH", amountInEnoughLiquidity);
-        emit log_named_uint("amount_out_WETH", amountOut);
-        emit log_named_uint("gas_used", gasUsed);
+        _measureSwap("UpgradedArm_EnoughLiquidity", amountInEnoughLiquidity);
     }
 
     function test_Gas_CurrentDeployedArm_EnoughLiquidity() public {
-        (uint256 gasUsed, uint256 amountOut) = _measureSwap(amountInEnoughLiquidity);
-
-        emit log_named_uint("fork_block", block.number);
-        emit log_named_uint("amount_in_stETH", amountInEnoughLiquidity);
-        emit log_named_uint("amount_out_WETH", amountOut);
-        emit log_named_uint("gas_used", gasUsed);
+        _measureSwap("CurrentDeployedArm_EnoughLiquidity", amountInEnoughLiquidity);
     }
 
     function test_Gas_UpgradedArm_NeedsMarketLiquidity() public {
-        _upgradeLidoArm();
-
-        uint256 reserveBefore = reserveWeth;
-        (uint256 gasUsed, uint256 amountOut) = _measureSwap(amountInNeedsMarketLiquidity);
-
-        require(amountOut > reserveBefore, "swap did not need market liquidity");
-
-        emit log_named_uint("fork_block", block.number);
-        emit log_named_uint("amount_in_stETH", amountInNeedsMarketLiquidity);
-        emit log_named_uint("amount_out_WETH", amountOut);
-        emit log_named_uint("weth_reserve_before", reserveBefore);
-        emit log_named_uint("market_shortfall", amountOut - reserveBefore);
-        emit log_named_uint("gas_used", gasUsed);
+        _measureSwap("UpgradedArm_NeedsMarketLiquidity", amountInNeedsMarketLiquidity);
     }
 
     function _upgradeLidoArm() internal {
@@ -102,15 +98,16 @@ contract Fork_Concrete_LidoARM_SwapGasComparison_Test is Test {
         // by re-applying the current traderates so swaps below aren't blocked.
         uint256 buyT1 = lidoARM.traderate1();
         uint256 sellT1 = PRICE_SCALE * PRICE_SCALE / lidoARM.traderate0();
-        vm.prank(lidoARM.owner());
+        vm.startPrank(lidoARM.owner());
+        lidoARM.setFee(1e10);
         lidoARM.setPrices(buyT1, sellT1, type(uint256).max, type(uint256).max);
+        vm.stopPrank();
     }
 
-    function _measureSwap(uint256 amountIn) internal returns (uint256 gasUsed, uint256 amountOut) {
-        uint256 gasBefore = gasleft();
-        uint256[] memory amounts = lidoARM.swapExactTokensForTokens(steth, weth, amountIn, 0, address(this));
-        gasUsed = gasBefore - gasleft();
-        amountOut = amounts[1];
+    function _measureSwap(string memory label, uint256 amountIn) internal {
+        startMeasuringGas(label);
+        lidoARM.swapExactTokensForTokens(steth, weth, amountIn, 0, address(this));
+        stopMeasuringGas();
     }
 
     function _amountInForDesiredOut(uint256 desiredOut) internal view returns (uint256) {
