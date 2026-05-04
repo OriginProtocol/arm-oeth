@@ -3,7 +3,6 @@ pragma solidity ^0.8.23;
 
 import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 import {OwnableOperable} from "./OwnableOperable.sol";
@@ -507,7 +506,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         if (swapFeeMultiplier == 0) return;
 
         // Fee is a percentage of the swap discount, precomputed when the buy price or fee changes.
-        feesAccrued = SafeCast.toUint128(feesAccrued + Math.mulDiv(amountOut, swapFeeMultiplier, PRICE_SCALE));
+        feesAccrued = SafeCast.toUint128(feesAccrued + amountOut * swapFeeMultiplier / PRICE_SCALE);
     }
 
     /// @notice Get the available liquidity for each token in the ARM.
@@ -944,12 +943,6 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         IERC20(liquidityAsset).transfer(feeCollector, fees);
 
         emit FeeCollected(feeCollector, fees);
-    }
-
-    /// @notice Deprecated compatibility getter kept for older tests and integrations.
-    /// Returns the current total assets after accrued swap fees are excluded.
-    function lastAvailableAssets() external view returns (int128) {
-        return SafeCast.toInt128(SafeCast.toInt256(totalAssets()));
     }
 
     ////////////////////////////////////////////////////

@@ -27,7 +27,7 @@ contract Unit_Concrete_OriginARM_RequestRedeem_Test_ is Unit_Shared_Test {
         uint256 expectedOETH = originARM.convertToAssets(expectedShares);
         uint256 requestIndex = originARM.nextWithdrawalIndex();
         uint128 queued = originARM.withdrawsQueued();
-        int128 lastAvailableAssets = originARM.lastAvailableAssets();
+        uint256 lastAvailableAssets = originARM.totalAssets();
         uint256 previewRedeem = originARM.previewRedeem(DEFAULT_AMOUNT);
         assertEq(previewRedeem, expectedShares, "Preview redeem should match expected shares");
 
@@ -43,8 +43,8 @@ contract Unit_Concrete_OriginARM_RequestRedeem_Test_ is Unit_Shared_Test {
             originARM.withdrawalRequests(0);
         // Assertions
         assertEq(
-            originARM.lastAvailableAssets().toUint256(),
-            lastAvailableAssets.toUint256() - DEFAULT_AMOUNT,
+            originARM.totalAssets(),
+            lastAvailableAssets - DEFAULT_AMOUNT,
             "Last available assets should be updated"
         );
         assertEq(originARM.withdrawsQueued(), queued + DEFAULT_AMOUNT, "Withdraws queued should be updated");

@@ -547,19 +547,6 @@
   },
   {
     "type": "function",
-    "name": "lastAvailableAssets",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "int128",
-        "internalType": "int128"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
     "name": "lidoWithdrawalQueue",
     "inputs": [],
     "outputs": [
@@ -1848,29 +1835,8 @@
   },
   {
     "type": "error",
-    "name": "MathOverflowedMulDiv",
-    "inputs": []
-  },
-  {
-    "type": "error",
     "name": "NotInitializing",
     "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "SafeCastOverflowedIntDowncast",
-    "inputs": [
-      {
-        "name": "bits",
-        "type": "uint8",
-        "internalType": "uint8"
-      },
-      {
-        "name": "value",
-        "type": "int256",
-        "internalType": "int256"
-      }
-    ]
   },
   {
     "type": "error",
