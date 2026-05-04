@@ -3,6 +3,7 @@ pragma solidity ^0.8.23;
 
 import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 import {OwnableOperable} from "./OwnableOperable.sol";
@@ -108,17 +109,14 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @notice Mapping of withdrawal request indices to the user withdrawal request data.
     mapping(uint256 requestId => WithdrawalRequest) public withdrawalRequests;
 
-    struct FeeData {
-        uint16 fee;
-        uint128 feesAccrued;
-    }
-
-    /// @notice Fee charged on discounted base-asset buy swaps measured in basis points (1/100th of a percent).
-    /// 10,000 = 100% fee.
-    /// 2,000 = 20% fee.
-    /// 500 = 5% fee.
-    FeeData internal feeData;
-    /// @notice The account or contract that can collect the accrued swap fee.
+    /// @notice Performance fee that is collected by the feeCollector measured in basis points (1/100th of a percent).
+    /// 10,000 = 100% performance fee
+    /// 2,000 = 20% performance fee
+    /// 500 = 5% performance fee
+    uint16 public fee;
+    /// @dev No longer used but keeping to avoid storage layout conflicts.
+    int128 internal _deprecatedLastAvailableAssets;
+    /// @notice The account or contract that can collect the performance fee.
     address public feeCollector;
     /// @notice The address of the CapManager contract used to manage the ARM's liquidity provider and total assets caps.
     address public capManager;
@@ -133,8 +131,12 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     uint256 public buyLiquidityRemaining;
     /// @notice Remaining liquidity-asset amount that can be sold into the ARM at the current sell price.
     uint256 public sellLiquidityRemaining;
+    /// @notice Multiplier used to accrue liquidity-asset fees from discounted base-asset buy swaps.
+    uint128 public swapFeeMultiplier;
+    /// @notice Accrued swap fees denominated in the liquidity asset.
+    uint128 public feesAccrued;
 
-    uint256[36] private _gap;
+    uint256[34] private _gap;
 
     ////////////////////////////////////////////////////
     ///                 Events
@@ -228,13 +230,6 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
         crossPrice = PRICE_SCALE;
         emit CrossPriceUpdated(PRICE_SCALE);
-    }
-
-    /// @dev Clears the reused legacy storage region that now backs `feesAccrued`.
-    /// This must be called exactly once during proxy upgrade via `upgradeToAndCall(...)`
-    /// after any legacy fees have been collected under the previous implementation.
-    function _migrateFeesAccrued() internal {
-        feeData.feesAccrued = 0;
     }
 
     ////////////////////////////////////////////////////
@@ -426,7 +421,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         // Transfer the output tokens to the recipient
         outToken.transfer(to, amountOut);
 
-        _accrueSwapFee(inToken, outToken, amountIn, amountOut);
+        _accrueSwapFee(inToken, outToken, amountOut);
     }
 
     function _swapTokensForExactTokens(IERC20 inToken, IERC20 outToken, uint256 amountOut, address to)
@@ -461,7 +456,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         if (outToken == IERC20(liquidityAsset)) _ensureLiquidityAvailableForSwap(amountOut);
         outToken.transfer(to, amountOut);
 
-        _accrueSwapFee(inToken, outToken, amountIn, amountOut);
+        _accrueSwapFee(inToken, outToken, amountOut);
     }
 
     /// @dev Consume the remaining liquidity cap for the current swap direction.
@@ -494,28 +489,25 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
     /**
      * @dev Accrues a fee only when the ARM buys the base asset with the liquidity asset at a discount.
-     * The fee is measured in liquidity-asset terms as a percentage of the discount captured on the swap:
-     * `(_convert(baseAsset, amountIn) - amountOut) * fee / FEE_SCALE`.
+     * The fee is measured in liquidity-asset terms using the precomputed `swapFeeMultiplier`.
+     * Logically, the accrued fee is:
+     * `amountOut * ((1 - buyPrice) / buyPrice) * feeShare`.
+     * With contract scales applied, this is:
+     * `amountOut * (PRICE_SCALE - buyT1) * fee / (buyT1 * FEE_SCALE)`.
+     * That is, `amountOut` multiplied by the discount relative to the buy price, multiplied by the fee share.
      * No fee is accrued when the ARM sells the base asset or when the executed swap is at or above par.
      * @param inToken The token sent into the ARM by the swapper.
      * @param outToken The token sent out from the ARM to the swapper.
-     * @param amountIn The amount of base asset received by the ARM.
      * @param amountOut The amount of liquidity asset paid out by the ARM.
      */
-    function _accrueSwapFee(IERC20 inToken, IERC20 outToken, uint256 amountIn, uint256 amountOut) internal {
+    function _accrueSwapFee(IERC20 inToken, IERC20 outToken, uint256 amountOut) internal {
         // Return if not buying the base asset
         if (address(inToken) != baseAsset || address(outToken) != liquidityAsset) return;
 
-        FeeData memory feeDataMem = feeData;
-        if (feeDataMem.fee == 0) return;
+        if (swapFeeMultiplier == 0) return;
 
-        // Convert the base amount in to liquidity asset terms for fee calculation
-        uint256 convertedAmountIn = _convert(address(inToken), amountIn);
-        if (convertedAmountIn <= amountOut) return;
-
-        // Fee is the percentage of the swap discount
-        feeData.feesAccrued =
-            feeDataMem.feesAccrued + uint128((convertedAmountIn - amountOut) * feeDataMem.fee / FEE_SCALE);
+        // Fee is a percentage of the swap discount, precomputed when the buy price or fee changes.
+        feesAccrued = SafeCast.toUint128(feesAccrued + Math.mulDiv(amountOut, swapFeeMultiplier, PRICE_SCALE));
     }
 
     /// @notice Get the available liquidity for each token in the ARM.
@@ -569,6 +561,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         traderate1 = buyT1; // base (t1) -> quote (t0). eg stETH -> WETH
         buyLiquidityRemaining = buyAmount;
         sellLiquidityRemaining = sellAmount;
+        _updateSwapFeeMultiplier(buyT1, fee);
 
         emit TraderateChanged(traderate0, traderate1);
     }
@@ -808,7 +801,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         // While waiting to claim their request, the ARM suffer a loss of assets. eg lending market loss.
         // When they claim their request, the newAvailableAssets will be zero as
         // the ARM assets will be less than the outstanding withdrawal request that was calculated before the loss.
-        uint256 feesAccruedMem = feeData.feesAccrued;
+        uint256 feesAccruedMem = feesAccrued;
         if (feesAccruedMem + MIN_TOTAL_SUPPLY >= newAvailableAssets) return MIN_TOTAL_SUPPLY;
 
         // Remove accrued swap fees from the available assets.
@@ -909,9 +902,19 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         // Collect any accrued swap fees up to this point using the old fee.
         collectFees();
 
-        feeData.fee = SafeCast.toUint16(_fee);
+        fee = SafeCast.toUint16(_fee);
+        _updateSwapFeeMultiplier(traderate1, _fee);
 
         emit FeeUpdated(_fee);
+    }
+
+    /// @dev Updates the fee multiplier used to accrue liquidity-asset fees on discounted base-asset buy swaps.
+    /// @param buyT1 The price the ARM buys base assets from traders, scaled to 36 decimals.
+    /// @param feeMem The swap fee measured in basis points.
+    function _updateSwapFeeMultiplier(uint256 buyT1, uint256 feeMem) internal {
+        swapFeeMultiplier = SafeCast.toUint128(
+            buyT1 == 0 || feeMem == 0 ? 0 : (PRICE_SCALE - buyT1) * feeMem * PRICE_SCALE / (buyT1 * FEE_SCALE)
+        );
     }
 
     function _setFeeCollector(address _feeCollector) internal {
@@ -927,7 +930,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// for the withdrawal queue to cover the accrued fees.
     /// @return fees The amount of accrued swap fees collected
     function collectFees() public returns (uint256 fees) {
-        fees = feeData.feesAccrued;
+        fees = feesAccrued;
         if (fees == 0) return 0;
 
         // Check there is enough liquidity assets that are not reserved for the withdrawal queue
@@ -937,24 +940,16 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         // We need to check there is enough liquidity assets to cover the fees being collected from this ARM contract.
         require(fees <= IERC20(liquidityAsset).balanceOf(address(this)), "ARM: insufficient liquidity");
 
-        feeData.feesAccrued = 0;
+        feesAccrued = 0;
         IERC20(liquidityAsset).transfer(feeCollector, fees);
 
         emit FeeCollected(feeCollector, fees);
-    }
-
-    function fee() external view returns (uint16) {
-        return feeData.fee;
     }
 
     /// @notice Deprecated compatibility getter kept for older tests and integrations.
     /// Returns the current total assets after accrued swap fees are excluded.
     function lastAvailableAssets() external view returns (int128) {
         return SafeCast.toInt128(SafeCast.toInt256(totalAssets()));
-    }
-
-    function feesAccrued() external view returns (uint128) {
-        return feeData.feesAccrued;
     }
 
     ////////////////////////////////////////////////////

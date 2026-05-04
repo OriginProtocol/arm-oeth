@@ -31,7 +31,7 @@ contract $028_UpgradeLidoARMSwapFeeScript is AbstractDeployScript("028_UpgradeLi
         govProposal.action(
             lidoARMProxy,
             "upgradeToAndCall(address,bytes)",
-            abi.encode(resolver.resolve("LIDO_ARM_IMPL"), abi.encodeWithSelector(LidoARM.migrateFeesAccrued.selector))
+            abi.encode(resolver.resolve("LIDO_ARM_IMPL"), "")
         );
     }
 
@@ -43,7 +43,7 @@ contract $028_UpgradeLidoARMSwapFeeScript is AbstractDeployScript("028_UpgradeLi
 
         vm.startPrank(proxy.owner());
         LidoARM(payable(address(proxy))).collectFees();
-        proxy.upgradeToAndCall(impl, abi.encodeWithSelector(LidoARM.migrateFeesAccrued.selector));
+        proxy.upgradeToAndCall(impl, "");
         vm.stopPrank();
     }
 }
