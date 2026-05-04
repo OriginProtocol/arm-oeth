@@ -503,8 +503,6 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         // Return if not buying the base asset
         if (address(inToken) != baseAsset || address(outToken) != liquidityAsset) return;
 
-        if (swapFeeMultiplier == 0) return;
-
         // Fee is a percentage of the swap discount, precomputed when the buy price or fee changes.
         feesAccrued = SafeCast.toUint128(feesAccrued + amountOut * swapFeeMultiplier / PRICE_SCALE);
     }
