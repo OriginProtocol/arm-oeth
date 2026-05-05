@@ -84,9 +84,11 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// This is also the price the base assets, eg stETH, in the ARM contract are priced at in `totalAssets`.
     uint256 public crossPrice;
 
-    /// @notice Cumulative total of all withdrawal requests including the ones that have already been claimed.
+    /// @notice Cumulative total of all redeemed shares ever queued in this ARM's withdrawal queue.
+    /// @dev Loss-sharing model: denominated in SHARES, not assets. Storage slot reused; semantics changed.
     uint128 public withdrawsQueued;
-    /// @notice Total of all the withdrawal requests that have been claimed.
+    /// @notice Cumulative total of all redeemed shares that have been claimed (and burned).
+    /// @dev Loss-sharing model: denominated in SHARES, not assets. Storage slot reused; semantics changed.
     uint128 public withdrawsClaimed;
     /// @notice Index of the next withdrawal request starting at 0.
     uint256 public nextWithdrawalIndex;
@@ -96,12 +98,13 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         bool claimed;
         // When the withdrawal can be claimed
         uint40 claimTimestamp;
-        // Amount of liquidity assets to withdraw. eg WETH
+        // Snapshot of the asset value of the redeemed shares at request time. Informational only.
+        // The actual payout at claim time uses the share price at that moment and may differ
+        // (lower if a loss occurred, higher if assets per share appreciated).
         uint128 assets;
-        // Cumulative total of all withdrawal requests including this one when the redeem request was made.
+        // Cumulative SHARES queued including this request, used for the FIFO gate.
         uint128 queued;
-        // The amount of shares that were burned at the time of this request.
-        // This has been added with a contract upgrade so may be zero for older requests.
+        // The amount of shares escrowed in the contract for this request. Burned at claim.
         uint128 shares;
     }
 
@@ -369,8 +372,10 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @param amount The amount of liquidity assets being sent out of the ARM.
     function _ensureLiquidityAvailableForSwap(uint256 amount) internal {
         uint256 liquidityBalance = IERC20(liquidityAsset).balanceOf(address(this));
-        uint256 outstandingWithdrawals = withdrawsQueued - withdrawsClaimed;
-        uint256 requiredLiquidity = amount + outstandingWithdrawals;
+        // Reserve liquidity for queued redemptions, valued at current (loss-adjusted) share price.
+        uint256 outstandingShares = withdrawsQueued - withdrawsClaimed;
+        uint256 reservedAssets = outstandingShares == 0 ? 0 : convertToAssets(outstandingShares);
+        uint256 requiredLiquidity = amount + reservedAssets;
 
         // If there is enough liquidity in the ARM to cover the swap after reserving liquidity for withdrawals
         if (requiredLiquidity <= liquidityBalance) return;
@@ -525,8 +530,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @return reserve0 The available liquidity for token0
     /// @return reserve1 The available liquidity for token1
     function getReserves() external view returns (uint256 reserve0, uint256 reserve1) {
-        // The amount of liquidity assets (WETH) that is still to be claimed in the withdrawal queue
-        uint256 outstandingWithdrawals = withdrawsQueued - withdrawsClaimed;
+        // Liquidity reserved for queued redemptions, valued at current (loss-adjusted) share price.
+        uint256 outstandingShares = withdrawsQueued - withdrawsClaimed;
+        uint256 reservedAssets = outstandingShares == 0 ? 0 : convertToAssets(outstandingShares);
 
         uint256 liquidityAssetsBalance = IERC20(liquidityAsset).balanceOf(address(this));
         address activeMarketMem = activeMarket;
@@ -534,8 +540,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
             liquidityAssetsBalance += IERC4626(activeMarketMem).maxWithdraw(address(this));
         }
 
-        // Ensure there is no negative reserves when there are more outstanding withdrawals than liquidity assets in the ARM
-        reserve0 = outstandingWithdrawals > liquidityAssetsBalance ? 0 : liquidityAssetsBalance - outstandingWithdrawals;
+        // Ensure there is no negative reserves when reserved liquidity exceeds available liquidity
+        reserve0 = reservedAssets > liquidityAssetsBalance ? 0 : liquidityAssetsBalance - reservedAssets;
         reserve1 = IERC20(baseAsset).balanceOf(address(this));
 
         // The previous assignment assumed token0 is be the liquidity asset.
@@ -642,7 +648,10 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
     /// @dev Internal logic for depositing liquidity assets in exchange for liquidity provider (LP) shares.
     function _deposit(uint256 assets, address receiver) internal returns (uint256 shares) {
-        // Do not allow deposits if the ARM can not meet all its withdrawal obligations.
+        // Safety guard: under the loss-sharing model, share price already reflects all outstanding claims
+        // (queued shares stay in totalSupply). The only pathological case is when totalAssets has hit the
+        // MIN_TOTAL_SUPPLY floor (near-total wipeout) AND there are still escrowed redemption shares;
+        // depositing then would be diluted to near zero. Block the deposit in that extreme case.
         require(totalAssets() > MIN_TOTAL_SUPPLY || withdrawsQueued == withdrawsClaimed, "ARM: insolvent");
 
         // Calculate the amount of shares to mint after accrued swap fees have been excluded,
@@ -670,27 +679,27 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         assets = convertToAssets(shares);
     }
 
-    /// @notice Request to redeem liquidity provider shares for liquidity assets
-    /// @param shares The amount of shares the redeemer wants to burn for liquidity assets
+    /// @notice Request to redeem liquidity provider shares for liquidity assets.
+    /// Shares are escrowed in the contract (not burned) and remain part of totalSupply()
+    /// so that any losses or gains between the request and the claim are absorbed pro-rata.
+    /// @param shares The amount of shares the redeemer wants to redeem
     /// @return requestId The index of the withdrawal request
-    /// @return assets The max amount of liquidity assets that will be claimable by the redeemer.
-    /// The amount can be less at claim time if ARM's assets per share has decreased. This can happen
-    /// from a significant slashing event on the base asset, eg stETH.
+    /// @return assets The asset value of the redeemed shares at request time. Informational only.
+    /// The actual payout at claim time will reflect the share price at that moment and may be
+    /// lower (after a loss) or higher (after appreciation).
     function requestRedeem(uint256 shares) external returns (uint256 requestId, uint256 assets) {
-        // Calculate the amount of assets to transfer to the redeemer
+        // Snapshot of the asset value at request time. Informational; payout uses claim-time price.
         assets = convertToAssets(shares);
 
         requestId = nextWithdrawalIndex;
-        // Store the next withdrawal request
         nextWithdrawalIndex = requestId + 1;
 
-        uint128 queued = SafeCast.toUint128(withdrawsQueued + assets);
-        // Store the updated queued amount which reserves liquidity assets (WETH) in the withdrawal queue
+        // Cumulative SHARES queued including this request. Used for the FIFO gate at claim time.
+        uint128 queued = SafeCast.toUint128(withdrawsQueued + shares);
         withdrawsQueued = queued;
 
         uint40 claimTimestamp = uint40(block.timestamp + claimDelay);
 
-        // Store requests
         withdrawalRequests[requestId] = WithdrawalRequest({
             withdrawer: msg.sender,
             claimed: false,
@@ -700,69 +709,69 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
             shares: SafeCast.toUint128(shares)
         });
 
-        // burn redeemer's shares
-        _burn(msg.sender, shares);
+        // Escrow the redeemer's shares. They stay in totalSupply() so the share price keeps
+        // reflecting the full set of claims on the ARM, including this queued one.
+        _transfer(msg.sender, address(this), shares);
 
         emit RedeemRequested(msg.sender, requestId, assets, queued, claimTimestamp);
     }
 
     /// @notice Claim liquidity assets from a previous withdrawal request after the claim delay has passed.
     /// This will try and withdraw from the active lending market if there are not enough liquidity assets in the ARM.
-    /// If there is not enough liquidity in the ARM and lending market the transaction will revert.
-    /// If the lending market has enough liquidity but has high utilization preventing the withdrawal, the transaction will revert.
-    /// If the assets per shares has decreased since the redeem request, the asset value of the redeemed shares at claim is used.
+    /// The payout is the current (loss-adjusted) asset value of the redeemed shares: any loss or gain
+    /// between the request and the claim is absorbed pro-rata across all share holders.
+    /// The FIFO gate prevents skipping ahead: this claim only succeeds if there is enough current liquidity
+    /// to also satisfy every earlier unclaimed request, valued at the same current share price.
     /// @param requestId The index of the withdrawal request
     /// @return assets The amount of liquidity assets that were transferred to the redeemer
     function claimRedeem(uint256 requestId) external returns (uint256 assets) {
-        // Load the struct from storage into memory
         WithdrawalRequest memory request = withdrawalRequests[requestId];
 
         require(request.claimTimestamp <= block.timestamp, "Claim delay not met");
-        // Is there enough liquidity in the ARM and lending market to claim this request?
-        require(request.queued <= claimable(), "Queue pending liquidity");
         require(request.withdrawer == msg.sender, "Not requester");
         require(request.claimed == false, "Already claimed");
 
-        // In the scenario where the ARM has made a loss from after the redeem request, the asset value of
-        // the redeemed shares at the time of the claim is used.
-        // This can happen if there was a significant slashing event on the base asset, eg stETH, after the redeem request was made.
-        uint256 assetsAtClaim = request.shares > 0 ? convertToAssets(request.shares) : request.assets;
-        // Use the minimum of the asset value of the redeemed shares at request or claim.
-        assets = request.assets < assetsAtClaim ? request.assets : assetsAtClaim;
+        // FIFO gate: enough current liquidity to satisfy every unclaimed earlier request and this one,
+        // valued at the current (loss-adjusted) share price. This prevents claim ordering games while
+        // remaining consistent with the actual payout below (no phantom liquidity required).
+        uint256 pendingShares = request.queued - withdrawsClaimed;
+        require(convertToAssets(pendingShares) <= claimable(), "Queue pending liquidity");
 
-        // Store the request as claimed
+        // Payout is the current asset value of the redeemer's escrowed shares.
+        assets = convertToAssets(request.shares);
+
         withdrawalRequests[requestId].claimed = true;
-        // Store the updated claimed amount
-        // The asset value at the time of the request is used instead of the value at the time of claim
-        // as the queued amount used the value at the time of the request.
-        withdrawsClaimed += SafeCast.toUint128(request.assets);
+        // Cumulative claimed counter is in shares (matches the unit of withdrawsQueued and request.queued).
+        withdrawsClaimed += request.shares;
+
+        // Burn the escrowed shares now that they have been valued and are being paid out.
+        // Doing this after computing `assets` keeps the conversion consistent.
+        _burn(address(this), request.shares);
 
         // If there is not enough liquidity assets in the ARM, get from the active market if one is configured.
-        // Read the active market address from storage once to save gas.
         address activeMarketMem = activeMarket;
         if (activeMarketMem != address(0)) {
             uint256 liquidityInARM = IERC20(liquidityAsset).balanceOf(address(this));
 
             if (assets > liquidityInARM) {
                 uint256 liquidityFromMarket = assets - liquidityInARM;
-                // This should work as we have checked earlier the claimable() amount which includes the active market
+                // This should work as we checked earlier that claimable() (= ARM balance + market) covers the claim
                 IERC4626(activeMarketMem).withdraw(liquidityFromMarket, address(this), address(this));
             }
         }
 
-        // transfer the liquidity asset to the withdrawer
         IERC20(liquidityAsset).transfer(msg.sender, assets);
 
         emit RedeemClaimed(msg.sender, requestId, assets);
     }
 
-    /// @notice Used to work out if an ARM's withdrawal request can be claimed.
-    /// If the withdrawal request's `queued` amount is less than or equal to the returned `claimableAmount`, then
-    /// the withdrawal request can be claimed.
-    /// @return claimableAmount The ARM's already claimed withdrawal requests plus the liquidity in the ARM
-    /// and liquidity that is withdrawable from the lending market.
+    /// @notice The current liquidity available to satisfy redemption claims.
+    /// @return claimableAmount The ARM's liquidity asset balance plus what can be withdrawn from the active lending market.
+    /// @dev Compared in claimRedeem against `convertToAssets(pendingShares)` rather than a cumulative
+    /// asset counter, since under the loss-sharing model the queue is denominated in shares and revalued
+    /// at claim time.
     function claimable() public view returns (uint256 claimableAmount) {
-        claimableAmount = withdrawsClaimed + IERC20(liquidityAsset).balanceOf(address(this));
+        claimableAmount = IERC20(liquidityAsset).balanceOf(address(this));
 
         // if there is an active lending market, add to the claimable amount
         address activeMarketMem = activeMarket;
@@ -777,41 +786,39 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     ///         Asset amount functions
     ////////////////////////////////////////////////////
 
-    /// @dev Checks if there is enough liquidity asset (WETH) in the ARM is not reserved for the withdrawal queue.
+    /// @dev Checks if there is enough liquidity asset (WETH) in the ARM that is not reserved for the withdrawal queue.
     // That is, the amount of liquidity assets (WETH) that is available to be swapped or collected as fees.
-    // If no outstanding withdrawals, no check will be done of the amount against the balance of the liquidity assets in the ARM.
+    // If no outstanding shares are queued, no check will be done of the amount against the balance of the liquidity assets in the ARM.
     // This is a gas optimization for swaps.
     // The ARM can swap out liquidity assets that are also used to collect accrued swap fees for the fee collector.
     // There is no liquidity guarantee for the fee collector. If there is not enough liquidity assets (WETH) in
     // the ARM to collect the accrued fees, then the fee collector will have to wait until there is enough liquidity assets.
     function _requireLiquidityAvailable(uint256 amount) internal view {
-        // The amount of liquidity assets (WETH) that is still to be claimed in the withdrawal queue
-        uint256 outstandingWithdrawals = withdrawsQueued - withdrawsClaimed;
+        // Outstanding shares queued for redemption, valued at current (loss-adjusted) share price.
+        uint256 outstandingShares = withdrawsQueued - withdrawsClaimed;
 
-        // Save gas on an external balanceOf call if there are no outstanding withdrawals
-        if (outstandingWithdrawals == 0) return;
+        // Save gas on the conversion and balanceOf call if there are no outstanding redemption shares
+        if (outstandingShares == 0) return;
 
-        // If there is not enough liquidity assets in the ARM to cover the outstanding withdrawals and the amount
+        uint256 reservedAssets = convertToAssets(outstandingShares);
+
         require(
-            amount + outstandingWithdrawals <= IERC20(liquidityAsset).balanceOf(address(this)),
+            amount + reservedAssets <= IERC20(liquidityAsset).balanceOf(address(this)),
             "ARM: Insufficient liquidity"
         );
     }
 
-    /// @notice The economic value of assets in the ARM, active lending market and external withdrawal queue,
-    /// less the liquidity assets reserved for the ARM's withdrawal queue and accrued swap fees.
+    /// @notice The gross economic value of assets in the ARM, active lending market and external withdrawal queue,
+    /// less only the accrued swap fees. Queued redemption shares are still part of totalSupply() so the share
+    /// price already reflects all outstanding claims; no separate subtraction is needed here.
     /// The active lending market is valued using ERC-4626 share conversion rather than current redeemable liquidity.
     /// @return The total amount of assets in the ARM
     function totalAssets() public view virtual returns (uint256) {
         (uint256 newAvailableAssets,) = _availableAssets();
 
-        // total assets should only go up from the initial deposit amount that is burnt
-        // but in case of something unforeseen, return at least MIN_TOTAL_SUPPLY.
-        // An example scenario that will return MIN_TOTAL_SUPPLY is:
-        // First LP deposits and then requests a redeem of all their ARM shares.
-        // While waiting to claim their request, the ARM suffer a loss of assets. eg lending market loss.
-        // When they claim their request, the newAvailableAssets will be zero as
-        // the ARM assets will be less than the outstanding withdrawal request that was calculated before the loss.
+        // Floor at MIN_TOTAL_SUPPLY to prevent division by zero in convertToShares / convertToAssets.
+        // In the loss-sharing model, the floor only triggers in the extreme case where almost all assets
+        // have been wiped out. The pro-rata distribution still applies up to that point.
         uint256 feesAccruedMem = feesAccrued;
         if (feesAccruedMem + MIN_TOTAL_SUPPLY >= newAvailableAssets) return MIN_TOTAL_SUPPLY;
 
@@ -826,18 +833,22 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         return liquidityAsset;
     }
 
-    /// @dev Calculate the economic value of assets in the ARM, external withdrawal queue,
-    /// and active lending market, less liquidity assets reserved for the ARM's withdrawal queue.
+    /// @dev Calculate the gross economic value of assets in the ARM, external withdrawal queue,
+    /// and active lending market. This does NOT subtract anything for the queued redemption shares:
+    /// those shares remain in totalSupply() under the loss-sharing model, so the share price already
+    /// represents the per-share value across all outstanding shares (free + escrowed for redemption).
     /// The active lending market is valued using convertToAssets() so market valuation remains
     /// consistent across ERC-4626 implementations even when current redeemable liquidity differs.
     /// This does not exclude any accrued swap fees.
-    function _availableAssets() internal view returns (uint256 availableAssets, uint256 outstandingWithdrawals) {
+    /// @return availableAssets Gross asset value owned by the ARM (all sources combined).
+    /// @return outstandingShares Cumulative shares queued but not yet claimed.
+    function _availableAssets() internal view returns (uint256 availableAssets, uint256 outstandingShares) {
         // Convert the base assets in the ARM to the amount of liquidity assets
         uint256 baseConvertedToLiquid = _convert(baseAsset, IERC20(baseAsset).balanceOf(address(this)));
 
         // Liquidity assets, eg WETH, in the ARM and lending markets are valued at 1.0.
-        // Base assets, eg stETH, in the withdrawal queue are valued at the amount of liquidity assets that are expected to be returned.
-        // Base assets, eg stETH, in the ARM is converted to liquidity assets and then the cross price applied. The cross price
+        // Base assets, eg stETH, in the external withdrawal queue are valued at the amount of liquidity assets that are expected to be returned.
+        // Base assets, eg stETH, in the ARM are converted to liquidity assets and then the cross price applied. The cross price
         // is the discounted price for the redemption time delay. This ensures the ARM's assets per share does not decrease if the ARM
         // sells base assets at a discount (less than 1). That's because the base sell price is greater than or equal to the cross price.
         uint256 assets = IERC20(liquidityAsset).balanceOf(address(this)) + _externalWithdrawQueue()
@@ -853,17 +864,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
             assets += IERC4626(activeMarketMem).convertToAssets(allShares);
         }
 
-        // The amount of liquidity assets, eg WETH, that is still to be claimed in the withdrawal queue
-        outstandingWithdrawals = withdrawsQueued - withdrawsClaimed;
-
-        // If the ARM becomes insolvent enough that the available assets in the ARM and external withdrawal queue
-        // is less than the outstanding withdrawals and accrued fees.
-        if (assets < outstandingWithdrawals) {
-            return (0, outstandingWithdrawals);
-        }
-
-        // Need to remove the liquidity assets that have been reserved for the withdrawal queue
-        availableAssets = assets - outstandingWithdrawals;
+        outstandingShares = withdrawsQueued - withdrawsClaimed;
+        availableAssets = assets;
     }
 
     /// @dev Hook for calculating the amount of liquidity assets in an external withdrawal queue like Lido or OETH.
@@ -1048,14 +1050,20 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     }
 
     function _allocate() internal returns (int256 targetLiquidityDelta, int256 actualLiquidityDelta) {
-        (uint256 availableAssets, uint256 outstandingWithdrawals) = _availableAssets();
+        (uint256 availableAssets, uint256 outstandingShares) = _availableAssets();
         if (availableAssets == 0) return (0, 0);
-        uint256 targetArmLiquidity = availableAssets * armBuffer / 1e18;
+
+        // Reserved liquidity for queued redemptions, valued at current (loss-adjusted) share price.
+        uint256 reservedAssets = outstandingShares == 0 ? 0 : convertToAssets(outstandingShares);
+
+        // Net assets available after reserving for the queue. The buffer is sized against the net amount.
+        uint256 netAvailable = availableAssets > reservedAssets ? availableAssets - reservedAssets : 0;
+        uint256 targetArmLiquidity = netAvailable * armBuffer / 1e18;
 
         // The current liquidity available in swap is the liquidity asset balance less
-        // any outstanding withdrawals from the ARM's withdrawal queue
+        // the assets reserved for the ARM's withdrawal queue.
         int256 currentArmLiquidity = SafeCast.toInt256(IERC20(liquidityAsset).balanceOf(address(this)))
-            - SafeCast.toInt256(outstandingWithdrawals);
+            - SafeCast.toInt256(reservedAssets);
 
         targetLiquidityDelta = currentArmLiquidity - SafeCast.toInt256(targetArmLiquidity);
 
