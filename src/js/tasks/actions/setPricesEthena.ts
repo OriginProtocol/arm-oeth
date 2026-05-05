@@ -18,7 +18,7 @@ action({
       arm,
       maxSellPrice: 0.99999,
       minSellPrice: 0.99996,
-      maxBuyPrice: 0.99985,
+      maxBuyPrice: 0.99988,
       minBuyPrice: 0.998,
       kyber: true,
       amount: 2000,
