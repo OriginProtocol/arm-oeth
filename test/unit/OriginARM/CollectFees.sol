@@ -13,7 +13,7 @@ contract Unit_Concrete_OriginARM_CollectFees_Test_ is Unit_Shared_Test {
         vm.stopPrank();
 
         amountIn = amounts[0];
-        expectedFee = (amountIn - amountOut) * originARM.fee() / originARM.FEE_SCALE();
+        expectedFee = amountOut * originARM.swapFeeMultiplier() / originARM.PRICE_SCALE();
     }
 
     function test_RevertWhen_CollectFees_Because_InsufficientLiquidity() public deposit(alice, DEFAULT_AMOUNT) {

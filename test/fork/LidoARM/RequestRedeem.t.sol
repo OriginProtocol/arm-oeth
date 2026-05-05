@@ -37,7 +37,7 @@ contract Fork_Concrete_LidoARM_RequestRedeem_Test_ is Fork_Shared_Test_ {
         assertEq(weth.balanceOf(address(lidoARM)), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT);
         assertEq(lidoARM.lidoWithdrawalQueueAmount(), 0);
         assertEq(lidoARM.feesAccrued(), 0); // No perfs so no fees
-        assertEq(lidoARM.lastAvailableAssets(), int256(MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT));
+        assertEq(int256(lidoARM.totalAssets()), int256(MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT));
         assertEq(lidoARM.balanceOf(address(this)), DEFAULT_AMOUNT);
         assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT);
         if (ac) assertEq(capManager.liquidityProviderCaps(address(this)), 0);
@@ -63,7 +63,7 @@ contract Fork_Concrete_LidoARM_RequestRedeem_Test_ is Fork_Shared_Test_ {
         assertEq(weth.balanceOf(address(lidoARM)), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT);
         assertEq(lidoARM.lidoWithdrawalQueueAmount(), 0);
         assertEq(lidoARM.feesAccrued(), 0); // No perfs so no fees
-        assertEq(lidoARM.lastAvailableAssets(), int256(MIN_TOTAL_SUPPLY));
+        assertEq(int256(lidoARM.totalAssets()), int256(MIN_TOTAL_SUPPLY));
         assertEq(lidoARM.balanceOf(address(this)), 0);
         assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY);
         if (ac) assertEq(capManager.liquidityProviderCaps(address(this)), 0);
@@ -82,7 +82,7 @@ contract Fork_Concrete_LidoARM_RequestRedeem_Test_ is Fork_Shared_Test_ {
         assertEq(weth.balanceOf(address(lidoARM)), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT);
         assertEq(lidoARM.lidoWithdrawalQueueAmount(), 0);
         assertEq(lidoARM.feesAccrued(), 0); // No perfs so no fees
-        assertEq(lidoARM.lastAvailableAssets(), int256(MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT * 3 / 4));
+        assertEq(int256(lidoARM.totalAssets()), int256(MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT * 3 / 4));
         assertEq(lidoARM.balanceOf(address(this)), DEFAULT_AMOUNT * 3 / 4);
         assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT * 3 / 4);
         if (ac) assertEq(capManager.liquidityProviderCaps(address(this)), 0); // Down only
@@ -116,7 +116,7 @@ contract Fork_Concrete_LidoARM_RequestRedeem_Test_ is Fork_Shared_Test_ {
         assertEq(weth.balanceOf(address(lidoARM)), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT);
         assertEq(lidoARM.lidoWithdrawalQueueAmount(), 0);
         assertEq(lidoARM.feesAccrued(), 0); // No perfs so no fees
-        assertEq(lidoARM.lastAvailableAssets(), int256(MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT * 1 / 4));
+        assertEq(int256(lidoARM.totalAssets()), int256(MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT * 1 / 4));
         assertEq(lidoARM.balanceOf(address(this)), DEFAULT_AMOUNT * 1 / 4);
         assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT * 1 / 4);
         if (ac) assertEq(capManager.liquidityProviderCaps(address(this)), 0); // Down only
@@ -157,7 +157,7 @@ contract Fork_Concrete_LidoARM_RequestRedeem_Test_ is Fork_Shared_Test_ {
         assertEq(lidoARM.lidoWithdrawalQueueAmount(), 0, "stETH in Lido withdrawal queue");
         assertEq(lidoARM.feesAccrued(), expectedFeeAccrued, "fees accrued");
         assertApproxEqAbs(
-            lidoARM.lastAvailableAssets(),
+            int256(lidoARM.totalAssets()),
             int256(MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT) - int256(expectedAssetsFromRedeem),
             1,
             "last available assets after"
@@ -209,7 +209,7 @@ contract Fork_Concrete_LidoARM_RequestRedeem_Test_ is Fork_Shared_Test_ {
         assertEq(lidoARM.lidoWithdrawalQueueAmount(), 0, "stETH in Lido withdrawal queue");
         assertEq(lidoARM.feesAccrued(), 0, "fees accrued");
         assertApproxEqAbs(
-            lidoARM.lastAvailableAssets(),
+            int256(lidoARM.totalAssets()),
             int256(assetsBeforeLoss - expectedAssetsFromRedeem),
             1,
             "last available assets"

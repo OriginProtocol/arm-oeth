@@ -34,6 +34,20 @@ contract Unit_Concrete_OriginARM_SwapLiquidityLimits_Test_ is Unit_Shared_Test {
         assertEq(originARM.buyLiquidityRemaining(), buyCap - amounts[1], "buy cap not consumed by amount out");
     }
 
+    function test_SwapExactTokensForTokens_BuySide_DoesNotConsumeUnlimitedCap() public {
+        _setSwapCaps(type(uint256).max, type(uint256).max);
+
+        deal(address(weth), address(originARM), 10 ether);
+        deal(address(oeth), alice, 3 ether);
+        vm.startPrank(alice);
+        oeth.approve(address(originARM), type(uint256).max);
+        originARM.swapExactTokensForTokens(oeth, weth, 1 ether, 0, alice);
+        vm.stopPrank();
+
+        assertEq(originARM.buyLiquidityRemaining(), type(uint256).max, "buy cap changed");
+        assertEq(originARM.sellLiquidityRemaining(), type(uint256).max, "sell cap changed");
+    }
+
     function test_SwapExactTokensForTokens_SellSide_ConsumesBaseAssetCap() public {
         uint256 sellCap = 4 ether;
         _setSwapCaps(type(uint256).max, sellCap);
@@ -62,6 +76,20 @@ contract Unit_Concrete_OriginARM_SwapLiquidityLimits_Test_ is Unit_Shared_Test {
 
         assertEq(amounts[1], 1 ether, "wrong output");
         assertEq(originARM.sellLiquidityRemaining(), sellCap - amounts[1], "sell cap not consumed by amount out");
+    }
+
+    function test_SwapExactTokensForTokens_SellSide_DoesNotConsumeUnlimitedCap() public {
+        _setSwapCaps(type(uint256).max, type(uint256).max);
+
+        deal(address(oeth), address(originARM), 10 ether);
+        deal(address(weth), alice, 3 ether);
+        vm.startPrank(alice);
+        weth.approve(address(originARM), type(uint256).max);
+        originARM.swapExactTokensForTokens(weth, oeth, 1 ether, 0, alice);
+        vm.stopPrank();
+
+        assertEq(originARM.buyLiquidityRemaining(), type(uint256).max, "buy cap changed");
+        assertEq(originARM.sellLiquidityRemaining(), type(uint256).max, "sell cap changed");
     }
 
     function test_RevertWhen_BuySideSwapExceedsRemainingCap() public {

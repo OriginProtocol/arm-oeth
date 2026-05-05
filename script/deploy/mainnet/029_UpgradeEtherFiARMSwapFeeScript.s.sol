@@ -37,9 +37,7 @@ contract $029_UpgradeEtherFiARMSwapFeeScript is AbstractDeployScript("029_Upgrad
         govProposal.action(
             etherFiARMProxy,
             "upgradeToAndCall(address,bytes)",
-            abi.encode(
-                resolver.resolve("ETHERFI_ARM_IMPL"), abi.encodeWithSelector(EtherFiARM.migrateFeesAccrued.selector)
-            )
+            abi.encode(resolver.resolve("ETHERFI_ARM_IMPL"), "")
         );
     }
 
@@ -51,7 +49,7 @@ contract $029_UpgradeEtherFiARMSwapFeeScript is AbstractDeployScript("029_Upgrad
 
         vm.startPrank(proxy.owner());
         EtherFiARM(payable(address(proxy))).collectFees();
-        proxy.upgradeToAndCall(impl, abi.encodeWithSelector(EtherFiARM.migrateFeesAccrued.selector));
+        proxy.upgradeToAndCall(impl, "");
         vm.stopPrank();
     }
 }

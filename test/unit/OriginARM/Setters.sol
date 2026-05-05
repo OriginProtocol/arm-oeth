@@ -160,6 +160,11 @@ contract Unit_Concrete_OriginARM_Setters_Test_ is Unit_Shared_Test {
 
         originARM.setFee(newFee);
         assertEq(originARM.fee(), newFee, "Wrong fee");
+        assertEq(
+            originARM.swapFeeMultiplier(),
+            _expectedSwapFeeMultiplier(originARM.traderate1(), newFee),
+            "Wrong swap fee multiplier"
+        );
         assertEq(weth.balanceOf(originARM.feeCollector()), feeCollectorBalanceBefore, "Wrong fee collector balance");
     }
 
@@ -179,6 +184,11 @@ contract Unit_Concrete_OriginARM_Setters_Test_ is Unit_Shared_Test {
 
         originARM.setFee(newFee);
         assertEq(originARM.fee(), newFee, "Wrong fee");
+        assertEq(
+            originARM.swapFeeMultiplier(),
+            _expectedSwapFeeMultiplier(originARM.traderate1(), newFee),
+            "Wrong swap fee multiplier"
+        );
         assertEq(weth.balanceOf(feeCollector), feeCollectorBalanceBefore + feeToCollect, "Wrong fee collector balance");
     }
 
@@ -240,6 +250,11 @@ contract Unit_Concrete_OriginARM_Setters_Test_ is Unit_Shared_Test {
         assertEq(originARM.traderate1(), newBuyPrice, "Wrong buy price");
         assertEq(originARM.buyLiquidityRemaining(), newBuyLiquidity, "Wrong buy liquidity");
         assertEq(originARM.sellLiquidityRemaining(), newSellLiquidity, "Wrong sell liquidity");
+        assertEq(
+            originARM.swapFeeMultiplier(),
+            _expectedSwapFeeMultiplier(newBuyPrice, originARM.fee()),
+            "Wrong swap fee multiplier"
+        );
     }
 
     function test_SetPrices_ResetsRemainingLiquidity() public asOperator {
@@ -289,5 +304,11 @@ contract Unit_Concrete_OriginARM_Setters_Test_ is Unit_Shared_Test {
         originARM.setCrossPrice(crossPrice + 1);
 
         assertEq(originARM.crossPrice(), crossPrice + 1, "Wrong cross price");
+    }
+
+    function _expectedSwapFeeMultiplier(uint256 buyT1, uint256 fee) internal view returns (uint256) {
+        uint256 priceScale = originARM.PRICE_SCALE();
+        if (buyT1 == 0 || fee == 0) return 0;
+        return (priceScale - buyT1) * fee * priceScale / (buyT1 * originARM.FEE_SCALE());
     }
 }

@@ -547,19 +547,6 @@
   },
   {
     "type": "function",
-    "name": "lastAvailableAssets",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "int128",
-        "internalType": "int128"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
     "name": "lidoWithdrawalQueue",
     "inputs": [],
     "outputs": [
@@ -615,13 +602,6 @@
       }
     ],
     "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "migrateFeesAccrued",
-    "inputs": [],
-    "outputs": [],
-    "stateMutability": "nonpayable"
   },
   {
     "type": "function",
@@ -1043,6 +1023,19 @@
       }
     ],
     "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "swapFeeMultiplier",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint128",
+        "internalType": "uint128"
+      }
+    ],
+    "stateMutability": "view"
   },
   {
     "type": "function",
@@ -1844,22 +1837,6 @@
     "type": "error",
     "name": "NotInitializing",
     "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "SafeCastOverflowedIntDowncast",
-    "inputs": [
-      {
-        "name": "bits",
-        "type": "uint8",
-        "internalType": "uint8"
-      },
-      {
-        "name": "value",
-        "type": "int256",
-        "internalType": "int256"
-      }
-    ]
   },
   {
     "type": "error",

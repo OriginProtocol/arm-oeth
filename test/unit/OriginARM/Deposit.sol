@@ -47,7 +47,7 @@ contract Unit_Concrete_OriginARM_Deposit_Test_ is Unit_Shared_Test {
 
         // Assertions
         assertEq(
-            originARM.lastAvailableAssets().toUint256(),
+            originARM.totalAssets(),
             DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY,
             "Last available assets should be updated"
         );
@@ -153,7 +153,7 @@ contract Unit_Concrete_OriginARM_Deposit_Test_ is Unit_Shared_Test {
         // Then request a withdrawal, this will decrease the available assets
         vm.prank(governor);
         originARM.requestOriginWithdrawal(1e12 / 2);
-        uint256 lastAvailableAssets = originARM.lastAvailableAssets().toUint256();
+        uint256 lastAvailableAssets = originARM.totalAssets();
 
         // Expected values
         uint256 expectedShares = originARM.convertToShares(DEFAULT_AMOUNT);
@@ -166,7 +166,7 @@ contract Unit_Concrete_OriginARM_Deposit_Test_ is Unit_Shared_Test {
         originARM.deposit(DEFAULT_AMOUNT);
         // Assertions
         assertEq(
-            originARM.lastAvailableAssets().toUint256(),
+            originARM.totalAssets(),
             DEFAULT_AMOUNT + lastAvailableAssets,
             "Last available assets should be updated"
         );
@@ -202,7 +202,7 @@ contract Unit_Concrete_OriginARM_Deposit_Test_ is Unit_Shared_Test {
         originARM.deposit(DEFAULT_AMOUNT);
         // Assertions
         assertEq(
-            originARM.lastAvailableAssets().toUint256(),
+            originARM.totalAssets(),
             DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY,
             "Last available assets should be updated"
         );
@@ -222,7 +222,7 @@ contract Unit_Concrete_OriginARM_Deposit_Test_ is Unit_Shared_Test {
 
         // Assertions
         assertEq(
-            originARM.lastAvailableAssets().toUint256(),
+            originARM.totalAssets(),
             DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY,
             "Last available assets should be updated"
         );
@@ -308,7 +308,7 @@ contract Unit_Concrete_OriginARM_Deposit_Test_ is Unit_Shared_Test {
 
         // Assertions
         assertEq(
-            originARM.lastAvailableAssets().toUint256(),
+            originARM.totalAssets(),
             DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY,
             "Last available assets should be updated"
         );

@@ -27,7 +27,7 @@ contract $006_UpgradeOriginARMSwapFeeScript is AbstractDeployScript("006_Upgrade
 
         vm.startPrank(proxy.owner());
         OriginARM(payable(address(proxy))).collectFees();
-        proxy.upgradeToAndCall(impl, abi.encodeWithSelector(OriginARM.migrateFeesAccrued.selector));
+        proxy.upgradeToAndCall(impl, "");
         vm.stopPrank();
     }
 }
