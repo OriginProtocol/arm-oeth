@@ -412,18 +412,24 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         }
         amountOut = convertedAmountIn * price / PRICE_SCALE;
 
+        // Update the remaining liquidity for the price
         _consumeSwapLiquidityLimit(isBuySide, amountOut);
+
+        //  If the ARM is buying base assets
+        if (isBuySide) {
+            // Accrue protocol fee
+            _accrueSwapFee(amountOut);
+
+            // Withdraw liquidity from the lending market if not enough in the ARM to cover the swap
+            // after reserving liquidity for withdrawals
+            _ensureLiquidityAvailableForSwap(amountOut);
+        }
 
         // Transfer the input tokens from the caller to this ARM contract
         inToken.transferFrom(msg.sender, address(this), amountIn);
 
-        // Withdraw liquidity from the lending market if not enough in the ARM to cover the swap
-        // after reserving liquidity for withdrawals
-        if (isBuySide) _ensureLiquidityAvailableForSwap(amountOut);
         // Transfer the output tokens to the recipient
         outToken.transfer(to, amountOut);
-
-        if (isBuySide) _accrueSwapFee(amountOut);
     }
 
     function _swapTokensForExactTokens(IERC20 inToken, IERC20 outToken, uint256 amountOut, address to)
@@ -451,16 +457,24 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         // +2 to cover stETH transfers being up to 2 wei short of the requested transfer amount
         amountIn = ((convertedAmountOut * PRICE_SCALE) / price) + 3;
 
+        // Update the remaining liquidity for the price
         _consumeSwapLiquidityLimit(isBuySide, amountOut);
+
+        //  If the ARM is buying base assets
+        if (isBuySide) {
+            // Accrue protocol fee if the ARM is buying the base asset at a discount.
+            _accrueSwapFee(amountOut);
+
+            // Withdraw liquidity from the lending market if not enough in the ARM to cover the swap
+            // after reserving liquidity for withdrawals
+            _ensureLiquidityAvailableForSwap(amountOut);
+        }
 
         // Transfer the input tokens from the caller to this ARM contract
         inToken.transferFrom(msg.sender, address(this), amountIn);
 
         // Transfer the output tokens to the recipient
-        if (isBuySide) _ensureLiquidityAvailableForSwap(amountOut);
         outToken.transfer(to, amountOut);
-
-        if (isBuySide) _accrueSwapFee(amountOut);
     }
 
     /// @dev Consume the remaining liquidity cap for the current swap direction.
