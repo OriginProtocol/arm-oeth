@@ -370,16 +370,17 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     function _ensureLiquidityAvailableForSwap(uint256 amount) internal {
         uint256 liquidityBalance = IERC20(liquidityAsset).balanceOf(address(this));
         uint256 outstandingWithdrawals = withdrawsQueued - withdrawsClaimed;
+        uint256 requiredLiquidity = amount + outstandingWithdrawals;
 
         // If there is enough liquidity in the ARM to cover the swap after reserving liquidity for withdrawals
-        if (amount + outstandingWithdrawals <= liquidityBalance) return;
+        if (requiredLiquidity <= liquidityBalance) return;
 
         // Revert if there is no active market configured to source the shortfall from
         address activeMarketMem = activeMarket;
         require(activeMarketMem != address(0), "ARM: Insufficient liquidity");
 
         // Calculate how much needs to be withdrawn from the active market to cover the swap
-        uint256 shortfall = amount + outstandingWithdrawals - liquidityBalance;
+        uint256 shortfall = requiredLiquidity - liquidityBalance;
 
         // Optimistically withdraw the shortfall to avoid an extra maxWithdraw() call on expensive markets
         // such as Morpho, while still normalizing any failure to the ARM's liquidity error.
@@ -398,29 +399,31 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         uint256 convertedAmountIn = _convert(address(inToken), amountIn);
 
         uint256 price;
+        bool isBuySide;
         if (inToken == token0) {
             require(outToken == token1, "ARM: Invalid out token");
             price = traderate0;
         } else if (inToken == token1) {
             require(outToken == token0, "ARM: Invalid out token");
             price = traderate1;
+            isBuySide = true;
         } else {
             revert("ARM: Invalid in token");
         }
         amountOut = convertedAmountIn * price / PRICE_SCALE;
 
-        _consumeSwapLiquidityLimit(outToken, amountOut);
+        _consumeSwapLiquidityLimit(isBuySide, amountOut);
 
         // Transfer the input tokens from the caller to this ARM contract
         inToken.transferFrom(msg.sender, address(this), amountIn);
 
         // Withdraw liquidity from the lending market if not enough in the ARM to cover the swap
         // after reserving liquidity for withdrawals
-        if (outToken == IERC20(liquidityAsset)) _ensureLiquidityAvailableForSwap(amountOut);
+        if (isBuySide) _ensureLiquidityAvailableForSwap(amountOut);
         // Transfer the output tokens to the recipient
         outToken.transfer(to, amountOut);
 
-        _accrueSwapFee(inToken, amountOut);
+        if (isBuySide) _accrueSwapFee(amountOut);
     }
 
     function _swapTokensForExactTokens(IERC20 inToken, IERC20 outToken, uint256 amountOut, address to)
@@ -432,12 +435,14 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         uint256 convertedAmountOut = _convert(address(outToken), amountOut);
 
         uint256 price;
+        bool isBuySide;
         if (inToken == token0) {
             require(outToken == token1, "ARM: Invalid out token");
             price = traderate0;
         } else if (inToken == token1) {
             require(outToken == token0, "ARM: Invalid out token");
             price = traderate1;
+            isBuySide = true;
         } else {
             revert("ARM: Invalid in token");
         }
@@ -446,29 +451,29 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         // +2 to cover stETH transfers being up to 2 wei short of the requested transfer amount
         amountIn = ((convertedAmountOut * PRICE_SCALE) / price) + 3;
 
-        _consumeSwapLiquidityLimit(outToken, amountOut);
+        _consumeSwapLiquidityLimit(isBuySide, amountOut);
 
         // Transfer the input tokens from the caller to this ARM contract
         inToken.transferFrom(msg.sender, address(this), amountIn);
 
         // Transfer the output tokens to the recipient
-        if (outToken == IERC20(liquidityAsset)) _ensureLiquidityAvailableForSwap(amountOut);
+        if (isBuySide) _ensureLiquidityAvailableForSwap(amountOut);
         outToken.transfer(to, amountOut);
 
-        _accrueSwapFee(inToken, amountOut);
+        if (isBuySide) _accrueSwapFee(amountOut);
     }
 
     /// @dev Consume the remaining liquidity cap for the current swap direction.
     /// Buy-side caps are denominated in liquidity-asset amounts and sell-side caps are denominated in
     /// base-asset amounts.
-    /// @param outToken The token being bought from the ARM by the trader.
-    /// That is the token being sold by the ARM.
+    /// @param isBuySide True when the ARM is buying base assets from the trader.
     /// @param amountOut The amount of `outToken` being bought from the ARM by the trader.
     /// That is the amount of tokens being sold by the ARM.
-    function _consumeSwapLiquidityLimit(IERC20 outToken, uint256 amountOut) internal {
-        bool isBuySide = address(outToken) == liquidityAsset;
+    function _consumeSwapLiquidityLimit(bool isBuySide, uint256 amountOut) internal {
         uint256 remaining = isBuySide ? buyLiquidityRemaining : sellLiquidityRemaining;
         require(amountOut <= remaining, "ARM: Insufficient liquidity");
+        if (remaining == type(uint256).max) return;
+
         remaining -= amountOut;
 
         if (isBuySide) buyLiquidityRemaining = remaining;
@@ -495,13 +500,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
      * `amountOut * (PRICE_SCALE - buyT1) * fee / (buyT1 * FEE_SCALE)`.
      * That is, `amountOut` multiplied by the discount relative to the buy price, multiplied by the fee share.
      * No fee is accrued when the ARM sells the base asset or when the executed swap is at or above par.
-     * @param inToken The token sent into the ARM by the swapper.
      * @param amountOut The amount of liquidity asset paid out by the ARM.
      */
-    function _accrueSwapFee(IERC20 inToken, uint256 amountOut) internal {
-        // Return if not buying the base asset
-        if (address(inToken) != baseAsset) return;
-
+    function _accrueSwapFee(uint256 amountOut) internal {
         // Fee is a percentage of the swap discount, precomputed when the buy price or fee changes.
         feesAccrued = SafeCast.toUint128(feesAccrued + amountOut * swapFeeMultiplier / PRICE_SCALE);
     }
