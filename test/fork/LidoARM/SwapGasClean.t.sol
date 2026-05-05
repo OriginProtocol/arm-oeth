@@ -35,19 +35,10 @@ contract Fork_Concrete_LidoARM_SwapGasClean_Test is Test {
 
         CapManager capManagerImpl = new CapManager(address(lidoProxy));
         capManagerProxy.initialize(
-            address(capManagerImpl),
-            address(this),
-            abi.encodeWithSignature("initialize(address)", operator)
+            address(capManagerImpl), address(this), abi.encodeWithSignature("initialize(address)", operator)
         );
 
-        LidoARM lidoImpl = new LidoARM(
-            Mainnet.STETH,
-            Mainnet.WETH,
-            Mainnet.LIDO_WITHDRAWAL,
-            10 minutes,
-            0,
-            0
-        );
+        LidoARM lidoImpl = new LidoARM(Mainnet.STETH, Mainnet.WETH, Mainnet.LIDO_WITHDRAWAL, 10 minutes, 0, 0);
 
         deal(address(weth), address(this), 1e12);
         weth.approve(address(lidoProxy), type(uint256).max);

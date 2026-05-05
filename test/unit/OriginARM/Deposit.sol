@@ -46,11 +46,7 @@ contract Unit_Concrete_OriginARM_Deposit_Test_ is Unit_Shared_Test {
         originARM.deposit(DEFAULT_AMOUNT);
 
         // Assertions
-        assertEq(
-            originARM.totalAssets(),
-            DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY,
-            "Last available assets should be updated"
-        );
+        assertEq(originARM.totalAssets(), DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, "Last available assets should be updated");
     }
 
     /// @notice Test under the following assumptions:
@@ -166,9 +162,7 @@ contract Unit_Concrete_OriginARM_Deposit_Test_ is Unit_Shared_Test {
         originARM.deposit(DEFAULT_AMOUNT);
         // Assertions
         assertEq(
-            originARM.totalAssets(),
-            DEFAULT_AMOUNT + lastAvailableAssets,
-            "Last available assets should be updated"
+            originARM.totalAssets(), DEFAULT_AMOUNT + lastAvailableAssets, "Last available assets should be updated"
         );
     }
 
@@ -201,11 +195,7 @@ contract Unit_Concrete_OriginARM_Deposit_Test_ is Unit_Shared_Test {
         vm.prank(alice);
         originARM.deposit(DEFAULT_AMOUNT);
         // Assertions
-        assertEq(
-            originARM.totalAssets(),
-            DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY,
-            "Last available assets should be updated"
-        );
+        assertEq(originARM.totalAssets(), DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, "Last available assets should be updated");
     }
 
     function test_Deposit_When_CapManagerIsSet() public setCapManager setTotalAssetsCapUnlimited {
@@ -221,11 +211,7 @@ contract Unit_Concrete_OriginARM_Deposit_Test_ is Unit_Shared_Test {
         originARM.deposit(DEFAULT_AMOUNT);
 
         // Assertions
-        assertEq(
-            originARM.totalAssets(),
-            DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY,
-            "Last available assets should be updated"
-        );
+        assertEq(originARM.totalAssets(), DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, "Last available assets should be updated");
     }
 
     /// @notice Deposit reverts when the ARM is insolvent (totalAssets floored to MIN_TOTAL_SUPPLY)
@@ -307,11 +293,7 @@ contract Unit_Concrete_OriginARM_Deposit_Test_ is Unit_Shared_Test {
         originARM.deposit(DEFAULT_AMOUNT, bob);
 
         // Assertions
-        assertEq(
-            originARM.totalAssets(),
-            DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY,
-            "Last available assets should be updated"
-        );
+        assertEq(originARM.totalAssets(), DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, "Last available assets should be updated");
         assertEq(originARM.balanceOf(bob), expectedShares, "Bob should have the shares");
     }
 }

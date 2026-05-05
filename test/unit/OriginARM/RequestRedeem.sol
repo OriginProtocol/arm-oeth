@@ -43,9 +43,7 @@ contract Unit_Concrete_OriginARM_RequestRedeem_Test_ is Unit_Shared_Test {
             originARM.withdrawalRequests(0);
         // Assertions
         assertEq(
-            originARM.totalAssets(),
-            lastAvailableAssets - DEFAULT_AMOUNT,
-            "Last available assets should be updated"
+            originARM.totalAssets(), lastAvailableAssets - DEFAULT_AMOUNT, "Last available assets should be updated"
         );
         assertEq(originARM.withdrawsQueued(), queued + DEFAULT_AMOUNT, "Withdraws queued should be updated");
         assertEq(originARM.nextWithdrawalIndex(), requestIndex + 1, "Next withdrawal index should be updated");

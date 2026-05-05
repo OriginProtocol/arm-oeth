@@ -29,9 +29,7 @@ contract $028_UpgradeLidoARMSwapFeeScript is AbstractDeployScript("028_UpgradeLi
         address lidoARMProxy = resolver.resolve("LIDO_ARM");
         govProposal.action(lidoARMProxy, "collectFees()", "");
         govProposal.action(
-            lidoARMProxy,
-            "upgradeToAndCall(address,bytes)",
-            abi.encode(resolver.resolve("LIDO_ARM_IMPL"), "")
+            lidoARMProxy, "upgradeToAndCall(address,bytes)", abi.encode(resolver.resolve("LIDO_ARM_IMPL"), "")
         );
     }
 

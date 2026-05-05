@@ -35,9 +35,7 @@ contract $029_UpgradeEtherFiARMSwapFeeScript is AbstractDeployScript("029_Upgrad
         address etherFiARMProxy = resolver.resolve("ETHER_FI_ARM");
         govProposal.action(etherFiARMProxy, "collectFees()", "");
         govProposal.action(
-            etherFiARMProxy,
-            "upgradeToAndCall(address,bytes)",
-            abi.encode(resolver.resolve("ETHERFI_ARM_IMPL"), "")
+            etherFiARMProxy, "upgradeToAndCall(address,bytes)", abi.encode(resolver.resolve("ETHERFI_ARM_IMPL"), "")
         );
     }
 
