@@ -135,7 +135,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @notice Accrued swap fees denominated in the liquidity asset.
     uint128 public feesAccrued;
 
-    uint256[34] private _gap;
+    uint256[35] private _gap;
 
     ////////////////////////////////////////////////////
     ///                 Events
