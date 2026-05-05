@@ -248,7 +248,7 @@
             "name": "026_UpgradeEthenaARMScript",
             "proposalId": 1,
             "tsDeployment": 1775631059,
-            "tsGovernance": 0
+            "tsGovernance": 1
         }
     ]
 }
