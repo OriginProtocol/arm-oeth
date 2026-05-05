@@ -908,9 +908,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @param buyT1 The price the ARM buys base assets from traders, scaled to 36 decimals.
     /// @param feeMem The swap fee measured in basis points.
     function _updateSwapFeeMultiplier(uint256 buyT1, uint256 feeMem) internal {
-        swapFeeMultiplier = SafeCast.toUint128(
-            buyT1 == 0 || feeMem == 0 ? 0 : (PRICE_SCALE - buyT1) * feeMem * PRICE_SCALE / (buyT1 * FEE_SCALE)
-        );
+        swapFeeMultiplier =
+            SafeCast.toUint128(buyT1 == 0 ? 0 : (PRICE_SCALE - buyT1) * feeMem * PRICE_SCALE / (buyT1 * FEE_SCALE));
     }
 
     function _setFeeCollector(address _feeCollector) internal {
