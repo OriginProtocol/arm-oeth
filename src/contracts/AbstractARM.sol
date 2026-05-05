@@ -420,7 +420,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         // Transfer the output tokens to the recipient
         outToken.transfer(to, amountOut);
 
-        _accrueSwapFee(inToken, outToken, amountOut);
+        _accrueSwapFee(inToken, amountOut);
     }
 
     function _swapTokensForExactTokens(IERC20 inToken, IERC20 outToken, uint256 amountOut, address to)
@@ -455,7 +455,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         if (outToken == IERC20(liquidityAsset)) _ensureLiquidityAvailableForSwap(amountOut);
         outToken.transfer(to, amountOut);
 
-        _accrueSwapFee(inToken, outToken, amountOut);
+        _accrueSwapFee(inToken, amountOut);
     }
 
     /// @dev Consume the remaining liquidity cap for the current swap direction.
@@ -496,12 +496,11 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
      * That is, `amountOut` multiplied by the discount relative to the buy price, multiplied by the fee share.
      * No fee is accrued when the ARM sells the base asset or when the executed swap is at or above par.
      * @param inToken The token sent into the ARM by the swapper.
-     * @param outToken The token sent out from the ARM to the swapper.
      * @param amountOut The amount of liquidity asset paid out by the ARM.
      */
-    function _accrueSwapFee(IERC20 inToken, IERC20 outToken, uint256 amountOut) internal {
+    function _accrueSwapFee(IERC20 inToken, uint256 amountOut) internal {
         // Return if not buying the base asset
-        if (address(inToken) != baseAsset || address(outToken) != liquidityAsset) return;
+        if (address(inToken) != baseAsset) return;
 
         // Fee is a percentage of the swap discount, precomputed when the buy price or fee changes.
         feesAccrued = SafeCast.toUint128(feesAccrued + amountOut * swapFeeMultiplier / PRICE_SCALE);
