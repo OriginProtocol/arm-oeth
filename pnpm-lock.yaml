@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@talos/client':
-        specifier: github:oplabs/talos#b9657a8e0c5276e946ded6e1adb2bc1bb0fd0965&path:packages/client
-        version: git+https://git@github.com:oplabs/talos.git#b9657a8e0c5276e946ded6e1adb2bc1bb0fd0965&path:packages/client(typescript@5.9.3)(zod@3.25.76)
+        specifier: github:oplabs/talos#a22db5ac6b0c7ae1e37f5cbc84120c5cb09b9b29&path:packages/client
+        version: git+https://git@github.com:oplabs/talos.git#a22db5ac6b0c7ae1e37f5cbc84120c5cb09b9b29&path:packages/client(typescript@5.9.3)(zod@3.25.76)
     devDependencies:
       '@apollo/client':
         specifier: ^3.11.4
@@ -1231,9 +1231,9 @@ packages:
   '@solidity-parser/parser@0.18.0':
     resolution: {integrity: sha512-yfORGUIPgLck41qyN7nbwJRAx17/jAIXCTanHOJZhB6PJ1iAk/84b/xlsVKFSyNyLXIj0dhppoE0+CRws7wlzA==}
 
-  '@talos/client@git+https://git@github.com:oplabs/talos.git#b9657a8e0c5276e946ded6e1adb2bc1bb0fd0965&path:packages/client':
-    resolution: {commit: b9657a8e0c5276e946ded6e1adb2bc1bb0fd0965, path: packages/client, repo: git@github.com:oplabs/talos.git, type: git}
-    version: 0.0.11
+  '@talos/client@git+https://git@github.com:oplabs/talos.git#a22db5ac6b0c7ae1e37f5cbc84120c5cb09b9b29&path:packages/client':
+    resolution: {commit: a22db5ac6b0c7ae1e37f5cbc84120c5cb09b9b29, path: packages/client, repo: git@github.com:oplabs/talos.git, type: git}
+    version: 0.0.12
 
   '@tsconfig/node10@1.0.12':
     resolution: {integrity: sha512-UCYBaeFvM11aU2y3YPZ//O5Rhj+xKyzy7mvcIoAjASbigy8mHMryP5cK7dgjlz2hWxh1g5pLw084E0a/wlUSFQ==}
@@ -5194,7 +5194,7 @@ snapshots:
 
   '@solidity-parser/parser@0.18.0': {}
 
-  '@talos/client@git+https://git@github.com:oplabs/talos.git#b9657a8e0c5276e946ded6e1adb2bc1bb0fd0965&path:packages/client(typescript@5.9.3)(zod@3.25.76)':
+  '@talos/client@git+https://git@github.com:oplabs/talos.git#a22db5ac6b0c7ae1e37f5cbc84120c5cb09b9b29&path:packages/client(typescript@5.9.3)(zod@3.25.76)':
     dependencies:
       '@hono/node-server': 1.19.14(hono@4.12.16)
       croner: 10.0.1
