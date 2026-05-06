@@ -718,8 +718,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
     /// @notice Claim liquidity assets from a previous withdrawal request after the claim delay has passed.
     /// This will try and withdraw from the active lending market if there are not enough liquidity assets in the ARM.
-    /// The payout is the current (loss-adjusted) asset value of the redeemed shares: any loss or gain
-    /// between the request and the claim is absorbed pro-rata across all share holders.
+    /// The payout is the lower of `request.assets` (the snapshot at request time) and the current asset value
+    /// of the escrowed shares. This caps any upside accrued during the wait (which is redistributed to the
+    /// remaining LPs) while still passing on any loss pro-rata to the redeemer.
     /// The FIFO gate prevents skipping ahead: this claim only succeeds if there is enough current liquidity
     /// to also satisfy every earlier unclaimed request, valued at the same current share price.
     /// @param requestId The index of the withdrawal request
@@ -732,13 +733,18 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         require(request.claimed == false, "Already claimed");
 
         // FIFO gate: enough current liquidity to satisfy every unclaimed earlier request and this one,
-        // valued at the current (loss-adjusted) share price. This prevents claim ordering games while
-        // remaining consistent with the actual payout below (no phantom liquidity required).
+        // valued at the current (loss-adjusted) share price. This is conservative for the gain case
+        // (overestimates payouts that are then capped at request.assets) but never causes a deadlock.
         uint256 pendingShares = request.queued - withdrawsClaimed;
         require(convertToAssets(pendingShares) <= claimable(), "Queue pending liquidity");
 
-        // Payout is the current asset value of the redeemer's escrowed shares.
-        assets = convertToAssets(request.shares);
+        // Payout is min(request.assets, current value of the escrowed shares).
+        // - If the share price dropped: assets = current value (loss is absorbed pro-rata).
+        // - If the share price rose: assets = request.assets (upside is forfeited to remaining LPs).
+        // This removes the free-timing-option the redeemer would otherwise have between claimDelay
+        // expiry and an arbitrarily later claim moment.
+        uint256 assetsAtClaim = convertToAssets(request.shares);
+        assets = request.assets < assetsAtClaim ? request.assets : assetsAtClaim;
 
         withdrawalRequests[requestId].claimed = true;
         // Cumulative claimed counter is in shares (matches the unit of withdrawsQueued and request.queued).
