@@ -84,11 +84,15 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// This is also the price the base assets, eg stETH, in the ARM contract are priced at in `totalAssets`.
     uint256 public crossPrice;
 
-    /// @notice Cumulative total of all redeemed shares ever queued in this ARM's withdrawal queue.
-    /// @dev Loss-sharing model: denominated in SHARES, not assets. Storage slot reused; semantics changed.
+    /// @notice Cumulative `request.assets` ever queued in this ARM's withdrawal queue.
+    /// @dev Asset-denominated, same semantics as the original deployed contract. The pair
+    /// `withdrawsQueued - withdrawsClaimed` is an upper bound on the WETH the queue can still
+    /// withdraw (each payout is `min(request.assets, convertToAssets(shares)) ≤ request.assets`),
+    /// which lets the swap-side reservation avoid an expensive `convertToAssets` / Morpho call.
     uint128 public withdrawsQueued;
-    /// @notice Cumulative total of all redeemed shares that have been claimed (and burned).
-    /// @dev Loss-sharing model: denominated in SHARES, not assets. Storage slot reused; semantics changed.
+    /// @notice Cumulative `request.assets` ever claimed.
+    /// @dev Incremented by `request.assets` (the upper bound), NOT by the actual reduced payout,
+    /// so that the gap with `withdrawsQueued` stays a true upper bound on the queue's liability.
     uint128 public withdrawsClaimed;
     /// @notice Index of the next withdrawal request starting at 0.
     uint256 public nextWithdrawalIndex;
@@ -138,15 +142,14 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @notice Accrued swap fees denominated in the liquidity asset.
     uint128 public feesAccrued;
 
-    /// @notice Cumulative `request.assets` ever queued in this ARM's withdrawal queue.
-    /// @dev Asset-denominated mirror of `withdrawsQueued`, used for the swap-side liquidity reservation.
-    /// `withdrawsQueuedAssets - withdrawsClaimedAssets` is an upper bound on the WETH the queue can still
-    /// withdraw (each payout is min(request.assets, convertToAssets(shares)) ≤ request.assets), which lets
-    /// the swap path avoid an expensive convertToAssets / Morpho call.
-    uint128 public withdrawsQueuedAssets;
-    /// @notice Cumulative `request.assets` ever claimed (each claim increments by request.assets, NOT by
-    /// the actual reduced payout, so the difference with `withdrawsQueuedAssets` stays a true upper bound).
-    uint128 public withdrawsClaimedAssets;
+    /// @notice Cumulative shares ever queued in this ARM's withdrawal queue.
+    /// @dev Shares-denominated, used by the FIFO gate at claim time
+    /// (`convertToAssets(request.queued - withdrawsClaimedShares) <= claimable()`).
+    /// New storage slot (added with the loss-sharing model).
+    uint128 public withdrawsQueuedShares;
+    /// @notice Cumulative shares ever claimed and burned.
+    /// @dev Shares-denominated mirror of `withdrawsClaimed`. New storage slot.
+    uint128 public withdrawsClaimedShares;
 
     uint256[34] private _gap;
 
@@ -385,7 +388,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         // Upper bound on what the queue can still withdraw. Cheap (no convertToAssets / Morpho call):
         // each payout is min(request.assets, convertToAssets(shares)) ≤ request.assets, so the cumulative
         // request.assets gap is always ≥ the actual remaining liability.
-        uint256 reservedAssets = withdrawsQueuedAssets - withdrawsClaimedAssets;
+        uint256 reservedAssets = withdrawsQueued - withdrawsClaimed;
         uint256 requiredLiquidity = amount + reservedAssets;
 
         // If there is enough liquidity in the ARM to cover the swap after reserving liquidity for withdrawals
@@ -542,7 +545,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @return reserve1 The available liquidity for token1
     function getReserves() external view returns (uint256 reserve0, uint256 reserve1) {
         // Upper bound on the queue's remaining liability. See _ensureLiquidityAvailableForSwap.
-        uint256 reservedAssets = withdrawsQueuedAssets - withdrawsClaimedAssets;
+        uint256 reservedAssets = withdrawsQueued - withdrawsClaimed;
 
         uint256 liquidityAssetsBalance = IERC20(liquidityAsset).balanceOf(address(this));
         address activeMarketMem = activeMarket;
@@ -662,7 +665,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         // (queued shares stay in totalSupply). The only pathological case is when totalAssets has hit the
         // MIN_TOTAL_SUPPLY floor (near-total wipeout) AND there are still escrowed redemption shares;
         // depositing then would be diluted to near zero. Block the deposit in that extreme case.
-        require(totalAssets() > MIN_TOTAL_SUPPLY || withdrawsQueued == withdrawsClaimed, "ARM: insolvent");
+        require(totalAssets() > MIN_TOTAL_SUPPLY || withdrawsQueuedShares == withdrawsClaimedShares, "ARM: insolvent");
 
         // Calculate the amount of shares to mint after accrued swap fees have been excluded,
         // and before new assets are deposited.
@@ -705,12 +708,12 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         nextWithdrawalIndex = requestId + 1;
 
         // Cumulative SHARES queued including this request. Used for the FIFO gate at claim time.
-        uint128 queued = SafeCast.toUint128(withdrawsQueued + shares);
-        withdrawsQueued = queued;
+        uint128 queued = SafeCast.toUint128(withdrawsQueuedShares + shares);
+        withdrawsQueuedShares = queued;
 
         // Cumulative ASSETS queued. Used for the cheap swap-side liquidity reservation
         // (request.assets is an upper bound on the actual payout, by construction of the min cap).
-        withdrawsQueuedAssets = SafeCast.toUint128(withdrawsQueuedAssets + assets);
+        withdrawsQueued = SafeCast.toUint128(withdrawsQueued + assets);
 
         uint40 claimTimestamp = uint40(block.timestamp + claimDelay);
 
@@ -749,7 +752,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         // FIFO gate: enough current liquidity to satisfy every unclaimed earlier request and this one,
         // valued at the current (loss-adjusted) share price. This is conservative for the gain case
         // (overestimates payouts that are then capped at request.assets) but never causes a deadlock.
-        uint256 pendingShares = request.queued - withdrawsClaimed;
+        uint256 pendingShares = request.queued - withdrawsClaimedShares;
         require(convertToAssets(pendingShares) <= claimable(), "Queue pending liquidity");
 
         // Payout is min(request.assets, current value of the escrowed shares).
@@ -761,12 +764,12 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         assets = request.assets < assetsAtClaim ? request.assets : assetsAtClaim;
 
         withdrawalRequests[requestId].claimed = true;
-        // Shares-denominated cumulative (matches withdrawsQueued and request.queued, used by the FIFO gate).
-        withdrawsClaimed += request.shares;
+        // Shares-denominated cumulative (matches withdrawsQueuedShares and request.queued, used by the FIFO gate).
+        withdrawsClaimedShares += request.shares;
         // Assets-denominated cumulative incremented by request.assets (the upper bound), NOT by the
-        // actual capped payout. This keeps `withdrawsQueuedAssets - withdrawsClaimedAssets` a valid
+        // actual capped payout. This keeps `withdrawsQueued - withdrawsClaimed` a valid
         // upper bound on the queue's remaining liability for the cheap swap-side reservation.
-        withdrawsClaimedAssets += request.assets;
+        withdrawsClaimed += request.assets;
 
         // Burn the escrowed shares now that they have been valued and are being paid out.
         // Doing this after computing `assets` keeps the conversion consistent.
@@ -819,7 +822,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     // the ARM to collect the accrued fees, then the fee collector will have to wait until there is enough liquidity assets.
     function _requireLiquidityAvailable(uint256 amount) internal view {
         // Upper bound on the queue's remaining liability. See _ensureLiquidityAvailableForSwap.
-        uint256 reservedAssets = withdrawsQueuedAssets - withdrawsClaimedAssets;
+        uint256 reservedAssets = withdrawsQueued - withdrawsClaimed;
 
         // Save gas on the balanceOf call if there is nothing reserved for the queue
         if (reservedAssets == 0) return;
@@ -886,7 +889,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
             assets += IERC4626(activeMarketMem).convertToAssets(allShares);
         }
 
-        outstandingShares = withdrawsQueued - withdrawsClaimed;
+        outstandingShares = withdrawsQueuedShares - withdrawsClaimedShares;
         availableAssets = assets;
     }
 
@@ -1076,7 +1079,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         if (availableAssets == 0) return (0, 0);
 
         // Upper bound on the queue's remaining liability. See _ensureLiquidityAvailableForSwap.
-        uint256 reservedAssets = withdrawsQueuedAssets - withdrawsClaimedAssets;
+        uint256 reservedAssets = withdrawsQueued - withdrawsClaimed;
 
         // Net assets available after reserving for the queue. The buffer is sized against the net amount.
         uint256 netAvailable = availableAssets > reservedAssets ? availableAssets - reservedAssets : 0;
