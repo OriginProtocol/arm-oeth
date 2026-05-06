@@ -4,7 +4,7 @@
 -- spawns them via sh -c in workdir /app.
 
 INSERT INTO schedules (product, name, command, cron_expr, timezone, enabled, note) VALUES
-('arm-oeth', 'healthcheck',                          'cd /app && pnpm hardhat healthcheck',                                       '*/5 * * * *',           'UTC', true,  NULL),
+('arm-oeth', 'healthcheck',                          'cd /app && pnpm hardhat healthcheck',                                       '*/5 * * * *',           'UTC', false, NULL),
 ('arm-oeth', 'mainnet_auto_request_lido_withdraw',   'cd /app && pnpm hardhat autoRequestLidoWithdraw --network mainnet',         '29,58 12-23,0-8 * * *', 'UTC', false, NULL),
 ('arm-oeth', 'mainnet_auto_claim_lido_withdraw',     'cd /app && pnpm hardhat autoClaimLidoWithdraw --network mainnet',           '32 0,12 * * *',         'UTC', false, NULL),
 ('arm-oeth', 'mainnet_auto_request_etherfi_withdraw','cd /app && pnpm hardhat autoRequestEtherFiWithdraw --network mainnet',      '10,40 * * * *',         'UTC', false, NULL),
