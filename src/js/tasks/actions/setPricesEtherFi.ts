@@ -22,9 +22,9 @@ action({
       minBuyPrice: 0.99,
       kyber: true,
       amount: 30,
-      tolerance: 0.2,
-      fee: 0.5,
-      offset: 0.3,
+      tolerance: 0.1,
+      fee: 2,
+      offset: 0.2,
       priceOffset: true,
       blockTag: "latest",
     });
