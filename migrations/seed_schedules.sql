@@ -26,4 +26,4 @@ INSERT INTO schedules (product, name, command, cron_expr, timezone, enabled, not
 ('arm-oeth', 'sonic_allocate',                       'cd /app && pnpm hardhat allocateSonic --network sonic',                     '1,31 * * * *',          'UTC', false, NULL),
 ('arm-oeth', 'os_silo_set_prices',                   'cd /app && pnpm hardhat setOSSiloPriceAction --network sonic',              '*/30 * * * *',          'UTC', false, NULL),
 ('arm-oeth', 'sonic_collect_rewards',                'cd /app && pnpm hardhat collectRewardsSonic --network sonic',               '45 23 * * *',           'UTC', false, NULL)
-ON CONFLICT DO NOTHING;
+ON CONFLICT (product, name) DO NOTHING;
