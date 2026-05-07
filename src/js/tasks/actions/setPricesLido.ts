@@ -24,7 +24,7 @@ action({
       amount: 100,
       tolerance: 0.1,
       fee: 2,
-      offset: 0.5,
+      offset: 0.3,
       priceOffset: true,
       blockTag: "latest",
     });
