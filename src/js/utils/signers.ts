@@ -52,7 +52,21 @@ const DEFAULT_KMS_RELAYER_ID = "mrk-248128595151466bb7f7b9a56501a98f";
 const AWS_KMS_REGION = "us-east-1";
 
 function hasAwsKmsCredentials(): boolean {
-  return !!process.env.AWS_ACCESS_KEY_ID && !!process.env.AWS_SECRET_ACCESS_KEY;
+  // Static IAM user creds (legacy / local dev).
+  if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
+    return true;
+  }
+  // ECS task role: the SDK fetches temporary creds from the task metadata
+  // endpoint at this URL. Set automatically by Fargate when a task role
+  // is attached, so its presence is a reliable "KMS is reachable from
+  // this process" signal — we don't need to inject static keys.
+  if (
+    process.env.AWS_CONTAINER_CREDENTIALS_RELATIVE_URI ||
+    process.env.AWS_CONTAINER_CREDENTIALS_FULL_URI
+  ) {
+    return true;
+  }
+  return false;
 }
 
 async function getKmsSigner(): Promise<Signer> {
