@@ -84,10 +84,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// This is also the price the base assets, eg stETH, in the ARM contract are priced at in `totalAssets`.
     uint256 public crossPrice;
 
-    /// @notice Cumulative total of all withdrawal requests including the ones that have already been claimed.
-    uint128 public withdrawsQueued;
-    /// @notice Total of all the withdrawal requests that have been claimed.
-    uint128 public withdrawsClaimed;
+    /// @notice Maximum amount of liquidity assets reserved for outstanding withdrawal requests.
+    uint256 public reservedWithdrawLiquidity;
     /// @notice Index of the next withdrawal request starting at 0.
     uint256 public nextWithdrawalIndex;
 
@@ -136,7 +134,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
     /// @notice Cumulative shares queued for redemption, used by the FIFO gate in `claimRedeem`.
     uint128 public withdrawsQueuedShares;
-    /// @notice Cumulative shares claimed (and burned). Mirror of `withdrawsClaimed` in shares.
+    /// @notice Cumulative shares claimed (and burned).
     uint128 public withdrawsClaimedShares;
 
     uint256[34] private _gap;
@@ -373,8 +371,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @param amount The amount of liquidity assets being sent out of the ARM.
     function _ensureLiquidityAvailableForSwap(uint256 amount) internal {
         uint256 liquidityBalance = IERC20(liquidityAsset).balanceOf(address(this));
-        uint256 outstandingWithdrawals = withdrawsQueued - withdrawsClaimed;
-        uint256 requiredLiquidity = amount + outstandingWithdrawals;
+        uint256 requiredLiquidity = amount + reservedWithdrawLiquidity;
 
         // If there is enough liquidity in the ARM to cover the swap after reserving liquidity for withdrawals
         if (requiredLiquidity <= liquidityBalance) return;
@@ -529,9 +526,6 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @return reserve0 The available liquidity for token0
     /// @return reserve1 The available liquidity for token1
     function getReserves() external view returns (uint256 reserve0, uint256 reserve1) {
-        // The amount of liquidity assets (WETH) that is still to be claimed in the withdrawal queue
-        uint256 outstandingWithdrawals = withdrawsQueued - withdrawsClaimed;
-
         uint256 liquidityAssetsBalance = IERC20(liquidityAsset).balanceOf(address(this));
         address activeMarketMem = activeMarket;
         if (activeMarketMem != address(0)) {
@@ -539,7 +533,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         }
 
         // Ensure there is no negative reserves when there are more outstanding withdrawals than liquidity assets in the ARM
-        reserve0 = outstandingWithdrawals > liquidityAssetsBalance ? 0 : liquidityAssetsBalance - outstandingWithdrawals;
+        uint256 reservedWithdrawLiquidityMem = reservedWithdrawLiquidity;
+        reserve0 = reservedWithdrawLiquidityMem > liquidityAssetsBalance ? 0 : liquidityAssetsBalance - reservedWithdrawLiquidityMem;
         reserve1 = IERC20(baseAsset).balanceOf(address(this));
 
         // The previous assignment assumed token0 is be the liquidity asset.
@@ -647,7 +642,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @dev Internal logic for depositing liquidity assets in exchange for liquidity provider (LP) shares.
     function _deposit(uint256 assets, address receiver) internal returns (uint256 shares) {
         // Do not allow deposits if the ARM can not meet all its withdrawal obligations.
-        require(totalAssets() > MIN_TOTAL_SUPPLY || withdrawsQueued == withdrawsClaimed, "ARM: insolvent");
+        require(totalAssets() > MIN_TOTAL_SUPPLY || reservedWithdrawLiquidity == 0, "ARM: insolvent");
 
         // Calculate the amount of shares to mint after accrued swap fees have been excluded,
         // and before new assets are deposited.
@@ -691,8 +686,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         // Cumulative shares queued including this request, used for the FIFO gate at claim
         uint128 queued = SafeCast.toUint128(withdrawsQueuedShares + shares);
         withdrawsQueuedShares = queued;
-        // Cumulative assets queued (upper bound on liability), used for the swap-side reservation
-        withdrawsQueued = SafeCast.toUint128(withdrawsQueued + assets);
+        // Increase the maximum liquidity reserved for outstanding withdrawal requests.
+        reservedWithdrawLiquidity += assets;
 
         uint40 claimTimestamp = uint40(block.timestamp + claimDelay);
 
@@ -741,8 +736,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
         // Store the request as claimed
         withdrawalRequests[requestId].claimed = true;
-        // Cumulative claimed amount in assets (upper bound, used by the swap-side reservation)
-        withdrawsClaimed += SafeCast.toUint128(request.assets);
+        // Release the full request-time reservation, even when a loss-adjusted payout is lower.
+        reservedWithdrawLiquidity -= request.assets;
         // Cumulative claimed amount in shares (used by the FIFO gate above)
         withdrawsClaimedShares += request.shares;
 
@@ -795,15 +790,13 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     // There is no liquidity guarantee for the fee collector. If there is not enough liquidity assets (WETH) in
     // the ARM to collect the accrued fees, then the fee collector will have to wait until there is enough liquidity assets.
     function _requireLiquidityAvailable(uint256 amount) internal view {
-        // The amount of liquidity assets (WETH) that is still to be claimed in the withdrawal queue
-        uint256 outstandingWithdrawals = withdrawsQueued - withdrawsClaimed;
-
         // Save gas on an external balanceOf call if there are no outstanding withdrawals
-        if (outstandingWithdrawals == 0) return;
+        uint256 reservedWithdrawLiquidityMem = reservedWithdrawLiquidity;
+        if (reservedWithdrawLiquidityMem == 0) return;
 
         // If there is not enough liquidity assets in the ARM to cover the outstanding withdrawals and the amount
         require(
-            amount + outstandingWithdrawals <= IERC20(liquidityAsset).balanceOf(address(this)),
+            amount + reservedWithdrawLiquidityMem <= IERC20(liquidityAsset).balanceOf(address(this)),
             "ARM: Insufficient liquidity"
         );
     }
@@ -861,7 +854,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         }
 
         // The amount of liquidity assets, eg WETH, reserved for the withdrawal queue (upper bound)
-        outstandingWithdrawals = withdrawsQueued - withdrawsClaimed;
+        outstandingWithdrawals = reservedWithdrawLiquidity;
     }
 
     /// @dev Hook for calculating the amount of liquidity assets in an external withdrawal queue like Lido or OETH.
