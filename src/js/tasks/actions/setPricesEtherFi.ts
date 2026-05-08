@@ -22,7 +22,7 @@ action({
       minBuyPrice: 0.99,
       kyber: true,
       amount: 30,
-      tolerance: 0.1,
+      tolerance: 0.2,
       fee: 2,
       offset: 0.5,
       priceOffset: true,
