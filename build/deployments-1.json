@@ -17,7 +17,7 @@
             "name": "ETHENA_ARM_CAP_MAN"
         },
         {
-            "implementation": "0xCDB636ed84D3c00C66427797871a4c084672AB5B",
+            "implementation": "0x15B3ed22DA895e9E9c2Ae8223128f35DA21fE607",
             "name": "ETHENA_ARM_IMPL"
         },
         {
@@ -248,6 +248,12 @@
             "name": "026_UpgradeEthenaARMScript",
             "proposalId": 1,
             "tsDeployment": 1775631059,
+            "tsGovernance": 1
+        },
+        {
+            "name": "027_UpgradeEthenaARMScript",
+            "proposalId": 1,
+            "tsDeployment": 1777952339,
             "tsGovernance": 0
         }
     ]
