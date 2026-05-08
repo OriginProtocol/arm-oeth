@@ -48,7 +48,7 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
 RUN --mount=type=ssh \
     --mount=type=cache,id=arm-oeth-pnpm-store,target=/root/.local/share/pnpm/store \
-    npm install -g pnpm && pnpm install --frozen-lockfile
+    npm install -g pnpm@10.33.4 && pnpm install --frozen-lockfile
 
 # Copy the rest of the workspace.
 COPY . .
