@@ -720,10 +720,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
         require(request.claimTimestamp <= block.timestamp, "Claim delay not met");
         // Is there enough liquidity in the ARM and lending market to claim this request?
-        // Pending shares are valued at the current (loss-adjusted) share price; matches the actual
-        // payout below in the loss case and is conservative in the gain case.
-        uint256 pendingShares = request.queued - withdrawsClaimedShares;
-        require(convertToAssets(pendingShares) <= claimable(), "Queue pending liquidity");
+        // `queued` and `claimable()` are both cumulative shares, so the UI can use the same check.
+        require(request.queued <= claimable(), "Queue pending liquidity");
         require(request.withdrawer == msg.sender, "Not requester");
         require(request.claimed == false, "Already claimed");
 
@@ -752,7 +750,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
             if (assets > liquidityInARM) {
                 uint256 liquidityFromMarket = assets - liquidityInARM;
-                // This should work as we have checked earlier the claimable() amount which includes the active market
+                // This should work as we have checked earlier the claimable liquidity which includes the active market.
                 IERC4626(activeMarketMem).withdraw(liquidityFromMarket, address(this), address(this));
             }
         }
@@ -763,19 +761,20 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         emit RedeemClaimed(msg.sender, requestId, assets);
     }
 
-    /// @notice The liquidity currently available to satisfy a withdrawal request.
-    /// @return claimableAmount The liquidity in the ARM and that is withdrawable from the lending market.
-    /// Compared in `claimRedeem` against `convertToAssets(pendingShares)`.
-    function claimable() public view returns (uint256 claimableAmount) {
-        claimableAmount = IERC20(liquidityAsset).balanceOf(address(this));
+    /// @notice The cumulative share queue frontier currently backed by claimable liquidity.
+    /// @return claimableShares Requests with `queued <= claimableShares` can be claimed once their delay has elapsed.
+    function claimable() public view returns (uint256 claimableShares) {
+        uint256 claimableLiquidity = IERC20(liquidityAsset).balanceOf(address(this));
 
         // if there is an active lending market, add to the claimable amount
         address activeMarketMem = activeMarket;
         if (activeMarketMem != address(0)) {
             // maxWithdraw is used as during periods of high utilization or temporary pauses,
             // maxWithdraw may return less than convertToAssets.
-            claimableAmount += IERC4626(activeMarketMem).maxWithdraw(address(this));
+            claimableLiquidity += IERC4626(activeMarketMem).maxWithdraw(address(this));
         }
+
+        claimableShares = withdrawsClaimedShares + convertToShares(claimableLiquidity);
     }
 
     ////////////////////////////////////////////////////
