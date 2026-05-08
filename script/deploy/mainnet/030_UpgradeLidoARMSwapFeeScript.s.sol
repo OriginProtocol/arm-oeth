@@ -8,7 +8,7 @@ import {Mainnet} from "contracts/utils/Addresses.sol";
 import {AbstractDeployScript} from "script/deploy/helpers/AbstractDeployScript.s.sol";
 import {GovHelper, GovProposal} from "script/deploy/helpers/GovHelper.sol";
 
-contract $028_UpgradeLidoARMSwapFeeScript is AbstractDeployScript("028_UpgradeLidoARMSwapFeeScript") {
+contract $030_UpgradeLidoARMSwapFeeScript is AbstractDeployScript("030_UpgradeLidoARMSwapFeeScript") {
     using GovHelper for GovProposal;
 
     bool public constant override skip = true;
