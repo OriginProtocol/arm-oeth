@@ -86,6 +86,8 @@ abstract contract Base_Test_ is Test {
     address public oethWhale;
     address public feeCollector;
     address public lidoWithdraw;
+    address public stethAdapter;
+    address public wstethAdapter;
 
     //////////////////////////////////////////////////////
     /// --- DEFAULT VALUES

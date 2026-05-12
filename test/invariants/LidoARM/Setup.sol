@@ -8,6 +8,7 @@ import {Base_Test_} from "test/Base.sol";
 import {Proxy} from "contracts/Proxy.sol";
 import {LidoARM} from "contracts/LidoARM.sol";
 import {CapManager} from "contracts/CapManager.sol";
+import {StETHAssetAdapter} from "contracts/adapters/StETHAssetAdapter.sol";
 import {WETH} from "@solmate/tokens/WETH.sol";
 
 // Mocks
@@ -151,6 +152,11 @@ abstract contract Setup is Base_Test_ {
 
         // Set the Proxy as the LidoARM.
         lidoARM = LidoARM(payable(address(lidoProxy)));
+
+        stethAdapter = address(new StETHAssetAdapter(address(lidoProxy), address(weth), address(steth), lidoWithdraw));
+        lidoARM.addBaseAsset(
+            address(steth), stethAdapter, 1e36 - 1, 1e36, type(uint256).max, type(uint256).max, 1e36, true
+        );
     }
 
     function min(uint256 a, uint256 b) public pure returns (uint256) {

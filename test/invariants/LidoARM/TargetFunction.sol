@@ -177,7 +177,7 @@ abstract contract TargetFunction is Properties {
 
         // Prank Owner
         vm.prank(lidoARM.owner());
-        uint256[] memory newLidoWithdrawRequests = lidoARM.requestLidoWithdrawals(amounts);
+        uint256[] memory newLidoWithdrawRequests = _requestLidoWithdrawals(amounts);
 
         // Update state
         for (uint256 i = 0; i < newLidoWithdrawRequests.length; i++) {
@@ -199,13 +199,13 @@ abstract contract TargetFunction is Properties {
         }
 
         // As `claimLidoWithdrawals` doesn't send back the amount, we need to calculate it
-        uint256 outstandingBefore = lidoARM.lidoWithdrawalQueueAmount();
+        uint256 outstandingBefore = _lidoWithdrawalQueueAmount();
 
         // Prank Owner
         vm.prank(lidoARM.owner());
-        lidoARM.claimLidoWithdrawals(requestToClaim, new uint256[](0));
+        _claimLidoWithdrawals(requestToClaim);
 
-        uint256 outstandingAfter = lidoARM.lidoWithdrawalQueueAmount();
+        uint256 outstandingAfter = _lidoWithdrawalQueueAmount();
         uint256 diff = outstandingBefore - outstandingAfter;
 
         // Remove it from the list
@@ -228,7 +228,7 @@ abstract contract TargetFunction is Properties {
     uint256 constant MAX_SELL_T1 = 1.02 * 1e36;
 
     function handler_setPrices(uint256 buyT1, uint256 sellT1) public {
-        uint256 crossPrice = lidoARM.crossPrice();
+        uint256 crossPrice = _lidoCrossPrice();
 
         // Bound prices
         buyT1 = _bound(buyT1, MIN_BUY_T1, crossPrice - 1);
@@ -238,21 +238,21 @@ abstract contract TargetFunction is Properties {
         vm.prank(lidoARM.owner());
 
         // Set prices
-        lidoARM.setPrices(buyT1, sellT1, type(uint256).max, type(uint256).max);
+        lidoARM.setPrices(address(steth), buyT1, sellT1, type(uint256).max, type(uint256).max);
     }
 
     function handler_setCrossPrice(uint256 newCrossPrice) public {
         uint256 priceScale = lidoARM.PRICE_SCALE();
 
         // Bound new cross price
-        uint256 sell = priceScale ** 2 / lidoARM.traderate0();
-        uint256 buy = lidoARM.traderate1();
+        uint256 sell = priceScale ** 2 / (lidoARM.PRICE_SCALE() * lidoARM.PRICE_SCALE() / _lidoSellPrice());
+        uint256 buy = _lidoBuyPrice();
         newCrossPrice = _bound(
             newCrossPrice, max(priceScale - lidoARM.MAX_CROSS_PRICE_DEVIATION(), buy) + 1, min(priceScale, sell)
         );
 
         uint256 stethBalance = steth.balanceOf(address(lidoARM));
-        if (lidoARM.crossPrice() > newCrossPrice && stethBalance > 0) {
+        if (_lidoCrossPrice() > newCrossPrice && stethBalance > 0) {
             // If there is more than 100 stETH in ARM, do nothing
             if (stethBalance >= 1e20) return;
 
@@ -272,7 +272,7 @@ abstract contract TargetFunction is Properties {
         vm.prank(lidoARM.owner());
 
         // Set cross price
-        lidoARM.setCrossPrice(newCrossPrice);
+        lidoARM.setCrossPrice(address(steth), newCrossPrice);
     }
 
     function handler_setFee(uint256 performanceFee) public {
@@ -344,9 +344,9 @@ abstract contract TargetFunction is Properties {
 
         // Prank Owner
         vm.prank(lidoARM.owner());
-        lidoARM.claimLidoWithdrawals(lidoWithdrawRequests, new uint256[](0));
+        _claimLidoWithdrawals(lidoWithdrawRequests);
 
-        require(lidoARM.lidoWithdrawalQueueAmount() == 0, "FINALIZE_FAILED");
+        require(_lidoWithdrawalQueueAmount() == 0, "FINALIZE_FAILED");
     }
 
     function sweepAllStETH() public {

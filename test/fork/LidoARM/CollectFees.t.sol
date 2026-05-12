@@ -25,14 +25,16 @@ contract Fork_Concrete_LidoARM_CollectFees_Test_ is Fork_Shared_Test_ {
         internal
         returns (uint256 amountOut, uint256 expectedFee)
     {
-        lidoARM.setPrices(DISCOUNTED_PRICE, 1001e33, type(uint256).max, type(uint256).max);
+        lidoARM.setPrices(address(steth), DISCOUNTED_PRICE, 1001e33, type(uint256).max, type(uint256).max);
         deal(address(weth), address(lidoARM), wethBalance);
         deal(address(steth), address(this), amountIn);
         steth.approve(address(lidoARM), type(uint256).max);
 
         uint256[] memory amounts = lidoARM.swapExactTokensForTokens(steth, weth, amountIn, 0, address(this));
         amountOut = amounts[1];
-        expectedFee = amountOut * lidoARM.swapFeeMultiplier() / lidoARM.PRICE_SCALE();
+        uint256 feeMultiplier = (lidoARM.PRICE_SCALE() - DISCOUNTED_PRICE) * lidoARM.fee() * lidoARM.PRICE_SCALE()
+            / (DISCOUNTED_PRICE * lidoARM.FEE_SCALE());
+        expectedFee = amountOut * feeMultiplier / lidoARM.PRICE_SCALE();
     }
 
     /// @notice This test is expected to revert as the discounted swap leaves too little WETH to collect the accrued fee.

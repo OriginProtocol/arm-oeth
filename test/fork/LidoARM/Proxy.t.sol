@@ -55,8 +55,8 @@ contract Fork_Concrete_LidoARM_Proxy_Test_ is Fork_Shared_Test_ {
         assertEq(lidoARM.owner(), owner);
 
         // Ensure the storage was preserved through the upgrade.
-        assertEq(address(lidoARM.token0()), Mainnet.WETH);
-        assertEq(address(lidoARM.token1()), Mainnet.STETH);
+        assertEq(lidoARM.liquidityAsset(), Mainnet.WETH);
+        assertEq(address(steth), Mainnet.STETH);
     }
 
     function test_UpgradeAndCall() public asLidoARMOwner {

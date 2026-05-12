@@ -8,6 +8,11 @@ import {Proxy} from "contracts/Proxy.sol";
 import {IERC20} from "contracts/Interfaces.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
 
+interface ILegacyLidoARM {
+    function traderate0() external view returns (uint256);
+    function traderate1() external view returns (uint256);
+}
+
 abstract contract Fork_LidoARM_SwapGasComparison_Base is Test {
     uint256 internal constant FORK_BLOCK = 24_846_066;
     uint256 internal constant PRICE_SCALE = 1e36;
@@ -32,8 +37,8 @@ abstract contract Fork_LidoARM_SwapGasComparison_Base is Test {
         weth = IERC20(Mainnet.WETH);
         steth = IERC20(Mainnet.STETH);
 
-        traderate0 = lidoARM.traderate0();
-        traderate1 = lidoARM.traderate1();
+        traderate0 = ILegacyLidoARM(address(lidoARM)).traderate0();
+        traderate1 = ILegacyLidoARM(address(lidoARM)).traderate1();
 
         deal(address(weth), address(this), LIQUIDITY_DEPOSIT);
         weth.approve(address(lidoARM), LIQUIDITY_DEPOSIT);
@@ -130,6 +135,6 @@ contract Fork_Concrete_LidoARM_SwapGasUpgraded_Test is Fork_LidoARM_SwapGasCompa
         uint256 sellT1 = PRICE_SCALE * PRICE_SCALE / traderate0;
 
         vm.prank(lidoProxy.owner());
-        lidoARM.setPrices(traderate1, sellT1, type(uint256).max, type(uint256).max);
+        lidoARM.setPrices(address(steth), traderate1, sellT1, type(uint256).max, type(uint256).max);
     }
 }

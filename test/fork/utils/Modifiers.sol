@@ -85,8 +85,8 @@ abstract contract Modifiers is Helpers {
 
     /// @notice Set the stETH/WETH swap prices on the LidoARM contract.
     modifier setPrices(uint256 buyPrice, uint256 crossPrice, uint256 sellPrice) {
-        lidoARM.setCrossPrice(crossPrice);
-        lidoARM.setPrices(buyPrice, sellPrice, type(uint256).max, type(uint256).max);
+        lidoARM.setCrossPrice(address(steth), crossPrice);
+        lidoARM.setPrices(address(steth), buyPrice, sellPrice, type(uint256).max, type(uint256).max);
         _;
     }
 
@@ -201,7 +201,7 @@ abstract contract Modifiers is Helpers {
         vm.stopPrank();
 
         vm.prank(lidoARM.owner());
-        lidoARM.requestLidoWithdrawals(amounts);
+        _requestLidoWithdrawals(amounts);
 
         if (mode == VmSafe.CallerMode.Prank) {
             vm.prank(_address, _origin);

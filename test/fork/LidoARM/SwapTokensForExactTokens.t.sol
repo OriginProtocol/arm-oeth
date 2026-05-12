@@ -36,7 +36,7 @@ contract Fork_Concrete_LidoARM_SwapTokensForExactTokens_Test is Fork_Shared_Test
     /// --- REVERTING TESTS
     //////////////////////////////////////////////////////
     function test_RevertWhen_SwapTokensForExactTokens_Because_InvalidTokenOut1() public {
-        lidoARM.token0();
+        IERC20(lidoARM.liquidityAsset());
         vm.expectRevert("ARM: Invalid out token");
         lidoARM.swapTokensForExactTokens(
             steth, // inToken
@@ -192,7 +192,7 @@ contract Fork_Concrete_LidoARM_SwapTokensForExactTokens_Test is Fork_Shared_Test
         uint256 balanceSTETHBeforeARM = steth.balanceOf(address(lidoARM));
 
         // Get maximum amount of WETH to send to the ARM
-        uint256 traderates0 = lidoARM.traderate0();
+        uint256 traderates0 = (lidoARM.PRICE_SCALE() * lidoARM.PRICE_SCALE() / _lidoSellPrice());
         uint256 amountIn = (amountOut * 1e36 / traderates0) + 3;
 
         // Expected events: Already checked in fuzz tests
@@ -239,7 +239,7 @@ contract Fork_Concrete_LidoARM_SwapTokensForExactTokens_Test is Fork_Shared_Test
         uint256 balanceSTETHBeforeARM = steth.balanceOf(address(lidoARM));
 
         // Get maximum amount of stETH to send to the ARM
-        uint256 traderates1 = lidoARM.traderate1();
+        uint256 traderates1 = _lidoBuyPrice();
         uint256 amountIn = (amountOut * 1e36 / traderates1) + 3;
 
         // Expected events: Already checked in fuzz tests
@@ -327,7 +327,7 @@ contract Fork_Concrete_LidoARM_SwapTokensForExactTokens_Test is Fork_Shared_Test
         // Use random sell price between 1 and 1.02 for the stETH/WETH price,
         // The buy price doesn't matter as it is not used in this test.
         price = _bound(price, MIN_PRICE1, MAX_PRICE1);
-        lidoARM.setPrices(MIN_PRICE0, price, type(uint256).max, type(uint256).max);
+        lidoARM.setPrices(address(steth), MIN_PRICE0, price, type(uint256).max, type(uint256).max);
 
         // Set random amount of WETH in the ARM
         wethReserveGrowth = _bound(wethReserveGrowth, 0, INITIAL_BALANCE / 100);
@@ -411,7 +411,7 @@ contract Fork_Concrete_LidoARM_SwapTokensForExactTokens_Test is Fork_Shared_Test
         // Use random stETH/WETH buy price between 0.98 and 1,
         // sell price doesn't matter as it is not used in this test.
         price = _bound(price, MIN_PRICE0, MAX_PRICE0);
-        lidoARM.setPrices(price, MAX_PRICE1, type(uint256).max, type(uint256).max);
+        lidoARM.setPrices(address(steth), price, MAX_PRICE1, type(uint256).max, type(uint256).max);
 
         // Set random amount of WETH growth in the ARM
         wethReserveGrowth = _bound(wethReserveGrowth, 0, INITIAL_BALANCE / 100);

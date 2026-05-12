@@ -58,7 +58,7 @@ contract Fork_Concrete_LidoARM_SwapGasClean_Test is Test {
         );
 
         lidoARM = LidoARM(payable(address(lidoProxy)));
-        lidoARM.setPrices(BUY_PRICE, SELL_PRICE, type(uint256).max, type(uint256).max);
+        lidoARM.setPrices(address(steth), BUY_PRICE, SELL_PRICE, type(uint256).max, type(uint256).max);
 
         deal(address(weth), address(lidoARM), ARM_BALANCE);
         _fundSteth(address(lidoARM), ARM_BALANCE);
