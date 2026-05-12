@@ -806,7 +806,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// The active lending market is valued using ERC-4626 share conversion rather than current redeemable liquidity.
     /// @return The total amount of assets in the ARM
     function totalAssets() public view virtual returns (uint256) {
-        (uint256 newAvailableAssets,) = _availableAssets();
+        uint256 newAvailableAssets = _availableAssets();
 
         // total assets should only go up from the initial deposit amount that is burnt
         // but in case of something unforeseen, return at least MIN_TOTAL_SUPPLY.
@@ -830,7 +830,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// The active lending market is valued using convertToAssets() so market valuation remains
     /// consistent across ERC-4626 implementations even when current redeemable liquidity differs.
     /// This does not exclude any accrued swap fees.
-    function _availableAssets() internal view returns (uint256 availableAssets, uint256 outstandingWithdrawals) {
+    function _availableAssets() internal view returns (uint256 availableAssets) {
         // Convert the base assets in the ARM to the amount of liquidity assets
         uint256 baseConvertedToLiquid = _convert(baseAsset, IERC20(baseAsset).balanceOf(address(this)));
 
@@ -851,9 +851,6 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
             // maxRedeem, withdraw and redeem when current liquidity matters.
             availableAssets += IERC4626(activeMarketMem).convertToAssets(allShares);
         }
-
-        // The amount of liquidity assets, eg WETH, reserved for the withdrawal queue (upper bound)
-        outstandingWithdrawals = reservedWithdrawLiquidity;
     }
 
     /// @dev Hook for calculating the amount of liquidity assets in an external withdrawal queue like Lido or OETH.
@@ -1038,17 +1035,19 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     }
 
     function _allocate() internal returns (int256 targetLiquidityDelta, int256 actualLiquidityDelta) {
-        (uint256 availableAssets, uint256 outstandingWithdrawals) = _availableAssets();
+        uint256 availableAssets = _availableAssets();
         if (availableAssets == 0) return (0, 0);
+        uint256 reservedWithdrawLiquidityMem = reservedWithdrawLiquidity;
         // Net of the withdrawal queue (queued shares stay in totalSupply but the buffer is sized
         // against the liquid assets that actually back free LP shares)
-        uint256 netAvailable = availableAssets > outstandingWithdrawals ? availableAssets - outstandingWithdrawals : 0;
+        uint256 netAvailable =
+            availableAssets > reservedWithdrawLiquidityMem ? availableAssets - reservedWithdrawLiquidityMem : 0;
         uint256 targetArmLiquidity = netAvailable * armBuffer / 1e18;
 
         // The current liquidity available in swap is the liquidity asset balance less
         // any outstanding withdrawals from the ARM's withdrawal queue
         int256 currentArmLiquidity = SafeCast.toInt256(IERC20(liquidityAsset).balanceOf(address(this)))
-            - SafeCast.toInt256(outstandingWithdrawals);
+            - SafeCast.toInt256(reservedWithdrawLiquidityMem);
 
         targetLiquidityDelta = currentArmLiquidity - SafeCast.toInt256(targetArmLiquidity);
 
