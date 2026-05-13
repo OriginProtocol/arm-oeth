@@ -13,11 +13,6 @@
         "internalType": "address"
       },
       {
-        "name": "_etherfiWithdrawalQueue",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
         "name": "_claimDelay",
         "type": "uint256",
         "internalType": "uint256"
@@ -31,11 +26,6 @@
         "name": "_allocateThreshold",
         "type": "int256",
         "internalType": "int256"
-      },
-      {
-        "name": "_etherfiWithdrawalNFT",
-        "type": "address",
-        "internalType": "address"
       }
     ],
     "stateMutability": "nonpayable"
@@ -543,32 +533,6 @@
         "name": "",
         "type": "address",
         "internalType": "contract IERC20"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "etherfiWithdrawalNFT",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "contract IEETHWithdrawalNFT"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "etherfiWithdrawalQueue",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "contract IEETHWithdrawal"
       }
     ],
     "stateMutability": "view"
