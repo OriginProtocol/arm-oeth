@@ -14,6 +14,12 @@ import {AbstractARM} from "./AbstractARM.sol";
  * @author Origin Protocol Inc
  */
 contract LidoARM is Initializable, AbstractARM {
+    /// @dev Deprecated queue amount retained for storage layout compatibility.
+    uint256 public _deprecatedLidoWithdrawalQueueAmount;
+
+    /// @dev Deprecated withdrawal request mapping retained for storage layout compatibility.
+    mapping(uint256 id => uint256 amount) internal _deprecatedLidoWithdrawalRequests;
+
     /// @param _steth The address of the stETH token
     /// @param _weth The address of the WETH token
     /// @param _lidoWithdrawalQueue The address of the Lido's withdrawal queue contract
@@ -53,6 +59,13 @@ contract LidoARM is Initializable, AbstractARM {
         address _capManager
     ) external initializer {
         _initARM(_operator, _name, _symbol, _fee, _feeCollector, _capManager);
+    }
+
+    /// @notice Revert if legacy Lido withdrawal requests are still outstanding.
+    /// @dev Used by upgrade scripts with `upgradeToAndCall` so the upgrade cannot
+    /// complete until the old ARM-owned Lido withdrawal queue has been drained.
+    function checkNoLegacyLidoWithdrawalRequests() external view {
+        require(_deprecatedLidoWithdrawalQueueAmount == 0, "LidoARM: legacy requests pending");
     }
 
     /// @notice This payable method is necessary for receiving ETH claimed from the Lido withdrawal queue.
