@@ -33,7 +33,11 @@ contract $028_UpgradeEthenaARMScript is AbstractDeployScript("028_UpgradeEthenaA
         if (proxy.implementation() == impl) return;
 
         vm.startPrank(proxy.owner());
-        proxy.upgradeTo(impl);
+        proxy.upgradeToAndCall(impl, _checkNoLegacyEthenaCooldownData());
         vm.stopPrank();
+    }
+
+    function _checkNoLegacyEthenaCooldownData() internal pure returns (bytes memory) {
+        return abi.encodeWithSelector(EthenaARM.checkNoLegacyEthenaCooldown.selector);
     }
 }
