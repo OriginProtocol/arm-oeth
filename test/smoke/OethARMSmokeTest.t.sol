@@ -10,31 +10,37 @@ import {Proxy} from "contracts/Proxy.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
 import {OriginARM} from "contracts/OriginARM.sol";
 import {OriginAssetAdapter} from "contracts/adapters/OriginAssetAdapter.sol";
+import {WrappedOriginAssetAdapter} from "contracts/adapters/WrappedOriginAssetAdapter.sol";
 
 contract Fork_OriginARM_Smoke_Test is AbstractSmokeTest {
     IERC20 BAD_TOKEN = IERC20(makeAddr("bad token"));
 
     IERC20 weth;
     IERC20 oeth;
+    IERC4626 woeth;
     Proxy proxy;
     OriginARM originARM;
     OriginAssetAdapter originAssetAdapter;
+    WrappedOriginAssetAdapter wrappedOriginAssetAdapter;
     IERC4626 morphoMarket;
     address operator;
 
     function setUp() public override {
         super.setUp();
         oeth = IERC20(Mainnet.OETH);
+        woeth = IERC4626(Mainnet.WOETH);
         weth = IERC20(Mainnet.WETH);
         operator = Mainnet.ARM_RELAYER;
 
         vm.label(address(weth), "WETH");
         vm.label(address(oeth), "OETH");
+        vm.label(address(woeth), "WOETH");
         vm.label(address(operator), "OPERATOR");
 
         proxy = Proxy(payable(resolver.resolve("OETH_ARM")));
         originARM = OriginARM(resolver.resolve("OETH_ARM"));
         originAssetAdapter = OriginAssetAdapter(resolver.resolve("OETH_ARM_OETH_ADAPTER"));
+        wrappedOriginAssetAdapter = WrappedOriginAssetAdapter(resolver.resolve("OETH_ARM_WOETH_ADAPTER"));
         morphoMarket = IERC4626(resolver.resolve("MORPHO_MARKET_ORIGIN"));
 
         _dealWETH(address(originARM), 100 ether);
@@ -78,6 +84,12 @@ contract Fork_OriginARM_Smoke_Test is AbstractSmokeTest {
         assertNotEq(crossPrice, 0, "cross price");
         assertNotEq(sellPrice, 0, "sell price");
         assertNotEq(buyPrice, 0, "buy price");
+
+        (buyPrice, sellPrice,,, crossPrice,,,) = originARM.baseAssetConfigs(Mainnet.WOETH);
+        assertNotEq(crossPrice, 0, "woeth cross price");
+        assertNotEq(sellPrice, 0, "woeth sell price");
+        assertNotEq(buyPrice, 0, "woeth buy price");
+        assertEq(wrappedOriginAssetAdapter.convertToAssets(1 ether), woeth.convertToAssets(1 ether), "woeth assets");
 
         // Redemption
         assertEq(address(originARM.vault()), Mainnet.OETH_VAULT, "OETH Vault");

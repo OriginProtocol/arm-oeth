@@ -13,6 +13,7 @@ import {OriginARM} from "contracts/OriginARM.sol";
 import {EthenaAssetAdapter} from "contracts/adapters/EthenaAssetAdapter.sol";
 import {EtherFiAssetAdapter} from "contracts/adapters/EtherFiAssetAdapter.sol";
 import {OriginAssetAdapter} from "contracts/adapters/OriginAssetAdapter.sol";
+import {WrappedOriginAssetAdapter} from "contracts/adapters/WrappedOriginAssetAdapter.sol";
 import {SonicHarvester} from "contracts/SonicHarvester.sol";
 import {CapManager} from "contracts/CapManager.sol";
 import {SiloMarket} from "contracts/markets/SiloMarket.sol";
@@ -52,6 +53,7 @@ abstract contract Base_Test_ is Test {
     EthenaAssetAdapter public ethenaAssetAdapter;
     EtherFiAssetAdapter public etherfiAssetAdapter;
     OriginAssetAdapter public originAssetAdapter;
+    WrappedOriginAssetAdapter public wrappedOriginAssetAdapter;
     CapManager public capManager;
     SiloMarket public siloMarket;
     MorphoMarket public morphoMarket;
@@ -62,6 +64,7 @@ abstract contract Base_Test_ is Test {
     IERC20 public wos;
     IERC20 public usde;
     IERC20 public oeth;
+    IERC4626 public woeth;
     IERC20 public weth;
     IERC20 public eeth;
     IERC20 public weeth;
@@ -125,6 +128,7 @@ abstract contract Base_Test_ is Test {
         _labelNotNull(address(wos), "WOS");
         _labelNotNull(address(usde), "USDE");
         _labelNotNull(address(oeth), "OETH");
+        _labelNotNull(address(woeth), "WOETH");
         _labelNotNull(address(weth), "WETH");
         _labelNotNull(address(eeth), "EETH");
         _labelNotNull(address(morpho), "MORPHO");

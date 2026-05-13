@@ -9,6 +9,7 @@ import {Modifiers} from "test/unit/shared/Modifiers.sol";
 import {Proxy} from "contracts/Proxy.sol";
 import {OriginARM} from "contracts/OriginARM.sol";
 import {OriginAssetAdapter} from "contracts/adapters/OriginAssetAdapter.sol";
+import {WrappedOriginAssetAdapter} from "contracts/adapters/WrappedOriginAssetAdapter.sol";
 import {CapManager} from "contracts/CapManager.sol";
 import {SiloMarket} from "contracts/markets/SiloMarket.sol";
 import {Abstract4626MarketWrapper} from "contracts/markets/Abstract4626MarketWrapper.sol";
@@ -45,6 +46,7 @@ abstract contract Unit_Shared_Test is Base_Test_, Modifiers {
 
     function _deployMockContracts() internal {
         oeth = IERC20(address(new MockERC20("Origin ETH", "OETH", 18)));
+        woeth = IERC4626(address(new MockERC4626Market(oeth)));
         weth = IERC20(address(new MockERC20("Wrapped ETH", "WETH", 18)));
         vault = IOriginVault(address(new MockVault(oeth, weth)));
         market = IERC4626(address(new MockERC4626Market(IERC20(weth))));
@@ -109,6 +111,9 @@ abstract contract Unit_Shared_Test is Base_Test_, Modifiers {
         // --- Set the proxy as the OriginARM
         originARM = OriginARM(address(originARMProxy));
         originAssetAdapter = new OriginAssetAdapter(address(originARM), address(oeth), address(weth), address(vault));
+        wrappedOriginAssetAdapter = new WrappedOriginAssetAdapter(
+            address(originARM), address(woeth), address(oeth), address(weth), address(vault)
+        );
         capManager = CapManager(address(capManagerProxy));
         siloMarket = SiloMarket(address(siloMarketProxy));
 
@@ -123,6 +128,18 @@ abstract contract Unit_Shared_Test is Base_Test_, Modifiers {
             type(uint128).max,
             1e36,
             true
+        );
+
+        vm.prank(governor);
+        originARM.addBaseAsset(
+            address(woeth),
+            address(wrappedOriginAssetAdapter),
+            992 * 1e33,
+            1001 * 1e33,
+            type(uint128).max,
+            type(uint128).max,
+            1e36,
+            false
         );
     }
 

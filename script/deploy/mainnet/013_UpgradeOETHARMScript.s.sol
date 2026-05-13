@@ -7,6 +7,7 @@ import {IERC20} from "contracts/Interfaces.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
 import {OriginARM} from "contracts/OriginARM.sol";
 import {OriginAssetAdapter} from "contracts/adapters/OriginAssetAdapter.sol";
+import {WrappedOriginAssetAdapter} from "contracts/adapters/WrappedOriginAssetAdapter.sol";
 import {MorphoMarket} from "contracts/markets/MorphoMarket.sol";
 import {Abstract4626MarketWrapper} from "contracts/markets/Abstract4626MarketWrapper.sol";
 
@@ -26,6 +27,11 @@ contract $013_UpgradeOETHARMScript is AbstractDeployScript("013_UpgradeOETHARMSc
         OriginAssetAdapter adapter =
             new OriginAssetAdapter(Mainnet.OETH_ARM, Mainnet.OETH, Mainnet.WETH, Mainnet.OETH_VAULT);
         _recordDeployment("OETH_ARM_OETH_ADAPTER", address(adapter));
+
+        WrappedOriginAssetAdapter wrappedAdapter = new WrappedOriginAssetAdapter(
+            Mainnet.OETH_ARM, Mainnet.WOETH, Mainnet.OETH, Mainnet.WETH, Mainnet.OETH_VAULT
+        );
+        _recordDeployment("OETH_ARM_WOETH_ADAPTER", address(wrappedAdapter));
 
         // 2. Deploy MorphoMarket proxy
         Proxy morphoMarketProxy = new Proxy();
@@ -98,12 +104,28 @@ contract $013_UpgradeOETHARMScript is AbstractDeployScript("013_UpgradeOETHARMSc
             )
         );
 
-        // 7. Add Morpho Market as an active market
+        // 7. Register wOETH as a non-pegged base asset.
+        govProposal.action(
+            resolver.resolve("OETH_ARM"),
+            "addBaseAsset(address,address,uint256,uint256,uint256,uint256,uint256,bool)",
+            abi.encode(
+                Mainnet.WOETH,
+                resolver.resolve("OETH_ARM_WOETH_ADAPTER"),
+                0.9994 * 1e36,
+                1e36,
+                type(uint128).max,
+                type(uint128).max,
+                crossPrice,
+                false
+            )
+        );
+
+        // 8. Add Morpho Market as an active market
         address[] memory markets = new address[](1);
         markets[0] = resolver.resolve("MORPHO_MARKET_ORIGIN");
         govProposal.action(resolver.resolve("OETH_ARM"), "addMarkets(address[])", abi.encode(markets));
 
-        // 8. Set Morpho Market as the active market
+        // 9. Set Morpho Market as the active market
         govProposal.action(
             resolver.resolve("OETH_ARM"),
             "setActiveMarket(address)",
