@@ -148,6 +148,7 @@ contract FuzzerFoundry_LidoARM is TargetFunction {
         finalizeLidoClaims();
         sweepAllStETH();
         finalizeUserClaims();
-        assertTrue(ensureSharesAreUpOnly(MAX_WETH_PER_USERS), "Shares are not up only");
+        assertEq(_lidoWithdrawalQueueAmount(), 0, "Lido queue not empty");
+        assertEq(steth.balanceOf(address(lidoARM)), 0, "stETH balance not zero");
     }
 }

@@ -111,6 +111,11 @@ abstract contract Setup is Base_Test_ {
         _deployLidoARM();
 
         vm.stopPrank();
+
+        vm.prank(lidoARM.owner());
+        lidoARM.addBaseAsset(
+            address(steth), stethAdapter, 1e36 - 1, 1e36, type(uint128).max, type(uint128).max, 1e36, true
+        );
     }
 
     function _deployProxies() private {
@@ -154,9 +159,6 @@ abstract contract Setup is Base_Test_ {
         lidoARM = LidoARM(payable(address(lidoProxy)));
 
         stethAdapter = address(new StETHAssetAdapter(address(lidoProxy), address(weth), address(steth), lidoWithdraw));
-        lidoARM.addBaseAsset(
-            address(steth), stethAdapter, 1e36 - 1, 1e36, type(uint128).max, type(uint128).max, 1e36, true
-        );
     }
 
     function min(uint256 a, uint256 b) public pure returns (uint256) {

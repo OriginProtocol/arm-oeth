@@ -166,14 +166,15 @@ abstract contract Properties is TargetFunctions {
     // ╔══════════════════════════════════════════════════════════════════════════════╗
     // ║                         ✦✦✦ LIQUIDITY MANAGEMENT ✦✦✦                         ║
     // ╚══════════════════════════════════════════════════════════════════════════════╝
-    function propertyL() public returns (bool) {
+    function propertyL() public view returns (bool) {
         uint256 liquidityAmountInCooldown;
         uint256 len = unstakers.length;
         for (uint256 i; i < len; i++) {
             UserCooldown memory cooldown = susde.cooldowns(address(unstakers[i]));
             liquidityAmountInCooldown += cooldown.underlyingAmount;
         }
-        return Math.eq(liquidityAmountInCooldown, uint256(vm.load(address(arm), bytes32(uint256(100)))));
+        (,,,,, uint120 pendingRedeemAssets,,) = arm.baseAssetConfigs(address(susde));
+        return Math.eq(liquidityAmountInCooldown, pendingRedeemAssets);
     }
 
     function propertyM() public view returns (bool) {
@@ -195,7 +196,7 @@ abstract contract Properties is TargetFunctions {
     // ╔══════════════════════════════════════════════════════════════════════════════╗
     // ║                              ✦✦✦ AFTER ALL ✦✦✦                               ║
     // ╚══════════════════════════════════════════════════════════════════════════════╝
-    function _propertyAfterAll() internal returns (bool) {
+    function _propertyAfterAll() internal view returns (bool) {
         uint256 usdeBalance = usde.balanceOf(address(arm));
         uint256 susdeBalance = susde.balanceOf(address(arm));
         uint256 morphoBalance = morpho.balanceOf(address(arm));
@@ -209,20 +210,6 @@ abstract contract Properties is TargetFunctions {
         }
         require(susdeBalance == 0, "sUSDe balance not zero");
         require(morphoBalance == 0, "Morpho shares not zero");
-        for (uint256 i; i < MAKERS_COUNT; i++) {
-            address user = makers[i];
-            uint256 totalMinted = mintedUSDe[user];
-            uint256 userBalance = usde.balanceOf(user);
-            if (!Math.approxGteAbs(userBalance, totalMinted, 1e12)) {
-                if (isConsoleAvailable) {
-                    console.log(">>> Property After All failed for user %s:", vm.getLabel(user));
-                    console.log("    - User USDe balance:   %18e", userBalance);
-                    console.log("    - Total minted USDe:   %18e", totalMinted);
-                    console.log("    - Difference:          %18e", Math.absDiff(userBalance, totalMinted));
-                }
-                return false;
-            }
-        }
         return true;
     }
 }

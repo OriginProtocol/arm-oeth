@@ -22,6 +22,15 @@ contract MockLidoWithdraw {
         uint256 amount;
     }
 
+    struct WithdrawalRequestStatus {
+        uint256 amountOfStETH;
+        uint256 amountOfShares;
+        address owner;
+        uint256 timestamp;
+        bool isFinalized;
+        bool isClaimed;
+    }
+
     //////////////////////////////////////////////////////
     /// --- VARIABLES
     //////////////////////////////////////////////////////
@@ -79,6 +88,26 @@ contract MockLidoWithdraw {
 
         // Send sum of eth
         vm.deal(address(msg.sender), address(msg.sender).balance + sum);
+    }
+
+    function getWithdrawalStatus(uint256[] calldata requestIds)
+        external
+        view
+        returns (WithdrawalRequestStatus[] memory statuses)
+    {
+        uint256 len = requestIds.length;
+        statuses = new WithdrawalRequestStatus[](len);
+        for (uint256 i; i < len; i++) {
+            Request memory request = requests[requestIds[i]];
+            statuses[i] = WithdrawalRequestStatus({
+                amountOfStETH: request.amount,
+                amountOfShares: request.amount,
+                owner: request.owner,
+                timestamp: block.timestamp,
+                isFinalized: true,
+                isClaimed: request.claimed
+            });
+        }
     }
 
     function getLastCheckpointIndex() external returns (uint256) {}

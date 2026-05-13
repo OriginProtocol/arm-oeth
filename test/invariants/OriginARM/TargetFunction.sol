@@ -394,23 +394,31 @@ abstract contract TargetFunction is Properties {
         sum_os_redeem += amount;
     }
 
-    function handler_claimOriginWithdrawals(uint16 requestCount, uint256 seed) public {
+    function handler_claimOriginWithdrawals(uint16 requestCount, uint256) public {
         vm.assume(originRequests.length > 0);
         requestCount = uint16(_bound(requestCount, 1, originRequests.length));
 
-        // This will remove the requestId from the list
-        uint256[] memory ids = getRandomOriginRequest(requestCount, seed);
+        uint256[] memory ids = new uint256[](requestCount);
+        for (uint256 i; i < requestCount; i++) {
+            ids[i] = originRequests[i];
+        }
 
         // Console log data
         if (CONSOLE_LOG) console.log("claimOWithdrawals() \t From: Owner | \t IDs: ", uintArrayToString(ids));
 
         // Main call
-        vm.prank(governor);
         uint256 totalShares;
         for (uint256 i; i < ids.length; i++) {
             totalShares += originAssetAdapter.requestShares(ids[i]);
         }
+        vm.prank(governor);
         (,, uint256 totalClaimed) = originARM.claimRedeem(address(os), totalShares);
+
+        uint256[] memory remainingIds = new uint256[](originRequests.length - requestCount);
+        for (uint256 i = requestCount; i < originRequests.length; i++) {
+            remainingIds[i - requestCount] = originRequests[i];
+        }
+        originRequests = remainingIds;
 
         sum_ws_arm_claimed += totalClaimed;
     }
@@ -490,11 +498,11 @@ abstract contract TargetFunction is Properties {
 
         // - Finalize claim all the Origin requests
         if (originRequests.length > 0) {
-            vm.prank(governor);
             uint256 totalShares;
             for (uint256 i; i < originRequests.length; i++) {
                 totalShares += originAssetAdapter.requestShares(originRequests[i]);
             }
+            vm.prank(governor);
             originARM.claimRedeem(address(os), totalShares);
         }
 
@@ -542,6 +550,7 @@ abstract contract TargetFunction is Properties {
         }
 
         // - Claim fees
+        vm.prank(governor);
         originARM.collectFees();
 
         // - Ensure everything is empty

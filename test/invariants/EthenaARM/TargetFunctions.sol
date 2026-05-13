@@ -111,10 +111,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         mintedUSDe[user] += amount;
     }
 
-    function targetARMRequestRedeem(uint88 shareAmount, uint248 randomAddressIndex)
-        external
-        ensureExchangeRateIncrease
-    {
+    function targetARMRequestRedeem(uint88 shareAmount, uint248) external ensureExchangeRateIncrease {
         address user;
         uint256 balance;
         (user, balance) = Find.getUserWithARMShares(makers, address(arm));
@@ -607,14 +604,10 @@ abstract contract TargetFunctions is Setup, StdUtils {
         sumSUSDeBaseRedeem += amount;
     }
 
-    function targetARMClaimBaseWithdrawals(uint256 randomAddressIndex)
-        external
-        ensureExchangeRateIncrease
-        ensureTimeIncrease
-    {
+    function targetARMClaimBaseWithdrawals(uint256) external ensureExchangeRateIncrease ensureTimeIncrease {
         if (assume(unstakerIndices.length != 0)) return;
-        // Select a random unstaker index from used unstakers
-        uint256 selectedIndex = unstakerIndices[randomAddressIndex % unstakerIndices.length];
+        // Adapter claims are FIFO, so always claim the oldest pending unstaker.
+        uint256 selectedIndex = unstakerIndices[0];
         address unstaker = ethenaAssetAdapter.unstakers(uint8(selectedIndex));
         UserCooldown memory cooldown = susde.cooldowns(address(unstaker));
         uint256 endTimestamp = cooldown.cooldownEnd;
@@ -639,11 +632,14 @@ abstract contract TargetFunctions is Setup, StdUtils {
             vm.warp(endTimestamp);
         }
 
+        uint256 shares = ethenaAssetAdapter.requestShares(unstaker);
         vm.prank(operator);
-        arm.claimRedeem(address(susde), ethenaAssetAdapter.requestShares(unstaker));
+        arm.claimRedeem(address(susde), shares);
 
-        // Remove selectedIndex from unstakerIndices, without preserving order
-        unstakerIndices[randomAddressIndex % unstakerIndices.length] = unstakerIndices[unstakerIndices.length - 1];
+        // Remove the oldest unstaker index while preserving FIFO order.
+        for (uint256 i; i < unstakerIndices.length - 1; i++) {
+            unstakerIndices[i] = unstakerIndices[i + 1];
+        }
         unstakerIndices.pop();
 
         if (isConsoleAvailable) {
@@ -871,7 +867,9 @@ abstract contract TargetFunctions is Setup, StdUtils {
         vm.warp(block.timestamp + 7 days);
         for (uint256 i; i < unstakerIndices.length; i++) {
             address unstaker = ethenaAssetAdapter.unstakers(uint8(unstakerIndices[i]));
-            arm.claimRedeem(address(susde), ethenaAssetAdapter.requestShares(unstaker));
+            uint256 shares = ethenaAssetAdapter.requestShares(unstaker);
+            vm.prank(operator);
+            arm.claimRedeem(address(susde), shares);
         }
 
         // 2. Request base withdrawal of the remaining sUSDe
@@ -887,7 +885,9 @@ abstract contract TargetFunctions is Setup, StdUtils {
             // Fast forward time to allow claiming the last base withdrawal
             vm.warp(block.timestamp + 7 days);
             address unstaker = ethenaAssetAdapter.unstakers(uint8(nextIndex));
-            arm.claimRedeem(address(susde), ethenaAssetAdapter.requestShares(unstaker));
+            uint256 shares = ethenaAssetAdapter.requestShares(unstaker);
+            vm.prank(operator);
+            arm.claimRedeem(address(susde), shares);
         }
         require(susde.balanceOf(address(arm)) == 0, "ARM still has sUSDe balance");
 
@@ -920,6 +920,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         }
 
         // 6. Claim fees accrued.
+        vm.prank(governor);
         arm.collectFees();
     }
 }
