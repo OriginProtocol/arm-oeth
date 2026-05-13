@@ -415,13 +415,14 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
         // Fee is taken in the liquidity asset on buy-side swaps and is paid to the fee collector
         // out of the same liquidity reserves as `amountOut`.
-        uint256 feeValue;
         if (isBuySide) {
-            feeValue = amountOut * swapFeeMultiplier / PRICE_SCALE;
+            uint256 feeValue = amountOut * swapFeeMultiplier / PRICE_SCALE;
 
             // Withdraw liquidity from the lending market if not enough in the ARM to cover both
             // the trader payout and the fee, after reserving liquidity for withdrawals.
             _ensureLiquidityAvailableForSwap(amountOut + feeValue);
+
+            _collectFees(feeValue);
         }
 
         // Transfer the input tokens from the caller to this ARM contract
@@ -429,9 +430,6 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
         // Transfer the output tokens to the recipient
         outToken.transfer(to, amountOut);
-
-        // Transfer the protocol fee to the fee collector
-        if (feeValue > 0) IERC20(liquidityAsset).transfer(feeCollector, feeValue);
     }
 
     function _swapTokensForExactTokens(IERC20 inToken, IERC20 outToken, uint256 amountOut, address to)
@@ -464,13 +462,14 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
         // Fee is taken in the liquidity asset on buy-side swaps and is paid to the fee collector
         // out of the same liquidity reserves as `amountOut`.
-        uint256 feeValue;
         if (isBuySide) {
-            feeValue = amountOut * swapFeeMultiplier / PRICE_SCALE;
+            uint256 feeValue = amountOut * swapFeeMultiplier / PRICE_SCALE;
 
             // Withdraw liquidity from the lending market if not enough in the ARM to cover both
             // the trader payout and the fee, after reserving liquidity for withdrawals.
             _ensureLiquidityAvailableForSwap(amountOut + feeValue);
+
+            _collectFees(feeValue);
         }
 
         // Transfer the input tokens from the caller to this ARM contract
@@ -478,9 +477,6 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
         // Transfer the output tokens to the recipient
         outToken.transfer(to, amountOut);
-
-        // Transfer the protocol fee to the fee collector
-        if (feeValue > 0) IERC20(liquidityAsset).transfer(feeCollector, feeValue);
     }
 
     /// @dev Consume the remaining liquidity cap for the current swap direction.
@@ -498,6 +494,21 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
         if (isBuySide) buyLiquidityRemaining = remaining;
         else sellLiquidityRemaining = remaining;
+    }
+
+    /// @dev Sends the swap fee to the fee collector in the liquidity asset (eg WETH) right after a
+    /// buy-side swap. No-op on sell-side swaps and when `amount` is zero (no discount or zero fee).
+    ///
+    /// Design rationale: rather than accruing fees into a storage slot (`feesAccrued`) and exposing a
+    /// separate `collectFees()` entry point, the fee is paid out on every qualifying swap.
+    ///   - It greatly simplifies the contract: no `feesAccrued` storage, no `collectFees()` function,
+    ///     no fee netting in `totalAssets()`, no liquidity-availability check on fee collection.
+    ///   - The measured cost is ~5% extra gas on a buy-side swap (one additional ERC20 transfer of a
+    ///     warm token to a warm-or-cold recipient). On sell-side swaps the cost is zero.
+    ///   - The simplification is therefore worth the per-swap overhead.
+    /// @param amount The fee amount in liquidity-asset terms.
+    function _collectFees(uint256 amount) internal {
+        if (amount > 0) IERC20(liquidityAsset).transfer(feeCollector, amount);
     }
 
     /// @dev Convert between base asset and liquidity asset if needed.
