@@ -188,12 +188,6 @@ abstract contract Modifiers is Helpers {
         _;
     }
 
-    /// @notice Collect fees on LidoARM contract.
-    modifier collectFeesOnLidoARM() {
-        lidoARM.collectFees();
-        _;
-    }
-
     /// @notice Request stETH withdrawal for ETH on LidoARM contract.
     modifier requestLidoWithdrawalsOnLidoARM(uint256[] memory amounts) {
         // Todo: extend this logic to other modifier if needed

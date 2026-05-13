@@ -40,7 +40,10 @@ contract $030_UpgradeLidoARMSwapFeeScript is AbstractDeployScript("030_UpgradeLi
         if (proxy.implementation() == impl) return;
 
         vm.startPrank(proxy.owner());
-        LidoARM(payable(address(proxy))).collectFees();
+        // Use a low-level call: the new LidoARM impl no longer exposes collectFees(),
+        // but the *current* (pre-upgrade) impl on the proxy still does.
+        (bool success,) = address(proxy).call(abi.encodeWithSignature("collectFees()"));
+        require(success, "Collect fees failed");
         proxy.upgradeToAndCall(impl, "");
         vm.stopPrank();
     }

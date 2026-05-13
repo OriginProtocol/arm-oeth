@@ -67,10 +67,8 @@ contract Unit_Concrete_OriginARM_Deposit_Test_ is Unit_Shared_Test {
         oeth.approve(address(originARM), type(uint256).max);
         originARM.swapTokensForExactTokens(oeth, weth, 1e12, type(uint256).max, bob);
         vm.stopPrank();
-        uint256 accruedFees = originARM.feesAccrued();
         assertEq(weth.balanceOf(address(originARM)), 0, "WETH balance should be 0");
         assertGt(originARM.fee(), 0, "Fee should be greater than 0");
-        assertGt(accruedFees, 0, "Fees should be accrued");
         assertGt(originARM.totalAssets(), MIN_TOTAL_SUPPLY, "Total assets should be > MIN_TOTAL_SUPPLY");
 
         // Expected values
@@ -85,7 +83,6 @@ contract Unit_Concrete_OriginARM_Deposit_Test_ is Unit_Shared_Test {
         // Alice deposits 1 WETH
         vm.prank(alice);
         originARM.deposit(DEFAULT_AMOUNT);
-        assertEq(accruedFees, originARM.feesAccrued(), "Fees should be accrued");
     }
 
     /// @notice Test under the following assumptions:
@@ -106,10 +103,8 @@ contract Unit_Concrete_OriginARM_Deposit_Test_ is Unit_Shared_Test {
         oeth.approve(address(originARM), type(uint256).max);
         originARM.swapTokensForExactTokens(oeth, weth, 1e12 / 2, type(uint256).max, bob);
         vm.stopPrank();
-        uint256 accruedFees = originARM.feesAccrued();
         assertEq(weth.balanceOf(address(originARM)), 1e12 / 2, "WETH balance should be 1e12/2");
         assertGt(originARM.fee(), 0, "Fee should be greater than 0");
-        assertGt(accruedFees, 0, "Fees should be accrued");
         assertGt(originARM.totalAssets(), MIN_TOTAL_SUPPLY, "Total assets should be > MIN_TOTAL_SUPPLY");
 
         // Expected values
@@ -124,7 +119,6 @@ contract Unit_Concrete_OriginARM_Deposit_Test_ is Unit_Shared_Test {
         // Alice deposits 1 WETH
         vm.prank(alice);
         originARM.deposit(DEFAULT_AMOUNT);
-        assertEq(accruedFees, originARM.feesAccrued(), "Fees should be accrued");
     }
 
     /// @notice Test under the following assumptions:

@@ -278,36 +278,15 @@ abstract contract TargetFunction is Properties {
     function handler_setFee(uint256 performanceFee) public {
         performanceFee = _bound(performanceFee, MIN_FEES, MAX_FEES);
 
-        // Cache accrued fees before setting new fee
-        uint256 accumulatedFees = lidoARM.feesAccrued();
-
         // Prank owner
         vm.prank(lidoARM.owner());
 
         // Set fees
         lidoARM.setFee(performanceFee);
-
-        // Update ghost
-        sum_weth_fees += accumulatedFees;
-    }
-
-    function handler_collectFees() public {
-        // Prank owner
-        vm.prank(lidoARM.owner());
-
-        // Collect fees
-        uint256 collectedFees = lidoARM.collectFees();
-
-        // Update ghost
-        sum_weth_fees += collectedFees;
     }
 
     function handler_totalAsset() public view returns (uint256) {
         return lidoARM.totalAssets();
-    }
-
-    function handler_feeAccrued() public view returns (uint256) {
-        return lidoARM.feesAccrued();
     }
 
     function handler_lastAvailableAsset() public view returns (uint256) {

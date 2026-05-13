@@ -61,7 +61,7 @@ contract FuzzerFoundry_LidoARM is TargetFunction {
         targetContract(address(this));
 
         // Add selectors
-        bytes4[] memory selectors = new bytes4[](12);
+        bytes4[] memory selectors = new bytes4[](11);
         selectors[0] = this.handler_swapExactTokensForTokens.selector;
         selectors[1] = this.handler_swapTokensForExactTokens.selector;
         selectors[2] = this.handler_deposit.selector;
@@ -72,8 +72,7 @@ contract FuzzerFoundry_LidoARM is TargetFunction {
         selectors[7] = this.handler_setPrices.selector;
         selectors[8] = this.handler_setCrossPrice.selector;
         selectors[9] = this.handler_setFee.selector;
-        selectors[10] = this.handler_collectFees.selector;
-        selectors[11] = this.handler_donate.selector;
+        selectors[10] = this.handler_donate.selector;
 
         // Target selectors
         targetSelector(FuzzSelector({addr: address(this), selectors: selectors}));

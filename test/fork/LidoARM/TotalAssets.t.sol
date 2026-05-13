@@ -109,20 +109,6 @@ contract Fork_Concrete_LidoARM_TotalAssets_Test_ is Fork_Shared_Test_ {
         assertApproxEqAbs(lidoARM.totalAssets(), totalAssetsBefore, STETH_ERROR_ROUNDING);
     }
 
-    function test_TotalAssets_With_FeeAccrued_NotNull() public {
-        uint256 assetGain = DEFAULT_AMOUNT;
-        // Simulate asset gain
-        deal(address(weth), address(lidoARM), weth.balanceOf(address(lidoARM)) + assetGain);
-
-        // User deposit, this will trigger a fee calculation
-        lidoARM.deposit(DEFAULT_AMOUNT);
-
-        // Assert fee accrued is not null
-        assertEq(lidoARM.feesAccrued(), assetGain * 20 / 100);
-
-        assertEq(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT + assetGain - assetGain * 20 / 100);
-    }
-
     function test_TotalAssets_When_ARMIsInsolvent()
         public
         depositInLidoARM(address(this), DEFAULT_AMOUNT)

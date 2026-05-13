@@ -45,17 +45,13 @@ contract Unit_Concrete_OriginARM_Allocate_Test_ is Unit_Shared_Test {
         // Allocate
         originARM.allocate();
 
-        // As we simulate a benefit from trade, we need to check the fees accrued
-        uint256 feesAccrued = originARM.feesAccrued();
         assertEq(
             market.balanceOf(address(originARM)),
             2 * DEFAULT_AMOUNT,
             "Market balance should be increased by DEFAULT_AMOUNT"
         );
         assertEq(
-            originARM.totalAssets(),
-            2 * DEFAULT_AMOUNT - feesAccrued,
-            "Total assets should be DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY"
+            originARM.totalAssets(), 2 * DEFAULT_AMOUNT, "Total assets should be DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY"
         );
     }
 

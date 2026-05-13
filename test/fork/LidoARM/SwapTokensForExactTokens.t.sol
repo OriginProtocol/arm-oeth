@@ -27,9 +27,6 @@ contract Fork_Concrete_LidoARM_SwapTokensForExactTokens_Test is Fork_Shared_Test
 
         deal(address(weth), address(lidoARM), INITIAL_BALANCE);
         deal(address(steth), address(lidoARM), INITIAL_BALANCE);
-
-        // We are artificially adding assets so collect the performance fees to reset the fees collected
-        lidoARM.collectFees();
     }
 
     //////////////////////////////////////////////////////
@@ -316,13 +313,11 @@ contract Fork_Concrete_LidoARM_SwapTokensForExactTokens_Test is Fork_Shared_Test
     /// @param wethReserveGrowth The amount WETH has grown in the ARM. Fuzzed between 0 and 1% of the INITIAL_BALANCE.
     /// @param stethReserveGrowth Amount of stETH has grown in the ARM. Fuzzed between 0 and 1% of the INITIAL_BALANCE.
     /// @param price Sell price of the stETH in WETH (stETH/WETH). Fuzzed between 1 and 1.02.
-    /// @param collectFees Whether to collect the accrued performance fees before the swap.
     function test_SwapTokensForExactTokens_Weth_To_Steth(
         uint256 amountOut,
         uint256 wethReserveGrowth,
         uint256 stethReserveGrowth,
-        uint256 price,
-        bool collectFees
+        uint256 price
     ) public {
         // Use random sell price between 1 and 1.02 for the stETH/WETH price,
         // The buy price doesn't matter as it is not used in this test.
@@ -336,11 +331,6 @@ contract Fork_Concrete_LidoARM_SwapTokensForExactTokens_Test is Fork_Shared_Test
         // Set random amount of stETH in the ARM
         stethReserveGrowth = _bound(stethReserveGrowth, 0, INITIAL_BALANCE / 100);
         deal(address(steth), address(lidoARM), INITIAL_BALANCE + stethReserveGrowth);
-
-        if (collectFees) {
-            // Collect and accrued performance fees before the swap
-            lidoARM.collectFees();
-        }
 
         // Calculate the amount of stETH to swap out of the ARM
         amountOut = _bound(amountOut, 0, steth.balanceOf(address(lidoARM)));
@@ -397,17 +387,13 @@ contract Fork_Concrete_LidoARM_SwapTokensForExactTokens_Test is Fork_Shared_Test
     /// @param stethReserveGrowth Amount of stETH has grown in the ARM. Fuzzed between 0 and 1% of the INITIAL_BALANCE.
     /// @param price Buy price of the stETH in WETH (stETH/WETH). Fuzzed between 0.998 and 1.02.
     /// @param userStethBalance The amount of stETH the user has before the swap.
-    /// @param collectFees Whether to collect the accrued performance fees before the swap.
     function test_SwapTokensForExactTokens_Steth_To_Weth(
         uint256 amountOut,
         uint256 wethReserveGrowth,
         uint256 stethReserveGrowth,
         uint256 price,
-        uint256 userStethBalance,
-        bool collectFees
+        uint256 userStethBalance
     ) public {
-        lidoARM.collectFees();
-
         // Use random stETH/WETH buy price between 0.98 and 1,
         // sell price doesn't matter as it is not used in this test.
         price = _bound(price, MIN_PRICE0, MAX_PRICE0);
@@ -420,11 +406,6 @@ contract Fork_Concrete_LidoARM_SwapTokensForExactTokens_Test is Fork_Shared_Test
         // Set random amount of stETH growth in the ARM
         stethReserveGrowth = _bound(stethReserveGrowth, 0, INITIAL_BALANCE / 100);
         deal(address(steth), address(lidoARM), INITIAL_BALANCE + stethReserveGrowth);
-
-        if (collectFees) {
-            // Collect and accrued performance fees before the swap
-            lidoARM.collectFees();
-        }
 
         // Calculate the amount of WETH to swap out of the ARM
         // Can take up to 100% of the WETH in the ARM even if there is some for the performance fee.

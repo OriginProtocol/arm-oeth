@@ -26,7 +26,10 @@ contract $006_UpgradeOriginARMSwapFeeScript is AbstractDeployScript("006_Upgrade
         if (proxy.implementation() == impl) return;
 
         vm.startPrank(proxy.owner());
-        OriginARM(payable(address(proxy))).collectFees();
+        // Use a low-level call: the new OriginARM impl no longer exposes collectFees(),
+        // but the *current* (pre-upgrade) impl on the proxy still does.
+        (bool success,) = address(proxy).call(abi.encodeWithSignature("collectFees()"));
+        require(success, "Collect fees failed");
         proxy.upgradeToAndCall(impl, "");
         vm.stopPrank();
     }
