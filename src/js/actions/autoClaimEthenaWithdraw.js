@@ -24,6 +24,7 @@ const handler = async (event) => {
   await claimEthenaWithdrawals({
     signer,
     arm,
+    armName: "Ethena",
   });
 };
 

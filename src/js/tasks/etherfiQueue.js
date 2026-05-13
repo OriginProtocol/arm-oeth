@@ -2,6 +2,7 @@ const { gql } = require("@apollo/client/core");
 const { parseUnits } = require("ethers");
 
 const { baseWithdrawAmount } = require("./liquidityAutomation");
+const { adapterContract, resolveArmBase } = require("../utils/arm");
 const { createApolloClient } = require("../utils/apollo");
 const { logTxDetails } = require("../utils/txLogger");
 
@@ -11,19 +12,25 @@ const uri = "https://origin.squids.live/ops-squid/graphql";
 
 const requestEtherFiWithdrawals = async (options) => {
   const { signer, arm, amount } = options;
+  const { baseSymbol, baseAddress } = await resolveArmBase(options);
 
   const withdrawAmount = amount
     ? parseUnits(amount.toString())
     : await baseWithdrawAmount(options);
   if (!withdrawAmount || withdrawAmount === 0n) return;
 
-  const tx = await arm.connect(signer).requestEtherFiWithdrawal(withdrawAmount);
+  log(`Requesting withdrawal for ${withdrawAmount} ${baseSymbol}...`);
+  const tx = await arm
+    .connect(signer)
+    .requestRedeem(baseAddress, withdrawAmount);
 
   await logTxDetails(tx, "requestEtherFiWithdrawal");
 };
 
 const claimEtherFiWithdrawals = async (options) => {
   const { arm, signer, id } = options;
+  const { baseAddress, config } = await resolveArmBase(options);
+  const adapter = await adapterContract(config.adapter, signer);
 
   const requestIds = id
     ? // If an id is provided, just claim that one
@@ -31,15 +38,21 @@ const claimEtherFiWithdrawals = async (options) => {
     : // Get the outstanding EtherFi withdrawal requests for the ARM
       await claimableEtherFiRequests();
 
-  if (requestIds.length > 0) {
-    log(
-      `About to claim ${requestIds.length} withdrawal requests with\nids: ${requestIds}`,
-    );
-    const tx = await arm.connect(signer).claimEtherFiWithdrawals(requestIds);
-    await logTxDetails(tx, "claim EtherFi withdraws");
-  } else {
-    log("No EtherFi withdrawal requests to claim");
+  let shares = 0n;
+  for (const requestId of requestIds) {
+    shares += await adapter["requestShares(uint256)"](requestId);
   }
+
+  if (shares === 0n) {
+    log("No EtherFi withdrawal requests to claim");
+    return;
+  }
+
+  log(
+    `About to claim ${requestIds.length} withdrawal requests with\nids: ${requestIds}`,
+  );
+  const tx = await arm.connect(signer).claimRedeem(baseAddress, shares);
+  await logTxDetails(tx, "claim EtherFi withdraws");
 };
 
 const claimableEtherFiRequests = async () => {

@@ -25,6 +25,7 @@ const handler = async (event) => {
   await autoRequestWithdraw({
     signer,
     arm,
+    armName: "Origin",
     minAmount: "300",
     thresholdAmount: 10000,
   });

@@ -1,4 +1,4 @@
-const { MaxUint256, formatUnits, parseUnits } = require("ethers");
+const { formatUnits, parseUnits } = require("ethers");
 
 const { abs } = require("../utils/maths");
 const { getLendingMarketRate } = require("../utils/silo");
@@ -10,6 +10,7 @@ const { get1InchSwapQuote } = require("../utils/1Inch");
 const { flyTradeQuote } = require("../utils/fly");
 const { logTxDetails } = require("../utils/txLogger");
 const { rangeSellPrice, rangeBuyPrice } = require("../utils/pricing");
+const { parseSwapCap, resolveArmBase } = require("../utils/arm");
 
 const log = require("../utils/logger")("task:osSiloPrice");
 
@@ -35,6 +36,11 @@ const setOSSiloPrice = async (options) => {
   } = options;
 
   log("Computing optimal price...");
+  const { baseAddress, config } = await resolveArmBase({
+    arm,
+    armName: "Origin",
+    blockTag,
+  });
 
   // 1. Get annual rate scaled to 1e18 from lending markets with added premium
   const currentAnnualLendingRate = await getLendingMarketRate(
@@ -133,8 +139,8 @@ const setOSSiloPrice = async (options) => {
 
   // 9. Get current ARM sell price
 
-  const currentSellPrice = parseUnits("1", 72) / (await arm.traderate0());
-  const currentBuyPrice = await arm.traderate1();
+  const currentSellPrice = config.sellPrice;
+  const currentBuyPrice = config.buyPrice;
   log(
     `Current sell price                     : ${Number(formatUnits(currentSellPrice, 36)).toFixed(5)}`,
   );
@@ -178,10 +184,11 @@ const setOSSiloPrice = async (options) => {
     const tx = await arm
       .connect(signer)
       .setPrices(
+        baseAddress,
         targetBuyPrice.toString(),
         targetSellPrice.toString(),
-        MaxUint256,
-        MaxUint256,
+        parseSwapCap(),
+        parseSwapCap(),
       );
 
     await logTxDetails(tx, "setOSSiloPrice");

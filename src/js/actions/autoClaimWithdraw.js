@@ -30,6 +30,7 @@ const handler = async (event) => {
     signer,
     liquidityAsset,
     arm,
+    armName: "Oeth",
     vault,
     confirm: true,
   });

@@ -25,6 +25,7 @@ const handler = async (event) => {
   await claimEtherFiWithdrawals({
     signer,
     arm,
+    armName: "EtherFi",
   });
 };
 

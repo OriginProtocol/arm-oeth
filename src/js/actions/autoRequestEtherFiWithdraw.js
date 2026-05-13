@@ -28,6 +28,7 @@ const handler = async (event) => {
     signer,
     eeth,
     arm,
+    armName: "EtherFi",
     minAmount: "0.1",
     thresholdAmount: 10,
   });

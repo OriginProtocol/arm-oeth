@@ -1,13 +1,18 @@
 const { parseUnits, MaxInt256 } = require("ethers");
 
 const { resolveAddress } = require("../utils/assets");
+const {
+  defaultBaseSymbol,
+  liquiditySymbol,
+  normalizeBaseSymbol,
+} = require("../utils/arm");
 const { getSigner } = require("../utils/signers");
 const { logTxDetails } = require("../utils/txLogger");
 const { resolveArmContract } = require("../utils/addressParser");
 
 const log = require("../utils/logger")("task:swap");
 
-const swap = async ({ arm, from, to, amount }) => {
+const swap = async ({ arm, from, to, amount, base }) => {
   if (from && to) {
     throw new Error(
       `Cannot specify both from and to asset. It has to be one or the other`,
@@ -21,7 +26,7 @@ const swap = async ({ arm, from, to, amount }) => {
   if (from) {
     const fromAddress = await resolveAddress(from);
 
-    const to = otherSymbol(arm, from);
+    const to = otherSymbol(arm, from, base);
     const toAddress = await resolveAddress(to);
 
     const fromAmount = parseUnits(amount.toString(), 18);
@@ -36,7 +41,7 @@ const swap = async ({ arm, from, to, amount }) => {
 
     await logTxDetails(tx, "swap exact from");
   } else if (to) {
-    const from = otherSymbol(arm, to);
+    const from = otherSymbol(arm, to, base);
     const fromAddress = await resolveAddress(from);
 
     const toAddress = await resolveAddress(to);
@@ -57,21 +62,13 @@ const swap = async ({ arm, from, to, amount }) => {
   }
 };
 
-const otherSymbol = (arm, symbol) => {
-  if (arm === "Oeth") {
-    return symbol === "OETH" ? "WETH" : "OETH";
-  } else if (arm === "Origin") {
-    return symbol === "OS" ? "WS" : "OS";
-  } else if (arm === "Lido") {
-    return symbol === "stETH" ? "WETH" : "stETH";
-  } else if (arm === "EtherFi") {
-    return symbol === "EETH" ? "WETH" : "EETH";
-  } else if (arm === "Ethena") {
-    return symbol === "SUSDE" ? "USDE" : "SUSDE";
-  }
-  throw new Error(
-    `Unknown ARM ${arm}. Has to be Oeth, Lido, Origin, EtherFi or Ethena`,
-  );
+const otherSymbol = (arm, symbol, base) => {
+  const normalizedSymbol = symbol.toString().replace(/-/g, "").toUpperCase();
+  const baseSymbol = normalizeBaseSymbol(base) ?? defaultBaseSymbol(arm);
+  const liquidSymbol = liquiditySymbol(arm);
+
+  if (normalizedSymbol === liquidSymbol.toUpperCase()) return baseSymbol;
+  return liquidSymbol;
 };
 
 module.exports = { swap };

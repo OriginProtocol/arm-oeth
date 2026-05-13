@@ -2,11 +2,14 @@ const { formatUnits, parseUnits } = require("ethers");
 const { ethers } = require("ethers");
 
 const { baseWithdrawAmount } = require("./liquidityAutomation");
+const { adapterContract, resolveArmBase } = require("../utils/arm");
 const { logTxDetails } = require("../utils/txLogger");
 const log = require("../utils/logger")("task:ethenaQueue");
 
 const requestEthenaWithdrawals = async (options) => {
   const { signer, arm, amount } = options;
+  const { baseAddress, config } = await resolveArmBase(options);
+  const adapter = await adapterContract(config.adapter, signer);
 
   // 1. Determine withdrawal amount: Explicit Input OR calculate from ARM and lending market balances
   const withdrawAmount = amount
@@ -15,8 +18,8 @@ const requestEthenaWithdrawals = async (options) => {
   if (!withdrawAmount || withdrawAmount === 0n) return;
 
   // 2. Check the contract request delay has passed since the last withdrawal request
-  const lastRequestTime = await arm.lastRequestTimestamp();
-  const requestDelay = Number(await arm.DELAY_REQUEST());
+  const lastRequestTime = await adapter.lastRequestTimestamp();
+  const requestDelay = Number(await adapter.DELAY_REQUEST());
   const currentTime = Math.floor(Date.now() / 1000);
   const timeSinceLastRequest = currentTime - Number(lastRequestTime);
   if (timeSinceLastRequest < requestDelay) {
@@ -29,7 +32,9 @@ const requestEthenaWithdrawals = async (options) => {
 
   // 3. Execution
   log(`Requesting withdrawal for ${formatUnits(withdrawAmount)} sUSDe...`);
-  const tx = await arm.connect(signer).requestBaseWithdrawal(withdrawAmount);
+  const tx = await arm
+    .connect(signer)
+    .requestRedeem(baseAddress, withdrawAmount);
   await logTxDetails(tx, "requestEthenaWithdrawal");
 };
 
@@ -41,17 +46,37 @@ const SUSDE_ABI = [
 
 // --- HELPER: CORE LOGIC ---
 // Fetches data for a list of addresses in PARALLEL (much faster)
-const fetchUnstakerStates = async (signer, addresses) => {
+const fetchUnstakerStates = async (signer, adapter, addresses) => {
   const contract = new ethers.Contract(SUSDE_ADDRESS, SUSDE_ABI, signer);
   const { timestamp: currentTimestamp } =
     await signer.provider.getBlock("latest");
 
+  if (!addresses) {
+    const pendingLength = await adapter.pendingUnstakerIndexesLength();
+    addresses = await Promise.all(
+      Array.from({ length: Number(pendingLength) }, async (_, pendingIndex) => {
+        const index = await adapter.pendingUnstakerIndex(pendingIndex);
+        const address = await adapter.unstakers(index);
+        return { address, index: Number(index) };
+      }),
+    );
+  } else {
+    addresses = await Promise.all(
+      addresses.map(async (address) => ({
+        address,
+        index: Number.MAX_SAFE_INTEGER,
+      })),
+    );
+  }
+
   // Promise.all executes all RPC calls simultaneously
   return Promise.all(
-    addresses.map(async (addr, index) => {
-      const [cooldownEnd, underlyingAmount] = await contract.cooldowns(addr);
+    addresses.map(async ({ address, index }) => {
+      const [cooldownEnd, underlyingAmount] = await contract.cooldowns(address);
+      const shares = await adapter["requestShares(address)"](address);
+      const expectedAssets = await adapter["requestAssets(address)"](address);
       const amountStr = formatUnits(underlyingAmount, 18);
-      const isBalancePositive = underlyingAmount > 0;
+      const isBalancePositive = underlyingAmount > 0 || shares > 0;
 
       let timeLeft = "None";
       let isReady = false;
@@ -68,9 +93,11 @@ const fetchUnstakerStates = async (signer, addresses) => {
       }
 
       return {
-        address: addr,
+        address,
         index, // Index in the unstakers array
         rawAmount: underlyingAmount, // Keep BigNumber for calculations
+        shares,
+        expectedAssets,
         amount: amountStr, // String for display
         hasBalance: isBalancePositive,
         isReady,
@@ -83,9 +110,11 @@ const fetchUnstakerStates = async (signer, addresses) => {
 // --- MAIN FUNCTIONS ---
 const ethenaWithdrawStatus = async (options) => {
   const { signer } = options;
+  const { config } = await resolveArmBase(options);
+  const adapter = await adapterContract(config.adapter, signer);
 
   // Reuse the core logic
-  const allStates = await fetchUnstakerStates(signer, UNSTAKERS);
+  const allStates = await fetchUnstakerStates(signer, adapter);
 
   // Filter and Log
   const active = allStates.filter((s) => s.hasBalance);
@@ -100,14 +129,16 @@ const ethenaWithdrawStatus = async (options) => {
 
 const claimEthenaWithdrawals = async (options) => {
   const { arm, signer, unstaker } = options;
+  const { baseAddress, config } = await resolveArmBase(options);
+  const adapter = await adapterContract(config.adapter, signer);
 
-  // Determine target list: single unstaker OR all of them
-  const targets = unstaker ? [unstaker] : UNSTAKERS;
+  // Determine target list: single unstaker OR all pending adapter requests
+  const targets = unstaker ? [unstaker] : undefined;
 
-  log(`Checking status for ${targets.length} address(es)...`);
+  log(`Checking Ethena adapter withdrawal status...`);
 
   // 1. Fetch all data in parallel first (Fast)
-  const states = await fetchUnstakerStates(signer, targets);
+  const states = await fetchUnstakerStates(signer, adapter, targets);
 
   // 2. Log status for everyone
   states.forEach((s) => {
@@ -118,21 +149,32 @@ const claimEthenaWithdrawals = async (options) => {
     }
   });
 
-  // 3. Filter who is ready to claim
-  const claimable = states.filter((s) => s.isReady && s.hasBalance);
+  // 3. Filter who is ready to claim. Adapter claims are FIFO, so only
+  // claim a contiguous ready prefix when no specific unstaker is requested.
+  const activeStates = states.filter((s) => s.hasBalance && s.shares > 0n);
+  const claimable = unstaker
+    ? activeStates.filter((s) => s.isReady)
+    : activeStates.slice(
+        0,
+        activeStates.findIndex((s) => !s.isReady) === -1
+          ? activeStates.length
+          : activeStates.findIndex((s) => !s.isReady),
+      );
 
   // 4. Execute Claims
   if (claimable.length > 0) {
     log(`About to claim ${claimable.length} withdrawal requests...`);
 
-    // Sequential execution for Transactions is safer to avoid nonce errors
+    let shares = 0n;
     for (const item of claimable) {
       log(
-        ` - Processing claim for index ${item.index}, ${item.amount} USDe and address ${item.address}`,
+        ` - Claimable index ${item.index}, ${item.amount} USDe and address ${item.address}`,
       );
-      const tx = await arm.connect(signer).claimBaseWithdrawals(item.index);
-      await logTxDetails(tx, `claimEthenaWithdrawal for ${item.address}`);
+      shares += item.shares;
     }
+
+    const tx = await arm.connect(signer).claimRedeem(baseAddress, shares);
+    await logTxDetails(tx, `claimEthenaWithdrawal`);
   } else {
     log("No ready USDe withdrawal requests found.");
   }
@@ -147,52 +189,6 @@ function getTimeDifference(date1, date2) {
   const s = Math.floor((diff / 1000) % 60);
   return `${d}d ${h}h ${m}m ${s}s`;
 }
-
-// The list of 42 addresses
-const UNSTAKERS = [
-  "0x77789BB87eAdfC429440209F7d28ED55aC15f17a",
-  "0x60CE563b5825Ff8ce932A2c8eCd32878639a4254",
-  "0xD88011b85685de9E5c0385Ef93c0E5A75666D043",
-  "0xD6F32654bAfb110A2DFbad18c8a25749c0A7f626",
-  "0x9C4a2B57310Ddc479A5D7b7d68Fa1e0425D35D41",
-  "0x7be23c73Ee70029Adf6a062dFbAE7B1518583630",
-  "0x6B444A63967059b52A7FB8F223a03EA693a936F9",
-  "0x39746c02FD20215cC6c33C2CCb49405a531F6AEa",
-  "0xD0554178956c702baE69DAaceD35Bb747286bC49",
-  "0x87c782917FAB4c2D4D921E767B26f82E7b2A5FD3",
-  "0x9b7dB18B1da996a3BFa4a9224cA60d2a267e6065",
-  "0xE671E4BD15f26609DE99ef028Fa27A5A4c839182",
-  "0x84425544aB8b6c3c0Ca2a3c78A90d92089fA3a3d",
-  "0x74C820df2b7D08EEB9cA9227B1aEc12D8A5C7B21",
-  "0x98e7d36007f864593330C1183aba85a49aA2D3e8",
-  "0x0F13DE7069020390741fbc9FFB6AA4931Ea4B28a",
-  "0x9DbB3D287F6e47331758e32F981281c59606a300",
-  "0xCca8EE05d84be9b19632c803633Bb9Cc879548c7",
-  "0x6241882D5c39E423c040c178AB364a228C648d3C",
-  "0xAA68295E2f05bb82143dF6937d99681916999Dda",
-  "0x61b740C3a571237a7d978f4EE237Be15409523d2",
-  "0xA39f03ba9ff8Ce1491d7Df4cAEd20a884E03b46c",
-  "0xff1F36047D5D0BFbD15D5fB0adcee4F3E4743E6d",
-  "0x663671666dEeD69c6a3d0F4a7b4f87Ad8b727B61",
-  "0x642F99190FE78827404664Ea94931014e1c6cD7E",
-  "0x0e98a4E0F840D98d54d891FC5cd1a2506E8DCF07",
-  "0x47D3aeda299fFfA802E2C1099F0501F67b75a4f6",
-  "0x3dBBa9614aBE1422136822e419344eDfB2A039A0",
-  "0xe2B5D52C636aC568e00F31C9fa96394BfEF49d1E",
-  "0xC8Fc241F85e18325f1a32688B59139e44249B64B",
-  "0x2440d433AB6A32A1206463Ef75A3E3dB4CC0a5d8",
-  "0xEBb379BC2f6ce49A20a14d2187B9876467994F24",
-  "0xCBC12a888B037138530c76718dC77B49ae2AAb0F",
-  "0xAd090F45EF9f1b748843833C1055022e88bBbE81",
-  "0x5559CBF6b80dEE109149AcA01B5dE3Eac950A7ef",
-  "0xc2776a7C73c41c732cF412A967703F699c75675E",
-  "0xeB5C42d2B3edF5f61128bb7D36C2C7dabd24e45C",
-  "0x58610F7984761217331A568e9FeBBF2F0D7cC41c",
-  "0x28F1896eC1dc7342735F2D715C6f4333ff1C91a4",
-  "0x3df2d3acc03B7BB618c5257A14834B1B7f3ea85B",
-  "0xde02336439Bb3894f983524cD451b19FB404f76D",
-  "0x38bF73Ac771bf47A403ebA754F9070Ec9FAC0F5E",
-];
 
 module.exports = {
   requestEthenaWithdrawals,

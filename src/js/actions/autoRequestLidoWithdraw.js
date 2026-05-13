@@ -28,6 +28,7 @@ const handler = async (event) => {
     signer,
     steth,
     arm,
+    armName: "Lido",
     minAmount: "0.1",
     thresholdAmount: 120,
     maxAmount: 300,

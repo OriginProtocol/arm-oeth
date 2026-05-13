@@ -31,6 +31,7 @@ const handler = async (event) => {
     signer,
     liquidityAsset,
     arm,
+    armName: "Origin",
     vault,
     confirm: true,
   });

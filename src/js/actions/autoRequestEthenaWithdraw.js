@@ -28,6 +28,7 @@ const handler = async (event) => {
     signer,
     susde,
     arm,
+    armName: "Ethena",
     minAmount: "100",
     thresholdAmount: 1000,
   });
