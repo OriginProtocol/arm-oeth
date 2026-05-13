@@ -78,6 +78,13 @@ contract EtherFiARM is Initializable, AbstractARM {
         _initARM(_operator, _name, _symbol, _fee, _feeCollector, _capManager);
     }
 
+    /// @notice Revert if legacy EtherFi withdrawal requests are still outstanding.
+    /// @dev Used by upgrade scripts with `upgradeToAndCall` so the upgrade cannot
+    /// complete until the old ARM-owned EtherFi withdrawal queue has been claimed.
+    function checkNoLegacyEtherFiWithdrawals() external view {
+        require(_deprecatedEtherfiWithdrawalQueueAmount == 0, "EtherFiARM: withdrawals pending");
+    }
+
     /// @notice This payable method is necessary for receiving ETH claimed from the EtherFi withdrawal queue.
     receive() external payable {}
 }

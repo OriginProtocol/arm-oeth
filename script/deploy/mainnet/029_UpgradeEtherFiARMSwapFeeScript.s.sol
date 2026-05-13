@@ -35,7 +35,9 @@ contract $029_UpgradeEtherFiARMSwapFeeScript is AbstractDeployScript("029_Upgrad
         address etherFiARMProxy = resolver.resolve("ETHER_FI_ARM");
         govProposal.action(etherFiARMProxy, "collectFees()", "");
         govProposal.action(
-            etherFiARMProxy, "upgradeToAndCall(address,bytes)", abi.encode(resolver.resolve("ETHERFI_ARM_IMPL"), "")
+            etherFiARMProxy,
+            "upgradeToAndCall(address,bytes)",
+            abi.encode(resolver.resolve("ETHERFI_ARM_IMPL"), _checkNoLegacyEtherFiWithdrawalsData())
         );
     }
 
@@ -47,7 +49,11 @@ contract $029_UpgradeEtherFiARMSwapFeeScript is AbstractDeployScript("029_Upgrad
 
         vm.startPrank(proxy.owner());
         EtherFiARM(payable(address(proxy))).collectFees();
-        proxy.upgradeToAndCall(impl, "");
+        proxy.upgradeToAndCall(impl, _checkNoLegacyEtherFiWithdrawalsData());
         vm.stopPrank();
+    }
+
+    function _checkNoLegacyEtherFiWithdrawalsData() internal pure returns (bytes memory) {
+        return abi.encodeWithSelector(EtherFiARM.checkNoLegacyEtherFiWithdrawals.selector);
     }
 }
