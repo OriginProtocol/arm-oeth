@@ -50,11 +50,9 @@ contract $011_DeployEtherFiARMScript is AbstractDeployScript("011_DeployEtherFiA
         EtherFiARM etherFiARMImpl = new EtherFiARM(
             Mainnet.EETH,
             Mainnet.WETH,
-            Mainnet.ETHERFI_WITHDRAWAL,
             claimDelay,
             1e7, // minSharesToRedeem
-            1e18, // allocateThreshold
-            Mainnet.ETHERFI_WITHDRAWAL_NFT
+            1e18 // allocateThreshold
         );
         _recordDeployment("ETHER_FI_ARM_IMPL", address(etherFiARMImpl));
 

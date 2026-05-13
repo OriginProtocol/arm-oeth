@@ -4,7 +4,7 @@ pragma solidity ^0.8.23;
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 import {AbstractARM} from "./AbstractARM.sol";
-import {IERC20, IWETH, IEETHWithdrawal, IEETHWithdrawalNFT} from "./Interfaces.sol";
+import {IERC20, IWETH} from "./Interfaces.sol";
 
 /**
  * @title EtherFi (eETH) Automated Redemption Manager (ARM)
@@ -19,10 +19,6 @@ contract EtherFiARM is Initializable, AbstractARM {
     IERC20 public immutable eeth;
     /// @notice The address of the Wrapped ETH (WETH) token
     IWETH public immutable weth;
-    /// @notice The address of the EtherFi Withdrawal Queue contract
-    IEETHWithdrawal public immutable etherfiWithdrawalQueue;
-    /// @notice The address of the EtherFi Withdrawal NFT contract
-    IEETHWithdrawalNFT public immutable etherfiWithdrawalNFT;
 
     /// @dev Deprecated queue amount retained for storage layout compatibility.
     uint256 internal _deprecatedEtherfiWithdrawalQueueAmount;
@@ -35,7 +31,6 @@ contract EtherFiARM is Initializable, AbstractARM {
 
     /// @param _eeth The address of the eETH token
     /// @param _weth The address of the WETH token
-    /// @param _etherfiWithdrawalQueue The address of the EtherFi's withdrawal queue contract
     /// @param _claimDelay The delay in seconds before a user can claim a redeem from the request
     /// @param _minSharesToRedeem The minimum amount of shares to redeem from the active lending market
     /// @param _allocateThreshold The minimum amount of liquidity assets in excess of the ARM buffer before
@@ -43,16 +38,12 @@ contract EtherFiARM is Initializable, AbstractARM {
     constructor(
         address _eeth,
         address _weth,
-        address _etherfiWithdrawalQueue,
         uint256 _claimDelay,
         uint256 _minSharesToRedeem,
-        int256 _allocateThreshold,
-        address _etherfiWithdrawalNFT
+        int256 _allocateThreshold
     ) AbstractARM(_weth, _claimDelay, _minSharesToRedeem, _allocateThreshold) {
         eeth = IERC20(_eeth);
         weth = IWETH(_weth);
-        etherfiWithdrawalQueue = IEETHWithdrawal(_etherfiWithdrawalQueue);
-        etherfiWithdrawalNFT = IEETHWithdrawalNFT(_etherfiWithdrawalNFT);
 
         _disableInitializers();
     }
