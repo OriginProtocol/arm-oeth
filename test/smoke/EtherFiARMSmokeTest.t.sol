@@ -216,26 +216,26 @@ contract Fork_EtherFiARM_Smoke_Test is AbstractSmokeTest {
         // trader sells eETH and buys WETH, the ARM buys eETH as a 4 bps discount
         _swapExactTokensForTokens(eeth, weth, 0.9996e36, 100 ether);
 
-        // Expected events
-        vm.expectEmit(true, false, false, false, address(etherFiARM));
-        emit EtherFiARM.RequestEtherFiWithdrawal(10 ether, 0);
-
         // Operator requests an Ether.fi withdrawal
         vm.prank(Mainnet.ARM_RELAYER);
         etherFiARM.requestRedeem(address(eeth), 10 ether);
+
+        uint256 requestId = etherfiAssetAdapter.pendingRequestId(0);
+        assertNotEq(requestId, 0);
+        assertEq(etherfiAssetAdapter.requestShares(requestId), 10 ether);
     }
 
     function test_request_etherfi_withdrawal_owner() external {
         // trader sells eETH and buys WETH, the ARM buys eETH as a 4 bps discount
         _swapExactTokensForTokens(eeth, weth, 0.9996e36, 100 ether);
 
-        // Expected events
-        vm.expectEmit(true, false, false, false, address(etherFiARM));
-        emit EtherFiARM.RequestEtherFiWithdrawal(10 ether, 0);
-
         // Owner requests an Ether.fi withdrawal
         vm.prank(Mainnet.TIMELOCK);
         etherFiARM.requestRedeem(address(eeth), 10 ether);
+
+        uint256 requestId = etherfiAssetAdapter.pendingRequestId(0);
+        assertNotEq(requestId, 0);
+        assertEq(etherfiAssetAdapter.requestShares(requestId), 10 ether);
     }
 
     function test_claim_etherfi_request_with_delay() external {
@@ -254,6 +254,7 @@ contract Fork_EtherFiARM_Smoke_Test is AbstractSmokeTest {
         etherfiWithdrawalNFT.finalizeRequests(requestId);
 
         // Claim the withdrawal
+        vm.prank(Mainnet.ARM_RELAYER);
         etherFiARM.claimRedeem(address(eeth), 10 ether);
     }
 

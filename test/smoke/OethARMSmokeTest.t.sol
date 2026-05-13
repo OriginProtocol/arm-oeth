@@ -116,8 +116,8 @@ contract Fork_OriginARM_Smoke_Test is AbstractSmokeTest {
         vm.startPrank(address(originARM));
         oeth.transfer(address(this), oeth.balanceOf(address(originARM)));
         vm.stopPrank();
-        //vm.prank(Mainnet.TIMELOCK);
-        //originARM.setCrossPrice(0.9995e36);
+        vm.prank(Mainnet.TIMELOCK);
+        originARM.setCrossPrice(address(oeth), 0.9999e36);
 
         // trader buys OETH and sells WETH, the ARM sells OETH at a
         // 0.5 bps discount
@@ -177,8 +177,8 @@ contract Fork_OriginARM_Smoke_Test is AbstractSmokeTest {
         vm.startPrank(address(originARM));
         oeth.transfer(address(this), oeth.balanceOf(address(originARM)));
         vm.stopPrank();
-        //vm.prank(Mainnet.TIMELOCK);
-        //originARM.setCrossPrice(0.9999e36);
+        vm.prank(Mainnet.TIMELOCK);
+        originARM.setCrossPrice(address(oeth), 0.9999e36);
 
         // trader buys OETH and sells WETH, the ARM sells OETH at a
         // 0.5 bps discount
@@ -223,38 +223,38 @@ contract Fork_OriginARM_Smoke_Test is AbstractSmokeTest {
     }
 
     function test_wrongInTokenExactIn() external {
-        vm.expectRevert("ARM: Invalid in token");
+        vm.expectRevert("ARM: Invalid swap assets");
         originARM.swapExactTokensForTokens(BAD_TOKEN, oeth, 10 ether, 0, address(this));
-        vm.expectRevert("ARM: Invalid in token");
+        vm.expectRevert("ARM: Invalid swap assets");
         originARM.swapExactTokensForTokens(BAD_TOKEN, weth, 10 ether, 0, address(this));
     }
 
     function test_wrongOutTokenExactIn() external {
-        vm.expectRevert("ARM: Invalid out token");
+        vm.expectRevert("ARM: Invalid swap assets");
         originARM.swapTokensForExactTokens(weth, BAD_TOKEN, 10 ether, 10 ether, address(this));
-        vm.expectRevert("ARM: Invalid out token");
+        vm.expectRevert("ARM: Invalid swap assets");
         originARM.swapTokensForExactTokens(oeth, BAD_TOKEN, 10 ether, 10 ether, address(this));
-        vm.expectRevert("ARM: Invalid out token");
+        vm.expectRevert("ARM: Invalid swap assets");
         originARM.swapTokensForExactTokens(weth, weth, 10 ether, 10 ether, address(this));
-        vm.expectRevert("ARM: Invalid out token");
+        vm.expectRevert("ARM: Invalid swap assets");
         originARM.swapTokensForExactTokens(oeth, oeth, 10 ether, 10 ether, address(this));
     }
 
     function test_wrongInTokenExactOut() external {
-        vm.expectRevert("ARM: Invalid in token");
+        vm.expectRevert("ARM: Invalid swap assets");
         originARM.swapTokensForExactTokens(BAD_TOKEN, oeth, 10 ether, 10 ether, address(this));
-        vm.expectRevert("ARM: Invalid in token");
+        vm.expectRevert("ARM: Invalid swap assets");
         originARM.swapTokensForExactTokens(BAD_TOKEN, weth, 10 ether, 10 ether, address(this));
     }
 
     function test_wrongOutTokenExactOut() external {
-        vm.expectRevert("ARM: Invalid out token");
+        vm.expectRevert("ARM: Invalid swap assets");
         originARM.swapTokensForExactTokens(weth, BAD_TOKEN, 10 ether, 10 ether, address(this));
-        vm.expectRevert("ARM: Invalid out token");
+        vm.expectRevert("ARM: Invalid swap assets");
         originARM.swapTokensForExactTokens(oeth, BAD_TOKEN, 10 ether, 10 ether, address(this));
-        vm.expectRevert("ARM: Invalid out token");
+        vm.expectRevert("ARM: Invalid swap assets");
         originARM.swapTokensForExactTokens(weth, weth, 10 ether, 10 ether, address(this));
-        vm.expectRevert("ARM: Invalid out token");
+        vm.expectRevert("ARM: Invalid swap assets");
         originARM.swapTokensForExactTokens(oeth, oeth, 10 ether, 10 ether, address(this));
     }
 
@@ -332,6 +332,7 @@ contract Fork_OriginARM_Smoke_Test is AbstractSmokeTest {
         uint256[] memory requestIds = new uint256[](1);
         requestIds[0] = requestId;
 
+        vm.prank(Mainnet.ARM_RELAYER);
         (,, uint256 amountClaimed) = originARM.claimRedeem(address(oeth), 10 ether);
         assertEq(amountClaimed, 10 ether);
     }
