@@ -1218,12 +1218,6 @@ task("requestEthenaWithdrawals").setAction(async (_, __, runSuper) => {
 
 subtask("claimEthenaWithdrawals", "Claim requested withdrawals from Ethena")
   .addOptionalParam(
-    "unstaker",
-    "Unstaker to use. (default: all)",
-    undefined,
-    types.string,
-  )
-  .addOptionalParam(
     "base",
     "Base asset symbol to claim. eg SUSDE",
     undefined,

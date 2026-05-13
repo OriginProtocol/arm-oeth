@@ -118,27 +118,36 @@ const ethenaWithdrawStatus = async (options) => {
 
   // Filter and Log
   const active = allStates.filter((s) => s.hasBalance);
+  const claimable = selectClaimableFifoPrefix(active);
+  const claimableSet = new Set(claimable.map((s) => s.address));
+  const firstBlocked = active.find((s) => !s.isReady);
 
   log(`Found ${active.length} active unstakers:`);
   active.forEach((u) => {
-    log(` - ${u.address}: ${u.amount} sUSDe\t| Status: ${u.timeLeft}`);
+    const fifoStatus = claimableSet.has(u.address)
+      ? "claimable"
+      : u.isReady && firstBlocked
+        ? "ready but FIFO-blocked"
+        : u.timeLeft;
+    log(
+      ` - index ${u.index}, ${u.address}: ${formatUnits(
+        u.shares,
+      )} shares, ${formatUnits(u.expectedAssets)} expected USDe, ${u.amount} cooldown USDe\t| Status: ${fifoStatus}`,
+    );
   });
 
   return active;
 };
 
 const claimEthenaWithdrawals = async (options) => {
-  const { arm, signer, unstaker } = options;
+  const { arm, signer } = options;
   const { baseAddress, config } = await resolveArmBase(options);
   const adapter = await adapterContract(config.adapter, signer);
-
-  // Determine target list: single unstaker OR all pending adapter requests
-  const targets = unstaker ? [unstaker] : undefined;
 
   log(`Checking Ethena adapter withdrawal status...`);
 
   // 1. Fetch all data in parallel first (Fast)
-  const states = await fetchUnstakerStates(signer, adapter, targets);
+  const states = await fetchUnstakerStates(signer, adapter);
 
   // 2. Log status for everyone
   states.forEach((s) => {
@@ -150,16 +159,9 @@ const claimEthenaWithdrawals = async (options) => {
   });
 
   // 3. Filter who is ready to claim. Adapter claims are FIFO, so only
-  // claim a contiguous ready prefix when no specific unstaker is requested.
+  // claim a contiguous ready prefix.
   const activeStates = states.filter((s) => s.hasBalance && s.shares > 0n);
-  const claimable = unstaker
-    ? activeStates.filter((s) => s.isReady)
-    : activeStates.slice(
-        0,
-        activeStates.findIndex((s) => !s.isReady) === -1
-          ? activeStates.length
-          : activeStates.findIndex((s) => !s.isReady),
-      );
+  const claimable = selectClaimableFifoPrefix(activeStates);
 
   // 4. Execute Claims
   if (claimable.length > 0) {
@@ -180,6 +182,12 @@ const claimEthenaWithdrawals = async (options) => {
   }
 };
 
+const selectClaimableFifoPrefix = (states) => {
+  const firstUnreadyIndex = states.findIndex((s) => !s.isReady);
+  if (firstUnreadyIndex === -1) return states;
+  return states.slice(0, firstUnreadyIndex);
+};
+
 // --- UTILS ---
 function getTimeDifference(date1, date2) {
   const diff = Math.abs(new Date(date2) - new Date(date1));
@@ -194,4 +202,5 @@ module.exports = {
   requestEthenaWithdrawals,
   claimEthenaWithdrawals,
   ethenaWithdrawStatus,
+  selectClaimableFifoPrefix,
 };
