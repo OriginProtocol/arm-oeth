@@ -6,16 +6,16 @@
 !$changedColor = Orange
 !$thirdPartyColor = WhiteSmoke
 
-legend
-blue - Origin
-green - new
-orange - changed
-white - 3rd Party
-end legend
+' legend
+' blue - Origin
+' green - new
+' orange - changed
+' white - 3rd Party
+' end legend
 
 title "Ethena\nAutomated Redemption Manager (ARM)\nContract Dependencies"
 
-object "EthenaARM" as arm <<Origin>><<Proxy>> #$changedColor {
+object "EthenaARM" as arm <<Origin>><<Proxy>> #$originColor {
     shares: ARM-sUSDe-USDe
     liquidity asset: USDe
     base asset: sUSDe
@@ -24,7 +24,7 @@ object "EthenaARM" as arm <<Origin>><<Proxy>> #$changedColor {
 object "CapManager" as capMan <<Origin>><<Proxy>> #$originColor {
 }
 
-object "EthenaAssetAdapter" as adapter <<Origin>> #$newColor {
+object "EthenaAssetAdapter" as adapter <<Origin>><<Proxy>> #$originColor {
     base asset: sUSDe
     asset: USDe
 }

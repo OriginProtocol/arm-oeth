@@ -6,12 +6,12 @@
 !$changedColor = Orange
 !$thirdPartyColor = WhiteSmoke
 
-legend
-blue - Origin
-green - new
-orange - changed
-white - 3rd Party
-end legend
+' legend
+' blue - Origin
+' green - new
+' orange - changed
+' white - 3rd Party
+' end legend
 
 title "Lido (stETH)\nAutomated Redemption Manager (ARM)\nContract Dependencies"
 
@@ -19,18 +19,18 @@ title "Lido (stETH)\nAutomated Redemption Manager (ARM)\nContract Dependencies"
 object "ZapperLidoARM" as zap <<Origin>> #$originColor {
 }
 
-object "LidoARM" as arm <<Origin>><<Proxy>> #$changedColor {
+object "LidoARM" as arm <<Origin>><<Proxy>> #$originColor {
     shares: ARM-stETH-WETH
     liquidity asset: WETH
     base assets: stETH, wstETH
 }
 
-object "StETHAssetAdapter" as stethAdapter <<Origin>> #$newColor {
+object "StETHAssetAdapter" as stethAdapter <<Origin>><<Proxy>> #$originColor {
     base asset: stETH
     pegged: true
 }
 
-object "WstETHAssetAdapter" as wstethAdapter <<Origin>> #$newColor {
+object "WstETHAssetAdapter" as wstethAdapter <<Origin>><<Proxy>> #$originColor {
     base asset: wstETH
     wrapped asset: stETH
 }

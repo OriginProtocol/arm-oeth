@@ -6,12 +6,12 @@
 !$changedColor = Orange
 !$thirdPartyColor = WhiteSmoke
 
-legend
-blue - Origin
-green - new
-orange - changed
-white - 3rd Party
-end legend
+' legend
+' blue - Origin
+' green - new
+' orange - changed
+' white - 3rd Party
+' end legend
 
 title "Origin Ether (OETH)\nAutomated Redemption Manager (ARM)\nContract Dependencies"
 
@@ -19,18 +19,18 @@ title "Origin Ether (OETH)\nAutomated Redemption Manager (ARM)\nContract Depende
 object "ZapperARM" as zap <<Origin>> #$originColor {
 }
 
-object "OriginARM" as arm <<Origin>><<Proxy>> #$changedColor {
+object "OriginARM" as arm <<Origin>><<Proxy>> #$originColor {
     shares: ARM-oETH-WETH
     liquidity asset: WETH
     base assets: OETH, wOETH
 }
 
-object "OriginAssetAdapter" as oethAdapter <<Origin>> #$newColor {
+object "OriginAssetAdapter" as oethAdapter <<Origin>><<Proxy>> #$originColor {
     base asset: OETH
     pegged: true
 }
 
-object "WrappedOriginAssetAdapter" as woethAdapter <<Origin>> #$newColor {
+object "WrappedOriginAssetAdapter" as woethAdapter <<Origin>><<Proxy>> #$originColor {
     base asset: wOETH
     wrapped asset: OETH
 }
