@@ -6,12 +6,12 @@
 !$changedColor = Orange
 !$thirdPartyColor = WhiteSmoke
 
-' legend
-' blue - Origin
-' ' green - new
-' ' orange - changed
-' white - 3rd Party
-' end legend
+legend
+blue - Origin
+green - new
+orange - changed
+white - 3rd Party
+end legend
 
 title "Lido (stETH)\nAutomated Redemption Manager (ARM)\nContract Dependencies"
 
@@ -19,9 +19,24 @@ title "Lido (stETH)\nAutomated Redemption Manager (ARM)\nContract Dependencies"
 object "ZapperLidoARM" as zap <<Origin>> #$originColor {
 }
 
-object "LidoARM" as arm <<Origin>><<Proxy>> #$originColor {
+object "LidoARM" as arm <<Origin>><<Proxy>> #$changedColor {
     shares: ARM-stETH-WETH
-    assets: stETH, WETH
+    liquidity asset: WETH
+    base assets: stETH, wstETH
+}
+
+object "StETHAssetAdapter" as stethAdapter <<Origin>> #$newColor {
+    base asset: stETH
+    pegged: true
+}
+
+object "WstETHAssetAdapter" as wstethAdapter <<Origin>> #$newColor {
+    base asset: wstETH
+    wrapped asset: stETH
+}
+
+object "wstETH" as wsteth <<Lido>> #$thirdPartyColor {
+    asset: stETH
 }
 
 object "CapManager" as capMan <<Origin>><<Proxy>> #$originColor {
@@ -41,7 +56,11 @@ object "Yearn WETH ARM Vault" as morpho <<Morpho>> #$thirdPartyColor {
 
 zap <..> arm
 arm <.> capMan
-arm ..> lidoQ
+arm ..> stethAdapter
+arm ..> wstethAdapter
+stethAdapter ..> lidoQ
+wstethAdapter ..> wsteth
+wstethAdapter ..> lidoQ
 arm ..> morphoMarket
 morphoMarket ..> morpho
 

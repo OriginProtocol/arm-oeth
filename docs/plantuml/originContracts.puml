@@ -6,12 +6,12 @@
 !$changedColor = Orange
 !$thirdPartyColor = WhiteSmoke
 
-' legend
-' blue - Origin
-' ' green - new
-' ' orange - changed
-' white - 3rd Party
-' end legend
+legend
+blue - Origin
+green - new
+orange - changed
+white - 3rd Party
+end legend
 
 title "Origin Ether (OETH)\nAutomated Redemption Manager (ARM)\nContract Dependencies"
 
@@ -19,9 +19,24 @@ title "Origin Ether (OETH)\nAutomated Redemption Manager (ARM)\nContract Depende
 object "ZapperARM" as zap <<Origin>> #$originColor {
 }
 
-object "OriginARM" as arm <<Origin>><<Proxy>> #$originColor {
+object "OriginARM" as arm <<Origin>><<Proxy>> #$changedColor {
     shares: ARM-oETH-WETH
-    assets: oETH, WETH
+    liquidity asset: WETH
+    base assets: OETH, wOETH
+}
+
+object "OriginAssetAdapter" as oethAdapter <<Origin>> #$newColor {
+    base asset: OETH
+    pegged: true
+}
+
+object "WrappedOriginAssetAdapter" as woethAdapter <<Origin>> #$newColor {
+    base asset: wOETH
+    wrapped asset: OETH
+}
+
+object "wOETH" as woeth <<Origin>><<ERC4626>> #$thirdPartyColor {
+    asset: OETH
 }
 
 object "OETHVault" as oethVault <<Origin>><<Proxy>> #$thirdPartyColor {
@@ -37,7 +52,11 @@ object "Yearn WETH ARM Vault" as morpho <<Morpho>> #$thirdPartyColor {
 }
 
 zap ..> arm
-arm ..> oethVault
+arm ..> oethAdapter
+arm ..> woethAdapter
+oethAdapter ..> oethVault
+woethAdapter ..> woeth
+woethAdapter ..> oethVault
 arm ..> morphoMarket
 morphoMarket ..> morpho
 
