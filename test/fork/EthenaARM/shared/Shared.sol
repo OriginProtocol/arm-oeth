@@ -8,6 +8,7 @@ import {Base_Test_} from "test/Base.sol";
 import {Proxy} from "contracts/Proxy.sol";
 import {EthenaARM} from "contracts/EthenaARM.sol";
 import {EthenaUnstaker} from "contracts/EthenaUnstaker.sol";
+import {EthenaAssetAdapter} from "contracts/adapters/EthenaAssetAdapter.sol";
 
 // Interfaces
 import {Mainnet} from "src/contracts/utils/Addresses.sol";
@@ -101,6 +102,24 @@ abstract contract Fork_Shared_Test is Base_Test_ {
 
         // Assign Ethena ARM instance
         ethenaARM = EthenaARM(address(ethenaProxy));
+
+        ethenaAssetAdapter = new EthenaAssetAdapter(governor, address(ethenaARM), address(usde), address(susde));
+    }
+
+    function _buyPrice() internal view returns (uint256 buyPrice) {
+        (uint128 buyPriceMem,,,,,,,) = ethenaARM.baseAssetConfigs(address(susde));
+        buyPrice = buyPriceMem;
+    }
+
+    function _sellPrice() internal view returns (uint256 sellPrice) {
+        (, uint128 sellPriceMem,,,,,,) = ethenaARM.baseAssetConfigs(address(susde));
+        sellPrice = sellPriceMem;
+    }
+
+    function _swapFeeMultiplier(uint256 buyPrice, uint256 fee) internal view returns (uint256) {
+        uint256 priceScale = ethenaARM.PRICE_SCALE();
+        if (buyPrice == 0 || fee == 0) return 0;
+        return (priceScale - buyPrice) * fee * priceScale / (buyPrice * ethenaARM.FEE_SCALE());
     }
 
     function _ignite() internal virtual {
@@ -115,17 +134,27 @@ abstract contract Fork_Shared_Test is Base_Test_ {
         // Deposit some usde in the ARM
         ethenaARM.deposit(10_000 ether);
 
+        vm.startPrank(ethenaARM.owner());
+        ethenaARM.addBaseAsset(
+            address(susde),
+            address(ethenaAssetAdapter),
+            0.9992e36,
+            0.9999e36,
+            type(uint128).max,
+            type(uint128).max,
+            0.9998e36,
+            false
+        );
+        ethenaAssetAdapter.setUnstakers(_deployUnstakers());
+        vm.stopPrank();
+
         // Swap usde to susde using ARM to have some susde balance
         ethenaARM.swapExactTokensForTokens(IERC20(address(susde)), usde, 5_000 ether, 0, address(this));
-
-        vm.startPrank(ethenaARM.owner());
-        ethenaARM.setUnstakers(_deployUnstakers());
-        vm.stopPrank();
     }
 
     function _deployUnstakers() internal returns (address[MAX_UNSTAKERS] memory unstakers) {
         for (uint256 i; i < MAX_UNSTAKERS; i++) {
-            address unstaker = address(new EthenaUnstaker(payable(ethenaProxy), IStakedUSDe(Mainnet.SUSDE)));
+            address unstaker = address(new EthenaUnstaker(address(ethenaAssetAdapter), IStakedUSDe(Mainnet.SUSDE)));
             unstakers[i] = address(unstaker);
         }
     }

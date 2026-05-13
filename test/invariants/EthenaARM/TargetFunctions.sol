@@ -66,6 +66,21 @@ abstract contract TargetFunctions is Setup, StdUtils {
     // ╔══════════════════════════════════════════════════════════════════════════════╗
     // ║                              ✦✦✦ ETHENA ARM ✦✦✦                              ║
     // ╚══════════════════════════════════════════════════════════════════════════════╝
+    function _buyPrice() internal view returns (uint256 buyPrice) {
+        (uint128 buyPriceMem,,,,,,,) = arm.baseAssetConfigs(address(susde));
+        buyPrice = buyPriceMem;
+    }
+
+    function _sellPrice() internal view returns (uint256 sellPrice) {
+        (, uint128 sellPriceMem,,,,,,) = arm.baseAssetConfigs(address(susde));
+        sellPrice = sellPriceMem;
+    }
+
+    function _crossPrice() internal view returns (uint256 crossPrice) {
+        (,,,, uint128 crossPriceMem,,,) = arm.baseAssetConfigs(address(susde));
+        crossPrice = crossPriceMem;
+    }
+
     function targetARMDeposit(uint88 amount, uint256 randomAddressIndex) external ensureExchangeRateIncrease {
         vm.assume(arm.totalAssets() > 1e12 || arm.withdrawsQueued() == arm.withdrawsClaimed());
         // Select a random user from makers
@@ -282,21 +297,21 @@ abstract contract TargetFunctions is Setup, StdUtils {
     }
 
     function targetARMSetPrices(uint256 buyPrice, uint256 sellPrice) external ensureExchangeRateIncrease {
-        uint256 crossPrice = arm.crossPrice();
+        uint256 crossPrice = _crossPrice();
         // Bound sellPrice
         sellPrice = uint120(_bound(sellPrice, crossPrice, (1e37 - 1) / 9)); // -> min traderate0 -> 0.9e36
         // Bound buyPrice
         buyPrice = uint120(_bound(buyPrice, 0.9e36, crossPrice - 1)); // -> min traderate1 -> 0.9e36
 
         vm.prank(operator);
-        arm.setPrices(buyPrice, sellPrice, type(uint256).max, type(uint256).max);
+        arm.setPrices(address(susde), buyPrice, sellPrice, type(uint128).max, type(uint128).max);
 
         if (isConsoleAvailable) {
             console.log(
                 ">>> ARM SetPrices:\t Governor set buy price to %36e\t sell price to %36e\t cross price to %36e",
                 buyPrice,
                 1e72 / sellPrice,
-                arm.crossPrice()
+                _crossPrice()
             );
         }
     }
@@ -304,15 +319,15 @@ abstract contract TargetFunctions is Setup, StdUtils {
     function targetARMSetCrossPrice(uint256 crossPrice) external ensureExchangeRateIncrease {
         uint256 maxCrossPrice = 1e36;
         uint256 minCrossPrice = 1e36 - 20e32;
-        uint256 sellT1 = 1e72 / (arm.traderate0());
-        uint256 buyT1 = arm.traderate1() + 1;
+        uint256 sellT1 = _sellPrice();
+        uint256 buyT1 = _buyPrice() + 1;
         minCrossPrice = Math.max(minCrossPrice, buyT1);
         maxCrossPrice = Math.min(maxCrossPrice, sellT1);
         if (assume(maxCrossPrice >= minCrossPrice)) return;
         crossPrice = _bound(crossPrice, minCrossPrice, maxCrossPrice);
 
         uint256 susdeBalance = susde.balanceOf(address(arm));
-        if (arm.crossPrice() > crossPrice && susdeBalance > 0) {
+        if (_crossPrice() > crossPrice && susdeBalance > 0) {
             // If there is more than 100 susde in ARM, do nothing
             if (assume(susdeBalance < 1e20)) return;
 
@@ -344,7 +359,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         }
 
         vm.prank(governor);
-        arm.setCrossPrice(crossPrice);
+        arm.setCrossPrice(address(susde), crossPrice);
 
         if (isConsoleAvailable) {
             console.log(">>> ARM SetCPrice:\t Governor set cross price to %36e", crossPrice);
@@ -373,8 +388,8 @@ abstract contract TargetFunctions is Setup, StdUtils {
 
         // What's the maximum amountIn we can provide to not exceed maxAmountOut?
         uint256 maxAmountIn = token0ForToken1
-            ? (maxAmountOut * 1e36 / arm.traderate0()) * susde.totalAssets() / susde.totalSupply()
-            : (maxAmountOut * 1e36 / arm.traderate1()) * susde.totalSupply() / susde.totalAssets();
+            ? (maxAmountOut * _sellPrice() / 1e36) * susde.totalAssets() / susde.totalSupply()
+            : (maxAmountOut * 1e36 / _buyPrice()) * susde.totalSupply() / susde.totalAssets();
         if (assume(maxAmountIn > 0)) return;
 
         // Bound amountIn
@@ -454,8 +469,9 @@ abstract contract TargetFunctions is Setup, StdUtils {
         } else {
             convertedAmountOut = (amountOut * susde.totalSupply()) / susde.totalAssets();
         }
-        uint256 price = token0ForToken1 ? arm.traderate0() : arm.traderate1();
-        uint256 amountIn = ((uint256(convertedAmountOut) * 1e36) / price) + 3 + 10; // slippage + rounding buffer
+        uint256 amountIn = token0ForToken1
+            ? (uint256(convertedAmountOut) * _sellPrice() / 1e36) + 3 + 10
+            : ((uint256(convertedAmountOut) * 1e36) / _buyPrice()) + 3 + 10; // slippage + rounding buffer
 
         // Select a random user from makers
         address user = traders[randomAddressIndex % TRADERS_COUNT];
@@ -546,16 +562,16 @@ abstract contract TargetFunctions is Setup, StdUtils {
         amount = uint88(_bound(amount, 1, balance));
 
         // Ensure there is an unstaker available
-        uint256 nextIndex = arm.nextUnstakerIndex();
-        address unstaker = arm.unstakers(nextIndex);
+        uint256 nextIndex = ethenaAssetAdapter.nextUnstakerIndex();
+        address unstaker = ethenaAssetAdapter.unstakers(nextIndex);
         UserCooldown memory cooldown = susde.cooldowns(unstaker);
         // If next unstaker has an active cooldown, this means all unstakers are in cooldown
         // -> no unstaker available
         if (assume(cooldown.underlyingAmount == 0)) return;
 
         // Ensure time delay has passed
-        uint32 lastRequestTimestamp = arm.lastRequestTimestamp();
-        uint256 requestDelay = arm.DELAY_REQUEST();
+        uint32 lastRequestTimestamp = ethenaAssetAdapter.lastRequestTimestamp();
+        uint256 requestDelay = ethenaAssetAdapter.DELAY_REQUEST();
         if (block.timestamp < lastRequestTimestamp + requestDelay) {
             if (isConsoleAvailable) {
                 console.log(
@@ -576,7 +592,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         }
 
         vm.prank(operator);
-        arm.requestBaseWithdrawal(amount);
+        arm.requestRedeem(address(susde), amount);
 
         unstakerIndices.push(nextIndex);
 
@@ -599,7 +615,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         if (assume(unstakerIndices.length != 0)) return;
         // Select a random unstaker index from used unstakers
         uint256 selectedIndex = unstakerIndices[randomAddressIndex % unstakerIndices.length];
-        address unstaker = arm.unstakers(uint8(selectedIndex));
+        address unstaker = ethenaAssetAdapter.unstakers(uint8(selectedIndex));
         UserCooldown memory cooldown = susde.cooldowns(address(unstaker));
         uint256 endTimestamp = cooldown.cooldownEnd;
 
@@ -624,7 +640,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         }
 
         vm.prank(operator);
-        arm.claimBaseWithdrawals(uint8(selectedIndex));
+        arm.claimRedeem(address(susde), ethenaAssetAdapter.requestShares(unstaker));
 
         // Remove selectedIndex from unstakerIndices, without preserving order
         unstakerIndices[randomAddressIndex % unstakerIndices.length] = unstakerIndices[unstakerIndices.length - 1];
@@ -854,22 +870,24 @@ abstract contract TargetFunctions is Setup, StdUtils {
         // Fast forward time to allow claiming all previous base withdrawals
         vm.warp(block.timestamp + 7 days);
         for (uint256 i; i < unstakerIndices.length; i++) {
-            arm.claimBaseWithdrawals(uint8(unstakerIndices[i]));
+            address unstaker = ethenaAssetAdapter.unstakers(uint8(unstakerIndices[i]));
+            arm.claimRedeem(address(susde), ethenaAssetAdapter.requestShares(unstaker));
         }
 
         // 2. Request base withdrawal of the remaining sUSDe
         uint256 susdeBalance = susde.balanceOf(address(arm));
-        uint256 nextIndex = arm.nextUnstakerIndex();
+        uint256 nextIndex = ethenaAssetAdapter.nextUnstakerIndex();
         if (susdeBalance > 0) {
             vm.prank(operator);
-            arm.requestBaseWithdrawal(susdeBalance);
+            arm.requestRedeem(address(susde), susdeBalance);
         }
 
         // 3. Claim previous base withdrawals. At this point we shouldn't have any sUSDe left in the ARM.
         if (susdeBalance > 0) {
             // Fast forward time to allow claiming the last base withdrawal
             vm.warp(block.timestamp + 7 days);
-            arm.claimBaseWithdrawals(uint8(nextIndex));
+            address unstaker = ethenaAssetAdapter.unstakers(uint8(nextIndex));
+            arm.claimRedeem(address(susde), ethenaAssetAdapter.requestShares(unstaker));
         }
         require(susde.balanceOf(address(arm)) == 0, "ARM still has sUSDe balance");
 

@@ -103,7 +103,7 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
             expectedOut = amountIn * 1e36 / price;
 
             vm.prank(Mainnet.ARM_RELAYER);
-            lidoARM.setPrices(address(steth), price - 2e32, price, type(uint256).max, type(uint256).max);
+            lidoARM.setPrices(address(steth), price - 2e32, price, type(uint128).max, type(uint128).max);
         } else {
             // Trader is selling stETH and buying WETH
             // the ARM is buying stETH and selling WETH
@@ -114,7 +114,7 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
 
             vm.prank(Mainnet.ARM_RELAYER);
             uint256 sellPrice = price < 0.9997e36 ? 0.99996e36 : price + 2e32;
-            lidoARM.setPrices(address(steth), price, sellPrice, type(uint256).max, type(uint256).max);
+            lidoARM.setPrices(address(steth), price, sellPrice, type(uint128).max, type(uint128).max);
         }
         // Approve the ARM to transfer the input token of the swap.
         inToken.approve(address(lidoARM), amountIn);
@@ -139,7 +139,7 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
             expectedIn = amountOut * price / 1e36;
 
             vm.prank(Mainnet.ARM_RELAYER);
-            lidoARM.setPrices(address(steth), price - 2e32, price, type(uint256).max, type(uint256).max);
+            lidoARM.setPrices(address(steth), price - 2e32, price, type(uint128).max, type(uint128).max);
         } else {
             // Trader is selling stETH and buying WETH
             // the ARM is buying stETH and selling WETH
@@ -151,7 +151,7 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
 
             vm.prank(Mainnet.ARM_RELAYER);
             uint256 sellPrice = price < 0.9997e36 ? 0.99996e36 : price + 2e32;
-            lidoARM.setPrices(address(steth), price, sellPrice, type(uint256).max, type(uint256).max);
+            lidoARM.setPrices(address(steth), price, sellPrice, type(uint128).max, type(uint128).max);
         }
         // Approve the ARM to transfer the input token of the swap.
         inToken.approve(address(lidoARM), expectedIn + 10000);

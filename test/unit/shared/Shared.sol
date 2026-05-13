@@ -8,6 +8,7 @@ import {Modifiers} from "test/unit/shared/Modifiers.sol";
 // Contracts
 import {Proxy} from "contracts/Proxy.sol";
 import {OriginARM} from "contracts/OriginARM.sol";
+import {OriginAssetAdapter} from "contracts/adapters/OriginAssetAdapter.sol";
 import {CapManager} from "contracts/CapManager.sol";
 import {SiloMarket} from "contracts/markets/SiloMarket.sol";
 import {Abstract4626MarketWrapper} from "contracts/markets/Abstract4626MarketWrapper.sol";
@@ -107,11 +108,52 @@ abstract contract Unit_Shared_Test is Base_Test_, Modifiers {
 
         // --- Set the proxy as the OriginARM
         originARM = OriginARM(address(originARMProxy));
+        originAssetAdapter = new OriginAssetAdapter(address(originARM), address(oeth), address(weth), address(vault));
         capManager = CapManager(address(capManagerProxy));
         siloMarket = SiloMarket(address(siloMarketProxy));
 
-        // set prices
+        // Register OETH as the base asset.
         vm.prank(governor);
-        originARM.setPrices(992 * 1e33, 1001 * 1e33, type(uint256).max, type(uint256).max);
+        originARM.addBaseAsset(
+            address(oeth),
+            address(originAssetAdapter),
+            992 * 1e33,
+            1001 * 1e33,
+            type(uint128).max,
+            type(uint128).max,
+            1e36,
+            true
+        );
+    }
+
+    function _buyPrice() internal view returns (uint256 buyPrice) {
+        (uint128 buyPriceMem,,,,,,,) = originARM.baseAssetConfigs(address(oeth));
+        buyPrice = buyPriceMem;
+    }
+
+    function _sellPrice() internal view returns (uint256 sellPrice) {
+        (, uint128 sellPriceMem,,,,,,) = originARM.baseAssetConfigs(address(oeth));
+        sellPrice = sellPriceMem;
+    }
+
+    function _buyLiquidityRemaining() internal view returns (uint256 remaining) {
+        (,, uint128 _remaining,,,,,) = originARM.baseAssetConfigs(address(oeth));
+        remaining = _remaining;
+    }
+
+    function _sellLiquidityRemaining() internal view returns (uint256 remaining) {
+        (,,, uint128 _remaining,,,,) = originARM.baseAssetConfigs(address(oeth));
+        remaining = _remaining;
+    }
+
+    function _crossPrice() internal view returns (uint256 crossPrice) {
+        (,,,, uint128 crossPriceMem,,,) = originARM.baseAssetConfigs(address(oeth));
+        crossPrice = crossPriceMem;
+    }
+
+    function _swapFeeMultiplier(uint256 buyPrice, uint256 fee) internal view returns (uint256) {
+        uint256 priceScale = originARM.PRICE_SCALE();
+        if (buyPrice == 0 || fee == 0) return 0;
+        return (priceScale - buyPrice) * fee * priceScale / (buyPrice * originARM.FEE_SCALE());
     }
 }

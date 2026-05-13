@@ -22,7 +22,7 @@ contract Fork_Concrete_EthenaARM_swapExactTokensForTokens_Test_ is Fork_Shared_T
         uint256 susdeBalanceBefore = susde.balanceOf(address(this));
 
         // Precompute expected amount out
-        uint256 traderate = ethenaARM.traderate0();
+        uint256 traderate = _sellPrice();
         uint256 expectedAmountOut = (susde.convertToShares(AMOUNT_IN) * 1e36) / traderate;
 
         // Expected events
@@ -52,7 +52,7 @@ contract Fork_Concrete_EthenaARM_swapExactTokensForTokens_Test_ is Fork_Shared_T
         uint256 susdeBalanceBefore = susde.balanceOf(address(this));
 
         // Precompute expected amount out
-        uint256 traderate = ethenaARM.traderate0();
+        uint256 traderate = _sellPrice();
         uint256 expectedAmountOut = (susde.convertToShares(AMOUNT_IN) * 1e36) / traderate;
 
         // Expected events
@@ -87,9 +87,10 @@ contract Fork_Concrete_EthenaARM_swapExactTokensForTokens_Test_ is Fork_Shared_T
         uint256 feesAccruedBefore = ethenaARM.feesAccrued();
 
         // Precompute expected amount out
-        uint256 traderate = ethenaARM.traderate1();
+        uint256 traderate = _buyPrice();
         uint256 expectedAmountOut = (susde.convertToAssets(AMOUNT_IN) * traderate) / 1e36;
-        uint256 expectedFee = expectedAmountOut * ethenaARM.swapFeeMultiplier() / ethenaARM.PRICE_SCALE();
+        uint256 expectedFee =
+            expectedAmountOut * _swapFeeMultiplier(_buyPrice(), ethenaARM.fee()) / ethenaARM.PRICE_SCALE();
 
         // Expected events
         vm.expectEmit({emitter: address(susde)});
@@ -119,7 +120,7 @@ contract Fork_Concrete_EthenaARM_swapExactTokensForTokens_Test_ is Fork_Shared_T
         ethenaARM.requestRedeem(AMOUNT_IN);
 
         // Precompute expected amount out
-        uint256 traderate = ethenaARM.traderate1();
+        uint256 traderate = _buyPrice();
         uint256 expectedAmountOut = (susde.convertToAssets(AMOUNT_IN) * traderate) / 1e36;
 
         // Perform the swap

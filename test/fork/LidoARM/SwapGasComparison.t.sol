@@ -135,6 +135,6 @@ contract Fork_Concrete_LidoARM_SwapGasUpgraded_Test is Fork_LidoARM_SwapGasCompa
         uint256 sellT1 = PRICE_SCALE * PRICE_SCALE / traderate0;
 
         vm.prank(lidoProxy.owner());
-        lidoARM.setPrices(address(steth), traderate1, sellT1, type(uint256).max, type(uint256).max);
+        lidoARM.setPrices(address(steth), traderate1, sellT1, type(uint128).max, type(uint128).max);
     }
 }

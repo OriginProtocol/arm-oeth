@@ -109,15 +109,15 @@ contract $003_UpgradeLidoARMMainnetScript is AbstractDeployScript("003_UpgradeLi
         LidoARM lidoARM_ = LidoARM(payable(Mainnet.LIDO_ARM));
 
         lidoARM_.addBaseAsset(
-            Mainnet.STETH, stethAdapter_, 0.99975e36, 0.9999e36, type(uint256).max, type(uint256).max, 0.9998e36, true
+            Mainnet.STETH, stethAdapter_, 0.99975e36, 0.9999e36, type(uint128).max, type(uint128).max, 0.9998e36, true
         );
         lidoARM_.addBaseAsset(
             Mainnet.WSTETH,
             wstethAdapter_,
             0.99975e36,
             0.9999e36,
-            type(uint256).max,
-            type(uint256).max,
+            type(uint128).max,
+            type(uint128).max,
             0.9998e36,
             false
         );

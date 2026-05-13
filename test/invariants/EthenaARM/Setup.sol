@@ -9,6 +9,7 @@ import {Proxy} from "contracts/Proxy.sol";
 import {EthenaARM} from "contracts/EthenaARM.sol";
 import {MorphoMarket} from "src/contracts/markets/MorphoMarket.sol";
 import {EthenaUnstaker} from "contracts/EthenaUnstaker.sol";
+import {EthenaAssetAdapter} from "contracts/adapters/EthenaAssetAdapter.sol";
 import {Abstract4626MarketWrapper} from "contracts/markets/Abstract4626MarketWrapper.sol";
 
 // Mocks
@@ -126,16 +127,27 @@ abstract contract Setup is Base_Test_ {
 
         // Cast proxy address to EthenaARM type for easier interaction.
         arm = EthenaARM(address(armProxy));
+        ethenaAssetAdapter = new EthenaAssetAdapter(deployer, address(arm), address(usde), address(susde));
+        arm.addBaseAsset(
+            address(susde),
+            address(ethenaAssetAdapter),
+            0.9992e36,
+            0.9999e36,
+            type(uint128).max,
+            type(uint128).max,
+            0.9998e36,
+            false
+        );
 
         // --- Ethena Unstakers ---
         // Deploy 42 Ethena Unstaker contracts
         address[UNSTAKERS_COUNT] memory _unstakers;
         for (uint256 i; i < UNSTAKERS_COUNT; i++) {
-            unstakers.push(new EthenaUnstaker(address(arm), susde));
+            unstakers.push(new EthenaUnstaker(address(ethenaAssetAdapter), susde));
             _unstakers[i] = address(unstakers[i]);
         }
-        // Set unstakers in the ARM
-        arm.setUnstakers(_unstakers);
+        // Set unstakers in the adapter
+        ethenaAssetAdapter.setUnstakers(_unstakers);
 
         // Transfer ownership of the ARM to the governor.
         arm.setOwner(governor);
@@ -249,11 +261,6 @@ abstract contract Setup is Base_Test_ {
         morpho.deposit(1_000_000 ether, dead);
         vm.stopPrank();
 
-        // Set initial prices in the ARM.
-        vm.prank(governor);
-        arm.setCrossPrice(0.9998e36);
-        vm.prank(operator);
-        arm.setPrices(0.9992e36, 0.9999e36, type(uint256).max, type(uint256).max);
         address[] memory markets = new address[](1);
         markets[0] = address(market);
         vm.prank(governor);

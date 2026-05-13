@@ -3,7 +3,7 @@ pragma solidity ^0.8.23;
 
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-import {AbstractMultiAssetARM} from "./AbstractMultiAssetARM.sol";
+import {AbstractARM} from "./AbstractARM.sol";
 
 /**
  * @title Lido (stETH) Automated Redemption Manager (ARM)
@@ -13,7 +13,7 @@ import {AbstractMultiAssetARM} from "./AbstractMultiAssetARM.sol";
  * A fee is accrued on discounted base-asset buy swaps.
  * @author Origin Protocol Inc
  */
-contract LidoARM is Initializable, AbstractMultiAssetARM {
+contract LidoARM is Initializable, AbstractARM {
     /// @param _steth The address of the stETH token
     /// @param _weth The address of the WETH token
     /// @param _lidoWithdrawalQueue The address of the Lido's withdrawal queue contract
@@ -28,7 +28,7 @@ contract LidoARM is Initializable, AbstractMultiAssetARM {
         uint256 _claimDelay,
         uint256 _minSharesToRedeem,
         int256 _allocateThreshold
-    ) AbstractMultiAssetARM(_weth, _claimDelay, _minSharesToRedeem, _allocateThreshold) {
+    ) AbstractARM(_weth, _claimDelay, _minSharesToRedeem, _allocateThreshold) {
         (_steth, _lidoWithdrawalQueue);
 
         _disableInitializers();
@@ -41,7 +41,7 @@ contract LidoARM is Initializable, AbstractMultiAssetARM {
     /// @param _operator The address of the account that can request and claim Lido withdrawals.
     /// @param _fee The fee accrued on discounted base-asset buy swaps measured in basis points (1/100th of a percent).
     /// 10,000 = 100% fee
-    /// 1,500 = 15% fee
+    /// 500 = 5% fee
     /// @param _feeCollector The account that can collect the accrued swap fee
     /// @param _capManager The address of the CapManager contract
     function initialize(

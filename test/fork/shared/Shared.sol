@@ -150,14 +150,14 @@ abstract contract Fork_Shared_Test_ is Modifiers {
         );
 
         lidoARM.addBaseAsset(
-            address(steth), stethAdapter, 992 * 1e33, 1001 * 1e33, type(uint256).max, type(uint256).max, 1e36, true
+            address(steth), stethAdapter, 992 * 1e33, 1001 * 1e33, type(uint128).max, type(uint128).max, 1e36, true
         );
         lidoARM.addBaseAsset(
-            address(wsteth), wstethAdapter, 992 * 1e33, 1001 * 1e33, type(uint256).max, type(uint256).max, 1e36, false
+            address(wsteth), wstethAdapter, 992 * 1e33, 1001 * 1e33, type(uint128).max, type(uint128).max, 1e36, false
         );
 
         // set prices
-        lidoARM.setPrices(address(steth), 992 * 1e33, 1001 * 1e33, type(uint256).max, type(uint256).max);
+        lidoARM.setPrices(address(steth), 992 * 1e33, 1001 * 1e33, type(uint128).max, type(uint128).max);
 
         // --- Deploy ZapperLidoARM ---
         zapperLidoARM = new ZapperLidoARM(address(weth), address(lidoProxy));

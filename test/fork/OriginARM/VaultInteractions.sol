@@ -7,7 +7,7 @@ import {Fork_Shared_Test} from "test/fork/OriginARM/shared/Shared.sol";
 contract Fork_Concrete_OriginARM_VaultInteractions_Test_ is Fork_Shared_Test {
     function test_RevertWhen_RequestingOriginWithdrawal_IfNotOperator() public asNotOperatorNorGovernor {
         vm.expectRevert("ARM: Only operator or owner can call this function.");
-        originARM.requestOriginWithdrawal(DEFAULT_AMOUNT);
+        originARM.requestRedeem(address(os), DEFAULT_AMOUNT);
     }
 
     function test_RequestOriginWithdrawal() public asGovernor {
@@ -18,7 +18,7 @@ contract Fork_Concrete_OriginARM_VaultInteractions_Test_ is Fork_Shared_Test {
         vm.expectEmit(address(originARM));
         emit OriginARM.RequestOriginWithdrawal(DEFAULT_AMOUNT, 1);
 
-        originARM.requestOriginWithdrawal(DEFAULT_AMOUNT);
+        originARM.requestRedeem(address(os), DEFAULT_AMOUNT);
 
         assertEq(originARM.vaultWithdrawalAmount(), DEFAULT_AMOUNT, "Vault withdrawal amount should be updated");
     }
@@ -29,7 +29,8 @@ contract Fork_Concrete_OriginARM_VaultInteractions_Test_ is Fork_Shared_Test {
         deal(address(ws), address(vault), DEFAULT_AMOUNT);
 
         // Request an Origin withdrawal
-        uint256 requestId = originARM.requestOriginWithdrawal(DEFAULT_AMOUNT);
+        originARM.requestRedeem(address(os), DEFAULT_AMOUNT);
+        uint256 requestId = originAssetAdapter.pendingRequestId(0);
 
         // Build the request IDs array
         uint256[] memory requestIds = new uint256[](1);
@@ -40,7 +41,7 @@ contract Fork_Concrete_OriginARM_VaultInteractions_Test_ is Fork_Shared_Test {
         emit OriginARM.ClaimOriginWithdrawals(requestIds, DEFAULT_AMOUNT);
 
         // Main call
-        originARM.claimOriginWithdrawals(requestIds);
+        originARM.claimRedeem(address(os), DEFAULT_AMOUNT);
 
         // Check the vault withdrawal amount
         assertEq(originARM.vaultWithdrawalAmount(), 0, "Vault withdrawal amount should be updated");

@@ -238,7 +238,7 @@ abstract contract TargetFunction is Properties {
         vm.prank(lidoARM.owner());
 
         // Set prices
-        lidoARM.setPrices(address(steth), buyT1, sellT1, type(uint256).max, type(uint256).max);
+        lidoARM.setPrices(address(steth), buyT1, sellT1, type(uint128).max, type(uint128).max);
     }
 
     function handler_setCrossPrice(uint256 newCrossPrice) public {

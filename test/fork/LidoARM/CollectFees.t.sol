@@ -25,7 +25,7 @@ contract Fork_Concrete_LidoARM_CollectFees_Test_ is Fork_Shared_Test_ {
         internal
         returns (uint256 amountOut, uint256 expectedFee)
     {
-        lidoARM.setPrices(address(steth), DISCOUNTED_PRICE, 1001e33, type(uint256).max, type(uint256).max);
+        lidoARM.setPrices(address(steth), DISCOUNTED_PRICE, 1001e33, type(uint128).max, type(uint128).max);
         deal(address(weth), address(lidoARM), wethBalance);
         deal(address(steth), address(this), amountIn);
         steth.approve(address(lidoARM), type(uint256).max);

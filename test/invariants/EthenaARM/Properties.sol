@@ -177,8 +177,8 @@ abstract contract Properties is TargetFunctions {
     }
 
     function propertyM() public view returns (bool) {
-        uint256 nextUnstakerIndex = arm.nextUnstakerIndex();
-        return Math.lt(nextUnstakerIndex, arm.MAX_UNSTAKERS());
+        uint256 nextUnstakerIndex = ethenaAssetAdapter.nextUnstakerIndex();
+        return Math.lt(nextUnstakerIndex, ethenaAssetAdapter.MAX_UNSTAKERS());
     }
 
     function propertyN() public view returns (bool) {

@@ -155,7 +155,7 @@ abstract contract Setup is Base_Test_ {
 
         stethAdapter = address(new StETHAssetAdapter(address(lidoProxy), address(weth), address(steth), lidoWithdraw));
         lidoARM.addBaseAsset(
-            address(steth), stethAdapter, 1e36 - 1, 1e36, type(uint256).max, type(uint256).max, 1e36, true
+            address(steth), stethAdapter, 1e36 - 1, 1e36, type(uint128).max, type(uint128).max, 1e36, true
         );
     }
 

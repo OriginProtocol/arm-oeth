@@ -248,6 +248,12 @@ interface IEETHRedemptionManager {
     function canRedeem(uint256 amount) external view returns (bool);
 }
 
+interface IWeETH {
+    function getEETHByWeETH(uint256 weETHAmount) external view returns (uint256);
+    function getWeETHByeETH(uint256 eETHAmount) external view returns (uint256);
+    function unwrap(uint256 weETHAmount) external returns (uint256);
+}
+
 interface IDistributor {
     function claim(
         address[] calldata users,

@@ -38,8 +38,8 @@ contract $005_RegisterLidoWithdrawalsScript is AbstractDeployScript("005_Registe
                 resolver.resolve("LIDO_ARM_STETH_ADAPTER"),
                 0.99975e36,
                 0.9999e36,
-                type(uint256).max,
-                type(uint256).max,
+                type(uint128).max,
+                type(uint128).max,
                 0.9998e36,
                 true
             )

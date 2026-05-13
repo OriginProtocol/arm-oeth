@@ -7,6 +7,8 @@ import {Base_Test_} from "test/Base.sol";
 // Contracts
 import {Proxy} from "contracts/Proxy.sol";
 import {EtherFiARM} from "contracts/EtherFiARM.sol";
+import {EtherFiAssetAdapter} from "contracts/adapters/EtherFiAssetAdapter.sol";
+import {WeETHAssetAdapter} from "contracts/adapters/WeETHAssetAdapter.sol";
 
 // Interfaces
 import {Mainnet} from "src/contracts/utils/Addresses.sol";
@@ -14,6 +16,7 @@ import {IERC20, IEETHWithdrawalNFT} from "contracts/Interfaces.sol";
 
 abstract contract Fork_Shared_Test is Base_Test_ {
     IEETHWithdrawalNFT public etherfiWithdrawalNFT;
+    WeETHAssetAdapter public weethAssetAdapter;
 
     //////////////////////////////////////////////////////
     /// --- SETUP
@@ -98,7 +101,43 @@ abstract contract Fork_Shared_Test is Base_Test_ {
 
         // Set the Proxy as the EtherFiARM.
         etherfiARM = EtherFiARM(payable(address(etherfiProxy)));
-
         vm.stopPrank();
+
+        etherfiAssetAdapter = new EtherFiAssetAdapter(
+            address(etherfiARM),
+            address(eeth),
+            address(weth),
+            Mainnet.ETHERFI_WITHDRAWAL,
+            Mainnet.ETHERFI_WITHDRAWAL_NFT
+        );
+        etherfiARM.addBaseAsset(
+            address(eeth),
+            address(etherfiAssetAdapter),
+            0.9997e36,
+            1e36,
+            type(uint128).max,
+            type(uint128).max,
+            0.9998e36,
+            true
+        );
+
+        weethAssetAdapter = new WeETHAssetAdapter(
+            address(etherfiARM),
+            address(weeth),
+            address(eeth),
+            address(weth),
+            Mainnet.ETHERFI_WITHDRAWAL,
+            Mainnet.ETHERFI_WITHDRAWAL_NFT
+        );
+        etherfiARM.addBaseAsset(
+            address(weeth),
+            address(weethAssetAdapter),
+            0.9997e36,
+            1e36,
+            type(uint128).max,
+            type(uint128).max,
+            0.9998e36,
+            false
+        );
     }
 }

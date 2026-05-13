@@ -7,6 +7,7 @@ import {EthenaARM} from "contracts/EthenaARM.sol";
 import {MockMorpho} from "test/invariants/EthenaARM/mocks/MockMorpho.sol";
 import {MorphoMarket} from "src/contracts/markets/MorphoMarket.sol";
 import {EthenaUnstaker} from "contracts/EthenaUnstaker.sol";
+import {EthenaAssetAdapter} from "contracts/adapters/EthenaAssetAdapter.sol";
 
 // Interfaces
 import {IERC20} from "contracts/Interfaces.sol";
@@ -32,6 +33,7 @@ abstract contract Base_Test_ {
     EthenaARM internal arm;
     MockMorpho internal morpho;
     MorphoMarket internal market;
+    EthenaAssetAdapter internal ethenaAssetAdapter;
     EthenaUnstaker[] internal unstakers;
     uint256[] internal unstakerIndices;
 
@@ -102,4 +104,3 @@ abstract contract Base_Test_ {
     uint256 internal sumSUSDeSwapOut;
     uint256 internal sumSUSDeBaseRedeem;
 }
-

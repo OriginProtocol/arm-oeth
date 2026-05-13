@@ -57,6 +57,25 @@ abstract contract TargetFunction is Properties {
     using SafeCast for uint256;
     using MathComparisons for uint256;
 
+    function _buyPrice() internal view returns (uint256 buyPrice) {
+        (uint128 buyPriceMem,,,,,,,) = originARM.baseAssetConfigs(address(os));
+        buyPrice = buyPriceMem;
+    }
+
+    function _sellPrice() internal view returns (uint256 sellPrice) {
+        (, uint128 sellPriceMem,,,,,,) = originARM.baseAssetConfigs(address(os));
+        sellPrice = sellPriceMem;
+    }
+
+    function _crossPrice() internal view returns (uint256 crossPrice) {
+        (,,,, uint128 crossPriceMem,,,) = originARM.baseAssetConfigs(address(os));
+        crossPrice = crossPriceMem;
+    }
+
+    function _legacySellRate() internal view returns (uint256) {
+        return PRICE_SCALE * PRICE_SCALE / _sellPrice();
+    }
+
     function handler_deposit(uint8 seed, uint88 amount) public {
         vm.assume(originARM.totalAssets() > 1e12 || originARM.withdrawsQueued() == originARM.withdrawsClaimed());
 
@@ -178,7 +197,7 @@ abstract contract TargetFunction is Properties {
         // We will try to mimic this behaviour for buyPrice, while trying to reach sometimes price with small decimals.
         // We will try to have most of the variation close from the first decimals like 0.999043 and reduces the one
         // around the last decimals, like 0.950000000000000000_000000000000000023.
-        uint256 crossPrice = originARM.crossPrice();
+        uint256 crossPrice = _crossPrice();
         buyPrice = uint256(_bound(buyPrice, MIN_BUY_PRICE / 1e30, (crossPrice - 1) / 1e30)) * 1e30 - buyPrice % 1e30;
         sellPrice = _bound(sellPrice, crossPrice, MAX_SELL_PRICE);
 
@@ -193,14 +212,14 @@ abstract contract TargetFunction is Properties {
 
         // Main call
         vm.prank(governor);
-        originARM.setPrices(buyPrice, sellPrice, type(uint256).max, type(uint256).max);
+        originARM.setPrices(address(os), buyPrice, sellPrice, type(uint128).max, type(uint128).max);
     }
 
     function handler_setCrossPrice(uint120 newCrossPrice) public {
         uint256 priceScale = 1e36;
         uint256 maxCrossPriceDeviation = 20e32;
-        uint256 buyPrice = originARM.traderate1();
-        uint256 sellPrice = (priceScale ** 2) / originARM.traderate0();
+        uint256 buyPrice = _buyPrice();
+        uint256 sellPrice = _sellPrice();
 
         // Conditions:
         // 1.a. crossPrice >= priceScale - maxCrossPriceDeviation
@@ -215,7 +234,7 @@ abstract contract TargetFunction is Properties {
         newCrossPrice = uint120(_bound(newCrossPrice, lowerBound, upperBound));
 
         uint256 osBalance = os.balanceOf(address(originARM));
-        if (originARM.crossPrice() > newCrossPrice && osBalance > 0) {
+        if (_crossPrice() > newCrossPrice && osBalance > 0) {
             // If there is more than 100 OS in ARM, do nothing
             vm.assume(osBalance < 1e20);
 
@@ -237,7 +256,7 @@ abstract contract TargetFunction is Properties {
 
         // Main call
         vm.prank(governor);
-        originARM.setCrossPrice(newCrossPrice);
+        originARM.setCrossPrice(address(os), newCrossPrice);
     }
 
     function handler_swapExactTokensForTokens(uint8 seed, bool OSForWS, uint88 amountIn) public {
@@ -250,7 +269,7 @@ abstract contract TargetFunction is Properties {
         // Ensure a user is selected, otherwise skip
         vm.assume(user != address(0));
 
-        uint256 price = path[0] == address(ws) ? originARM.traderate0() : originARM.traderate1();
+        uint256 price = path[0] == address(ws) ? _legacySellRate() : _buyPrice();
         uint256 liquidityAvailable = getLiquidityAvailable(path[1]);
 
         // We reverse the price calculation to get the amountIn based on the amountOut
@@ -291,7 +310,7 @@ abstract contract TargetFunction is Properties {
         // Ensure a user is selected, otherwise skip
         vm.assume(user != address(0) && balance >= 3);
 
-        uint256 price = path[0] == address(ws) ? originARM.traderate0() : originARM.traderate1();
+        uint256 price = path[0] == address(ws) ? _legacySellRate() : _buyPrice();
         uint256 liquidityAvailable = getLiquidityAvailable(path[1]);
 
         // Get the maximum of amountIn based on the maximum of amountOut
@@ -367,7 +386,7 @@ abstract contract TargetFunction is Properties {
 
         // Main call
         vm.prank(governor);
-        originARM.requestOriginWithdrawal(amount);
+        originARM.requestRedeem(address(os), amount);
 
         // Add requestId to the list
         originRequests.push(expectedId);
@@ -387,7 +406,11 @@ abstract contract TargetFunction is Properties {
 
         // Main call
         vm.prank(governor);
-        uint256 totalClaimed = originARM.claimOriginWithdrawals(ids);
+        uint256 totalShares;
+        for (uint256 i; i < ids.length; i++) {
+            totalShares += originAssetAdapter.requestShares(ids[i]);
+        }
+        (,, uint256 totalClaimed) = originARM.claimRedeem(address(os), totalShares);
 
         sum_ws_arm_claimed += totalClaimed;
     }
@@ -468,7 +491,11 @@ abstract contract TargetFunction is Properties {
         // - Finalize claim all the Origin requests
         if (originRequests.length > 0) {
             vm.prank(governor);
-            originARM.claimOriginWithdrawals(originRequests);
+            uint256 totalShares;
+            for (uint256 i; i < originRequests.length; i++) {
+                totalShares += originAssetAdapter.requestShares(originRequests[i]);
+            }
+            originARM.claimRedeem(address(os), totalShares);
         }
 
         // - Remove the active market to pull out all deposited funds
@@ -480,7 +507,7 @@ abstract contract TargetFunction is Properties {
 
         // - Set the prices to 1:1
         vm.prank(governor);
-        originARM.setPrices(0, PRICE_SCALE, type(uint256).max, type(uint256).max);
+        originARM.setPrices(address(os), 0, PRICE_SCALE, type(uint128).max, type(uint128).max);
 
         // - Swap all the OS on ARM to WS
         deal(address(ws), makeAddr("swapper"), type(uint120).max);
@@ -563,7 +590,7 @@ abstract contract TargetFunction is Properties {
     function getAvailableAssets() public view returns (uint256 availableAssets, uint256 outstandingWithdrawals) {
         uint256 liquidityAsset = ws.balanceOf(address(originARM));
         uint256 baseAsset = os.balanceOf(address(originARM));
-        uint256 crossPrice = originARM.crossPrice();
+        uint256 crossPrice = _crossPrice();
         uint256 externalWithdrawQueue = originARM.vaultWithdrawalAmount();
         uint256 assets = liquidityAsset + externalWithdrawQueue + (baseAsset * crossPrice / PRICE_SCALE);
 

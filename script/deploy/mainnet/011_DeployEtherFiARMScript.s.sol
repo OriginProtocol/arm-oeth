@@ -8,6 +8,8 @@ import {Mainnet} from "contracts/utils/Addresses.sol";
 import {ZapperARM} from "contracts/ZapperARM.sol";
 import {EtherFiARM} from "contracts/EtherFiARM.sol";
 import {CapManager} from "contracts/CapManager.sol";
+import {EtherFiAssetAdapter} from "contracts/adapters/EtherFiAssetAdapter.sol";
+import {WeETHAssetAdapter} from "contracts/adapters/WeETHAssetAdapter.sol";
 import {MorphoMarket} from "contracts/markets/MorphoMarket.sol";
 import {Abstract4626MarketWrapper} from "contracts/markets/Abstract4626MarketWrapper.sol";
 
@@ -92,22 +94,66 @@ contract $011_DeployEtherFiARMScript is AbstractDeployScript("011_DeployEtherFiA
         );
         morphoMarketProxy.initialize(address(morphoMarket), Mainnet.TIMELOCK, data);
 
-        // 13. Set crossPrice to 0.9998 ETH
+        // 13. Deploy the eETH adapter and register eETH as the base asset.
         uint256 crossPrice = 0.9998 * 1e36;
-        EtherFiARM(payable(address(armProxy))).setCrossPrice(crossPrice);
+        {
+            EtherFiAssetAdapter adapter = new EtherFiAssetAdapter(
+                address(armProxy),
+                Mainnet.EETH,
+                Mainnet.WETH,
+                Mainnet.ETHERFI_WITHDRAWAL,
+                Mainnet.ETHERFI_WITHDRAWAL_NFT
+            );
+            _recordDeployment("ETHER_FI_ARM_EETH_ADAPTER", address(adapter));
+            EtherFiARM(payable(address(armProxy)))
+                .addBaseAsset(
+                    Mainnet.EETH,
+                    address(adapter),
+                    0.9997 * 1e36,
+                    1e36,
+                    type(uint128).max,
+                    type(uint128).max,
+                    crossPrice,
+                    true
+                );
+        }
 
-        // 14. Add Morpho Market as an active market
+        // 14. Deploy the weETH adapter and register weETH as a non-pegged base asset.
+        {
+            WeETHAssetAdapter weethAdapter = new WeETHAssetAdapter(
+                address(armProxy),
+                Mainnet.WEETH,
+                Mainnet.EETH,
+                Mainnet.WETH,
+                Mainnet.ETHERFI_WITHDRAWAL,
+                Mainnet.ETHERFI_WITHDRAWAL_NFT
+            );
+            _recordDeployment("ETHER_FI_ARM_WEETH_ADAPTER", address(weethAdapter));
+            EtherFiARM(payable(address(armProxy)))
+                .addBaseAsset(
+                    Mainnet.WEETH,
+                    address(weethAdapter),
+                    0.9997 * 1e36,
+                    1e36,
+                    type(uint128).max,
+                    type(uint128).max,
+                    crossPrice,
+                    false
+                );
+        }
+
+        // 15. Add Morpho Market as an active market
         address[] memory markets = new address[](1);
         markets[0] = address(morphoMarketProxy);
         EtherFiARM(payable(address(armProxy))).addMarkets(markets);
 
-        // 15. Set Morpho Market as the active market
+        // 16. Set Morpho Market as the active market
         EtherFiARM(payable(address(armProxy))).setActiveMarket(address(morphoMarketProxy));
 
-        // 16. Set ARM buffer to 20%
+        // 17. Set ARM buffer to 20%
         EtherFiARM(payable(address(armProxy))).setARMBuffer(0.2e18); // 20% buffer
 
-        // 17. Transfer ownership of ARM to the 5/8 multisig
+        // 18. Transfer ownership of ARM to the 5/8 multisig
         armProxy.setOwner(Mainnet.GOV_MULTISIG);
     }
 }
