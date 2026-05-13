@@ -48,15 +48,9 @@ contract EtherFiUpgradeGuardsTest is Test {
     function _deployInitializedEtherFiARMProxy() internal returns (Proxy proxy, EtherFiARM newImpl) {
         MockERC20 eeth = new MockERC20("EtherFi ETH", "eETH", 18);
         MockERC20 weth = new MockERC20("Wrapped ETH", "WETH", 18);
-        address etherFiWithdrawalQueue = makeAddr("etherFiWithdrawalQueue");
-        address etherFiWithdrawalNFT = makeAddr("etherFiWithdrawalNFT");
 
-        EtherFiARM oldImpl = new EtherFiARM(
-            address(eeth), address(weth), etherFiWithdrawalQueue, 10 minutes, 1e7, 1e18, etherFiWithdrawalNFT
-        );
-        newImpl = new EtherFiARM(
-            address(eeth), address(weth), etherFiWithdrawalQueue, 10 minutes, 1e7, 1e18, etherFiWithdrawalNFT
-        );
+        EtherFiARM oldImpl = new EtherFiARM(address(eeth), address(weth), 10 minutes, 1e7, 1e18);
+        newImpl = new EtherFiARM(address(eeth), address(weth), 10 minutes, 1e7, 1e18);
         proxy = new Proxy();
 
         weth.mint(address(this), 1e12);
