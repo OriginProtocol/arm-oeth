@@ -797,7 +797,12 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
             assets += IERC4626(activeMarketMem).convertToAssets(allShares);
         }
 
+        // The amount of liquidity assets, eg WETH, that is still to be claimed in the withdrawal queue.
         uint256 outstandingWithdrawals = withdrawsQueued - withdrawsClaimed;
+
+        // If the ARM becomes insolvent enough that the available assets in the ARM, lending market and
+        // external withdrawal queue are less than the outstanding withdrawals, return 0 to avoid an
+        // underflow. Otherwise return the assets net of the liquidity reserved for the withdrawal queue.
         return assets < outstandingWithdrawals ? 0 : assets - outstandingWithdrawals;
     }
 
