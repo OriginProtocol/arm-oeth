@@ -4,8 +4,6 @@ pragma solidity 0.8.23;
 // Test
 import {Fork_Shared_Test} from "test/fork/EthenaARM/shared/Shared.sol";
 
-// Contracts
-import {EthenaARM} from "contracts/EthenaARM.sol";
 import {IStakedUSDe, UserCooldown} from "contracts/Interfaces.sol";
 import {EthenaUnstaker} from "contracts/EthenaUnstaker.sol";
 
@@ -18,21 +16,19 @@ contract Fork_Concrete_EthenaARM_RequestWithdraw_Test_ is Fork_Shared_Test {
     function test_RequestWithdraw_FirstRequest() public {
         uint256 susdeBalanceBefore = susde.balanceOf(address(ethenaARM));
         uint256 nextUnstakerIndex = ethenaAssetAdapter.nextUnstakerIndex();
-
-        vm.expectEmit({emitter: address(ethenaARM)});
-        emit EthenaARM.RequestBaseWithdrawal(
-            ethenaAssetAdapter.unstakers(nextUnstakerIndex), AMOUNT_IN, susde.convertToAssets(AMOUNT_IN)
-        );
+        uint256 expectedAssets = susde.convertToAssets(AMOUNT_IN);
 
         vm.prank(operator);
-        ethenaARM.requestRedeem(address(susde), AMOUNT_IN);
+        (uint256 sharesRequested, uint256 assetsExpected) = ethenaARM.requestRedeem(address(susde), AMOUNT_IN);
 
         EthenaUnstaker unstaker = EthenaUnstaker(ethenaAssetAdapter.unstakers(nextUnstakerIndex));
         UserCooldown memory cooldown = IStakedUSDe(address(susde)).cooldowns(address(unstaker));
         uint256 susdeBalanceAfter = susde.balanceOf(address(ethenaARM));
+        assertEq(sharesRequested, AMOUNT_IN, "shares requested incorrect");
+        assertEq(assetsExpected, expectedAssets, "assets expected incorrect");
         assertEq(susdeBalanceAfter, susdeBalanceBefore - AMOUNT_IN, "sUSDe balance after request incorrect");
         assertEq(ethenaAssetAdapter.nextUnstakerIndex(), nextUnstakerIndex + 1, "nextUnstakerIndex not incremented");
-        assertEq(cooldown.underlyingAmount, susde.convertToAssets(AMOUNT_IN), "unstaker cooldown amount incorrect");
+        assertEq(cooldown.underlyingAmount, expectedAssets, "unstaker cooldown amount incorrect");
     }
 
     function test_RequestWithdraw_SecondRequest() public {

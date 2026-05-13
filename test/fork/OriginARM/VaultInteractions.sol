@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
-import {OriginARM} from "contracts/OriginARM.sol";
 import {Fork_Shared_Test} from "test/fork/OriginARM/shared/Shared.sol";
 
 contract Fork_Concrete_OriginARM_VaultInteractions_Test_ is Fork_Shared_Test {
@@ -15,12 +14,10 @@ contract Fork_Concrete_OriginARM_VaultInteractions_Test_ is Fork_Shared_Test {
 
         deal(address(os), address(originARM), DEFAULT_AMOUNT);
 
-        vm.expectEmit(address(originARM));
-        emit OriginARM.RequestOriginWithdrawal(DEFAULT_AMOUNT, 1);
-
         originARM.requestRedeem(address(os), DEFAULT_AMOUNT);
 
-        assertEq(originARM.vaultWithdrawalAmount(), DEFAULT_AMOUNT, "Vault withdrawal amount should be updated");
+        (,,,,, uint120 pendingRedeemAssets,,) = originARM.baseAssetConfigs(address(os));
+        assertEq(pendingRedeemAssets, DEFAULT_AMOUNT, "Pending redeem assets should be updated");
     }
 
     function test_ClaimOriginWithdrawals() public asGovernor {
@@ -30,15 +27,7 @@ contract Fork_Concrete_OriginARM_VaultInteractions_Test_ is Fork_Shared_Test {
 
         // Request an Origin withdrawal
         originARM.requestRedeem(address(os), DEFAULT_AMOUNT);
-        uint256 requestId = originAssetAdapter.pendingRequestId(0);
-
-        // Build the request IDs array
-        uint256[] memory requestIds = new uint256[](1);
-        requestIds[0] = requestId;
-
-        // Expected event
-        vm.expectEmit(address(originARM));
-        emit OriginARM.ClaimOriginWithdrawals(requestIds, DEFAULT_AMOUNT);
+        assertEq(originAssetAdapter.pendingRequestId(0), 1, "pending request id");
 
         // Main call
         originARM.claimRedeem(address(os), DEFAULT_AMOUNT);

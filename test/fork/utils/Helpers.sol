@@ -91,6 +91,8 @@ abstract contract Helpers is Base_Test_ {
             totalAmount += amounts[i];
         }
 
+        if (totalAmount == 0) return new uint256[](0);
+
         uint256 previousLength = AbstractLidoAssetAdapter(payable(stethAdapter)).pendingRequestIdsLength();
         lidoARM.requestRedeem(address(steth), totalAmount);
         uint256 newLength = AbstractLidoAssetAdapter(payable(stethAdapter)).pendingRequestIdsLength();

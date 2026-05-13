@@ -6,6 +6,8 @@ import {Test} from "forge-std/Test.sol";
 import {LidoARM} from "contracts/LidoARM.sol";
 import {Proxy} from "contracts/Proxy.sol";
 import {IERC20} from "contracts/Interfaces.sol";
+import {StETHAssetAdapter} from "contracts/adapters/StETHAssetAdapter.sol";
+import {WstETHAssetAdapter} from "contracts/adapters/WstETHAssetAdapter.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
 
 interface ILegacyLidoARM {
@@ -132,7 +134,24 @@ contract Fork_Concrete_LidoARM_SwapGasUpgraded_Test is Fork_LidoARM_SwapGasCompa
         vm.prank(lidoProxy.owner());
         lidoProxy.upgradeTo(address(upgradedImpl));
 
-        uint256 sellT1 = PRICE_SCALE * PRICE_SCALE / traderate0;
+        uint256 sellT1 = PRICE_SCALE;
+        address stethAdapter =
+            address(new StETHAssetAdapter(address(lidoProxy), address(weth), address(steth), Mainnet.LIDO_WITHDRAWAL));
+        address wstethAdapter = address(
+            new WstETHAssetAdapter(
+                address(lidoProxy), address(weth), address(steth), Mainnet.WSTETH, Mainnet.LIDO_WITHDRAWAL
+            )
+        );
+
+        vm.prank(lidoProxy.owner());
+        lidoARM.addBaseAsset(
+            address(steth), stethAdapter, traderate1, sellT1, type(uint128).max, type(uint128).max, PRICE_SCALE, true
+        );
+
+        vm.prank(lidoProxy.owner());
+        lidoARM.addBaseAsset(
+            Mainnet.WSTETH, wstethAdapter, traderate1, sellT1, type(uint128).max, type(uint128).max, PRICE_SCALE, false
+        );
 
         vm.prank(lidoProxy.owner());
         lidoARM.setPrices(address(steth), traderate1, sellT1, type(uint128).max, type(uint128).max);

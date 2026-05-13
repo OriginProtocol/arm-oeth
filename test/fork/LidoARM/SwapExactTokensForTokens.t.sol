@@ -37,7 +37,7 @@ contract Fork_Concrete_LidoARM_SwapExactTokensForTokens_Test is Fork_Shared_Test
     //////////////////////////////////////////////////////
     function test_RevertWhen_SwapExactTokensForTokens_Because_InvalidTokenOut1() public {
         IERC20(lidoARM.liquidityAsset());
-        vm.expectRevert("ARM: Invalid out token");
+        vm.expectRevert("ARM: Invalid swap assets");
         lidoARM.swapExactTokensForTokens(
             steth, // inToken
             badToken, // outToken
@@ -48,7 +48,7 @@ contract Fork_Concrete_LidoARM_SwapExactTokensForTokens_Test is Fork_Shared_Test
     }
 
     function test_RevertWhen_SwapExactTokensForTokens_Because_InvalidTokenOut0() public {
-        vm.expectRevert("ARM: Invalid out token");
+        vm.expectRevert("ARM: Invalid swap assets");
         lidoARM.swapExactTokensForTokens(
             weth, // inToken
             badToken, // outToken
@@ -59,7 +59,7 @@ contract Fork_Concrete_LidoARM_SwapExactTokensForTokens_Test is Fork_Shared_Test
     }
 
     function test_RevertWhen_SwapExactTokensForTokens_Because_InvalidTokenIn() public {
-        vm.expectRevert("ARM: Invalid in token");
+        vm.expectRevert("ARM: Invalid swap assets");
         lidoARM.swapExactTokensForTokens(
             badToken, // inToken
             steth, // outToken
@@ -70,7 +70,7 @@ contract Fork_Concrete_LidoARM_SwapExactTokensForTokens_Test is Fork_Shared_Test
     }
 
     function test_RevertWhen_SwapExactTokensForTokens_Because_BothInvalidTokens() public {
-        vm.expectRevert("ARM: Invalid in token");
+        vm.expectRevert("ARM: Invalid swap assets");
         lidoARM.swapExactTokensForTokens(
             badToken, // inToken
             badToken, // outToken

@@ -18,21 +18,21 @@ contract Fork_Concrete_EthenaARM_ClaimBaseWithdrawals_Test_ is Fork_Shared_Test 
         vm.prank(operator);
         ethenaARM.requestRedeem(address(susde), AMOUNT_IN);
 
-        uint256 amountOut = susde.convertToAssets(AMOUNT_IN);
         uint8 unstakerIndex = ethenaAssetAdapter.nextUnstakerIndex() - 1;
         address unstakerAddress = ethenaAssetAdapter.unstakers(unstakerIndex);
         skip(7 days + 1);
+        uint256 shares = ethenaAssetAdapter.requestShares(unstakerAddress);
 
-        vm.expectEmit({emitter: address(ethenaARM)});
-        emit EthenaARM.ClaimBaseWithdrawals(unstakerAddress, amountOut);
-        ethenaARM.claimRedeem(address(susde), ethenaAssetAdapter.requestShares(unstakerAddress));
+        vm.prank(operator);
+        ethenaARM.claimRedeem(address(susde), shares);
     }
 
     //////////////////////////////////////////////////////
     /// --- REVERT TESTS
     //////////////////////////////////////////////////////
     function test_RevertWhen_ClaimBaseWithdrawals_NoCooldownAmount() public {
-        vm.expectRevert("EthenaARM: No cooldown amount");
+        vm.expectRevert("Adapter: redeem exceeds claimable");
+        vm.prank(operator);
         ethenaARM.claimRedeem(address(susde), AMOUNT_IN);
     }
 
@@ -42,6 +42,7 @@ contract Fork_Concrete_EthenaARM_ClaimBaseWithdrawals_Test_ is Fork_Shared_Test 
         ethenaAssetAdapter.setUnstakers(emptyUnstakers);
 
         vm.expectRevert("Adapter: redeem exceeds claimable");
+        vm.prank(operator);
         ethenaARM.claimRedeem(address(susde), AMOUNT_IN);
     }
 

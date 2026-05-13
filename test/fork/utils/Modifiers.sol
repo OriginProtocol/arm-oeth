@@ -246,7 +246,7 @@ abstract contract Modifiers is Helpers {
 
     function _mockFunctionClaimWithdrawOnLidoARM(uint256 amount) internal {
         // Deploy fake lido withdraw contract
-        MockLidoWithdraw mocklidoWithdraw = new MockLidoWithdraw(address(lidoARM));
+        MockLidoWithdraw mocklidoWithdraw = new MockLidoWithdraw(stethAdapter);
         // Give ETH to the ETH Sender contract
         vm.deal(address(mocklidoWithdraw.ethSender()), amount);
         // Mock all the call to the fake lido withdraw contract

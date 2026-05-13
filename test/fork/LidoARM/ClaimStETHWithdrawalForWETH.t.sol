@@ -37,7 +37,7 @@ contract Fork_Concrete_LidoARM_ClaimLidoWithdrawals_Test_ is Fork_Shared_Test_ {
     //////////////////////////////////////////////////////
     /// --- PASSING TESTS
     //////////////////////////////////////////////////////
-    function test_ClaimLidoWithdrawals_EmptyList() public asOperator requestLidoWithdrawalsOnLidoARM(new uint256[](0)) {
+    function test_ClaimLidoWithdrawals_EmptyList() public asOperator {
         assertEq(address(lidoARM).balance, 0);
         assertEq(_lidoWithdrawalQueueAmount(), 0);
 
@@ -66,9 +66,6 @@ contract Fork_Concrete_LidoARM_ClaimLidoWithdrawals_Test_ is Fork_Shared_Test_ {
         uint256[] memory requests = new uint256[](1);
         requests[0] = stETHWithdrawal.getLastRequestId();
 
-        uint256 lastIndex = stETHWithdrawal.getLastCheckpointIndex();
-        uint256[] memory hintIds = stETHWithdrawal.findCheckpointHints(requests, 1, lastIndex);
-
         // Expected events
 
         // Main call
@@ -94,9 +91,6 @@ contract Fork_Concrete_LidoARM_ClaimLidoWithdrawals_Test_ is Fork_Shared_Test_ {
         uint256[] memory requests = new uint256[](2);
         requests[0] = stETHWithdrawal.getLastRequestId() - 1;
         requests[1] = stETHWithdrawal.getLastRequestId();
-
-        uint256 lastIndex = stETHWithdrawal.getLastCheckpointIndex();
-        uint256[] memory hintIds = stETHWithdrawal.findCheckpointHints(requests, 1, lastIndex);
 
         // Expected events
 

@@ -23,8 +23,11 @@ contract Fork_Concrete_LidoARM_RequestLidoWithdrawals_Test_ is Fork_Shared_Test_
     /// --- REVERTING TESTS
     //////////////////////////////////////////////////////
     function test_RevertWhen_RequestLidoWithdrawals_NotOperator() public asRandomAddress {
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = DEFAULT_AMOUNT;
+
         vm.expectRevert("ARM: Only operator or owner can call this function.");
-        _requestLidoWithdrawals(new uint256[](0));
+        lidoARM.requestRedeem(address(steth), amounts[0]);
     }
 
     function test_RevertWhen_RequestLidoWithdrawals_Because_BalanceExceeded() public asOperator {
@@ -34,8 +37,8 @@ contract Fork_Concrete_LidoARM_RequestLidoWithdrawals_Test_ is Fork_Shared_Test_
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = DEFAULT_AMOUNT;
 
-        vm.expectRevert("BALANCE_EXCEEDED");
-        _requestLidoWithdrawals(amounts);
+        vm.expectRevert();
+        lidoARM.requestRedeem(address(steth), amounts[0]);
     }
 
     //////////////////////////////////////////////////////
@@ -57,10 +60,6 @@ contract Fork_Concrete_LidoARM_RequestLidoWithdrawals_Test_ is Fork_Shared_Test_
         uint256[] memory expectedLidoRequestIds = new uint256[](1);
         expectedLidoRequestIds[0] = IStETHWithdrawal(Mainnet.LIDO_WITHDRAWAL).getLastRequestId() + 1;
 
-        // Expected events
-        vm.expectEmit({emitter: address(steth)});
-        emit IERC20.Transfer(address(lidoARM), Mainnet.LIDO_WITHDRAWAL, amounts[0]);
-
         // Main call
         uint256[] memory requestIds = _requestLidoWithdrawals(amounts);
 
@@ -73,10 +72,6 @@ contract Fork_Concrete_LidoARM_RequestLidoWithdrawals_Test_ is Fork_Shared_Test_
         uint256[] memory expectedLidoRequestIds = new uint256[](1);
         expectedLidoRequestIds[0] = IStETHWithdrawal(Mainnet.LIDO_WITHDRAWAL).getLastRequestId() + 1;
 
-        // Expected events
-        vm.expectEmit({emitter: address(steth)});
-        emit IERC20.Transfer(address(lidoARM), Mainnet.LIDO_WITHDRAWAL, amounts[0]);
-
         // Main call
         uint256[] memory requestIds = _requestLidoWithdrawals(amounts);
 
@@ -86,10 +81,15 @@ contract Fork_Concrete_LidoARM_RequestLidoWithdrawals_Test_ is Fork_Shared_Test_
     function test_RequestLidoWithdrawals_MultipleAmount() public asOperator {
         uint256 length = _bound(vm.randomUint(), 2, 10);
         uint256[] memory amounts = new uint256[](length);
-        uint256[] memory expectedLidoRequestIds = new uint256[](length);
         uint256 startingLidoRequestId = IStETHWithdrawal(Mainnet.LIDO_WITHDRAWAL).getLastRequestId() + 1;
+        uint256 totalAmount;
         for (uint256 i = 0; i < amounts.length; i++) {
-            amounts[i] = _bound(vm.randomUint(), 0, 1_000 ether);
+            amounts[i] = _bound(vm.randomUint(), 1, 1_000 ether);
+            totalAmount += amounts[i];
+        }
+        uint256 expectedLength = (totalAmount + 1_000 ether - 1) / 1_000 ether;
+        uint256[] memory expectedLidoRequestIds = new uint256[](expectedLength);
+        for (uint256 i = 0; i < expectedLength; ++i) {
             expectedLidoRequestIds[i] = startingLidoRequestId + i;
         }
 

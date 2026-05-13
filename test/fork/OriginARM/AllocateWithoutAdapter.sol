@@ -110,21 +110,16 @@ contract Fork_Concrete_OriginARM_AllocateWithoutAdapter_Test_ is Fork_Shared_Tes
         assertApproxEqAbs(originARM.totalAssets(), DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, 1, "totalAssets before");
 
         int256 expectedLiquidityDelta = getLiquidityDelta();
-        uint256 expectedShares = market.previewWithdraw(abs(expectedLiquidityDelta));
+        uint256 expectedShares = market.maxRedeem(address(originARM));
+        uint256 expectedAmount = market.convertToAssets(expectedShares);
         assertApproxEqAbs(abs(expectedLiquidityDelta), DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, 1, "expectedLiquidityDelta");
 
-        // Expected event
-        vm.expectEmit(address(market));
-        emit IERC4626.Withdraw(
-            address(originARM), address(originARM), address(originARM), abs(expectedLiquidityDelta), expectedShares
-        );
-        vm.expectEmit(address(originARM));
-        emit AbstractARM.Allocated(address(market), expectedLiquidityDelta, expectedLiquidityDelta);
-
         // Main call
-        originARM.allocate();
+        (int256 targetLiquidityDelta, int256 actualLiquidityDelta) = originARM.allocate();
 
         // Assertions after allocation
+        assertEq(targetLiquidityDelta, expectedLiquidityDelta, "targetLiquidityDelta");
+        assertApproxEqAbs(actualLiquidityDelta, -expectedAmount.toInt256(), 1, "actualLiquidityDelta");
         assertLe(market.balanceOf(address(originARM)), MIN_BALANCE, "shares after");
         assertApproxEqAbs(originARM.totalAssets(), DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, 1, "totalAssets after");
     }
@@ -150,17 +145,12 @@ contract Fork_Concrete_OriginARM_AllocateWithoutAdapter_Test_ is Fork_Shared_Tes
         uint256 expectedAmount = market.convertToAssets(expectedShares);
         int256 expectedLiquidityDelta = getLiquidityDelta();
 
-        // Expected event
-        vm.expectEmit(address(market));
-        emit IERC4626.Withdraw(
-            address(originARM), address(originARM), address(originARM), expectedAmount - 1, expectedShares
-        );
-        vm.expectEmit(address(originARM));
-        emit AbstractARM.Allocated(address(market), expectedLiquidityDelta, expectedLiquidityDelta + 1 ether);
         // Main call
-        originARM.allocate();
+        (int256 targetLiquidityDelta, int256 actualLiquidityDelta) = originARM.allocate();
 
         // Assertions after allocation
+        assertEq(targetLiquidityDelta, expectedLiquidityDelta, "targetLiquidityDelta");
+        assertApproxEqAbs(actualLiquidityDelta, -expectedAmount.toInt256(), 1, "actualLiquidityDelta");
         assertEq(market.balanceOf(address(originARM)), marketBalanceBefore - expectedShares, "shares after");
         assertApproxEqAbs(originARM.totalAssets(), 2 * DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, 1, "totalAssets after");
     }
@@ -180,8 +170,6 @@ contract Fork_Concrete_OriginARM_AllocateWithoutAdapter_Test_ is Fork_Shared_Tes
         uint256 marketBalanceBefore = market.balanceOf(address(originARM));
         // Assertions before allocation
         assertLe(marketBalanceBefore, MIN_BALANCE, "shares before");
-        // We ensure we are in the edge case where Silo has rounded issues.
-        assertNotEq(marketBalanceBefore, 0, "shares before");
         assertApproxEqAbs(originARM.totalAssets(), 2 * DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, 1, "totalAssets before");
 
         // Main call

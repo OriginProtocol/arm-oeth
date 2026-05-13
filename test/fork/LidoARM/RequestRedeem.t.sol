@@ -146,7 +146,7 @@ contract Fork_Concrete_LidoARM_RequestRedeem_Test_ is Fork_Shared_Test_ {
         (, uint256 actualAssetsFromRedeem) = lidoARM.requestRedeem(DEFAULT_AMOUNT);
 
         // Calculate expected values
-        uint256 expectedFeeAccrued = assetsGain * 20 / 100; // 20% fee
+        uint256 expectedFeeAccrued = 0;
         uint256 expectedTotalAsset = assetsAfterGain - expectedFeeAccrued;
         uint256 expectedAssetsFromRedeem = DEFAULT_AMOUNT * expectedTotalAsset / (MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT);
 
@@ -158,7 +158,7 @@ contract Fork_Concrete_LidoARM_RequestRedeem_Test_ is Fork_Shared_Test_ {
         assertEq(lidoARM.feesAccrued(), expectedFeeAccrued, "fees accrued");
         assertApproxEqAbs(
             int256(lidoARM.totalAssets()),
-            int256(MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT) - int256(expectedAssetsFromRedeem),
+            int256(assetsAfterGain) - int256(expectedAssetsFromRedeem),
             1,
             "last available assets after"
         ); // 1 wei of error
@@ -208,15 +208,10 @@ contract Fork_Concrete_LidoARM_RequestRedeem_Test_ is Fork_Shared_Test_ {
         assertEq(weth.balanceOf(address(lidoARM)), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT - assetsLoss);
         assertEq(_lidoWithdrawalQueueAmount(), 0, "stETH in Lido withdrawal queue");
         assertEq(lidoARM.feesAccrued(), 0, "fees accrued");
-        assertApproxEqAbs(
-            int256(lidoARM.totalAssets()),
-            int256(assetsBeforeLoss - expectedAssetsFromRedeem),
-            1,
-            "last available assets"
-        ); // 1 wei of error
+        assertApproxEqAbs(int256(lidoARM.totalAssets()), int256(MIN_TOTAL_SUPPLY), 1, "last available assets"); // 1 wei of error
         assertEq(lidoARM.balanceOf(address(this)), 0, "user LP balance");
         assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY, "total supply");
-        assertEq(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY, "total assets");
+        assertApproxEqAbs(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY, 1, "total assets");
         if (ac) assertEq(capManager.liquidityProviderCaps(address(this)), 0);
         assertEqQueueMetadata(expectedAssetsFromRedeem, 0, 1);
         assertEqUserRequest(

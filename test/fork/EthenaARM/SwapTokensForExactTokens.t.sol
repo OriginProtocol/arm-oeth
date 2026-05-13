@@ -117,15 +117,15 @@ contract Fork_Concrete_EthenaARM_swapTokensForExactTokens_Test_ is Fork_Shared_T
     /// --- REVERTING TESTS
     //////////////////////////////////////////////////////
     function test_RevertWhen_swapTokensForExactTokens_Because_InvalidInToken() public {
-        vm.expectRevert(bytes("ARM: Invalid in token"));
+        vm.expectRevert(bytes("ARM: Invalid swap assets"));
         ethenaARM.swapTokensForExactTokens(badToken, usde, AMOUNT_OUT, 0, address(this));
     }
 
     function test_RevertWhen_swapTokensForExactTokens_Because_InvalidOutToken() public {
-        vm.expectRevert(bytes("EthenaARM: Invalid token"));
+        vm.expectRevert(bytes("ARM: Invalid swap assets"));
         ethenaARM.swapTokensForExactTokens(usde, badToken, AMOUNT_OUT, 0, address(this));
 
-        vm.expectRevert(bytes("EthenaARM: Invalid token"));
+        vm.expectRevert(bytes("ARM: Invalid swap assets"));
         ethenaARM.swapTokensForExactTokens(IERC20(address(susde)), badToken, AMOUNT_OUT, 0, address(this));
     }
 
