@@ -2,10 +2,11 @@
 pragma solidity ^0.8.23;
 
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
+import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 import {IAssetAdapter, IERC20, IOriginVault} from "../Interfaces.sol";
 
-contract WrappedOriginAssetAdapter is IAssetAdapter {
+contract WrappedOriginAssetAdapter is Initializable, IAssetAdapter {
     address public immutable arm;
     IERC4626 public immutable wrappedOToken;
     IERC20 public immutable otoken;
@@ -24,6 +25,10 @@ contract WrappedOriginAssetAdapter is IAssetAdapter {
         liquidityAsset = IERC20(_liquidityAsset);
         vault = IOriginVault(_vault);
         otoken.approve(_vault, type(uint256).max);
+    }
+
+    function initialize() external initializer {
+        otoken.approve(address(vault), type(uint256).max);
     }
 
     function asset() external view returns (address) {

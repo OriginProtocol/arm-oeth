@@ -53,13 +53,20 @@ contract $003_UpgradeLidoARMMainnetScript is AbstractDeployScript("003_UpgradeLi
         lidoARMImpl = new LidoARM(Mainnet.STETH, Mainnet.WETH, Mainnet.LIDO_WITHDRAWAL, claimDelay, 0, 0);
         _recordDeployment("LIDO_ARM_IMPL", address(lidoARMImpl));
 
-        // 8. Deploy asset adapters
+        // 8. Deploy asset adapter implementations and proxies
         stethAdapter = new StETHAssetAdapter(Mainnet.LIDO_ARM, Mainnet.WETH, Mainnet.STETH, Mainnet.LIDO_WITHDRAWAL);
-        _recordDeployment("LIDO_ARM_STETH_ADAPTER", address(stethAdapter));
+        _recordDeployment("LIDO_ARM_STETH_ADAPTER_IMPL", address(stethAdapter));
+        Proxy stethAdapterProxy = new Proxy();
+        stethAdapterProxy.initialize(address(stethAdapter), Mainnet.TIMELOCK, abi.encodeWithSignature("initialize()"));
+        _recordDeployment("LIDO_ARM_STETH_ADAPTER", address(stethAdapterProxy));
+
         wstethAdapter = new WstETHAssetAdapter(
             Mainnet.LIDO_ARM, Mainnet.WETH, Mainnet.STETH, Mainnet.WSTETH, Mainnet.LIDO_WITHDRAWAL
         );
-        _recordDeployment("LIDO_ARM_WSTETH_ADAPTER", address(wstethAdapter));
+        _recordDeployment("LIDO_ARM_WSTETH_ADAPTER_IMPL", address(wstethAdapter));
+        Proxy wstethAdapterProxy = new Proxy();
+        wstethAdapterProxy.initialize(address(wstethAdapter), Mainnet.TIMELOCK, abi.encodeWithSignature("initialize()"));
+        _recordDeployment("LIDO_ARM_WSTETH_ADAPTER", address(wstethAdapterProxy));
 
         // 9. Deploy the Zapper
         zapper = new ZapperLidoARM(Mainnet.WETH, Mainnet.LIDO_ARM);

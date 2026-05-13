@@ -81,8 +81,12 @@ contract $014_DeployEthenaARMScript is AbstractDeployScript("014_DeployEthenaARM
 
         // 9. Deploy the sUSDe adapter and register sUSDe as the base asset.
         uint256 crossPrice = 0.999 * 1e36;
-        EthenaAssetAdapter adapter = new EthenaAssetAdapter(deployer, address(armProxy), Mainnet.USDE, Mainnet.SUSDE);
-        _recordDeployment("ETHENA_ARM_SUSDE_ADAPTER", address(adapter));
+        EthenaAssetAdapter adapterImpl = new EthenaAssetAdapter(address(armProxy), Mainnet.USDE, Mainnet.SUSDE);
+        _recordDeployment("ETHENA_ARM_SUSDE_ADAPTER_IMPL", address(adapterImpl));
+        Proxy adapterProxy = new Proxy();
+        adapterProxy.initialize(address(adapterImpl), deployer, "");
+        EthenaAssetAdapter adapter = EthenaAssetAdapter(address(adapterProxy));
+        _recordDeployment("ETHENA_ARM_SUSDE_ADAPTER", address(adapterProxy));
         EthenaARM(payable(address(armProxy)))
             .addBaseAsset(
                 Mainnet.SUSDE,
@@ -110,6 +114,7 @@ contract $014_DeployEthenaARMScript is AbstractDeployScript("014_DeployEthenaARM
 
         // 18. Set Unstakers in the adapter
         adapter.setUnstakers(unstakers);
+        adapterProxy.setOwner(Mainnet.TIMELOCK);
 
         // 14. Transfer ownership of ARM to the 5/8 multisig
         armProxy.setOwner(Mainnet.GOV_MULTISIG);

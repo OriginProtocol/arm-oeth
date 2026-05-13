@@ -127,7 +127,10 @@ abstract contract Setup is Base_Test_ {
 
         // Cast proxy address to EthenaARM type for easier interaction.
         arm = EthenaARM(address(armProxy));
-        ethenaAssetAdapter = new EthenaAssetAdapter(deployer, address(arm), address(usde), address(susde));
+        EthenaAssetAdapter adapterImpl = new EthenaAssetAdapter(address(arm), address(usde), address(susde));
+        Proxy adapterProxy = new Proxy();
+        adapterProxy.initialize(address(adapterImpl), deployer, "");
+        ethenaAssetAdapter = EthenaAssetAdapter(address(adapterProxy));
         arm.addBaseAsset(
             address(susde),
             address(ethenaAssetAdapter),

@@ -24,14 +24,22 @@ contract $013_UpgradeOETHARMScript is AbstractDeployScript("013_UpgradeOETHARMSc
         OriginARM originARMImpl = new OriginARM(Mainnet.OETH, Mainnet.WETH, Mainnet.OETH_VAULT, claimDelay, 1e7, 1e18);
         _recordDeployment("OETH_ARM_IMPL", address(originARMImpl));
 
-        OriginAssetAdapter adapter =
+        OriginAssetAdapter adapterImpl =
             new OriginAssetAdapter(Mainnet.OETH_ARM, Mainnet.OETH, Mainnet.WETH, Mainnet.OETH_VAULT);
-        _recordDeployment("OETH_ARM_OETH_ADAPTER", address(adapter));
+        _recordDeployment("OETH_ARM_OETH_ADAPTER_IMPL", address(adapterImpl));
+        Proxy adapterProxy = new Proxy();
+        adapterProxy.initialize(address(adapterImpl), Mainnet.TIMELOCK, abi.encodeWithSignature("initialize()"));
+        _recordDeployment("OETH_ARM_OETH_ADAPTER", address(adapterProxy));
 
-        WrappedOriginAssetAdapter wrappedAdapter = new WrappedOriginAssetAdapter(
+        WrappedOriginAssetAdapter wrappedAdapterImpl = new WrappedOriginAssetAdapter(
             Mainnet.OETH_ARM, Mainnet.WOETH, Mainnet.OETH, Mainnet.WETH, Mainnet.OETH_VAULT
         );
-        _recordDeployment("OETH_ARM_WOETH_ADAPTER", address(wrappedAdapter));
+        _recordDeployment("OETH_ARM_WOETH_ADAPTER_IMPL", address(wrappedAdapterImpl));
+        Proxy wrappedAdapterProxy = new Proxy();
+        wrappedAdapterProxy.initialize(
+            address(wrappedAdapterImpl), Mainnet.TIMELOCK, abi.encodeWithSignature("initialize()")
+        );
+        _recordDeployment("OETH_ARM_WOETH_ADAPTER", address(wrappedAdapterProxy));
 
         // 2. Deploy MorphoMarket proxy
         Proxy morphoMarketProxy = new Proxy();

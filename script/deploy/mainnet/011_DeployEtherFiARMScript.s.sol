@@ -97,18 +97,21 @@ contract $011_DeployEtherFiARMScript is AbstractDeployScript("011_DeployEtherFiA
         // 13. Deploy the eETH adapter and register eETH as the base asset.
         uint256 crossPrice = 0.9998 * 1e36;
         {
-            EtherFiAssetAdapter adapter = new EtherFiAssetAdapter(
+            EtherFiAssetAdapter adapterImpl = new EtherFiAssetAdapter(
                 address(armProxy),
                 Mainnet.EETH,
                 Mainnet.WETH,
                 Mainnet.ETHERFI_WITHDRAWAL,
                 Mainnet.ETHERFI_WITHDRAWAL_NFT
             );
-            _recordDeployment("ETHER_FI_ARM_EETH_ADAPTER", address(adapter));
+            _recordDeployment("ETHER_FI_ARM_EETH_ADAPTER_IMPL", address(adapterImpl));
+            Proxy adapterProxy = new Proxy();
+            adapterProxy.initialize(address(adapterImpl), Mainnet.TIMELOCK, abi.encodeWithSignature("initialize()"));
+            _recordDeployment("ETHER_FI_ARM_EETH_ADAPTER", address(adapterProxy));
             EtherFiARM(payable(address(armProxy)))
                 .addBaseAsset(
                     Mainnet.EETH,
-                    address(adapter),
+                    address(adapterProxy),
                     0.9997 * 1e36,
                     1e36,
                     type(uint128).max,
@@ -120,7 +123,7 @@ contract $011_DeployEtherFiARMScript is AbstractDeployScript("011_DeployEtherFiA
 
         // 14. Deploy the weETH adapter and register weETH as a non-pegged base asset.
         {
-            WeETHAssetAdapter weethAdapter = new WeETHAssetAdapter(
+            WeETHAssetAdapter weethAdapterImpl = new WeETHAssetAdapter(
                 address(armProxy),
                 Mainnet.WEETH,
                 Mainnet.EETH,
@@ -128,11 +131,16 @@ contract $011_DeployEtherFiARMScript is AbstractDeployScript("011_DeployEtherFiA
                 Mainnet.ETHERFI_WITHDRAWAL,
                 Mainnet.ETHERFI_WITHDRAWAL_NFT
             );
-            _recordDeployment("ETHER_FI_ARM_WEETH_ADAPTER", address(weethAdapter));
+            _recordDeployment("ETHER_FI_ARM_WEETH_ADAPTER_IMPL", address(weethAdapterImpl));
+            Proxy weethAdapterProxy = new Proxy();
+            weethAdapterProxy.initialize(
+                address(weethAdapterImpl), Mainnet.TIMELOCK, abi.encodeWithSignature("initialize()")
+            );
+            _recordDeployment("ETHER_FI_ARM_WEETH_ADAPTER", address(weethAdapterProxy));
             EtherFiARM(payable(address(armProxy)))
                 .addBaseAsset(
                     Mainnet.WEETH,
-                    address(weethAdapter),
+                    address(weethAdapterProxy),
                     0.9997 * 1e36,
                     1e36,
                     type(uint128).max,

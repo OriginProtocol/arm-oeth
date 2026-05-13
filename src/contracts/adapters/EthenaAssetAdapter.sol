@@ -3,12 +3,12 @@ pragma solidity ^0.8.23;
 
 import {EthenaUnstaker} from "../EthenaUnstaker.sol";
 import {IAssetAdapter, IERC20, IStakedUSDe, UserCooldown} from "../Interfaces.sol";
+import {Ownable} from "../Ownable.sol";
 
-contract EthenaAssetAdapter is IAssetAdapter {
+contract EthenaAssetAdapter is IAssetAdapter, Ownable {
     uint256 public constant DELAY_REQUEST = 30 minutes;
     uint8 public constant MAX_UNSTAKERS = 42;
 
-    address public immutable owner;
     address public immutable arm;
     IERC20 public immutable usde;
     IStakedUSDe public immutable susde;
@@ -22,11 +22,12 @@ contract EthenaAssetAdapter is IAssetAdapter {
     uint8[] internal pendingUnstakerIndexes;
     uint256 internal nextPendingIndex;
 
-    constructor(address _owner, address _arm, address _usde, address _susde) {
-        owner = _owner;
+    constructor(address _arm, address _usde, address _susde) {
         arm = _arm;
         usde = IERC20(_usde);
         susde = IStakedUSDe(_susde);
+
+        _setOwner(address(0));
     }
 
     function asset() external view returns (address) {
@@ -121,10 +122,5 @@ contract EthenaAssetAdapter is IAssetAdapter {
 
     function _onlyARM() internal view {
         require(msg.sender == arm, "Adapter: only ARM");
-    }
-
-    modifier onlyOwner() {
-        require(msg.sender == owner, "Adapter: only owner");
-        _;
     }
 }

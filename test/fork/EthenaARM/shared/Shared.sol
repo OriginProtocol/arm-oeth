@@ -103,7 +103,10 @@ abstract contract Fork_Shared_Test is Base_Test_ {
         // Assign Ethena ARM instance
         ethenaARM = EthenaARM(address(ethenaProxy));
 
-        ethenaAssetAdapter = new EthenaAssetAdapter(governor, address(ethenaARM), address(usde), address(susde));
+        EthenaAssetAdapter adapterImpl = new EthenaAssetAdapter(address(ethenaARM), address(usde), address(susde));
+        Proxy adapterProxy = new Proxy();
+        adapterProxy.initialize(address(adapterImpl), governor, "");
+        ethenaAssetAdapter = EthenaAssetAdapter(address(adapterProxy));
     }
 
     function _buyPrice() internal view returns (uint256 buyPrice) {

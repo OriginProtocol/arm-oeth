@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
+import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 
 import {IAssetAdapter, IERC20, IEETHWithdrawal, IEETHWithdrawalNFT, IWeETH, IWETH} from "../Interfaces.sol";
 
-contract WeETHAssetAdapter is IAssetAdapter, IERC721Receiver {
+contract WeETHAssetAdapter is Initializable, IAssetAdapter, IERC721Receiver {
     address public immutable arm;
     IWeETH public immutable weeth;
     IERC20 public immutable eeth;
@@ -34,6 +35,10 @@ contract WeETHAssetAdapter is IAssetAdapter, IERC721Receiver {
         etherfiWithdrawalNFT = IEETHWithdrawalNFT(_etherfiWithdrawalNFT);
 
         eeth.approve(_etherfiWithdrawalQueue, type(uint256).max);
+    }
+
+    function initialize() external initializer {
+        eeth.approve(address(etherfiWithdrawalQueue), type(uint256).max);
     }
 
     function asset() external view returns (address) {

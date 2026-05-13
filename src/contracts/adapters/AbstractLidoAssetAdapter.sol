@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
+import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+
 import {IAssetAdapter, IERC20, IStETHWithdrawal, ISTETH, IWETH} from "../Interfaces.sol";
 
-abstract contract AbstractLidoAssetAdapter is IAssetAdapter {
+abstract contract AbstractLidoAssetAdapter is Initializable, IAssetAdapter {
     uint256 internal constant MAX_WITHDRAWAL_AMOUNT = 1000 ether;
 
     address public immutable arm;
@@ -24,6 +26,10 @@ abstract contract AbstractLidoAssetAdapter is IAssetAdapter {
         lidoWithdrawalQueue = IStETHWithdrawal(_lidoWithdrawalQueue);
 
         IERC20(_steth).approve(_lidoWithdrawalQueue, type(uint256).max);
+    }
+
+    function initialize() external initializer {
+        IERC20(address(steth)).approve(address(lidoWithdrawalQueue), type(uint256).max);
     }
 
     function asset() external view returns (address) {

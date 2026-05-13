@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
+import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+
 import {IAssetAdapter, IERC20, IOriginVault} from "../Interfaces.sol";
 
-contract OriginAssetAdapter is IAssetAdapter {
+contract OriginAssetAdapter is Initializable, IAssetAdapter {
     address public immutable arm;
     IERC20 public immutable otoken;
     IERC20 public immutable liquidityAsset;
@@ -19,6 +21,10 @@ contract OriginAssetAdapter is IAssetAdapter {
         liquidityAsset = IERC20(_liquidityAsset);
         vault = IOriginVault(_vault);
         otoken.approve(_vault, type(uint256).max);
+    }
+
+    function initialize() external initializer {
+        otoken.approve(address(vault), type(uint256).max);
     }
 
     function asset() external view returns (address) {

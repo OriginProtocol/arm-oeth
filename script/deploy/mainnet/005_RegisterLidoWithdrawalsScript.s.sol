@@ -3,6 +3,7 @@ pragma solidity 0.8.23;
 
 // Contract
 import {LidoARM} from "contracts/LidoARM.sol";
+import {Proxy} from "contracts/Proxy.sol";
 import {StETHAssetAdapter} from "contracts/adapters/StETHAssetAdapter.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
 
@@ -21,7 +22,10 @@ contract $005_RegisterLidoWithdrawalsScript is AbstractDeployScript("005_Registe
 
         StETHAssetAdapter stethAdapter =
             new StETHAssetAdapter(Mainnet.LIDO_ARM, Mainnet.WETH, Mainnet.STETH, Mainnet.LIDO_WITHDRAWAL);
-        _recordDeployment("LIDO_ARM_STETH_ADAPTER", address(stethAdapter));
+        _recordDeployment("LIDO_ARM_STETH_ADAPTER_IMPL", address(stethAdapter));
+        Proxy stethAdapterProxy = new Proxy();
+        stethAdapterProxy.initialize(address(stethAdapter), Mainnet.TIMELOCK, abi.encodeWithSignature("initialize()"));
+        _recordDeployment("LIDO_ARM_STETH_ADAPTER", address(stethAdapterProxy));
     }
 
     function _buildGovernanceProposal() internal override {
