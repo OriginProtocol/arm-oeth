@@ -132,8 +132,10 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     uint128 public withdrawsQueuedShares;
     /// @notice Cumulative LP shares claimed and burned.
     uint128 public withdrawsClaimedShares;
+    /// @notice True when user-facing ARM actions are paused.
+    bool public paused;
 
-    uint256[34] private _gap;
+    uint256[33] private _gap;
 
     ////////////////////////////////////////////////////
     ///                 Events
@@ -163,6 +165,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     event MarketRemoved(address indexed market);
     event ARMBufferUpdated(uint256 armBuffer);
     event Allocated(address indexed market, int256 targetLiquidityDelta, int256 actualLiquidityDelta);
+    event Paused(address indexed account);
+    event Unpaused(address indexed account);
 
     ////////////////////////////////////////////////////
     ///                 Constructor
@@ -242,7 +246,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         uint256 amountIn,
         uint256 amountOutMin,
         address to
-    ) external virtual returns (uint256[] memory amounts) {
+    ) external virtual whenNotPaused returns (uint256[] memory amounts) {
         uint256 amountOut = _swapExactTokensForTokens(inToken, outToken, amountIn, to);
         require(amountOut >= amountOutMin, "ARM: Insufficient output amount");
 
@@ -264,7 +268,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         address[] calldata path,
         address to,
         uint256 deadline
-    ) external virtual returns (uint256[] memory amounts) {
+    ) external virtual whenNotPaused returns (uint256[] memory amounts) {
         require(path.length == 2, "ARM: Invalid path length");
         _inDeadline(deadline);
 
@@ -289,7 +293,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         uint256 amountOut,
         uint256 amountInMax,
         address to
-    ) external virtual returns (uint256[] memory amounts) {
+    ) external virtual whenNotPaused returns (uint256[] memory amounts) {
         uint256 amountIn = _swapTokensForExactTokens(inToken, outToken, amountOut, to);
         require(amountIn <= amountInMax, "ARM: Excess input amount");
 
@@ -311,7 +315,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         address[] calldata path,
         address to,
         uint256 deadline
-    ) external virtual returns (uint256[] memory amounts) {
+    ) external virtual whenNotPaused returns (uint256[] memory amounts) {
         require(path.length == 2, "ARM: Invalid path length");
         _inDeadline(deadline);
 
@@ -660,7 +664,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @notice Deposit liquidity assets and mint LP shares to the caller.
     /// @param assets Liquidity assets to deposit.
     /// @return shares LP shares minted.
-    function deposit(uint256 assets) external returns (uint256 shares) {
+    function deposit(uint256 assets) external whenNotPaused returns (uint256 shares) {
         shares = _deposit(assets, msg.sender);
     }
 
@@ -668,7 +672,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @param assets Liquidity assets to deposit.
     /// @param receiver Account that receives minted LP shares.
     /// @return shares LP shares minted.
-    function deposit(uint256 assets, address receiver) external returns (uint256 shares) {
+    function deposit(uint256 assets, address receiver) external whenNotPaused returns (uint256 shares) {
         shares = _deposit(assets, receiver);
     }
 
@@ -704,7 +708,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @param shares LP shares to burn.
     /// @return requestId The LP withdrawal request id.
     /// @return assets The maximum liquidity assets claimable by the redeemer.
-    function requestRedeem(uint256 shares) external returns (uint256 requestId, uint256 assets) {
+    function requestRedeem(uint256 shares) external whenNotPaused returns (uint256 requestId, uint256 assets) {
         assets = convertToAssets(shares);
         requestId = nextWithdrawalIndex;
         // Store the next withdrawal request id.
@@ -1093,6 +1097,18 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     ///                 Admin Functions
     ////////////////////////////////////////////////////
 
+    /// @notice Pause user-facing ARM actions.
+    function pause() external onlyOperatorOrOwner {
+        paused = true;
+        emit Paused(msg.sender);
+    }
+
+    /// @notice Unpause user-facing ARM actions.
+    function unpause() external onlyOwner {
+        paused = false;
+        emit Unpaused(msg.sender);
+    }
+
     /// @notice Set the CapManager contract.
     /// @param _capManager CapManager contract address, or address(0) to disable caps.
     function setCapManager(address _capManager) external onlyOwner {
@@ -1123,5 +1139,10 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         require(legacyQueued == legacyClaimed, "ARM: legacy withdrawals pending");
 
         reservedWithdrawLiquidity = 0;
+    }
+
+    modifier whenNotPaused() {
+        require(!paused, "ARM: paused");
+        _;
     }
 }
