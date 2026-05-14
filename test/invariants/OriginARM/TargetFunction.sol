@@ -386,7 +386,7 @@ abstract contract TargetFunction is Properties {
 
         // Main call
         vm.prank(governor);
-        originARM.requestRedeem(address(os), amount);
+        originARM.requestBaseAssetRedeem(address(os), amount);
 
         // Add requestId to the list
         originRequests.push(expectedId);
@@ -412,7 +412,7 @@ abstract contract TargetFunction is Properties {
             totalShares += originAssetAdapter.requestShares(ids[i]);
         }
         vm.prank(governor);
-        (,, uint256 totalClaimed) = originARM.claimRedeem(address(os), totalShares);
+        (,, uint256 totalClaimed) = originARM.claimBaseAssetRedeem(address(os), totalShares);
 
         uint256[] memory remainingIds = new uint256[](originRequests.length - requestCount);
         for (uint256 i = requestCount; i < originRequests.length; i++) {
@@ -503,7 +503,7 @@ abstract contract TargetFunction is Properties {
                 totalShares += originAssetAdapter.requestShares(originRequests[i]);
             }
             vm.prank(governor);
-            originARM.claimRedeem(address(os), totalShares);
+            originARM.claimBaseAssetRedeem(address(os), totalShares);
         }
 
         // - Remove the active market to pull out all deposited funds

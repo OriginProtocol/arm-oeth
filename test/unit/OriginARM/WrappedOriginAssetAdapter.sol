@@ -41,7 +41,8 @@ contract Unit_Concrete_OriginARM_WrappedOriginAssetAdapter_Test_ is Unit_Shared_
         uint256 assetsExpected = woeth.convertToAssets(shares);
 
         vm.prank(governor);
-        (uint256 sharesRequested, uint256 requestAssetsExpected) = originARM.requestRedeem(address(woeth), shares);
+        (uint256 sharesRequested, uint256 requestAssetsExpected) =
+            originARM.requestBaseAssetRedeem(address(woeth), shares);
 
         assertEq(sharesRequested, shares, "shares requested");
         assertEq(requestAssetsExpected, assetsExpected, "assets expected");
@@ -53,7 +54,7 @@ contract Unit_Concrete_OriginARM_WrappedOriginAssetAdapter_Test_ is Unit_Shared_
 
         vm.prank(governor);
         (uint256 sharesClaimed, uint256 claimAssetsExpected, uint256 assetsReceived) =
-            originARM.claimRedeem(address(woeth), shares);
+            originARM.claimBaseAssetRedeem(address(woeth), shares);
 
         assertEq(sharesClaimed, shares, "shares claimed");
         assertEq(claimAssetsExpected, assetsExpected, "claim assets expected");

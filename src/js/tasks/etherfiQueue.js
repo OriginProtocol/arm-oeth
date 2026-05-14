@@ -22,7 +22,7 @@ const requestEtherFiWithdrawals = async (options) => {
   log(`Requesting withdrawal for ${withdrawAmount} ${baseSymbol}...`);
   const tx = await arm
     .connect(signer)
-    .requestRedeem(baseAddress, withdrawAmount);
+    .requestBaseAssetRedeem(baseAddress, withdrawAmount);
 
   await logTxDetails(tx, "requestEtherFiWithdrawal");
 };
@@ -51,7 +51,9 @@ const claimEtherFiWithdrawals = async (options) => {
   log(
     `About to claim ${requestIds.length} withdrawal requests with\nids: ${requestIds}`,
   );
-  const tx = await arm.connect(signer).claimRedeem(baseAddress, shares);
+  const tx = await arm
+    .connect(signer)
+    .claimBaseAssetRedeem(baseAddress, shares);
   await logTxDetails(tx, "claim EtherFi withdraws");
 };
 

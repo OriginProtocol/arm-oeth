@@ -26,7 +26,7 @@ const autoRequestWithdraw = async (options) => {
 
   const tx = await arm
     .connect(signer)
-    .requestRedeem(baseAddress, withdrawAmount);
+    .requestBaseAssetRedeem(baseAddress, withdrawAmount);
   await logTxDetails(tx, "requestRedeem");
 };
 
@@ -84,7 +84,9 @@ const autoClaimWithdraw = async ({
     shares += await adapter["requestShares(uint256)"](requestId);
   }
 
-  const tx = await arm.connect(signer).claimRedeem(baseAddress, shares);
+  const tx = await arm
+    .connect(signer)
+    .claimBaseAssetRedeem(baseAddress, shares);
   await logTxDetails(tx, "claimRedeem", confirm);
 
   return requestIds;

@@ -362,20 +362,14 @@
   },
   {
     "type": "function",
-    "name": "claimDelay",
+    "name": "checkNoLegacyEthenaCooldown",
     "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
+    "outputs": [],
     "stateMutability": "view"
   },
   {
     "type": "function",
-    "name": "claimRedeem",
+    "name": "claimBaseAssetRedeem",
     "inputs": [
       {
         "name": "redeemBaseAsset",
@@ -406,6 +400,19 @@
       }
     ],
     "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "claimDelay",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
   },
   {
     "type": "function",
@@ -817,7 +824,7 @@
   },
   {
     "type": "function",
-    "name": "requestRedeem",
+    "name": "requestBaseAssetRedeem",
     "inputs": [
       {
         "name": "redeemBaseAsset",

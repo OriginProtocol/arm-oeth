@@ -300,7 +300,7 @@ contract Fork_OriginARM_Smoke_Test is AbstractSmokeTest {
     function test_request_origin_withdrawal() external {
         _dealOETH(address(originARM), 10 ether);
         vm.prank(Mainnet.ARM_RELAYER);
-        originARM.requestRedeem(address(oeth), 10 ether);
+        originARM.requestBaseAssetRedeem(address(oeth), 10 ether);
         uint256 requestId = originAssetAdapter.pendingRequestId(0);
         assertNotEq(requestId, 0);
     }
@@ -322,7 +322,7 @@ contract Fork_OriginARM_Smoke_Test is AbstractSmokeTest {
 
         // Request a withdrawal
         vm.prank(Mainnet.ARM_RELAYER);
-        originARM.requestRedeem(address(oeth), 10 ether);
+        originARM.requestBaseAssetRedeem(address(oeth), 10 ether);
         uint256 requestId = originAssetAdapter.pendingRequestId(0);
 
         // Fast forward time by 1 day to pass the claim delay
@@ -333,7 +333,7 @@ contract Fork_OriginARM_Smoke_Test is AbstractSmokeTest {
         requestIds[0] = requestId;
 
         vm.prank(Mainnet.ARM_RELAYER);
-        (,, uint256 amountClaimed) = originARM.claimRedeem(address(oeth), 10 ether);
+        (,, uint256 amountClaimed) = originARM.claimBaseAssetRedeem(address(oeth), 10 ether);
         assertEq(amountClaimed, 10 ether);
     }
 

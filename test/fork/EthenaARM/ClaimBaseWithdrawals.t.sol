@@ -16,7 +16,7 @@ contract Fork_Concrete_EthenaARM_ClaimBaseWithdrawals_Test_ is Fork_Shared_Test 
     //////////////////////////////////////////////////////
     function test_ClaimBaseWithdrawals_FirstRequest() public {
         vm.prank(operator);
-        ethenaARM.requestRedeem(address(susde), AMOUNT_IN);
+        ethenaARM.requestBaseAssetRedeem(address(susde), AMOUNT_IN);
 
         uint8 unstakerIndex = ethenaAssetAdapter.nextUnstakerIndex() - 1;
         address unstakerAddress = ethenaAssetAdapter.unstakers(unstakerIndex);
@@ -24,7 +24,7 @@ contract Fork_Concrete_EthenaARM_ClaimBaseWithdrawals_Test_ is Fork_Shared_Test 
         uint256 shares = ethenaAssetAdapter.requestShares(unstakerAddress);
 
         vm.prank(operator);
-        ethenaARM.claimRedeem(address(susde), shares);
+        ethenaARM.claimBaseAssetRedeem(address(susde), shares);
     }
 
     //////////////////////////////////////////////////////
@@ -33,7 +33,7 @@ contract Fork_Concrete_EthenaARM_ClaimBaseWithdrawals_Test_ is Fork_Shared_Test 
     function test_RevertWhen_ClaimBaseWithdrawals_NoCooldownAmount() public {
         vm.expectRevert("Adapter: redeem exceeds claimable");
         vm.prank(operator);
-        ethenaARM.claimRedeem(address(susde), AMOUNT_IN);
+        ethenaARM.claimBaseAssetRedeem(address(susde), AMOUNT_IN);
     }
 
     function test_RevertWhen_ClaimBaseWithdrawals_InvalidUnstakerIndex() public {
@@ -43,12 +43,12 @@ contract Fork_Concrete_EthenaARM_ClaimBaseWithdrawals_Test_ is Fork_Shared_Test 
 
         vm.expectRevert("Adapter: redeem exceeds claimable");
         vm.prank(operator);
-        ethenaARM.claimRedeem(address(susde), AMOUNT_IN);
+        ethenaARM.claimBaseAssetRedeem(address(susde), AMOUNT_IN);
     }
 
     function test_RevertWhen_ClaimBaseWithdrawals_InvalidUnstaker() public {
         vm.prank(operator);
-        ethenaARM.requestRedeem(address(susde), AMOUNT_IN);
+        ethenaARM.requestBaseAssetRedeem(address(susde), AMOUNT_IN);
         address unstaker = ethenaAssetAdapter.unstakers(0);
         skip(7 days + 1);
         vm.expectRevert("Only ARM can request unstake");

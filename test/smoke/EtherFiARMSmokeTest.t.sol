@@ -218,7 +218,7 @@ contract Fork_EtherFiARM_Smoke_Test is AbstractSmokeTest {
 
         // Operator requests an Ether.fi withdrawal
         vm.prank(Mainnet.ARM_RELAYER);
-        etherFiARM.requestRedeem(address(eeth), 10 ether);
+        etherFiARM.requestBaseAssetRedeem(address(eeth), 10 ether);
 
         uint256 requestId = etherfiAssetAdapter.pendingRequestId(0);
         assertNotEq(requestId, 0);
@@ -231,7 +231,7 @@ contract Fork_EtherFiARM_Smoke_Test is AbstractSmokeTest {
 
         // Owner requests an Ether.fi withdrawal
         vm.prank(Mainnet.TIMELOCK);
-        etherFiARM.requestRedeem(address(eeth), 10 ether);
+        etherFiARM.requestBaseAssetRedeem(address(eeth), 10 ether);
 
         uint256 requestId = etherfiAssetAdapter.pendingRequestId(0);
         assertNotEq(requestId, 0);
@@ -244,7 +244,7 @@ contract Fork_EtherFiARM_Smoke_Test is AbstractSmokeTest {
 
         // Owner requests an Ether.fi withdrawal
         vm.prank(Mainnet.TIMELOCK);
-        etherFiARM.requestRedeem(address(eeth), 10 ether);
+        etherFiARM.requestBaseAssetRedeem(address(eeth), 10 ether);
         uint256 requestId = etherfiAssetAdapter.pendingRequestId(0);
 
         // Process finalization on withdrawal queue
@@ -255,7 +255,7 @@ contract Fork_EtherFiARM_Smoke_Test is AbstractSmokeTest {
 
         // Claim the withdrawal
         vm.prank(Mainnet.ARM_RELAYER);
-        etherFiARM.claimRedeem(address(eeth), 10 ether);
+        etherFiARM.claimBaseAssetRedeem(address(eeth), 10 ether);
     }
 
     /* Lending Market Allocation Tests */

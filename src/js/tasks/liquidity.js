@@ -32,7 +32,9 @@ const requestWithdraw = async ({ amount, signer, arm, armName, base }) => {
 
   log(`About to request ${amount} ${baseSymbol} withdrawal`);
 
-  const tx = await arm.connect(signer).requestRedeem(baseAddress, amountBI);
+  const tx = await arm
+    .connect(signer)
+    .requestBaseAssetRedeem(baseAddress, amountBI);
 
   await logTxDetails(tx, "requestRedeem");
 
@@ -47,7 +49,9 @@ const claimWithdraw = async ({ id, signer, arm, armName, base }) => {
   });
   const adapter = await adapterContract(config.adapter, signer);
   const shares = await adapter["requestShares(uint256)"](id);
-  const tx = await arm.connect(signer).claimRedeem(baseAddress, shares);
+  const tx = await arm
+    .connect(signer)
+    .claimBaseAssetRedeem(baseAddress, shares);
 
   log(`About to claim withdrawal request ${id}`);
   await logTxDetails(tx, "claimRedeem");

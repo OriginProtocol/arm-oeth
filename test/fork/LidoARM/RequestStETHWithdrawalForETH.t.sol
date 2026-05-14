@@ -27,7 +27,7 @@ contract Fork_Concrete_LidoARM_RequestLidoWithdrawals_Test_ is Fork_Shared_Test_
         amounts[0] = DEFAULT_AMOUNT;
 
         vm.expectRevert("ARM: Only operator or owner can call this function.");
-        lidoARM.requestRedeem(address(steth), amounts[0]);
+        lidoARM.requestBaseAssetRedeem(address(steth), amounts[0]);
     }
 
     function test_RevertWhen_RequestLidoWithdrawals_Because_BalanceExceeded() public asOperator {
@@ -38,7 +38,7 @@ contract Fork_Concrete_LidoARM_RequestLidoWithdrawals_Test_ is Fork_Shared_Test_
         amounts[0] = DEFAULT_AMOUNT;
 
         vm.expectRevert();
-        lidoARM.requestRedeem(address(steth), amounts[0]);
+        lidoARM.requestBaseAssetRedeem(address(steth), amounts[0]);
     }
 
     //////////////////////////////////////////////////////

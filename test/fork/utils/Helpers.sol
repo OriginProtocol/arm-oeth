@@ -94,7 +94,7 @@ abstract contract Helpers is Base_Test_ {
         if (totalAmount == 0) return new uint256[](0);
 
         uint256 previousLength = AbstractLidoAssetAdapter(payable(stethAdapter)).pendingRequestIdsLength();
-        lidoARM.requestRedeem(address(steth), totalAmount);
+        lidoARM.requestBaseAssetRedeem(address(steth), totalAmount);
         uint256 newLength = AbstractLidoAssetAdapter(payable(stethAdapter)).pendingRequestIdsLength();
 
         requestIds = new uint256[](newLength - previousLength);
@@ -111,6 +111,6 @@ abstract contract Helpers is Base_Test_ {
             shares += AbstractLidoAssetAdapter(payable(stethAdapter)).requestShares(requestIds[i]);
         }
 
-        lidoARM.claimRedeem(address(steth), shares);
+        lidoARM.claimBaseAssetRedeem(address(steth), shares);
     }
 }

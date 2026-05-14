@@ -589,7 +589,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         }
 
         vm.prank(operator);
-        arm.requestRedeem(address(susde), amount);
+        arm.requestBaseAssetRedeem(address(susde), amount);
 
         unstakerIndices.push(nextIndex);
 
@@ -634,7 +634,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
 
         uint256 shares = ethenaAssetAdapter.requestShares(unstaker);
         vm.prank(operator);
-        arm.claimRedeem(address(susde), shares);
+        arm.claimBaseAssetRedeem(address(susde), shares);
 
         // Remove the oldest unstaker index while preserving FIFO order.
         for (uint256 i; i < unstakerIndices.length - 1; i++) {
@@ -869,7 +869,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
             address unstaker = ethenaAssetAdapter.unstakers(uint8(unstakerIndices[i]));
             uint256 shares = ethenaAssetAdapter.requestShares(unstaker);
             vm.prank(operator);
-            arm.claimRedeem(address(susde), shares);
+            arm.claimBaseAssetRedeem(address(susde), shares);
         }
 
         // 2. Request base withdrawal of the remaining sUSDe
@@ -877,7 +877,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         uint256 nextIndex = ethenaAssetAdapter.nextUnstakerIndex();
         if (susdeBalance > 0) {
             vm.prank(operator);
-            arm.requestRedeem(address(susde), susdeBalance);
+            arm.requestBaseAssetRedeem(address(susde), susdeBalance);
         }
 
         // 3. Claim previous base withdrawals. At this point we shouldn't have any sUSDe left in the ARM.
@@ -887,7 +887,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
             address unstaker = ethenaAssetAdapter.unstakers(uint8(nextIndex));
             uint256 shares = ethenaAssetAdapter.requestShares(unstaker);
             vm.prank(operator);
-            arm.claimRedeem(address(susde), shares);
+            arm.claimBaseAssetRedeem(address(susde), shares);
         }
         require(susde.balanceOf(address(arm)) == 0, "ARM still has sUSDe balance");
 

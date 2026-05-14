@@ -34,7 +34,7 @@ const requestEthenaWithdrawals = async (options) => {
   log(`Requesting withdrawal for ${formatUnits(withdrawAmount)} sUSDe...`);
   const tx = await arm
     .connect(signer)
-    .requestRedeem(baseAddress, withdrawAmount);
+    .requestBaseAssetRedeem(baseAddress, withdrawAmount);
   await logTxDetails(tx, "requestEthenaWithdrawal");
 };
 
@@ -175,7 +175,9 @@ const claimEthenaWithdrawals = async (options) => {
       shares += item.shares;
     }
 
-    const tx = await arm.connect(signer).claimRedeem(baseAddress, shares);
+    const tx = await arm
+      .connect(signer)
+      .claimBaseAssetRedeem(baseAddress, shares);
     await logTxDetails(tx, `claimEthenaWithdrawal`);
   } else {
     log("No ready USDe withdrawal requests found.");

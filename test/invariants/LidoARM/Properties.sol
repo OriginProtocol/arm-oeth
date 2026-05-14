@@ -222,7 +222,7 @@ abstract contract Properties is Setup, Utils {
         }
 
         uint256 previousLength = AbstractLidoAssetAdapter(payable(stethAdapter)).pendingRequestIdsLength();
-        lidoARM.requestRedeem(address(steth), totalAmount);
+        lidoARM.requestBaseAssetRedeem(address(steth), totalAmount);
         uint256 newLength = AbstractLidoAssetAdapter(payable(stethAdapter)).pendingRequestIdsLength();
 
         requestIds = new uint256[](newLength - previousLength);
@@ -239,6 +239,6 @@ abstract contract Properties is Setup, Utils {
             shares += AbstractLidoAssetAdapter(payable(stethAdapter)).requestShares(requestIds[i]);
         }
 
-        lidoARM.claimRedeem(address(steth), shares);
+        lidoARM.claimBaseAssetRedeem(address(steth), shares);
     }
 }

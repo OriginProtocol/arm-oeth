@@ -96,7 +96,7 @@ contract Modifiers is Helpers {
 
     modifier requestOriginWithdrawal(uint256 amount) {
         vm.startPrank(governor);
-        originARM.requestRedeem(address(os), amount);
+        originARM.requestBaseAssetRedeem(address(os), amount);
         vm.stopPrank();
         _;
     }

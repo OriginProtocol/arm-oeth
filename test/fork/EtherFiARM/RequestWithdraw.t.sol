@@ -15,7 +15,7 @@ contract Fork_Concrete_EtherFiARM_RequestWithdraw_Test_ is Fork_Shared_Test {
 
         // Request a withdrawal
         vm.prank(operator);
-        etherfiARM.requestRedeem(address(eeth), 1 ether);
+        etherfiARM.requestBaseAssetRedeem(address(eeth), 1 ether);
         uint256 requestId = etherfiAssetAdapter.pendingRequestId(0);
 
         // Process finalization on withdrawal queue
@@ -26,7 +26,7 @@ contract Fork_Concrete_EtherFiARM_RequestWithdraw_Test_ is Fork_Shared_Test {
 
         // Claim the withdrawal
         vm.prank(operator);
-        etherfiARM.claimRedeem(address(eeth), 1 ether);
+        etherfiARM.claimBaseAssetRedeem(address(eeth), 1 ether);
     }
 
     function test_WeETH_ConvertToAssets_And_ConvertToShares() public view {
@@ -48,7 +48,8 @@ contract Fork_Concrete_EtherFiARM_RequestWithdraw_Test_ is Fork_Shared_Test {
         deal(address(weeth), address(etherfiARM), weethAmount);
 
         vm.prank(operator);
-        (uint256 sharesRequested, uint256 assetsExpected) = etherfiARM.requestRedeem(address(weeth), weethAmount);
+        (uint256 sharesRequested, uint256 assetsExpected) =
+            etherfiARM.requestBaseAssetRedeem(address(weeth), weethAmount);
 
         assertEq(sharesRequested, weethAmount, "shares requested");
         assertEq(assetsExpected, eethExpected, "assets expected");
@@ -69,7 +70,7 @@ contract Fork_Concrete_EtherFiARM_RequestWithdraw_Test_ is Fork_Shared_Test {
 
         vm.prank(operator);
         (uint256 sharesClaimed, uint256 claimAssetsExpected, uint256 assetsReceived) =
-            etherfiARM.claimRedeem(address(weeth), weethAmount);
+            etherfiARM.claimBaseAssetRedeem(address(weeth), weethAmount);
 
         assertEq(sharesClaimed, weethAmount, "shares claimed");
         assertEq(claimAssetsExpected, eethExpected, "claim assets expected");

@@ -21,7 +21,7 @@ const requestLidoWithdrawals = async (options) => {
 
   const tx = await arm
     .connect(signer)
-    .requestRedeem(baseAddress, withdrawAmount);
+    .requestBaseAssetRedeem(baseAddress, withdrawAmount);
 
   await logTxDetails(tx, "requestRedeem");
 };
@@ -47,7 +47,9 @@ const claimLidoWithdrawals = async (options) => {
   }
 
   log(`About to claim ${formatUnits(shares)} Lido adapter shares`);
-  const tx = await arm.connect(signer).claimRedeem(baseAddress, shares);
+  const tx = await arm
+    .connect(signer)
+    .claimBaseAssetRedeem(baseAddress, shares);
   await logTxDetails(tx, "claimRedeem");
 };
 

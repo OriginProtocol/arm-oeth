@@ -608,7 +608,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @param shares Base asset shares to submit for protocol redemption.
     /// @return sharesRequested Base asset shares accepted by the adapter.
     /// @return assetsExpected Liquidity-denominated assets expected from the redemption.
-    function requestRedeem(address redeemBaseAsset, uint256 shares)
+    function requestBaseAssetRedeem(address redeemBaseAsset, uint256 shares)
         external
         onlyOperatorOrOwner
         returns (uint256 sharesRequested, uint256 assetsExpected)
@@ -629,7 +629,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @return sharesClaimed Base asset shares claimed by the adapter.
     /// @return assetsExpected Liquidity-denominated assets expected from the claimed redemptions.
     /// @return assetsReceived Liquidity assets actually received by the ARM.
-    function claimRedeem(address redeemBaseAsset, uint256 shares)
+    function claimBaseAssetRedeem(address redeemBaseAsset, uint256 shares)
         external
         onlyOperatorOrOwner
         returns (uint256 sharesClaimed, uint256 assetsExpected, uint256 assetsReceived)

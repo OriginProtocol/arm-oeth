@@ -214,7 +214,7 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
         // Operator requests an Ethena withdrawal
         skip(ethenaARM.DELAY_REQUEST() + 1);
         vm.prank(Mainnet.ARM_RELAYER);
-        ethenaARM.requestRedeem(address(susde), 10 ether);
+        ethenaARM.requestBaseAssetRedeem(address(susde), 10 ether);
     }
 
     function test_request_ethena_withdrawal_owner() external {
@@ -224,7 +224,7 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
         // Owner requests an Ethena withdrawal
         skip(ethenaARM.DELAY_REQUEST() + 1);
         vm.prank(Mainnet.TIMELOCK);
-        ethenaARM.requestRedeem(address(susde), 10 ether);
+        ethenaARM.requestBaseAssetRedeem(address(susde), 10 ether);
     }
 
     function test_claim_ethena_request_with_delay() external {
@@ -235,7 +235,7 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
         uint256 nextUnstakerIndex = ethenaAssetAdapter.nextUnstakerIndex();
         skip(ethenaARM.DELAY_REQUEST() + 1);
         vm.prank(Mainnet.TIMELOCK);
-        ethenaARM.requestRedeem(address(susde), 10 ether);
+        ethenaARM.requestBaseAssetRedeem(address(susde), 10 ether);
 
         skip(7 days);
 
@@ -243,7 +243,7 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
         address unstaker = ethenaAssetAdapter.unstakers(uint8(nextUnstakerIndex));
         uint256 requestShares = ethenaAssetAdapter.requestShares(unstaker);
         vm.prank(Mainnet.ARM_RELAYER);
-        ethenaARM.claimRedeem(address(susde), requestShares);
+        ethenaARM.claimBaseAssetRedeem(address(susde), requestShares);
     }
 
     // Allocate to market

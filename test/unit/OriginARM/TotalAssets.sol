@@ -15,7 +15,7 @@ contract Unit_Concrete_OriginARM_TotalAssets_Test_ is Unit_Shared_Test {
         uint256 totalAssetsBefore = originARM.totalAssets();
 
         vm.prank(governor);
-        originARM.requestRedeem(address(oeth), MIN_TOTAL_SUPPLY / 2);
+        originARM.requestBaseAssetRedeem(address(oeth), MIN_TOTAL_SUPPLY / 2);
 
         // Ensure the total assets is equal to the external withdraw queue
         assertEq(originARM.totalAssets(), totalAssetsBefore, "Wrong total assets");

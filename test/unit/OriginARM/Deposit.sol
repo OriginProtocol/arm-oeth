@@ -148,7 +148,7 @@ contract Unit_Concrete_OriginARM_Deposit_Test_ is Unit_Shared_Test {
 
         // Then request a withdrawal, this will decrease the available assets
         vm.prank(governor);
-        originARM.requestRedeem(address(oeth), 1e12 / 2);
+        originARM.requestBaseAssetRedeem(address(oeth), 1e12 / 2);
         uint256 lastAvailableAssets = originARM.totalAssets();
 
         // Expected values
