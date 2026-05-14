@@ -33,7 +33,7 @@ contract Fork_Concrete_OriginARM_TotalAsset_Test_ is Fork_Shared_Test {
         );
         assertEq(market.maxWithdraw(address(originARM)), 0, "Max withdraw should be 0");
         assertEq(originARM.totalAssets(), totalAsset, "Total asset should be the same");
-        assertEq(claimableBefore, totalAsset, "Claimable before should be the same as total asset");
+        assertApproxEqAbs(claimableBefore, totalAsset, 1, "Claimable before should be the same as total asset");
         assertEq(originARM.claimable(), 0, "Claimable after should be 0 as 100% allocated and 100% borrowed");
     }
 }

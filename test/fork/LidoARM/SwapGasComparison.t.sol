@@ -2,6 +2,7 @@
 pragma solidity 0.8.23;
 
 import {Test} from "forge-std/Test.sol";
+import {stdStorage, StdStorage} from "forge-std/StdStorage.sol";
 
 import {LidoARM} from "contracts/LidoARM.sol";
 import {Proxy} from "contracts/Proxy.sol";
@@ -9,6 +10,8 @@ import {IERC20} from "contracts/Interfaces.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
 
 abstract contract Fork_LidoARM_SwapGasComparison_Base is Test {
+    using stdStorage for StdStorage;
+
     uint256 internal constant FORK_BLOCK = 24_846_066;
     uint256 internal constant PRICE_SCALE = 1e36;
     uint256 internal constant LIQUIDITY_DEPOSIT = 1_000 ether;
@@ -126,6 +129,10 @@ contract Fork_Concrete_LidoARM_SwapGasUpgraded_Test is Fork_LidoARM_SwapGasCompa
 
         vm.prank(lidoProxy.owner());
         lidoProxy.upgradeTo(address(upgradedImpl));
+
+        stdStorage.target(stdstore, address(lidoARM));
+        stdStorage.sig(stdstore, lidoARM.reservedWithdrawLiquidity.selector);
+        stdStorage.checked_write(stdstore, uint256(0));
 
         uint256 sellT1 = PRICE_SCALE * PRICE_SCALE / traderate0;
 

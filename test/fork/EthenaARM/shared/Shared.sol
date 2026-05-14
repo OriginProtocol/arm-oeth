@@ -112,6 +112,10 @@ abstract contract Fork_Shared_Test is Base_Test_ {
         usde.approve(address(ethenaARM), type(uint256).max);
         susde.approve(address(ethenaARM), type(uint256).max);
 
+        vm.startPrank(ethenaARM.owner());
+        ethenaARM.setPrices(ethenaARM.traderate1(), 1e36, type(uint256).max, type(uint256).max);
+        vm.stopPrank();
+
         // Deposit some usde in the ARM
         ethenaARM.deposit(10_000 ether);
 

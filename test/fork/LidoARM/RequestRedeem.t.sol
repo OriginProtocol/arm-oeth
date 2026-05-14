@@ -46,7 +46,7 @@ contract Fork_Concrete_LidoARM_RequestRedeem_Test_ is Fork_Shared_Test_ {
         uint256 delay = lidoARM.claimDelay();
 
         vm.expectEmit({emitter: address(lidoARM)});
-        emit IERC20.Transfer(address(this), address(0), DEFAULT_AMOUNT);
+        emit IERC20.Transfer(address(this), address(lidoARM), DEFAULT_AMOUNT);
         vm.expectEmit({emitter: address(lidoARM)});
         emit AbstractARM.RedeemRequested(address(this), 0, DEFAULT_AMOUNT, DEFAULT_AMOUNT, block.timestamp + delay);
         // Main Call
@@ -63,9 +63,10 @@ contract Fork_Concrete_LidoARM_RequestRedeem_Test_ is Fork_Shared_Test_ {
         assertEq(weth.balanceOf(address(lidoARM)), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT);
         assertEq(lidoARM.lidoWithdrawalQueueAmount(), 0);
         assertEq(lidoARM.feesAccrued(), 0); // No perfs so no fees
-        assertEq(int256(lidoARM.totalAssets()), int256(MIN_TOTAL_SUPPLY));
+        assertEq(int256(lidoARM.totalAssets()), int256(MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT));
         assertEq(lidoARM.balanceOf(address(this)), 0);
-        assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY);
+        assertEq(lidoARM.balanceOf(address(lidoARM)), DEFAULT_AMOUNT);
+        assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT);
         if (ac) assertEq(capManager.liquidityProviderCaps(address(this)), 0);
     }
 
@@ -82,16 +83,17 @@ contract Fork_Concrete_LidoARM_RequestRedeem_Test_ is Fork_Shared_Test_ {
         assertEq(weth.balanceOf(address(lidoARM)), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT);
         assertEq(lidoARM.lidoWithdrawalQueueAmount(), 0);
         assertEq(lidoARM.feesAccrued(), 0); // No perfs so no fees
-        assertEq(int256(lidoARM.totalAssets()), int256(MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT * 3 / 4));
+        assertEq(int256(lidoARM.totalAssets()), int256(MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT));
         assertEq(lidoARM.balanceOf(address(this)), DEFAULT_AMOUNT * 3 / 4);
-        assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT * 3 / 4);
+        assertEq(lidoARM.balanceOf(address(lidoARM)), DEFAULT_AMOUNT / 4);
+        assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT);
         if (ac) assertEq(capManager.liquidityProviderCaps(address(this)), 0); // Down only
         assertEqQueueMetadata(DEFAULT_AMOUNT / 4, 0, 1);
 
         uint256 delay = lidoARM.claimDelay();
 
         vm.expectEmit({emitter: address(lidoARM)});
-        emit IERC20.Transfer(address(this), address(0), DEFAULT_AMOUNT / 2);
+        emit IERC20.Transfer(address(this), address(lidoARM), DEFAULT_AMOUNT / 2);
         vm.expectEmit({emitter: address(lidoARM)});
         emit AbstractARM.RedeemRequested(
             address(this), 1, DEFAULT_AMOUNT / 2, DEFAULT_AMOUNT * 3 / 4, block.timestamp + delay
@@ -116,9 +118,10 @@ contract Fork_Concrete_LidoARM_RequestRedeem_Test_ is Fork_Shared_Test_ {
         assertEq(weth.balanceOf(address(lidoARM)), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT);
         assertEq(lidoARM.lidoWithdrawalQueueAmount(), 0);
         assertEq(lidoARM.feesAccrued(), 0); // No perfs so no fees
-        assertEq(int256(lidoARM.totalAssets()), int256(MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT * 1 / 4));
+        assertEq(int256(lidoARM.totalAssets()), int256(MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT));
         assertEq(lidoARM.balanceOf(address(this)), DEFAULT_AMOUNT * 1 / 4);
-        assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT * 1 / 4);
+        assertEq(lidoARM.balanceOf(address(lidoARM)), DEFAULT_AMOUNT * 3 / 4);
+        assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT);
         if (ac) assertEq(capManager.liquidityProviderCaps(address(this)), 0); // Down only
     }
 
@@ -140,13 +143,13 @@ contract Fork_Concrete_LidoARM_RequestRedeem_Test_ is Fork_Shared_Test_ {
 
         // Expected Events
         vm.expectEmit({emitter: address(lidoARM)});
-        emit IERC20.Transfer(address(this), address(0), DEFAULT_AMOUNT);
+        emit IERC20.Transfer(address(this), address(lidoARM), DEFAULT_AMOUNT);
 
         // Main call
         (, uint256 actualAssetsFromRedeem) = lidoARM.requestRedeem(DEFAULT_AMOUNT);
 
         // Calculate expected values
-        uint256 expectedFeeAccrued = assetsGain * 20 / 100; // 20% fee
+        uint256 expectedFeeAccrued = 0;
         uint256 expectedTotalAsset = assetsAfterGain - expectedFeeAccrued;
         uint256 expectedAssetsFromRedeem = DEFAULT_AMOUNT * expectedTotalAsset / (MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT);
 
@@ -156,14 +159,10 @@ contract Fork_Concrete_LidoARM_RequestRedeem_Test_ is Fork_Shared_Test_ {
         assertEq(weth.balanceOf(address(lidoARM)), assetsAfterGain);
         assertEq(lidoARM.lidoWithdrawalQueueAmount(), 0, "stETH in Lido withdrawal queue");
         assertEq(lidoARM.feesAccrued(), expectedFeeAccrued, "fees accrued");
-        assertApproxEqAbs(
-            int256(lidoARM.totalAssets()),
-            int256(MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT) - int256(expectedAssetsFromRedeem),
-            1,
-            "last available assets after"
-        ); // 1 wei of error
+        assertApproxEqAbs(int256(lidoARM.totalAssets()), int256(expectedTotalAsset), 1, "last available assets after"); // 1 wei of error
         assertEq(lidoARM.balanceOf(address(this)), 0);
-        assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY);
+        assertEq(lidoARM.balanceOf(address(lidoARM)), DEFAULT_AMOUNT);
+        assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT);
         if (ac) assertEq(capManager.liquidityProviderCaps(address(this)), 0);
         assertEqQueueMetadata(expectedAssetsFromRedeem, 0, 1);
         assertEqUserRequest(
@@ -172,7 +171,7 @@ contract Fork_Concrete_LidoARM_RequestRedeem_Test_ is Fork_Shared_Test_ {
             false,
             block.timestamp + lidoARM.claimDelay(),
             expectedAssetsFromRedeem,
-            expectedAssetsFromRedeem,
+            DEFAULT_AMOUNT,
             DEFAULT_AMOUNT
         );
     }
@@ -195,7 +194,7 @@ contract Fork_Concrete_LidoARM_RequestRedeem_Test_ is Fork_Shared_Test_ {
 
         // Expected Events
         vm.expectEmit({emitter: address(lidoARM)});
-        emit IERC20.Transfer(address(this), address(0), DEFAULT_AMOUNT);
+        emit IERC20.Transfer(address(this), address(lidoARM), DEFAULT_AMOUNT);
 
         // Main call
         (, uint256 actualAssetsFromRedeem) = lidoARM.requestRedeem(DEFAULT_AMOUNT);
@@ -208,25 +207,15 @@ contract Fork_Concrete_LidoARM_RequestRedeem_Test_ is Fork_Shared_Test_ {
         assertEq(weth.balanceOf(address(lidoARM)), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT - assetsLoss);
         assertEq(lidoARM.lidoWithdrawalQueueAmount(), 0, "stETH in Lido withdrawal queue");
         assertEq(lidoARM.feesAccrued(), 0, "fees accrued");
-        assertApproxEqAbs(
-            int256(lidoARM.totalAssets()),
-            int256(assetsBeforeLoss - expectedAssetsFromRedeem),
-            1,
-            "last available assets"
-        ); // 1 wei of error
+        assertApproxEqAbs(int256(lidoARM.totalAssets()), int256(assetsAfterLoss), 1, "last available assets"); // 1 wei of error
         assertEq(lidoARM.balanceOf(address(this)), 0, "user LP balance");
-        assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY, "total supply");
-        assertEq(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY, "total assets");
+        assertEq(lidoARM.balanceOf(address(lidoARM)), DEFAULT_AMOUNT, "escrowed LP balance");
+        assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT, "total supply");
+        assertEq(lidoARM.totalAssets(), assetsAfterLoss, "total assets");
         if (ac) assertEq(capManager.liquidityProviderCaps(address(this)), 0);
         assertEqQueueMetadata(expectedAssetsFromRedeem, 0, 1);
         assertEqUserRequest(
-            0,
-            address(this),
-            false,
-            block.timestamp + delay,
-            expectedAssetsFromRedeem,
-            expectedAssetsFromRedeem,
-            DEFAULT_AMOUNT
+            0, address(this), false, block.timestamp + delay, expectedAssetsFromRedeem, DEFAULT_AMOUNT, DEFAULT_AMOUNT
         );
     }
 }
