@@ -88,7 +88,7 @@ abstract contract TargetFunction is Properties {
     mapping(address => uint256[]) public requests;
 
     function handler_deposit(uint8 account, uint80 amount) public {
-        vm.assume(lidoARM.totalAssets() > MIN_TOTAL_SUPPLY || lidoARM.withdrawsQueued() == lidoARM.withdrawsClaimed());
+        vm.assume(lidoARM.totalAssets() > MIN_TOTAL_SUPPLY || lidoARM.reservedWithdrawLiquidity() == 0);
 
         // Select a random user
         address user = lps[account % lps.length];
@@ -138,6 +138,7 @@ abstract contract TargetFunction is Properties {
         // Update state
         requests[user].push(id);
         sum_weth_request += amount;
+        sum_shares_request += shares;
         ghost_lp_E = amount == expectedAmount;
         ghost_requestCounter++;
     }
@@ -159,10 +160,10 @@ abstract contract TargetFunction is Properties {
 
         if (user == address(0)) return;
 
-        (,, uint40 claimTimestamp,,, uint128 shares) = lidoARM.withdrawalRequests(requestId);
+        (,,, uint128 requestAssets, uint128 queued, uint128 shares) = lidoARM.withdrawalRequests(requestId);
+        (,, uint40 claimTimestamp,,,) = lidoARM.withdrawalRequests(requestId);
         vm.assume(block.timestamp + lidoARM.claimDelay() >= claimTimestamp);
-        vm.assume(lidoARM.withdrawsQueued() == lidoARM.withdrawsClaimed());
-        vm.assume(lidoARM.claimable() >= lidoARM.previewRedeem(shares));
+        vm.assume(lidoARM.claimable() >= queued);
 
         // Timejump to request deadline
         skip(lidoARM.claimDelay());
@@ -189,6 +190,8 @@ abstract contract TargetFunction is Properties {
 
         // Update ghost
         sum_weth_withdraw += amount;
+        sum_weth_request -= requestAssets;
+        sum_shares_withdraw += shares;
     }
 
     ////////////////////////////////////////////////////
@@ -361,7 +364,7 @@ abstract contract TargetFunction is Properties {
 
     function _availableWethLiquidity() internal view returns (uint256) {
         uint256 balance = weth.balanceOf(address(lidoARM));
-        uint256 outstandingWithdrawals = lidoARM.withdrawsQueued() - lidoARM.withdrawsClaimed();
+        uint256 outstandingWithdrawals = lidoARM.reservedWithdrawLiquidity();
         if (outstandingWithdrawals >= balance) return 0;
         return balance - outstandingWithdrawals;
     }

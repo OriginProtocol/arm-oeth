@@ -119,10 +119,15 @@ abstract contract Fork_Shared_Test is Base_Test_ {
         sellPrice = sellPriceMem;
     }
 
-    function _swapFeeMultiplier(uint256 buyPrice, uint256 fee) internal view returns (uint256) {
+    function _crossPrice() internal view returns (uint256 crossPrice) {
+        (,,,, uint128 crossPriceMem,,,) = ethenaARM.baseAssetConfigs(address(susde));
+        crossPrice = crossPriceMem;
+    }
+
+    function _swapFeeMultiplier(uint256 buyPrice, uint256 crossPrice, uint256 fee) internal view returns (uint256) {
         uint256 priceScale = ethenaARM.PRICE_SCALE();
         if (buyPrice == 0 || fee == 0) return 0;
-        return (priceScale - buyPrice) * fee * priceScale / (buyPrice * ethenaARM.FEE_SCALE());
+        return (crossPrice - buyPrice) * fee * priceScale / (buyPrice * ethenaARM.FEE_SCALE());
     }
 
     function _ignite() internal virtual {

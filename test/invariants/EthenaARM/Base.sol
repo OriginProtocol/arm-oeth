@@ -94,6 +94,8 @@ abstract contract Base_Test_ {
     uint256 internal sumUSDeUserDeposit;
     uint256 internal sumUSDeUserRedeem;
     uint256 internal sumUSDeUserRequest;
+    uint256 internal sumARMUserRequestShares;
+    uint256 internal sumARMUserRedeemShares;
     uint256 internal sumUSDeBaseRedeem;
     uint256 internal sumUSDeFeesCollected;
     uint256 internal sumUSDeMarketDeposit;

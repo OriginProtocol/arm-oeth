@@ -34,13 +34,13 @@ abstract contract Helpers is Base_Test_ {
         }
     }
 
-    /// @notice Asserts the equality between value of `withdrawalQueueMetadata()` and the expected values.
-    function assertEqQueueMetadata(uint256 expectedQueued, uint256 expectedClaimed, uint256 expectedNextIndex)
+    /// @notice Asserts LP withdrawal queue reservation and claimed share metadata.
+    function assertEqQueueMetadata(uint256 expectedReserved, uint256 expectedClaimedShares, uint256 expectedNextIndex)
         public
         view
     {
-        assertEq(lidoARM.withdrawsQueued(), expectedQueued, "metadata queued");
-        assertEq(lidoARM.withdrawsClaimed(), expectedClaimed, "metadata claimed");
+        assertEq(lidoARM.reservedWithdrawLiquidity(), expectedReserved, "metadata reserved");
+        assertEq(lidoARM.withdrawsClaimedShares(), expectedClaimedShares, "metadata claimed shares");
         assertEq(lidoARM.nextWithdrawalIndex(), expectedNextIndex, "metadata nextWithdrawalIndex");
     }
 

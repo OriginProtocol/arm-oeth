@@ -77,7 +77,7 @@ abstract contract TargetFunction is Properties {
     }
 
     function handler_deposit(uint8 seed, uint88 amount) public {
-        vm.assume(originARM.totalAssets() > 1e12 || originARM.withdrawsQueued() == originARM.withdrawsClaimed());
+        vm.assume(originARM.totalAssets() > 1e12 || originARM.reservedWithdrawLiquidity() == 0);
 
         // Get a random user from the list of lps
         address user = getRandomLPs(seed);
@@ -120,6 +120,7 @@ abstract contract TargetFunction is Properties {
         require(id == expectedId, "Expected ID != received");
         require(amount == expectedAmount, "Expected amount != received");
         sum_ws_redeem += amount;
+        sum_shares_redeem += shares;
     }
 
     function handler_claimRedeem(uint8 seed, uint16 seed_id) public {
@@ -138,11 +139,13 @@ abstract contract TargetFunction is Properties {
 
         // Main call
         vm.prank(user);
-        originARM.claimRedeem(id);
+        uint256 assets = originARM.claimRedeem(id);
 
         // Remove the request from the list
         removeRequest(user, id);
-        sum_ws_user_claimed += expectedAmount;
+        sum_ws_user_claimed += assets;
+        (,,,,, uint128 requestShares) = originARM.withdrawalRequests(id);
+        sum_shares_claimed += requestShares;
     }
 
     function handler_setARMBuffer(uint64 pct) public {
@@ -573,9 +576,7 @@ abstract contract TargetFunction is Properties {
         if (token == address(os)) {
             return os.balanceOf(address(originARM));
         } else if (token == address(ws)) {
-            uint256 withdrawsQueued = originARM.withdrawsQueued();
-            uint256 withdrawsClaimed = originARM.withdrawsClaimed();
-            uint256 outstandingWithdrawals = withdrawsQueued - withdrawsClaimed;
+            uint256 outstandingWithdrawals = originARM.reservedWithdrawLiquidity();
             uint256 balance = ws.balanceOf(address(originARM));
             if (outstandingWithdrawals > balance) return 0;
 
@@ -608,10 +609,8 @@ abstract contract TargetFunction is Properties {
             assets += IERC4626(activeMarket).previewRedeem(IERC4626(activeMarket).balanceOf(address(originARM)));
         }
 
-        outstandingWithdrawals = originARM.withdrawsQueued() - originARM.withdrawsClaimed();
-        if (assets < outstandingWithdrawals) return (0, outstandingWithdrawals);
-
-        availableAssets = assets - outstandingWithdrawals;
+        outstandingWithdrawals = originARM.reservedWithdrawLiquidity();
+        availableAssets = assets;
     }
 
     function assertLpsAreUpOnly(uint256 tolerance) public view {
