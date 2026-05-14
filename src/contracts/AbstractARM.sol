@@ -679,6 +679,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     function _deposit(uint256 assets, address receiver) internal returns (uint256 shares) {
         require(totalAssets() > MIN_TOTAL_SUPPLY || reservedWithdrawLiquidity == 0, "ARM: insolvent");
         shares = convertToShares(assets);
+        require(shares != 0, "ARM: zero shares");
 
         // Transfer liquidity from the depositor before minting LP shares.
         IERC20(liquidityAsset).transferFrom(msg.sender, address(this), assets);

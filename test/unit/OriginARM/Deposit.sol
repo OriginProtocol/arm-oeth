@@ -228,6 +228,18 @@ contract Unit_Concrete_OriginARM_Deposit_Test_ is Unit_Shared_Test {
         originARM.deposit(DEFAULT_AMOUNT);
     }
 
+    function test_RevertWhen_Deposit_Because_ZeroShares() public {
+        // Donating 1 wei increases assets per share enough for a 1 wei deposit to round down to 0 shares.
+        deal(address(weth), address(originARM), weth.balanceOf(address(originARM)) + 1);
+        assertEq(originARM.convertToShares(1), 0, "deposit should round to zero shares");
+
+        deal(address(weth), alice, 1);
+
+        vm.expectRevert("ARM: zero shares");
+        vm.prank(alice);
+        originARM.deposit(1);
+    }
+
     /// @notice Deposits remain priced from gross assets when escrowed redeem shares share a partial loss.
     function test_Deposit_When_OutstandingRequestSharesShareSmallLoss()
         public
