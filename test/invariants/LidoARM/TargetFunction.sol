@@ -93,8 +93,12 @@ abstract contract TargetFunction is Properties {
         // Select a random user
         address user = lps[account % lps.length];
 
-        amount = uint80(_bound(amount, 0, min(weth.balanceOf(user), type(uint80).max)));
-        vm.assume(amount > 0);
+        uint256 totalSupply = lidoARM.totalSupply();
+        uint256 totalAssets = lidoARM.totalAssets();
+        uint256 minAmount = totalAssets / totalSupply + 1;
+        uint256 maxAmount = min(weth.balanceOf(user), type(uint80).max);
+        vm.assume(minAmount <= maxAmount);
+        amount = uint80(_bound(amount, minAmount, maxAmount));
 
         // Cache preview deposit
         uint256 expectedShares = lidoARM.previewDeposit(amount);

@@ -86,6 +86,11 @@ abstract contract TargetFunction is Properties {
         if (CONSOLE_LOG) console.log("deposit() \t\t From: %s | \t Amount: %s", name(user), faa(amount));
 
         // Expected amount of shares
+        uint256 totalSupply = originARM.totalSupply();
+        uint256 totalAssets = originARM.totalAssets();
+        uint256 minAmount = totalAssets / totalSupply + 1;
+        vm.assume(minAmount <= type(uint88).max);
+        amount = uint88(_bound(amount, minAmount, type(uint88).max));
         uint256 previewDeposit = originARM.previewDeposit(amount);
 
         // Main call
