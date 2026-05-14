@@ -534,7 +534,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
         // Ensure there is no negative reserves when there are more outstanding withdrawals than liquidity assets in the ARM
         uint256 reservedWithdrawLiquidityMem = reservedWithdrawLiquidity;
-        reserve0 = reservedWithdrawLiquidityMem > liquidityAssetsBalance ? 0 : liquidityAssetsBalance - reservedWithdrawLiquidityMem;
+        reserve0 = reservedWithdrawLiquidityMem > liquidityAssetsBalance
+            ? 0
+            : liquidityAssetsBalance - reservedWithdrawLiquidityMem;
         reserve1 = IERC20(baseAsset).balanceOf(address(this));
 
         // The previous assignment assumed token0 is be the liquidity asset.
