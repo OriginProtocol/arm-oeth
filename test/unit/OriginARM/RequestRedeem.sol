@@ -42,9 +42,7 @@ contract Unit_Concrete_OriginARM_RequestRedeem_Test_ is Unit_Shared_Test {
         (address withdrawer, bool claimed, uint256 requestTimestamp, uint256 amount, uint256 queued_, uint256 shares) =
             originARM.withdrawalRequests(0);
         // Assertions
-        assertEq(
-            originARM.totalAssets(), lastAvailableAssets - DEFAULT_AMOUNT, "Last available assets should be updated"
-        );
+        assertEq(originARM.totalAssets(), lastAvailableAssets, "Total assets should be unchanged");
         assertEq(
             originARM.reservedWithdrawLiquidity(),
             reservedWithdrawLiquidity + DEFAULT_AMOUNT,

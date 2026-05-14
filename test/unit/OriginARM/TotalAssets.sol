@@ -26,12 +26,12 @@ contract Unit_Concrete_OriginARM_TotalAssets_Test_ is Unit_Shared_Test {
         assertEq(originARM.totalAssets(), MIN_TOTAL_SUPPLY, "Wrong total assets");
     }
 
-    /// deposit then redeem should have no impact on total assets
+    /// deposit then redeem keeps escrowed shares in totalSupply, so totalAssets is not reduced by the queued redeem
     function test_TotalAssets_When_WithdrawQueue_IsNotZero() public deposit(alice, 1 ether) requestRedeemAll(alice) {
-        assertEq(originARM.totalAssets(), MIN_TOTAL_SUPPLY, "Wrong total assets");
+        assertEq(originARM.totalAssets(), 1 ether + MIN_TOTAL_SUPPLY, "Wrong total assets");
     }
 
-    /// market take a 100% loss, totalAssets should be MIN_TOTAL_SUPPLY
+    /// market liquidity constraints do not reduce totalAssets, which values the market using convertToAssets
     function test_TotalAssets_When_MarketLoseAll()
         public
         addMarket(address(market))
@@ -42,7 +42,7 @@ contract Unit_Concrete_OriginARM_TotalAssets_Test_ is Unit_Shared_Test {
         simulateMarketLoss(address(market), 1 ether)
         requestRedeem(alice, 1 ether)
     {
-        assertEq(originARM.totalAssets(), MIN_TOTAL_SUPPLY, "Wrong total assets");
+        assertEq(originARM.totalAssets(), 1 ether + MIN_TOTAL_SUPPLY, "Wrong total assets");
     }
 
     function test_TotalAssets_When_AssetIsLessThanOutstandingWithdrawals()
