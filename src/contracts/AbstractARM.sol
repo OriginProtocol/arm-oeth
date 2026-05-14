@@ -3,6 +3,8 @@ pragma solidity ^0.8.23;
 
 import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
+import {IERC20 as OZIERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 import {OwnableOperable} from "./OwnableOperable.sol";
@@ -17,6 +19,8 @@ import {IAssetAdapter, IERC20, ICapManager} from "./Interfaces.sol";
  * @author Origin Protocol Inc
  */
 abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
+    using SafeERC20 for OZIERC20;
+
     ////////////////////////////////////////////////////
     ///                 Constants
     ////////////////////////////////////////////////////
@@ -213,7 +217,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         __ERC20_init(_name, _symbol);
 
         // Transfer a small bit of liquidity from the initializer to this contract.
-        IERC20(liquidityAsset).transferFrom(msg.sender, address(this), MIN_TOTAL_SUPPLY);
+        OZIERC20(liquidityAsset).safeTransferFrom(msg.sender, address(this), MIN_TOTAL_SUPPLY);
         // Mint a small amount of shares to a dead account so total supply can never be zero.
         // This avoids donation attacks when there are no assets in the ARM contract.
         _mint(DEAD_ACCOUNT, MIN_TOTAL_SUPPLY);
@@ -369,10 +373,10 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         _consumeSwapLiquidityLimit(config, isBuySide, amountOut);
 
         // Transfer the input tokens from the caller to this ARM contract
-        inToken.transferFrom(msg.sender, address(this), amountIn);
+        OZIERC20(address(inToken)).safeTransferFrom(msg.sender, address(this), amountIn);
 
         // Transfer the output tokens to the recipient
-        outToken.transfer(to, amountOut);
+        OZIERC20(address(outToken)).safeTransfer(to, amountOut);
     }
 
     /// @dev Swap for exact output between the liquidity asset and one supported base asset.
@@ -412,10 +416,10 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         _consumeSwapLiquidityLimit(config, isBuySide, amountOut);
 
         // Transfer the input tokens from the caller to this ARM contract
-        inToken.transferFrom(msg.sender, address(this), amountIn);
+        OZIERC20(address(inToken)).safeTransferFrom(msg.sender, address(this), amountIn);
 
         // Transfer the output tokens to the recipient
-        outToken.transfer(to, amountOut);
+        OZIERC20(address(outToken)).safeTransfer(to, amountOut);
     }
 
     /// @dev Resolve the supported base asset from a 2-token swap pair.
@@ -536,7 +540,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
         baseAssets.push(newBaseAsset);
         // Allow the adapter to pull base assets when requesting protocol redemptions.
-        IERC20(newBaseAsset).approve(adapter, type(uint256).max);
+        OZIERC20(newBaseAsset).forceApprove(adapter, type(uint256).max);
         baseAssetConfigs[newBaseAsset] = BaseAssetConfig({
             buyPrice: SafeCast.toUint128(buyPrice),
             sellPrice: SafeCast.toUint128(sellPrice),
@@ -681,7 +685,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         shares = convertToShares(assets);
 
         // Transfer liquidity from the depositor before minting LP shares.
-        IERC20(liquidityAsset).transferFrom(msg.sender, address(this), assets);
+        OZIERC20(liquidityAsset).safeTransferFrom(msg.sender, address(this), assets);
         _mint(receiver, shares);
 
         // Enforce LP caps after the deposit has changed the receiver's share balance.
@@ -774,7 +778,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         }
 
         // Transfer the liquidity asset to the withdrawer.
-        IERC20(liquidityAsset).transfer(msg.sender, assets);
+        OZIERC20(liquidityAsset).safeTransfer(msg.sender, assets);
         emit RedeemClaimed(msg.sender, requestId, assets);
     }
 
@@ -960,7 +964,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         require(fees <= IERC20(liquidityAsset).balanceOf(address(this)), "ARM: insufficient liquidity");
 
         feesAccrued = 0;
-        IERC20(liquidityAsset).transfer(feeCollector, fees);
+        OZIERC20(liquidityAsset).safeTransfer(feeCollector, fees);
         emit FeeCollected(feeCollector, fees);
     }
 
@@ -1060,7 +1064,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         if (targetLiquidityDelta > allocateThreshold) {
             // We have too much liquidity in the ARM, so deposit some to the active lending market.
             uint256 depositAmount = SafeCast.toUint256(targetLiquidityDelta);
-            IERC20(liquidityAsset).approve(activeMarketMem, depositAmount);
+            OZIERC20(liquidityAsset).forceApprove(activeMarketMem, depositAmount);
             IERC4626(activeMarketMem).deposit(depositAmount, address(this));
             actualLiquidityDelta = SafeCast.toInt256(depositAmount);
         } else if (targetLiquidityDelta < 0) {

@@ -2,6 +2,8 @@
 pragma solidity ^0.8.23;
 
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {IERC20 as OZIERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import {IAssetAdapter, IERC20, IStETHWithdrawal, ISTETH, IWETH} from "../Interfaces.sol";
 
@@ -10,6 +12,8 @@ interface ILidoARMLegacyQueueCheck {
 }
 
 abstract contract AbstractLidoAssetAdapter is Initializable, IAssetAdapter {
+    using SafeERC20 for OZIERC20;
+
     uint256 internal constant MAX_WITHDRAWAL_AMOUNT = 1000 ether;
 
     address public immutable arm;
@@ -29,12 +33,12 @@ abstract contract AbstractLidoAssetAdapter is Initializable, IAssetAdapter {
         steth = ISTETH(_steth);
         lidoWithdrawalQueue = IStETHWithdrawal(_lidoWithdrawalQueue);
 
-        IERC20(_steth).approve(_lidoWithdrawalQueue, type(uint256).max);
+        OZIERC20(_steth).forceApprove(_lidoWithdrawalQueue, type(uint256).max);
     }
 
     function initialize() external initializer {
         ILidoARMLegacyQueueCheck(arm).checkNoLegacyLidoWithdrawalRequests();
-        IERC20(address(steth)).approve(address(lidoWithdrawalQueue), type(uint256).max);
+        OZIERC20(address(steth)).forceApprove(address(lidoWithdrawalQueue), type(uint256).max);
     }
 
     function asset() external view returns (address) {
@@ -115,7 +119,7 @@ abstract contract AbstractLidoAssetAdapter is Initializable, IAssetAdapter {
         }
 
         assetsReceived = weth.balanceOf(address(this)) - wethBefore;
-        IERC20(address(weth)).transfer(arm, assetsReceived);
+        OZIERC20(address(weth)).safeTransfer(arm, assetsReceived);
     }
 
     function claimableRedeem() external view returns (uint256 claimableShares, uint256 claimableAssets) {

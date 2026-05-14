@@ -1,11 +1,16 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
+import {IERC20 as OZIERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
 import {EthenaUnstaker} from "../EthenaUnstaker.sol";
 import {IAssetAdapter, IERC20, IStakedUSDe, UserCooldown} from "../Interfaces.sol";
 import {Ownable} from "../Ownable.sol";
 
 contract EthenaAssetAdapter is IAssetAdapter, Ownable {
+    using SafeERC20 for OZIERC20;
+
     uint256 public constant DELAY_REQUEST = 30 minutes;
     uint8 public constant MAX_UNSTAKERS = 42;
 
@@ -61,7 +66,7 @@ contract EthenaAssetAdapter is IAssetAdapter, Ownable {
         pendingUnstakerIndexes.push(nextUnstakerIndex);
         nextUnstakerIndex = uint8((nextUnstakerIndex + 1) % MAX_UNSTAKERS);
 
-        susde.transferFrom(arm, unstaker, shares);
+        OZIERC20(address(susde)).safeTransferFrom(arm, unstaker, shares);
         assetsExpected = EthenaUnstaker(unstaker).requestUnstake(shares);
         requestShares[unstaker] = shares;
         requestAssets[unstaker] = assetsExpected;
@@ -101,7 +106,7 @@ contract EthenaAssetAdapter is IAssetAdapter, Ownable {
         nextPendingIndex = cursor + claimCount;
 
         assetsReceived = usde.balanceOf(address(this)) - balanceBefore;
-        usde.transfer(arm, assetsReceived);
+        OZIERC20(address(usde)).safeTransfer(arm, assetsReceived);
     }
 
     function deployUnstakers() external onlyOwner {

@@ -1,10 +1,14 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import {IERC20} from "../Interfaces.sol";
+import {IERC20 as OZIERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
 import {AbstractLidoAssetAdapter} from "./AbstractLidoAssetAdapter.sol";
 
 contract StETHAssetAdapter is AbstractLidoAssetAdapter {
+    using SafeERC20 for OZIERC20;
+
     constructor(address _arm, address _weth, address _steth, address _lidoWithdrawalQueue)
         AbstractLidoAssetAdapter(_arm, _weth, _steth, _lidoWithdrawalQueue)
     {}
@@ -18,7 +22,7 @@ contract StETHAssetAdapter is AbstractLidoAssetAdapter {
     }
 
     function _pullSharesAndConvertToSteth(address owner, uint256 shares) internal override returns (uint256 assetsOut) {
-        IERC20(address(steth)).transferFrom(owner, address(this), shares);
+        OZIERC20(address(steth)).safeTransferFrom(owner, address(this), shares);
         assetsOut = shares;
     }
 

@@ -2,10 +2,14 @@
 pragma solidity ^0.8.23;
 
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {IERC20 as OZIERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import {IAssetAdapter, IERC20, IOriginVault} from "../Interfaces.sol";
 
 contract OriginAssetAdapter is Initializable, IAssetAdapter {
+    using SafeERC20 for OZIERC20;
+
     address public immutable arm;
     IERC20 public immutable otoken;
     IERC20 public immutable liquidityAsset;
@@ -20,11 +24,11 @@ contract OriginAssetAdapter is Initializable, IAssetAdapter {
         otoken = IERC20(_otoken);
         liquidityAsset = IERC20(_liquidityAsset);
         vault = IOriginVault(_vault);
-        otoken.approve(_vault, type(uint256).max);
+        OZIERC20(address(otoken)).forceApprove(_vault, type(uint256).max);
     }
 
     function initialize() external initializer {
-        otoken.approve(address(vault), type(uint256).max);
+        OZIERC20(address(otoken)).forceApprove(address(vault), type(uint256).max);
     }
 
     function asset() external view returns (address) {
@@ -45,7 +49,7 @@ contract OriginAssetAdapter is Initializable, IAssetAdapter {
         nonZeroShares(shares)
         returns (uint256 sharesRequested, uint256 assetsExpected)
     {
-        otoken.transferFrom(arm, address(this), shares);
+        OZIERC20(address(otoken)).safeTransferFrom(arm, address(this), shares);
         (uint256 requestId,) = vault.requestWithdrawal(shares);
         requestShares[requestId] = shares;
         pendingRequestIds.push(requestId);
@@ -88,7 +92,7 @@ contract OriginAssetAdapter is Initializable, IAssetAdapter {
         (, uint256 amountClaimed) = vault.claimWithdrawals(requestIds);
         uint256 balanceDelta = liquidityAsset.balanceOf(address(this)) - balanceBefore;
         assetsReceived = balanceDelta > amountClaimed ? balanceDelta : amountClaimed;
-        liquidityAsset.transfer(arm, balanceDelta);
+        OZIERC20(address(liquidityAsset)).safeTransfer(arm, balanceDelta);
     }
 
     function pendingRequestIdsLength() external view returns (uint256) {

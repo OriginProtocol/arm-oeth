@@ -3,10 +3,14 @@ pragma solidity ^0.8.23;
 
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
+import {IERC20 as OZIERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import {IAssetAdapter, IERC20, IEETHWithdrawal, IEETHWithdrawalNFT, IWETH} from "../Interfaces.sol";
 
 contract EtherFiAssetAdapter is Initializable, IAssetAdapter, IERC721Receiver {
+    using SafeERC20 for OZIERC20;
+
     address public immutable arm;
     IERC20 public immutable eeth;
     IWETH public immutable weth;
@@ -30,11 +34,11 @@ contract EtherFiAssetAdapter is Initializable, IAssetAdapter, IERC721Receiver {
         etherfiWithdrawalQueue = IEETHWithdrawal(_etherfiWithdrawalQueue);
         etherfiWithdrawalNFT = IEETHWithdrawalNFT(_etherfiWithdrawalNFT);
 
-        eeth.approve(_etherfiWithdrawalQueue, type(uint256).max);
+        OZIERC20(address(eeth)).forceApprove(_etherfiWithdrawalQueue, type(uint256).max);
     }
 
     function initialize() external initializer {
-        eeth.approve(address(etherfiWithdrawalQueue), type(uint256).max);
+        OZIERC20(address(eeth)).forceApprove(address(etherfiWithdrawalQueue), type(uint256).max);
     }
 
     function asset() external view returns (address) {
@@ -55,7 +59,7 @@ contract EtherFiAssetAdapter is Initializable, IAssetAdapter, IERC721Receiver {
         nonZeroShares(shares)
         returns (uint256 sharesRequested, uint256 assetsExpected)
     {
-        eeth.transferFrom(arm, address(this), shares);
+        OZIERC20(address(eeth)).safeTransferFrom(arm, address(this), shares);
         uint256 requestId = etherfiWithdrawalQueue.requestWithdraw(address(this), shares);
         requestShares[requestId] = shares;
         pendingRequestIds.push(requestId);
@@ -101,7 +105,7 @@ contract EtherFiAssetAdapter is Initializable, IAssetAdapter, IERC721Receiver {
         if (ethBalance > 0) weth.deposit{value: ethBalance}();
 
         assetsReceived = weth.balanceOf(address(this)) - wethBefore;
-        IERC20(address(weth)).transfer(arm, assetsReceived);
+        OZIERC20(address(weth)).safeTransfer(arm, assetsReceived);
     }
 
     function pendingRequestIdsLength() external view returns (uint256) {
