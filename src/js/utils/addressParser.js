@@ -5,9 +5,14 @@ const log = require("./logger")("utils:addressParser");
 
 const resolveArmContract = async (arm) => {
   const deployName =
-    arm === "EtherFi" ? "ETHER_FI_ARM" : `${arm.toUpperCase()}_ARM`;
+    arm === "EtherFi"
+      ? "ETHER_FI_ARM"
+      : arm === "Oeth"
+        ? "OETH_ARM"
+        : `${arm.toUpperCase()}_ARM`;
   const armAddress = await parseDeployedAddress(deployName);
-  const armContract = await ethers.getContractAt(`${arm}ARM`, armAddress);
+  const contractName = arm === "Oeth" ? "OriginARM" : `${arm}ARM`;
+  const armContract = await ethers.getContractAt(contractName, armAddress);
 
   return armContract;
 };

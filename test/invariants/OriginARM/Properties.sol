@@ -29,11 +29,11 @@ abstract contract Properties is Setup, Helpers {
     // [x] Invariant D: previewRedeem(shares) == (, uint256 assets) *
     // [x] Invariant E: previewDeposit(amount) == uint256 shares *
     // [x] Invariant F: nextWithdrawalIndex == requestRedeem call count *
-    // [x] Invariant G: withdrawsQueued == ∑requestRedeem.amount
-    // [x] Invariant H: withdrawsQueued > withdrawsClaimed
-    // [x] Invariant I: withdrawsQueued == ∑request.assets
-    // [x] Invariant J: withdrawsClaimed == ∑claimRedeem.amount
-    // [x] Invariant K: ∀ requestId, request.queued >= request.assets
+    // [x] Invariant G: reservedWithdrawLiquidity == ∑unclaimed request.assets
+    // [x] Invariant H: withdrawsQueuedShares >= withdrawsClaimedShares
+    // [x] Invariant I: withdrawsQueuedShares == ∑request.shares
+    // [x] Invariant J: withdrawsClaimedShares == ∑claimed request.shares
+    // [x] Invariant K: ARM escrowed shares == withdrawsQueuedShares - withdrawsClaimedShares
     // [x] Invariant L: ∑feesCollected == feeCollector.balance
     // * invariants tested directly in the handlers.
 
@@ -51,6 +51,8 @@ abstract contract Properties is Setup, Helpers {
     uint256 public sum_ws_redeem;
     uint256 public sum_os_redeem;
     uint256 public sum_ws_user_claimed;
+    uint256 public sum_shares_redeem;
+    uint256 public sum_shares_claimed;
     uint256 public sum_ws_swapOut;
     uint256 public sum_os_swapOut;
     uint256 public sum_feesCollected;
@@ -84,30 +86,24 @@ abstract contract Properties is Setup, Helpers {
     }
 
     function property_lp_G() public view returns (bool) {
-        return originARM.withdrawsQueued() == sum_ws_redeem;
+        return originARM.reservedWithdrawLiquidity() == sumOfUnclaimedRequestRedeemAmount();
     }
 
     function property_lp_H() public view returns (bool) {
-        return originARM.withdrawsQueued() >= originARM.withdrawsClaimed();
+        return originARM.withdrawsQueuedShares() >= originARM.withdrawsClaimedShares();
     }
 
     function property_lp_I() public view returns (bool) {
-        return originARM.withdrawsQueued() == sumOfRequestRedeemAmount();
+        return originARM.withdrawsQueuedShares() == sum_shares_redeem;
     }
 
     function property_lp_J() public view returns (bool) {
-        return originARM.withdrawsClaimed() == sum_ws_user_claimed;
+        return originARM.withdrawsClaimedShares() == sum_shares_claimed;
     }
 
     function property_lp_K() public view returns (bool) {
-        uint256 len = originARM.nextWithdrawalIndex();
-        for (uint256 i; i < len; i++) {
-            (,,, uint128 amount, uint128 queued,) = originARM.withdrawalRequests(i);
-            if (queued < amount) {
-                return false;
-            }
-        }
-        return true;
+        return originARM.balanceOf(address(originARM))
+            == originARM.withdrawsQueuedShares() - originARM.withdrawsClaimedShares();
     }
 
     function property_lp_L() public view returns (bool) {
@@ -118,14 +114,15 @@ abstract contract Properties is Setup, Helpers {
         for (uint256 i; i < lps.length; i++) {
             usersShares += originARM.balanceOf(lps[i]);
         }
+        usersShares += originARM.balanceOf(address(originARM));
         usersShares += MIN_TOTAL_SUPPLY;
     }
 
-    function sumOfRequestRedeemAmount() public view returns (uint256 sum) {
+    function sumOfUnclaimedRequestRedeemAmount() public view returns (uint256 sum) {
         uint256 len = originARM.nextWithdrawalIndex();
         for (uint256 i; i < len; i++) {
-            (,,, uint128 amount,,) = originARM.withdrawalRequests(i);
-            sum += amount;
+            (, bool claimed,, uint128 amount,,) = originARM.withdrawalRequests(i);
+            if (!claimed) sum += amount;
         }
     }
 }

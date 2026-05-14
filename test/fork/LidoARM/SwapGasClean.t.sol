@@ -7,6 +7,8 @@ import {CapManager} from "contracts/CapManager.sol";
 import {IERC20} from "contracts/Interfaces.sol";
 import {LidoARM} from "contracts/LidoARM.sol";
 import {Proxy} from "contracts/Proxy.sol";
+import {StETHAssetAdapter} from "contracts/adapters/StETHAssetAdapter.sol";
+import {WstETHAssetAdapter} from "contracts/adapters/WstETHAssetAdapter.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
 
 contract Fork_Concrete_LidoARM_SwapGasClean_Test is Test {
@@ -58,7 +60,34 @@ contract Fork_Concrete_LidoARM_SwapGasClean_Test is Test {
         );
 
         lidoARM = LidoARM(payable(address(lidoProxy)));
-        lidoARM.setPrices(BUY_PRICE, SELL_PRICE, type(uint256).max, type(uint256).max);
+        address stethAdapter =
+            address(new StETHAssetAdapter(address(lidoProxy), address(weth), address(steth), Mainnet.LIDO_WITHDRAWAL));
+        address wstethAdapter = address(
+            new WstETHAssetAdapter(
+                address(lidoProxy), address(weth), address(steth), Mainnet.WSTETH, Mainnet.LIDO_WITHDRAWAL
+            )
+        );
+        lidoARM.addBaseAsset(
+            address(steth),
+            stethAdapter,
+            BUY_PRICE,
+            SELL_PRICE,
+            type(uint128).max,
+            type(uint128).max,
+            PRICE_SCALE(),
+            true
+        );
+        lidoARM.addBaseAsset(
+            Mainnet.WSTETH,
+            wstethAdapter,
+            BUY_PRICE,
+            SELL_PRICE,
+            type(uint128).max,
+            type(uint128).max,
+            PRICE_SCALE(),
+            false
+        );
+        lidoARM.setPrices(address(steth), BUY_PRICE, SELL_PRICE, type(uint128).max, type(uint128).max);
 
         deal(address(weth), address(lidoARM), ARM_BALANCE);
         _fundSteth(address(lidoARM), ARM_BALANCE);
@@ -102,5 +131,9 @@ contract Fork_Concrete_LidoARM_SwapGasClean_Test is Test {
     function _fundSteth(address to, uint256 amount) internal {
         vm.prank(Mainnet.WSTETH);
         steth.transfer(to, amount);
+    }
+
+    function PRICE_SCALE() internal pure returns (uint256) {
+        return 1e36;
     }
 }

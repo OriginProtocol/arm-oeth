@@ -9,29 +9,38 @@ import {IERC20, IERC4626} from "contracts/Interfaces.sol";
 import {Proxy} from "contracts/Proxy.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
 import {OriginARM} from "contracts/OriginARM.sol";
+import {OriginAssetAdapter} from "contracts/adapters/OriginAssetAdapter.sol";
+import {WrappedOriginAssetAdapter} from "contracts/adapters/WrappedOriginAssetAdapter.sol";
 
 contract Fork_OriginARM_Smoke_Test is AbstractSmokeTest {
     IERC20 BAD_TOKEN = IERC20(makeAddr("bad token"));
 
     IERC20 weth;
     IERC20 oeth;
+    IERC4626 woeth;
     Proxy proxy;
     OriginARM originARM;
+    OriginAssetAdapter originAssetAdapter;
+    WrappedOriginAssetAdapter wrappedOriginAssetAdapter;
     IERC4626 morphoMarket;
     address operator;
 
     function setUp() public override {
         super.setUp();
         oeth = IERC20(Mainnet.OETH);
+        woeth = IERC4626(Mainnet.WOETH);
         weth = IERC20(Mainnet.WETH);
         operator = Mainnet.ARM_RELAYER;
 
         vm.label(address(weth), "WETH");
         vm.label(address(oeth), "OETH");
+        vm.label(address(woeth), "WOETH");
         vm.label(address(operator), "OPERATOR");
 
         proxy = Proxy(payable(resolver.resolve("OETH_ARM")));
         originARM = OriginARM(resolver.resolve("OETH_ARM"));
+        originAssetAdapter = OriginAssetAdapter(resolver.resolve("OETH_ARM_OETH_ADAPTER"));
+        wrappedOriginAssetAdapter = WrappedOriginAssetAdapter(resolver.resolve("OETH_ARM_WOETH_ADAPTER"));
         morphoMarket = IERC4626(resolver.resolve("MORPHO_MARKET_ORIGIN"));
 
         _dealWETH(address(originARM), 100 ether);
@@ -67,16 +76,20 @@ contract Fork_OriginARM_Smoke_Test is AbstractSmokeTest {
         assertEq((100 * uint256(originARM.fee())) / originARM.FEE_SCALE(), 20, "Performance fee as a percentage");
 
         // Assets
-        assertEq(address(originARM.token0()), address(weth), "token0");
-        assertEq(address(originARM.token1()), address(oeth), "token1");
         assertEq(originARM.liquidityAsset(), Mainnet.WETH, "liquidity asset");
-        assertEq(originARM.baseAsset(), Mainnet.OETH, "base asset");
         assertEq(originARM.asset(), Mainnet.WETH, "ERC-4626 asset");
 
         // Prices
-        assertNotEq(originARM.crossPrice(), 0, "cross price");
-        assertNotEq(originARM.traderate0(), 0, "traderate0");
-        assertNotEq(originARM.traderate1(), 0, "traderate1");
+        (uint128 buyPrice, uint128 sellPrice,,, uint128 crossPrice,,,) = originARM.baseAssetConfigs(Mainnet.OETH);
+        assertNotEq(crossPrice, 0, "cross price");
+        assertNotEq(sellPrice, 0, "sell price");
+        assertNotEq(buyPrice, 0, "buy price");
+
+        (buyPrice, sellPrice,,, crossPrice,,,) = originARM.baseAssetConfigs(Mainnet.WOETH);
+        assertNotEq(crossPrice, 0, "woeth cross price");
+        assertNotEq(sellPrice, 0, "woeth sell price");
+        assertNotEq(buyPrice, 0, "woeth buy price");
+        assertEq(wrappedOriginAssetAdapter.convertToAssets(1 ether), woeth.convertToAssets(1 ether), "woeth assets");
 
         // Redemption
         assertEq(address(originARM.vault()), Mainnet.OETH_VAULT, "OETH Vault");
@@ -103,8 +116,8 @@ contract Fork_OriginARM_Smoke_Test is AbstractSmokeTest {
         vm.startPrank(address(originARM));
         oeth.transfer(address(this), oeth.balanceOf(address(originARM)));
         vm.stopPrank();
-        //vm.prank(Mainnet.TIMELOCK);
-        //originARM.setCrossPrice(0.9995e36);
+        vm.prank(Mainnet.TIMELOCK);
+        originARM.setCrossPrice(address(oeth), 0.9999e36);
 
         // trader buys OETH and sells WETH, the ARM sells OETH at a
         // 0.5 bps discount
@@ -124,7 +137,7 @@ contract Fork_OriginARM_Smoke_Test is AbstractSmokeTest {
             expectedOut = amountIn * 1e36 / price;
 
             vm.prank(Mainnet.ARM_RELAYER);
-            originARM.setPrices(0.99e36, price, type(uint256).max, type(uint256).max);
+            originARM.setPrices(address(oeth), 0.99e36, price, type(uint128).max, type(uint128).max);
         } else {
             // Trader is selling stETH and buying WETH
             // the ARM is buying stETH and selling WETH
@@ -134,7 +147,7 @@ contract Fork_OriginARM_Smoke_Test is AbstractSmokeTest {
             expectedOut = amountIn * price / 1e36;
 
             vm.prank(Mainnet.ARM_RELAYER);
-            originARM.setPrices(price, 1e36, type(uint256).max, type(uint256).max);
+            originARM.setPrices(address(oeth), price, 1e36, type(uint128).max, type(uint128).max);
         }
         // Approve the ARM to transfer the input token of the swap.
         inToken.approve(address(originARM), amountIn);
@@ -164,8 +177,8 @@ contract Fork_OriginARM_Smoke_Test is AbstractSmokeTest {
         vm.startPrank(address(originARM));
         oeth.transfer(address(this), oeth.balanceOf(address(originARM)));
         vm.stopPrank();
-        //vm.prank(Mainnet.TIMELOCK);
-        //originARM.setCrossPrice(0.9999e36);
+        vm.prank(Mainnet.TIMELOCK);
+        originARM.setCrossPrice(address(oeth), 0.9999e36);
 
         // trader buys OETH and sells WETH, the ARM sells OETH at a
         // 0.5 bps discount
@@ -185,7 +198,7 @@ contract Fork_OriginARM_Smoke_Test is AbstractSmokeTest {
             expectedIn = amountOut * price / 1e36;
 
             vm.prank(Mainnet.ARM_RELAYER);
-            originARM.setPrices(0.99e36, price, type(uint256).max, type(uint256).max);
+            originARM.setPrices(address(oeth), 0.99e36, price, type(uint128).max, type(uint128).max);
         } else {
             // Trader is selling stETH and buying WETH
             // the ARM is buying stETH and selling WETH
@@ -195,7 +208,7 @@ contract Fork_OriginARM_Smoke_Test is AbstractSmokeTest {
             expectedIn = amountOut * 1e36 / price + 3;
 
             vm.prank(Mainnet.ARM_RELAYER);
-            originARM.setPrices(price, 1e36, type(uint256).max, type(uint256).max);
+            originARM.setPrices(address(oeth), price, 1e36, type(uint128).max, type(uint128).max);
         }
         // Approve the ARM to transfer the input token of the swap.
         inToken.approve(address(originARM), expectedIn + 10000);
@@ -210,38 +223,38 @@ contract Fork_OriginARM_Smoke_Test is AbstractSmokeTest {
     }
 
     function test_wrongInTokenExactIn() external {
-        vm.expectRevert("ARM: Invalid in token");
+        vm.expectRevert("ARM: Invalid swap assets");
         originARM.swapExactTokensForTokens(BAD_TOKEN, oeth, 10 ether, 0, address(this));
-        vm.expectRevert("ARM: Invalid in token");
+        vm.expectRevert("ARM: Invalid swap assets");
         originARM.swapExactTokensForTokens(BAD_TOKEN, weth, 10 ether, 0, address(this));
     }
 
     function test_wrongOutTokenExactIn() external {
-        vm.expectRevert("ARM: Invalid out token");
+        vm.expectRevert("ARM: Invalid swap assets");
         originARM.swapTokensForExactTokens(weth, BAD_TOKEN, 10 ether, 10 ether, address(this));
-        vm.expectRevert("ARM: Invalid out token");
+        vm.expectRevert("ARM: Invalid swap assets");
         originARM.swapTokensForExactTokens(oeth, BAD_TOKEN, 10 ether, 10 ether, address(this));
-        vm.expectRevert("ARM: Invalid out token");
+        vm.expectRevert("ARM: Invalid swap assets");
         originARM.swapTokensForExactTokens(weth, weth, 10 ether, 10 ether, address(this));
-        vm.expectRevert("ARM: Invalid out token");
+        vm.expectRevert("ARM: Invalid swap assets");
         originARM.swapTokensForExactTokens(oeth, oeth, 10 ether, 10 ether, address(this));
     }
 
     function test_wrongInTokenExactOut() external {
-        vm.expectRevert("ARM: Invalid in token");
+        vm.expectRevert("ARM: Invalid swap assets");
         originARM.swapTokensForExactTokens(BAD_TOKEN, oeth, 10 ether, 10 ether, address(this));
-        vm.expectRevert("ARM: Invalid in token");
+        vm.expectRevert("ARM: Invalid swap assets");
         originARM.swapTokensForExactTokens(BAD_TOKEN, weth, 10 ether, 10 ether, address(this));
     }
 
     function test_wrongOutTokenExactOut() external {
-        vm.expectRevert("ARM: Invalid out token");
+        vm.expectRevert("ARM: Invalid swap assets");
         originARM.swapTokensForExactTokens(weth, BAD_TOKEN, 10 ether, 10 ether, address(this));
-        vm.expectRevert("ARM: Invalid out token");
+        vm.expectRevert("ARM: Invalid swap assets");
         originARM.swapTokensForExactTokens(oeth, BAD_TOKEN, 10 ether, 10 ether, address(this));
-        vm.expectRevert("ARM: Invalid out token");
+        vm.expectRevert("ARM: Invalid swap assets");
         originARM.swapTokensForExactTokens(weth, weth, 10 ether, 10 ether, address(this));
-        vm.expectRevert("ARM: Invalid out token");
+        vm.expectRevert("ARM: Invalid swap assets");
         originARM.swapTokensForExactTokens(oeth, oeth, 10 ether, 10 ether, address(this));
     }
 
@@ -287,7 +300,8 @@ contract Fork_OriginARM_Smoke_Test is AbstractSmokeTest {
     function test_request_origin_withdrawal() external {
         _dealOETH(address(originARM), 10 ether);
         vm.prank(Mainnet.ARM_RELAYER);
-        uint256 requestId = originARM.requestOriginWithdrawal(10 ether);
+        originARM.requestBaseAssetRedeem(address(oeth), 10 ether);
+        uint256 requestId = originAssetAdapter.pendingRequestId(0);
         assertNotEq(requestId, 0);
     }
 
@@ -308,7 +322,8 @@ contract Fork_OriginARM_Smoke_Test is AbstractSmokeTest {
 
         // Request a withdrawal
         vm.prank(Mainnet.ARM_RELAYER);
-        uint256 requestId = originARM.requestOriginWithdrawal(10 ether);
+        originARM.requestBaseAssetRedeem(address(oeth), 10 ether);
+        uint256 requestId = originAssetAdapter.pendingRequestId(0);
 
         // Fast forward time by 1 day to pass the claim delay
         vm.warp(block.timestamp + 1 days);
@@ -317,7 +332,8 @@ contract Fork_OriginARM_Smoke_Test is AbstractSmokeTest {
         uint256[] memory requestIds = new uint256[](1);
         requestIds[0] = requestId;
 
-        uint256 amountClaimed = originARM.claimOriginWithdrawals(requestIds);
+        vm.prank(Mainnet.ARM_RELAYER);
+        (,, uint256 amountClaimed) = originARM.claimBaseAssetRedeem(address(oeth), 10 ether);
         assertEq(amountClaimed, 10 ether);
     }
 

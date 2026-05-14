@@ -26,7 +26,7 @@ contract Unit_Concrete_OriginARM_RequestRedeem_Test_ is Unit_Shared_Test {
         uint256 expectedShares = originARM.convertToShares(DEFAULT_AMOUNT);
         uint256 expectedOETH = originARM.convertToAssets(expectedShares);
         uint256 requestIndex = originARM.nextWithdrawalIndex();
-        uint128 queued = originARM.withdrawsQueued();
+        uint128 queuedShares = originARM.withdrawsQueuedShares();
         uint256 lastAvailableAssets = originARM.totalAssets();
         uint256 previewRedeem = originARM.previewRedeem(DEFAULT_AMOUNT);
         assertEq(previewRedeem, expectedShares, "Preview redeem should match expected shares");
@@ -42,16 +42,15 @@ contract Unit_Concrete_OriginARM_RequestRedeem_Test_ is Unit_Shared_Test {
         (address withdrawer, bool claimed, uint256 requestTimestamp, uint256 amount, uint256 queued_, uint256 shares) =
             originARM.withdrawalRequests(0);
         // Assertions
-        assertEq(
-            originARM.totalAssets(), lastAvailableAssets - DEFAULT_AMOUNT, "Last available assets should be updated"
-        );
-        assertEq(originARM.withdrawsQueued(), queued + DEFAULT_AMOUNT, "Withdraws queued should be updated");
+        assertEq(originARM.totalAssets(), lastAvailableAssets, "Total assets should include escrowed shares");
+        assertEq(originARM.reservedWithdrawLiquidity(), DEFAULT_AMOUNT, "Reserved liquidity should be updated");
+        assertEq(originARM.withdrawsQueuedShares(), queuedShares + expectedShares, "Queued shares should be updated");
         assertEq(originARM.nextWithdrawalIndex(), requestIndex + 1, "Next withdrawal index should be updated");
         assertEq(withdrawer, alice, "Withdrawer should be Alice");
         assertEq(claimed, false, "Claimed should be false");
         assertEq(requestTimestamp, block.timestamp + CLAIM_DELAY, "Request timestamp should be updated");
         assertEq(amount, DEFAULT_AMOUNT, "Amount should be updated");
-        assertEq(queued_, queued + DEFAULT_AMOUNT, "Queued should be updated");
+        assertEq(queued_, queuedShares + expectedShares, "Queued should be updated");
         assertEq(shares, expectedShares, "Shares should be updated");
     }
 }

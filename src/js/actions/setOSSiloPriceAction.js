@@ -2,6 +2,9 @@ const { Defender } = require("@openzeppelin/defender-sdk");
 const { ethers, parseUnits } = require("ethers");
 
 const { setOSSiloPrice } = require("../tasks/osSiloPrice");
+const { sonic } = require("../utils/addresses");
+const erc20Abi = require("../../abis/ERC20.json");
+const armAbi = require("../../abis/OriginARM.json");
 
 // Entrypoint for the Defender Action
 const handler = async (credentials) => {
@@ -13,22 +16,7 @@ const handler = async (credentials) => {
     ethersVersion: "v6",
   });
 
-  const armAddress = "0x2F872623d1E1Af5835b08b0E49aAd2d81d649D30";
-  const arm = new ethers.Contract(
-    armAddress,
-    [
-      "function traderate0() external view returns (uint256)",
-      "function traderate1() external view returns (uint256)",
-      "function activeMarket() external view returns (address)",
-      "function setPrices(uint256, uint256, uint256, uint256) external",
-      "function vault() external view returns (address)",
-      "function token0() external view returns (address)",
-      "function token1() external view returns (address)",
-      "function withdrawsQueued() external view returns (uint256)",
-      "function withdrawsClaimed() external view returns (uint256)",
-    ],
-    signer,
-  );
+  const arm = new ethers.Contract(sonic.OriginARM, armAbi, signer);
 
   // Get the SiloMarketWrapper contract
   const activeMarket = await arm.activeMarket();
@@ -42,19 +30,8 @@ const handler = async (credentials) => {
         );
 
   // Get the WS and OS token contracts
-  const wSAddress = await arm.token0();
-  const wS = new ethers.Contract(
-    wSAddress,
-    ["function balanceOf(address) external view returns (uint256)"],
-    signer,
-  );
-
-  const oSAddress = await arm.token1();
-  const oS = new ethers.Contract(
-    oSAddress,
-    ["function balanceOf(address) external view returns (uint256)"],
-    signer,
-  );
+  const wS = new ethers.Contract(sonic.WS, erc20Abi, signer);
+  const oS = new ethers.Contract(sonic.OSonicProxy, erc20Abi, signer);
 
   // Get the OS Vault contract
   const vaultAddress = await arm.vault();

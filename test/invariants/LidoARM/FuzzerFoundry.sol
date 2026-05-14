@@ -54,7 +54,7 @@ contract FuzzerFoundry_LidoARM is TargetFunction {
 
         // Set prices, start with almost 1:1
         vm.prank(lidoARM.owner());
-        lidoARM.setPrices(1e36 - 1, 1e36, type(uint256).max, type(uint256).max);
+        lidoARM.setPrices(address(steth), 1e36 - 1, 1e36, type(uint128).max, type(uint128).max);
 
         // --- Setup Fuzzer target ---
         // Setup target
@@ -148,6 +148,7 @@ contract FuzzerFoundry_LidoARM is TargetFunction {
         finalizeLidoClaims();
         sweepAllStETH();
         finalizeUserClaims();
-        assertTrue(ensureSharesAreUpOnly(MAX_WETH_PER_USERS), "Shares are not up only");
+        assertEq(_lidoWithdrawalQueueAmount(), 0, "Lido queue not empty");
+        assertEq(steth.balanceOf(address(lidoARM)), 0, "stETH balance not zero");
     }
 }

@@ -17,15 +17,7 @@ contract $022_UpgradeEtherFiARMDepositScript is AbstractDeployScript("022_Upgrad
         uint256 claimDelay = 10 minutes;
         uint256 minSharesToRedeem = 1e7;
         int256 allocateThreshold = 1e18;
-        etherFiARMImpl = new EtherFiARM(
-            Mainnet.EETH,
-            Mainnet.WETH,
-            Mainnet.ETHERFI_WITHDRAWAL,
-            claimDelay,
-            minSharesToRedeem,
-            allocateThreshold,
-            Mainnet.ETHERFI_WITHDRAWAL_NFT
-        );
+        etherFiARMImpl = new EtherFiARM(Mainnet.EETH, Mainnet.WETH, claimDelay, minSharesToRedeem, allocateThreshold);
         _recordDeployment("ETHERFI_ARM_IMPL", address(etherFiARMImpl));
     }
 

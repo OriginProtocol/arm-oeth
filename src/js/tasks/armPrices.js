@@ -1,16 +1,17 @@
-const { MaxUint256, formatUnits, parseUnits } = require("ethers");
+const { formatUnits, parseUnits } = require("ethers");
 
 const addresses = require("../utils/addresses");
+const {
+  adapterContract,
+  parseSwapCap,
+  resolveArmBase,
+} = require("../utils/arm");
 const { abs } = require("../utils/maths");
 const { getCurvePrices } = require("../utils/curve");
 const { getKyberPrices } = require("../utils/kyber");
 const { get1InchPrices } = require("../utils/1Inch");
 const { logTxDetails } = require("../utils/txLogger");
-const {
-  convertToAsset,
-  rangeSellPrice,
-  rangeBuyPrice,
-} = require("../utils/pricing");
+const { rangeSellPrice, rangeBuyPrice } = require("../utils/pricing");
 
 const log = require("../utils/logger")("task:prices");
 
@@ -29,7 +30,8 @@ const log = require("../utils/logger")("task:prices");
  * offset - price offset in basis points to add to the reference buy price when calculating target prices
  * priceOffset - whether to use the offset-based approach for calculating target prices, or just calculate off the reference mid price and fee
  * dryrun - if true, will not actually call setPrices on the ARM, just log the target prices
- * wrapped - uses for appreciating assets like sUSDe or wstETH
+ * base - base asset symbol. eg STETH, WSTETH, EETH, WEETH, SUSDE, OETH, WOETH, OS
+ * wrapped - adjust market prices by the adapter conversion rate
  * @returns
  */
 const setPrices = async (options) => {
@@ -52,15 +54,27 @@ const setPrices = async (options) => {
     market,
     priceOffset,
     dryrun,
-    wrapped = false,
-    buyAmount = MaxUint256,
-    sellAmount = MaxUint256,
+    base,
+    wrapped,
+    buyAmount,
+    sellAmount,
   } = options;
 
   // 1. Get current ARM prices
+  const { baseSymbol, baseAddress, liquidityAddress, config } =
+    await resolveArmBase({
+      arm,
+      armName: options.armName,
+      base,
+      blockTag: options.blockTag,
+    });
+  const shouldAdjustWrapped =
+    wrapped !== undefined ? wrapped : !config.peggedToLiquidityAsset;
+
   log(`Getting current ARM prices:`);
-  const currentSellPrice = parseUnits("1", 72) / (await arm.traderate0());
-  const currentBuyPrice = await arm.traderate1();
+  log(`base asset         : ${baseSymbol}`);
+  const currentSellPrice = config.sellPrice;
+  const currentBuyPrice = config.buyPrice;
   log(`current sell price : ${formatUnits(currentSellPrice, 36)}`);
   log(`current buy price  : ${formatUnits(currentBuyPrice, 36)}`);
 
@@ -70,10 +84,14 @@ const setPrices = async (options) => {
   if (!buyPrice && !sellPrice && (midPrice || curve || inch || kyber)) {
     // Set asset options
     const assets = {
-      liquid: await arm.liquidityAsset(),
-      base: await arm.baseAsset(),
+      liquid: liquidityAddress,
+      base: baseAddress,
     };
-    const inchFee = assets.base === addresses.mainnet.stETH ? 10n : 30n;
+    const inchFee =
+      assets.base.toLowerCase() === addresses.mainnet.stETH.toLowerCase() ||
+      assets.base.toLowerCase() === addresses.mainnet.wstETH.toLowerCase()
+        ? 10n
+        : 30n;
 
     // 2.1 Get reference prices
     let referencePrices;
@@ -83,7 +101,7 @@ const setPrices = async (options) => {
         midPrice: parseUnits(midPrice.toString(), 18),
       };
     } else {
-      if (curve && arm !== "Lido")
+      if (curve && options.armName !== "Lido")
         throw new Error(`Curve prices only available for Lido`);
 
       // 2.1 Get latest market prices if no midPrice is provided
@@ -100,13 +118,11 @@ const setPrices = async (options) => {
             });
 
       // Adjust price down if a wrapped asset like sUSDe or wstETH
-      if (wrapped) {
-        // Assume the wrapped base asset is ERC-4626
-        const wrapPrice = await convertToAsset(
-          assets.base,
-          options.amount,
-          signer,
-        );
+      if (shouldAdjustWrapped) {
+        const adapter = await adapterContract(config.adapter, signer);
+        const amountIn = parseUnits(options.amount.toString(), 18);
+        const convertedAssets = await adapter.convertToAssets(amountIn);
+        const wrapPrice = (convertedAssets * parseUnits("1")) / amountIn;
 
         log(`Base asset price : ${formatUnits(wrapPrice, 18)} base/liquid`);
 
@@ -229,7 +245,7 @@ const setPrices = async (options) => {
     targetBuyPrice = rangeBuyPrice(targetBuyPrice, minBuyPrice, maxBuyPrice);
 
     // 2.5 Adjust target prices based on cross price
-    const crossPrice = await arm.crossPrice();
+    const crossPrice = config.crossPrice;
     log(`\nAdjusting target prices based on cross price:`);
     log(`cross price        : ${formatUnits(crossPrice, 36)}`);
     if (targetSellPrice < crossPrice) {
@@ -290,7 +306,13 @@ const setPrices = async (options) => {
 
     const tx = await arm
       .connect(signer)
-      .setPrices(targetBuyPrice, targetSellPrice, buyAmount, sellAmount);
+      .setPrices(
+        baseAddress,
+        targetBuyPrice,
+        targetSellPrice,
+        parseSwapCap(buyAmount),
+        parseSwapCap(sellAmount),
+      );
 
     await logTxDetails(tx, "setPrices", options.confirm);
   } else {

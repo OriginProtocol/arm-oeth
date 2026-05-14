@@ -3,6 +3,7 @@ pragma solidity 0.8.23;
 
 // Interfaces
 import {IERC20} from "contracts/Interfaces.sol";
+import {AbstractLidoAssetAdapter} from "contracts/adapters/AbstractLidoAssetAdapter.sol";
 
 // Test imports
 import {Utils} from "./Utils.sol";
@@ -18,6 +19,8 @@ abstract contract Properties is Setup, Utils {
     uint256 sum_weth_deposit;
     uint256 sum_weth_request;
     uint256 sum_weth_withdraw;
+    uint256 sum_shares_request;
+    uint256 sum_shares_withdraw;
     uint256 sum_weth_donated;
     uint256 sum_weth_lido_redeem;
     uint256 sum_steth_lido_requested;
@@ -48,11 +51,11 @@ abstract contract Properties is Setup, Utils {
     // Invariant D: previewRedeem(shares) == (, uint256 assets) = previewRedeem(shares)
     // Invariant E: previewDeposit(amount) == uint256 shares = previewDeposit(amount)
     // Invariant F: nextWithdrawalIndex == requestRedeem call count
-    // Invariant G: withdrawsQueued == ∑requestRedeem.amount
-    // Invariant H: withdrawsQueued > withdrawsClaimed
-    // Invariant I: withdrawsQueued == ∑request.assets
-    // Invariant J: withdrawsClaimed >= ∑claimRedeem.amount
-    // Invariant K: ∀ requestId, request.queued >= request.assets
+    // Invariant G: reservedWithdrawLiquidity == ∑unclaimed request.assets
+    // Invariant H: withdrawsQueuedShares >= withdrawsClaimedShares
+    // Invariant I: withdrawsQueuedShares == ∑request.shares
+    // Invariant J: withdrawsClaimedShares == ∑claimed request.shares
+    // Invariant K: ARM escrowed shares == withdrawsQueuedShares - withdrawsClaimedShares
     // Invariant M: ∑feesCollected == feeCollector.balance
 
     // --- Lido Liquidity Management properties ---
@@ -112,36 +115,24 @@ abstract contract Properties is Setup, Utils {
     }
 
     function property_lp_G() public view returns (bool) {
-        return eq(lidoARM.withdrawsQueued(), sum_weth_request);
+        return eq(lidoARM.reservedWithdrawLiquidity(), sumOfUnclaimedRequestAssets());
     }
 
     function property_lp_H() public view returns (bool) {
-        return gte(lidoARM.withdrawsQueued(), lidoARM.withdrawsClaimed());
+        return gte(lidoARM.withdrawsQueuedShares(), lidoARM.withdrawsClaimedShares());
     }
 
     function property_lp_I() public view returns (bool) {
-        uint256 sum;
-        uint256 nextWithdrawalIndex = lidoARM.nextWithdrawalIndex();
-        for (uint256 i; i < nextWithdrawalIndex; i++) {
-            (,,, uint128 assets,,) = lidoARM.withdrawalRequests(i);
-            sum += assets;
-        }
-
-        return eq(lidoARM.withdrawsQueued(), sum);
+        return eq(lidoARM.withdrawsQueuedShares(), sum_shares_request);
     }
 
     function property_lp_invariant_J() public view returns (bool) {
-        return gte(lidoARM.withdrawsClaimed(), sum_weth_withdraw);
+        return eq(lidoARM.withdrawsClaimedShares(), sum_shares_withdraw);
     }
 
     function property_lp_invariant_K() public view returns (bool) {
-        uint256 nextWithdrawalIndex = lidoARM.nextWithdrawalIndex();
-        for (uint256 i; i < nextWithdrawalIndex; i++) {
-            (,,, uint128 assets, uint128 queued,) = lidoARM.withdrawalRequests(i);
-            if (queued < assets) return false;
-        }
-
-        return true;
+        return
+            eq(lidoARM.balanceOf(address(lidoARM)), lidoARM.withdrawsQueuedShares() - lidoARM.withdrawsClaimedShares());
     }
 
     function property_lp_invariant_M() public view returns (bool) {
@@ -153,7 +144,7 @@ abstract contract Properties is Setup, Utils {
     /// --- LIDO LIQUIDITY MANAGMENT
     ////////////////////////////////////////////////////
     function property_llm_A() public view returns (bool) {
-        return eq(lidoARM.lidoWithdrawalQueueAmount(), sum_steth_lido_requested - sum_weth_lido_redeem);
+        return eq(_lidoWithdrawalQueueAmount(), sum_steth_lido_requested - sum_weth_lido_redeem);
     }
 
     function property_llm_B() public view returns (bool) {
@@ -164,15 +155,22 @@ abstract contract Properties is Setup, Utils {
     /// --- HELPERS
     ////////////////////////////////////////////////////
     function estimateAmountIn(IERC20 tokenOut, uint256 amountOut) public view returns (uint256) {
-        return (amountOut * lidoARM.PRICE_SCALE()) / price(tokenOut == weth ? steth : weth) + 3;
+        if (tokenOut == weth) {
+            return (amountOut * lidoARM.PRICE_SCALE()) / _lidoBuyPrice() + 3;
+        }
+        return (amountOut * _lidoSellPrice()) / lidoARM.PRICE_SCALE() + 3;
     }
 
     function estimateAmountOut(IERC20 tokenIn, uint256 amountIn) public view returns (uint256) {
-        return (amountIn * price(tokenIn)) / lidoARM.PRICE_SCALE();
+        if (tokenIn == steth) {
+            return (amountIn * _lidoBuyPrice()) / lidoARM.PRICE_SCALE();
+        }
+        return (amountIn * lidoARM.PRICE_SCALE()) / _lidoSellPrice();
     }
 
     function price(IERC20 token) public view returns (uint256) {
-        return token == lidoARM.token0() ? lidoARM.traderate0() : lidoARM.traderate1();
+        (uint128 buyPrice, uint128 sellPrice,,,,,,) = lidoARM.baseAssetConfigs(address(steth));
+        return token == weth ? sellPrice : buyPrice;
     }
 
     function sumOfUserShares() public view returns (uint256) {
@@ -182,8 +180,64 @@ abstract contract Properties is Setup, Utils {
             sum_shares += lidoARM.balanceOf(lps[i]);
         }
 
+        sum_shares += lidoARM.balanceOf(address(lidoARM));
         sum_shares += lidoARM.balanceOf(address(0xdEaD));
 
         return sum_shares;
+    }
+
+    function sumOfUnclaimedRequestAssets() public view returns (uint256 sum) {
+        uint256 nextWithdrawalIndex = lidoARM.nextWithdrawalIndex();
+        for (uint256 i; i < nextWithdrawalIndex; i++) {
+            (, bool claimed,, uint128 assets,,) = lidoARM.withdrawalRequests(i);
+            if (!claimed) sum += assets;
+        }
+    }
+
+    function _lidoWithdrawalQueueAmount() internal view returns (uint256 pendingRedeemAssets) {
+        (,,,,, uint120 _pendingRedeemAssets,,) = lidoARM.baseAssetConfigs(address(steth));
+        pendingRedeemAssets = _pendingRedeemAssets;
+    }
+
+    function _lidoBuyPrice() internal view returns (uint256 buyPrice) {
+        (uint128 _buyPrice,,,,,,,) = lidoARM.baseAssetConfigs(address(steth));
+        buyPrice = _buyPrice;
+    }
+
+    function _lidoSellPrice() internal view returns (uint256 sellPrice) {
+        (, uint128 _sellPrice,,,,,,) = lidoARM.baseAssetConfigs(address(steth));
+        sellPrice = _sellPrice;
+    }
+
+    function _lidoCrossPrice() internal view returns (uint256 crossPrice) {
+        (,,,, uint128 _crossPrice,,,) = lidoARM.baseAssetConfigs(address(steth));
+        crossPrice = _crossPrice;
+    }
+
+    function _requestLidoWithdrawals(uint256[] memory amounts) internal returns (uint256[] memory requestIds) {
+        uint256 totalAmount;
+        for (uint256 i = 0; i < amounts.length; ++i) {
+            totalAmount += amounts[i];
+        }
+
+        uint256 previousLength = AbstractLidoAssetAdapter(payable(stethAdapter)).pendingRequestIdsLength();
+        lidoARM.requestBaseAssetRedeem(address(steth), totalAmount);
+        uint256 newLength = AbstractLidoAssetAdapter(payable(stethAdapter)).pendingRequestIdsLength();
+
+        requestIds = new uint256[](newLength - previousLength);
+        for (uint256 i = 0; i < requestIds.length; ++i) {
+            requestIds[i] = AbstractLidoAssetAdapter(payable(stethAdapter)).pendingRequestId(previousLength + i);
+        }
+    }
+
+    function _claimLidoWithdrawals(uint256[] memory requestIds) internal {
+        if (requestIds.length == 0) return;
+
+        uint256 shares;
+        for (uint256 i = 0; i < requestIds.length; ++i) {
+            shares += AbstractLidoAssetAdapter(payable(stethAdapter)).requestShares(requestIds[i]);
+        }
+
+        lidoARM.claimBaseAssetRedeem(address(steth), shares);
     }
 }

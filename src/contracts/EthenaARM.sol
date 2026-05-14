@@ -4,8 +4,7 @@ pragma solidity ^0.8.23;
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 import {AbstractARM} from "./AbstractARM.sol";
-import {EthenaUnstaker} from "./EthenaUnstaker.sol";
-import {IERC20, IStakedUSDe, UserCooldown} from "./Interfaces.sol";
+import {IERC20, IStakedUSDe} from "./Interfaces.sol";
 
 /**
  * @title Ethena sUSDe/USDe Automated Redemption Manager (ARM)
@@ -21,14 +20,14 @@ contract EthenaARM is Initializable, AbstractARM {
     /// @notice The address of Ethena's staked synthetic dollar token (sUSDe)
     IStakedUSDe public immutable susde;
 
-    /// @notice The total amount of liquidity asset (USDe) currently in cooldown
-    uint256 public liquidityAmountInCooldown;
-    /// @notice Array of unstaker helper contracts
-    address[MAX_UNSTAKERS] public unstakers;
-    /// @notice The index of the next unstaker to use in the round robin
-    uint8 public nextUnstakerIndex;
-    /// @notice The timestamp of the last request made
-    uint32 public lastRequestTimestamp;
+    /// @dev Deprecated cooldown amount retained for storage layout compatibility.
+    uint256 internal _deprecatedLiquidityAmountInCooldown;
+    /// @dev Deprecated unstaker helper array retained for storage layout compatibility.
+    address[MAX_UNSTAKERS] internal _deprecatedUnstakers;
+    /// @dev Deprecated unstaker index retained for storage layout compatibility.
+    uint8 internal _deprecatedNextUnstakerIndex;
+    /// @dev Deprecated request timestamp retained for storage layout compatibility.
+    uint32 internal _deprecatedLastRequestTimestamp;
 
     event RequestBaseWithdrawal(address indexed unstaker, uint256 baseAmount, uint256 liquidityAmount);
     event ClaimBaseWithdrawals(address indexed unstaker, uint256 liquidityAmount);
@@ -45,7 +44,7 @@ contract EthenaARM is Initializable, AbstractARM {
         uint256 _claimDelay,
         uint256 _minSharesToRedeem,
         int256 _allocateThreshold
-    ) AbstractARM(_usde, _susde, _usde, _claimDelay, _minSharesToRedeem, _allocateThreshold) {
+    ) AbstractARM(_usde, _claimDelay, _minSharesToRedeem, _allocateThreshold) {
         usde = IERC20(_usde);
         susde = IStakedUSDe(_susde);
 
@@ -59,7 +58,7 @@ contract EthenaARM is Initializable, AbstractARM {
     /// @param _operator The address of the account that can request and claim withdrawals.
     /// @param _fee The fee accrued on discounted base-asset buy swaps measured in basis points (1/100th of a percent).
     /// 10,000 = 100% fee
-    /// 1,500 = 15% fee
+    /// 500 = 5% fee
     /// @param _feeCollector The account that can collect the accrued swap fee
     /// @param _capManager The address of the CapManager contract
     function initialize(
@@ -73,82 +72,39 @@ contract EthenaARM is Initializable, AbstractARM {
         _initARM(_operator, _name, _symbol, _fee, _feeCollector, _capManager);
     }
 
-    /// @notice Request a cooldown of USDe from Ethena's Staked USDe (sUSDe) contract.
-    /// @dev Uses a round robin to select the next unstaker helper contract.
-    /// @param baseAmount The amount of staked USDe (sUSDe) to withdraw.
-    function requestBaseWithdrawal(uint256 baseAmount) external onlyOperatorOrOwner {
-        require(block.timestamp >= lastRequestTimestamp + DELAY_REQUEST, "EthenaARM: Delay not passed");
-        lastRequestTimestamp = uint32(block.timestamp);
-
-        // Get the next unstaker contract in the round robin
-        address unstaker = unstakers[nextUnstakerIndex];
-        // Ensure unstaker is valid
-        require(unstaker != address(0), "EthenaARM: Invalid unstaker");
-
-        // Ensure unstaker isn't used during last 7 days
-        UserCooldown memory cooldown = susde.cooldowns(address(unstaker));
-        require(cooldown.underlyingAmount == 0, "EthenaARM: Unstaker in cooldown");
-
-        // Update last used unstaker for the day. Safe to cast as there is a maximum of MAX_UNSTAKERS
-        nextUnstakerIndex = uint8((nextUnstakerIndex + 1) % MAX_UNSTAKERS);
-
-        // Transfer sUSDe to the helper contract
-        susde.transfer(unstaker, baseAmount);
-
-        uint256 liquidityAmount = EthenaUnstaker(unstaker).requestUnstake(baseAmount);
-
-        liquidityAmountInCooldown += liquidityAmount;
-
-        // Emit event for the request
-        emit RequestBaseWithdrawal(unstaker, baseAmount, liquidityAmount);
+    /// @notice Revert if legacy Ethena cooldowns are still outstanding.
+    /// @dev Used by upgrade scripts with `upgradeToAndCall` so the upgrade cannot
+    /// complete until the old ARM-owned Ethena cooldowns have been claimed.
+    function checkNoLegacyEthenaCooldown() external view {
+        require(_deprecatedLiquidityAmountInCooldown == 0, "EthenaARM: cooldown pending");
     }
 
-    /// @notice Claim all the USDe that is now claimable from the Staked USDe contract.
-    /// Reverts with `InvalidCooldown` from the Staked USDe contract if the cooldown period has not yet passed.
-    function claimBaseWithdrawals(uint8 unstakerIndex) external {
-        address unstaker = unstakers[unstakerIndex];
-        require(unstaker != address(0), "EthenaARM: Invalid unstaker");
-        UserCooldown memory cooldown = susde.cooldowns(unstaker);
-        require(cooldown.underlyingAmount > 0, "EthenaARM: No cooldown amount");
-
-        liquidityAmountInCooldown -= cooldown.underlyingAmount;
-
-        // Claim all the underlying USDe that has cooled down for the unstaker and send to the ARM
-        EthenaUnstaker(unstaker).claimUnstake();
-
-        emit ClaimBaseWithdrawals(unstaker, cooldown.underlyingAmount);
+    /// @notice Deprecated legacy cooldown amount view.
+    /// @dev New protocol cooldown state is owned by `EthenaAssetAdapter`.
+    /// @return The deprecated stored cooldown amount.
+    function liquidityAmountInCooldown() external view returns (uint256) {
+        return _deprecatedLiquidityAmountInCooldown;
     }
 
-    /// @dev Gets the total amount of USDe waiting to be claimed from the Staked USDe contract.
-    /// This can be for many different cooldowns.
-    /// This can be either in the cooldown period or ready to be claimed.
-    function _externalWithdrawQueue() internal view override returns (uint256) {
-        return liquidityAmountInCooldown;
+    /// @notice Deprecated legacy unstaker helper view.
+    /// @dev New unstaker helpers are owned by `EthenaAssetAdapter`.
+    /// @param index Unstaker index.
+    /// @return The deprecated unstaker address.
+    function unstakers(uint256 index) external view returns (address) {
+        return _deprecatedUnstakers[index];
     }
 
-    /// @dev Convert between base asset (sUSDe) and liquidity asset (USDe).
-    /// ERC-4626 convert functions are used as the preview functions can return a
-    /// smaller amount if the contract is paused or has high utilization.
-    /// Although that is not the case the the sUSDe implementation.
-    /// @param token The address of the token to convert from. sUSDe or USDe.
-    /// @param amount The amount of the token to convert from.
-    /// @return The converted to amount.
-    function _convert(address token, uint256 amount) internal view override returns (uint256) {
-        if (token == baseAsset) {
-            // Convert base asset (sUSDe) to liquidity asset (USDe)
-            return susde.convertToAssets(amount);
-        } else if (token == liquidityAsset) {
-            // Convert liquidity asset (USDe) to base asset (sUSDe)
-            return susde.convertToShares(amount);
-        } else {
-            revert("EthenaARM: Invalid token");
-        }
+    /// @notice Deprecated legacy unstaker index view.
+    /// @dev New unstaker rotation state is owned by `EthenaAssetAdapter`.
+    /// @return The deprecated next unstaker index.
+    function nextUnstakerIndex() external view returns (uint8) {
+        return _deprecatedNextUnstakerIndex;
     }
 
-    /// @notice Set the unstaker helper contracts.
-    /// @param _unstakers The array of unstaker contract addresses.
-    function setUnstakers(address[MAX_UNSTAKERS] calldata _unstakers) external onlyOwner {
-        require(_unstakers.length == MAX_UNSTAKERS, "EthenaARM: Invalid unstakers length");
-        unstakers = _unstakers;
+    /// @notice Deprecated legacy request timestamp view.
+    /// @dev New request timing state is owned by `EthenaAssetAdapter`.
+    /// @return The deprecated last request timestamp.
+    function lastRequestTimestamp() external view returns (uint32) {
+        return _deprecatedLastRequestTimestamp;
     }
 }

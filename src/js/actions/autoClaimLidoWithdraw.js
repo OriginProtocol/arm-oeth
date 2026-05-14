@@ -31,6 +31,7 @@ const handler = async (event) => {
   await claimLidoWithdrawals({
     signer,
     arm,
+    armName: "Lido",
     withdrawalQueue,
   });
 };

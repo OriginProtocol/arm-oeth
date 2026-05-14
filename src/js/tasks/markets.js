@@ -10,6 +10,7 @@ const { getFluidSpotPrices } = require("../utils/fluid");
 const { mainnet } = require("../utils/addresses");
 const { resolveAddress } = require("../utils/assets");
 const { convertToAsset, convertReth } = require("../utils/pricing");
+const { resolveArmBase } = require("../utils/arm");
 
 const log = require("../utils/logger")("task:markets");
 
@@ -117,31 +118,28 @@ const logDiscount = (marketPrice, days) => {
   );
 };
 
-const logArmPrices = async ({ blockTag, gas, days }, arm) => {
+const logArmPrices = async (options, arm) => {
+  const { blockTag, gas, days } = options;
   console.log(`\nARM Prices`);
-  // The rate of 1 WETH for stETH to 36 decimals from the perspective of the AMM. ie WETH/stETH
-  // from the trader's perspective, this is the stETH/WETH buy price
-  const rate0 = await arm.traderate0({ blockTag });
-
-  // convert from WETH/stETH rate with 36 decimals to stETH/WETH rate with 18 decimals
-  const sellPrice = BigInt(1e54) / BigInt(rate0);
-
-  // The rate of 1 stETH for WETH to 36 decimals. ie stETH/WETH
-  const rate1 = await arm.traderate1({ blockTag });
-  // Convert back to 18 decimals
-  const buyPrice = BigInt(rate1) / BigInt(1e18);
+  const baseContext =
+    options.baseAddress && options.config
+      ? options
+      : await resolveArmBase({ arm, armName: "Lido", blockTag });
+  const { baseAddress, liquidityAddress, config } = baseContext;
+  const sellPrice = BigInt(config.sellPrice) / BigInt(1e18);
+  const buyPrice = BigInt(config.buyPrice) / BigInt(1e18);
 
   const midPrice = (sellPrice + buyPrice) / 2n;
 
-  const crossPrice = await arm.crossPrice({ blockTag });
+  const crossPrice = BigInt(config.crossPrice) / BigInt(1e18);
 
   let buyGasCosts = "";
   let sellGasCosts = "";
   if (gas) {
     const signer = await getSigner();
     const amountBI = parseUnits("0.01", 18);
-    const baseToken = await arm.baseAsset();
-    const liquidityToken = await arm.liquidityAsset();
+    const baseToken = baseAddress;
+    const liquidityToken = liquidityAddress;
     try {
       const buyGas = await arm
         .connect(signer)
@@ -172,7 +170,7 @@ const logArmPrices = async ({ blockTag, gas, days }, arm) => {
     `sell   : ${formatUnits(sellPrice, 18).padEnd(20)} ${sellGasCosts}`,
   );
   if (crossPrice > sellPrice) {
-    console.log(`cross  : ${formatUnits(crossPrice, 36).padEnd(20)}`);
+    console.log(`cross  : ${formatUnits(crossPrice, 18).padEnd(20)}`);
     console.log(`mid    : ${formatUnits(midPrice, 18).padEnd(20)}`);
   } else {
     console.log(`mid    : ${formatUnits(midPrice, 18).padEnd(20)}`);

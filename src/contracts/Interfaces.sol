@@ -34,6 +34,16 @@ interface ICapManager {
     function postDepositHook(address liquidityProvider, uint256 assets) external;
 }
 
+interface IAssetAdapter {
+    function asset() external view returns (address);
+    function convertToAssets(uint256 shares) external view returns (uint256 assets);
+    function convertToShares(uint256 assets) external view returns (uint256 shares);
+    function requestRedeem(uint256 shares) external returns (uint256 sharesRequested, uint256 assetsExpected);
+    function redeem(uint256 shares)
+        external
+        returns (uint256 sharesClaimed, uint256 assetsExpected, uint256 assetsReceived);
+}
+
 interface LegacyAMM {
     function transferToken(address tokenOut, address to, uint256 amount) external;
 }
@@ -114,6 +124,12 @@ interface ISTETH is IERC20 {
 
     // function() external payable;
     function submit(address _referral) external payable returns (uint256);
+}
+
+interface IWstETH is IERC20 {
+    function getStETHByWstETH(uint256 wstETHAmount) external view returns (uint256);
+    function getWstETHByStETH(uint256 stETHAmount) external view returns (uint256);
+    function unwrap(uint256 wstETHAmount) external returns (uint256);
 }
 
 interface IStETHWithdrawal {
@@ -230,6 +246,12 @@ interface IEETHRedemptionManager {
     function redeemEEth(uint256 amount, address receiver) external;
     function redeemWeEth(uint256 amount, address receiver) external;
     function canRedeem(uint256 amount) external view returns (bool);
+}
+
+interface IWeETH {
+    function getEETHByWeETH(uint256 weETHAmount) external view returns (uint256);
+    function getWeETHByeETH(uint256 eETHAmount) external view returns (uint256);
+    function unwrap(uint256 weETHAmount) external returns (uint256);
 }
 
 interface IDistributor {

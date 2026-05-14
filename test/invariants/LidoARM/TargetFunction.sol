@@ -19,6 +19,17 @@ abstract contract TargetFunction is Properties {
         // Select a random user
         address user = swaps[account % swaps.length];
 
+        uint256 maxAmount = IERC20(path[0]).balanceOf(user);
+        if (stETHForWETH) {
+            uint256 maxByLiquidity = _availableWethLiquidity() * lidoARM.PRICE_SCALE() / _lidoBuyPrice();
+            maxAmount = min(maxAmount, maxByLiquidity);
+        } else {
+            uint256 maxByLiquidity = steth.balanceOf(address(lidoARM)) * _lidoSellPrice() / lidoARM.PRICE_SCALE();
+            maxAmount = min(maxAmount, maxByLiquidity);
+        }
+        amount = uint80(_bound(amount, 0, min(maxAmount, type(uint80).max)));
+        vm.assume(amount > 0);
+
         // Cache estimated amount out
         uint256 estimatedAmountOut = estimateAmountOut(IERC20(path[0]), amount);
 
@@ -43,6 +54,18 @@ abstract contract TargetFunction is Properties {
         // Select a random user
         address user = swaps[account % swaps.length];
 
+        uint256 maxAmount = IERC20(path[1]).balanceOf(address(lidoARM));
+        uint256 maxByInput;
+        if (stETHForWETH) {
+            maxByInput = steth.balanceOf(user) * _lidoBuyPrice() / lidoARM.PRICE_SCALE();
+            maxAmount = min(maxAmount, _availableWethLiquidity());
+        } else {
+            maxByInput = weth.balanceOf(user) * lidoARM.PRICE_SCALE() / _lidoSellPrice();
+        }
+        maxAmount = min(maxAmount, maxByInput);
+        amount = uint80(_bound(amount, 0, min(maxAmount, type(uint80).max)));
+        vm.assume(amount > 0);
+
         // Cache estimated amount in
         uint256 estimatedAmountIn = estimateAmountIn(IERC20(path[1]), amount);
 
@@ -65,8 +88,13 @@ abstract contract TargetFunction is Properties {
     mapping(address => uint256[]) public requests;
 
     function handler_deposit(uint8 account, uint80 amount) public {
+        vm.assume(lidoARM.totalAssets() > MIN_TOTAL_SUPPLY || lidoARM.reservedWithdrawLiquidity() == 0);
+
         // Select a random user
         address user = lps[account % lps.length];
+
+        amount = uint80(_bound(amount, 0, min(weth.balanceOf(user), type(uint80).max)));
+        vm.assume(amount > 0);
 
         // Cache preview deposit
         uint256 expectedShares = lidoARM.previewDeposit(amount);
@@ -96,6 +124,8 @@ abstract contract TargetFunction is Properties {
             return;
         }
 
+        shares = uint80(_bound(shares, 1, lidoARM.balanceOf(user)));
+
         // Cache preview redeem
         uint256 expectedAmount = lidoARM.previewRedeem(shares);
 
@@ -108,6 +138,7 @@ abstract contract TargetFunction is Properties {
         // Update state
         requests[user].push(id);
         sum_weth_request += amount;
+        sum_shares_request += shares;
         ghost_lp_E = amount == expectedAmount;
         ghost_requestCounter++;
     }
@@ -122,10 +153,17 @@ abstract contract TargetFunction is Properties {
             uint256 requestCount = requests[user_].length;
             if (requestCount > 0) {
                 user = user_;
-                requestId = id % requestCount;
+                requestId = requests[user_][id % requestCount];
                 break;
             }
         }
+
+        if (user == address(0)) return;
+
+        (,,, uint128 requestAssets, uint128 queued, uint128 shares) = lidoARM.withdrawalRequests(requestId);
+        (,, uint40 claimTimestamp,,,) = lidoARM.withdrawalRequests(requestId);
+        vm.assume(block.timestamp + lidoARM.claimDelay() >= claimTimestamp);
+        vm.assume(lidoARM.claimable() >= queued);
 
         // Timejump to request deadline
         skip(lidoARM.claimDelay());
@@ -152,6 +190,8 @@ abstract contract TargetFunction is Properties {
 
         // Update ghost
         sum_weth_withdraw += amount;
+        sum_weth_request -= requestAssets;
+        sum_shares_withdraw += shares;
     }
 
     ////////////////////////////////////////////////////
@@ -161,6 +201,9 @@ abstract contract TargetFunction is Properties {
     uint256[] public lidoWithdrawRequests;
 
     function handler_requestLidoWithdrawals(uint80 amount) public {
+        amount = uint80(_bound(amount, 0, min(steth.balanceOf(address(lidoARM)), type(uint80).max)));
+        vm.assume(amount > 0);
+
         // Split the amount into 1k chunks
         uint256 batch = (amount + MAX_BATCH_SIZE - 1) / MAX_BATCH_SIZE; // Rounded up
         uint256[] memory amounts = new uint256[](batch);
@@ -177,7 +220,7 @@ abstract contract TargetFunction is Properties {
 
         // Prank Owner
         vm.prank(lidoARM.owner());
-        uint256[] memory newLidoWithdrawRequests = lidoARM.requestLidoWithdrawals(amounts);
+        uint256[] memory newLidoWithdrawRequests = _requestLidoWithdrawals(amounts);
 
         // Update state
         for (uint256 i = 0; i < newLidoWithdrawRequests.length; i++) {
@@ -190,7 +233,8 @@ abstract contract TargetFunction is Properties {
 
     function handler_claimLidoWithdrawals(uint256 requestToClaimCount) public {
         uint256 len = lidoWithdrawRequests.length;
-        requestToClaimCount = requestToClaimCount % len;
+        if (len == 0) return;
+        requestToClaimCount = _bound(requestToClaimCount, 1, len);
 
         // Select lidoWithdrawRequests
         uint256[] memory requestToClaim = new uint256[](requestToClaimCount);
@@ -199,13 +243,13 @@ abstract contract TargetFunction is Properties {
         }
 
         // As `claimLidoWithdrawals` doesn't send back the amount, we need to calculate it
-        uint256 outstandingBefore = lidoARM.lidoWithdrawalQueueAmount();
+        uint256 outstandingBefore = _lidoWithdrawalQueueAmount();
 
         // Prank Owner
         vm.prank(lidoARM.owner());
-        lidoARM.claimLidoWithdrawals(requestToClaim, new uint256[](0));
+        _claimLidoWithdrawals(requestToClaim);
 
-        uint256 outstandingAfter = lidoARM.lidoWithdrawalQueueAmount();
+        uint256 outstandingAfter = _lidoWithdrawalQueueAmount();
         uint256 diff = outstandingBefore - outstandingAfter;
 
         // Remove it from the list
@@ -228,7 +272,7 @@ abstract contract TargetFunction is Properties {
     uint256 constant MAX_SELL_T1 = 1.02 * 1e36;
 
     function handler_setPrices(uint256 buyT1, uint256 sellT1) public {
-        uint256 crossPrice = lidoARM.crossPrice();
+        uint256 crossPrice = _lidoCrossPrice();
 
         // Bound prices
         buyT1 = _bound(buyT1, MIN_BUY_T1, crossPrice - 1);
@@ -238,21 +282,21 @@ abstract contract TargetFunction is Properties {
         vm.prank(lidoARM.owner());
 
         // Set prices
-        lidoARM.setPrices(buyT1, sellT1, type(uint256).max, type(uint256).max);
+        lidoARM.setPrices(address(steth), buyT1, sellT1, type(uint128).max, type(uint128).max);
     }
 
     function handler_setCrossPrice(uint256 newCrossPrice) public {
         uint256 priceScale = lidoARM.PRICE_SCALE();
 
         // Bound new cross price
-        uint256 sell = priceScale ** 2 / lidoARM.traderate0();
-        uint256 buy = lidoARM.traderate1();
+        uint256 sell = priceScale ** 2 / (lidoARM.PRICE_SCALE() * lidoARM.PRICE_SCALE() / _lidoSellPrice());
+        uint256 buy = _lidoBuyPrice();
         newCrossPrice = _bound(
             newCrossPrice, max(priceScale - lidoARM.MAX_CROSS_PRICE_DEVIATION(), buy) + 1, min(priceScale, sell)
         );
 
         uint256 stethBalance = steth.balanceOf(address(lidoARM));
-        if (lidoARM.crossPrice() > newCrossPrice && stethBalance > 0) {
+        if (_lidoCrossPrice() > newCrossPrice && stethBalance > 0) {
             // If there is more than 100 stETH in ARM, do nothing
             if (stethBalance >= 1e20) return;
 
@@ -272,7 +316,7 @@ abstract contract TargetFunction is Properties {
         vm.prank(lidoARM.owner());
 
         // Set cross price
-        lidoARM.setCrossPrice(newCrossPrice);
+        lidoARM.setCrossPrice(address(steth), newCrossPrice);
     }
 
     function handler_setFee(uint256 performanceFee) public {
@@ -280,6 +324,7 @@ abstract contract TargetFunction is Properties {
 
         // Cache accrued fees before setting new fee
         uint256 accumulatedFees = lidoARM.feesAccrued();
+        vm.assume(accumulatedFees <= _availableWethLiquidity());
 
         // Prank owner
         vm.prank(lidoARM.owner());
@@ -292,6 +337,9 @@ abstract contract TargetFunction is Properties {
     }
 
     function handler_collectFees() public {
+        uint256 accruedFees = lidoARM.feesAccrued();
+        vm.assume(accruedFees <= _availableWethLiquidity());
+
         // Prank owner
         vm.prank(lidoARM.owner());
 
@@ -312,6 +360,13 @@ abstract contract TargetFunction is Properties {
 
     function handler_lastAvailableAsset() public view returns (uint256) {
         return lidoARM.totalAssets();
+    }
+
+    function _availableWethLiquidity() internal view returns (uint256) {
+        uint256 balance = weth.balanceOf(address(lidoARM));
+        uint256 outstandingWithdrawals = lidoARM.reservedWithdrawLiquidity();
+        if (outstandingWithdrawals >= balance) return 0;
+        return balance - outstandingWithdrawals;
     }
 
     ////////////////////////////////////////////////////
@@ -344,9 +399,9 @@ abstract contract TargetFunction is Properties {
 
         // Prank Owner
         vm.prank(lidoARM.owner());
-        lidoARM.claimLidoWithdrawals(lidoWithdrawRequests, new uint256[](0));
+        _claimLidoWithdrawals(lidoWithdrawRequests);
 
-        require(lidoARM.lidoWithdrawalQueueAmount() == 0, "FINALIZE_FAILED");
+        require(_lidoWithdrawalQueueAmount() == 0, "FINALIZE_FAILED");
     }
 
     function sweepAllStETH() public {

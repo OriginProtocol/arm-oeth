@@ -22,8 +22,8 @@ contract Fork_Concrete_EthenaARM_swapTokensForExactTokens_Test_ is Fork_Shared_T
         uint256 susdeBalanceBefore = susde.balanceOf(address(this));
 
         // Precompute expected amount out
-        uint256 traderate = ethenaARM.traderate0();
-        uint256 expectedAmountIn = ((susde.convertToAssets(AMOUNT_OUT) * 1e36) / traderate) + 3;
+        uint256 sellPrice = _sellPrice();
+        uint256 expectedAmountIn = ((susde.convertToAssets(AMOUNT_OUT) * sellPrice) / 1e36) + 3;
 
         // Expected events
         vm.expectEmit({emitter: address(usde)});
@@ -53,8 +53,8 @@ contract Fork_Concrete_EthenaARM_swapTokensForExactTokens_Test_ is Fork_Shared_T
         uint256 susdeBalanceBefore = susde.balanceOf(address(this));
 
         // Precompute expected amount out
-        uint256 traderate = ethenaARM.traderate0();
-        uint256 expectedAmountIn = ((susde.convertToAssets(AMOUNT_OUT) * 1e36) / traderate) + 3;
+        uint256 sellPrice = _sellPrice();
+        uint256 expectedAmountIn = ((susde.convertToAssets(AMOUNT_OUT) * sellPrice) / 1e36) + 3;
 
         address[] memory path = new address[](2);
         path[0] = address(usde);
@@ -88,7 +88,7 @@ contract Fork_Concrete_EthenaARM_swapTokensForExactTokens_Test_ is Fork_Shared_T
         uint256 susdeBalanceBefore = susde.balanceOf(address(this));
 
         // Precompute expected amount out
-        uint256 traderate = ethenaARM.traderate1();
+        uint256 traderate = _buyPrice();
         uint256 expectedAmountIn = (susde.convertToShares(AMOUNT_OUT) * 1e36) / traderate + 3;
 
         // Expected events
@@ -117,15 +117,15 @@ contract Fork_Concrete_EthenaARM_swapTokensForExactTokens_Test_ is Fork_Shared_T
     /// --- REVERTING TESTS
     //////////////////////////////////////////////////////
     function test_RevertWhen_swapTokensForExactTokens_Because_InvalidInToken() public {
-        vm.expectRevert(bytes("ARM: Invalid in token"));
+        vm.expectRevert(bytes("ARM: Invalid swap assets"));
         ethenaARM.swapTokensForExactTokens(badToken, usde, AMOUNT_OUT, 0, address(this));
     }
 
     function test_RevertWhen_swapTokensForExactTokens_Because_InvalidOutToken() public {
-        vm.expectRevert(bytes("EthenaARM: Invalid token"));
+        vm.expectRevert(bytes("ARM: Invalid swap assets"));
         ethenaARM.swapTokensForExactTokens(usde, badToken, AMOUNT_OUT, 0, address(this));
 
-        vm.expectRevert(bytes("EthenaARM: Invalid token"));
+        vm.expectRevert(bytes("ARM: Invalid swap assets"));
         ethenaARM.swapTokensForExactTokens(IERC20(address(susde)), badToken, AMOUNT_OUT, 0, address(this));
     }
 

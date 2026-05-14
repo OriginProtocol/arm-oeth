@@ -1,14 +1,23 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
-import {Test} from "forge-std/Test.sol";
+import {Test, stdStorage, StdStorage} from "forge-std/Test.sol";
 
 import {LidoARM} from "contracts/LidoARM.sol";
 import {Proxy} from "contracts/Proxy.sol";
 import {IERC20} from "contracts/Interfaces.sol";
+import {StETHAssetAdapter} from "contracts/adapters/StETHAssetAdapter.sol";
+import {WstETHAssetAdapter} from "contracts/adapters/WstETHAssetAdapter.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
 
+interface ILegacyLidoARM {
+    function traderate0() external view returns (uint256);
+    function traderate1() external view returns (uint256);
+}
+
 abstract contract Fork_LidoARM_SwapGasComparison_Base is Test {
+    using stdStorage for StdStorage;
+
     uint256 internal constant FORK_BLOCK = 24_846_066;
     uint256 internal constant PRICE_SCALE = 1e36;
     uint256 internal constant LIQUIDITY_DEPOSIT = 1_000 ether;
@@ -32,8 +41,8 @@ abstract contract Fork_LidoARM_SwapGasComparison_Base is Test {
         weth = IERC20(Mainnet.WETH);
         steth = IERC20(Mainnet.STETH);
 
-        traderate0 = lidoARM.traderate0();
-        traderate1 = lidoARM.traderate1();
+        traderate0 = ILegacyLidoARM(address(lidoARM)).traderate0();
+        traderate1 = ILegacyLidoARM(address(lidoARM)).traderate1();
 
         deal(address(weth), address(this), LIQUIDITY_DEPOSIT);
         weth.approve(address(lidoARM), LIQUIDITY_DEPOSIT);
@@ -127,9 +136,33 @@ contract Fork_Concrete_LidoARM_SwapGasUpgraded_Test is Fork_LidoARM_SwapGasCompa
         vm.prank(lidoProxy.owner());
         lidoProxy.upgradeTo(address(upgradedImpl));
 
-        uint256 sellT1 = PRICE_SCALE * PRICE_SCALE / traderate0;
+        stdStorage.checked_write(
+            stdStorage.sig(stdStorage.target(stdstore, address(lidoProxy)), "reservedWithdrawLiquidity()"), uint256(0)
+        );
 
         vm.prank(lidoProxy.owner());
-        lidoARM.setPrices(traderate1, sellT1, type(uint256).max, type(uint256).max);
+        lidoARM.migrateLegacyWithdrawQueue();
+
+        uint256 sellT1 = PRICE_SCALE;
+        address stethAdapter =
+            address(new StETHAssetAdapter(address(lidoProxy), address(weth), address(steth), Mainnet.LIDO_WITHDRAWAL));
+        address wstethAdapter = address(
+            new WstETHAssetAdapter(
+                address(lidoProxy), address(weth), address(steth), Mainnet.WSTETH, Mainnet.LIDO_WITHDRAWAL
+            )
+        );
+
+        vm.prank(lidoProxy.owner());
+        lidoARM.addBaseAsset(
+            address(steth), stethAdapter, traderate1, sellT1, type(uint128).max, type(uint128).max, PRICE_SCALE, true
+        );
+
+        vm.prank(lidoProxy.owner());
+        lidoARM.addBaseAsset(
+            Mainnet.WSTETH, wstethAdapter, traderate1, sellT1, type(uint128).max, type(uint128).max, PRICE_SCALE, false
+        );
+
+        vm.prank(lidoProxy.owner());
+        lidoARM.setPrices(address(steth), traderate1, sellT1, type(uint128).max, type(uint128).max);
     }
 }

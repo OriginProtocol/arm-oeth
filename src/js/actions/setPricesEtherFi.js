@@ -25,6 +25,7 @@ const handler = async (event) => {
   await setPrices({
     signer,
     arm,
+    armName: "EtherFi",
     // sellPrice: 0.9998,
     // buyPrice: 0.9997,
     maxSellPrice: 1.0,

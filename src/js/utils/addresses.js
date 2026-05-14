@@ -17,6 +17,7 @@ addresses.mainnet.OETHVaultProxy = "0x39254033945aa2e4809cc2977e7087bee48bd7ab";
 
 // Tokens
 addresses.mainnet.WETH = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
+addresses.mainnet.WOETH = "0xDcEe70654261AF21C44c093C300eD3Bb97b78192";
 addresses.mainnet.stETH = "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84";
 addresses.mainnet.wstETH = "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0";
 addresses.mainnet.eETH = "0x35fA164735182de50811E8e2E824cFb9B6118ac2";
@@ -60,6 +61,7 @@ addresses.mainnet.FluidWstEthEthPool =
 addresses.sonic = {};
 addresses.sonic.guardian = "0x63cdd3072F25664eeC6FAEFf6dAeB668Ea4de94a";
 addresses.sonic.WS = "0x039e2fB66102314Ce7b64Ce5Ce3E5183bc94aD38";
+addresses.sonic.WOS = "0x9F0dF7799f6FDAd409300080cfF680f5A23df4b1";
 addresses.sonic.OriginARM = "0x2F872623d1E1Af5835b08b0E49aAd2d81d649D30";
 addresses.sonic.SILO = "0xb098AFC30FCE67f1926e735Db6fDadFE433E61db";
 addresses.sonic.OSonicProxy = "0xb1e25689D55734FD3ffFc939c4C3Eb52DFf8A794";

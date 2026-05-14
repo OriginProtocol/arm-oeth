@@ -13,7 +13,9 @@ contract Fork_Concrete_OriginARM_ClaimRedeem_Test_ is Fork_Shared_Test {
         timejump(CLAIM_DELAY)
     {
         // Assertions before claim
-        assertEq(originARM.totalAssets(), MIN_TOTAL_SUPPLY, "totalAssets before");
+        assertEq(originARM.totalAssets(), DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, "totalAssets before");
+        assertEq(originARM.reservedWithdrawLiquidity(), DEFAULT_AMOUNT, "reserved liquidity before");
+        assertEq(originARM.balanceOf(address(originARM)), DEFAULT_AMOUNT, "escrowed shares before");
         assertEq(ws.balanceOf(address(alice)), 0, "ws balance before");
 
         // Expected event
@@ -26,6 +28,9 @@ contract Fork_Concrete_OriginARM_ClaimRedeem_Test_ is Fork_Shared_Test {
 
         // Assertions after claim
         assertEq(originARM.totalAssets(), MIN_TOTAL_SUPPLY, "totalAssets after");
+        assertEq(originARM.reservedWithdrawLiquidity(), 0, "reserved liquidity after");
+        assertEq(originARM.withdrawsClaimedShares(), DEFAULT_AMOUNT, "claimed shares after");
+        assertEq(originARM.balanceOf(address(originARM)), 0, "escrowed shares after");
         assertEq(ws.balanceOf(address(alice)), DEFAULT_AMOUNT, "ws balance after");
     }
 
@@ -38,8 +43,12 @@ contract Fork_Concrete_OriginARM_ClaimRedeem_Test_ is Fork_Shared_Test {
         setActiveMarket(address(siloMarket))
         requestRedeemAll(alice)
     {
+        (,,, uint128 requestAssets,,) = originARM.withdrawalRequests(0);
+
         // Assertions before claim
-        assertEq(originARM.totalAssets(), MIN_TOTAL_SUPPLY, "totalAssets before");
+        assertApproxEqAbs(originARM.totalAssets(), uint256(requestAssets) + MIN_TOTAL_SUPPLY, 1, "totalAssets before");
+        assertEq(originARM.reservedWithdrawLiquidity(), requestAssets, "reserved liquidity before");
+        assertEq(originARM.balanceOf(address(originARM)), DEFAULT_AMOUNT, "escrowed shares before");
         assertEq(ws.balanceOf(address(alice)), 0, "ws balance before");
 
         // Expected event
@@ -53,6 +62,9 @@ contract Fork_Concrete_OriginARM_ClaimRedeem_Test_ is Fork_Shared_Test {
 
         // Assertions after claim
         assertGt(originARM.totalAssets(), MIN_TOTAL_SUPPLY, "totalAssets after");
+        assertEq(originARM.reservedWithdrawLiquidity(), 0, "reserved liquidity after");
+        assertEq(originARM.withdrawsClaimedShares(), DEFAULT_AMOUNT, "claimed shares after");
+        assertEq(originARM.balanceOf(address(originARM)), 0, "escrowed shares after");
         assertApproxEqAbs(ws.balanceOf(address(alice)), DEFAULT_AMOUNT, 1, "ws balance after");
     }
 }

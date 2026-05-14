@@ -15,7 +15,7 @@ contract Unit_Concrete_OriginARM_TotalAssets_Test_ is Unit_Shared_Test {
         uint256 totalAssetsBefore = originARM.totalAssets();
 
         vm.prank(governor);
-        originARM.requestOriginWithdrawal(MIN_TOTAL_SUPPLY / 2);
+        originARM.requestBaseAssetRedeem(address(oeth), MIN_TOTAL_SUPPLY / 2);
 
         // Ensure the total assets is equal to the external withdraw queue
         assertEq(originARM.totalAssets(), totalAssetsBefore, "Wrong total assets");
@@ -28,10 +28,10 @@ contract Unit_Concrete_OriginARM_TotalAssets_Test_ is Unit_Shared_Test {
 
     /// deposit then redeem should have no impact on total assets
     function test_TotalAssets_When_WithdrawQueue_IsNotZero() public deposit(alice, 1 ether) requestRedeemAll(alice) {
-        assertEq(originARM.totalAssets(), MIN_TOTAL_SUPPLY, "Wrong total assets");
+        assertEq(originARM.totalAssets(), MIN_TOTAL_SUPPLY + 1 ether, "Wrong total assets");
     }
 
-    /// market take a 100% loss, totalAssets should be MIN_TOTAL_SUPPLY
+    /// queued shares remain in total supply, so a market loss is shared pro-rata
     function test_TotalAssets_When_MarketLoseAll()
         public
         addMarket(address(market))
@@ -42,7 +42,7 @@ contract Unit_Concrete_OriginARM_TotalAssets_Test_ is Unit_Shared_Test {
         simulateMarketLoss(address(market), 1 ether)
         requestRedeem(alice, 1 ether)
     {
-        assertEq(originARM.totalAssets(), MIN_TOTAL_SUPPLY, "Wrong total assets");
+        assertEq(originARM.totalAssets(), MIN_TOTAL_SUPPLY + 1 ether, "Wrong total assets");
     }
 
     function test_TotalAssets_When_AssetIsLessThanOutstandingWithdrawals()

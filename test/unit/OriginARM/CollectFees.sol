@@ -13,7 +13,8 @@ contract Unit_Concrete_OriginARM_CollectFees_Test_ is Unit_Shared_Test {
         vm.stopPrank();
 
         amountIn = amounts[0];
-        expectedFee = amountOut * originARM.swapFeeMultiplier() / originARM.PRICE_SCALE();
+        expectedFee =
+            amountOut * _swapFeeMultiplier(_buyPrice(), _crossPrice(), originARM.fee()) / originARM.PRICE_SCALE();
     }
 
     function test_RevertWhen_CollectFees_Because_InsufficientLiquidity() public deposit(alice, DEFAULT_AMOUNT) {
@@ -60,5 +61,35 @@ contract Unit_Concrete_OriginARM_CollectFees_Test_ is Unit_Shared_Test {
 
         // Ensure there nothing has been allocated
         assertEq(weth.balanceOf(feeCollector), collectorBalance + expectedFees, "Collector balance should change");
+    }
+
+    function test_SwapFee_IsBoundedByCrossPriceNavGain() public {
+        uint256 crossPrice = 9998 * 1e32;
+        uint256 buyPrice = 9997 * 1e32;
+        uint256 amountIn = 100 ether;
+
+        vm.startPrank(governor);
+        originARM.setFee(originARM.FEE_SCALE() / 2);
+        originARM.setCrossPrice(address(oeth), crossPrice);
+        originARM.setPrices(address(oeth), buyPrice, crossPrice, type(uint128).max, type(uint128).max);
+        vm.stopPrank();
+
+        deal(address(weth), address(originARM), amountIn);
+        deal(address(oeth), bob, amountIn);
+        uint256 totalAssetsBefore = originARM.totalAssets();
+
+        vm.startPrank(bob);
+        oeth.approve(address(originARM), amountIn);
+        uint256[] memory amounts = originARM.swapExactTokensForTokens(oeth, weth, amountIn, 0, bob);
+        vm.stopPrank();
+
+        uint256 amountOut = amounts[1];
+        uint256 recognizedNavGain = amountOut * (crossPrice - buyPrice) / buyPrice;
+        uint256 expectedFee =
+            amountOut * _swapFeeMultiplier(buyPrice, crossPrice, originARM.fee()) / originARM.PRICE_SCALE();
+
+        assertEq(originARM.feesAccrued(), expectedFee, "Wrong bounded swap fee");
+        assertLe(originARM.feesAccrued(), recognizedNavGain, "Fee exceeds recognized NAV gain");
+        assertGe(originARM.totalAssets(), totalAssetsBefore, "Swap fee should not reduce total assets");
     }
 }

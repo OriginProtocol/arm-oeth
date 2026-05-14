@@ -6,28 +6,34 @@
 !$changedColor = Orange
 !$thirdPartyColor = WhiteSmoke
 
-legend
-blue - Origin
+' legend
+' blue - Origin
 ' green - new
 ' orange - changed
-white - 3rd Party
-end legend
+' white - 3rd Party
+' end legend
 
 title "Ethena\nAutomated Redemption Manager (ARM)\nContract Dependencies"
 
 object "EthenaARM" as arm <<Origin>><<Proxy>> #$originColor {
     shares: ARM-sUSDe-USDe
-    assets: sUSDe, USDe
+    liquidity asset: USDe
+    base asset: sUSDe
 }
 
 object "CapManager" as capMan <<Origin>><<Proxy>> #$originColor {
 }
 
+object "EthenaAssetAdapter" as adapter <<Origin>><<Proxy>> #$originColor {
+    base asset: sUSDe
+    asset: USDe
+}
 
 object "Ethena\nUnstaker" as unstaker <<Origin>> #$originColor {
 }
 
-object "Ethena\nMinting" as em <<Ethena>><<Proxy>> #$thirdPartyColor {
+object "StakedUSDe" as susde <<Ethena>><<Proxy>> #$thirdPartyColor {
+    asset: USDe
 }
 
 ' object "Aave Market" as aMarket <<Origin>><<Proxy>> #$originColor {
@@ -43,9 +49,10 @@ object "aUSDe" as aUSDe <<Aave>> #$thirdPartyColor {
 }
 
 arm <.> capMan
-arm ..> unstaker
-arm ...> em
-unstaker ..> em
+arm ..> adapter
+adapter ..> unstaker
+adapter ..> susde
+unstaker ..> susde
 ' arm ..> aMarket
 ' aMarket ..> aVault
 ' aVault ..> aUSDe

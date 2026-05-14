@@ -7,6 +7,7 @@ import {Base_Test_} from "test/Base.sol";
 // Contracts
 import {Proxy} from "contracts/Proxy.sol";
 import {OriginARM} from "contracts/OriginARM.sol";
+import {OriginAssetAdapter} from "contracts/adapters/OriginAssetAdapter.sol";
 import {SiloMarket} from "contracts/markets/SiloMarket.sol";
 import {Abstract4626MarketWrapper} from "contracts/markets/Abstract4626MarketWrapper.sol";
 
@@ -181,6 +182,7 @@ abstract contract Setup is Base_Test_ {
         // ---
         // --- 4. Set the proxy as the OriginARM ---
         originARM = OriginARM(address(originARMProxy));
+        originAssetAdapter = new OriginAssetAdapter(address(originARM), address(os), address(ws), address(vault));
         siloMarket = SiloMarket(address(siloMarketProxy));
 
         // ---
@@ -231,12 +233,17 @@ abstract contract Setup is Base_Test_ {
         deal(address(ws), address(vault), type(uint128).max);
 
         // --- Setup ARM ---
-        // Set cross price
         vm.prank(governor);
-        originARM.setCrossPrice(0.9999 * 1e36);
-        // Set prices
-        vm.prank(operator);
-        originARM.setPrices(MIN_BUY_PRICE, MAX_SELL_PRICE, type(uint256).max, type(uint256).max);
+        originARM.addBaseAsset(
+            address(os),
+            address(originAssetAdapter),
+            MIN_BUY_PRICE,
+            MAX_SELL_PRICE,
+            type(uint128).max,
+            type(uint128).max,
+            0.9999 * 1e36,
+            true
+        );
 
         // --- Setup Markets ---
         markets = new address[](2);

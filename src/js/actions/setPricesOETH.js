@@ -20,11 +20,12 @@ const handler = async (event) => {
   );
 
   // References to contracts
-  const arm = new ethers.Contract(mainnet.etherfiARM, armAbi, signer);
+  const arm = new ethers.Contract(mainnet.OethARM, armAbi, signer);
 
   await setPrices({
     signer,
     arm,
+    armName: "Oeth",
     // sellPrice: 0.9998,
     // buyPrice: 0.9997,
     maxSellPrice: 0.9999,
