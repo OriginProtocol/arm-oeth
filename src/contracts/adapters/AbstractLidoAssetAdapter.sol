@@ -41,10 +41,12 @@ abstract contract AbstractLidoAssetAdapter is Initializable, IAssetAdapter {
         return address(weth);
     }
 
-    function requestRedeem(uint256 shares) external returns (uint256 sharesRequested, uint256 assetsExpected) {
-        _onlyARM();
-        require(shares > 0, "Adapter: zero shares");
-
+    function requestRedeem(uint256 shares)
+        external
+        onlyARM
+        nonZeroShares(shares)
+        returns (uint256 sharesRequested, uint256 assetsExpected)
+    {
         assetsExpected = _pullSharesAndConvertToSteth(arm, shares);
         uint256[] memory amounts = _splitAmounts(assetsExpected);
         uint256[] memory shareSplits = _splitShares(shares, amounts, assetsExpected);
@@ -61,11 +63,10 @@ abstract contract AbstractLidoAssetAdapter is Initializable, IAssetAdapter {
 
     function redeem(uint256 shares)
         external
+        onlyARM
+        nonZeroShares(shares)
         returns (uint256 sharesClaimed, uint256 assetsExpected, uint256 assetsReceived)
     {
-        _onlyARM();
-        require(shares > 0, "Adapter: zero shares");
-
         uint256 pendingCount = pendingRequestIds.length - nextPendingIndex;
         require(pendingCount > 0, "Adapter: no pending requests");
 
@@ -184,8 +185,14 @@ abstract contract AbstractLidoAssetAdapter is Initializable, IAssetAdapter {
         }
     }
 
-    function _onlyARM() internal view {
+    modifier onlyARM() {
         require(msg.sender == arm, "Adapter: only ARM");
+        _;
+    }
+
+    modifier nonZeroShares(uint256 shares) {
+        require(shares > 0, "Adapter: zero shares");
+        _;
     }
 
     function _pullSharesAndConvertToSteth(address owner, uint256 shares) internal virtual returns (uint256 assetsOut);

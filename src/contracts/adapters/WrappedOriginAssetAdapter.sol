@@ -43,10 +43,12 @@ contract WrappedOriginAssetAdapter is Initializable, IAssetAdapter {
         return wrappedOToken.convertToShares(assets);
     }
 
-    function requestRedeem(uint256 shares) external returns (uint256 sharesRequested, uint256 assetsExpected) {
-        _onlyARM();
-        require(shares > 0, "Adapter: zero shares");
-
+    function requestRedeem(uint256 shares)
+        external
+        onlyARM
+        nonZeroShares(shares)
+        returns (uint256 sharesRequested, uint256 assetsExpected)
+    {
         IERC20(address(wrappedOToken)).transferFrom(arm, address(this), shares);
         assetsExpected = wrappedOToken.redeem(shares, address(this), address(this));
         (uint256 requestId,) = vault.requestWithdrawal(assetsExpected);
@@ -60,11 +62,10 @@ contract WrappedOriginAssetAdapter is Initializable, IAssetAdapter {
 
     function redeem(uint256 shares)
         external
+        onlyARM
+        nonZeroShares(shares)
         returns (uint256 sharesClaimed, uint256 assetsExpected, uint256 assetsReceived)
     {
-        _onlyARM();
-        require(shares > 0, "Adapter: zero shares");
-
         uint256 length = pendingRequestIds.length;
         uint256 cursor = nextPendingIndex;
         uint256 claimCount;
@@ -105,7 +106,13 @@ contract WrappedOriginAssetAdapter is Initializable, IAssetAdapter {
         return pendingRequestIds[index];
     }
 
-    function _onlyARM() internal view {
+    modifier onlyARM() {
         require(msg.sender == arm, "Adapter: only ARM");
+        _;
+    }
+
+    modifier nonZeroShares(uint256 shares) {
+        require(shares > 0, "Adapter: zero shares");
+        _;
     }
 }

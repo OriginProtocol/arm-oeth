@@ -53,10 +53,12 @@ contract WeETHAssetAdapter is Initializable, IAssetAdapter, IERC721Receiver {
         return weeth.getWeETHByeETH(assets);
     }
 
-    function requestRedeem(uint256 shares) external returns (uint256 sharesRequested, uint256 assetsExpected) {
-        _onlyARM();
-        require(shares > 0, "Adapter: zero shares");
-
+    function requestRedeem(uint256 shares)
+        external
+        onlyARM
+        nonZeroShares(shares)
+        returns (uint256 sharesRequested, uint256 assetsExpected)
+    {
         IERC20(address(weeth)).transferFrom(arm, address(this), shares);
         assetsExpected = weeth.unwrap(shares);
         uint256 requestId = etherfiWithdrawalQueue.requestWithdraw(address(this), assetsExpected);
@@ -70,11 +72,10 @@ contract WeETHAssetAdapter is Initializable, IAssetAdapter, IERC721Receiver {
 
     function redeem(uint256 shares)
         external
+        onlyARM
+        nonZeroShares(shares)
         returns (uint256 sharesClaimed, uint256 assetsExpected, uint256 assetsReceived)
     {
-        _onlyARM();
-        require(shares > 0, "Adapter: zero shares");
-
         uint256 length = pendingRequestIds.length;
         uint256 cursor = nextPendingIndex;
         uint256 claimCount;
@@ -118,8 +119,14 @@ contract WeETHAssetAdapter is Initializable, IAssetAdapter, IERC721Receiver {
         return pendingRequestIds[index];
     }
 
-    function _onlyARM() internal view {
+    modifier onlyARM() {
         require(msg.sender == arm, "Adapter: only ARM");
+        _;
+    }
+
+    modifier nonZeroShares(uint256 shares) {
+        require(shares > 0, "Adapter: zero shares");
+        _;
     }
 
     receive() external payable {}
