@@ -242,7 +242,7 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
         vm.stopPrank();
 
         // Deal enough WETH to cover the outstanding withdrawal queue plus extra to deposit
-        uint256 outstandingWithdrawals = lidoARM.withdrawsQueued() - lidoARM.withdrawsClaimed();
+        uint256 outstandingWithdrawals = lidoARM.reservedWithdrawLiquidity();
         deal(address(weth), address(lidoARM), outstandingWithdrawals + 100 ether);
 
         uint256 armWethBefore = weth.balanceOf(address(lidoARM));
@@ -277,7 +277,7 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
         vm.stopPrank();
 
         // Deal enough WETH to cover the outstanding withdrawal queue plus extra to deposit
-        uint256 outstandingWithdrawals = lidoARM.withdrawsQueued() - lidoARM.withdrawsClaimed();
+        uint256 outstandingWithdrawals = lidoARM.reservedWithdrawLiquidity();
         deal(address(weth), address(lidoARM), outstandingWithdrawals + 100 ether);
         vm.prank(Mainnet.ARM_RELAYER);
         lidoARM.setARMBuffer(0);

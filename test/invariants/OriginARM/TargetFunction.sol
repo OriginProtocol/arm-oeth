@@ -58,7 +58,7 @@ abstract contract TargetFunction is Properties {
     using MathComparisons for uint256;
 
     function handler_deposit(uint8 seed, uint88 amount) public {
-        vm.assume(originARM.totalAssets() > 1e12 || originARM.withdrawsQueued() == originARM.withdrawsClaimed());
+        vm.assume(originARM.totalAssets() > 1e12 || originARM.reservedWithdrawLiquidity() == 0);
 
         // Get a random user from the list of lps
         address user = getRandomLPs(seed);
@@ -537,8 +537,8 @@ abstract contract TargetFunction is Properties {
         if (token == address(os)) {
             return os.balanceOf(address(originARM));
         } else if (token == address(ws)) {
-            uint256 withdrawsQueued = originARM.withdrawsQueued();
-            uint256 withdrawsClaimed = originARM.withdrawsClaimed();
+            uint256 withdrawsQueued = originARM.reservedWithdrawLiquidity();
+            uint256 withdrawsClaimed = originARM.withdrawsClaimedShares();
             uint256 outstandingWithdrawals = withdrawsQueued - withdrawsClaimed;
             uint256 balance = ws.balanceOf(address(originARM));
             if (outstandingWithdrawals > balance) return 0;
@@ -572,7 +572,7 @@ abstract contract TargetFunction is Properties {
             assets += IERC4626(activeMarket).previewRedeem(IERC4626(activeMarket).balanceOf(address(originARM)));
         }
 
-        outstandingWithdrawals = originARM.withdrawsQueued() - originARM.withdrawsClaimed();
+        outstandingWithdrawals = originARM.reservedWithdrawLiquidity();
         if (assets < outstandingWithdrawals) return (0, outstandingWithdrawals);
 
         availableAssets = assets - outstandingWithdrawals;

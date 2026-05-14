@@ -126,11 +126,11 @@ abstract contract Properties is TargetFunctions {
     }
 
     function propertyF() public view returns (bool) {
-        return Math.eq(arm.withdrawsQueued(), sumUSDeUserRequest);
+        return Math.eq(arm.reservedWithdrawLiquidity(), sumUSDeUserRequest);
     }
 
     function propertyG() public view returns (bool) {
-        return Math.gte(arm.withdrawsQueued(), arm.withdrawsClaimed());
+        return Math.gte(arm.reservedWithdrawLiquidity(), arm.withdrawsClaimedShares());
     }
 
     function propertyH() public view returns (bool) {
@@ -140,11 +140,11 @@ abstract contract Properties is TargetFunctions {
             (,,, uint128 amount,,) = arm.withdrawalRequests(i);
             sum += amount;
         }
-        return Math.eq(arm.withdrawsQueued(), sum);
+        return Math.eq(arm.reservedWithdrawLiquidity(), sum);
     }
 
     function propertyI() public view returns (bool) {
-        return Math.gte(arm.withdrawsClaimed(), sumUSDeUserRedeem);
+        return Math.gte(arm.withdrawsClaimedShares(), sumUSDeUserRedeem);
     }
 
     function propertyJ() public view returns (bool) {

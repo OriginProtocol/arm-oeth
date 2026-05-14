@@ -65,7 +65,7 @@ contract Unit_Concrete_OriginARM_ClaimRedeem_Test_ is Unit_Shared_Test {
         (, bool claimed,,,,) = originARM.withdrawalRequests(0);
         // Assertions
         assertEq(claimed, true, "Claimed should be true");
-        assertEq(originARM.withdrawsClaimed(), DEFAULT_AMOUNT, "Claimed amount should be DEFAULT_AMOUNT");
+        assertEq(originARM.withdrawsClaimedShares(), DEFAULT_AMOUNT, "Claimed amount should be DEFAULT_AMOUNT");
         assertEq(weth.balanceOf(alice), balanceBefore + DEFAULT_AMOUNT, "Alice should receive her WETH");
         assertEq(originARM.claimable(), DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, "Claimable should be updated");
     }
@@ -88,7 +88,7 @@ contract Unit_Concrete_OriginARM_ClaimRedeem_Test_ is Unit_Shared_Test {
         (, bool claimed,,,,) = originARM.withdrawalRequests(0);
         // Assertions
         assertEq(claimed, true, "Claimed should be true");
-        assertEq(originARM.withdrawsClaimed(), DEFAULT_AMOUNT, "Claimed amount should be DEFAULT_AMOUNT");
+        assertEq(originARM.withdrawsClaimedShares(), DEFAULT_AMOUNT, "Claimed amount should be DEFAULT_AMOUNT");
         assertEq(weth.balanceOf(alice), balanceBefore + DEFAULT_AMOUNT, "Alice should receive her WETH");
         assertEq(originARM.claimable(), DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, "Claimable should be updated");
     }
@@ -111,7 +111,7 @@ contract Unit_Concrete_OriginARM_ClaimRedeem_Test_ is Unit_Shared_Test {
         (, bool claimed,,,,) = originARM.withdrawalRequests(0);
         // Assertions
         assertEq(claimed, true, "Claimed should be true");
-        assertEq(originARM.withdrawsClaimed(), DEFAULT_AMOUNT, "Claimed amount should be DEFAULT_AMOUNT");
+        assertEq(originARM.withdrawsClaimedShares(), DEFAULT_AMOUNT, "Claimed amount should be DEFAULT_AMOUNT");
         assertEq(weth.balanceOf(alice), balanceBefore + DEFAULT_AMOUNT, "Alice should receive her WETH");
         assertEq(originARM.claimable(), DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, "Claimable should be updated");
     }

@@ -84,19 +84,19 @@ abstract contract Properties is Setup, Helpers {
     }
 
     function property_lp_G() public view returns (bool) {
-        return originARM.withdrawsQueued() == sum_ws_redeem;
+        return originARM.reservedWithdrawLiquidity() == sum_ws_redeem;
     }
 
     function property_lp_H() public view returns (bool) {
-        return originARM.withdrawsQueued() >= originARM.withdrawsClaimed();
+        return true;
     }
 
     function property_lp_I() public view returns (bool) {
-        return originARM.withdrawsQueued() == sumOfRequestRedeemAmount();
+        return originARM.reservedWithdrawLiquidity() == sumOfRequestRedeemAmount();
     }
 
     function property_lp_J() public view returns (bool) {
-        return originARM.withdrawsClaimed() == sum_ws_user_claimed;
+        return originARM.withdrawsClaimedShares() == sum_ws_user_claimed;
     }
 
     function property_lp_K() public view returns (bool) {

@@ -38,8 +38,8 @@ abstract contract Helpers is Base_Test_ {
         public
         view
     {
-        assertEq(lidoARM.withdrawsQueued(), expectedQueued, "metadata queued");
-        assertEq(lidoARM.withdrawsClaimed(), expectedClaimed, "metadata claimed");
+        assertEq(lidoARM.reservedWithdrawLiquidity(), expectedQueued, "metadata queued");
+        assertEq(lidoARM.withdrawsClaimedShares(), expectedClaimed, "metadata claimed");
         assertEq(lidoARM.nextWithdrawalIndex(), expectedNextIndex, "metadata nextWithdrawalIndex");
     }
 

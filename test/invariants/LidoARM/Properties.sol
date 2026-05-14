@@ -112,11 +112,11 @@ abstract contract Properties is Setup, Utils {
     }
 
     function property_lp_G() public view returns (bool) {
-        return eq(lidoARM.withdrawsQueued(), sum_weth_request);
+        return eq(lidoARM.reservedWithdrawLiquidity(), sum_weth_request);
     }
 
     function property_lp_H() public view returns (bool) {
-        return gte(lidoARM.withdrawsQueued(), lidoARM.withdrawsClaimed());
+        return gte(lidoARM.reservedWithdrawLiquidity(), lidoARM.withdrawsClaimedShares());
     }
 
     function property_lp_I() public view returns (bool) {
@@ -127,11 +127,11 @@ abstract contract Properties is Setup, Utils {
             sum += assets;
         }
 
-        return eq(lidoARM.withdrawsQueued(), sum);
+        return eq(lidoARM.reservedWithdrawLiquidity(), sum);
     }
 
     function property_lp_invariant_J() public view returns (bool) {
-        return gte(lidoARM.withdrawsClaimed(), sum_weth_withdraw);
+        return gte(lidoARM.withdrawsClaimedShares(), sum_weth_withdraw);
     }
 
     function property_lp_invariant_K() public view returns (bool) {

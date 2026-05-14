@@ -221,7 +221,11 @@ contract Unit_Concrete_OriginARM_Deposit_Test_ is Unit_Shared_Test {
         deal(address(weth), address(originARM), 0);
 
         assertEq(originARM.totalAssets(), MIN_TOTAL_SUPPLY, "totalAssets should be floored at MIN_TOTAL_SUPPLY");
-        assertGt(originARM.withdrawsQueued(), originARM.withdrawsClaimed(), "should have outstanding requests");
+        assertGt(
+            originARM.reservedWithdrawLiquidity(),
+            originARM.withdrawsClaimedShares(),
+            "should have outstanding requests"
+        );
 
         vm.expectRevert("ARM: insolvent");
         vm.prank(alice);
@@ -246,7 +250,11 @@ contract Unit_Concrete_OriginARM_Deposit_Test_ is Unit_Shared_Test {
         deal(address(weth), address(originARM), wethAfterLoss);
 
         assertEq(originARM.totalAssets(), MIN_TOTAL_SUPPLY, "totalAssets should be floored at MIN_TOTAL_SUPPLY");
-        assertGt(originARM.withdrawsQueued(), originARM.withdrawsClaimed(), "should have outstanding requests");
+        assertGt(
+            originARM.reservedWithdrawLiquidity(),
+            originARM.withdrawsClaimedShares(),
+            "should have outstanding requests"
+        );
 
         // Attacker (bob) attempts to deposit to dilute Alice's claim — must be blocked
         deal(address(weth), bob, DEFAULT_AMOUNT);
@@ -269,7 +277,11 @@ contract Unit_Concrete_OriginARM_Deposit_Test_ is Unit_Shared_Test {
         // rawTotal = MIN_TOTAL_SUPPLY + 2*DEFAULT_AMOUNT, outstanding = DEFAULT_AMOUNT
         // totalAssets() = MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT > MIN_TOTAL_SUPPLY → solvent
         assertGt(originARM.totalAssets(), MIN_TOTAL_SUPPLY, "should be solvent with LP equity");
-        assertGt(originARM.withdrawsQueued(), originARM.withdrawsClaimed(), "should have outstanding requests");
+        assertGt(
+            originARM.reservedWithdrawLiquidity(),
+            originARM.withdrawsClaimedShares(),
+            "should have outstanding requests"
+        );
 
         deal(address(weth), bob, DEFAULT_AMOUNT);
         vm.startPrank(bob);

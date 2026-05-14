@@ -209,8 +209,8 @@ contract Fork_Concrete_OriginARM_AllocateWithAdapter_Test_ is Fork_Shared_Test {
         uint256 targetArmLiquidity = availableAssets * armBuffer / 1e18;
 
         // ARM liquidity
-        uint256 withdrawQueued = originARM.withdrawsQueued();
-        uint256 withdrawClaimed = originARM.withdrawsClaimed();
+        uint256 withdrawQueued = originARM.reservedWithdrawLiquidity();
+        uint256 withdrawClaimed = originARM.withdrawsClaimedShares();
         uint256 outstandingWithdrawals = withdrawQueued - withdrawClaimed;
         int256 armLiquidity = ws.balanceOf(address(originARM)).toInt256() - outstandingWithdrawals.toInt256();
         return armLiquidity - targetArmLiquidity.toInt256();

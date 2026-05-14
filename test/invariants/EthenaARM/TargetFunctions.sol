@@ -67,7 +67,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
     // ║                              ✦✦✦ ETHENA ARM ✦✦✦                              ║
     // ╚══════════════════════════════════════════════════════════════════════════════╝
     function targetARMDeposit(uint88 amount, uint256 randomAddressIndex) external ensureExchangeRateIncrease {
-        vm.assume(arm.totalAssets() > 1e12 || arm.withdrawsQueued() == arm.withdrawsClaimed());
+        vm.assume(arm.totalAssets() > 1e12 || arm.reservedWithdrawLiquidity() == 0);
         // Select a random user from makers
         address user = makers[randomAddressIndex % MAKERS_COUNT];
 
@@ -363,7 +363,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         uint256 maxAmountOut;
         if (address(tokenOut) == address(usde)) {
             uint256 balance = usde.balanceOf(address(arm));
-            uint256 outstandingWithdrawals = arm.withdrawsQueued() - arm.withdrawsClaimed();
+            uint256 outstandingWithdrawals = arm.reservedWithdrawLiquidity();
             maxAmountOut = outstandingWithdrawals >= balance ? 0 : balance - outstandingWithdrawals;
         } else {
             maxAmountOut = susde.balanceOf(address(arm));
@@ -437,7 +437,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         uint256 maxAmountOut;
         if (address(tokenOut) == address(usde)) {
             uint256 balance = usde.balanceOf(address(arm));
-            uint256 outstandingWithdrawals = arm.withdrawsQueued() - arm.withdrawsClaimed();
+            uint256 outstandingWithdrawals = arm.reservedWithdrawLiquidity();
             maxAmountOut = outstandingWithdrawals >= balance ? 0 : balance - outstandingWithdrawals;
         } else {
             maxAmountOut = susde.balanceOf(address(arm));
@@ -505,7 +505,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
     function targetARMCollectFees() external ensureExchangeRateIncrease {
         uint256 feesAccrued = arm.feesAccrued();
         uint256 balance = usde.balanceOf(address(arm));
-        uint256 outstandingWithdrawals = arm.withdrawsQueued() - arm.withdrawsClaimed();
+        uint256 outstandingWithdrawals = arm.reservedWithdrawLiquidity();
         if (assume(balance >= feesAccrued + outstandingWithdrawals)) return;
 
         uint256 feesCollected = arm.collectFees();
@@ -523,7 +523,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         uint256 feesAccrued = arm.feesAccrued();
         if (feesAccrued != 0) {
             uint256 balance = usde.balanceOf(address(arm));
-            uint256 outstandingWithdrawals = arm.withdrawsQueued() - arm.withdrawsClaimed();
+            uint256 outstandingWithdrawals = arm.reservedWithdrawLiquidity();
             if (assume(balance >= feesAccrued + outstandingWithdrawals)) return;
         }
 
