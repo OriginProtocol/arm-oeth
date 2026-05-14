@@ -362,7 +362,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
             // base input expressed in liquidity terms, multiply by buyPrice to get liquidity output.
             amountOut = convertedAmountIn * config.buyPrice / PRICE_SCALE;
 
-            _accrueSwapFee(config.buyPrice, amountOut);
+            _accrueSwapFee(config.buyPrice, config.crossPrice, amountOut);
             _ensureLiquidityAvailableForSwap(amountOut);
         }
 
@@ -405,7 +405,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
             // Divide the exact liquidity output by buyPrice to solve for the required base input.
             amountIn = convertedAmountOut * PRICE_SCALE / config.buyPrice + 3;
 
-            _accrueSwapFee(config.buyPrice, amountOut);
+            _accrueSwapFee(config.buyPrice, config.crossPrice, amountOut);
             _ensureLiquidityAvailableForSwap(amountOut);
         }
 
@@ -486,12 +486,13 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         return IAssetAdapter(config.adapter).convertToShares(assets);
     }
 
-    /// @dev Accrue fees on discounted buy-side swaps using the executed base buy price.
+    /// @dev Accrue fees on discounted buy-side swaps using the recognized NAV gain.
     /// @param buyPrice Price the ARM paid for the base asset.
+    /// @param crossPrice Price used to value the base asset in totalAssets().
     /// @param amountOut Liquidity asset amount paid out by the ARM.
-    function _accrueSwapFee(uint256 buyPrice, uint256 amountOut) internal {
+    function _accrueSwapFee(uint256 buyPrice, uint256 crossPrice, uint256 amountOut) internal {
         uint256 feeMultiplier =
-            buyPrice == 0 ? 0 : (PRICE_SCALE - buyPrice) * uint256(fee) * PRICE_SCALE / (buyPrice * FEE_SCALE);
+            buyPrice == 0 ? 0 : (crossPrice - buyPrice) * uint256(fee) * PRICE_SCALE / (buyPrice * FEE_SCALE);
         feesAccrued = SafeCast.toUint128(feesAccrued + amountOut * feeMultiplier / PRICE_SCALE);
     }
 

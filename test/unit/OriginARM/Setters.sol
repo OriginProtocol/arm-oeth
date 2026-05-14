@@ -161,8 +161,8 @@ contract Unit_Concrete_OriginARM_Setters_Test_ is Unit_Shared_Test {
         originARM.setFee(newFee);
         assertEq(originARM.fee(), newFee, "Wrong fee");
         assertEq(
-            _swapFeeMultiplier(_buyPrice(), originARM.fee()),
-            _expectedSwapFeeMultiplier(_buyPrice(), newFee),
+            _swapFeeMultiplier(_buyPrice(), _crossPrice(), originARM.fee()),
+            _expectedSwapFeeMultiplier(_buyPrice(), _crossPrice(), newFee),
             "Wrong swap fee multiplier"
         );
         assertEq(weth.balanceOf(originARM.feeCollector()), feeCollectorBalanceBefore, "Wrong fee collector balance");
@@ -185,8 +185,8 @@ contract Unit_Concrete_OriginARM_Setters_Test_ is Unit_Shared_Test {
         originARM.setFee(newFee);
         assertEq(originARM.fee(), newFee, "Wrong fee");
         assertEq(
-            _swapFeeMultiplier(_buyPrice(), originARM.fee()),
-            _expectedSwapFeeMultiplier(_buyPrice(), newFee),
+            _swapFeeMultiplier(_buyPrice(), _crossPrice(), originARM.fee()),
+            _expectedSwapFeeMultiplier(_buyPrice(), _crossPrice(), newFee),
             "Wrong swap fee multiplier"
         );
         assertEq(weth.balanceOf(feeCollector), feeCollectorBalanceBefore + feeToCollect, "Wrong fee collector balance");
@@ -250,8 +250,8 @@ contract Unit_Concrete_OriginARM_Setters_Test_ is Unit_Shared_Test {
         assertEq(_buyLiquidityRemaining(), newBuyLiquidity, "Wrong buy liquidity");
         assertEq(_sellLiquidityRemaining(), newSellLiquidity, "Wrong sell liquidity");
         assertEq(
-            _swapFeeMultiplier(_buyPrice(), originARM.fee()),
-            _expectedSwapFeeMultiplier(newBuyPrice, originARM.fee()),
+            _swapFeeMultiplier(_buyPrice(), _crossPrice(), originARM.fee()),
+            _expectedSwapFeeMultiplier(newBuyPrice, _crossPrice(), originARM.fee()),
             "Wrong swap fee multiplier"
         );
     }
@@ -305,9 +305,13 @@ contract Unit_Concrete_OriginARM_Setters_Test_ is Unit_Shared_Test {
         assertEq(_crossPrice(), crossPrice + 1, "Wrong cross price");
     }
 
-    function _expectedSwapFeeMultiplier(uint256 buyT1, uint256 fee) internal view returns (uint256) {
+    function _expectedSwapFeeMultiplier(uint256 buyT1, uint256 crossPrice, uint256 fee)
+        internal
+        view
+        returns (uint256)
+    {
         uint256 priceScale = originARM.PRICE_SCALE();
         if (buyT1 == 0 || fee == 0) return 0;
-        return (priceScale - buyT1) * fee * priceScale / (buyT1 * originARM.FEE_SCALE());
+        return (crossPrice - buyT1) * fee * priceScale / (buyT1 * originARM.FEE_SCALE());
     }
 }
