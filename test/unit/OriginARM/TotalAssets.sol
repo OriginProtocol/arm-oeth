@@ -21,6 +21,64 @@ contract Unit_Concrete_OriginARM_TotalAssets_Test_ is Unit_Shared_Test {
         assertEq(originARM.totalAssets(), totalAssetsBefore, "Wrong total assets");
     }
 
+    function test_TotalAssets_ValuesPendingBaseRedeemsAtCrossPrice() public {
+        uint256 crossPrice = 0.999e36;
+        uint256 amount = DEFAULT_AMOUNT;
+
+        vm.prank(governor);
+        originARM.setCrossPrice(address(oeth), crossPrice);
+        deal(address(oeth), address(originARM), amount);
+
+        uint256 totalAssetsBefore = originARM.totalAssets();
+        assertEq(totalAssetsBefore, MIN_TOTAL_SUPPLY + amount * crossPrice / 1e36, "total assets before");
+
+        vm.prank(governor);
+        originARM.requestBaseAssetRedeem(address(oeth), amount);
+
+        assertEq(originARM.totalAssets(), totalAssetsBefore, "total assets after request");
+    }
+
+    function test_TotalAssets_PendingBaseRedeemsUseLiveCrossPrice() public {
+        uint256 amount = DEFAULT_AMOUNT;
+        uint256 crossPrice = 0.999e36;
+        uint256 newCrossPrice = 0.998e36;
+
+        vm.prank(governor);
+        originARM.setCrossPrice(address(oeth), crossPrice);
+        deal(address(oeth), address(originARM), amount);
+
+        vm.prank(governor);
+        originARM.requestBaseAssetRedeem(address(oeth), amount);
+
+        assertEq(originARM.totalAssets(), MIN_TOTAL_SUPPLY + amount * crossPrice / 1e36, "initial pending value");
+
+        vm.prank(governor);
+        originARM.setCrossPrice(address(oeth), newCrossPrice);
+
+        assertEq(originARM.totalAssets(), MIN_TOTAL_SUPPLY + amount * newCrossPrice / 1e36, "repriced pending value");
+    }
+
+    function test_TotalAssets_ClaimedPendingBaseRedeemsUseActualLiquidityReceived() public {
+        uint256 amount = DEFAULT_AMOUNT;
+        uint256 crossPrice = 0.999e36;
+
+        vm.prank(governor);
+        originARM.setCrossPrice(address(oeth), crossPrice);
+        deal(address(oeth), address(originARM), amount);
+
+        vm.prank(governor);
+        originARM.requestBaseAssetRedeem(address(oeth), amount);
+
+        assertEq(originARM.totalAssets(), MIN_TOTAL_SUPPLY + amount * crossPrice / 1e36, "pending value");
+
+        deal(address(weth), address(vault), amount);
+
+        vm.prank(governor);
+        originARM.claimBaseAssetRedeem(address(oeth), amount);
+
+        assertEq(originARM.totalAssets(), MIN_TOTAL_SUPPLY + amount, "claimed value");
+    }
+
     /// allocating to a market should have no impact on total assets
     function test_TotalAssets_When_ActiveMarket() public addMarket(address(market)) setActiveMarket(address(market)) {
         assertEq(originARM.totalAssets(), MIN_TOTAL_SUPPLY, "Wrong total assets");

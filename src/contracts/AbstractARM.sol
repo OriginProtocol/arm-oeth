@@ -884,8 +884,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
                 _convertToAssets(config, IERC20(supportedBaseAsset).balanceOf(address(this)));
             availableAssets += baseConvertedToLiquid * config.crossPrice / PRICE_SCALE;
             // Pending adapter redemptions are already tracked in liquidity terms and represent assets
-            // expected back from protocol withdrawal queues.
-            availableAssets += config.pendingRedeemAssets;
+            // expected back from protocol withdrawal queues. Value them at the live cross price so moving
+            // base assets into a withdrawal queue does not create an immediate assets-per-share increase.
+            availableAssets += uint256(config.pendingRedeemAssets) * config.crossPrice / PRICE_SCALE;
         }
 
         address activeMarketMem = activeMarket;
