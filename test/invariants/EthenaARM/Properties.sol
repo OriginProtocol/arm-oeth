@@ -37,11 +37,11 @@ abstract contract Properties is TargetFunctions {
     // [x] Invariant C: ∑shares > 0 due to initial deposit
     // [x] Invariant D: totalShares == ∑userShares + deadShares
     // [x] Invariant E: previewRedeem(∑shares) == totalAssets
-    // [x] Invariant F: withdrawsQueued == ∑requestRedeem.amount
-    // [x] Invariant G: withdrawsQueued >= withdrawsClaimed
-    // [x] Invariant H: withdrawsQueued == ∑request.assets
-    // [x] Invariant I: withdrawsClaimed >= ∑claimRedeem.amount
-    // [x] Invariant J: ∀ requestId, request.queued >= request.assets
+    // [x] Invariant F: reservedWithdrawLiquidity == ∑unclaimed request.assets
+    // [x] Invariant G: withdrawsQueuedShares >= withdrawsClaimedShares
+    // [x] Invariant H: withdrawsQueuedShares == ∑request.shares
+    // [x] Invariant I: withdrawsClaimedShares == ∑claimed request.shares
+    // [x] Invariant J: ARM escrowed shares == withdrawsQueuedShares - withdrawsClaimedShares
     // [x] Invariant K: ∑feesCollected == feeCollector.balance
     //
     // ╔══════════════════════════════════════════════════════════════════════════════╗
@@ -117,6 +117,7 @@ abstract contract Properties is TargetFunctions {
         for (uint256 i = 0; i < MAKERS_COUNT; i++) {
             totalUserShares += arm.balanceOf(makers[i]);
         }
+        totalUserShares += arm.balanceOf(address(arm));
         uint256 deadShares = 1e12;
         return Math.eq(arm.totalSupply(), totalUserShares + deadShares);
     }
@@ -126,36 +127,31 @@ abstract contract Properties is TargetFunctions {
     }
 
     function propertyF() public view returns (bool) {
-        return Math.eq(arm.withdrawsQueued(), sumUSDeUserRequest);
+        return Math.eq(arm.reservedWithdrawLiquidity(), sumOfUnclaimedRequestAssets());
     }
 
     function propertyG() public view returns (bool) {
-        return Math.gte(arm.withdrawsQueued(), arm.withdrawsClaimed());
+        return Math.gte(arm.withdrawsQueuedShares(), arm.withdrawsClaimedShares());
     }
 
     function propertyH() public view returns (bool) {
-        uint256 sum = 0;
-        uint256 len = arm.nextWithdrawalIndex();
-        for (uint256 i; i < len; i++) {
-            (,,, uint128 amount,,) = arm.withdrawalRequests(i);
-            sum += amount;
-        }
-        return Math.eq(arm.withdrawsQueued(), sum);
+        return Math.eq(arm.withdrawsQueuedShares(), sumARMUserRequestShares);
     }
 
     function propertyI() public view returns (bool) {
-        return Math.gte(arm.withdrawsClaimed(), sumUSDeUserRedeem);
+        return Math.eq(arm.withdrawsClaimedShares(), sumARMUserRedeemShares);
     }
 
     function propertyJ() public view returns (bool) {
+        return Math.eq(arm.balanceOf(address(arm)), arm.withdrawsQueuedShares() - arm.withdrawsClaimedShares());
+    }
+
+    function sumOfUnclaimedRequestAssets() public view returns (uint256 sum) {
         uint256 len = arm.nextWithdrawalIndex();
         for (uint256 i; i < len; i++) {
-            (,,, uint128 amount, uint128 queued,) = arm.withdrawalRequests(i);
-            if (queued < amount) {
-                return false;
-            }
+            (, bool claimed,, uint128 amount,,) = arm.withdrawalRequests(i);
+            if (!claimed) sum += amount;
         }
-        return true;
     }
 
     function propertyK() public view returns (bool) {

@@ -59,10 +59,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     uint256 internal _deprecatedTraderate1;
     uint256 internal _deprecatedCrossPrice;
 
-    /// @notice Cumulative total of all LP withdrawal requests, including claimed requests.
-    uint128 public withdrawsQueued;
-    /// @notice Cumulative total of all LP withdrawal requests that have been claimed.
-    uint128 public withdrawsClaimed;
+    /// @notice Maximum liquidity assets reserved for outstanding LP withdrawal requests.
+    /// @dev Reuses the legacy packed `withdrawsQueued`/`withdrawsClaimed` storage slot.
+    uint256 public reservedWithdrawLiquidity;
     /// @notice Index of the next LP withdrawal request.
     uint256 public nextWithdrawalIndex;
 
@@ -74,9 +73,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         uint40 claimTimestamp;
         /// @notice Liquidity assets requested at request time.
         uint128 assets;
-        /// @notice Cumulative queued liquidity assets including this request.
+        /// @notice Cumulative queued LP shares including this request.
         uint128 queued;
-        /// @notice LP shares burned when this request was made.
+        /// @notice LP shares escrowed when this request was made.
         uint128 shares;
     }
 
@@ -129,7 +128,12 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @notice Base asset configuration. A zero adapter means unsupported.
     mapping(address asset => BaseAssetConfig) public baseAssetConfigs;
 
-    uint256[35] private _gap;
+    /// @notice Cumulative LP shares queued for redemption, used by the FIFO gate.
+    uint128 public withdrawsQueuedShares;
+    /// @notice Cumulative LP shares claimed and burned.
+    uint128 public withdrawsClaimedShares;
+
+    uint256[34] private _gap;
 
     ////////////////////////////////////////////////////
     ///                 Events
@@ -437,8 +441,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @param amount Liquidity asset amount needed by the swap.
     function _ensureLiquidityAvailableForSwap(uint256 amount) internal {
         uint256 liquidityBalance = IERC20(liquidityAsset).balanceOf(address(this));
-        uint256 outstandingWithdrawals = withdrawsQueued - withdrawsClaimed;
-        uint256 requiredLiquidity = amount + outstandingWithdrawals;
+        uint256 requiredLiquidity = amount + reservedWithdrawLiquidity;
         if (requiredLiquidity <= liquidityBalance) return;
 
         address activeMarketMem = activeMarket;
@@ -673,7 +676,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @param receiver Account that receives minted LP shares.
     /// @return shares LP shares minted.
     function _deposit(uint256 assets, address receiver) internal returns (uint256 shares) {
-        require(totalAssets() > MIN_TOTAL_SUPPLY || withdrawsQueued == withdrawsClaimed, "ARM: insolvent");
+        require(totalAssets() > MIN_TOTAL_SUPPLY || reservedWithdrawLiquidity == 0, "ARM: insolvent");
         shares = convertToShares(assets);
 
         // Transfer liquidity from the depositor before minting LP shares.
@@ -706,9 +709,11 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         // Store the next withdrawal request id.
         nextWithdrawalIndex = requestId + 1;
 
-        // Reserve liquidity assets in the LP withdrawal queue.
-        uint128 queued = SafeCast.toUint128(withdrawsQueued + assets);
-        withdrawsQueued = queued;
+        // Cumulative shares queued including this request, used for the FIFO gate at claim.
+        uint128 queued = SafeCast.toUint128(withdrawsQueuedShares + shares);
+        withdrawsQueuedShares = queued;
+        // Reserve the request-time maximum liquidity payout.
+        reservedWithdrawLiquidity += assets;
 
         uint40 claimTimestamp = uint40(block.timestamp + claimDelay);
         withdrawalRequests[requestId] = WithdrawalRequest({
@@ -720,8 +725,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
             shares: SafeCast.toUint128(shares)
         });
 
-        // Burn the redeemer's shares at request time.
-        _burn(msg.sender, shares);
+        // Escrow the redeemer's shares so they stay in totalSupply() and share losses/gains pro-rata.
+        _transfer(msg.sender, address(this), shares);
         emit RedeemRequested(msg.sender, requestId, assets, queued, claimTimestamp);
     }
 
@@ -747,9 +752,13 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
         // Store the request as claimed.
         withdrawalRequests[requestId].claimed = true;
-        // Store the updated claimed amount. The asset value at the time of the request is used instead of
-        // the value at the time of claim as the queued amount used the value at the time of the request.
-        withdrawsClaimed += SafeCast.toUint128(request.assets);
+        // Release the full request-time reservation, even when a loss-adjusted payout is lower.
+        reservedWithdrawLiquidity -= request.assets;
+        // Cumulative claimed amount in shares, used by the FIFO gate above.
+        withdrawsClaimedShares += request.shares;
+
+        // Burn the escrowed shares after `assets` was computed so conversion uses the pre-claim supply.
+        _burn(address(this), request.shares);
 
         // If there is not enough liquidity assets in the ARM, get from the active market if one is configured.
         // Read the active market address from storage once to save gas.
@@ -758,7 +767,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
             uint256 liquidityInARM = IERC20(liquidityAsset).balanceOf(address(this));
             if (assets > liquidityInARM) {
                 uint256 liquidityFromMarket = assets - liquidityInARM;
-                // This should work as we have checked earlier the claimable() amount which includes the active market.
+                // This should work as we have checked earlier the claimable liquidity which includes the active market.
                 IERC4626(activeMarketMem).withdraw(liquidityFromMarket, address(this), address(this));
             }
         }
@@ -772,19 +781,20 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     ///                 Accounting
     ////////////////////////////////////////////////////
 
-    /// @notice Liquidity currently available to satisfy LP withdrawal claims.
-    /// @dev Includes claimed queue offset, on-hand liquidity, and currently withdrawable active market liquidity.
-    /// @return claimableAmount Claimed queue offset plus currently claimable liquidity.
-    function claimable() public view returns (uint256 claimableAmount) {
-        claimableAmount = withdrawsClaimed + IERC20(liquidityAsset).balanceOf(address(this));
+    /// @notice Cumulative share queue frontier currently backed by claimable liquidity.
+    /// @return claimableShares Requests with `queued <= claimableShares` can be claimed once their delay has elapsed.
+    function claimable() public view returns (uint256 claimableShares) {
+        uint256 claimableLiquidity = IERC20(liquidityAsset).balanceOf(address(this));
 
         // If there is an active lending market, add to the claimable amount.
         address activeMarketMem = activeMarket;
         if (activeMarketMem != address(0)) {
             // maxWithdraw is used as during periods of high utilization or temporary pauses,
             // maxWithdraw may return less than convertToAssets.
-            claimableAmount += IERC4626(activeMarketMem).maxWithdraw(address(this));
+            claimableLiquidity += IERC4626(activeMarketMem).maxWithdraw(address(this));
         }
+
+        claimableShares = withdrawsClaimedShares + convertToShares(claimableLiquidity);
     }
 
     /// @notice Get available liquidity and base asset reserves for a supported base asset.
@@ -798,7 +808,6 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     {
         require(baseAssetConfigs[reserveBaseAsset].adapter != address(0), "ARM: unsupported asset");
 
-        uint256 outstandingWithdrawals = withdrawsQueued - withdrawsClaimed;
         liquidityAssets = IERC20(liquidityAsset).balanceOf(address(this));
 
         address activeMarketMem = activeMarket;
@@ -807,7 +816,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
             liquidityAssets += IERC4626(activeMarketMem).maxWithdraw(address(this));
         }
 
-        liquidityAssets = outstandingWithdrawals > liquidityAssets ? 0 : liquidityAssets - outstandingWithdrawals;
+        uint256 reservedWithdrawLiquidityMem = reservedWithdrawLiquidity;
+        liquidityAssets =
+            reservedWithdrawLiquidityMem > liquidityAssets ? 0 : liquidityAssets - reservedWithdrawLiquidityMem;
         baseAssetReserve = IERC20(reserveBaseAsset).balanceOf(address(this));
     }
 
@@ -818,21 +829,21 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @param amount Liquidity asset amount that must be unreserved.
     function _requireLiquidityAvailable(uint256 amount) internal view {
         // Liquidity assets still reserved for unclaimed LP withdrawal requests.
-        uint256 outstandingWithdrawals = withdrawsQueued - withdrawsClaimed;
+        uint256 reservedWithdrawLiquidityMem = reservedWithdrawLiquidity;
         // Save gas on an external balanceOf call if there are no outstanding withdrawals.
-        if (outstandingWithdrawals == 0) return;
+        if (reservedWithdrawLiquidityMem == 0) return;
 
         // Ensure the ARM can cover both the requested amount and outstanding LP withdrawals.
         require(
-            amount + outstandingWithdrawals <= IERC20(liquidityAsset).balanceOf(address(this)),
+            amount + reservedWithdrawLiquidityMem <= IERC20(liquidityAsset).balanceOf(address(this)),
             "ARM: Insufficient liquidity"
         );
     }
 
-    /// @notice Economic value of ARM assets net of LP withdrawal obligations and accrued swap fees.
+    /// @notice Economic value of ARM assets net of accrued swap fees.
     /// @return Total liquidity-denominated assets available to LP shares.
     function totalAssets() public view virtual returns (uint256) {
-        (uint256 newAvailableAssets,) = _availableAssets();
+        uint256 newAvailableAssets = _availableAssets();
         uint256 feesAccruedMem = feesAccrued;
         // total assets should only go up from the initial deposit amount that is burnt,
         // but in case of something unforeseen, return at least MIN_TOTAL_SUPPLY.
@@ -855,10 +866,10 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
     /// @dev Calculate ARM asset value before accrued swap fees are removed.
     /// Includes on-hand liquidity, active market value, base balances valued at cross price, and adapter queues.
-    /// @return availableAssets Liquidity-denominated assets after LP withdrawal obligations.
-    /// @return outstandingWithdrawals Liquidity assets reserved for unclaimed LP withdrawal requests.
-    function _availableAssets() internal view returns (uint256 availableAssets, uint256 outstandingWithdrawals) {
-        uint256 assets = IERC20(liquidityAsset).balanceOf(address(this));
+    /// Queued redemption shares stay in totalSupply(), so the share price already reflects outstanding claims.
+    /// @return availableAssets Liquidity-denominated assets before accrued swap fees.
+    function _availableAssets() internal view returns (uint256 availableAssets) {
+        availableAssets = IERC20(liquidityAsset).balanceOf(address(this));
 
         uint256 length = baseAssets.length;
         for (uint256 i = 0; i < length; ++i) {
@@ -870,10 +881,10 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
             // sell price is greater than or equal to the cross price.
             uint256 baseConvertedToLiquid =
                 _convertToAssets(config, IERC20(supportedBaseAsset).balanceOf(address(this)));
-            assets += baseConvertedToLiquid * config.crossPrice / PRICE_SCALE;
+            availableAssets += baseConvertedToLiquid * config.crossPrice / PRICE_SCALE;
             // Pending adapter redemptions are already tracked in liquidity terms and represent assets
             // expected back from protocol withdrawal queues.
-            assets += config.pendingRedeemAssets;
+            availableAssets += config.pendingRedeemAssets;
         }
 
         address activeMarketMem = activeMarket;
@@ -883,16 +894,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
             // Value active market shares economically, not by currently withdrawable liquidity.
             // Liquidity-aware functions such as claimable() and _allocate() continue to use maxWithdraw,
             // maxRedeem, withdraw and redeem when current liquidity matters.
-            assets += IERC4626(activeMarketMem).convertToAssets(allShares);
+            availableAssets += IERC4626(activeMarketMem).convertToAssets(allShares);
         }
-
-        // The amount of liquidity assets that is still to be claimed in the LP withdrawal queue.
-        outstandingWithdrawals = withdrawsQueued - withdrawsClaimed;
-        // If the ARM becomes insolvent enough that assets are less than outstanding withdrawals,
-        // report zero available assets and keep the outstanding withdrawal amount for allocation logic.
-        if (assets < outstandingWithdrawals) return (0, outstandingWithdrawals);
-        // Remove liquidity assets reserved for the LP withdrawal queue.
-        availableAssets = assets - outstandingWithdrawals;
     }
 
     /// @notice Convert liquidity assets to LP shares.
@@ -1037,14 +1040,14 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @return targetLiquidityDelta Desired liquidity movement. Positive means deposit, negative means withdraw.
     /// @return actualLiquidityDelta Actual liquidity movement. Positive means deposited, negative means withdrawn.
     function _allocate() internal returns (int256 targetLiquidityDelta, int256 actualLiquidityDelta) {
-        (uint256 availableAssets, uint256 outstandingWithdrawals) = _availableAssets();
+        uint256 availableAssets = _availableAssets();
         if (availableAssets == 0) return (0, 0);
 
         uint256 targetArmLiquidity = availableAssets * armBuffer / 1e18;
         // The current liquidity available to swap is the liquidity asset balance less
         // any outstanding withdrawals from the ARM's withdrawal queue.
         int256 currentArmLiquidity = SafeCast.toInt256(IERC20(liquidityAsset).balanceOf(address(this)))
-            - SafeCast.toInt256(outstandingWithdrawals);
+            - SafeCast.toInt256(reservedWithdrawLiquidity);
 
         targetLiquidityDelta = currentArmLiquidity - SafeCast.toInt256(targetArmLiquidity);
 
@@ -1103,5 +1106,20 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         require(_armBuffer <= 1e18, "ARM: invalid arm buffer");
         armBuffer = _armBuffer;
         emit ARMBufferUpdated(_armBuffer);
+    }
+
+    /// @notice Clear the legacy packed asset queue counter slot during the Model A upgrade.
+    /// @dev The reused slot previously packed `withdrawsQueued` in the low 128 bits and
+    /// `withdrawsClaimed` in the high 128 bits. It may be nonzero even when the old queue
+    /// is fully drained, so upgrade scripts should call this with `upgradeToAndCall`.
+    function migrateLegacyWithdrawQueue() external onlyOwner {
+        require(withdrawsQueuedShares == 0 && withdrawsClaimedShares == 0, "ARM: already migrated");
+
+        uint256 packedLegacyQueue = reservedWithdrawLiquidity;
+        uint128 legacyQueued = uint128(packedLegacyQueue);
+        uint128 legacyClaimed = uint128(packedLegacyQueue >> 128);
+        require(legacyQueued == legacyClaimed, "ARM: legacy withdrawals pending");
+
+        reservedWithdrawLiquidity = 0;
     }
 }

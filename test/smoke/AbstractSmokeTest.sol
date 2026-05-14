@@ -2,7 +2,7 @@
 pragma solidity ^0.8.23;
 
 // Foundry imports
-import {Test} from "forge-std/Test.sol";
+import {stdStorage, StdStorage, Test} from "forge-std/Test.sol";
 
 import {DeployManager} from "script/deploy/DeployManager.s.sol";
 import {$028_UpgradeEthenaARMScript} from "script/deploy/mainnet/028_UpgradeEthenaARMScript.s.sol";
@@ -22,6 +22,8 @@ import {OriginAssetAdapter} from "contracts/adapters/OriginAssetAdapter.sol";
 import {WrappedOriginAssetAdapter} from "contracts/adapters/WrappedOriginAssetAdapter.sol";
 
 abstract contract AbstractSmokeTest is Test {
+    using stdStorage for StdStorage;
+
     /// @dev First derived-contract storage slot after AbstractARM's reserved gap.
     uint256 internal constant LEGACY_PENDING_AMOUNT_SLOT = 100;
     /// @dev Ethena ARM proxy from mainnet deployment history. `Mainnet` does not expose this address.
@@ -83,6 +85,9 @@ abstract contract AbstractSmokeTest is Test {
         vm.prank(proxy.owner());
         proxy.upgradeTo(address(impl));
 
+        _clearLegacyWithdrawQueueForSmoke(address(proxy));
+        _migrateLegacyWithdrawQueue(address(proxy));
+
         StETHAssetAdapter stethAdapterImpl =
             new StETHAssetAdapter(address(proxy), Mainnet.WETH, Mainnet.STETH, Mainnet.LIDO_WITHDRAWAL);
         resolver.addContract("LIDO_ARM_STETH_ADAPTER_IMPL", address(stethAdapterImpl));
@@ -118,6 +123,9 @@ abstract contract AbstractSmokeTest is Test {
 
         vm.prank(proxy.owner());
         proxy.upgradeTo(address(impl));
+
+        _clearLegacyWithdrawQueueForSmoke(address(proxy));
+        _migrateLegacyWithdrawQueue(address(proxy));
 
         EtherFiAssetAdapter eethAdapterImpl = new EtherFiAssetAdapter(
             address(proxy), Mainnet.EETH, Mainnet.WETH, Mainnet.ETHERFI_WITHDRAWAL, Mainnet.ETHERFI_WITHDRAWAL_NFT
@@ -177,6 +185,9 @@ abstract contract AbstractSmokeTest is Test {
         vm.prank(proxy.owner());
         proxy.upgradeTo(address(impl));
 
+        _clearLegacyWithdrawQueueForSmoke(address(proxy));
+        _migrateLegacyWithdrawQueue(address(proxy));
+
         OriginAssetAdapter oethAdapterImpl =
             new OriginAssetAdapter(address(proxy), Mainnet.OETH, Mainnet.WETH, Mainnet.OETH_VAULT);
         resolver.addContract("OETH_ARM_OETH_ADAPTER_IMPL", address(oethAdapterImpl));
@@ -205,6 +216,21 @@ abstract contract AbstractSmokeTest is Test {
         // Smoke tests exercise the post-upgrade ARM shape. Production upgrades still require
         // operators to drain legacy protocol queues before adapter-owned withdrawals are enabled.
         vm.store(arm, bytes32(LEGACY_PENDING_AMOUNT_SLOT), bytes32(0));
+    }
+
+    function _clearLegacyWithdrawQueueForSmoke(address arm) internal {
+        // The live fork can contain outstanding legacy LP withdrawals at the selected block.
+        // Smoke tests normalize that fork-only state so the strict production migration path can run.
+        stdstore.target(arm).sig("reservedWithdrawLiquidity()").checked_write(uint256(0));
+    }
+
+    function _migrateLegacyWithdrawQueue(address arm) internal {
+        (bool success, bytes memory result) = arm.staticcall(abi.encodeWithSignature("owner()"));
+        require(success, "owner lookup failed");
+
+        vm.prank(abi.decode(result, (address)));
+        (success,) = arm.call(abi.encodeWithSignature("migrateLegacyWithdrawQueue()"));
+        require(success, "legacy withdraw migration failed");
     }
 
     function _addBaseAssetIfMissing(

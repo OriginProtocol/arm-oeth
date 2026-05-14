@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
-import {Test} from "forge-std/Test.sol";
+import {Test, stdStorage, StdStorage} from "forge-std/Test.sol";
 
 import {LidoARM} from "contracts/LidoARM.sol";
 import {Proxy} from "contracts/Proxy.sol";
@@ -16,6 +16,8 @@ interface ILegacyLidoARM {
 }
 
 abstract contract Fork_LidoARM_SwapGasComparison_Base is Test {
+    using stdStorage for StdStorage;
+
     uint256 internal constant FORK_BLOCK = 24_846_066;
     uint256 internal constant PRICE_SCALE = 1e36;
     uint256 internal constant LIQUIDITY_DEPOSIT = 1_000 ether;
@@ -133,6 +135,13 @@ contract Fork_Concrete_LidoARM_SwapGasUpgraded_Test is Fork_LidoARM_SwapGasCompa
 
         vm.prank(lidoProxy.owner());
         lidoProxy.upgradeTo(address(upgradedImpl));
+
+        stdStorage.checked_write(
+            stdStorage.sig(stdStorage.target(stdstore, address(lidoProxy)), "reservedWithdrawLiquidity()"), uint256(0)
+        );
+
+        vm.prank(lidoProxy.owner());
+        lidoARM.migrateLegacyWithdrawQueue();
 
         uint256 sellT1 = PRICE_SCALE;
         address stethAdapter =

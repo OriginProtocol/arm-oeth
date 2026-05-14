@@ -81,7 +81,7 @@ contract Unit_Concrete_OriginARM_SwapLiquidityFromMarket_Test_ is Unit_Shared_Te
         originARM.swapTokensForExactTokens(oeth, weth, amountOut, type(uint256).max, swapper);
         vm.stopPrank();
 
-        assertEq(originARM.withdrawsQueued() - originARM.withdrawsClaimed(), queuedAssets, "queued amount tracked");
+        assertEq(originARM.reservedWithdrawLiquidity(), queuedAssets, "reserved amount tracked");
         assertEq(weth.balanceOf(address(originARM)), queuedAssets, "queued redeem liquidity remains in ARM");
     }
 
