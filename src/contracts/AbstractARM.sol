@@ -401,6 +401,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
             uint256 convertedAmountOut = _convertToAssets(config, amountOut);
             // amountOut is converted to liquidity terms first, then multiplied by sellPrice
             // to solve for the required liquidity input.
+            // + 3 wei buffer for stETH rounding on larger transfers (observed up to 2 wei; 3 is for safety).
             amountIn = convertedAmountOut * config.sellPrice / PRICE_SCALE + 3;
         } else {
             // Trader sells base asset and buys the liquidity asset.
