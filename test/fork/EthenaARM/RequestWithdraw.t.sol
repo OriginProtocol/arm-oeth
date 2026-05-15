@@ -67,6 +67,27 @@ contract Fork_Concrete_EthenaARM_RequestWithdraw_Test_ is Fork_Shared_Test {
         assertEq(balanceBefore - balanceAfter, AMOUNT_IN * MAX_UNSTAKERS, "sUSDe balance after max requests incorrect");
     }
 
+    function test_SetUnstakers_ReplacesIdleUnstakers() public {
+        address[42] memory replacementUnstakers = _deployUnstakers();
+
+        vm.prank(governor);
+        ethenaAssetAdapter.setUnstakers(replacementUnstakers);
+
+        assertEq(ethenaAssetAdapter.unstakers(0), replacementUnstakers[0], "unstaker not replaced");
+    }
+
+    function test_SetUnstakers_AllowsSameArrayWithPendingRequest() public {
+        vm.prank(operator);
+        ethenaARM.requestBaseAssetRedeem(address(susde), AMOUNT_IN);
+
+        address[42] memory currentUnstakers = _currentUnstakers();
+
+        vm.prank(governor);
+        ethenaAssetAdapter.setUnstakers(currentUnstakers);
+
+        assertEq(ethenaAssetAdapter.unstakers(0), currentUnstakers[0], "unstaker changed");
+    }
+
     //////////////////////////////////////////////////////
     /// --- REVERT TESTS
     //////////////////////////////////////////////////////
@@ -87,6 +108,18 @@ contract Fork_Concrete_EthenaARM_RequestWithdraw_Test_ is Fork_Shared_Test {
         vm.expectRevert("Adapter: invalid unstaker");
         vm.prank(operator);
         ethenaARM.requestBaseAssetRedeem(address(susde), AMOUNT_IN);
+    }
+
+    function test_RevertWhen_SetUnstakers_ReplacesPendingUnstaker() public {
+        vm.prank(operator);
+        ethenaARM.requestBaseAssetRedeem(address(susde), AMOUNT_IN);
+
+        address[42] memory replacementUnstakers = _currentUnstakers();
+        replacementUnstakers[0] = address(new EthenaUnstaker(address(ethenaAssetAdapter), IStakedUSDe(address(susde))));
+
+        vm.expectRevert("Adapter: unstaker pending");
+        vm.prank(governor);
+        ethenaAssetAdapter.setUnstakers(replacementUnstakers);
     }
 
     function test_RevertWhen_RequestWithdraw_UnstakerInCooldown() public {
@@ -114,5 +147,11 @@ contract Fork_Concrete_EthenaARM_RequestWithdraw_Test_ is Fork_Shared_Test {
 
         vm.expectRevert("Only ARM can request unstake");
         EthenaUnstaker(unstakerAddress).requestUnstake(AMOUNT_IN);
+    }
+
+    function _currentUnstakers() internal view returns (address[42] memory currentUnstakers) {
+        for (uint256 i; i < MAX_UNSTAKERS; ++i) {
+            currentUnstakers[i] = ethenaAssetAdapter.unstakers(i);
+        }
     }
 }
