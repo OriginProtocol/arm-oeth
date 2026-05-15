@@ -39,6 +39,42 @@ action({
         "Lower bound for sell-side price (stETH per ETH).",
         0.9999,
         types.float,
+      )
+      .addOptionalParam(
+        "amount",
+        "Reference swap amount used when fetching aggregator quotes.",
+        20,
+        types.float,
+      )
+      .addOptionalParam(
+        "inch",
+        "Use 1Inch as the aggregator price source.",
+        true,
+        types.boolean,
+      )
+      .addOptionalParam(
+        "kyber",
+        "Use Kyber as the aggregator price source.",
+        false,
+        types.boolean,
+      )
+      .addOptionalParam(
+        "offset",
+        "Price offset applied to aggregator quotes.",
+        0.2,
+        types.float,
+      )
+      .addOptionalParam(
+        "tolerance",
+        "Tolerance used when comparing target and current prices.",
+        0.1,
+        types.float,
+      )
+      .addOptionalParam(
+        "fee",
+        "Swap fee in basis points used by setPrices when computing target prices.",
+        2,
+        types.float,
       ),
   run: async ({ signer, log, args }) => {
     const arm = new ethers.Contract(mainnet.lidoARM, lidoARMAbi, signer);
@@ -51,12 +87,12 @@ action({
       minSellPrice: args.minSellPrice,
       maxBuyPrice: args.maxBuyPrice,
       minBuyPrice: args.minBuyPrice,
-      // kyber: true,
-      inch: true,
-      amount: 20,
-      tolerance: 0.1,
-      fee: 2,
-      offset: 0.2,
+      kyber: args.kyber,
+      inch: args.inch,
+      amount: args.amount,
+      tolerance: args.tolerance,
+      fee: args.fee,
+      offset: args.offset,
       priceOffset: true,
       blockTag: "latest",
     });

@@ -39,6 +39,42 @@ action({
         "Lower bound for sell-side price (OETH per WETH).",
         0.9995,
         types.float,
+      )
+      .addOptionalParam(
+        "amount",
+        "Reference swap amount used when fetching aggregator quotes.",
+        10,
+        types.float,
+      )
+      .addOptionalParam(
+        "inch",
+        "Use 1Inch as the aggregator price source.",
+        false,
+        types.boolean,
+      )
+      .addOptionalParam(
+        "kyber",
+        "Use Kyber as the aggregator price source.",
+        true,
+        types.boolean,
+      )
+      .addOptionalParam(
+        "offset",
+        "Price offset applied to aggregator quotes.",
+        1.0,
+        types.float,
+      )
+      .addOptionalParam(
+        "tolerance",
+        "Tolerance used when comparing target and current prices.",
+        0.3,
+        types.float,
+      )
+      .addOptionalParam(
+        "fee",
+        "Swap fee in basis points used by setPrices when computing target prices.",
+        5,
+        types.float,
       ),
   run: async ({ signer, log, args }) => {
     const arm = new ethers.Contract(mainnet.etherfiARM, armAbi, signer);
@@ -51,11 +87,12 @@ action({
       minSellPrice: args.minSellPrice,
       maxBuyPrice: args.maxBuyPrice,
       minBuyPrice: args.minBuyPrice,
-      kyber: true,
-      amount: 10,
-      tolerance: 0.3,
-      fee: 5,
-      offset: 1.0,
+      kyber: args.kyber,
+      inch: args.inch,
+      amount: args.amount,
+      tolerance: args.tolerance,
+      fee: args.fee,
+      offset: args.offset,
       priceOffset: true,
       blockTag: "latest",
     });
