@@ -39,8 +39,26 @@ contract Unit_Concrete_OriginARM_ClaimRedeem_Test_ is Unit_Shared_Test {
         timejump(CLAIM_DELAY)
         asNot(alice)
     {
-        vm.expectRevert("Not requester");
+        vm.expectRevert("Not requester or operator");
         originARM.claimRedeem(0);
+    }
+
+    function test_ClaimRedeem_WhenOperatorClaimsForWithdrawer() public requestRedeemAll(alice) timejump(CLAIM_DELAY) {
+        uint256 aliceBalanceBefore = weth.balanceOf(alice);
+        uint256 operatorBalanceBefore = weth.balanceOf(operator);
+
+        vm.prank(operator);
+        vm.expectEmit(address(originARM));
+        emit AbstractARM.RedeemClaimed(alice, 0, DEFAULT_AMOUNT);
+        originARM.claimRedeem(0);
+
+        (, bool claimed,,,,) = originARM.withdrawalRequests(0);
+        assertEq(claimed, true, "Claimed should be true");
+        assertEq(originARM.reservedWithdrawLiquidity(), 0, "Reserved liquidity should be released");
+        assertEq(originARM.withdrawsClaimedShares(), DEFAULT_AMOUNT, "Claimed shares should be DEFAULT_AMOUNT");
+        assertEq(weth.balanceOf(alice), aliceBalanceBefore + DEFAULT_AMOUNT, "Alice should receive her WETH");
+        assertEq(weth.balanceOf(operator), operatorBalanceBefore, "Operator should not receive WETH");
+        assertEq(originARM.claimable(), DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, "Claimable should be updated");
     }
 
     function test_RevertWhen_ClaimRedeem_Because_AlreadyClaimed() public requestRedeemAll(alice) timejump(CLAIM_DELAY) {

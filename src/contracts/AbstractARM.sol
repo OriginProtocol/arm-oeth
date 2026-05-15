@@ -749,7 +749,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
         require(request.claimTimestamp <= block.timestamp, "Claim delay not met");
         require(request.queued <= claimable(), "Queue pending liquidity");
-        require(request.withdrawer == msg.sender, "Not requester");
+        require(request.withdrawer == msg.sender || msg.sender == operator, "Not requester or operator");
         require(request.claimed == false, "Already claimed");
 
         // In the scenario where the ARM has made a loss after the redeem request, the asset value of
@@ -783,8 +783,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         }
 
         // Transfer the liquidity asset to the withdrawer.
-        IERC20(liquidityAsset).transfer(msg.sender, assets);
-        emit RedeemClaimed(msg.sender, requestId, assets);
+        IERC20(liquidityAsset).transfer(request.withdrawer, assets);
+        emit RedeemClaimed(request.withdrawer, requestId, assets);
     }
 
     ////////////////////////////////////////////////////
