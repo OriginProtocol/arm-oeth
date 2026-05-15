@@ -41,7 +41,7 @@ contract Unit_Concrete_OriginARM_TotalAssets_Test_ is Unit_Shared_Test {
     function test_TotalAssets_PendingBaseRedeemsUseLiveCrossPrice() public {
         uint256 amount = DEFAULT_AMOUNT;
         uint256 crossPrice = 0.999e36;
-        uint256 newCrossPrice = 0.998e36;
+        uint256 newCrossPrice = 1e36;
 
         vm.prank(governor);
         originARM.setCrossPrice(address(oeth), crossPrice);

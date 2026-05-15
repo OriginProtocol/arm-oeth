@@ -171,7 +171,7 @@ contract Unit_Concrete_OriginARM_Pause_Test_ is Unit_Shared_Test {
         uint256 crossPrice = _crossPrice();
         vm.prank(operator);
         vm.expectEmit(address(originARM));
-        emit AbstractARM.TraderateChanged(address(oeth), crossPrice - 1, crossPrice);
+        emit AbstractARM.TraderateChanged(address(oeth), crossPrice - 1, crossPrice, 2 ether, 3 ether);
         originARM.setPrices(address(oeth), crossPrice - 1, crossPrice, 2 ether, 3 ether);
 
         vm.prank(operator);
