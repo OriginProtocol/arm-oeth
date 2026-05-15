@@ -16,6 +16,7 @@ extra_output_files = ["metadata"]
 ignored_warnings_from = ["src/contracts/Proxy.sol"]
 optimizer = true
 optimizer_runs = 200
+via_ir = true
 ffi = true
 
 # About remappings: 
