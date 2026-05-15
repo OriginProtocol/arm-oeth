@@ -10,13 +10,10 @@ import {AbstractARM} from "./AbstractARM.sol";
  * @author Origin Protocol Inc
  */
 contract EthenaARM is Initializable, AbstractARM {
-    /// @notice The maximum number of unstaker helper contracts
-    uint8 internal constant MAX_UNSTAKERS = 42;
-
     /// @dev Deprecated cooldown amount retained for storage layout compatibility.
     uint256 internal _deprecatedLiquidityAmountInCooldown;
     /// @dev Deprecated unstaker helper array retained for storage layout compatibility.
-    address[MAX_UNSTAKERS] internal _deprecatedUnstakers;
+    uint256 internal _deprecatedUnstakers;
     /// @dev Deprecated unstaker index retained for storage layout compatibility.
     uint8 internal _deprecatedNextUnstakerIndex;
     /// @dev Deprecated request timestamp retained for storage layout compatibility.

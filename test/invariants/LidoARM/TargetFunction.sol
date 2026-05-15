@@ -291,9 +291,8 @@ abstract contract TargetFunction is Properties {
         // Bound new cross price
         uint256 sell = priceScale ** 2 / (PRICE_SCALE * PRICE_SCALE / _lidoSellPrice());
         uint256 buy = _lidoBuyPrice();
-        newCrossPrice = _bound(
-            newCrossPrice, max(priceScale - MAX_CROSS_PRICE_DEVIATION, buy) + 1, min(priceScale, sell)
-        );
+        newCrossPrice =
+            _bound(newCrossPrice, max(priceScale - MAX_CROSS_PRICE_DEVIATION, buy) + 1, min(priceScale, sell));
 
         uint256 stethBalance = steth.balanceOf(address(lidoARM));
         if (_lidoCrossPrice() > newCrossPrice && stethBalance > 0) {
