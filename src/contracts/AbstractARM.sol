@@ -23,15 +23,15 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
     /// @notice Maximum amount the Owner can set the cross price below 1 scaled to 36 decimals.
     /// 20e32 is a 0.2% deviation, or 20 basis points.
-    uint256 public constant MAX_CROSS_PRICE_DEVIATION = 20e32;
+    uint256 internal constant MAX_CROSS_PRICE_DEVIATION = 20e32;
     /// @notice Scale used for prices.
-    uint256 public constant PRICE_SCALE = 1e36;
+    uint256 internal constant PRICE_SCALE = 1e36;
     /// @notice The amount of shares minted to a dead address on initialization.
     uint256 internal constant MIN_TOTAL_SUPPLY = 1e12;
     /// @notice Address with no known private key that receives initial dead shares.
     address internal constant DEAD_ACCOUNT = 0x000000000000000000000000000000000000dEaD;
     /// @notice Scale of the swap fee. 10,000 = 100%.
-    uint256 public constant FEE_SCALE = 10000;
+    uint256 internal constant FEE_SCALE = 10000;
 
     ////////////////////////////////////////////////////
     ///                 Immutables

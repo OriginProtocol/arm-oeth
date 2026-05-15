@@ -3,7 +3,7 @@
     "type": "constructor",
     "inputs": [
       {
-        "name": "_eeth",
+        "name": "",
         "type": "address",
         "internalType": "address"
       },
@@ -33,45 +33,6 @@
   {
     "type": "receive",
     "stateMutability": "payable"
-  },
-  {
-    "type": "function",
-    "name": "FEE_SCALE",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "MAX_CROSS_PRICE_DEVIATION",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "PRICE_SCALE",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
   },
   {
     "type": "function",
@@ -417,7 +378,7 @@
     "inputs": [],
     "outputs": [
       {
-        "name": "claimableAmount",
+        "name": "claimableShares",
         "type": "uint256",
         "internalType": "uint256"
       }
@@ -533,19 +494,6 @@
   },
   {
     "type": "function",
-    "name": "eeth",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "contract IERC20"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
     "name": "fee",
     "inputs": [],
     "outputs": [
@@ -657,6 +605,13 @@
       }
     ],
     "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "migrateLegacyWithdrawQueue",
+    "inputs": [],
+    "outputs": [],
+    "stateMutability": "nonpayable"
   },
   {
     "type": "function",
@@ -826,6 +781,19 @@
       }
     ],
     "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "reservedWithdrawLiquidity",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
   },
   {
     "type": "function",
@@ -1238,19 +1206,6 @@
   },
   {
     "type": "function",
-    "name": "weth",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "contract IWETH"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
     "name": "withdrawalRequests",
     "inputs": [
       {
@@ -1295,7 +1250,7 @@
   },
   {
     "type": "function",
-    "name": "withdrawsClaimed",
+    "name": "withdrawsClaimedShares",
     "inputs": [],
     "outputs": [
       {
@@ -1308,7 +1263,7 @@
   },
   {
     "type": "function",
-    "name": "withdrawsQueued",
+    "name": "withdrawsQueuedShares",
     "inputs": [],
     "outputs": [
       {
@@ -1466,19 +1421,6 @@
         "type": "address",
         "indexed": true,
         "internalType": "address"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "ClaimEtherFiWithdrawals",
-    "inputs": [
-      {
-        "name": "requestIds",
-        "type": "uint256[]",
-        "indexed": false,
-        "internalType": "uint256[]"
       }
     ],
     "anonymous": false
@@ -1679,25 +1621,6 @@
       },
       {
         "name": "claimTimestamp",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "RequestEtherFiWithdrawal",
-    "inputs": [
-      {
-        "name": "amount",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      },
-      {
-        "name": "requestId",
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"

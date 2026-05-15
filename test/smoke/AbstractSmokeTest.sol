@@ -26,6 +26,8 @@ abstract contract AbstractSmokeTest is Test {
 
     /// @dev First derived-contract storage slot after AbstractARM's reserved gap.
     uint256 internal constant LEGACY_PENDING_AMOUNT_SLOT = 100;
+    uint256 internal constant FEE_SCALE = 10000;
+    uint256 internal constant DELAY_REQUEST = 30 minutes;
     /// @dev Ethena ARM proxy from mainnet deployment history. `Mainnet` does not expose this address.
     address internal constant ETHENA_ARM_PROXY = 0xCEDa2d856238aA0D12f6329de20B9115f07C366d;
 
@@ -77,7 +79,7 @@ abstract contract AbstractSmokeTest is Test {
 
     function _upgradeLidoARM() internal {
         Proxy proxy = Proxy(payable(resolver.resolve("LIDO_ARM")));
-        LidoARM impl = new LidoARM(Mainnet.STETH, Mainnet.WETH, Mainnet.LIDO_WITHDRAWAL, 10 minutes, 1e7, 1e18);
+        LidoARM impl = new LidoARM(Mainnet.WETH, 10 minutes, 1e7, 1e18);
         resolver.addContract("LIDO_ARM_IMPL", address(impl));
 
         _clearLegacyPendingAmount(address(proxy));

@@ -90,7 +90,7 @@ contract Fork_Concrete_EthenaARM_swapExactTokensForTokens_Test_ is Fork_Shared_T
         uint256 traderate = _buyPrice();
         uint256 expectedAmountOut = (susde.convertToAssets(AMOUNT_IN) * traderate) / 1e36;
         uint256 expectedFee = expectedAmountOut * _swapFeeMultiplier(_buyPrice(), _crossPrice(), ethenaARM.fee())
-            / ethenaARM.PRICE_SCALE();
+            / PRICE_SCALE;
 
         // Expected events
         vm.expectEmit({emitter: address(susde)});

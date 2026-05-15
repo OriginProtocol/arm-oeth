@@ -56,7 +56,6 @@ contract $014_DeployEthenaARMScript is AbstractDeployScript("014_DeployEthenaARM
         uint256 claimDelay = 10 minutes;
         EthenaARM armImpl = new EthenaARM(
             Mainnet.USDE,
-            Mainnet.SUSDE,
             claimDelay,
             1e18, // minSharesToRedeem
             100e18 // allocateThreshold
@@ -87,17 +86,9 @@ contract $014_DeployEthenaARMScript is AbstractDeployScript("014_DeployEthenaARM
         adapterProxy.initialize(address(adapterImpl), deployer, "");
         EthenaAssetAdapter adapter = EthenaAssetAdapter(address(adapterProxy));
         _recordDeployment("ETHENA_ARM_SUSDE_ADAPTER", address(adapterProxy));
-        EthenaARM(payable(address(armProxy)))
-            .addBaseAsset(
-                Mainnet.SUSDE,
-                address(adapter),
-                0.998 * 1e36,
-                1e36,
-                type(uint128).max,
-                type(uint128).max,
-                crossPrice,
-                false
-            );
+        EthenaARM(payable(address(armProxy))).addBaseAsset(
+            Mainnet.SUSDE, address(adapter), 0.998 * 1e36, 1e36, type(uint128).max, type(uint128).max, crossPrice, false
+        );
 
         // 10. Add Aave Market as an active market
         address[] memory markets = new address[](1);

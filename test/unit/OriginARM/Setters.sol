@@ -24,7 +24,6 @@ contract Unit_Concrete_OriginARM_Setters_Test_ is Unit_Shared_Test {
     }
 
     function test_RevertWhen_SetFee_Because_FeeIsTooHigh() public asGovernor {
-        uint256 FEE_SCALE = originARM.FEE_SCALE();
         vm.expectRevert("ARM: fee too high");
         originARM.setFee(FEE_SCALE / 2 + 1);
     }
@@ -72,8 +71,8 @@ contract Unit_Concrete_OriginARM_Setters_Test_ is Unit_Shared_Test {
         originARM.setCrossPrice(address(oeth), 0);
 
         // Just below the limit
-        uint256 priceScale = originARM.PRICE_SCALE();
-        uint256 maxCrossPriceDeviation = originARM.MAX_CROSS_PRICE_DEVIATION();
+        uint256 priceScale = PRICE_SCALE;
+        uint256 maxCrossPriceDeviation = MAX_CROSS_PRICE_DEVIATION;
         vm.expectRevert("ARM: cross price too low");
         originARM.setCrossPrice(address(oeth), priceScale - maxCrossPriceDeviation - 1);
     }
@@ -84,15 +83,15 @@ contract Unit_Concrete_OriginARM_Setters_Test_ is Unit_Shared_Test {
         originARM.setCrossPrice(address(oeth), type(uint256).max);
 
         // Just above the limit
-        uint256 priceScale = originARM.PRICE_SCALE();
+        uint256 priceScale = PRICE_SCALE;
         vm.expectRevert("ARM: cross price too high");
         originARM.setCrossPrice(address(oeth), priceScale + 1);
     }
 
     function test_RevertWhen_SetCrossPrice_Because_SellPriceTooLow() public asGovernor {
         // Fecth useful data
-        uint256 priceScale = originARM.PRICE_SCALE();
-        uint256 maxCrossPriceDeviation = originARM.MAX_CROSS_PRICE_DEVIATION();
+        uint256 priceScale = PRICE_SCALE;
+        uint256 maxCrossPriceDeviation = MAX_CROSS_PRICE_DEVIATION;
 
         // Reduce the cross price to be able to reduce the sell price after
         originARM.setCrossPrice(address(oeth), priceScale - maxCrossPriceDeviation);
@@ -108,8 +107,8 @@ contract Unit_Concrete_OriginARM_Setters_Test_ is Unit_Shared_Test {
 
     function test_RevertWhen_SetCrossPrice_Because_BuyPriceTooHigh() public asGovernor {
         // Fecth useful data
-        uint256 priceScale = originARM.PRICE_SCALE();
-        uint256 maxCrossPriceDeviation = originARM.MAX_CROSS_PRICE_DEVIATION();
+        uint256 priceScale = PRICE_SCALE;
+        uint256 maxCrossPriceDeviation = MAX_CROSS_PRICE_DEVIATION;
 
         // Reduce the cross price to be able to reduce the buy price after
         originARM.setCrossPrice(address(oeth), priceScale - (maxCrossPriceDeviation) / 2);
@@ -322,8 +321,8 @@ contract Unit_Concrete_OriginARM_Setters_Test_ is Unit_Shared_Test {
         view
         returns (uint256)
     {
-        uint256 priceScale = originARM.PRICE_SCALE();
+        uint256 priceScale = PRICE_SCALE;
         if (buyT1 == 0 || fee == 0) return 0;
-        return (crossPrice - buyT1) * fee * priceScale / (buyT1 * originARM.FEE_SCALE());
+        return (crossPrice - buyT1) * fee * priceScale / (buyT1 * FEE_SCALE);
     }
 }

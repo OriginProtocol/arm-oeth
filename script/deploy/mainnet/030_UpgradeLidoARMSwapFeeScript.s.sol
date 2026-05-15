@@ -17,9 +17,7 @@ contract $030_UpgradeLidoARMSwapFeeScript is AbstractDeployScript("030_UpgradeLi
         uint256 claimDelay = 10 minutes;
         uint256 minSharesToRedeem = 1e7;
         int256 allocateThreshold = 1e18;
-        LidoARM lidoARMImpl = new LidoARM(
-            Mainnet.STETH, Mainnet.WETH, Mainnet.LIDO_WITHDRAWAL, claimDelay, minSharesToRedeem, allocateThreshold
-        );
+        LidoARM lidoARMImpl = new LidoARM(Mainnet.WETH, claimDelay, minSharesToRedeem, allocateThreshold);
         _recordDeployment("LIDO_ARM_IMPL", address(lidoARMImpl));
     }
 

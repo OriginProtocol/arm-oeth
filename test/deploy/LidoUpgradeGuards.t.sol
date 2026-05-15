@@ -83,11 +83,9 @@ contract LidoUpgradeGuardsTest is Test {
 
     function _deployInitializedLidoARMProxy() internal returns (Proxy proxy, LidoARM newImpl) {
         MockERC20 weth = new MockERC20("Wrapped ETH", "WETH", 18);
-        MockERC20 steth = new MockERC20("Lido Staked Ether", "stETH", 18);
-        address lidoWithdrawalQueue = makeAddr("lidoWithdrawalQueue");
 
-        LidoARM oldImpl = new LidoARM(address(steth), address(weth), lidoWithdrawalQueue, 10 minutes, 0, 0);
-        newImpl = new LidoARM(address(steth), address(weth), lidoWithdrawalQueue, 10 minutes, 0, 0);
+        LidoARM oldImpl = new LidoARM(address(weth), 10 minutes, 0, 0);
+        newImpl = new LidoARM(address(weth), 10 minutes, 0, 0);
         proxy = new Proxy();
 
         weth.mint(address(this), 1e12);

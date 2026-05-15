@@ -14,7 +14,7 @@ contract Unit_Concrete_OriginARM_CollectFees_Test_ is Unit_Shared_Test {
 
         amountIn = amounts[0];
         expectedFee =
-            amountOut * _swapFeeMultiplier(_buyPrice(), _crossPrice(), originARM.fee()) / originARM.PRICE_SCALE();
+            amountOut * _swapFeeMultiplier(_buyPrice(), _crossPrice(), originARM.fee()) / PRICE_SCALE;
     }
 
     function test_RevertWhen_CollectFees_Because_InsufficientLiquidity() public deposit(alice, DEFAULT_AMOUNT) {
@@ -69,7 +69,7 @@ contract Unit_Concrete_OriginARM_CollectFees_Test_ is Unit_Shared_Test {
         uint256 amountIn = 100 ether;
 
         vm.startPrank(governor);
-        originARM.setFee(originARM.FEE_SCALE() / 2);
+        originARM.setFee(FEE_SCALE / 2);
         originARM.setCrossPrice(address(oeth), crossPrice);
         originARM.setPrices(address(oeth), buyPrice, crossPrice, type(uint128).max, type(uint128).max);
         vm.stopPrank();
@@ -86,7 +86,7 @@ contract Unit_Concrete_OriginARM_CollectFees_Test_ is Unit_Shared_Test {
         uint256 amountOut = amounts[1];
         uint256 recognizedNavGain = amountOut * (crossPrice - buyPrice) / buyPrice;
         uint256 expectedFee =
-            amountOut * _swapFeeMultiplier(buyPrice, crossPrice, originARM.fee()) / originARM.PRICE_SCALE();
+            amountOut * _swapFeeMultiplier(buyPrice, crossPrice, originARM.fee()) / PRICE_SCALE;
 
         assertEq(originARM.feesAccrued(), expectedFee, "Wrong bounded swap fee");
         assertLe(originARM.feesAccrued(), recognizedNavGain, "Fee exceeds recognized NAV gain");

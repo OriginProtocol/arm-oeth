@@ -50,9 +50,7 @@ contract Fork_EtherFiARM_Smoke_Test is AbstractSmokeTest {
         assertEq(etherFiARM.owner(), Mainnet.TIMELOCK, "Owner");
         assertEq(etherFiARM.operator(), Mainnet.ARM_RELAYER, "Operator");
         assertEq(etherFiARM.feeCollector(), Mainnet.BUYBACK_OPERATOR, "Fee collector");
-        assertEq((100 * uint256(etherFiARM.fee())) / etherFiARM.FEE_SCALE(), 20, "Performance fee as a percentage");
-        assertEq(address(etherFiARM.eeth()), Mainnet.EETH, "eETH");
-        assertEq(address(etherFiARM.weth()), Mainnet.WETH, "WETH");
+        assertEq((100 * uint256(etherFiARM.fee())) / FEE_SCALE, 20, "Performance fee as a percentage");
         assertEq(address(etherfiAssetAdapter.etherfiWithdrawalQueue()), Mainnet.ETHERFI_WITHDRAWAL, "withdrawal queue");
         assertEq(address(etherfiAssetAdapter.etherfiWithdrawalNFT()), Mainnet.ETHERFI_WITHDRAWAL_NFT, "withdrawal NFT");
         assertEq(etherFiARM.liquidityAsset(), Mainnet.WETH, "liquidity asset");

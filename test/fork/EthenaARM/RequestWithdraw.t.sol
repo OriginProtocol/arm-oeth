@@ -35,7 +35,7 @@ contract Fork_Concrete_EthenaARM_RequestWithdraw_Test_ is Fork_Shared_Test {
         // First request
         vm.prank(operator);
         ethenaARM.requestBaseAssetRedeem(address(susde), AMOUNT_IN);
-        skip(ethenaARM.DELAY_REQUEST());
+        skip(DELAY_REQUEST);
 
         // Second request
         uint256 susdeBalanceBefore = susde.balanceOf(address(ethenaARM));
@@ -53,7 +53,7 @@ contract Fork_Concrete_EthenaARM_RequestWithdraw_Test_ is Fork_Shared_Test {
 
     function test_RequestWithdraw_MaxRequest() public {
         uint256 balanceBefore = susde.balanceOf(address(ethenaARM));
-        uint256 delay = ethenaARM.DELAY_REQUEST();
+        uint256 delay = DELAY_REQUEST;
 
         // Make MAX_UNSTAKERS requests
         for (uint256 i; i < MAX_UNSTAKERS; i++) {
@@ -123,7 +123,7 @@ contract Fork_Concrete_EthenaARM_RequestWithdraw_Test_ is Fork_Shared_Test {
     }
 
     function test_RevertWhen_RequestWithdraw_UnstakerInCooldown() public {
-        uint256 delay = ethenaARM.DELAY_REQUEST();
+        uint256 delay = DELAY_REQUEST;
 
         // Make MAX_UNSTAKERS requests
         for (uint256 i; i < MAX_UNSTAKERS; i++) {
