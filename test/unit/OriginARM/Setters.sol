@@ -132,6 +132,18 @@ contract Unit_Concrete_OriginARM_Setters_Test_ is Unit_Shared_Test {
         originARM.setCrossPrice(address(oeth), crossPrice - 1);
     }
 
+    function test_RevertWhen_SetCrossPrice_Because_TooManyQueuedBaseAssets() public asGovernor {
+        uint256 crossPrice = _crossPrice();
+
+        // Queue OETH for protocol withdrawal so it is no longer held directly by the ARM.
+        deal(address(oeth), address(originARM), 1e18);
+        originARM.requestBaseAssetRedeem(address(oeth), 1e18);
+        assertEq(oeth.balanceOf(address(originARM)), 0, "ARM OETH balance");
+
+        vm.expectRevert("ARM: too many base assets");
+        originARM.setCrossPrice(address(oeth), crossPrice - 1);
+    }
+
     ////////////////////////////////////////////////////
     /// --- TESTS
     ////////////////////////////////////////////////////

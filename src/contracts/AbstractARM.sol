@@ -588,7 +588,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     }
 
     /// @notice Set the valuation price that buy and sell prices may not cross for a base asset.
-    /// @dev When lowering cross price, the ARM must not hold a meaningful balance of that base asset.
+    /// @dev When lowering cross price, the ARM must not have meaningful exposure to that base asset
+    ///      either on-hand or in the adapter withdrawal queue.
     /// @param priceBaseAsset Base asset whose cross price is being updated.
     /// @param newCrossPrice New valuation price scaled to 36 decimals.
     /// eg 1e36 values the base asset at 1 liquidity asset.
@@ -601,7 +602,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         require(config.buyPrice < newCrossPrice, "ARM: buy price too high");
 
         if (newCrossPrice < config.crossPrice) {
-            require(IERC20(priceBaseAsset).balanceOf(address(this)) < MIN_TOTAL_SUPPLY, "ARM: too many base assets");
+            uint256 baseAssetExposure =
+                _convertToAssets(config, IERC20(priceBaseAsset).balanceOf(address(this))) + config.pendingRedeemAssets;
+            require(baseAssetExposure < MIN_TOTAL_SUPPLY, "ARM: too many base assets");
         }
 
         config.crossPrice = SafeCast.toUint128(newCrossPrice);
