@@ -832,24 +832,6 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         baseAssetReserve = IERC20(reserveBaseAsset).balanceOf(address(this));
     }
 
-    /// @dev Ensure swaps and fee collection do not consume liquidity reserved for LP withdrawal claims.
-    /// If no outstanding withdrawals exist, no balance check is done. This is a gas optimization for swaps.
-    /// There is no liquidity guarantee for the fee collector. If there is not enough unreserved liquidity
-    /// to collect accrued fees, the fee collector has to wait until enough liquidity is available.
-    /// @param amount Liquidity asset amount that must be unreserved.
-    function _requireLiquidityAvailable(uint256 amount) internal view {
-        // Liquidity assets still reserved for unclaimed LP withdrawal requests.
-        uint256 reservedWithdrawLiquidityMem = reservedWithdrawLiquidity;
-        // Save gas on an external balanceOf call if there are no outstanding withdrawals.
-        if (reservedWithdrawLiquidityMem == 0) return;
-
-        // Ensure the ARM can cover both the requested amount and outstanding LP withdrawals.
-        require(
-            amount + reservedWithdrawLiquidityMem <= IERC20(liquidityAsset).balanceOf(address(this)),
-            "ARM: Insufficient liquidity"
-        );
-    }
-
     /// @notice Economic value of ARM assets net of accrued swap fees.
     /// @return Total liquidity-denominated assets available to LP shares.
     function totalAssets() public view virtual returns (uint256) {
@@ -965,8 +947,10 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         if (fees == 0) return 0;
 
         // Fees can only be collected from unreserved on-hand liquidity.
-        _requireLiquidityAvailable(fees);
-        require(fees <= IERC20(liquidityAsset).balanceOf(address(this)), "ARM: insufficient liquidity");
+        require(
+            fees + reservedWithdrawLiquidity <= IERC20(liquidityAsset).balanceOf(address(this)),
+            "ARM: Insufficient liquidity"
+        );
 
         feesAccrued = 0;
         IERC20(liquidityAsset).transfer(feeCollector, fees);

@@ -31,7 +31,7 @@ contract Unit_Concrete_OriginARM_CollectFees_Test_ is Unit_Shared_Test {
         _swapBaseForLiquidity(1e12);
 
         vm.prank(vm.randomAddress());
-        vm.expectRevert("ARM: insufficient liquidity");
+        vm.expectRevert("ARM: Insufficient liquidity");
         originARM.collectFees();
     }
 
