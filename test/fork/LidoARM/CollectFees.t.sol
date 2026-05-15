@@ -32,16 +32,16 @@ contract Fork_Concrete_LidoARM_CollectFees_Test_ is Fork_Shared_Test_ {
 
         uint256[] memory amounts = lidoARM.swapExactTokensForTokens(steth, weth, amountIn, 0, address(this));
         amountOut = amounts[1];
-        uint256 feeMultiplier = (lidoARM.PRICE_SCALE() - DISCOUNTED_PRICE) * lidoARM.fee() * lidoARM.PRICE_SCALE()
-            / (DISCOUNTED_PRICE * lidoARM.FEE_SCALE());
-        expectedFee = amountOut * feeMultiplier / lidoARM.PRICE_SCALE();
+        uint256 feeMultiplier =
+            (PRICE_SCALE - DISCOUNTED_PRICE) * lidoARM.fee() * PRICE_SCALE / (DISCOUNTED_PRICE * FEE_SCALE);
+        expectedFee = amountOut * feeMultiplier / PRICE_SCALE;
     }
 
     /// @notice This test is expected to revert as the discounted swap leaves too little WETH to collect the accrued fee.
     function test_RevertWhen_CollectFees_Because_InsufficientLiquidity() public {
         _swapBaseForLiquidity(99_955e15, 100 ether);
 
-        vm.expectRevert("ARM: insufficient liquidity");
+        vm.expectRevert("ARM: Insufficient liquidity");
         lidoARM.collectFees();
     }
 

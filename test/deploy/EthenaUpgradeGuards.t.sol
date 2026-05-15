@@ -47,10 +47,9 @@ contract EthenaUpgradeGuardsTest is Test {
 
     function _deployInitializedEthenaARMProxy() internal returns (Proxy proxy, EthenaARM newImpl) {
         MockERC20 usde = new MockERC20("USDe", "USDe", 18);
-        MockERC20 susde = new MockERC20("Staked USDe", "sUSDe", 18);
 
-        EthenaARM oldImpl = new EthenaARM(address(usde), address(susde), 10 minutes, 1e18, 100e18);
-        newImpl = new EthenaARM(address(usde), address(susde), 10 minutes, 1e18, 100e18);
+        EthenaARM oldImpl = new EthenaARM(address(usde), 10 minutes, 1e18, 100e18);
+        newImpl = new EthenaARM(address(usde), 10 minutes, 1e18, 100e18);
         proxy = new Proxy();
 
         usde.mint(address(this), 1e12);

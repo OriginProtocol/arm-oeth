@@ -36,7 +36,7 @@ contract Fork_Concrete_LidoARM_Setters_Test_ is Fork_Shared_Test_ {
     }
 
     function test_RevertWhen_PerformanceFee_SetFee_Because_FeeIsTooHigh() public asLidoARMOwner {
-        uint256 max = lidoARM.FEE_SCALE();
+        uint256 max = FEE_SCALE;
         vm.expectRevert("ARM: fee too high");
         lidoARM.setFee(max + 1);
     }
@@ -62,7 +62,7 @@ contract Fork_Concrete_LidoARM_Setters_Test_ is Fork_Shared_Test_ {
     function test_PerformanceFee_SetFee_() public asLidoARMOwner {
         uint256 feeBefore = lidoARM.fee();
 
-        uint256 newFee = _bound(vm.randomUint(), 0, lidoARM.FEE_SCALE() / 2);
+        uint256 newFee = _bound(vm.randomUint(), 0, FEE_SCALE / 2);
 
         vm.expectEmit({emitter: address(lidoARM)});
         emit AbstractARM.FeeUpdated(newFee);
@@ -141,7 +141,7 @@ contract Fork_Concrete_LidoARM_Setters_Test_ is Fork_Shared_Test_ {
         lidoARM.setPrices(address(steth), 992 * 1e33, 2000 * 1e33, type(uint128).max, type(uint128).max);
 
         // Check the traderates
-        assertEq((lidoARM.PRICE_SCALE() * lidoARM.PRICE_SCALE() / _lidoSellPrice()), 500 * 1e33);
+        assertEq((PRICE_SCALE * PRICE_SCALE / _lidoSellPrice()), 500 * 1e33);
         assertEq(_lidoBuyPrice(), 992 * 1e33);
     }
 

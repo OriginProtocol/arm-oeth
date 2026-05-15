@@ -72,11 +72,7 @@ abstract contract Fork_Shared_Test is Base_Test_ {
         vm.startPrank(deployer);
         // 1. Deploy Ethena ARM
         ethenaARM = new EthenaARM({
-            _usde: address(usde),
-            _susde: address(susde),
-            _claimDelay: 10 minutes,
-            _minSharesToRedeem: 1e7,
-            _allocateThreshold: 1 ether
+            _usde: address(usde), _claimDelay: 10 minutes, _minSharesToRedeem: 1e7, _allocateThreshold: 1 ether
         });
 
         // 2. Deploy Ethena ARM Proxy
@@ -125,9 +121,9 @@ abstract contract Fork_Shared_Test is Base_Test_ {
     }
 
     function _swapFeeMultiplier(uint256 buyPrice, uint256 crossPrice, uint256 fee) internal view returns (uint256) {
-        uint256 priceScale = ethenaARM.PRICE_SCALE();
+        uint256 priceScale = PRICE_SCALE;
         if (buyPrice == 0 || fee == 0) return 0;
-        return (crossPrice - buyPrice) * fee * priceScale / (buyPrice * ethenaARM.FEE_SCALE());
+        return (crossPrice - buyPrice) * fee * priceScale / (buyPrice * FEE_SCALE);
     }
 
     function _ignite() internal virtual {

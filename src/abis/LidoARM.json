@@ -3,17 +3,7 @@
     "type": "constructor",
     "inputs": [
       {
-        "name": "_steth",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
         "name": "_weth",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "_lidoWithdrawalQueue",
         "type": "address",
         "internalType": "address"
       },
@@ -38,58 +28,6 @@
   {
     "type": "receive",
     "stateMutability": "payable"
-  },
-  {
-    "type": "function",
-    "name": "FEE_SCALE",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "MAX_CROSS_PRICE_DEVIATION",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "PRICE_SCALE",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "_deprecatedLidoWithdrawalQueueAmount",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
   },
   {
     "type": "function",
@@ -435,7 +373,7 @@
     "inputs": [],
     "outputs": [
       {
-        "name": "claimableAmount",
+        "name": "claimableShares",
         "type": "uint256",
         "internalType": "uint256"
       }
@@ -665,6 +603,13 @@
   },
   {
     "type": "function",
+    "name": "migrateLegacyWithdrawQueue",
+    "inputs": [],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
     "name": "minSharesToRedeem",
     "inputs": [],
     "outputs": [
@@ -831,6 +776,19 @@
       }
     ],
     "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "reservedWithdrawLiquidity",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
   },
   {
     "type": "function",
@@ -1287,7 +1245,7 @@
   },
   {
     "type": "function",
-    "name": "withdrawsClaimed",
+    "name": "withdrawsClaimedShares",
     "inputs": [],
     "outputs": [
       {
@@ -1300,7 +1258,7 @@
   },
   {
     "type": "function",
-    "name": "withdrawsQueued",
+    "name": "withdrawsQueuedShares",
     "inputs": [],
     "outputs": [
       {
@@ -1683,6 +1641,18 @@
       },
       {
         "name": "sellPrice",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "buyLiquidityRemaining",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "sellLiquidityRemaining",
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"

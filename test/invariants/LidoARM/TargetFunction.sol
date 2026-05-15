@@ -21,10 +21,10 @@ abstract contract TargetFunction is Properties {
 
         uint256 maxAmount = IERC20(path[0]).balanceOf(user);
         if (stETHForWETH) {
-            uint256 maxByLiquidity = _availableWethLiquidity() * lidoARM.PRICE_SCALE() / _lidoBuyPrice();
+            uint256 maxByLiquidity = _availableWethLiquidity() * PRICE_SCALE / _lidoBuyPrice();
             maxAmount = min(maxAmount, maxByLiquidity);
         } else {
-            uint256 maxByLiquidity = steth.balanceOf(address(lidoARM)) * _lidoSellPrice() / lidoARM.PRICE_SCALE();
+            uint256 maxByLiquidity = steth.balanceOf(address(lidoARM)) * _lidoSellPrice() / PRICE_SCALE;
             maxAmount = min(maxAmount, maxByLiquidity);
         }
         amount = uint80(_bound(amount, 0, min(maxAmount, type(uint80).max)));
@@ -57,10 +57,10 @@ abstract contract TargetFunction is Properties {
         uint256 maxAmount = IERC20(path[1]).balanceOf(address(lidoARM));
         uint256 maxByInput;
         if (stETHForWETH) {
-            maxByInput = steth.balanceOf(user) * _lidoBuyPrice() / lidoARM.PRICE_SCALE();
+            maxByInput = steth.balanceOf(user) * _lidoBuyPrice() / PRICE_SCALE;
             maxAmount = min(maxAmount, _availableWethLiquidity());
         } else {
-            maxByInput = weth.balanceOf(user) * lidoARM.PRICE_SCALE() / _lidoSellPrice();
+            maxByInput = weth.balanceOf(user) * PRICE_SCALE / _lidoSellPrice();
         }
         maxAmount = min(maxAmount, maxByInput);
         amount = uint80(_bound(amount, 0, min(maxAmount, type(uint80).max)));
@@ -286,14 +286,13 @@ abstract contract TargetFunction is Properties {
     }
 
     function handler_setCrossPrice(uint256 newCrossPrice) public {
-        uint256 priceScale = lidoARM.PRICE_SCALE();
+        uint256 priceScale = PRICE_SCALE;
 
         // Bound new cross price
-        uint256 sell = priceScale ** 2 / (lidoARM.PRICE_SCALE() * lidoARM.PRICE_SCALE() / _lidoSellPrice());
+        uint256 sell = priceScale ** 2 / (PRICE_SCALE * PRICE_SCALE / _lidoSellPrice());
         uint256 buy = _lidoBuyPrice();
-        newCrossPrice = _bound(
-            newCrossPrice, max(priceScale - lidoARM.MAX_CROSS_PRICE_DEVIATION(), buy) + 1, min(priceScale, sell)
-        );
+        newCrossPrice =
+            _bound(newCrossPrice, max(priceScale - MAX_CROSS_PRICE_DEVIATION, buy) + 1, min(priceScale, sell));
 
         uint256 stethBalance = steth.balanceOf(address(lidoARM));
         if (_lidoCrossPrice() > newCrossPrice && stethBalance > 0) {

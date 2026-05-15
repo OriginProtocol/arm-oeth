@@ -111,6 +111,14 @@ contract EthenaAssetAdapter is IAssetAdapter, Ownable {
     }
 
     function setUnstakers(address[MAX_UNSTAKERS] calldata _unstakers) external onlyOwner {
+        for (uint256 i = 0; i < MAX_UNSTAKERS; ++i) {
+            address oldUnstaker = unstakers[i];
+            if (oldUnstaker != _unstakers[i]) {
+                require(requestShares[oldUnstaker] == 0, "Adapter: unstaker pending");
+                require(susde.cooldowns(oldUnstaker).underlyingAmount == 0, "Adapter: unstaker in cooldown");
+            }
+        }
+
         unstakers = _unstakers;
     }
 

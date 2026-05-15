@@ -15,28 +15,19 @@ import {AbstractARM} from "./AbstractARM.sol";
  */
 contract LidoARM is Initializable, AbstractARM {
     /// @dev Deprecated queue amount retained for storage layout compatibility.
-    uint256 public _deprecatedLidoWithdrawalQueueAmount;
+    uint256 internal _deprecatedLidoWithdrawalQueueAmount;
 
     /// @dev Deprecated withdrawal request mapping retained for storage layout compatibility.
-    mapping(uint256 id => uint256 amount) internal _deprecatedLidoWithdrawalRequests;
+    uint256 internal _deprecatedLidoWithdrawalRequests;
 
-    /// @param _steth The address of the stETH token
     /// @param _weth The address of the WETH token
-    /// @param _lidoWithdrawalQueue The address of the Lido's withdrawal queue contract
     /// @param _claimDelay The delay in seconds before a user can claim a redeem from the request
     /// @param _minSharesToRedeem The minimum amount of shares to redeem from the active lending market
     /// @param _allocateThreshold The minimum amount of liquidity assets in excess of the ARM buffer before
     /// the ARM can allocate to a active lending market.
-    constructor(
-        address _steth,
-        address _weth,
-        address _lidoWithdrawalQueue,
-        uint256 _claimDelay,
-        uint256 _minSharesToRedeem,
-        int256 _allocateThreshold
-    ) AbstractARM(_weth, _claimDelay, _minSharesToRedeem, _allocateThreshold) {
-        (_steth, _lidoWithdrawalQueue);
-
+    constructor(address _weth, uint256 _claimDelay, uint256 _minSharesToRedeem, int256 _allocateThreshold)
+        AbstractARM(_weth, _claimDelay, _minSharesToRedeem, _allocateThreshold)
+    {
         _disableInitializers();
     }
 

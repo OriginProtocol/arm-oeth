@@ -4,7 +4,6 @@ pragma solidity ^0.8.23;
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 import {AbstractARM} from "./AbstractARM.sol";
-import {IERC20, IWETH} from "./Interfaces.sol";
 
 /**
  * @title EtherFi (eETH) Automated Redemption Manager (ARM)
@@ -15,36 +14,20 @@ import {IERC20, IWETH} from "./Interfaces.sol";
  * @author Origin Protocol Inc
  */
 contract EtherFiARM is Initializable, AbstractARM {
-    /// @notice The address of the EtherFi eETH token
-    IERC20 public immutable eeth;
-    /// @notice The address of the Wrapped ETH (WETH) token
-    IWETH public immutable weth;
-
     /// @dev Deprecated queue amount retained for storage layout compatibility.
     uint256 internal _deprecatedEtherfiWithdrawalQueueAmount;
 
     /// @dev Deprecated withdrawal request mapping retained for storage layout compatibility.
-    mapping(uint256 id => uint256 amount) internal _deprecatedEtherfiWithdrawalRequests;
+    uint256 internal _deprecatedEtherfiWithdrawalRequests;
 
-    event RequestEtherFiWithdrawal(uint256 amount, uint256 requestId);
-    event ClaimEtherFiWithdrawals(uint256[] requestIds);
-
-    /// @param _eeth The address of the eETH token
     /// @param _weth The address of the WETH token
     /// @param _claimDelay The delay in seconds before a user can claim a redeem from the request
     /// @param _minSharesToRedeem The minimum amount of shares to redeem from the active lending market
     /// @param _allocateThreshold The minimum amount of liquidity assets in excess of the ARM buffer before
     /// the ARM can allocate to a active lending market.
-    constructor(
-        address _eeth,
-        address _weth,
-        uint256 _claimDelay,
-        uint256 _minSharesToRedeem,
-        int256 _allocateThreshold
-    ) AbstractARM(_weth, _claimDelay, _minSharesToRedeem, _allocateThreshold) {
-        eeth = IERC20(_eeth);
-        weth = IWETH(_weth);
-
+    constructor(address, address _weth, uint256 _claimDelay, uint256 _minSharesToRedeem, int256 _allocateThreshold)
+        AbstractARM(_weth, _claimDelay, _minSharesToRedeem, _allocateThreshold)
+    {
         _disableInitializers();
     }
 

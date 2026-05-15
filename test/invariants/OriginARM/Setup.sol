@@ -29,7 +29,6 @@ abstract contract Setup is Base_Test_ {
 
     uint256 public constant CLAIM_DELAY = 1 days;
     uint256 public constant DEFAULT_FEE = 2000; // 20%
-    uint256 public constant PRICE_SCALE = 1e36;
     uint256 public constant MIN_BUY_PRICE = 0.8 * 1e36;
     uint256 public constant MAX_SELL_PRICE = 1e36 + 2e30;
     uint256 public constant INITIAL_AMOUNT_LPS = 100 * 1_000_000_000 ether; // 100B WS

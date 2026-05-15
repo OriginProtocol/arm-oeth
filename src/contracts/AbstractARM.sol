@@ -23,15 +23,15 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
     /// @notice Maximum amount the Owner can set the cross price below 1 scaled to 36 decimals.
     /// 20e32 is a 0.2% deviation, or 20 basis points.
-    uint256 public constant MAX_CROSS_PRICE_DEVIATION = 20e32;
+    uint256 internal constant MAX_CROSS_PRICE_DEVIATION = 20e32;
     /// @notice Scale used for prices.
-    uint256 public constant PRICE_SCALE = 1e36;
+    uint256 internal constant PRICE_SCALE = 1e36;
     /// @notice The amount of shares minted to a dead address on initialization.
     uint256 internal constant MIN_TOTAL_SUPPLY = 1e12;
     /// @notice Address with no known private key that receives initial dead shares.
     address internal constant DEAD_ACCOUNT = 0x000000000000000000000000000000000000dEaD;
     /// @notice Scale of the swap fee. 10,000 = 100%.
-    uint256 public constant FEE_SCALE = 10000;
+    uint256 internal constant FEE_SCALE = 10000;
 
     ////////////////////////////////////////////////////
     ///                 Immutables
@@ -149,7 +149,13 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         uint256 crossPrice,
         bool peggedToLiquidityAsset
     );
-    event TraderateChanged(address indexed asset, uint256 buyPrice, uint256 sellPrice);
+    event TraderateChanged(
+        address indexed asset,
+        uint256 buyPrice,
+        uint256 sellPrice,
+        uint256 buyLiquidityRemaining,
+        uint256 sellLiquidityRemaining
+    );
     event CrossPriceUpdated(address indexed asset, uint256 crossPrice);
     event Deposit(address indexed owner, uint256 assets, uint256 shares);
     event RedeemRequested(
@@ -582,11 +588,12 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         config.buyLiquidityRemaining = SafeCast.toUint128(buyAmount);
         config.sellLiquidityRemaining = SafeCast.toUint128(sellAmount);
 
-        emit TraderateChanged(priceBaseAsset, buyPrice, sellPrice);
+        emit TraderateChanged(priceBaseAsset, buyPrice, sellPrice, buyAmount, sellAmount);
     }
 
     /// @notice Set the valuation price that buy and sell prices may not cross for a base asset.
-    /// @dev When lowering cross price, the ARM must not hold a meaningful balance of that base asset.
+    /// @dev When lowering cross price, the ARM must not have meaningful exposure to that base asset
+    ///      either on-hand or in the adapter withdrawal queue.
     /// @param priceBaseAsset Base asset whose cross price is being updated.
     /// @param newCrossPrice New valuation price scaled to 36 decimals.
     /// eg 1e36 values the base asset at 1 liquidity asset.
@@ -599,7 +606,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         require(config.buyPrice < newCrossPrice, "ARM: buy price too high");
 
         if (newCrossPrice < config.crossPrice) {
-            require(IERC20(priceBaseAsset).balanceOf(address(this)) < MIN_TOTAL_SUPPLY, "ARM: too many base assets");
+            uint256 baseAssetExposure =
+                _convertToAssets(config, IERC20(priceBaseAsset).balanceOf(address(this))) + config.pendingRedeemAssets;
+            require(baseAssetExposure < MIN_TOTAL_SUPPLY, "ARM: too many base assets");
         }
 
         config.crossPrice = SafeCast.toUint128(newCrossPrice);
@@ -744,7 +753,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
         require(request.claimTimestamp <= block.timestamp, "Claim delay not met");
         require(request.queued <= claimable(), "Queue pending liquidity");
-        require(request.withdrawer == msg.sender, "Not requester");
+        require(request.withdrawer == msg.sender || msg.sender == operator, "Not requester or operator");
         require(request.claimed == false, "Already claimed");
 
         // In the scenario where the ARM has made a loss after the redeem request, the asset value of
@@ -778,8 +787,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         }
 
         // Transfer the liquidity asset to the withdrawer.
-        IERC20(liquidityAsset).transfer(msg.sender, assets);
-        emit RedeemClaimed(msg.sender, requestId, assets);
+        IERC20(liquidityAsset).transfer(request.withdrawer, assets);
+        emit RedeemClaimed(request.withdrawer, requestId, assets);
     }
 
     ////////////////////////////////////////////////////
@@ -825,24 +834,6 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         liquidityAssets =
             reservedWithdrawLiquidityMem > liquidityAssets ? 0 : liquidityAssets - reservedWithdrawLiquidityMem;
         baseAssetReserve = IERC20(reserveBaseAsset).balanceOf(address(this));
-    }
-
-    /// @dev Ensure swaps and fee collection do not consume liquidity reserved for LP withdrawal claims.
-    /// If no outstanding withdrawals exist, no balance check is done. This is a gas optimization for swaps.
-    /// There is no liquidity guarantee for the fee collector. If there is not enough unreserved liquidity
-    /// to collect accrued fees, the fee collector has to wait until enough liquidity is available.
-    /// @param amount Liquidity asset amount that must be unreserved.
-    function _requireLiquidityAvailable(uint256 amount) internal view {
-        // Liquidity assets still reserved for unclaimed LP withdrawal requests.
-        uint256 reservedWithdrawLiquidityMem = reservedWithdrawLiquidity;
-        // Save gas on an external balanceOf call if there are no outstanding withdrawals.
-        if (reservedWithdrawLiquidityMem == 0) return;
-
-        // Ensure the ARM can cover both the requested amount and outstanding LP withdrawals.
-        require(
-            amount + reservedWithdrawLiquidityMem <= IERC20(liquidityAsset).balanceOf(address(this)),
-            "ARM: Insufficient liquidity"
-        );
     }
 
     /// @notice Economic value of ARM assets net of accrued swap fees.
@@ -960,8 +951,10 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         if (fees == 0) return 0;
 
         // Fees can only be collected from unreserved on-hand liquidity.
-        _requireLiquidityAvailable(fees);
-        require(fees <= IERC20(liquidityAsset).balanceOf(address(this)), "ARM: insufficient liquidity");
+        require(
+            fees + reservedWithdrawLiquidity <= IERC20(liquidityAsset).balanceOf(address(this)),
+            "ARM: Insufficient liquidity"
+        );
 
         feesAccrued = 0;
         IERC20(liquidityAsset).transfer(feeCollector, fees);

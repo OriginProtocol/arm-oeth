@@ -124,14 +124,8 @@ contract Fork_Concrete_LidoARM_SwapGasUpgraded_Test is Fork_LidoARM_SwapGasCompa
     }
 
     function _upgradeLidoArm() internal {
-        LidoARM upgradedImpl = new LidoARM(
-            Mainnet.STETH,
-            Mainnet.WETH,
-            Mainnet.LIDO_WITHDRAWAL,
-            lidoARM.claimDelay(),
-            lidoARM.minSharesToRedeem(),
-            lidoARM.allocateThreshold()
-        );
+        LidoARM upgradedImpl =
+            new LidoARM(Mainnet.WETH, lidoARM.claimDelay(), lidoARM.minSharesToRedeem(), lidoARM.allocateThreshold());
 
         vm.prank(lidoProxy.owner());
         lidoProxy.upgradeTo(address(upgradedImpl));

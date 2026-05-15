@@ -17,7 +17,6 @@ contract $028_UpgradeEthenaARMScript is AbstractDeployScript("028_UpgradeEthenaA
         uint256 claimDelay = 10 minutes;
         armImpl = new EthenaARM(
             Mainnet.USDE,
-            Mainnet.SUSDE,
             claimDelay,
             1e18, // minSharesToRedeem
             100e18 // allocateThreshold

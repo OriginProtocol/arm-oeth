@@ -156,16 +156,16 @@ abstract contract Properties is Setup, Utils {
     ////////////////////////////////////////////////////
     function estimateAmountIn(IERC20 tokenOut, uint256 amountOut) public view returns (uint256) {
         if (tokenOut == weth) {
-            return (amountOut * lidoARM.PRICE_SCALE()) / _lidoBuyPrice() + 3;
+            return (amountOut * PRICE_SCALE) / _lidoBuyPrice() + 3;
         }
-        return (amountOut * _lidoSellPrice()) / lidoARM.PRICE_SCALE() + 3;
+        return (amountOut * _lidoSellPrice()) / PRICE_SCALE + 3;
     }
 
     function estimateAmountOut(IERC20 tokenIn, uint256 amountIn) public view returns (uint256) {
         if (tokenIn == steth) {
-            return (amountIn * _lidoBuyPrice()) / lidoARM.PRICE_SCALE();
+            return (amountIn * _lidoBuyPrice()) / PRICE_SCALE;
         }
-        return (amountIn * lidoARM.PRICE_SCALE()) / _lidoSellPrice();
+        return (amountIn * PRICE_SCALE) / _lidoSellPrice();
     }
 
     function price(IERC20 token) public view returns (uint256) {
