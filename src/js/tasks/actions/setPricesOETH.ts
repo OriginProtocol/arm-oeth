@@ -1,4 +1,5 @@
 import { ethers } from "ethers";
+import { types } from "hardhat/config";
 
 import { action } from "../lib/action";
 import { setPrices } from "../armPrices";
@@ -9,17 +10,47 @@ action({
   name: "setPricesOETH",
   description: "Set prices for OETH ARM",
   chains: [1],
-  run: async ({ signer, log }) => {
+  // Price points are operator-overridable from the scheduled command in
+  // talos (talos UI → schedules → command field). Defaults match what
+  // was hardcoded previously so existing seed commands without overrides
+  // keep their old behavior.
+  params: (t) =>
+    t
+      .addOptionalParam(
+        "maxBuyPrice",
+        "Upper bound for buy-side price (WETH per OETH).",
+        0.9995,
+        types.float,
+      )
+      .addOptionalParam(
+        "minBuyPrice",
+        "Lower bound for buy-side price (WETH per OETH).",
+        0.996,
+        types.float,
+      )
+      .addOptionalParam(
+        "maxSellPrice",
+        "Upper bound for sell-side price (OETH per WETH).",
+        0.9999,
+        types.float,
+      )
+      .addOptionalParam(
+        "minSellPrice",
+        "Lower bound for sell-side price (OETH per WETH).",
+        0.9995,
+        types.float,
+      ),
+  run: async ({ signer, log, args }) => {
     const arm = new ethers.Contract(mainnet.etherfiARM, armAbi, signer);
 
     log.info("Setting prices for OETH ARM");
     await setPrices({
       signer,
       arm,
-      maxSellPrice: 0.9999,
-      minSellPrice: 0.9995,
-      maxBuyPrice: 0.9995,
-      minBuyPrice: 0.996,
+      maxSellPrice: args.maxSellPrice,
+      minSellPrice: args.minSellPrice,
+      maxBuyPrice: args.maxBuyPrice,
+      minBuyPrice: args.minBuyPrice,
       kyber: true,
       amount: 10,
       tolerance: 0.3,
