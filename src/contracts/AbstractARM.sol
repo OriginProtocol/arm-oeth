@@ -147,7 +147,13 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         uint256 crossPrice,
         bool peggedToLiquidityAsset
     );
-    event TraderateChanged(address indexed asset, uint256 buyPrice, uint256 sellPrice);
+    event TraderateChanged(
+        address indexed asset,
+        uint256 buyPrice,
+        uint256 sellPrice,
+        uint256 buyLiquidityRemaining,
+        uint256 sellLiquidityRemaining
+    );
     event CrossPriceUpdated(address indexed asset, uint256 crossPrice);
     event Deposit(address indexed owner, uint256 assets, uint256 shares);
     event RedeemRequested(
@@ -578,7 +584,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         config.buyLiquidityRemaining = SafeCast.toUint128(buyAmount);
         config.sellLiquidityRemaining = SafeCast.toUint128(sellAmount);
 
-        emit TraderateChanged(priceBaseAsset, buyPrice, sellPrice);
+        emit TraderateChanged(priceBaseAsset, buyPrice, sellPrice, buyAmount, sellAmount);
     }
 
     /// @notice Set the valuation price that buy and sell prices may not cross for a base asset.

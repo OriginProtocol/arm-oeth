@@ -240,7 +240,7 @@ contract Unit_Concrete_OriginARM_Setters_Test_ is Unit_Shared_Test {
 
         // Expected event
         vm.expectEmit(address(originARM));
-        emit AbstractARM.TraderateChanged(address(oeth), newBuyPrice, newSellPrice);
+        emit AbstractARM.TraderateChanged(address(oeth), newBuyPrice, newSellPrice, newBuyLiquidity, newSellLiquidity);
 
         originARM.setPrices(address(oeth), newBuyPrice, newSellPrice, newBuyLiquidity, newSellLiquidity);
 
