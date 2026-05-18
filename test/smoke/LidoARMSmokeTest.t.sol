@@ -203,7 +203,7 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
     }
 
     function test_nonOwnerCannotSetOperator() external {
-        vm.expectRevert("ARM: Only owner can call this function.");
+        vm.expectRevert(bytes4(keccak256("OnlyOwner()")));
         vm.prank(operator);
         lidoARM.setOperator(operator);
     }

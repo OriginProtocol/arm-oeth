@@ -8,6 +8,8 @@ import {Ownable} from "./Ownable.sol";
  * @author Origin Protocol Inc
  */
 contract OwnableOperable is Ownable {
+    error OnlyOperatorOrOwner();
+
     /// @notice The account that can request and claim withdrawals.
     address public operator;
 
@@ -32,7 +34,7 @@ contract OwnableOperable is Ownable {
     }
 
     modifier onlyOperatorOrOwner() {
-        require(msg.sender == operator || msg.sender == _owner(), "ARM: Only operator or owner can call this function.");
+        if (msg.sender != operator && msg.sender != _owner()) revert OnlyOperatorOrOwner();
         _;
     }
 }

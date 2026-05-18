@@ -138,7 +138,7 @@ contract Fork_Concrete_EthenaARM_RequestWithdraw_Test_ is Fork_Shared_Test {
     }
 
     function test_RevertWhen_RequestWithdraw_NotOperatorOrOwner() public {
-        vm.expectRevert("ARM: Only operator or owner can call this function.");
+        vm.expectRevert(bytes4(keccak256("OnlyOperatorOrOwner()")));
         ethenaARM.requestBaseAssetRedeem(address(susde), AMOUNT_IN);
     }
 
