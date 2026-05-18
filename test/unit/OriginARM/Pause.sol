@@ -26,7 +26,7 @@ contract Unit_Concrete_OriginARM_Pause_Test_ is Unit_Shared_Test {
     }
 
     function test_RevertWhen_Pause_Because_NotOperatorNorGovernor() public asNotOperatorNorGovernor {
-        vm.expectRevert("ARM: Only operator or owner can call this function.");
+        vm.expectRevert(bytes4(keccak256("OnlyOperatorOrOwner()")));
         originARM.pause();
     }
 
@@ -48,12 +48,12 @@ contract Unit_Concrete_OriginARM_Pause_Test_ is Unit_Shared_Test {
         originARM.pause();
 
         vm.prank(operator);
-        vm.expectRevert("ARM: Only owner can call this function.");
+        vm.expectRevert(bytes4(keccak256("OnlyOwner()")));
         originARM.unpause();
     }
 
     function test_RevertWhen_Unpause_Because_RandomCaller() public asNotOperatorNorGovernor {
-        vm.expectRevert("ARM: Only owner can call this function.");
+        vm.expectRevert(bytes4(keccak256("OnlyOwner()")));
         originARM.unpause();
     }
 
@@ -63,7 +63,7 @@ contract Unit_Concrete_OriginARM_Pause_Test_ is Unit_Shared_Test {
 
         vm.startPrank(alice);
         weth.approve(address(originARM), DEFAULT_AMOUNT);
-        vm.expectRevert("ARM: paused");
+        vm.expectRevert(AbstractARM.ContractPaused.selector);
         originARM.deposit(DEFAULT_AMOUNT);
         vm.stopPrank();
     }
@@ -74,7 +74,7 @@ contract Unit_Concrete_OriginARM_Pause_Test_ is Unit_Shared_Test {
 
         vm.startPrank(alice);
         weth.approve(address(originARM), DEFAULT_AMOUNT);
-        vm.expectRevert("ARM: paused");
+        vm.expectRevert(AbstractARM.ContractPaused.selector);
         originARM.deposit(DEFAULT_AMOUNT, bob);
         vm.stopPrank();
     }
@@ -84,7 +84,7 @@ contract Unit_Concrete_OriginARM_Pause_Test_ is Unit_Shared_Test {
         originARM.pause();
 
         vm.prank(alice);
-        vm.expectRevert("ARM: paused");
+        vm.expectRevert(AbstractARM.ContractPaused.selector);
         originARM.requestRedeem(DEFAULT_AMOUNT);
     }
 
@@ -94,7 +94,7 @@ contract Unit_Concrete_OriginARM_Pause_Test_ is Unit_Shared_Test {
 
         vm.startPrank(alice);
         oeth.approve(address(originARM), DEFAULT_AMOUNT);
-        vm.expectRevert("ARM: paused");
+        vm.expectRevert(AbstractARM.ContractPaused.selector);
         originARM.swapExactTokensForTokens(oeth, weth, DEFAULT_AMOUNT, 0, alice);
         vm.stopPrank();
     }
@@ -106,7 +106,7 @@ contract Unit_Concrete_OriginARM_Pause_Test_ is Unit_Shared_Test {
 
         vm.startPrank(alice);
         oeth.approve(address(originARM), DEFAULT_AMOUNT);
-        vm.expectRevert("ARM: paused");
+        vm.expectRevert(AbstractARM.ContractPaused.selector);
         originARM.swapExactTokensForTokens(DEFAULT_AMOUNT, 0, path, alice, block.timestamp + 1);
         vm.stopPrank();
     }
@@ -117,7 +117,7 @@ contract Unit_Concrete_OriginARM_Pause_Test_ is Unit_Shared_Test {
 
         vm.startPrank(alice);
         oeth.approve(address(originARM), DEFAULT_AMOUNT);
-        vm.expectRevert("ARM: paused");
+        vm.expectRevert(AbstractARM.ContractPaused.selector);
         originARM.swapTokensForExactTokens(oeth, weth, 1e12, DEFAULT_AMOUNT, alice);
         vm.stopPrank();
     }
@@ -129,7 +129,7 @@ contract Unit_Concrete_OriginARM_Pause_Test_ is Unit_Shared_Test {
 
         vm.startPrank(alice);
         oeth.approve(address(originARM), DEFAULT_AMOUNT);
-        vm.expectRevert("ARM: paused");
+        vm.expectRevert(AbstractARM.ContractPaused.selector);
         originARM.swapTokensForExactTokens(1e12, DEFAULT_AMOUNT, path, alice, block.timestamp + 1);
         vm.stopPrank();
     }

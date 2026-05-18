@@ -137,6 +137,10 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
     uint256[33] private _gap;
 
+    ////////////////////////////////////////////////////
+    ///                 Errors
+    ////////////////////////////////////////////////////
+
     error UnsupportedAsset();
     error InvalidAsset();
     error InvalidAdapter();
@@ -158,6 +162,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     error InvalidARMBuffer();
     error AlreadyMigrated();
     error LegacyWithdrawalsPending();
+    error ContractPaused();
 
     ////////////////////////////////////////////////////
     ///                 Events
@@ -201,7 +206,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     ////////////////////////////////////////////////////
 
     modifier whenNotPaused() {
-        require(!paused, "ARM: paused");
+        if (paused) revert ContractPaused();
         _;
     }
 
