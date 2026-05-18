@@ -723,7 +723,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
     /// @notice Deposit liquidity assets and mint LP shares to the caller.
     /// @param assets Liquidity assets to deposit.
     /// @return shares LP shares minted.
-    function deposit(uint256 assets) external whenNotPaused returns (uint256 shares) {
+    function deposit(uint256 assets) external whenNotPaused nonReentrant returns (uint256 shares) {
         shares = _deposit(assets, msg.sender);
     }
 
@@ -731,7 +731,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
     /// @param assets Liquidity assets to deposit.
     /// @param receiver Account that receives minted LP shares.
     /// @return shares LP shares minted.
-    function deposit(uint256 assets, address receiver) external whenNotPaused returns (uint256 shares) {
+    function deposit(uint256 assets, address receiver) external whenNotPaused nonReentrant returns (uint256 shares) {
         shares = _deposit(assets, receiver);
     }
 
@@ -767,7 +767,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
     /// @param shares LP shares to burn.
     /// @return requestId The LP withdrawal request id.
     /// @return assets The maximum liquidity assets claimable by the redeemer.
-    function requestRedeem(uint256 shares) external whenNotPaused returns (uint256 requestId, uint256 assets) {
+    function requestRedeem(uint256 shares) external whenNotPaused nonReentrant returns (uint256 requestId, uint256 assets) {
         assets = convertToAssets(shares);
         requestId = nextWithdrawalIndex;
         // Store the next withdrawal request id.
@@ -798,7 +798,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
     /// @dev If assets per share decreased after request time, the claim uses the lower claim-time value.
     /// @param requestId LP withdrawal request id to claim.
     /// @return assets Liquidity assets transferred to the requester.
-    function claimRedeem(uint256 requestId) external whenNotPaused returns (uint256 assets) {
+    function claimRedeem(uint256 requestId) external whenNotPaused nonReentrant returns (uint256 assets) {
         WithdrawalRequest memory request = withdrawalRequests[requestId];
 
         require(request.claimTimestamp <= block.timestamp, "Claim delay not met");
