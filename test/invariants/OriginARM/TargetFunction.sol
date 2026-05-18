@@ -237,11 +237,13 @@ abstract contract TargetFunction is Properties {
         newCrossPrice = uint120(_bound(newCrossPrice, lowerBound, upperBound));
 
         uint256 osBalance = os.balanceOf(address(originARM));
-        if (_crossPrice() > newCrossPrice) {
-            (,,,,, uint120 pendingRedeemAssets,,) = originARM.baseAssetConfigs(address(os));
+        (,,,,, uint120 pendingRedeemAssets,,) = originARM.baseAssetConfigs(address(os));
+        bool loweringCrossPrice = _crossPrice() > newCrossPrice;
+        if (loweringCrossPrice) {
             vm.assume(uint256(pendingRedeemAssets) < MIN_TOTAL_SUPPLY);
+        }
 
-            osBalance = os.balanceOf(address(originARM));
+        if (loweringCrossPrice && osBalance > 0) {
             // If there is more than 100 OS in ARM, do nothing
             vm.assume(osBalance + uint256(pendingRedeemAssets) < 1e20);
 
@@ -256,6 +258,9 @@ abstract contract TargetFunction is Properties {
                 sum_ws_swapIn += outputs[0];
                 sum_os_swapOut += outputs[1];
             }
+        }
+        if (loweringCrossPrice) {
+            vm.assume(os.balanceOf(address(originARM)) + uint256(pendingRedeemAssets) < MIN_TOTAL_SUPPLY);
         }
 
         // Console log data
