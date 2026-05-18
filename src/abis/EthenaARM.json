@@ -8,11 +8,6 @@
         "internalType": "address"
       },
       {
-        "name": "_susde",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
         "name": "_claimDelay",
         "type": "uint256",
         "internalType": "uint256"
@@ -29,71 +24,6 @@
       }
     ],
     "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "DELAY_REQUEST",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "FEE_SCALE",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "MAX_CROSS_PRICE_DEVIATION",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "MAX_UNSTAKERS",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint8",
-        "internalType": "uint8"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "PRICE_SCALE",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
   },
   {
     "type": "function",
@@ -362,13 +292,6 @@
   },
   {
     "type": "function",
-    "name": "checkNoLegacyEthenaCooldown",
-    "inputs": [],
-    "outputs": [],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
     "name": "claimBaseAssetRedeem",
     "inputs": [
       {
@@ -439,7 +362,7 @@
     "inputs": [],
     "outputs": [
       {
-        "name": "claimableAmount",
+        "name": "claimableShares",
         "type": "uint256",
         "internalType": "uint256"
       }
@@ -656,32 +579,6 @@
   },
   {
     "type": "function",
-    "name": "lastRequestTimestamp",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint32",
-        "internalType": "uint32"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "liquidityAmountInCooldown",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
     "name": "liquidityAsset",
     "inputs": [],
     "outputs": [
@@ -692,6 +589,13 @@
       }
     ],
     "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "migrateLegacyWithdrawQueue",
+    "inputs": [],
+    "outputs": [],
+    "stateMutability": "nonpayable"
   },
   {
     "type": "function",
@@ -715,19 +619,6 @@
         "name": "",
         "type": "string",
         "internalType": "string"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "nextUnstakerIndex",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint8",
-        "internalType": "uint8"
       }
     ],
     "stateMutability": "view"
@@ -874,6 +765,19 @@
       }
     ],
     "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "reservedWithdrawLiquidity",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
   },
   {
     "type": "function",
@@ -1032,19 +936,6 @@
         "name": "supported",
         "type": "bool",
         "internalType": "bool"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "susde",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "contract IStakedUSDe"
       }
     ],
     "stateMutability": "view"
@@ -1299,38 +1190,6 @@
   },
   {
     "type": "function",
-    "name": "unstakers",
-    "inputs": [
-      {
-        "name": "index",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "usde",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "contract IERC20"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
     "name": "withdrawalRequests",
     "inputs": [
       {
@@ -1375,7 +1234,7 @@
   },
   {
     "type": "function",
-    "name": "withdrawsClaimed",
+    "name": "withdrawsClaimedShares",
     "inputs": [],
     "outputs": [
       {
@@ -1388,7 +1247,7 @@
   },
   {
     "type": "function",
-    "name": "withdrawsQueued",
+    "name": "withdrawsQueuedShares",
     "inputs": [],
     "outputs": [
       {
@@ -1546,25 +1405,6 @@
         "type": "address",
         "indexed": true,
         "internalType": "address"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "ClaimBaseWithdrawals",
-    "inputs": [
-      {
-        "name": "unstaker",
-        "type": "address",
-        "indexed": true,
-        "internalType": "address"
-      },
-      {
-        "name": "liquidityAmount",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
       }
     ],
     "anonymous": false
@@ -1774,31 +1614,6 @@
   },
   {
     "type": "event",
-    "name": "RequestBaseWithdrawal",
-    "inputs": [
-      {
-        "name": "unstaker",
-        "type": "address",
-        "indexed": true,
-        "internalType": "address"
-      },
-      {
-        "name": "baseAmount",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      },
-      {
-        "name": "liquidityAmount",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
     "name": "TraderateChanged",
     "inputs": [
       {
@@ -1815,6 +1630,18 @@
       },
       {
         "name": "sellPrice",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "buyLiquidityRemaining",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "sellLiquidityRemaining",
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"

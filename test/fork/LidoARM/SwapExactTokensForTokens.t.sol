@@ -107,7 +107,7 @@ contract Fork_Concrete_LidoARM_SwapExactTokensForTokens_Test is Fork_Shared_Test
         uint256 initialBalance = steth.balanceOf(address(lidoARM));
         deal(address(weth), address(this), initialBalance * 2);
 
-        vm.expectRevert("BALANCE_EXCEEDED"); // Lido error
+        vm.expectRevert("ARM: Insufficient liquidity");
         lidoARM.swapExactTokensForTokens(
             weth, // inToken
             steth, // outToken
@@ -218,7 +218,7 @@ contract Fork_Concrete_LidoARM_SwapExactTokensForTokens_Test is Fork_Shared_Test
         uint256 balanceSTETHBeforeARM = steth.balanceOf(address(lidoARM));
 
         // Get minimum amount of stETH to receive
-        uint256 traderates0 = (lidoARM.PRICE_SCALE() * lidoARM.PRICE_SCALE() / _lidoSellPrice());
+        uint256 traderates0 = (PRICE_SCALE * PRICE_SCALE / _lidoSellPrice());
         uint256 minAmount = amountIn * traderates0 / 1e36;
 
         // Expected events: Already checked in fuzz tests

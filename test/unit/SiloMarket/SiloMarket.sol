@@ -56,7 +56,7 @@ contract Unit_Concrete_OriginARM_SiloMarket_Test_ is Unit_Shared_Test {
     }
 
     function test_RevertWhen_SetHarvester_Because_OnlyOwner() public asNotGovernor {
-        vm.expectRevert("ARM: Only owner can call this function.");
+        vm.expectRevert(bytes4(keccak256("OnlyOwner()")));
         siloMarket.setHarvester(address(this));
     }
 

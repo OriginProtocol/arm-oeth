@@ -23,7 +23,7 @@ contract Unit_Concrete_OriginARM_WrappedOriginAssetAdapter_Test_ is Unit_Shared_
         deal(address(weth), address(originARM), 20 ether);
 
         uint256 convertedAmountIn = woeth.convertToAssets(sharesIn);
-        uint256 expectedAmountOut = convertedAmountIn * _woethBuyPrice() / originARM.PRICE_SCALE();
+        uint256 expectedAmountOut = convertedAmountIn * _woethBuyPrice() / PRICE_SCALE;
 
         vm.startPrank(alice);
         woeth.approve(address(originARM), sharesIn);

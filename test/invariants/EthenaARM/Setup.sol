@@ -103,7 +103,6 @@ abstract contract Setup is Base_Test_ {
         // Deploy Ethena ARM implementation.
         arm = new EthenaARM({
             _usde: address(usde),
-            _susde: address(susde),
             _claimDelay: DEFAULT_CLAIM_DELAY,
             _minSharesToRedeem: DEFAULT_MIN_SHARES_TO_REDEEM,
             _allocateThreshold: int256(DEFAULT_ALLOCATE_THRESHOLD)

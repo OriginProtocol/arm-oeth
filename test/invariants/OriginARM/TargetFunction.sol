@@ -237,19 +237,30 @@ abstract contract TargetFunction is Properties {
         newCrossPrice = uint120(_bound(newCrossPrice, lowerBound, upperBound));
 
         uint256 osBalance = os.balanceOf(address(originARM));
-        if (_crossPrice() > newCrossPrice && osBalance > 0) {
+        (,,,,, uint120 pendingRedeemAssets,,) = originARM.baseAssetConfigs(address(os));
+        bool loweringCrossPrice = _crossPrice() > newCrossPrice;
+        if (loweringCrossPrice) {
+            vm.assume(uint256(pendingRedeemAssets) < MIN_TOTAL_SUPPLY);
+        }
+
+        if (loweringCrossPrice && osBalance > 0) {
             // If there is more than 100 OS in ARM, do nothing
-            vm.assume(osBalance < 1e20);
+            vm.assume(osBalance + uint256(pendingRedeemAssets) < 1e20);
 
             // If there is less than 100 OS in ARM, swap them all to WS, to avoid creating loss on ARM
-            deal(address(ws), address(this), osBalance * 10);
-            ws.approve(address(originARM), type(uint256).max);
-            uint256[] memory outputs =
-                originARM.swapTokensForExactTokens(ws, os, osBalance, type(uint256).max, address(this));
-            require(os.balanceOf(address(originARM)) < 10, "ARM still has too much OS after swap");
+            if (osBalance > 0) {
+                deal(address(ws), address(this), osBalance * 10);
+                ws.approve(address(originARM), type(uint256).max);
+                uint256[] memory outputs =
+                    originARM.swapTokensForExactTokens(ws, os, osBalance, type(uint256).max, address(this));
+                require(os.balanceOf(address(originARM)) < 10, "ARM still has too much OS after swap");
 
-            sum_ws_swapIn += outputs[0];
-            sum_os_swapOut += outputs[1];
+                sum_ws_swapIn += outputs[0];
+                sum_os_swapOut += outputs[1];
+            }
+        }
+        if (loweringCrossPrice) {
+            vm.assume(os.balanceOf(address(originARM)) + uint256(pendingRedeemAssets) < MIN_TOTAL_SUPPLY);
         }
 
         // Console log data
@@ -518,7 +529,7 @@ abstract contract TargetFunction is Properties {
 
         // - Set the prices to 1:1
         vm.prank(governor);
-        originARM.setPrices(address(os), 0, PRICE_SCALE, type(uint128).max, type(uint128).max);
+        originARM.setPrices(address(os), PRICE_SCALE / 2, PRICE_SCALE, type(uint128).max, type(uint128).max);
 
         // - Swap all the OS on ARM to WS
         deal(address(ws), makeAddr("swapper"), type(uint120).max);

@@ -10,7 +10,7 @@ contract Fork_Concrete_Harvester_Setters_Test_ is Fork_Shared_Test {
     /// --- REVERTS
     ////////////////////////////////////////////////////
     function test_RevertWhen_SetAllowedSlippage_Because_NotOwner() public {
-        vm.expectRevert("ARM: Only owner can call this function.");
+        vm.expectRevert(bytes4(keccak256("OnlyOwner()")));
         vm.prank(operator);
         harvester.setAllowedSlippage(1000);
     }
@@ -22,13 +22,13 @@ contract Fork_Concrete_Harvester_Setters_Test_ is Fork_Shared_Test {
     }
 
     function test_RevertWhen_SetPriceProvider_Because_NotOwner() public {
-        vm.expectRevert("ARM: Only owner can call this function.");
+        vm.expectRevert(bytes4(keccak256("OnlyOwner()")));
         vm.prank(operator);
         harvester.setPriceProvider(address(0));
     }
 
     function test_RevertWhen_SetRewardRecipient_Because_NotOwner() public {
-        vm.expectRevert("ARM: Only owner can call this function.");
+        vm.expectRevert(bytes4(keccak256("OnlyOwner()")));
         vm.prank(operator);
         harvester.setRewardRecipient(address(0x1));
     }
@@ -40,7 +40,7 @@ contract Fork_Concrete_Harvester_Setters_Test_ is Fork_Shared_Test {
     }
 
     function test_RevertWhen_SetSupportedStrategy_Because_NotOwner() public {
-        vm.expectRevert("ARM: Only owner can call this function.");
+        vm.expectRevert(bytes4(keccak256("OnlyOwner()")));
         vm.prank(operator);
         harvester.setSupportedStrategy(address(0x1234), true);
     }

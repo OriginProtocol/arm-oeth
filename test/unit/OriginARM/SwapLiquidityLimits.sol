@@ -122,6 +122,36 @@ contract Unit_Concrete_OriginARM_SwapLiquidityLimits_Test_ is Unit_Shared_Test {
         vm.stopPrank();
     }
 
+    function test_RevertWhen_SwapExactTokensForTokens_SellSideInsufficientBaseAsset() public {
+        _setSwapCaps(MAX_SWAP_LIQUIDITY, MAX_SWAP_LIQUIDITY);
+
+        deal(address(oeth), address(originARM), 0);
+        deal(address(weth), alice, 2 ether);
+        vm.startPrank(alice);
+        weth.approve(address(originARM), type(uint256).max);
+
+        vm.expectRevert("ARM: Insufficient liquidity");
+        originARM.swapExactTokensForTokens(weth, oeth, 1 ether, 0, alice);
+
+        vm.stopPrank();
+        assertEq(_sellLiquidityRemaining(), MAX_SWAP_LIQUIDITY, "sell cap changed");
+    }
+
+    function test_RevertWhen_SwapTokensForExactTokens_SellSideInsufficientBaseAsset() public {
+        _setSwapCaps(MAX_SWAP_LIQUIDITY, MAX_SWAP_LIQUIDITY);
+
+        deal(address(oeth), address(originARM), 0);
+        deal(address(weth), alice, 2 ether);
+        vm.startPrank(alice);
+        weth.approve(address(originARM), type(uint256).max);
+
+        vm.expectRevert("ARM: Insufficient liquidity");
+        originARM.swapTokensForExactTokens(weth, oeth, 1 ether, type(uint256).max, alice);
+
+        vm.stopPrank();
+        assertEq(_sellLiquidityRemaining(), MAX_SWAP_LIQUIDITY, "sell cap changed");
+    }
+
     function _setSwapCaps(uint256 buyCap, uint256 sellCap) internal {
         vm.prank(operator);
         originARM.setPrices(address(oeth), 992 * 1e33, 1001 * 1e33, buyCap, sellCap);

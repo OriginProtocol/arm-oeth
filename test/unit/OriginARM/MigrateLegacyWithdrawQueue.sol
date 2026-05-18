@@ -8,7 +8,7 @@ contract Unit_Concrete_OriginARM_MigrateLegacyWithdrawQueue_Test_ is Unit_Shared
     using stdStorage for StdStorage;
 
     function test_RevertWhen_MigrateLegacyWithdrawQueue_Because_NotGovernor() public asNotGovernor {
-        vm.expectRevert("ARM: Only owner can call this function.");
+        vm.expectRevert(bytes4(keccak256("OnlyOwner()")));
         originARM.migrateLegacyWithdrawQueue();
     }
 
@@ -31,7 +31,7 @@ contract Unit_Concrete_OriginARM_MigrateLegacyWithdrawQueue_Test_ is Unit_Shared
     function test_RevertWhen_MigrateLegacyWithdrawQueue_Because_LegacyWithdrawalsPending() public asGovernor {
         _writeLegacyWithdrawQueue(5 ether, 4 ether);
 
-        vm.expectRevert("ARM: legacy withdrawals pending");
+        vm.expectRevert(bytes4(keccak256("LegacyWithdrawalsPending()")));
         originARM.migrateLegacyWithdrawQueue();
     }
 
@@ -43,7 +43,7 @@ contract Unit_Concrete_OriginARM_MigrateLegacyWithdrawQueue_Test_ is Unit_Shared
         originARM.requestRedeem(DEFAULT_AMOUNT);
 
         vm.prank(governor);
-        vm.expectRevert("ARM: already migrated");
+        vm.expectRevert(bytes4(keccak256("AlreadyMigrated()")));
         originARM.migrateLegacyWithdrawQueue();
     }
 

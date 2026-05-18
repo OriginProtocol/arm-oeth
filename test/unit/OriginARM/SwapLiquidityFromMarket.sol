@@ -145,4 +145,115 @@ contract Unit_Concrete_OriginARM_SwapLiquidityFromMarket_Test_ is Unit_Shared_Te
 
         assertEq(market.balanceOf(address(originARM)), marketBalanceBefore, "market balance should not change");
     }
+
+    function test_SwapExactTokensForTokens_ConsumesBuyLimitBeforeMarketWithdraw()
+        public
+        deposit(alice, 2 * DEFAULT_AMOUNT)
+    {
+        ReentrantSwapMarket reentrantMarket = new ReentrantSwapMarket(weth, originARM, oeth);
+        uint256 amountIn = DEFAULT_AMOUNT / 2;
+        uint256 amountOut = amountIn * 999e33 / 1e36;
+
+        vm.prank(governor);
+        originARM.setARMBuffer(0);
+
+        address[] memory markets = new address[](1);
+        markets[0] = address(reentrantMarket);
+        vm.prank(governor);
+        originARM.addMarkets(markets);
+
+        vm.prank(governor);
+        originARM.setActiveMarket(address(reentrantMarket));
+
+        vm.prank(operator);
+        originARM.setPrices(address(oeth), 999e33, 1001 * 1e33, amountOut, type(uint128).max);
+
+        deal(address(weth), address(reentrantMarket), amountOut);
+        deal(address(oeth), address(reentrantMarket), amountIn);
+        reentrantMarket.setReentrantSwap(amountIn);
+
+        address swapper = makeAddr("reentrant market swapper");
+        deal(address(oeth), swapper, amountIn);
+
+        vm.startPrank(swapper);
+        oeth.approve(address(originARM), amountIn);
+        uint256[] memory amounts = originARM.swapExactTokensForTokens(oeth, weth, amountIn, amountOut, swapper);
+        vm.stopPrank();
+
+        assertEq(amounts[1], amountOut, "output amount");
+        assertTrue(reentrantMarket.reentryFailed(), "reentrant swap should fail");
+        assertEq(_buyLiquidityRemaining(), 0, "buy cap not consumed");
+    }
+}
+
+contract ReentrantSwapMarket {
+    IERC20 public immutable liquidityAsset;
+    OriginARM public immutable originARM;
+    IERC20 public immutable baseAsset;
+
+    uint256 public reentrantAmountIn;
+    bool public reentryAttempted;
+    bool public reentryFailed;
+
+    constructor(IERC20 _liquidityAsset, OriginARM _originARM, IERC20 _baseAsset) {
+        liquidityAsset = _liquidityAsset;
+        originARM = _originARM;
+        baseAsset = _baseAsset;
+    }
+
+    function asset() external view returns (address) {
+        return address(liquidityAsset);
+    }
+
+    function setReentrantSwap(uint256 amountIn) external {
+        reentrantAmountIn = amountIn;
+        baseAsset.approve(address(originARM), type(uint256).max);
+    }
+
+    function withdraw(uint256 assets, address receiver, address) external returns (uint256 shares) {
+        _withdraw(assets, receiver);
+        return assets;
+    }
+
+    function deposit(uint256 assets, address) external returns (uint256 shares) {
+        liquidityAsset.transferFrom(msg.sender, address(this), assets);
+        return assets;
+    }
+
+    function redeem(uint256 shares, address receiver, address) external returns (uint256 assets) {
+        _withdraw(shares, receiver);
+        return shares;
+    }
+
+    function _withdraw(uint256 assets, address receiver) internal {
+        if (!reentryAttempted) {
+            reentryAttempted = true;
+            try originARM.swapExactTokensForTokens(baseAsset, liquidityAsset, reentrantAmountIn, 0, address(this)) {}
+            catch {
+                reentryFailed = true;
+            }
+        }
+
+        liquidityAsset.transfer(receiver, assets);
+    }
+
+    function maxWithdraw(address) external view returns (uint256) {
+        return liquidityAsset.balanceOf(address(this));
+    }
+
+    function maxRedeem(address) external view returns (uint256) {
+        return liquidityAsset.balanceOf(address(this));
+    }
+
+    function convertToAssets(uint256 shares) external pure returns (uint256) {
+        return shares;
+    }
+
+    function convertToShares(uint256 assets) external pure returns (uint256) {
+        return assets;
+    }
+
+    function balanceOf(address) external view returns (uint256) {
+        return liquidityAsset.balanceOf(address(this));
+    }
 }

@@ -73,7 +73,7 @@ contract Fork_OriginARM_Smoke_Test is AbstractSmokeTest {
         assertEq(originARM.owner(), Mainnet.TIMELOCK, "Owner");
         assertEq(originARM.operator(), Mainnet.ARM_RELAYER, "Operator");
         assertEq(originARM.feeCollector(), Mainnet.BUYBACK_OPERATOR, "Fee collector");
-        assertEq((100 * uint256(originARM.fee())) / originARM.FEE_SCALE(), 20, "Performance fee as a percentage");
+        assertEq((100 * uint256(originARM.fee())) / FEE_SCALE, 20, "Performance fee as a percentage");
 
         // Assets
         assertEq(originARM.liquidityAsset(), Mainnet.WETH, "liquidity asset");
@@ -283,7 +283,7 @@ contract Fork_OriginARM_Smoke_Test is AbstractSmokeTest {
         originARM.setOwner(RANDOM_ADDRESS);
         vm.stopPrank();
 
-        vm.expectRevert("ARM: Only owner can call this function.");
+        vm.expectRevert(bytes4(keccak256("OnlyOwner()")));
         vm.prank(operator);
         originARM.setOperator(operator);
     }
