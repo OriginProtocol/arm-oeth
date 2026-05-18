@@ -1,10 +1,20 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
-import {IERC20} from "contracts/Interfaces.sol";
-import {ERC4626} from "@solmate/mixins/ERC4626.sol";
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+// Test
 import {Unit_LidoARM_Shared_Test} from "../Shared.t.sol";
+
+// Contracts
+import {AbstractARM} from "contracts/AbstractARM.sol";
+
+// Interfaces
+import {IERC20} from "contracts/Interfaces.sol";
+
+// Libraries
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+
+// External
+import {ERC4626} from "@solmate/mixins/ERC4626.sol";
 
 /// @author Origin Protocol Inc
 /// @notice Tests exact-input swaps between the Lido ARM liquidity asset and supported base assets.
@@ -15,6 +25,9 @@ import {Unit_LidoARM_Shared_Test} from "../Shared.t.sol";
 contract Unit_Concrete_LidoARM_SwapExactTokensForTokens_Test is Unit_LidoARM_Shared_Test {
     using Math for uint256;
 
+    //////////////////////////////////////////////////////
+    /// ---                  SETUP                     ---
+    //////////////////////////////////////////////////////
     function setUp() public override {
         super.setUp();
         desactiveCapManager();
@@ -24,6 +37,9 @@ contract Unit_Concrete_LidoARM_SwapExactTokensForTokens_Test is Unit_LidoARM_Sha
         aliceFirstDeposit();
     }
 
+    //////////////////////////////////////////////////////
+    /// ---       Happy paths: stETH -> WETH           ---
+    //////////////////////////////////////////////////////
     function test_SwapExactTokensForTokens_Steth_To_Weth_Default() public {
         // Given
         uint256 amountIn = 50 ether;
@@ -248,6 +264,9 @@ contract Unit_Concrete_LidoARM_SwapExactTokensForTokens_Test is Unit_LidoARM_Sha
         assertApproxEqAbs(lidoARM.totalAssets(), totalAssetsBefore + expectedTotalAssetsIncrease - expectedFee, 1);
     }
 
+    //////////////////////////////////////////////////////
+    /// ---       Happy paths: WETH -> stETH           ---
+    //////////////////////////////////////////////////////
     function test_SwapExactTokensForTokens_Weth_To_Steth_Default() public {
         // Seed stETH sell liquidity directly instead of calling the stETH -> WETH test.
         // Calling another test would make coverage include that test's swap path too.
@@ -299,6 +318,9 @@ contract Unit_Concrete_LidoARM_SwapExactTokensForTokens_Test is Unit_LidoARM_Sha
         assertEq(lidoARM.totalAssets(), totalAssetsBefore + expectedTotalAssetsIncrease);
     }
 
+    //////////////////////////////////////////////////////
+    /// ---       Happy paths: wstETH <-> WETH         ---
+    //////////////////////////////////////////////////////
     function test_SwapExactTokensForTokens_Wsteth_To_Weth_Default() public {
         // Given
         uint256 amountIn = 50 ether;
@@ -410,6 +432,9 @@ contract Unit_Concrete_LidoARM_SwapExactTokensForTokens_Test is Unit_LidoARM_Sha
         assertEq(lidoARM.totalAssets(), totalAssetsBefore + expectedTotalAssetsIncrease);
     }
 
+    //////////////////////////////////////////////////////
+    /// ---                  REVERTS                   ---
+    //////////////////////////////////////////////////////
     function test_SwapExactTokensForTokens_RevertWhen_InvalidSwapAssets() public {
         // Same token for both sides of the swap, even if it's a supported base asset
         vm.expectRevert("ARM: Invalid swap assets");
@@ -507,5 +532,16 @@ contract Unit_Concrete_LidoARM_SwapExactTokensForTokens_Test is Unit_LidoARM_Sha
         path[1] = address(weth);
         vm.expectRevert("ARM: Deadline expired");
         lidoARM.swapExactTokensForTokens(0, 0, path, alice, block.timestamp - 1);
+    }
+
+    function test_SwapExactTokensForTokens_RevertWhen_Paused() public {
+        vm.prank(governor);
+        lidoARM.pause();
+
+        vm.expectRevert(AbstractARM.ContractPaused.selector);
+        lidoARM.swapExactTokensForTokens(steth, weth, 1 ether, 0, alice);
+
+        vm.expectRevert(AbstractARM.ContractPaused.selector);
+        lidoARM.swapExactTokensForTokens(1 ether, 0, new address[](2), alice, block.timestamp);
     }
 }

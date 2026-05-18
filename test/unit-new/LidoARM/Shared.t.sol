@@ -153,13 +153,17 @@ abstract contract Unit_LidoARM_Shared_Test is Base_Test_ {
     }
 
     function aliceFirstDeposit() internal {
+        aliceFirstDeposit(100 ether);
+    }
+
+    function aliceFirstDeposit(uint256 amount) internal {
         vm.startPrank(alice);
         // Give Alice some WETH
-        deal(address(weth), alice, 100 ether);
+        deal(address(weth), alice, amount);
         // Alice approve LidoARM to spend her WETH
         weth.approve(address(lidoARM), type(uint256).max);
-        // Alice deposit 100 WETH to LidoARM
-        lidoARM.deposit(100 ether);
+        // Alice deposit the specified amount of WETH to LidoARM
+        lidoARM.deposit(amount);
         vm.stopPrank();
     }
 
