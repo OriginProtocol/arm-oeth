@@ -185,7 +185,7 @@ contract Fork_EtherFiARM_Smoke_Test is AbstractSmokeTest {
         armProxy.upgradeToAndCall(address(this), "");
 
         // Implementation's restricted methods.
-        vm.expectRevert(bytes4(keccak256("OnlyOwner()")));
+        vm.expectRevert("ARM: Only owner can call this function.");
         etherFiARM.setOwner(RANDOM_ADDRESS);
     }
 
