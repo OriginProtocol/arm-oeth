@@ -470,13 +470,17 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
             _accrueSwapFee(config.buyPrice, config.crossPrice, amountOut);
             remaining = config.buyLiquidityRemaining;
             require(amountOut <= remaining, "ARM: Insufficient liquidity");
-            config.buyLiquidityRemaining = SafeCast.toUint128(remaining - amountOut);
+            unchecked {
+                config.buyLiquidityRemaining = uint128(remaining - amountOut);
+            }
             _ensureLiquidityAvailableForSwap(amountOut);
         } else {
             require(amountOut <= outToken.balanceOf(address(this)), "ARM: Insufficient liquidity");
             remaining = config.sellLiquidityRemaining;
             require(amountOut <= remaining, "ARM: Insufficient liquidity");
-            config.sellLiquidityRemaining = SafeCast.toUint128(remaining - amountOut);
+            unchecked {
+                config.sellLiquidityRemaining = uint128(remaining - amountOut);
+            }
         }
     }
 
