@@ -348,8 +348,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         internal
         returns (uint256 amountOut)
     {
-        (address swapBaseAsset, bool isBuySide) = _getSwapBaseAsset(address(inToken), address(outToken));
-        BaseAssetConfig storage config = baseAssetConfigs[swapBaseAsset];
+        (BaseAssetConfig storage config, bool isBuySide) = _getSwapConfig(address(inToken), address(outToken));
 
         if (!isBuySide) {
             // Trader sells liquidity asset and buys the base asset.
@@ -388,8 +387,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         internal
         returns (uint256 amountIn)
     {
-        (address swapBaseAsset, bool isBuySide) = _getSwapBaseAsset(address(inToken), address(outToken));
-        BaseAssetConfig storage config = baseAssetConfigs[swapBaseAsset];
+        (BaseAssetConfig storage config, bool isBuySide) = _getSwapConfig(address(inToken), address(outToken));
 
         if (!isBuySide) {
             // Trader sells liquidity asset and buys the base asset.
@@ -419,22 +417,24 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         outToken.transfer(to, amountOut);
     }
 
-    /// @dev Resolve the supported base asset from a 2-token swap pair.
+    /// @dev Resolve the supported base asset config from a 2-token swap pair.
     /// @param inToken Swap input token address.
     /// @param outToken Swap output token address.
-    /// @return swapBaseAsset Supported base asset involved in the swap.
+    /// @return config Supported base asset config involved in the swap.
     /// @return isBuySide True when the ARM buys base asset and pays out liquidity asset.
-    function _getSwapBaseAsset(address inToken, address outToken)
+    function _getSwapConfig(address inToken, address outToken)
         internal
         view
-        returns (address swapBaseAsset, bool isBuySide)
+        returns (BaseAssetConfig storage config, bool isBuySide)
     {
-        if (inToken == liquidityAsset && baseAssetConfigs[outToken].adapter != address(0)) {
-            return (outToken, false);
+        if (outToken == liquidityAsset) {
+            config = baseAssetConfigs[inToken];
+            if (config.adapter != address(0)) return (config, true);
+        } else if (inToken == liquidityAsset) {
+            config = baseAssetConfigs[outToken];
+            if (config.adapter != address(0)) return (config, false);
         }
-        if (outToken == liquidityAsset && baseAssetConfigs[inToken].adapter != address(0)) {
-            return (inToken, true);
-        }
+
         revert("ARM: Invalid swap assets");
     }
 
