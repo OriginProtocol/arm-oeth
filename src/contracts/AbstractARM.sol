@@ -17,6 +17,28 @@ import {IAssetAdapter, IERC20, ICapManager} from "./Interfaces.sol";
  * @author Origin Protocol Inc
  */
 abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
+    error UnsupportedAsset();
+    error InvalidAsset();
+    error InvalidAdapter();
+    error AssetAlreadySupported();
+    error InvalidAssetDecimals();
+    error InvalidAdapterAsset();
+    error InvalidBuyPrice();
+    error SellPriceTooLow();
+    error CrossPriceTooLow();
+    error CrossPriceTooHigh();
+    error TooManyBaseAssets();
+    error FeeTooHigh();
+    error InvalidFeeCollector();
+    error InvalidMarket();
+    error InvalidMarketAsset();
+    error MarketAlreadySupported();
+    error MarketNotSupported();
+    error MarketActive();
+    error InvalidARMBuffer();
+    error AlreadyMigrated();
+    error LegacyWithdrawalsPending();
+
     ////////////////////////////////////////////////////
     ///                 Constants
     ////////////////////////////////////////////////////
@@ -539,13 +561,13 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         uint256 newCrossPrice,
         bool peggedToLiquidityAsset
     ) external onlyOwner {
-        require(newBaseAsset != address(0), "ARM: invalid asset");
-        require(adapter != address(0), "ARM: invalid adapter");
-        require(baseAssetConfigs[newBaseAsset].adapter == address(0), "ARM: asset already supported");
-        require(IERC20(newBaseAsset).decimals() == 18, "ARM: invalid asset decimals");
-        require(IAssetAdapter(adapter).asset() == liquidityAsset, "ARM: invalid adapter asset");
-        require(newCrossPrice >= PRICE_SCALE - MAX_CROSS_PRICE_DEVIATION, "ARM: cross price too low");
-        require(newCrossPrice <= PRICE_SCALE, "ARM: cross price too high");
+        if (newBaseAsset == address(0)) revert InvalidAsset();
+        if (adapter == address(0)) revert InvalidAdapter();
+        if (baseAssetConfigs[newBaseAsset].adapter != address(0)) revert AssetAlreadySupported();
+        if (IERC20(newBaseAsset).decimals() != 18) revert InvalidAssetDecimals();
+        if (IAssetAdapter(adapter).asset() != liquidityAsset) revert InvalidAdapterAsset();
+        if (newCrossPrice < PRICE_SCALE - MAX_CROSS_PRICE_DEVIATION) revert CrossPriceTooLow();
+        if (newCrossPrice > PRICE_SCALE) revert CrossPriceTooHigh();
         _validatePrices(buyPrice, sellPrice, newCrossPrice);
 
         baseAssets.push(newBaseAsset);
@@ -583,7 +605,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         uint256 sellAmount
     ) external onlyOperatorOrOwner {
         BaseAssetConfig storage config = baseAssetConfigs[priceBaseAsset];
-        require(config.adapter != address(0), "ARM: unsupported asset");
+        if (config.adapter == address(0)) revert UnsupportedAsset();
         _validatePrices(buyPrice, sellPrice, config.crossPrice);
 
         config.buyPrice = SafeCast.toUint128(buyPrice);
@@ -595,8 +617,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     }
 
     function _validatePrices(uint256 buyPrice, uint256 sellPrice, uint256 crossPrice) internal pure {
-        require(sellPrice >= crossPrice, "ARM: sell price too low");
-        require(buyPrice >= MAX_CROSS_PRICE_DEVIATION && buyPrice < crossPrice, "ARM: invalid buy price");
+        if (sellPrice < crossPrice) revert SellPriceTooLow();
+        if (buyPrice < MAX_CROSS_PRICE_DEVIATION || buyPrice >= crossPrice) revert InvalidBuyPrice();
     }
 
     /// @notice Set the valuation price that buy and sell prices may not cross for a base asset.
@@ -607,16 +629,16 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// eg 1e36 values the base asset at 1 liquidity asset.
     function setCrossPrice(address priceBaseAsset, uint256 newCrossPrice) external onlyOwner {
         BaseAssetConfig storage config = baseAssetConfigs[priceBaseAsset];
-        require(config.adapter != address(0), "ARM: unsupported asset");
-        require(newCrossPrice >= PRICE_SCALE - MAX_CROSS_PRICE_DEVIATION, "ARM: cross price too low");
-        require(newCrossPrice <= PRICE_SCALE, "ARM: cross price too high");
-        require(config.sellPrice >= newCrossPrice, "ARM: sell price too low");
-        require(config.buyPrice < newCrossPrice, "ARM: invalid buy price");
+        if (config.adapter == address(0)) revert UnsupportedAsset();
+        if (newCrossPrice < PRICE_SCALE - MAX_CROSS_PRICE_DEVIATION) revert CrossPriceTooLow();
+        if (newCrossPrice > PRICE_SCALE) revert CrossPriceTooHigh();
+        if (config.sellPrice < newCrossPrice) revert SellPriceTooLow();
+        if (config.buyPrice >= newCrossPrice) revert InvalidBuyPrice();
 
         if (newCrossPrice < config.crossPrice) {
             uint256 baseAssetExposure =
                 _convertToAssets(config, IERC20(priceBaseAsset).balanceOf(address(this))) + config.pendingRedeemAssets;
-            require(baseAssetExposure < MIN_TOTAL_SUPPLY, "ARM: too many base assets");
+            if (baseAssetExposure >= MIN_TOTAL_SUPPLY) revert TooManyBaseAssets();
         }
 
         config.crossPrice = SafeCast.toUint128(newCrossPrice);
@@ -639,7 +661,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         returns (uint256 sharesRequested, uint256 assetsExpected)
     {
         BaseAssetConfig storage config = baseAssetConfigs[redeemBaseAsset];
-        require(config.adapter != address(0), "ARM: unsupported asset");
+        if (config.adapter == address(0)) revert UnsupportedAsset();
 
         (sharesRequested, assetsExpected) = IAssetAdapter(config.adapter).requestRedeem(shares);
         // Track the liquidity-denominated value expected back from the adapter queue.
@@ -660,7 +682,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         returns (uint256 sharesClaimed, uint256 assetsExpected, uint256 assetsReceived)
     {
         BaseAssetConfig storage config = baseAssetConfigs[redeemBaseAsset];
-        require(config.adapter != address(0), "ARM: unsupported asset");
+        if (config.adapter == address(0)) revert UnsupportedAsset();
 
         (sharesClaimed, assetsExpected, assetsReceived) = IAssetAdapter(config.adapter).redeem(shares);
         // Remove expected queue value. Any received shortfall remains reflected in totalAssets().
@@ -939,7 +961,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// 10,000 = 100% fee
     /// 500 = 5% fee
     function _setFee(uint256 _fee) internal {
-        require(_fee <= FEE_SCALE / 2, "ARM: fee too high");
+        if (_fee > FEE_SCALE / 2) revert FeeTooHigh();
         collectFees();
         fee = SafeCast.toUint16(_fee);
         emit FeeUpdated(_fee);
@@ -947,7 +969,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
     /// @param _feeCollector Account or contract that receives accrued swap fees.
     function _setFeeCollector(address _feeCollector) internal {
-        require(_feeCollector != address(0), "ARM: invalid fee collector");
+        if (_feeCollector == address(0)) revert InvalidFeeCollector();
         feeCollector = _feeCollector;
         emit FeeCollectorUpdated(_feeCollector);
     }
@@ -978,9 +1000,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     function addMarkets(address[] calldata _markets) external onlyOwner {
         for (uint256 i = 0; i < _markets.length; ++i) {
             address market = _markets[i];
-            require(market != address(0), "ARM: invalid market");
-            require(!supportedMarkets[market], "ARM: market already supported");
-            require(IERC4626(market).asset() == liquidityAsset, "ARM: invalid market asset");
+            if (market == address(0)) revert InvalidMarket();
+            if (supportedMarkets[market]) revert MarketAlreadySupported();
+            if (IERC4626(market).asset() != liquidityAsset) revert InvalidMarketAsset();
 
             supportedMarkets[market] = true;
             emit MarketAdded(market);
@@ -990,9 +1012,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @notice Remove a supported ERC-4626 lending market.
     /// @param _market Market address to remove.
     function removeMarket(address _market) external onlyOwner {
-        require(_market != address(0), "ARM: invalid market");
-        require(supportedMarkets[_market], "ARM: market not supported");
-        require(_market != activeMarket, "ARM: market in active");
+        if (_market == address(0)) revert InvalidMarket();
+        if (!supportedMarkets[_market]) revert MarketNotSupported();
+        if (_market == activeMarket) revert MarketActive();
 
         supportedMarkets[_market] = false;
         emit MarketRemoved(_market);
@@ -1002,7 +1024,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @dev Redeems all shares from the previous market before switching.
     /// @param _market Supported market to activate, or address(0) to disable active allocation.
     function setActiveMarket(address _market) external onlyOperatorOrOwner {
-        require(_market == address(0) || supportedMarkets[_market], "ARM: market not supported");
+        if (_market != address(0) && !supportedMarkets[_market]) revert MarketNotSupported();
         // Read once from storage to save gas and make it clear this is the previous active market.
         address previousActiveMarket = activeMarket;
         // Don't revert if the previous active market is the same as the new one.
@@ -1110,7 +1132,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// 1e18 = 100% buffer
     /// 0.1e18 = 10% buffer
     function setARMBuffer(uint256 _armBuffer) external onlyOperatorOrOwner {
-        require(_armBuffer <= 1e18, "ARM: invalid arm buffer");
+        if (_armBuffer > 1e18) revert InvalidARMBuffer();
         armBuffer = _armBuffer;
         emit ARMBufferUpdated(_armBuffer);
     }
@@ -1122,12 +1144,12 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     function migrateLegacyWithdrawQueue() external onlyOwner reinitializer(2) {
         _checkNoLegacyWithdrawQueue();
 
-        require(withdrawsQueuedShares == 0 && withdrawsClaimedShares == 0, "ARM: already migrated");
+        if (withdrawsQueuedShares != 0 || withdrawsClaimedShares != 0) revert AlreadyMigrated();
 
         uint256 packedLegacyQueue = reservedWithdrawLiquidity;
         uint128 legacyQueued = uint128(packedLegacyQueue);
         uint128 legacyClaimed = uint128(packedLegacyQueue >> 128);
-        require(legacyQueued == legacyClaimed, "ARM: legacy withdrawals pending");
+        if (legacyQueued != legacyClaimed) revert LegacyWithdrawalsPending();
 
         reservedWithdrawLiquidity = 0;
     }

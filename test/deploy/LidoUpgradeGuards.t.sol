@@ -80,7 +80,7 @@ contract LidoUpgradeGuardsTest is Test {
         proxy.upgradeTo(address(newImpl));
 
         vm.prank(makeAddr("not owner"));
-        vm.expectRevert("ARM: Only owner can call this function.");
+        vm.expectRevert(bytes4(keccak256("OnlyOwner()")));
         LidoARM(payable(address(proxy))).migrateLegacyWithdrawQueue();
     }
 

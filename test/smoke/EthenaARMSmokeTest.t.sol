@@ -175,20 +175,20 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
         vm.startPrank(RANDOM_ADDRESS);
 
         // Proxy's restricted methods.
-        vm.expectRevert("ARM: Only owner can call this function.");
+        vm.expectRevert(bytes4(keccak256("OnlyOwner()")));
         armProxy.setOwner(RANDOM_ADDRESS);
 
-        vm.expectRevert("ARM: Only owner can call this function.");
+        vm.expectRevert(bytes4(keccak256("OnlyOwner()")));
         armProxy.initialize(address(this), address(this), "");
 
-        vm.expectRevert("ARM: Only owner can call this function.");
+        vm.expectRevert(bytes4(keccak256("OnlyOwner()")));
         armProxy.upgradeTo(address(this));
 
-        vm.expectRevert("ARM: Only owner can call this function.");
+        vm.expectRevert(bytes4(keccak256("OnlyOwner()")));
         armProxy.upgradeToAndCall(address(this), "");
 
         // Implementation's restricted methods.
-        vm.expectRevert("ARM: Only owner can call this function.");
+        vm.expectRevert(bytes4(keccak256("OnlyOwner()")));
         ethenaARM.setOwner(RANDOM_ADDRESS);
     }
 
@@ -200,7 +200,7 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
     }
 
     function test_nonOwnerCannotSetOperator() external {
-        vm.expectRevert("ARM: Only owner can call this function.");
+        vm.expectRevert(bytes4(keccak256("OnlyOwner()")));
         vm.prank(operator);
         ethenaARM.setOperator(operator);
     }

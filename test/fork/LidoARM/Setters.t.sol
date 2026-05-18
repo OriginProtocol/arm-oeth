@@ -26,33 +26,33 @@ contract Fork_Concrete_LidoARM_Setters_Test_ is Fork_Shared_Test_ {
     /// --- PERFORMANCE FEE - REVERTING TEST
     //////////////////////////////////////////////////////
     function test_RevertWhen_PerformanceFee_SetFee_Because_NotOwner() public asRandomAddress {
-        vm.expectRevert("ARM: Only owner can call this function.");
+        vm.expectRevert(bytes4(keccak256("OnlyOwner()")));
         lidoARM.setFee(0);
     }
 
     function test_RevertWhen_PerformanceFee_SetFee_Because_Operator() public asOperator {
-        vm.expectRevert("ARM: Only owner can call this function.");
+        vm.expectRevert(bytes4(keccak256("OnlyOwner()")));
         lidoARM.setFee(0);
     }
 
     function test_RevertWhen_PerformanceFee_SetFee_Because_FeeIsTooHigh() public asLidoARMOwner {
         uint256 max = FEE_SCALE;
-        vm.expectRevert("ARM: fee too high");
+        vm.expectRevert(bytes4(keccak256("FeeTooHigh()")));
         lidoARM.setFee(max + 1);
     }
 
     function test_RevertWhen_PerformanceFee_SetFeeCollector_Because_NotOwner() public asRandomAddress {
-        vm.expectRevert("ARM: Only owner can call this function.");
+        vm.expectRevert(bytes4(keccak256("OnlyOwner()")));
         lidoARM.setFeeCollector(address(0));
     }
 
     function test_RevertWhen_PerformanceFee_SetFeeCollector_Because_Operator() public asOperator {
-        vm.expectRevert("ARM: Only owner can call this function.");
+        vm.expectRevert(bytes4(keccak256("OnlyOwner()")));
         lidoARM.setFeeCollector(address(0));
     }
 
     function test_RevertWhen_PerformanceFee_SetFeeCollector_Because_FeeCollectorIsZero() public asLidoARMOwner {
-        vm.expectRevert("ARM: invalid fee collector");
+        vm.expectRevert(bytes4(keccak256("InvalidFeeCollector()")));
         lidoARM.setFeeCollector(address(0));
     }
 
@@ -90,40 +90,40 @@ contract Fork_Concrete_LidoARM_Setters_Test_ is Fork_Shared_Test_ {
     //////////////////////////////////////////////////////
     function test_RevertWhen_SetPrices_Because_PriceRange_Operator() public asOperator {
         // buy price 1 basis points higher than 1.0
-        vm.expectRevert("ARM: invalid buy price");
+        vm.expectRevert(bytes4(keccak256("InvalidBuyPrice()")));
         lidoARM.setPrices(address(steth), 1.0001 * 1e36, 1.002 * 1e36, type(uint128).max, type(uint128).max);
 
         // sell price 11 basis points lower than 1.0
-        vm.expectRevert("ARM: sell price too low");
+        vm.expectRevert(bytes4(keccak256("SellPriceTooLow()")));
         lidoARM.setPrices(address(steth), 0.998 * 1e36, 0.9989 * 1e36, type(uint128).max, type(uint128).max);
 
         // Forgot to scale up to 36 decimals
-        vm.expectRevert("ARM: sell price too low");
+        vm.expectRevert(bytes4(keccak256("SellPriceTooLow()")));
         lidoARM.setPrices(address(steth), 1e18, 1e18, type(uint128).max, type(uint128).max);
     }
 
     function test_RevertWhen_SetPrices_Because_PriceRange_Owner() public asLidoARMOwner {
         // buy price 1 basis points higher than 1.0
-        vm.expectRevert("ARM: invalid buy price");
+        vm.expectRevert(bytes4(keccak256("InvalidBuyPrice()")));
         lidoARM.setPrices(address(steth), 1.0001 * 1e36, 1.002 * 1e36, type(uint128).max, type(uint128).max);
 
         // sell price 11 basis points lower than 1.0
-        vm.expectRevert("ARM: sell price too low");
+        vm.expectRevert(bytes4(keccak256("SellPriceTooLow()")));
         lidoARM.setPrices(address(steth), 0.998 * 1e36, 0.9989 * 1e36, type(uint128).max, type(uint128).max);
     }
 
     function test_RevertWhen_SetPrices_Because_NotOwnerOrOperator() public asRandomAddress {
-        vm.expectRevert("ARM: Only operator or owner can call this function.");
+        vm.expectRevert(bytes4(keccak256("OnlyOperatorOrOwner()")));
         lidoARM.setPrices(address(steth), 0, 0, type(uint128).max, type(uint128).max);
     }
 
     function test_RevertWhen_SetPrices_Because_SellPriceCannotCrossOneByMoreThanTenBps() public asOperator {
-        vm.expectRevert("ARM: sell price too low");
+        vm.expectRevert(bytes4(keccak256("SellPriceTooLow()")));
         lidoARM.setPrices(address(steth), 0.998 * 1e36, 0.9989 * 1e36, type(uint128).max, type(uint128).max);
     }
 
     function test_RevertWhen_SetPrices_Because_BuyPriceCannotCrossOneByMoreThanTenBps() public asOperator {
-        vm.expectRevert("ARM: invalid buy price");
+        vm.expectRevert(bytes4(keccak256("InvalidBuyPrice()")));
         lidoARM.setPrices(address(steth), 1.0011 * 1e36, 1.002 * 1e36, type(uint128).max, type(uint128).max);
     }
 
@@ -153,22 +153,22 @@ contract Fork_Concrete_LidoARM_Setters_Test_ is Fork_Shared_Test_ {
     /// --- OWNABLE - REVERTING TESTS
     //////////////////////////////////////////////////////
     function test_RevertWhen_Ownable_SetOwner_Because_NotOwner() public asRandomAddress {
-        vm.expectRevert("ARM: Only owner can call this function.");
+        vm.expectRevert(bytes4(keccak256("OnlyOwner()")));
         lidoARM.setOwner(address(0));
     }
 
     function test_RevertWhen_Ownable_SetOwner_Because_Operator() public asOperator {
-        vm.expectRevert("ARM: Only owner can call this function.");
+        vm.expectRevert(bytes4(keccak256("OnlyOwner()")));
         lidoARM.setOwner(address(0));
     }
 
     function test_RevertWhen_Ownable_SetOperator_Because_NotOwner() public asRandomAddress {
-        vm.expectRevert("ARM: Only owner can call this function.");
+        vm.expectRevert(bytes4(keccak256("OnlyOwner()")));
         lidoARM.setOperator(address(0));
     }
 
     function test_RevertWhen_Ownable_SetOperator_Because_Operator() public asOperator {
-        vm.expectRevert("ARM: Only owner can call this function.");
+        vm.expectRevert(bytes4(keccak256("OnlyOwner()")));
         lidoARM.setOperator(address(0));
     }
 
@@ -176,12 +176,12 @@ contract Fork_Concrete_LidoARM_Setters_Test_ is Fork_Shared_Test_ {
     /// --- LIQUIIDITY PROVIDER CONTROLLER - REVERTING TESTS
     //////////////////////////////////////////////////////
     function test_RevertWhen_CapManager_SetLiquidityProvider_Because_NotOwner() public asRandomAddress {
-        vm.expectRevert("ARM: Only owner can call this function.");
+        vm.expectRevert(bytes4(keccak256("OnlyOwner()")));
         lidoARM.setCapManager(address(0));
     }
 
     function test_RevertWhen_CapManager_SetLiquidityProvider_Because_Operator() public asOperator {
-        vm.expectRevert("ARM: Only owner can call this function.");
+        vm.expectRevert(bytes4(keccak256("OnlyOwner()")));
         lidoARM.setCapManager(address(0));
     }
 
@@ -202,17 +202,17 @@ contract Fork_Concrete_LidoARM_Setters_Test_ is Fork_Shared_Test_ {
     /// --- AccountCapEnabled - REVERTING TEST
     //////////////////////////////////////////////////////
     function test_RevertWhen_CapManager_SetAccountCapEnabled_Because_NotOwner() public asRandomAddress {
-        vm.expectRevert("ARM: Only owner can call this function.");
+        vm.expectRevert(bytes4(keccak256("OnlyOwner()")));
         capManager.setAccountCapEnabled(false);
     }
 
     function test_RevertWhen_CapManager_SetAccountCapEnabled_Because_Operator() public asOperator {
-        vm.expectRevert("ARM: Only owner can call this function.");
+        vm.expectRevert(bytes4(keccak256("OnlyOwner()")));
         capManager.setAccountCapEnabled(false);
     }
 
     function test_RevertWhen_CapManager_SetAccountCapEnabled_Because_AlreadySet() public enableCaps asLidoARMOwner {
-        vm.expectRevert("LPC: Account cap already set");
+        vm.expectRevert(bytes4(keccak256("AccountCapAlreadySet()")));
         capManager.setAccountCapEnabled(true);
     }
 
@@ -231,7 +231,7 @@ contract Fork_Concrete_LidoARM_Setters_Test_ is Fork_Shared_Test_ {
     /// --- TotalAssetsCap - REVERTING TEST
     //////////////////////////////////////////////////////
     function test_RevertWhen_CapManager_SetTotalAssetsCap_Because_NotOwner() public asRandomAddress {
-        vm.expectRevert("ARM: Only operator or owner can call this function.");
+        vm.expectRevert(bytes4(keccak256("OnlyOperatorOrOwner()")));
         capManager.setTotalAssetsCap(100 ether);
     }
 
@@ -258,7 +258,7 @@ contract Fork_Concrete_LidoARM_Setters_Test_ is Fork_Shared_Test_ {
     /// --- LiquidityProviderCaps - REVERTING TEST
     //////////////////////////////////////////////////////
     function test_RevertWhen_CapManager_SetLiquidityProviderCaps_Because_NotOwner() public asRandomAddress {
-        vm.expectRevert("ARM: Only operator or owner can call this function.");
+        vm.expectRevert(bytes4(keccak256("OnlyOperatorOrOwner()")));
         capManager.setLiquidityProviderCaps(testProviders, 50 ether);
     }
 
