@@ -11,6 +11,20 @@ import {Unit_Shared_Test} from "test/unit/shared/Shared.sol";
 import {MockVault} from "test/unit/mocks/MockVault.sol";
 
 contract Unit_Concrete_OriginARM_Reentrancy_Test_ is Unit_Shared_Test {
+    ReentrantGuardHarnessARM internal harness;
+
+    function setUp() public virtual override {
+        super.setUp();
+
+        ReentrantGuardHarnessARM harnessImpl =
+            new ReentrantGuardHarnessARM(address(oeth), address(weth), address(vault), CLAIM_DELAY, 1e7, 1e18);
+
+        vm.prank(governor);
+        originARMProxy.upgradeTo(address(harnessImpl));
+
+        harness = ReentrantGuardHarnessARM(address(originARM));
+    }
+
     function test_RevertWhen_BuySideTransferFromReentersSwap() public deposit(alice, 4 * DEFAULT_AMOUNT) {
         ReentrantBaseToken reentrantBase = new ReentrantBaseToken();
         OriginAssetAdapter adapter = new OriginAssetAdapter(
@@ -50,6 +64,53 @@ contract Unit_Concrete_OriginARM_Reentrancy_Test_ is Unit_Shared_Test {
         );
 
         vm.stopPrank();
+    }
+
+    function test_RevertWhen_DepositReentersDeposit() public {
+        vm.expectRevert(ReentrancyGuardUpgradeable.ReentrancyGuardReentrantCall.selector);
+        harness.enterThenDeposit(DEFAULT_AMOUNT);
+    }
+
+    function test_RevertWhen_DepositToReceiverReentersDepositToReceiver() public {
+        vm.expectRevert(ReentrancyGuardUpgradeable.ReentrancyGuardReentrantCall.selector);
+        harness.enterThenDeposit(DEFAULT_AMOUNT, alice);
+    }
+
+    function test_RevertWhen_RequestRedeemReentersRequestRedeem() public {
+        vm.expectRevert(ReentrancyGuardUpgradeable.ReentrancyGuardReentrantCall.selector);
+        harness.enterThenRequestRedeem(DEFAULT_AMOUNT);
+    }
+
+    function test_RevertWhen_ClaimRedeemReentersClaimRedeem() public {
+        vm.expectRevert(ReentrancyGuardUpgradeable.ReentrancyGuardReentrantCall.selector);
+        harness.enterThenClaimRedeem(0);
+    }
+}
+
+contract ReentrantGuardHarnessARM is OriginARM {
+    constructor(
+        address _otoken,
+        address _liquidityAsset,
+        address _vault,
+        uint256 _claimDelay,
+        uint256 _minSharesToRedeem,
+        int256 _allocateThreshold
+    ) OriginARM(_otoken, _liquidityAsset, _vault, _claimDelay, _minSharesToRedeem, _allocateThreshold) {}
+
+    function enterThenDeposit(uint256 assets) external nonReentrant {
+        this.deposit(assets);
+    }
+
+    function enterThenDeposit(uint256 assets, address receiver) external nonReentrant {
+        this.deposit(assets, receiver);
+    }
+
+    function enterThenRequestRedeem(uint256 shares) external nonReentrant {
+        this.requestRedeem(shares);
+    }
+
+    function enterThenClaimRedeem(uint256 requestId) external nonReentrant {
+        this.claimRedeem(requestId);
     }
 }
 
