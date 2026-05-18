@@ -41,7 +41,7 @@ contract Fork_Concrete_LidoARM_SetCrossPrice_Test_ is Fork_Shared_Test_ {
 
     function test_RevertWhen_SetCrossPrice_Because_BuyPriceTooHigh() public {
         lidoARM.setPrices(address(steth), 1e36 - 20e32 + 1, 1000 * 1e33 + 1, type(uint128).max, type(uint128).max);
-        vm.expectRevert("ARM: buy price too high");
+        vm.expectRevert("ARM: invalid buy price");
         lidoARM.setCrossPrice(address(steth), 1e36 - 20e32);
     }
 

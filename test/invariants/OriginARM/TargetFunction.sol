@@ -524,7 +524,7 @@ abstract contract TargetFunction is Properties {
 
         // - Set the prices to 1:1
         vm.prank(governor);
-        originARM.setPrices(address(os), 0, PRICE_SCALE, type(uint128).max, type(uint128).max);
+        originARM.setPrices(address(os), PRICE_SCALE / 2, PRICE_SCALE, type(uint128).max, type(uint128).max);
 
         // - Swap all the OS on ARM to WS
         deal(address(ws), makeAddr("swapper"), type(uint120).max);

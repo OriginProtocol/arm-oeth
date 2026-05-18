@@ -56,8 +56,23 @@ contract Unit_Concrete_OriginARM_Setters_Test_ is Unit_Shared_Test {
 
     function test_RevertWhen_SetPrices_Because_BuyPriceTooHigh() public asOperator {
         uint256 crossPrice = _crossPrice();
-        vm.expectRevert("ARM: buy price too high");
+        vm.expectRevert("ARM: invalid buy price");
         originARM.setPrices(address(oeth), crossPrice, crossPrice, 0, 0);
+    }
+
+    function test_RevertWhen_SetPrices_Because_BuyPriceTooLow() public asOperator {
+        uint256 crossPrice = _crossPrice();
+        vm.expectRevert("ARM: invalid buy price");
+        originARM.setPrices(address(oeth), MAX_CROSS_PRICE_DEVIATION - 1, crossPrice, 0, 0);
+    }
+
+    function test_SetPrices_WithMinimumBuyPrice() public asOperator {
+        uint256 crossPrice = _crossPrice();
+        vm.expectEmit(address(originARM));
+        emit AbstractARM.TraderateChanged(address(oeth), MAX_CROSS_PRICE_DEVIATION, crossPrice, 0, 0);
+
+        originARM.setPrices(address(oeth), MAX_CROSS_PRICE_DEVIATION, crossPrice, 0, 0);
+        assertEq(_buyPrice(), MAX_CROSS_PRICE_DEVIATION, "Wrong buy price");
     }
 
     function test_RevertWhen_SetCrossPrice_Because_NotGovernor() public asNotGovernor {
@@ -97,7 +112,7 @@ contract Unit_Concrete_OriginARM_Setters_Test_ is Unit_Shared_Test {
         originARM.setCrossPrice(address(oeth), priceScale - maxCrossPriceDeviation);
 
         // Set sellT1 to the minimum value (crossPrice - 1)
-        originARM.setPrices(address(oeth), 0, _crossPrice(), type(uint128).max, type(uint128).max);
+        originARM.setPrices(address(oeth), PRICE_SCALE / 2, _crossPrice(), type(uint128).max, type(uint128).max);
 
         // Now we have enough space between PRICE_SCALE and sellT1 to set the cross price to a wrong value
         uint256 sellT1 = _sellPrice();
@@ -118,7 +133,7 @@ contract Unit_Concrete_OriginARM_Setters_Test_ is Unit_Shared_Test {
         originARM.setPrices(address(oeth), crossPrice - 1, priceScale, type(uint128).max, type(uint128).max);
 
         // Now we have enough space between PRICE_SCALE and buyT1 to set the cross price to a wrong value
-        vm.expectRevert("ARM: buy price too high");
+        vm.expectRevert("ARM: invalid buy price");
         originARM.setCrossPrice(address(oeth), priceScale - maxCrossPriceDeviation);
     }
 

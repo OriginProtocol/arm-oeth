@@ -51,10 +51,8 @@ contract EthenaARM is Initializable, AbstractARM {
         _initARM(_operator, _name, _symbol, _fee, _feeCollector, _capManager);
     }
 
-    /// @notice Revert if legacy Ethena cooldowns are still outstanding.
-    /// @dev Used by upgrade scripts with `upgradeToAndCall` so the upgrade cannot
-    /// complete until the old ARM-owned Ethena cooldowns have been claimed.
-    function checkNoLegacyEthenaCooldown() external view {
+    /// @dev Revert if legacy Ethena cooldowns are still outstanding.
+    function _checkNoLegacyWithdrawQueue() internal view override {
         require(_deprecatedLiquidityAmountInCooldown == 0, "EthenaARM: cooldown pending");
     }
 }

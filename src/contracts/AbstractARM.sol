@@ -175,6 +175,15 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     event Unpaused(address indexed account);
 
     ////////////////////////////////////////////////////
+    ///                 Modifiers
+    ////////////////////////////////////////////////////
+
+    modifier whenNotPaused() {
+        require(!paused, "ARM: paused");
+        _;
+    }
+
+    ////////////////////////////////////////////////////
     ///                 Constructor
     ////////////////////////////////////////////////////
 
@@ -352,8 +361,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         internal
         returns (uint256 amountOut)
     {
-        (address swapBaseAsset, bool isBuySide) = _getSwapBaseAsset(address(inToken), address(outToken));
-        BaseAssetConfig storage config = baseAssetConfigs[swapBaseAsset];
+        (BaseAssetConfig storage config, bool isBuySide) = _getSwapConfig(address(inToken), address(outToken));
 
         if (!isBuySide) {
             // Trader sells liquidity asset and buys the base asset.
@@ -371,12 +379,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
             // buyPrice is liquidity assets per base asset. Since convertedAmountIn is the
             // base input expressed in liquidity terms, multiply by buyPrice to get liquidity output.
             amountOut = convertedAmountIn * config.buyPrice / PRICE_SCALE;
-
-            _accrueSwapFee(config.buyPrice, config.crossPrice, amountOut);
-            _ensureLiquidityAvailableForSwap(amountOut);
         }
 
-        _consumeSwapLiquidityLimit(config, isBuySide, amountOut);
+        _validateAndConsumeSwapLiquidity(config, isBuySide, outToken, amountOut);
 
         // Transfer the input tokens from the caller to this ARM contract
         inToken.transferFrom(msg.sender, address(this), amountIn);
@@ -395,8 +400,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         internal
         returns (uint256 amountIn)
     {
-        (address swapBaseAsset, bool isBuySide) = _getSwapBaseAsset(address(inToken), address(outToken));
-        BaseAssetConfig storage config = baseAssetConfigs[swapBaseAsset];
+        (BaseAssetConfig storage config, bool isBuySide) = _getSwapConfig(address(inToken), address(outToken));
 
         if (!isBuySide) {
             // Trader sells liquidity asset and buys the base asset.
@@ -405,6 +409,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
             uint256 convertedAmountOut = _convertToAssets(config, amountOut);
             // amountOut is converted to liquidity terms first, then multiplied by sellPrice
             // to solve for the required liquidity input.
+            // + 3 wei buffer for stETH rounding on larger transfers (observed up to 2 wei; 3 is for safety).
             amountIn = convertedAmountOut * config.sellPrice / PRICE_SCALE + 3;
         } else {
             // Trader sells base asset and buys the liquidity asset.
@@ -414,12 +419,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
             // buyPrice is liquidity assets per base asset, but amountIn is base assets.
             // Divide the exact liquidity output by buyPrice to solve for the required base input.
             amountIn = convertedAmountOut * PRICE_SCALE / config.buyPrice + 3;
-
-            _accrueSwapFee(config.buyPrice, config.crossPrice, amountOut);
-            _ensureLiquidityAvailableForSwap(amountOut);
         }
 
-        _consumeSwapLiquidityLimit(config, isBuySide, amountOut);
+        _validateAndConsumeSwapLiquidity(config, isBuySide, outToken, amountOut);
 
         // Transfer the input tokens from the caller to this ARM contract
         inToken.transferFrom(msg.sender, address(this), amountIn);
@@ -428,22 +430,24 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         outToken.transfer(to, amountOut);
     }
 
-    /// @dev Resolve the supported base asset from a 2-token swap pair.
+    /// @dev Resolve the supported base asset config from a 2-token swap pair.
     /// @param inToken Swap input token address.
     /// @param outToken Swap output token address.
-    /// @return swapBaseAsset Supported base asset involved in the swap.
+    /// @return config Supported base asset config involved in the swap.
     /// @return isBuySide True when the ARM buys base asset and pays out liquidity asset.
-    function _getSwapBaseAsset(address inToken, address outToken)
+    function _getSwapConfig(address inToken, address outToken)
         internal
         view
-        returns (address swapBaseAsset, bool isBuySide)
+        returns (BaseAssetConfig storage config, bool isBuySide)
     {
-        if (inToken == liquidityAsset && baseAssetConfigs[outToken].adapter != address(0)) {
-            return (outToken, false);
+        if (outToken == liquidityAsset) {
+            config = baseAssetConfigs[inToken];
+            if (config.adapter != address(0)) return (config, true);
+        } else if (inToken == liquidityAsset) {
+            config = baseAssetConfigs[outToken];
+            if (config.adapter != address(0)) return (config, false);
         }
-        if (outToken == liquidityAsset && baseAssetConfigs[inToken].adapter != address(0)) {
-            return (inToken, true);
-        }
+
         revert("ARM: Invalid swap assets");
     }
 
@@ -464,18 +468,33 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         }
     }
 
-    /// @dev Consume the per-base liquidity limit for the current swap direction.
-    /// Buy-side limits are denominated in liquidity assets. Sell-side limits are denominated in base assets.
-    /// @param config Base asset config whose liquidity limit is consumed.
+    /// @dev Validate swap reserves and consume the per-base liquidity limit.
     /// @param isBuySide True when the ARM buys base asset and pays out liquidity asset.
-    /// @param amountOut Amount of output token sent by the ARM.
-    function _consumeSwapLiquidityLimit(BaseAssetConfig storage config, bool isBuySide, uint256 amountOut) internal {
-        uint256 remaining = isBuySide ? config.buyLiquidityRemaining : config.sellLiquidityRemaining;
-        require(amountOut <= remaining, "ARM: Insufficient liquidity");
-
-        remaining -= amountOut;
-        if (isBuySide) config.buyLiquidityRemaining = SafeCast.toUint128(remaining);
-        else config.sellLiquidityRemaining = SafeCast.toUint128(remaining);
+    /// @param outToken Swap output token address.
+    /// @param amountOut Swap output token amount.
+    function _validateAndConsumeSwapLiquidity(
+        BaseAssetConfig storage config,
+        bool isBuySide,
+        IERC20 outToken,
+        uint256 amountOut
+    ) private {
+        uint256 remaining;
+        if (isBuySide) {
+            _accrueSwapFee(config.buyPrice, config.crossPrice, amountOut);
+            remaining = config.buyLiquidityRemaining;
+            require(amountOut <= remaining, "ARM: Insufficient liquidity");
+            unchecked {
+                config.buyLiquidityRemaining = uint128(remaining - amountOut);
+            }
+            _ensureLiquidityAvailableForSwap(amountOut);
+        } else {
+            require(amountOut <= outToken.balanceOf(address(this)), "ARM: Insufficient liquidity");
+            remaining = config.sellLiquidityRemaining;
+            require(amountOut <= remaining, "ARM: Insufficient liquidity");
+            unchecked {
+                config.sellLiquidityRemaining = uint128(remaining - amountOut);
+            }
+        }
     }
 
     /// @dev Convert base shares to liquidity assets, bypassing the adapter for pegged assets.
@@ -501,8 +520,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @param crossPrice Price used to value the base asset in totalAssets().
     /// @param amountOut Liquidity asset amount paid out by the ARM.
     function _accrueSwapFee(uint256 buyPrice, uint256 crossPrice, uint256 amountOut) internal {
-        uint256 feeMultiplier =
-            buyPrice == 0 ? 0 : (crossPrice - buyPrice) * uint256(fee) * PRICE_SCALE / (buyPrice * FEE_SCALE);
+        uint256 feeMultiplier = (crossPrice - buyPrice) * uint256(fee) * PRICE_SCALE / (buyPrice * FEE_SCALE);
         feesAccrued = SafeCast.toUint128(feesAccrued + amountOut * feeMultiplier / PRICE_SCALE);
     }
 
@@ -541,8 +559,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         require(IAssetAdapter(adapter).asset() == liquidityAsset, "ARM: invalid adapter asset");
         require(newCrossPrice >= PRICE_SCALE - MAX_CROSS_PRICE_DEVIATION, "ARM: cross price too low");
         require(newCrossPrice <= PRICE_SCALE, "ARM: cross price too high");
-        require(sellPrice >= newCrossPrice, "ARM: sell price too low");
-        require(buyPrice < newCrossPrice, "ARM: buy price too high");
+        _validatePrices(buyPrice, sellPrice, newCrossPrice);
 
         baseAssets.push(newBaseAsset);
         // Allow the adapter to pull base assets when requesting protocol redemptions.
@@ -580,8 +597,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     ) external onlyOperatorOrOwner {
         BaseAssetConfig storage config = baseAssetConfigs[priceBaseAsset];
         require(config.adapter != address(0), "ARM: unsupported asset");
-        require(sellPrice >= config.crossPrice, "ARM: sell price too low");
-        require(buyPrice < config.crossPrice, "ARM: buy price too high");
+        _validatePrices(buyPrice, sellPrice, config.crossPrice);
 
         config.buyPrice = SafeCast.toUint128(buyPrice);
         config.sellPrice = SafeCast.toUint128(sellPrice);
@@ -589,6 +605,11 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         config.sellLiquidityRemaining = SafeCast.toUint128(sellAmount);
 
         emit TraderateChanged(priceBaseAsset, buyPrice, sellPrice, buyAmount, sellAmount);
+    }
+
+    function _validatePrices(uint256 buyPrice, uint256 sellPrice, uint256 crossPrice) internal pure {
+        require(sellPrice >= crossPrice, "ARM: sell price too low");
+        require(buyPrice >= MAX_CROSS_PRICE_DEVIATION && buyPrice < crossPrice, "ARM: invalid buy price");
     }
 
     /// @notice Set the valuation price that buy and sell prices may not cross for a base asset.
@@ -603,7 +624,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         require(newCrossPrice >= PRICE_SCALE - MAX_CROSS_PRICE_DEVIATION, "ARM: cross price too low");
         require(newCrossPrice <= PRICE_SCALE, "ARM: cross price too high");
         require(config.sellPrice >= newCrossPrice, "ARM: sell price too low");
-        require(config.buyPrice < newCrossPrice, "ARM: buy price too high");
+        require(config.buyPrice < newCrossPrice, "ARM: invalid buy price");
 
         if (newCrossPrice < config.crossPrice) {
             uint256 baseAssetExposure =
@@ -1123,7 +1144,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @dev The reused slot previously packed `withdrawsQueued` in the low 128 bits and
     /// `withdrawsClaimed` in the high 128 bits. It may be nonzero even when the old queue
     /// is fully drained, so upgrade scripts should call this with `upgradeToAndCall`.
-    function migrateLegacyWithdrawQueue() external onlyOwner {
+    function migrateLegacyWithdrawQueue() external onlyOwner reinitializer(2) {
+        _checkNoLegacyWithdrawQueue();
+
         require(withdrawsQueuedShares == 0 && withdrawsClaimedShares == 0, "ARM: already migrated");
 
         uint256 packedLegacyQueue = reservedWithdrawLiquidity;
@@ -1134,8 +1157,6 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         reservedWithdrawLiquidity = 0;
     }
 
-    modifier whenNotPaused() {
-        require(!paused, "ARM: paused");
-        _;
-    }
+    /// @dev Hook for protocol-specific legacy withdrawal queue checks before shared queue migration.
+    function _checkNoLegacyWithdrawQueue() internal view virtual {}
 }
