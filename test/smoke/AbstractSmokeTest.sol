@@ -234,8 +234,10 @@ abstract contract AbstractSmokeTest is Test {
         vm.prank(abi.decode(result, (address)));
         (success, result) = arm.call(abi.encodeWithSignature("migrateLegacyWithdrawQueue()"));
         if (!success && result.length == 4 && bytes4(result) == INVALID_INITIALIZATION) return;
-        if (!success) assembly {
-            revert(add(result, 0x20), mload(result))
+        if (!success) {
+            assembly {
+                revert(add(result, 0x20), mload(result))
+            }
         }
     }
 
