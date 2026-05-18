@@ -503,8 +503,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @param crossPrice Price used to value the base asset in totalAssets().
     /// @param amountOut Liquidity asset amount paid out by the ARM.
     function _accrueSwapFee(uint256 buyPrice, uint256 crossPrice, uint256 amountOut) internal {
-        uint256 feeMultiplier =
-            buyPrice == 0 ? 0 : (crossPrice - buyPrice) * uint256(fee) * PRICE_SCALE / (buyPrice * FEE_SCALE);
+        uint256 feeMultiplier = (crossPrice - buyPrice) * uint256(fee) * PRICE_SCALE / (buyPrice * FEE_SCALE);
         feesAccrued = SafeCast.toUint128(feesAccrued + amountOut * feeMultiplier / PRICE_SCALE);
     }
 
@@ -544,7 +543,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         require(newCrossPrice >= PRICE_SCALE - MAX_CROSS_PRICE_DEVIATION, "ARM: cross price too low");
         require(newCrossPrice <= PRICE_SCALE, "ARM: cross price too high");
         require(sellPrice >= newCrossPrice, "ARM: sell price too low");
-        require(buyPrice < newCrossPrice, "ARM: buy price too high");
+        require(buyPrice >= MAX_CROSS_PRICE_DEVIATION && buyPrice < newCrossPrice, "ARM: invalid buy price");
 
         baseAssets.push(newBaseAsset);
         // Allow the adapter to pull base assets when requesting protocol redemptions.
@@ -583,7 +582,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         BaseAssetConfig storage config = baseAssetConfigs[priceBaseAsset];
         require(config.adapter != address(0), "ARM: unsupported asset");
         require(sellPrice >= config.crossPrice, "ARM: sell price too low");
-        require(buyPrice < config.crossPrice, "ARM: buy price too high");
+        require(buyPrice >= MAX_CROSS_PRICE_DEVIATION && buyPrice < config.crossPrice, "ARM: invalid buy price");
 
         config.buyPrice = SafeCast.toUint128(buyPrice);
         config.sellPrice = SafeCast.toUint128(sellPrice);
@@ -605,7 +604,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         require(newCrossPrice >= PRICE_SCALE - MAX_CROSS_PRICE_DEVIATION, "ARM: cross price too low");
         require(newCrossPrice <= PRICE_SCALE, "ARM: cross price too high");
         require(config.sellPrice >= newCrossPrice, "ARM: sell price too low");
-        require(config.buyPrice < newCrossPrice, "ARM: buy price too high");
+        require(config.buyPrice < newCrossPrice, "ARM: invalid buy price");
 
         if (newCrossPrice < config.crossPrice) {
             uint256 baseAssetExposure =
