@@ -52,10 +52,8 @@ contract LidoARM is Initializable, AbstractARM {
         _initARM(_operator, _name, _symbol, _fee, _feeCollector, _capManager);
     }
 
-    /// @notice Revert if legacy Lido withdrawal requests are still outstanding.
-    /// @dev Used by upgrade scripts with `upgradeToAndCall` so the upgrade cannot
-    /// complete until the old ARM-owned Lido withdrawal queue has been drained.
-    function checkNoLegacyLidoWithdrawalRequests() external view {
+    /// @dev Revert if legacy Lido withdrawal requests are still outstanding.
+    function _checkNoLegacyWithdrawQueue() internal view override {
         require(_deprecatedLidoWithdrawalQueueAmount == 0, "LidoARM: requests pending");
     }
 

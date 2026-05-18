@@ -5,10 +5,6 @@ import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Ini
 
 import {IAssetAdapter, IERC20, IStETHWithdrawal, ISTETH, IWETH} from "../Interfaces.sol";
 
-interface ILidoARMLegacyQueueCheck {
-    function checkNoLegacyLidoWithdrawalRequests() external view;
-}
-
 abstract contract AbstractLidoAssetAdapter is Initializable, IAssetAdapter {
     uint256 internal constant MAX_WITHDRAWAL_AMOUNT = 1000 ether;
 
@@ -33,7 +29,6 @@ abstract contract AbstractLidoAssetAdapter is Initializable, IAssetAdapter {
     }
 
     function initialize() external initializer {
-        ILidoARMLegacyQueueCheck(arm).checkNoLegacyLidoWithdrawalRequests();
         IERC20(address(steth)).approve(address(lidoWithdrawalQueue), type(uint256).max);
     }
 

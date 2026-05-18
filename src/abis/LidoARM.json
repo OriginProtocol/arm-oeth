@@ -296,13 +296,6 @@
   },
   {
     "type": "function",
-    "name": "checkNoLegacyLidoWithdrawalRequests",
-    "inputs": [],
-    "outputs": [],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
     "name": "claimBaseAssetRedeem",
     "inputs": [
       {

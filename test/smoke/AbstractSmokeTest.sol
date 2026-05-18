@@ -28,6 +28,7 @@ abstract contract AbstractSmokeTest is Test {
     uint256 internal constant LEGACY_PENDING_AMOUNT_SLOT = 100;
     uint256 internal constant FEE_SCALE = 10000;
     uint256 internal constant DELAY_REQUEST = 30 minutes;
+    bytes4 internal constant INVALID_INITIALIZATION = 0xf92ee8a9;
     /// @dev Ethena ARM proxy from mainnet deployment history. `Mainnet` does not expose this address.
     address internal constant ETHENA_ARM_PROXY = 0xCEDa2d856238aA0D12f6329de20B9115f07C366d;
 
@@ -231,8 +232,13 @@ abstract contract AbstractSmokeTest is Test {
         require(success, "owner lookup failed");
 
         vm.prank(abi.decode(result, (address)));
-        (success,) = arm.call(abi.encodeWithSignature("migrateLegacyWithdrawQueue()"));
-        require(success, "legacy withdraw migration failed");
+        (success, result) = arm.call(abi.encodeWithSignature("migrateLegacyWithdrawQueue()"));
+        if (!success && result.length == 4 && bytes4(result) == INVALID_INITIALIZATION) return;
+        if (!success) {
+            assembly {
+                revert(add(result, 0x20), mload(result))
+            }
+        }
     }
 
     function _addBaseAssetIfMissing(

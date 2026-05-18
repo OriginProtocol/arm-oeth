@@ -90,7 +90,7 @@ contract Fork_Concrete_LidoARM_Setters_Test_ is Fork_Shared_Test_ {
     //////////////////////////////////////////////////////
     function test_RevertWhen_SetPrices_Because_PriceRange_Operator() public asOperator {
         // buy price 1 basis points higher than 1.0
-        vm.expectRevert("ARM: buy price too high");
+        vm.expectRevert("ARM: invalid buy price");
         lidoARM.setPrices(address(steth), 1.0001 * 1e36, 1.002 * 1e36, type(uint128).max, type(uint128).max);
 
         // sell price 11 basis points lower than 1.0
@@ -104,7 +104,7 @@ contract Fork_Concrete_LidoARM_Setters_Test_ is Fork_Shared_Test_ {
 
     function test_RevertWhen_SetPrices_Because_PriceRange_Owner() public asLidoARMOwner {
         // buy price 1 basis points higher than 1.0
-        vm.expectRevert("ARM: buy price too high");
+        vm.expectRevert("ARM: invalid buy price");
         lidoARM.setPrices(address(steth), 1.0001 * 1e36, 1.002 * 1e36, type(uint128).max, type(uint128).max);
 
         // sell price 11 basis points lower than 1.0
@@ -123,7 +123,7 @@ contract Fork_Concrete_LidoARM_Setters_Test_ is Fork_Shared_Test_ {
     }
 
     function test_RevertWhen_SetPrices_Because_BuyPriceCannotCrossOneByMoreThanTenBps() public asOperator {
-        vm.expectRevert("ARM: buy price too high");
+        vm.expectRevert("ARM: invalid buy price");
         lidoARM.setPrices(address(steth), 1.0011 * 1e36, 1.002 * 1e36, type(uint128).max, type(uint128).max);
     }
 

@@ -367,12 +367,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
             // buyPrice is liquidity assets per base asset. Since convertedAmountIn is the
             // base input expressed in liquidity terms, multiply by buyPrice to get liquidity output.
             amountOut = convertedAmountIn * config.buyPrice / PRICE_SCALE;
-
-            _accrueSwapFee(config.buyPrice, config.crossPrice, amountOut);
-            _ensureLiquidityAvailableForSwap(amountOut);
         }
 
-        _consumeSwapLiquidityLimit(config, isBuySide, amountOut);
+        _validateAndConsumeSwapLiquidity(config, isBuySide, outToken, amountOut);
 
         // Transfer the input tokens from the caller to this ARM contract
         inToken.transferFrom(msg.sender, address(this), amountIn);
@@ -411,12 +408,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
             // buyPrice is liquidity assets per base asset, but amountIn is base assets.
             // Divide the exact liquidity output by buyPrice to solve for the required base input.
             amountIn = convertedAmountOut * PRICE_SCALE / config.buyPrice + 3;
-
-            _accrueSwapFee(config.buyPrice, config.crossPrice, amountOut);
-            _ensureLiquidityAvailableForSwap(amountOut);
         }
 
-        _consumeSwapLiquidityLimit(config, isBuySide, amountOut);
+        _validateAndConsumeSwapLiquidity(config, isBuySide, outToken, amountOut);
 
         // Transfer the input tokens from the caller to this ARM contract
         inToken.transferFrom(msg.sender, address(this), amountIn);
@@ -461,18 +455,33 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         }
     }
 
-    /// @dev Consume the per-base liquidity limit for the current swap direction.
-    /// Buy-side limits are denominated in liquidity assets. Sell-side limits are denominated in base assets.
-    /// @param config Base asset config whose liquidity limit is consumed.
+    /// @dev Validate swap reserves and consume the per-base liquidity limit.
     /// @param isBuySide True when the ARM buys base asset and pays out liquidity asset.
-    /// @param amountOut Amount of output token sent by the ARM.
-    function _consumeSwapLiquidityLimit(BaseAssetConfig storage config, bool isBuySide, uint256 amountOut) internal {
-        uint256 remaining = isBuySide ? config.buyLiquidityRemaining : config.sellLiquidityRemaining;
-        require(amountOut <= remaining, "ARM: Insufficient liquidity");
-
-        remaining -= amountOut;
-        if (isBuySide) config.buyLiquidityRemaining = SafeCast.toUint128(remaining);
-        else config.sellLiquidityRemaining = SafeCast.toUint128(remaining);
+    /// @param outToken Swap output token address.
+    /// @param amountOut Swap output token amount.
+    function _validateAndConsumeSwapLiquidity(
+        BaseAssetConfig storage config,
+        bool isBuySide,
+        IERC20 outToken,
+        uint256 amountOut
+    ) private {
+        uint256 remaining;
+        if (isBuySide) {
+            _accrueSwapFee(config.buyPrice, config.crossPrice, amountOut);
+            remaining = config.buyLiquidityRemaining;
+            require(amountOut <= remaining, "ARM: Insufficient liquidity");
+            unchecked {
+                config.buyLiquidityRemaining = uint128(remaining - amountOut);
+            }
+            _ensureLiquidityAvailableForSwap(amountOut);
+        } else {
+            require(amountOut <= outToken.balanceOf(address(this)), "ARM: Insufficient liquidity");
+            remaining = config.sellLiquidityRemaining;
+            require(amountOut <= remaining, "ARM: Insufficient liquidity");
+            unchecked {
+                config.sellLiquidityRemaining = uint128(remaining - amountOut);
+            }
+        }
     }
 
     /// @dev Convert base shares to liquidity assets, bypassing the adapter for pegged assets.
@@ -498,8 +507,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @param crossPrice Price used to value the base asset in totalAssets().
     /// @param amountOut Liquidity asset amount paid out by the ARM.
     function _accrueSwapFee(uint256 buyPrice, uint256 crossPrice, uint256 amountOut) internal {
-        uint256 feeMultiplier =
-            buyPrice == 0 ? 0 : (crossPrice - buyPrice) * uint256(fee) * PRICE_SCALE / (buyPrice * FEE_SCALE);
+        uint256 feeMultiplier = (crossPrice - buyPrice) * uint256(fee) * PRICE_SCALE / (buyPrice * FEE_SCALE);
         feesAccrued = SafeCast.toUint128(feesAccrued + amountOut * feeMultiplier / PRICE_SCALE);
     }
 
@@ -538,8 +546,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         require(IAssetAdapter(adapter).asset() == liquidityAsset, "ARM: invalid adapter asset");
         require(newCrossPrice >= PRICE_SCALE - MAX_CROSS_PRICE_DEVIATION, "ARM: cross price too low");
         require(newCrossPrice <= PRICE_SCALE, "ARM: cross price too high");
-        require(sellPrice >= newCrossPrice, "ARM: sell price too low");
-        require(buyPrice < newCrossPrice, "ARM: buy price too high");
+        _validatePrices(buyPrice, sellPrice, newCrossPrice);
 
         baseAssets.push(newBaseAsset);
         // Allow the adapter to pull base assets when requesting protocol redemptions.
@@ -577,8 +584,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     ) external onlyOperatorOrOwner {
         BaseAssetConfig storage config = baseAssetConfigs[priceBaseAsset];
         require(config.adapter != address(0), "ARM: unsupported asset");
-        require(sellPrice >= config.crossPrice, "ARM: sell price too low");
-        require(buyPrice < config.crossPrice, "ARM: buy price too high");
+        _validatePrices(buyPrice, sellPrice, config.crossPrice);
 
         config.buyPrice = SafeCast.toUint128(buyPrice);
         config.sellPrice = SafeCast.toUint128(sellPrice);
@@ -586,6 +592,11 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         config.sellLiquidityRemaining = SafeCast.toUint128(sellAmount);
 
         emit TraderateChanged(priceBaseAsset, buyPrice, sellPrice, buyAmount, sellAmount);
+    }
+
+    function _validatePrices(uint256 buyPrice, uint256 sellPrice, uint256 crossPrice) internal pure {
+        require(sellPrice >= crossPrice, "ARM: sell price too low");
+        require(buyPrice >= MAX_CROSS_PRICE_DEVIATION && buyPrice < crossPrice, "ARM: invalid buy price");
     }
 
     /// @notice Set the valuation price that buy and sell prices may not cross for a base asset.
@@ -600,7 +611,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         require(newCrossPrice >= PRICE_SCALE - MAX_CROSS_PRICE_DEVIATION, "ARM: cross price too low");
         require(newCrossPrice <= PRICE_SCALE, "ARM: cross price too high");
         require(config.sellPrice >= newCrossPrice, "ARM: sell price too low");
-        require(config.buyPrice < newCrossPrice, "ARM: buy price too high");
+        require(config.buyPrice < newCrossPrice, "ARM: invalid buy price");
 
         if (newCrossPrice < config.crossPrice) {
             uint256 baseAssetExposure =
@@ -1108,7 +1119,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @dev The reused slot previously packed `withdrawsQueued` in the low 128 bits and
     /// `withdrawsClaimed` in the high 128 bits. It may be nonzero even when the old queue
     /// is fully drained, so upgrade scripts should call this with `upgradeToAndCall`.
-    function migrateLegacyWithdrawQueue() external onlyOwner {
+    function migrateLegacyWithdrawQueue() external onlyOwner reinitializer(2) {
+        _checkNoLegacyWithdrawQueue();
+
         require(withdrawsQueuedShares == 0 && withdrawsClaimedShares == 0, "ARM: already migrated");
 
         uint256 packedLegacyQueue = reservedWithdrawLiquidity;
@@ -1118,4 +1131,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
         reservedWithdrawLiquidity = 0;
     }
+
+    /// @dev Hook for protocol-specific legacy withdrawal queue checks before shared queue migration.
+    function _checkNoLegacyWithdrawQueue() internal view virtual {}
 }
