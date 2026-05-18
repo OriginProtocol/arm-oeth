@@ -542,8 +542,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         require(IAssetAdapter(adapter).asset() == liquidityAsset, "ARM: invalid adapter asset");
         require(newCrossPrice >= PRICE_SCALE - MAX_CROSS_PRICE_DEVIATION, "ARM: cross price too low");
         require(newCrossPrice <= PRICE_SCALE, "ARM: cross price too high");
-        require(sellPrice >= newCrossPrice, "ARM: sell price too low");
-        require(buyPrice >= MAX_CROSS_PRICE_DEVIATION && buyPrice < newCrossPrice, "ARM: invalid buy price");
+        _validatePrices(buyPrice, sellPrice, newCrossPrice);
 
         baseAssets.push(newBaseAsset);
         // Allow the adapter to pull base assets when requesting protocol redemptions.
@@ -581,8 +580,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     ) external onlyOperatorOrOwner {
         BaseAssetConfig storage config = baseAssetConfigs[priceBaseAsset];
         require(config.adapter != address(0), "ARM: unsupported asset");
-        require(sellPrice >= config.crossPrice, "ARM: sell price too low");
-        require(buyPrice >= MAX_CROSS_PRICE_DEVIATION && buyPrice < config.crossPrice, "ARM: invalid buy price");
+        _validatePrices(buyPrice, sellPrice, config.crossPrice);
 
         config.buyPrice = SafeCast.toUint128(buyPrice);
         config.sellPrice = SafeCast.toUint128(sellPrice);
@@ -590,6 +588,11 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         config.sellLiquidityRemaining = SafeCast.toUint128(sellAmount);
 
         emit TraderateChanged(priceBaseAsset, buyPrice, sellPrice, buyAmount, sellAmount);
+    }
+
+    function _validatePrices(uint256 buyPrice, uint256 sellPrice, uint256 crossPrice) internal pure {
+        require(sellPrice >= crossPrice, "ARM: sell price too low");
+        require(buyPrice >= MAX_CROSS_PRICE_DEVIATION && buyPrice < crossPrice, "ARM: invalid buy price");
     }
 
     /// @notice Set the valuation price that buy and sell prices may not cross for a base asset.
