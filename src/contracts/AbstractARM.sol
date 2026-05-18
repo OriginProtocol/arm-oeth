@@ -17,28 +17,6 @@ import {IAssetAdapter, IERC20, ICapManager} from "./Interfaces.sol";
  * @author Origin Protocol Inc
  */
 abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
-    error UnsupportedAsset();
-    error InvalidAsset();
-    error InvalidAdapter();
-    error AssetAlreadySupported();
-    error InvalidAssetDecimals();
-    error InvalidAdapterAsset();
-    error InvalidBuyPrice();
-    error SellPriceTooLow();
-    error CrossPriceTooLow();
-    error CrossPriceTooHigh();
-    error TooManyBaseAssets();
-    error FeeTooHigh();
-    error InvalidFeeCollector();
-    error InvalidMarket();
-    error InvalidMarketAsset();
-    error MarketAlreadySupported();
-    error MarketNotSupported();
-    error MarketActive();
-    error InvalidARMBuffer();
-    error AlreadyMigrated();
-    error LegacyWithdrawalsPending();
-
     ////////////////////////////////////////////////////
     ///                 Constants
     ////////////////////////////////////////////////////
@@ -156,6 +134,28 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     uint128 public withdrawsClaimedShares;
 
     uint256[34] private _gap;
+
+    error UnsupportedAsset();
+    error InvalidAsset();
+    error InvalidAdapter();
+    error AssetAlreadySupported();
+    error InvalidAssetDecimals();
+    error InvalidAdapterAsset();
+    error InvalidBuyPrice();
+    error SellPriceTooLow();
+    error CrossPriceTooLow();
+    error CrossPriceTooHigh();
+    error TooManyBaseAssets();
+    error FeeTooHigh();
+    error InvalidFeeCollector();
+    error InvalidMarket();
+    error InvalidMarketAsset();
+    error MarketAlreadySupported();
+    error MarketNotSupported();
+    error MarketActive();
+    error InvalidARMBuffer();
+    error AlreadyMigrated();
+    error LegacyWithdrawalsPending();
 
     ////////////////////////////////////////////////////
     ///                 Events
