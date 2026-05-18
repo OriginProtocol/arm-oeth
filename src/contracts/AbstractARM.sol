@@ -1108,7 +1108,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @dev The reused slot previously packed `withdrawsQueued` in the low 128 bits and
     /// `withdrawsClaimed` in the high 128 bits. It may be nonzero even when the old queue
     /// is fully drained, so upgrade scripts should call this with `upgradeToAndCall`.
-    function migrateLegacyWithdrawQueue() external onlyOwner {
+    function migrateLegacyWithdrawQueue() external onlyOwner reinitializer(2) {
+        _checkNoLegacyWithdrawQueue();
+
         require(withdrawsQueuedShares == 0 && withdrawsClaimedShares == 0, "ARM: already migrated");
 
         uint256 packedLegacyQueue = reservedWithdrawLiquidity;
@@ -1118,4 +1120,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
         reservedWithdrawLiquidity = 0;
     }
+
+    /// @dev Hook for protocol-specific legacy withdrawal queue checks before shared queue migration.
+    function _checkNoLegacyWithdrawQueue() internal view virtual {}
 }

@@ -292,13 +292,6 @@
   },
   {
     "type": "function",
-    "name": "checkNoLegacyEthenaCooldown",
-    "inputs": [],
-    "outputs": [],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
     "name": "claimBaseAssetRedeem",
     "inputs": [
       {

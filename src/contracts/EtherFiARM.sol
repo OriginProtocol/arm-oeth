@@ -56,6 +56,11 @@ contract EtherFiARM is Initializable, AbstractARM {
     /// @dev Used by upgrade scripts with `upgradeToAndCall` so the upgrade cannot
     /// complete until the old ARM-owned EtherFi withdrawal queue has been claimed.
     function checkNoLegacyEtherFiWithdrawals() external view {
+        _checkNoLegacyWithdrawQueue();
+    }
+
+    /// @dev Revert if legacy EtherFi withdrawal requests are still outstanding.
+    function _checkNoLegacyWithdrawQueue() internal view override {
         require(_deprecatedEtherfiWithdrawalQueueAmount == 0, "EtherFiARM: withdrawals pending");
     }
 
