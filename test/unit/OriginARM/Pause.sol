@@ -134,7 +134,7 @@ contract Unit_Concrete_OriginARM_Pause_Test_ is Unit_Shared_Test {
         vm.stopPrank();
     }
 
-    function test_ClaimRedeem_WhenPaused() public deposit(alice, DEFAULT_AMOUNT) {
+    function test_RevertWhen_ClaimRedeem_Because_Paused() public deposit(alice, DEFAULT_AMOUNT) {
         vm.prank(alice);
         originARM.requestRedeem(DEFAULT_AMOUNT);
 
@@ -142,8 +142,7 @@ contract Unit_Concrete_OriginARM_Pause_Test_ is Unit_Shared_Test {
         vm.warp(block.timestamp + CLAIM_DELAY);
 
         vm.prank(alice);
-        vm.expectEmit(address(originARM));
-        emit AbstractARM.RedeemClaimed(alice, 0, DEFAULT_AMOUNT);
+        vm.expectRevert(AbstractARM.ContractPaused.selector);
         originARM.claimRedeem(0);
     }
 

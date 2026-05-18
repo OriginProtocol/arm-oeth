@@ -2,6 +2,7 @@
 pragma solidity ^0.8.23;
 
 import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
@@ -16,7 +17,7 @@ import {IAssetAdapter, IERC20, ICapManager} from "./Interfaces.sol";
  * legacy single-base storage so Lido, EtherFi, Ethena, and Origin ARMs can share this implementation.
  * @author Origin Protocol Inc
  */
-abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
+abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGuardUpgradeable {
     ////////////////////////////////////////////////////
     ///                 Constants
     ////////////////////////////////////////////////////
@@ -257,6 +258,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     ) internal {
         _initOwnableOperable(_operator);
         __ERC20_init(_name, _symbol);
+        __ReentrancyGuard_init();
 
         // Transfer a small bit of liquidity from the initializer to this contract.
         IERC20(liquidityAsset).transferFrom(msg.sender, address(this), MIN_TOTAL_SUPPLY);
@@ -288,7 +290,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         uint256 amountIn,
         uint256 amountOutMin,
         address to
-    ) external virtual whenNotPaused returns (uint256[] memory amounts) {
+    ) external virtual whenNotPaused nonReentrant returns (uint256[] memory amounts) {
         uint256 amountOut = _swapExactTokensForTokens(inToken, outToken, amountIn, to);
         require(amountOut >= amountOutMin, "ARM: Insufficient output amount");
 
@@ -310,7 +312,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         address[] calldata path,
         address to,
         uint256 deadline
-    ) external virtual whenNotPaused returns (uint256[] memory amounts) {
+    ) external virtual whenNotPaused nonReentrant returns (uint256[] memory amounts) {
         require(path.length == 2, "ARM: Invalid path length");
         _inDeadline(deadline);
 
@@ -335,7 +337,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         uint256 amountOut,
         uint256 amountInMax,
         address to
-    ) external virtual whenNotPaused returns (uint256[] memory amounts) {
+    ) external virtual whenNotPaused nonReentrant returns (uint256[] memory amounts) {
         uint256 amountIn = _swapTokensForExactTokens(inToken, outToken, amountOut, to);
         require(amountIn <= amountInMax, "ARM: Excess input amount");
 
@@ -357,7 +359,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         address[] calldata path,
         address to,
         uint256 deadline
-    ) external virtual whenNotPaused returns (uint256[] memory amounts) {
+    ) external virtual whenNotPaused nonReentrant returns (uint256[] memory amounts) {
         require(path.length == 2, "ARM: Invalid path length");
         _inDeadline(deadline);
 
@@ -721,7 +723,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @notice Deposit liquidity assets and mint LP shares to the caller.
     /// @param assets Liquidity assets to deposit.
     /// @return shares LP shares minted.
-    function deposit(uint256 assets) external whenNotPaused returns (uint256 shares) {
+    function deposit(uint256 assets) external whenNotPaused nonReentrant returns (uint256 shares) {
         shares = _deposit(assets, msg.sender);
     }
 
@@ -729,7 +731,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @param assets Liquidity assets to deposit.
     /// @param receiver Account that receives minted LP shares.
     /// @return shares LP shares minted.
-    function deposit(uint256 assets, address receiver) external whenNotPaused returns (uint256 shares) {
+    function deposit(uint256 assets, address receiver) external whenNotPaused nonReentrant returns (uint256 shares) {
         shares = _deposit(assets, receiver);
     }
 
@@ -765,7 +767,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @param shares LP shares to burn.
     /// @return requestId The LP withdrawal request id.
     /// @return assets The maximum liquidity assets claimable by the redeemer.
-    function requestRedeem(uint256 shares) external whenNotPaused returns (uint256 requestId, uint256 assets) {
+    function requestRedeem(uint256 shares) external whenNotPaused nonReentrant returns (uint256 requestId, uint256 assets) {
         assets = convertToAssets(shares);
         requestId = nextWithdrawalIndex;
         // Store the next withdrawal request id.
@@ -796,7 +798,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @dev If assets per share decreased after request time, the claim uses the lower claim-time value.
     /// @param requestId LP withdrawal request id to claim.
     /// @return assets Liquidity assets transferred to the requester.
-    function claimRedeem(uint256 requestId) external returns (uint256 assets) {
+    function claimRedeem(uint256 requestId) external whenNotPaused nonReentrant returns (uint256 assets) {
         WithdrawalRequest memory request = withdrawalRequests[requestId];
 
         require(request.claimTimestamp <= block.timestamp, "Claim delay not met");
@@ -994,7 +996,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
 
     /// @notice Transfer accrued swap fees to the fee collector.
     /// @return fees Liquidity assets transferred to the fee collector.
-    function collectFees() public returns (uint256 fees) {
+    function collectFees() public nonReentrant returns (uint256 fees) {
         fees = feesAccrued;
         if (fees == 0) return 0;
 
