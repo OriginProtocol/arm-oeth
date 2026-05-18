@@ -34,6 +34,39 @@ contract Fork_Concrete_OriginARM_ClaimRedeem_Test_ is Fork_Shared_Test {
         assertEq(ws.balanceOf(address(alice)), DEFAULT_AMOUNT, "ws balance after");
     }
 
+    function test_ClaimRedeem_WhenOperatorClaimsForWithdrawer()
+        public
+        setFee(0)
+        deposit(alice, DEFAULT_AMOUNT)
+        requestRedeemAll(alice)
+        timejump(CLAIM_DELAY)
+    {
+        address actualOperator = originARM.operator();
+
+        // Assertions before claim
+        assertEq(originARM.totalAssets(), DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, "totalAssets before");
+        assertEq(originARM.reservedWithdrawLiquidity(), DEFAULT_AMOUNT, "reserved liquidity before");
+        assertEq(originARM.balanceOf(address(originARM)), DEFAULT_AMOUNT, "escrowed shares before");
+        assertEq(ws.balanceOf(address(alice)), 0, "alice ws balance before");
+        uint256 operatorBalanceBefore = ws.balanceOf(actualOperator);
+
+        // Expected event
+        vm.expectEmit(address(originARM));
+        emit AbstractARM.RedeemClaimed(address(alice), 0, DEFAULT_AMOUNT);
+
+        // Main call
+        vm.prank(actualOperator);
+        originARM.claimRedeem(0);
+
+        // Assertions after claim
+        assertEq(originARM.totalAssets(), MIN_TOTAL_SUPPLY, "totalAssets after");
+        assertEq(originARM.reservedWithdrawLiquidity(), 0, "reserved liquidity after");
+        assertEq(originARM.withdrawsClaimedShares(), DEFAULT_AMOUNT, "claimed shares after");
+        assertEq(originARM.balanceOf(address(originARM)), 0, "escrowed shares after");
+        assertEq(ws.balanceOf(address(alice)), DEFAULT_AMOUNT, "alice ws balance after");
+        assertEq(ws.balanceOf(actualOperator), operatorBalanceBefore, "operator ws balance after");
+    }
+
     function test_ClaimRedeem_WhenNotEnoughLiquidityInARM_ButEnoughInMarket()
         public
         setFee(0)

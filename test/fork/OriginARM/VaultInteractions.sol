@@ -5,7 +5,7 @@ import {Fork_Shared_Test} from "test/fork/OriginARM/shared/Shared.sol";
 
 contract Fork_Concrete_OriginARM_VaultInteractions_Test_ is Fork_Shared_Test {
     function test_RevertWhen_RequestingOriginWithdrawal_IfNotOperator() public asNotOperatorNorGovernor {
-        vm.expectRevert("ARM: Only operator or owner can call this function.");
+        vm.expectRevert(bytes4(keccak256("OnlyOperatorOrOwner()")));
         originARM.requestBaseAssetRedeem(address(os), DEFAULT_AMOUNT);
     }
 

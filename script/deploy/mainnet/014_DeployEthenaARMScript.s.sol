@@ -56,7 +56,6 @@ contract $014_DeployEthenaARMScript is AbstractDeployScript("014_DeployEthenaARM
         uint256 claimDelay = 10 minutes;
         EthenaARM armImpl = new EthenaARM(
             Mainnet.USDE,
-            Mainnet.SUSDE,
             claimDelay,
             1e18, // minSharesToRedeem
             100e18 // allocateThreshold

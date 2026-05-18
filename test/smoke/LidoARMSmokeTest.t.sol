@@ -48,7 +48,7 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
         assertEq(lidoARM.owner(), Mainnet.TIMELOCK, "Owner");
         assertEq(lidoARM.operator(), Mainnet.ARM_RELAYER, "Operator");
         assertEq(lidoARM.feeCollector(), Mainnet.BUYBACK_OPERATOR, "Fee collector");
-        assertEq((100 * uint256(lidoARM.fee())) / lidoARM.FEE_SCALE(), 20, "Performance fee as a percentage");
+        assertEq((100 * uint256(lidoARM.fee())) / FEE_SCALE, 20, "Performance fee as a percentage");
         // LidoLiquidityManager
         assertEq(Mainnet.LIDO_WITHDRAWAL, Mainnet.LIDO_WITHDRAWAL, "Lido withdrawal queue");
         assertEq(lidoARM.liquidityAsset(), Mainnet.WETH, "WETH");
@@ -203,7 +203,7 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
     }
 
     function test_nonOwnerCannotSetOperator() external {
-        vm.expectRevert("ARM: Only owner can call this function.");
+        vm.expectRevert(bytes4(keccak256("OnlyOwner()")));
         vm.prank(operator);
         lidoARM.setOperator(operator);
     }

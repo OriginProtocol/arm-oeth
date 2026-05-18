@@ -19,29 +19,29 @@ contract Fork_Concrete_LidoARM_SetCrossPrice_Test_ is Fork_Shared_Test_ {
     /// --- REVERTING TESTS
     //////////////////////////////////////////////////////
     function test_RevertWhen_SetCrossPrice_Because_NotOwner() public asRandomAddress {
-        vm.expectRevert("ARM: Only owner can call this function.");
+        vm.expectRevert(bytes4(keccak256("OnlyOwner()")));
         lidoARM.setCrossPrice(address(steth), 0.9998e36);
     }
 
     function test_RevertWhen_SetCrossPrice_Because_Operator() public asOperator {
-        vm.expectRevert("ARM: Only owner can call this function.");
+        vm.expectRevert(bytes4(keccak256("OnlyOwner()")));
         lidoARM.setCrossPrice(address(steth), 0.9998e36);
     }
 
     function test_RevertWhen_SetCrossPrice_Because_CrossPriceTooLow() public {
-        vm.expectRevert("ARM: cross price too low");
+        vm.expectRevert(bytes4(keccak256("CrossPriceTooLow()")));
         lidoARM.setCrossPrice(address(steth), 0);
     }
 
     function test_RevertWhen_SetCrossPrice_Because_CrossPriceTooHigh() public {
         uint256 priceScale = 10 ** 36;
-        vm.expectRevert("ARM: cross price too high");
+        vm.expectRevert(bytes4(keccak256("CrossPriceTooHigh()")));
         lidoARM.setCrossPrice(address(steth), priceScale + 1);
     }
 
     function test_RevertWhen_SetCrossPrice_Because_BuyPriceTooHigh() public {
         lidoARM.setPrices(address(steth), 1e36 - 20e32 + 1, 1000 * 1e33 + 1, type(uint128).max, type(uint128).max);
-        vm.expectRevert("ARM: buy price too high");
+        vm.expectRevert(bytes4(keccak256("InvalidBuyPrice()")));
         lidoARM.setCrossPrice(address(steth), 1e36 - 20e32);
     }
 
@@ -56,13 +56,13 @@ contract Fork_Concrete_LidoARM_SetCrossPrice_Test_ is Fork_Shared_Test_ {
         lidoARM.setPrices(address(steth), 1e36 - 20e32, 1e36 - 20e32 + 1, type(uint128).max, type(uint128).max);
 
         // Then we try to set cross price above the sell price
-        vm.expectRevert("ARM: sell price too low");
+        vm.expectRevert(bytes4(keccak256("SellPriceTooLow()")));
         lidoARM.setCrossPrice(address(steth), 1e36 - 20e32 + 2);
     }
 
     function test_RevertWhen_SetCrossPrice_Because_TooManyBaseAssets() public {
         deal(address(steth), address(lidoARM), MIN_TOTAL_SUPPLY + STETH_ERROR_ROUNDING);
-        vm.expectRevert("ARM: too many base assets");
+        vm.expectRevert(bytes4(keccak256("TooManyBaseAssets()")));
         lidoARM.setCrossPrice(address(steth), 1e36 - 1);
     }
 

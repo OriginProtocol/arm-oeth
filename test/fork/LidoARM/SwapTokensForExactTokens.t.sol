@@ -192,7 +192,7 @@ contract Fork_Concrete_LidoARM_SwapTokensForExactTokens_Test is Fork_Shared_Test
         uint256 balanceSTETHBeforeARM = steth.balanceOf(address(lidoARM));
 
         // Get maximum amount of WETH to send to the ARM
-        uint256 traderates0 = (lidoARM.PRICE_SCALE() * lidoARM.PRICE_SCALE() / _lidoSellPrice());
+        uint256 traderates0 = (PRICE_SCALE * PRICE_SCALE / _lidoSellPrice());
         uint256 amountIn = (amountOut * 1e36 / traderates0) + 3;
 
         // Expected events: Already checked in fuzz tests

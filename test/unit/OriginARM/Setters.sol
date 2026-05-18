@@ -9,107 +9,121 @@ contract Unit_Concrete_OriginARM_Setters_Test_ is Unit_Shared_Test {
     /// --- REVERT
     ////////////////////////////////////////////////////
     function test_RevertWhen_SetFeeCollector_Because_NotGovernor() public asNotGovernor {
-        vm.expectRevert("ARM: Only owner can call this function.");
+        vm.expectRevert(bytes4(keccak256("OnlyOwner()")));
         originARM.setFeeCollector(address(0));
     }
 
     function test_RevertWhen_SetFeeCollector_Because_FeeCollectorIsZero() public asGovernor {
-        vm.expectRevert("ARM: invalid fee collector");
+        vm.expectRevert(bytes4(keccak256("InvalidFeeCollector()")));
         originARM.setFeeCollector(address(0));
     }
 
     function test_RevertWhen_SetFee_Because_NotGovernor() public asNotGovernor {
-        vm.expectRevert("ARM: Only owner can call this function.");
+        vm.expectRevert(bytes4(keccak256("OnlyOwner()")));
         originARM.setFee(0);
     }
 
     function test_RevertWhen_SetFee_Because_FeeIsTooHigh() public asGovernor {
-        uint256 FEE_SCALE = originARM.FEE_SCALE();
-        vm.expectRevert("ARM: fee too high");
+        vm.expectRevert(bytes4(keccak256("FeeTooHigh()")));
         originARM.setFee(FEE_SCALE / 2 + 1);
     }
 
     function test_RevertWhen_SetCapManager_Because_NotGovernor() public asNotGovernor {
-        vm.expectRevert("ARM: Only owner can call this function.");
+        vm.expectRevert(bytes4(keccak256("OnlyOwner()")));
         originARM.setCapManager(address(0));
     }
 
     function test_RevertWhen_SetARMBuffer_Because_NotGovernorNorOperator() public asRandomCaller {
-        vm.expectRevert("ARM: Only operator or owner can call this function.");
+        vm.expectRevert(bytes4(keccak256("OnlyOperatorOrOwner()")));
         originARM.setARMBuffer(0);
     }
 
     function test_RevertWhen_SetARMBuffer_Because_Above1e18() public asGovernor {
-        vm.expectRevert("ARM: invalid arm buffer");
+        vm.expectRevert(bytes4(keccak256("InvalidARMBuffer()")));
         originARM.setARMBuffer(1e18 + 1);
     }
 
     function test_RevertWhen_SetPrices_Because_NotOperator() public asNotOperatorNorGovernor {
-        vm.expectRevert("ARM: Only operator or owner can call this function.");
+        vm.expectRevert(bytes4(keccak256("OnlyOperatorOrOwner()")));
         originARM.setPrices(address(oeth), 0, 0, 0, 0);
     }
 
     function test_RevertWhen_SetPrices_Because_SellPriceTooLow() public asOperator {
         uint256 crossPrice = _crossPrice();
-        vm.expectRevert("ARM: sell price too low");
+        vm.expectRevert(bytes4(keccak256("SellPriceTooLow()")));
         originARM.setPrices(address(oeth), 0, crossPrice - 1, 0, 0);
     }
 
     function test_RevertWhen_SetPrices_Because_BuyPriceTooHigh() public asOperator {
         uint256 crossPrice = _crossPrice();
-        vm.expectRevert("ARM: buy price too high");
+        vm.expectRevert(bytes4(keccak256("InvalidBuyPrice()")));
         originARM.setPrices(address(oeth), crossPrice, crossPrice, 0, 0);
     }
 
+    function test_RevertWhen_SetPrices_Because_BuyPriceTooLow() public asOperator {
+        uint256 crossPrice = _crossPrice();
+        vm.expectRevert(bytes4(keccak256("InvalidBuyPrice()")));
+        originARM.setPrices(address(oeth), MAX_CROSS_PRICE_DEVIATION - 1, crossPrice, 0, 0);
+    }
+
+    function test_SetPrices_WithMinimumBuyPrice() public asOperator {
+        uint256 crossPrice = _crossPrice();
+        vm.expectEmit(address(originARM));
+        emit AbstractARM.TraderateChanged(address(oeth), MAX_CROSS_PRICE_DEVIATION, crossPrice, 0, 0);
+
+        originARM.setPrices(address(oeth), MAX_CROSS_PRICE_DEVIATION, crossPrice, 0, 0);
+        assertEq(_buyPrice(), MAX_CROSS_PRICE_DEVIATION, "Wrong buy price");
+    }
+
     function test_RevertWhen_SetCrossPrice_Because_NotGovernor() public asNotGovernor {
-        vm.expectRevert("ARM: Only owner can call this function.");
+        vm.expectRevert(bytes4(keccak256("OnlyOwner()")));
         originARM.setCrossPrice(address(oeth), 0);
     }
 
     function test_RevertWhen_SetCrossPrice_Because_CrossPriceTooLow() public asGovernor {
         // Far bellow the limit
-        vm.expectRevert("ARM: cross price too low");
+        vm.expectRevert(bytes4(keccak256("CrossPriceTooLow()")));
         originARM.setCrossPrice(address(oeth), 0);
 
         // Just below the limit
-        uint256 priceScale = originARM.PRICE_SCALE();
-        uint256 maxCrossPriceDeviation = originARM.MAX_CROSS_PRICE_DEVIATION();
-        vm.expectRevert("ARM: cross price too low");
+        uint256 priceScale = PRICE_SCALE;
+        uint256 maxCrossPriceDeviation = MAX_CROSS_PRICE_DEVIATION;
+        vm.expectRevert(bytes4(keccak256("CrossPriceTooLow()")));
         originARM.setCrossPrice(address(oeth), priceScale - maxCrossPriceDeviation - 1);
     }
 
     function test_RevertWhen_SetCrossPrice_Because_CrossPriceTooHigh() public asGovernor {
         // Far above the limit
-        vm.expectRevert("ARM: cross price too high");
+        vm.expectRevert(bytes4(keccak256("CrossPriceTooHigh()")));
         originARM.setCrossPrice(address(oeth), type(uint256).max);
 
         // Just above the limit
-        uint256 priceScale = originARM.PRICE_SCALE();
-        vm.expectRevert("ARM: cross price too high");
+        uint256 priceScale = PRICE_SCALE;
+        vm.expectRevert(bytes4(keccak256("CrossPriceTooHigh()")));
         originARM.setCrossPrice(address(oeth), priceScale + 1);
     }
 
     function test_RevertWhen_SetCrossPrice_Because_SellPriceTooLow() public asGovernor {
         // Fecth useful data
-        uint256 priceScale = originARM.PRICE_SCALE();
-        uint256 maxCrossPriceDeviation = originARM.MAX_CROSS_PRICE_DEVIATION();
+        uint256 priceScale = PRICE_SCALE;
+        uint256 maxCrossPriceDeviation = MAX_CROSS_PRICE_DEVIATION;
 
         // Reduce the cross price to be able to reduce the sell price after
         originARM.setCrossPrice(address(oeth), priceScale - maxCrossPriceDeviation);
 
         // Set sellT1 to the minimum value (crossPrice - 1)
-        originARM.setPrices(address(oeth), 0, _crossPrice(), type(uint128).max, type(uint128).max);
+        originARM.setPrices(address(oeth), PRICE_SCALE / 2, _crossPrice(), type(uint128).max, type(uint128).max);
 
         // Now we have enough space between PRICE_SCALE and sellT1 to set the cross price to a wrong value
         uint256 sellT1 = _sellPrice();
-        vm.expectRevert("ARM: sell price too low");
+        vm.expectRevert(bytes4(keccak256("SellPriceTooLow()")));
         originARM.setCrossPrice(address(oeth), sellT1 + 1);
     }
 
     function test_RevertWhen_SetCrossPrice_Because_BuyPriceTooHigh() public asGovernor {
         // Fecth useful data
-        uint256 priceScale = originARM.PRICE_SCALE();
-        uint256 maxCrossPriceDeviation = originARM.MAX_CROSS_PRICE_DEVIATION();
+        uint256 priceScale = PRICE_SCALE;
+        uint256 maxCrossPriceDeviation = MAX_CROSS_PRICE_DEVIATION;
 
         // Reduce the cross price to be able to reduce the buy price after
         originARM.setCrossPrice(address(oeth), priceScale - (maxCrossPriceDeviation) / 2);
@@ -119,7 +133,7 @@ contract Unit_Concrete_OriginARM_Setters_Test_ is Unit_Shared_Test {
         originARM.setPrices(address(oeth), crossPrice - 1, priceScale, type(uint128).max, type(uint128).max);
 
         // Now we have enough space between PRICE_SCALE and buyT1 to set the cross price to a wrong value
-        vm.expectRevert("ARM: buy price too high");
+        vm.expectRevert(bytes4(keccak256("InvalidBuyPrice()")));
         originARM.setCrossPrice(address(oeth), priceScale - maxCrossPriceDeviation);
     }
 
@@ -128,7 +142,19 @@ contract Unit_Concrete_OriginARM_Setters_Test_ is Unit_Shared_Test {
 
         // Simlate OETH in the ARM.
         deal(address(oeth), address(originARM), 1e18);
-        vm.expectRevert("ARM: too many base assets");
+        vm.expectRevert(bytes4(keccak256("TooManyBaseAssets()")));
+        originARM.setCrossPrice(address(oeth), crossPrice - 1);
+    }
+
+    function test_RevertWhen_SetCrossPrice_Because_TooManyQueuedBaseAssets() public asGovernor {
+        uint256 crossPrice = _crossPrice();
+
+        // Queue OETH for protocol withdrawal so it is no longer held directly by the ARM.
+        deal(address(oeth), address(originARM), 1e18);
+        originARM.requestBaseAssetRedeem(address(oeth), 1e18);
+        assertEq(oeth.balanceOf(address(originARM)), 0, "ARM OETH balance");
+
+        vm.expectRevert(bytes4(keccak256("TooManyBaseAssets()")));
         originARM.setCrossPrice(address(oeth), crossPrice - 1);
     }
 
@@ -240,7 +266,7 @@ contract Unit_Concrete_OriginARM_Setters_Test_ is Unit_Shared_Test {
 
         // Expected event
         vm.expectEmit(address(originARM));
-        emit AbstractARM.TraderateChanged(address(oeth), newBuyPrice, newSellPrice);
+        emit AbstractARM.TraderateChanged(address(oeth), newBuyPrice, newSellPrice, newBuyLiquidity, newSellLiquidity);
 
         originARM.setPrices(address(oeth), newBuyPrice, newSellPrice, newBuyLiquidity, newSellLiquidity);
 
@@ -310,8 +336,8 @@ contract Unit_Concrete_OriginARM_Setters_Test_ is Unit_Shared_Test {
         view
         returns (uint256)
     {
-        uint256 priceScale = originARM.PRICE_SCALE();
+        uint256 priceScale = PRICE_SCALE;
         if (buyT1 == 0 || fee == 0) return 0;
-        return (crossPrice - buyT1) * fee * priceScale / (buyT1 * originARM.FEE_SCALE());
+        return (crossPrice - buyT1) * fee * priceScale / (buyT1 * FEE_SCALE);
     }
 }

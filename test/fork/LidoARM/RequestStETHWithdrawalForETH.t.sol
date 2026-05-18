@@ -26,7 +26,7 @@ contract Fork_Concrete_LidoARM_RequestLidoWithdrawals_Test_ is Fork_Shared_Test_
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = DEFAULT_AMOUNT;
 
-        vm.expectRevert("ARM: Only operator or owner can call this function.");
+        vm.expectRevert(bytes4(keccak256("OnlyOperatorOrOwner()")));
         lidoARM.requestBaseAssetRedeem(address(steth), amounts[0]);
     }
 

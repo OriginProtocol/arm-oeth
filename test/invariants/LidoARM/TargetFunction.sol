@@ -21,10 +21,10 @@ abstract contract TargetFunction is Properties {
 
         uint256 maxAmount = IERC20(path[0]).balanceOf(user);
         if (stETHForWETH) {
-            uint256 maxByLiquidity = _availableWethLiquidity() * lidoARM.PRICE_SCALE() / _lidoBuyPrice();
+            uint256 maxByLiquidity = _availableWethLiquidity() * PRICE_SCALE / _lidoBuyPrice();
             maxAmount = min(maxAmount, maxByLiquidity);
         } else {
-            uint256 maxByLiquidity = steth.balanceOf(address(lidoARM)) * _lidoSellPrice() / lidoARM.PRICE_SCALE();
+            uint256 maxByLiquidity = steth.balanceOf(address(lidoARM)) * _lidoSellPrice() / PRICE_SCALE;
             maxAmount = min(maxAmount, maxByLiquidity);
         }
         amount = uint80(_bound(amount, 0, min(maxAmount, type(uint80).max)));
@@ -57,10 +57,10 @@ abstract contract TargetFunction is Properties {
         uint256 maxAmount = IERC20(path[1]).balanceOf(address(lidoARM));
         uint256 maxByInput;
         if (stETHForWETH) {
-            maxByInput = steth.balanceOf(user) * _lidoBuyPrice() / lidoARM.PRICE_SCALE();
+            maxByInput = steth.balanceOf(user) * _lidoBuyPrice() / PRICE_SCALE;
             maxAmount = min(maxAmount, _availableWethLiquidity());
         } else {
-            maxByInput = weth.balanceOf(user) * lidoARM.PRICE_SCALE() / _lidoSellPrice();
+            maxByInput = weth.balanceOf(user) * PRICE_SCALE / _lidoSellPrice();
         }
         maxAmount = min(maxAmount, maxByInput);
         amount = uint80(_bound(amount, 0, min(maxAmount, type(uint80).max)));
@@ -290,30 +290,40 @@ abstract contract TargetFunction is Properties {
     }
 
     function handler_setCrossPrice(uint256 newCrossPrice) public {
-        uint256 priceScale = lidoARM.PRICE_SCALE();
+        uint256 priceScale = PRICE_SCALE;
 
         // Bound new cross price
-        uint256 sell = priceScale ** 2 / (lidoARM.PRICE_SCALE() * lidoARM.PRICE_SCALE() / _lidoSellPrice());
+        uint256 sell = priceScale ** 2 / (PRICE_SCALE * PRICE_SCALE / _lidoSellPrice());
         uint256 buy = _lidoBuyPrice();
-        newCrossPrice = _bound(
-            newCrossPrice, max(priceScale - lidoARM.MAX_CROSS_PRICE_DEVIATION(), buy) + 1, min(priceScale, sell)
-        );
+        newCrossPrice =
+            _bound(newCrossPrice, max(priceScale - MAX_CROSS_PRICE_DEVIATION, buy) + 1, min(priceScale, sell));
 
         uint256 stethBalance = steth.balanceOf(address(lidoARM));
-        if (_lidoCrossPrice() > newCrossPrice && stethBalance > 0) {
+        (,,,,, uint120 pendingRedeemAssets,,) = lidoARM.baseAssetConfigs(address(steth));
+        bool loweringCrossPrice = _lidoCrossPrice() > newCrossPrice;
+        if (loweringCrossPrice) {
+            vm.assume(uint256(pendingRedeemAssets) < MIN_TOTAL_SUPPLY);
+        }
+
+        if (loweringCrossPrice && stethBalance > 0) {
             // If there is more than 100 stETH in ARM, do nothing
-            if (stethBalance >= 1e20) return;
+            if (stethBalance + pendingRedeemAssets >= 1e20) return;
 
             // If there is less than 100 stETH in ARM, swap them all to WETH, to avoid creating loss on ARM
-            deal(address(weth), address(this), stethBalance * 10);
-            weth.approve(address(lidoARM), type(uint256).max);
-            uint256[] memory amounts = lidoARM.swapTokensForExactTokens(
-                IERC20(address(weth)), IERC20(address(steth)), stethBalance, type(uint256).max, address(this)
-            );
-            require(steth.balanceOf(address(lidoARM)) < 10, "ARM still has too much stETH after swap");
+            if (stethBalance > 0) {
+                deal(address(weth), address(this), stethBalance * 10);
+                weth.approve(address(lidoARM), type(uint256).max);
+                uint256[] memory amounts = lidoARM.swapTokensForExactTokens(
+                    IERC20(address(weth)), IERC20(address(steth)), stethBalance, type(uint256).max, address(this)
+                );
+                require(steth.balanceOf(address(lidoARM)) < 10, "ARM still has too much stETH after swap");
 
-            sum_weth_swap_in += amounts[0];
-            sum_steth_swap_out += amounts[1];
+                sum_weth_swap_in += amounts[0];
+                sum_steth_swap_out += amounts[1];
+            }
+        }
+        if (loweringCrossPrice) {
+            vm.assume(steth.balanceOf(address(lidoARM)) + uint256(pendingRedeemAssets) < MIN_TOTAL_SUPPLY);
         }
 
         // Prank owner

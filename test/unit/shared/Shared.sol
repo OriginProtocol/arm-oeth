@@ -169,8 +169,8 @@ abstract contract Unit_Shared_Test is Base_Test_, Modifiers {
     }
 
     function _swapFeeMultiplier(uint256 buyPrice, uint256 crossPrice, uint256 fee) internal view returns (uint256) {
-        uint256 priceScale = originARM.PRICE_SCALE();
+        uint256 priceScale = PRICE_SCALE;
         if (buyPrice == 0 || fee == 0) return 0;
-        return (crossPrice - buyPrice) * fee * priceScale / (buyPrice * originARM.FEE_SCALE());
+        return (crossPrice - buyPrice) * fee * priceScale / (buyPrice * FEE_SCALE);
     }
 }

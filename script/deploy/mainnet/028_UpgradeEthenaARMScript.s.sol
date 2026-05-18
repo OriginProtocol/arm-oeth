@@ -4,6 +4,7 @@ pragma solidity 0.8.23;
 // Contract
 import {Proxy} from "contracts/Proxy.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
+import {AbstractARM} from "contracts/AbstractARM.sol";
 import {EthenaARM} from "contracts/EthenaARM.sol";
 
 // Deployment
@@ -17,7 +18,6 @@ contract $028_UpgradeEthenaARMScript is AbstractDeployScript("028_UpgradeEthenaA
         uint256 claimDelay = 10 minutes;
         armImpl = new EthenaARM(
             Mainnet.USDE,
-            Mainnet.SUSDE,
             claimDelay,
             1e18, // minSharesToRedeem
             100e18 // allocateThreshold
@@ -33,11 +33,11 @@ contract $028_UpgradeEthenaARMScript is AbstractDeployScript("028_UpgradeEthenaA
         if (proxy.implementation() == impl) return;
 
         vm.startPrank(proxy.owner());
-        proxy.upgradeToAndCall(impl, _checkNoLegacyEthenaCooldownData());
+        proxy.upgradeToAndCall(impl, _migrateLegacyWithdrawQueueData());
         vm.stopPrank();
     }
 
-    function _checkNoLegacyEthenaCooldownData() internal pure returns (bytes memory) {
-        return abi.encodeWithSelector(EthenaARM.checkNoLegacyEthenaCooldown.selector);
+    function _migrateLegacyWithdrawQueueData() internal pure returns (bytes memory) {
+        return abi.encodeWithSelector(AbstractARM.migrateLegacyWithdrawQueue.selector);
     }
 }

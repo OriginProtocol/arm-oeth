@@ -47,10 +47,8 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
         assertEq(ethenaARM.owner(), Mainnet.TIMELOCK, "Owner");
         assertEq(ethenaARM.operator(), Mainnet.ARM_RELAYER, "Operator");
         assertEq(ethenaARM.feeCollector(), Mainnet.BUYBACK_OPERATOR, "Fee collector");
-        assertEq((100 * uint256(ethenaARM.fee())) / ethenaARM.FEE_SCALE(), 20, "Performance fee as a percentage");
+        assertEq((100 * uint256(ethenaARM.fee())) / FEE_SCALE, 20, "Performance fee as a percentage");
 
-        assertEq(address(ethenaARM.susde()), Mainnet.SUSDE, "sUSDe");
-        assertEq(address(ethenaARM.usde()), Mainnet.USDE, "USDE");
         assertEq(ethenaARM.liquidityAsset(), Mainnet.USDE, "liquidity asset");
         assertEq(ethenaARM.asset(), Mainnet.USDE, "ERC-4626 asset");
         assertEq(ethenaARM.claimDelay(), 10 minutes, "claim delay");
@@ -202,7 +200,7 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
     }
 
     function test_nonOwnerCannotSetOperator() external {
-        vm.expectRevert("ARM: Only owner can call this function.");
+        vm.expectRevert(bytes4(keccak256("OnlyOwner()")));
         vm.prank(operator);
         ethenaARM.setOperator(operator);
     }
@@ -212,7 +210,7 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
         _swapExactTokensForTokens(susde, usde, 0.998e36, 100 ether);
 
         // Operator requests an Ethena withdrawal
-        skip(ethenaARM.DELAY_REQUEST() + 1);
+        skip(DELAY_REQUEST + 1);
         vm.prank(Mainnet.ARM_RELAYER);
         ethenaARM.requestBaseAssetRedeem(address(susde), 10 ether);
     }
@@ -222,7 +220,7 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
         _swapExactTokensForTokens(susde, usde, 0.998e36, 100 ether);
 
         // Owner requests an Ethena withdrawal
-        skip(ethenaARM.DELAY_REQUEST() + 1);
+        skip(DELAY_REQUEST + 1);
         vm.prank(Mainnet.TIMELOCK);
         ethenaARM.requestBaseAssetRedeem(address(susde), 10 ether);
     }
@@ -233,7 +231,7 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
 
         // Owner requests an Ethena withdrawal
         uint256 nextUnstakerIndex = ethenaAssetAdapter.nextUnstakerIndex();
-        skip(ethenaARM.DELAY_REQUEST() + 1);
+        skip(DELAY_REQUEST + 1);
         vm.prank(Mainnet.TIMELOCK);
         ethenaARM.requestBaseAssetRedeem(address(susde), 10 ether);
 
