@@ -183,7 +183,7 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
         proxy.upgradeToAndCall(address(this), "");
 
         // Implementation's restricted methods.
-        vm.expectRevert("OSwap: Only owner can call this function.");
+        vm.expectRevert(bytes4(keccak256("OnlyOwner()")));
         lidoARM.setOwner(RANDOM_ADDRESS);
     }
 

@@ -266,16 +266,16 @@ contract Fork_OriginARM_Smoke_Test is AbstractSmokeTest {
         vm.startPrank(RANDOM_ADDRESS);
 
         // Proxy's restricted methods.
-        vm.expectRevert(bytes4(keccak256("OnlyOwner()")));
+        vm.expectRevert("ARM: Only owner can call this function.");
         proxy.setOwner(RANDOM_ADDRESS);
 
-        vm.expectRevert(bytes4(keccak256("OnlyOwner()")));
+        vm.expectRevert("ARM: Only owner can call this function.");
         proxy.initialize(address(this), address(this), "");
 
-        vm.expectRevert(bytes4(keccak256("OnlyOwner()")));
+        vm.expectRevert("ARM: Only owner can call this function.");
         proxy.upgradeTo(address(this));
 
-        vm.expectRevert(bytes4(keccak256("OnlyOwner()")));
+        vm.expectRevert("ARM: Only owner can call this function.");
         proxy.upgradeToAndCall(address(this), "");
 
         // Implementation's restricted methods.
