@@ -23,12 +23,12 @@ contract Unit_Concrete_OriginARM_ManageMarket_Test_ is Unit_Shared_Test {
     /// --- REVERTS
     ////////////////////////////////////////////////////
     function test_RevertWhen_AddMarkets_Because_NotGovernor() public asNotGovernor {
-        vm.expectRevert("ARM: Only owner can call this function.");
+        vm.expectRevert(bytes4(keccak256("OnlyOwner()")));
         originARM.addMarkets(new address[](0));
     }
 
     function test_RevertWhen_AddMarkets_Because_AddressZero() public asGovernor {
-        vm.expectRevert("ARM: invalid market");
+        vm.expectRevert(bytes4(keccak256("InvalidMarket()")));
         originARM.addMarkets(new address[](1));
     }
 
@@ -41,7 +41,7 @@ contract Unit_Concrete_OriginARM_ManageMarket_Test_ is Unit_Shared_Test {
     {
         address[] memory strategies = new address[](1);
         strategies[0] = address(market);
-        vm.expectRevert("ARM: market already supported");
+        vm.expectRevert(bytes4(keccak256("MarketAlreadySupported()")));
         originARM.addMarkets(strategies);
     }
 
@@ -50,22 +50,22 @@ contract Unit_Concrete_OriginARM_ManageMarket_Test_ is Unit_Shared_Test {
         strategies[0] = address(0x123);
         // Using mockCall to simulate the asset() function on a simple address
         vm.mockCall(strategies[0], abi.encodeWithSignature("asset()"), abi.encode(address(0)));
-        vm.expectRevert("ARM: invalid market asset");
+        vm.expectRevert(bytes4(keccak256("InvalidMarketAsset()")));
         originARM.addMarkets(strategies);
     }
 
     function test_RevertWhen_RemoveMarket_Because_NotGovernor() public asNotGovernor {
-        vm.expectRevert("ARM: Only owner can call this function.");
+        vm.expectRevert(bytes4(keccak256("OnlyOwner()")));
         originARM.removeMarket(address(market));
     }
 
     function test_RevertWhen_RemoveMarket_Because_MarketIsAddressZero() public asGovernor {
-        vm.expectRevert("ARM: invalid market");
+        vm.expectRevert(bytes4(keccak256("InvalidMarket()")));
         originARM.removeMarket(address(0));
     }
 
     function test_RevertWhen_RemoveMarket_Because_MarketNotSupported() public asGovernor {
-        vm.expectRevert("ARM: market not supported");
+        vm.expectRevert(bytes4(keccak256("MarketNotSupported()")));
         originARM.removeMarket(address(market));
     }
 
@@ -76,17 +76,17 @@ contract Unit_Concrete_OriginARM_ManageMarket_Test_ is Unit_Shared_Test {
         setActiveMarket(address(market))
         asGovernor
     {
-        vm.expectRevert("ARM: market in active");
+        vm.expectRevert(bytes4(keccak256("MarketActive()")));
         originARM.removeMarket(address(market));
     }
 
     function test_RevertWhen_SetActiveMarket_Because_NotGovernor() public asNotGovernor {
-        vm.expectRevert("ARM: Only operator or owner can call this function.");
+        vm.expectRevert(bytes4(keccak256("OnlyOperatorOrOwner()")));
         originARM.setActiveMarket(address(market));
     }
 
     function test_RevertWhen_SetActiveMarket_Because_MarketNotSupported() public asGovernor {
-        vm.expectRevert("ARM: market not supported");
+        vm.expectRevert(bytes4(keccak256("MarketNotSupported()")));
         originARM.setActiveMarket(address(market));
     }
 

@@ -25,16 +25,16 @@ contract Fork_Concrete_LidoARM_Proxy_Test_ is Fork_Shared_Test_ {
     //////////////////////////////////////////////////////
     function test_RevertWhen_UnauthorizedAccess() public {
         vm.startPrank(address(0x123));
-        vm.expectRevert("ARM: Only owner can call this function.");
+        vm.expectRevert(bytes4(keccak256("OnlyOwner()")));
         lidoProxy.setOwner(deployer);
 
-        vm.expectRevert("ARM: Only owner can call this function.");
+        vm.expectRevert(bytes4(keccak256("OnlyOwner()")));
         lidoProxy.initialize(address(this), address(this), "");
 
-        vm.expectRevert("ARM: Only owner can call this function.");
+        vm.expectRevert(bytes4(keccak256("OnlyOwner()")));
         lidoProxy.upgradeTo(address(this));
 
-        vm.expectRevert("ARM: Only owner can call this function.");
+        vm.expectRevert(bytes4(keccak256("OnlyOwner()")));
         lidoProxy.upgradeToAndCall(address(this), "");
         vm.stopPrank();
     }

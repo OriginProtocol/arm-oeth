@@ -295,7 +295,13 @@ abstract contract TargetFunction is Properties {
             _bound(newCrossPrice, max(priceScale - MAX_CROSS_PRICE_DEVIATION, buy) + 1, min(priceScale, sell));
 
         uint256 stethBalance = steth.balanceOf(address(lidoARM));
-        if (_lidoCrossPrice() > newCrossPrice && stethBalance > 0) {
+        (,,,,, uint120 pendingRedeemAssets,,) = lidoARM.baseAssetConfigs(address(steth));
+        bool loweringCrossPrice = _lidoCrossPrice() > newCrossPrice;
+        if (loweringCrossPrice) {
+            vm.assume(uint256(pendingRedeemAssets) < MIN_TOTAL_SUPPLY);
+        }
+
+        if (loweringCrossPrice && stethBalance > 0) {
             // If there is more than 100 stETH in ARM, do nothing
             if (stethBalance >= 1e20) return;
 
@@ -309,6 +315,9 @@ abstract contract TargetFunction is Properties {
 
             sum_weth_swap_in += amounts[0];
             sum_steth_swap_out += amounts[1];
+        }
+        if (loweringCrossPrice) {
+            vm.assume(steth.balanceOf(address(lidoARM)) + uint256(pendingRedeemAssets) < MIN_TOTAL_SUPPLY);
         }
 
         // Prank owner

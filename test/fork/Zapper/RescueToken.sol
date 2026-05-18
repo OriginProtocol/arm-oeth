@@ -9,7 +9,7 @@ import {ZapperLidoARM} from "contracts/ZapperLidoARM.sol";
 
 contract Fork_Concrete_ZapperLidoARM_RescueToken_Test_ is Fork_Shared_Test_ {
     function test_RevertWhen_RescueToken_CalledByNonOwner() public asRandomAddress {
-        vm.expectRevert("ARM: Only owner can call this function.");
+        vm.expectRevert(bytes4(keccak256("OnlyOwner()")));
         zapperLidoARM.rescueERC20(address(badToken), DEFAULT_AMOUNT);
     }
 

@@ -6,6 +6,8 @@ pragma solidity ^0.8.23;
  * @author Origin Protocol Inc
  */
 contract Ownable {
+    error OnlyOwner();
+
     /// @notice The slot used to store the owner of the contract.
     /// This is also used as the proxy admin.
     /// keccak256(“eip1967.proxy.admin”) - 1 per EIP 1967
@@ -47,7 +49,7 @@ contract Ownable {
     }
 
     function _onlyOwner() internal view {
-        require(msg.sender == _owner(), "ARM: Only owner can call this function.");
+        if (msg.sender != _owner()) revert OnlyOwner();
     }
 
     modifier onlyOwner() {

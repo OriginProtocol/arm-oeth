@@ -327,7 +327,11 @@ abstract contract TargetFunctions is Setup, StdUtils {
         crossPrice = _bound(crossPrice, minCrossPrice, maxCrossPrice);
 
         uint256 susdeBalance = susde.balanceOf(address(arm));
-        if (_crossPrice() > crossPrice && susdeBalance > 0) {
+        (,,,,, uint120 pendingRedeemAssets,,) = arm.baseAssetConfigs(address(susde));
+        bool loweringCrossPrice = _crossPrice() > crossPrice;
+        if (loweringCrossPrice && assume(uint256(pendingRedeemAssets) < DEFAULT_MIN_TOTAL_SUPPLY)) return;
+
+        if (loweringCrossPrice && susdeBalance > 0) {
             // If there is more than 100 susde in ARM, do nothing
             if (assume(susdeBalance < 1e20)) return;
 
@@ -356,6 +360,12 @@ abstract contract TargetFunctions is Setup, StdUtils {
 
             sumUSDeSwapIn += obtained[0];
             sumSUSDeSwapOut += obtained[1];
+        }
+        if (
+            loweringCrossPrice
+                && assume(susde.balanceOf(address(arm)) + uint256(pendingRedeemAssets) < DEFAULT_MIN_TOTAL_SUPPLY)
+        ) {
+            return;
         }
 
         vm.prank(governor);

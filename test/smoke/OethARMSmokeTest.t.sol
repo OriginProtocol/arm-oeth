@@ -283,7 +283,7 @@ contract Fork_OriginARM_Smoke_Test is AbstractSmokeTest {
         originARM.setOwner(RANDOM_ADDRESS);
         vm.stopPrank();
 
-        vm.expectRevert("ARM: Only owner can call this function.");
+        vm.expectRevert(bytes4(keccak256("OnlyOwner()")));
         vm.prank(operator);
         originARM.setOperator(operator);
     }
