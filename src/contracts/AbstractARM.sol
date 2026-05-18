@@ -796,7 +796,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @dev If assets per share decreased after request time, the claim uses the lower claim-time value.
     /// @param requestId LP withdrawal request id to claim.
     /// @return assets Liquidity assets transferred to the requester.
-    function claimRedeem(uint256 requestId) external returns (uint256 assets) {
+    function claimRedeem(uint256 requestId) external whenNotPaused returns (uint256 assets) {
         WithdrawalRequest memory request = withdrawalRequests[requestId];
 
         require(request.claimTimestamp <= block.timestamp, "Claim delay not met");
