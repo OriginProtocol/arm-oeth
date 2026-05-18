@@ -359,6 +359,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
             // sellPrice is liquidity assets per base asset, so divide liquidity input by sellPrice
             // to get the base output owed to the trader.
             amountOut = convertedAmountIn * PRICE_SCALE / config.sellPrice;
+            _consumeSwapLiquidityLimit(config, isBuySide, amountOut);
         } else {
             // Trader sells base asset and buys the liquidity asset.
             // The ARM buys the base asset and sells the liquidity asset.
@@ -369,10 +370,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
             amountOut = convertedAmountIn * config.buyPrice / PRICE_SCALE;
 
             _accrueSwapFee(config.buyPrice, config.crossPrice, amountOut);
+            _consumeSwapLiquidityLimit(config, isBuySide, amountOut);
             _ensureLiquidityAvailableForSwap(amountOut);
         }
-
-        _consumeSwapLiquidityLimit(config, isBuySide, amountOut);
 
         // Transfer the input tokens from the caller to this ARM contract
         inToken.transferFrom(msg.sender, address(this), amountIn);
@@ -403,6 +403,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
             // to solve for the required liquidity input.
             // + 3 wei buffer for stETH rounding on larger transfers (observed up to 2 wei; 3 is for safety).
             amountIn = convertedAmountOut * config.sellPrice / PRICE_SCALE + 3;
+            _consumeSwapLiquidityLimit(config, isBuySide, amountOut);
         } else {
             // Trader sells base asset and buys the liquidity asset.
             // The ARM buys the base asset and sells the liquidity asset.
@@ -413,10 +414,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
             amountIn = convertedAmountOut * PRICE_SCALE / config.buyPrice + 3;
 
             _accrueSwapFee(config.buyPrice, config.crossPrice, amountOut);
+            _consumeSwapLiquidityLimit(config, isBuySide, amountOut);
             _ensureLiquidityAvailableForSwap(amountOut);
         }
-
-        _consumeSwapLiquidityLimit(config, isBuySide, amountOut);
 
         // Transfer the input tokens from the caller to this ARM contract
         inToken.transferFrom(msg.sender, address(this), amountIn);
