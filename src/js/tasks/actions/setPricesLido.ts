@@ -1,4 +1,5 @@
 import { ethers } from "ethers";
+import { types } from "hardhat/config";
 
 import { action } from "../lib/action";
 import { setPrices } from "../armPrices";
@@ -9,22 +10,89 @@ action({
   name: "setPricesLido",
   description: "Set prices for Lido ARM",
   chains: [1],
-  run: async ({ signer, log }) => {
+  // Price points are operator-overridable from the scheduled command in
+  // talos (talos UI → schedules → command field). Defaults match what
+  // was hardcoded previously so existing seed commands without overrides
+  // keep their old behavior.
+  params: (t) =>
+    t
+      .addOptionalParam(
+        "maxBuyPrice",
+        "Upper bound for buy-side price (ETH per stETH).",
+        0.9999,
+        types.float,
+      )
+      .addOptionalParam(
+        "minBuyPrice",
+        "Lower bound for buy-side price (ETH per stETH).",
+        0.998,
+        types.float,
+      )
+      .addOptionalParam(
+        "maxSellPrice",
+        "Upper bound for sell-side price (stETH per ETH).",
+        1.0,
+        types.float,
+      )
+      .addOptionalParam(
+        "minSellPrice",
+        "Lower bound for sell-side price (stETH per ETH).",
+        0.9999,
+        types.float,
+      )
+      .addOptionalParam(
+        "amount",
+        "Reference swap amount used when fetching aggregator quotes.",
+        20,
+        types.float,
+      )
+      .addOptionalParam(
+        "inch",
+        "Use 1Inch as the aggregator price source.",
+        true,
+        types.boolean,
+      )
+      .addOptionalParam(
+        "kyber",
+        "Use Kyber as the aggregator price source.",
+        false,
+        types.boolean,
+      )
+      .addOptionalParam(
+        "offset",
+        "Price offset applied to aggregator quotes.",
+        0.2,
+        types.float,
+      )
+      .addOptionalParam(
+        "tolerance",
+        "Tolerance used when comparing target and current prices.",
+        0.1,
+        types.float,
+      )
+      .addOptionalParam(
+        "fee",
+        "Swap fee in basis points used by setPrices when computing target prices.",
+        2,
+        types.float,
+      ),
+  run: async ({ signer, log, args }) => {
     const arm = new ethers.Contract(mainnet.lidoARM, lidoARMAbi, signer);
 
     log.info("Setting prices for Lido ARM");
     await setPrices({
       signer,
       arm,
-      maxSellPrice: 1.0,
-      minSellPrice: 0.9999,
-      maxBuyPrice: 0.9996,
-      minBuyPrice: 0.998,
-      kyber: true,
-      amount: 100,
-      tolerance: 0.1,
-      fee: 2,
-      offset: 0.3,
+      maxSellPrice: args.maxSellPrice,
+      minSellPrice: args.minSellPrice,
+      maxBuyPrice: args.maxBuyPrice,
+      minBuyPrice: args.minBuyPrice,
+      kyber: args.kyber,
+      inch: args.inch,
+      amount: args.amount,
+      tolerance: args.tolerance,
+      fee: args.fee,
+      offset: args.offset,
       priceOffset: true,
       blockTag: "latest",
     });
