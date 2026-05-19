@@ -10,7 +10,12 @@ import {AbstractARM} from "contracts/AbstractARM.sol";
 // Interfaces
 import {IERC20} from "contracts/Interfaces.sol";
 
+// Libraries
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+
 contract Unit_LidoARM_Deposit_Test is Unit_LidoARM_Shared_Test {
+    using Math for uint256;
+
     function setUp() public override {
         super.setUp();
         desactiveCapManager();
@@ -26,9 +31,10 @@ contract Unit_LidoARM_Deposit_Test is Unit_LidoARM_Shared_Test {
         // Given
         uint256 amount = 1 ether;
         uint256 expectedShares = amount; // 1:1 for simplicity
-        assertEq(lidoARM.convertToShares(amount), expectedShares, "Unexpected share conversion");
-        assertEq(lidoARM.totalAssets(), 1e12, "Unexpected total assets before deposit");
-        assertEq(lidoARM.totalSupply(), 1e12, "Unexpected total shares before deposit");
+        assertEq(lidoARM.convertToShares(amount), expectedShares, "convertToShares");
+        assertEq(lidoARM.totalAssets(), 1e12, "totalAssets pre");
+        assertEq(lidoARM.totalSupply(), 1e12, "totalSupply pre");
+        assertEq(lidoARM.previewDeposit(amount), expectedShares, "previewDeposit");
 
         // Expect
         vm.expectEmit({emitter: address(weth)});
@@ -43,10 +49,10 @@ contract Unit_LidoARM_Deposit_Test is Unit_LidoARM_Shared_Test {
         lidoARM.deposit(amount);
 
         // Then
-        assertEq(weth.balanceOf(alice), 99 ether, "Unexpected WETH balance for Alice after deposit");
-        assertEq(lidoARM.balanceOf(alice), expectedShares, "Unexpected LidoARM share balance for Alice after deposit");
-        assertEq(lidoARM.totalAssets(), 1e12 + amount, "Unexpected total assets after deposit");
-        assertEq(lidoARM.totalSupply(), 1e12 + expectedShares, "Unexpected total shares after deposit");
+        assertEq(weth.balanceOf(alice), 99 ether, "alice weth");
+        assertEq(lidoARM.balanceOf(alice), expectedShares, "alice shares");
+        assertEq(lidoARM.totalAssets(), 1e12 + amount, "totalAssets");
+        assertEq(lidoARM.totalSupply(), 1e12 + expectedShares, "totalSupply");
     }
 
     function test_Deposit_SecondDeposit() public {
@@ -64,9 +70,9 @@ contract Unit_LidoARM_Deposit_Test is Unit_LidoARM_Shared_Test {
         lidoARM.deposit(firstAmount);
 
         // Sanity check state after first deposit
-        assertEq(lidoARM.balanceOf(alice), expectedFirstShares, "Unexpected Alice shares after first deposit");
-        assertEq(lidoARM.totalAssets(), 1e12 + firstAmount, "Unexpected total assets after first deposit");
-        assertEq(lidoARM.totalSupply(), 1e12 + expectedFirstShares, "Unexpected total shares after first deposit");
+        assertEq(lidoARM.balanceOf(alice), expectedFirstShares, "alice shares pre");
+        assertEq(lidoARM.totalAssets(), 1e12 + firstAmount, "totalAssets pre");
+        assertEq(lidoARM.totalSupply(), 1e12 + expectedFirstShares, "totalSupply pre");
 
         // Expect events for second deposit (by Bobby)
         vm.expectEmit({emitter: address(weth)});
@@ -81,27 +87,21 @@ contract Unit_LidoARM_Deposit_Test is Unit_LidoARM_Shared_Test {
         lidoARM.deposit(secondAmount);
 
         // Then
-        assertEq(weth.balanceOf(alice), 99 ether, "Unexpected WETH balance for Alice after second deposit");
-        assertEq(weth.balanceOf(bobby), 97 ether, "Unexpected WETH balance for Bobby after second deposit");
-        assertEq(lidoARM.balanceOf(alice), expectedFirstShares, "Unexpected Alice shares after second deposit");
-        assertEq(lidoARM.balanceOf(bobby), expectedSecondShares, "Unexpected Bobby shares after second deposit");
-        assertEq(
-            lidoARM.totalAssets(), 1e12 + firstAmount + secondAmount, "Unexpected total assets after second deposit"
-        );
-        assertEq(
-            lidoARM.totalSupply(),
-            1e12 + expectedFirstShares + expectedSecondShares,
-            "Unexpected total shares after second deposit"
-        );
+        assertEq(weth.balanceOf(alice), 99 ether, "alice weth");
+        assertEq(weth.balanceOf(bobby), 97 ether, "bobby weth");
+        assertEq(lidoARM.balanceOf(alice), expectedFirstShares, "alice shares");
+        assertEq(lidoARM.balanceOf(bobby), expectedSecondShares, "bobby shares");
+        assertEq(lidoARM.totalAssets(), 1e12 + firstAmount + secondAmount, "totalAssets");
+        assertEq(lidoARM.totalSupply(), 1e12 + expectedFirstShares + expectedSecondShares, "totalSupply");
     }
 
-    function test_Deposit_Default_With_Cap() public {
+    function test_Deposit_Default_WithCap() public {
         // Given
         uint256 amount = 1 ether;
         uint256 expectedShares = amount; // 1:1 for simplicity
-        assertEq(lidoARM.convertToShares(amount), expectedShares, "Unexpected share conversion");
-        assertEq(lidoARM.totalAssets(), 1e12, "Unexpected total assets before deposit");
-        assertEq(lidoARM.totalSupply(), 1e12, "Unexpected total shares before deposit");
+        assertEq(lidoARM.convertToShares(amount), expectedShares, "convertToShares");
+        assertEq(lidoARM.totalAssets(), 1e12, "totalAssets pre");
+        assertEq(lidoARM.totalSupply(), 1e12, "totalSupply pre");
 
         // Set a cap that allows the deposit
         address[] memory lps = new address[](1);
@@ -125,10 +125,78 @@ contract Unit_LidoARM_Deposit_Test is Unit_LidoARM_Shared_Test {
         lidoARM.deposit(amount);
 
         // Then
-        assertEq(weth.balanceOf(alice), 99 ether, "Unexpected WETH balance for Alice after deposit");
-        assertEq(lidoARM.balanceOf(alice), expectedShares, "Unexpected LidoARM share balance for Alice after deposit");
-        assertEq(lidoARM.totalAssets(), 1e12 + amount, "Unexpected total assets after deposit");
-        assertEq(lidoARM.totalSupply(), 1e12 + expectedShares, "Unexpected total shares after deposit");
+        assertEq(weth.balanceOf(alice), 99 ether, "alice weth");
+        assertEq(lidoARM.balanceOf(alice), expectedShares, "alice shares");
+        assertEq(lidoARM.totalAssets(), 1e12 + amount, "totalAssets");
+        assertEq(lidoARM.totalSupply(), 1e12 + expectedShares, "totalSupply");
+    }
+
+    function test_Deposit_DifferentReceiver() public {
+        // Given
+        uint256 amount = 1 ether;
+        uint256 expectedShares = amount; // 1:1 for simplicity
+        assertEq(lidoARM.convertToShares(amount), expectedShares, "convertToShares");
+        assertEq(lidoARM.totalAssets(), 1e12, "totalAssets pre");
+        assertEq(lidoARM.totalSupply(), 1e12, "totalSupply pre");
+        deal(address(weth), bobby, 100 ether);
+
+        // Expect
+        vm.expectEmit({emitter: address(weth)});
+        emit IERC20.Transfer(alice, address(lidoARM), amount);
+        vm.expectEmit({emitter: address(lidoARM)});
+        emit IERC20.Transfer(address(0), bobby, expectedShares);
+        vm.expectEmit({emitter: address(lidoARM)});
+        emit AbstractARM.Deposit(bobby, amount, expectedShares);
+
+        // When
+        vm.prank(alice);
+        lidoARM.deposit(amount, bobby);
+
+        // Then
+        assertEq(weth.balanceOf(alice), 99 ether, "alice weth");
+        assertEq(weth.balanceOf(bobby), 100 ether, "bobby weth");
+        assertEq(lidoARM.balanceOf(alice), 0, "alice shares");
+        assertEq(lidoARM.balanceOf(bobby), expectedShares, "bobby shares");
+        assertEq(lidoARM.totalAssets(), 1e12 + amount, "totalAssets");
+        assertEq(lidoARM.totalSupply(), 1e12 + expectedShares, "totalSupply");
+    }
+
+    function test_Deposit_SharesAreAbove1() public {
+        aliceFirstDeposit();
+        uint256 rewards = 1.235679154167425791 ether;
+        // Simulate rewards by donating WETH directly to the ARM. totalSupply stays at 1e12 + 100 ether,
+        // while totalAssets grows by `rewards`, so 1 share is now worth >1 asset.
+        deal(address(weth), address(lidoARM), weth.balanceOf(address(lidoARM)) + rewards);
+
+        // Given
+        uint256 amount = 10 ether;
+        uint256 expectedShares = amount.mulDiv(100 ether + 1e12, 100 ether + 1e12 + rewards, Math.Rounding.Floor);
+        assertEq(lidoARM.convertToShares(amount), expectedShares, "convertToShares");
+        assertLt(expectedShares, amount, "shares < assets");
+
+        // Fund Bobby for the deposit
+        deal(address(weth), bobby, amount);
+
+        uint256 totalAssetsBefore = lidoARM.totalAssets();
+        uint256 totalSupplyBefore = lidoARM.totalSupply();
+
+        // Expect
+        vm.expectEmit({emitter: address(weth)});
+        emit IERC20.Transfer(bobby, address(lidoARM), amount);
+        vm.expectEmit({emitter: address(lidoARM)});
+        emit IERC20.Transfer(address(0), bobby, expectedShares);
+        vm.expectEmit({emitter: address(lidoARM)});
+        emit AbstractARM.Deposit(bobby, amount, expectedShares);
+
+        // When
+        vm.prank(bobby);
+        lidoARM.deposit(amount);
+
+        // Then
+        assertEq(weth.balanceOf(bobby), 0, "bobby weth");
+        assertEq(lidoARM.balanceOf(bobby), expectedShares, "bobby shares");
+        assertEq(lidoARM.totalAssets(), totalAssetsBefore + amount, "totalAssets");
+        assertEq(lidoARM.totalSupply(), totalSupplyBefore + expectedShares, "totalSupply");
     }
 
     //////////////////////////////////////////////////////

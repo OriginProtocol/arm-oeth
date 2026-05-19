@@ -156,13 +156,25 @@ abstract contract Unit_LidoARM_Shared_Test is Base_Test_ {
         aliceFirstDeposit(100 ether);
     }
 
+    function bobbyFirstDeposit() internal {
+        bobbyFirstDeposit(100 ether);
+    }
+
     function aliceFirstDeposit(uint256 amount) internal {
-        vm.startPrank(alice);
-        // Give Alice some WETH
-        deal(address(weth), alice, amount);
-        // Alice approve LidoARM to spend her WETH
+        firstDeposit(alice, amount);
+    }
+
+    function bobbyFirstDeposit(uint256 amount) internal {
+        firstDeposit(bobby, amount);
+    }
+
+    function firstDeposit(address user, uint256 amount) internal {
+        vm.startPrank(user);
+        // Give the user some WETH
+        deal(address(weth), user, amount);
+        // The user approve LidoARM to spend his WETH
         weth.approve(address(lidoARM), type(uint256).max);
-        // Alice deposit the specified amount of WETH to LidoARM
+        // The user deposit the specified amount of WETH to LidoARM
         lidoARM.deposit(amount);
         vm.stopPrank();
     }
@@ -285,5 +297,45 @@ abstract contract Unit_LidoARM_Shared_Test is Base_Test_ {
         mockWstETH.mint(amount, from);
         wsteth.transfer(to, amount);
         vm.stopPrank();
+    }
+
+    function aliceRequest(uint256 sharesToRedeem) internal returns (uint256 requestId, uint256 assets) {
+        return requestRedeem(alice, sharesToRedeem);
+    }
+
+    function bobbyRequest(uint256 sharesToRedeem) internal returns (uint256 requestId, uint256 assets) {
+        return requestRedeem(bobby, sharesToRedeem);
+    }
+
+    function requestRedeem(address user, uint256 sharesToRedeem) internal returns (uint256 requestId, uint256 assets) {
+        if (sharesToRedeem == 0) {
+            sharesToRedeem = lidoARM.balanceOf(user);
+        }
+        vm.prank(user);
+        (requestId, assets) = lidoARM.requestRedeem(sharesToRedeem);
+    }
+
+    function _assertStoredRequest(
+        uint256 requestId,
+        address expectedWithdrawer,
+        uint256 expectedClaimTimestamp,
+        uint256 expectedAssets,
+        uint256 expectedQueued,
+        uint256 expectedShares
+    ) internal view {
+        (
+            address withdrawer,
+            bool claimed,
+            uint40 claimTimestamp,
+            uint128 storedAssets,
+            uint128 storedQueued,
+            uint128 storedShares
+        ) = lidoARM.withdrawalRequests(requestId);
+        assertEq(withdrawer, expectedWithdrawer, "req.withdrawer");
+        assertEq(claimed, false, "req.claimed");
+        assertEq(claimTimestamp, expectedClaimTimestamp, "req.claimTimestamp");
+        assertEq(storedAssets, expectedAssets, "req.assets");
+        assertEq(storedQueued, expectedQueued, "req.queued");
+        assertEq(storedShares, expectedShares, "req.shares");
     }
 }
