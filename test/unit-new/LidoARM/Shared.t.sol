@@ -20,6 +20,7 @@ import {WETH} from "@solmate/tokens/WETH.sol";
 import {MockERC20} from "@solmate/test/utils/mocks/MockERC20.sol";
 import {MockWstETH} from "./mocks/MockWstETH.sol";
 import {MockERC4626Market} from "./mocks/MockERC4626Market.sol";
+import {MockLidoWithdraw} from "./mocks/MockLidoWithdraw.sol";
 
 abstract contract Unit_LidoARM_Shared_Test is Base_Test_ {
     //////////////////////////////////////////////////////
@@ -45,6 +46,7 @@ abstract contract Unit_LidoARM_Shared_Test is Base_Test_ {
         mockERC4626Market = new MockERC4626Market(weth);
         mockWstETH = new MockWstETH(steth);
         wsteth = IERC20(address(mockWstETH));
+        lidoWithdrawalQueue = new MockLidoWithdraw(address(steth));
     }
 
     function deployContracts() internal virtual {
@@ -68,14 +70,14 @@ abstract contract Unit_LidoARM_Shared_Test is Base_Test_ {
             _arm: address(lidoARMProxy),
             _weth: address(weth),
             _steth: address(steth),
-            _lidoWithdrawalQueue: lidoWithdrawalQueue
+            _lidoWithdrawalQueue: address(lidoWithdrawalQueue)
         });
         WstETHAssetAdapter wstETHAssetAdapterLogic = new WstETHAssetAdapter({
             _arm: address(lidoARMProxy),
             _weth: address(weth),
             _steth: address(steth),
             _wsteth: address(wsteth),
-            _lidoWithdrawalQueue: lidoWithdrawalQueue
+            _lidoWithdrawalQueue: address(lidoWithdrawalQueue)
         });
 
         // Initialization requires 1e12 liquid assets to mint to dead address.
@@ -131,6 +133,7 @@ abstract contract Unit_LidoARM_Shared_Test is Base_Test_ {
         vm.label(address(capManager), "CAP MANAGER PROXY");
         vm.label(address(stETHAssetAdapter), "STETH ASSET ADAPTER PROXY");
         vm.label(address(wstETHAssetAdapter), "WSTETH ASSET ADAPTER PROXY");
+        vm.label(address(lidoWithdrawalQueue), "LIDO WITHDRAWAL QUEUE (MOCK)");
     }
 
     function approveSpending() internal {

@@ -16,6 +16,7 @@ import {IERC20} from "contracts/Interfaces.sol";
 // Mocks
 import {MockWstETH} from "./mocks/MockWstETH.sol";
 import {MockERC4626Market} from "./mocks/MockERC4626Market.sol";
+import {MockLidoWithdraw} from "./mocks/MockLidoWithdraw.sol";
 
 abstract contract Base_Test_ is Test {
     //////////////////////////////////////////////////////
@@ -34,6 +35,7 @@ abstract contract Base_Test_ is Test {
 
     // Mocks
     MockWstETH public mockWstETH;
+    MockLidoWithdraw public lidoWithdrawalQueue;
     MockERC4626Market public mockERC4626Market;
 
     //////////////////////////////////////////////////////
@@ -48,9 +50,6 @@ abstract contract Base_Test_ is Test {
     address public governor = makeAddr("governor");
     address public operator = makeAddr("operator");
     address public feeCollector = makeAddr("feeCollector");
-
-    // Mocks
-    address public lidoWithdrawalQueue = makeAddr("lidoWithdrawalQueue");
 
     //////////////////////////////////////////////////////
     /// --- DEFAULT VALUES
