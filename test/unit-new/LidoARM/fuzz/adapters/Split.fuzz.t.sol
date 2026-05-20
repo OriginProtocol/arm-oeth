@@ -7,9 +7,6 @@ import {Unit_LidoARM_Shared_Test} from "../../Shared.t.sol";
 // Contracts
 import {AbstractLidoAssetAdapter} from "contracts/adapters/AbstractLidoAssetAdapter.sol";
 
-// Interfaces
-import {IERC20} from "contracts/Interfaces.sol";
-
 // Libraries
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
