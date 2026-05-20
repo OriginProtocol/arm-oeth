@@ -55,10 +55,7 @@ contract MockLidoWithdraw {
     //////////////////////////////////////////////////////
     /// --- IStETHWithdrawal (subset used by the adapter)
     //////////////////////////////////////////////////////
-    function requestWithdrawals(uint256[] calldata amounts, address owner)
-        external
-        returns (uint256[] memory ids)
-    {
+    function requestWithdrawals(uint256[] calldata amounts, address owner) external returns (uint256[] memory ids) {
         uint256 len = amounts.length;
         ids = new uint256[](len);
 
