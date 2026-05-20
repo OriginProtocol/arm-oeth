@@ -137,8 +137,10 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
     bool public paused;
     /// @notice Maximum liquidity assets reserved for outstanding LP withdrawal requests.
     uint256 public reservedWithdrawLiquidity;
+    /// @notice First withdrawal request id that uses the new share-escrow queue semantics.
+    uint256 public legacyWithdrawalRequestCount;
 
-    uint256[32] private _gap;
+    uint256[31] private _gap;
 
     ////////////////////////////////////////////////////
     ///                 Errors
@@ -816,7 +818,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
         WithdrawalRequest memory request = withdrawalRequests[requestId];
 
         if (request.claimTimestamp > block.timestamp) revert ClaimDelayNotMet();
-        bool legacyRequest = request.shares == 0;
+        bool legacyRequest = requestId < legacyWithdrawalRequestCount;
         if (legacyRequest) {
             if (request.queued > _legacyClaimable()) revert QueuePendingLiquidity();
         } else {
@@ -1218,6 +1220,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
         if (withdrawsQueuedShares != 0 || withdrawsClaimedShares != 0 || reservedWithdrawLiquidity != 0) {
             revert AlreadyMigrated();
         }
+        legacyWithdrawalRequestCount = nextWithdrawalIndex;
     }
 
     /// @dev Hook for protocol-specific legacy withdrawal queue checks before shared queue migration.

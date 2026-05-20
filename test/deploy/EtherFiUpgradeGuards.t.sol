@@ -18,6 +18,7 @@ contract ExposedUpgradeEtherFiARMSwapFeeScript is $029_UpgradeEtherFiARMSwapFeeS
 
 contract EtherFiUpgradeGuardsTest is Test {
     uint256 internal constant LEGACY_PACKED_WITHDRAW_QUEUE_SLOT = 53;
+    uint256 internal constant NEXT_WITHDRAWAL_INDEX_SLOT = 54;
     uint256 internal constant ETHERFI_LEGACY_WITHDRAWAL_QUEUE_AMOUNT_SLOT = 100;
 
     ExposedUpgradeEtherFiARMSwapFeeScript internal script;
@@ -37,10 +38,12 @@ contract EtherFiUpgradeGuardsTest is Test {
         (Proxy proxy, EtherFiARM newImpl) = _deployInitializedEtherFiARMProxy();
         uint256 packedLegacyQueue = _packLegacyWithdrawQueue(1 ether, 1 ether);
         vm.store(address(proxy), bytes32(LEGACY_PACKED_WITHDRAW_QUEUE_SLOT), bytes32(packedLegacyQueue));
+        vm.store(address(proxy), bytes32(NEXT_WITHDRAWAL_INDEX_SLOT), bytes32(uint256(3)));
 
         proxy.upgradeToAndCall(address(newImpl), script.migrateLegacyWithdrawQueueData());
 
         assertEq(EtherFiARM(payable(address(proxy))).reservedWithdrawLiquidity(), 0);
+        assertEq(EtherFiARM(payable(address(proxy))).legacyWithdrawalRequestCount(), 3);
         assertEq(uint256(vm.load(address(proxy), bytes32(LEGACY_PACKED_WITHDRAW_QUEUE_SLOT))), packedLegacyQueue);
     }
 
@@ -58,10 +61,12 @@ contract EtherFiUpgradeGuardsTest is Test {
         bytes memory data = script.migrateLegacyWithdrawQueueData();
         uint256 packedLegacyQueue = _packLegacyWithdrawQueue(1 ether, 0);
         vm.store(address(proxy), bytes32(LEGACY_PACKED_WITHDRAW_QUEUE_SLOT), bytes32(packedLegacyQueue));
+        vm.store(address(proxy), bytes32(NEXT_WITHDRAWAL_INDEX_SLOT), bytes32(uint256(3)));
 
         proxy.upgradeToAndCall(address(newImpl), data);
 
         assertEq(EtherFiARM(payable(address(proxy))).reservedWithdrawLiquidity(), 0);
+        assertEq(EtherFiARM(payable(address(proxy))).legacyWithdrawalRequestCount(), 3);
         assertEq(uint256(vm.load(address(proxy), bytes32(LEGACY_PACKED_WITHDRAW_QUEUE_SLOT))), packedLegacyQueue);
     }
 
