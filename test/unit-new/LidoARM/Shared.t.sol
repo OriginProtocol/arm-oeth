@@ -45,6 +45,7 @@ abstract contract Unit_LidoARM_Shared_Test is Base_Test_ {
         weth = IERC20(address(new WETH()));
         steth = IERC20(address(new MockERC20("Staked Ether", "stETH", 18)));
         mockERC4626Market = new MockERC4626Market(weth);
+        mockERC4626Market2 = new MockERC4626Market(weth);
         mockWstETH = new MockWstETH(steth);
         wsteth = IERC20(address(mockWstETH));
         lidoWithdrawalQueue = new MockLidoWithdraw(address(steth));
@@ -144,6 +145,8 @@ abstract contract Unit_LidoARM_Shared_Test is Base_Test_ {
         vm.label(address(stETHAssetAdapter), "STETH ASSET ADAPTER PROXY");
         vm.label(address(wstETHAssetAdapter), "WSTETH ASSET ADAPTER PROXY");
         vm.label(address(lidoWithdrawalQueue), "LIDO WITHDRAWAL QUEUE (MOCK)");
+        vm.label(address(mockERC4626Market), "ERC4626 MARKET (MOCK)");
+        vm.label(address(mockERC4626Market2), "ERC4626 MARKET 2 (MOCK)");
     }
 
     function approveSpending() internal {
@@ -163,6 +166,23 @@ abstract contract Unit_LidoARM_Shared_Test is Base_Test_ {
     function desactiveCapManager() internal {
         vm.prank(governor);
         lidoARM.setCapManager(address(0));
+    }
+
+    function addMarket(address market) internal {
+        address[] memory markets = new address[](1);
+        markets[0] = market;
+        vm.prank(governor);
+        lidoARM.addMarkets(markets);
+    }
+
+    function setActiveMarket(address market) internal {
+        vm.prank(governor);
+        lidoARM.setActiveMarket(market);
+    }
+
+    function setARMBuffer(uint256 buffer) internal {
+        vm.prank(governor);
+        lidoARM.setARMBuffer(buffer);
     }
 
     function aliceFirstDeposit() internal {

@@ -37,6 +37,7 @@ abstract contract Base_Test_ is Test {
     MockWstETH public mockWstETH;
     MockLidoWithdraw public lidoWithdrawalQueue;
     MockERC4626Market public mockERC4626Market;
+    MockERC4626Market public mockERC4626Market2;
 
     //////////////////////////////////////////////////////
     /// --- Governance, multisigs and EOAs
