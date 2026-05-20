@@ -19,7 +19,7 @@ contract EthenaARM is Initializable, AbstractARM {
     /// @dev Deprecated request timestamp retained for storage layout compatibility.
     uint32 internal _deprecatedLastRequestTimestamp;
 
-    error LegacyEthenaCooldownPending();
+    error LegacyEthenaCooldownPending(); // 0x0b5abdf2
 
     /// @param _usde The address of Ethena's synthetic dollar token (USDe)
     /// @param _claimDelay The delay in seconds before a user can claim a redeem from the request

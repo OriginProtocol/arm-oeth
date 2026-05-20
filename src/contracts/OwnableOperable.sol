@@ -8,7 +8,7 @@ import {Ownable} from "./Ownable.sol";
  * @author Origin Protocol Inc
  */
 contract OwnableOperable is Ownable {
-    error OnlyOperatorOrOwner();
+    error OnlyOperatorOrOwner(); // 0x3fbed347
 
     /// @notice The account that can request and claim withdrawals.
     address public operator;

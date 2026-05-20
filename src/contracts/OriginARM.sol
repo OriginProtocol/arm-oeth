@@ -23,7 +23,7 @@ contract OriginARM is Initializable, AbstractARM {
     event RequestOriginWithdrawal(uint256 amount, uint256 requestId);
     event ClaimOriginWithdrawals(uint256[] requestIds, uint256 amountClaimed);
 
-    error LegacyOriginWithdrawalsPending();
+    error LegacyOriginWithdrawalsPending(); // 0xfa449524
 
     /// @param _otoken The address of the Origin token. eg OETH or OS
     /// @param _liquidityAsset The address of the liquidity asset. eg WETH or wS
