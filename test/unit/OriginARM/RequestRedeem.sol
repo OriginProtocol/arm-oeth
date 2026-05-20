@@ -53,4 +53,10 @@ contract Unit_Concrete_OriginARM_RequestRedeem_Test_ is Unit_Shared_Test {
         assertEq(queued_, queuedShares + expectedShares, "Queued should be updated");
         assertEq(shares, expectedShares, "Shares should be updated");
     }
+
+    function test_RevertWhen_RequestRedeem_Because_ZeroShares() public {
+        vm.prank(alice);
+        vm.expectRevert("ARM: Zero shares");
+        originARM.requestRedeem(0);
+    }
 }

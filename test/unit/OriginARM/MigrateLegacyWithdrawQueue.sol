@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
-import {stdStorage, StdStorage} from "forge-std/Test.sol";
 import {Unit_Shared_Test} from "test/unit/shared/Shared.sol";
 
 contract Unit_Concrete_OriginARM_MigrateLegacyWithdrawQueue_Test_ is Unit_Shared_Test {
-    using stdStorage for StdStorage;
+    uint256 internal constant LEGACY_PACKED_WITHDRAW_QUEUE_SLOT = 53;
 
     function test_RevertWhen_MigrateLegacyWithdrawQueue_Because_NotGovernor() public asNotGovernor {
         vm.expectRevert(bytes4(keccak256("OnlyOwner()")));
@@ -26,13 +25,16 @@ contract Unit_Concrete_OriginARM_MigrateLegacyWithdrawQueue_Test_ is Unit_Shared
         originARM.migrateLegacyWithdrawQueue();
 
         assertEq(originARM.reservedWithdrawLiquidity(), 0, "reserved liquidity");
+        assertEq(_readLegacyWithdrawQueue(), _packLegacyWithdrawQueue(legacyQueued, legacyClaimed), "legacy queue preserved");
     }
 
-    function test_RevertWhen_MigrateLegacyWithdrawQueue_Because_LegacyWithdrawalsPending() public asGovernor {
+    function test_MigrateLegacyWithdrawQueue_When_LegacyWithdrawalsPending() public asGovernor {
         _writeLegacyWithdrawQueue(5 ether, 4 ether);
 
-        vm.expectRevert(bytes4(keccak256("LegacyWithdrawalsPending()")));
         originARM.migrateLegacyWithdrawQueue();
+
+        assertEq(originARM.reservedWithdrawLiquidity(), 0, "reserved liquidity");
+        assertEq(_readLegacyWithdrawQueue(), _packLegacyWithdrawQueue(5 ether, 4 ether), "legacy queue preserved");
     }
 
     function test_RevertWhen_MigrateLegacyWithdrawQueue_Because_NewQueueAlreadyUsed()
@@ -48,11 +50,18 @@ contract Unit_Concrete_OriginARM_MigrateLegacyWithdrawQueue_Test_ is Unit_Shared
     }
 
     function _writeLegacyWithdrawQueue(uint128 legacyQueued, uint128 legacyClaimed) internal {
-        uint256 packedLegacyQueue = uint256(legacyQueued) | (uint256(legacyClaimed) << 128);
+        uint256 packedLegacyQueue = _packLegacyWithdrawQueue(legacyQueued, legacyClaimed);
 
-        stdstore.target(address(originARM)).sig(originARM.reservedWithdrawLiquidity.selector)
-            .checked_write(packedLegacyQueue);
+        vm.store(address(originARM), bytes32(LEGACY_PACKED_WITHDRAW_QUEUE_SLOT), bytes32(packedLegacyQueue));
+        assertEq(_readLegacyWithdrawQueue(), packedLegacyQueue, "packed legacy queue");
+        assertEq(originARM.reservedWithdrawLiquidity(), 0, "reserved liquidity");
+    }
 
-        assertEq(originARM.reservedWithdrawLiquidity(), packedLegacyQueue, "packed legacy queue");
+    function _readLegacyWithdrawQueue() internal view returns (uint256) {
+        return uint256(vm.load(address(originARM), bytes32(LEGACY_PACKED_WITHDRAW_QUEUE_SLOT)));
+    }
+
+    function _packLegacyWithdrawQueue(uint128 legacyQueued, uint128 legacyClaimed) internal pure returns (uint256) {
+        return uint256(legacyQueued) | (uint256(legacyClaimed) << 128);
     }
 }

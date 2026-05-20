@@ -5,6 +5,9 @@ import {Unit_Shared_Test} from "test/unit/shared/Shared.sol";
 import {AbstractARM} from "contracts/AbstractARM.sol";
 
 contract Unit_Concrete_OriginARM_ClaimRedeem_Test_ is Unit_Shared_Test {
+    uint256 internal constant LEGACY_PACKED_WITHDRAW_QUEUE_SLOT = 53;
+    uint256 internal constant WITHDRAWAL_REQUESTS_SLOT = 55;
+
     function setUp() public virtual override {
         super.setUp();
 
@@ -59,6 +62,48 @@ contract Unit_Concrete_OriginARM_ClaimRedeem_Test_ is Unit_Shared_Test {
         assertEq(weth.balanceOf(alice), aliceBalanceBefore + DEFAULT_AMOUNT, "Alice should receive her WETH");
         assertEq(weth.balanceOf(operator), operatorBalanceBefore, "Operator should not receive WETH");
         assertEq(originARM.claimable(), DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, "Claimable should be updated");
+    }
+
+    function test_ClaimRedeem_WhenLegacyRequestClaimedByWithdrawer() public timejump(CLAIM_DELAY) {
+        uint128 legacyAssets = 0.4 ether;
+        uint128 legacyQueued = 1 ether;
+        uint128 legacyClaimed = legacyQueued - legacyAssets;
+        _writeLegacyWithdrawQueue(legacyQueued, legacyClaimed);
+        _writeLegacyWithdrawalRequest(0, alice, false, uint40(block.timestamp), legacyAssets, legacyQueued);
+
+        uint256 aliceBalanceBefore = weth.balanceOf(alice);
+
+        vm.prank(alice);
+        vm.expectEmit(address(originARM));
+        emit AbstractARM.RedeemClaimed(alice, 0, legacyAssets);
+        originARM.claimRedeem(0);
+
+        (, bool claimed,,,, uint256 shares) = originARM.withdrawalRequests(0);
+        assertEq(claimed, true, "claimed");
+        assertEq(shares, 0, "legacy shares");
+        assertEq(weth.balanceOf(alice), aliceBalanceBefore + legacyAssets, "alice WETH");
+        assertEq(originARM.reservedWithdrawLiquidity(), 0, "reserved liquidity");
+        assertEq(originARM.withdrawsClaimedShares(), 0, "claimed shares");
+        assertEq(_readLegacyWithdrawQueue(), _packLegacyWithdrawQueue(legacyQueued, legacyQueued), "legacy claimed");
+    }
+
+    function test_ClaimRedeem_WhenLegacyRequestClaimedByOperator() public timejump(CLAIM_DELAY) {
+        uint128 legacyAssets = 0.25 ether;
+        uint128 legacyQueued = 1 ether;
+        uint128 legacyClaimed = legacyQueued - legacyAssets;
+        _writeLegacyWithdrawQueue(legacyQueued, legacyClaimed);
+        _writeLegacyWithdrawalRequest(0, alice, false, uint40(block.timestamp), legacyAssets, legacyQueued);
+
+        uint256 aliceBalanceBefore = weth.balanceOf(alice);
+        uint256 operatorBalanceBefore = weth.balanceOf(operator);
+
+        vm.prank(operator);
+        originARM.claimRedeem(0);
+
+        assertEq(weth.balanceOf(alice), aliceBalanceBefore + legacyAssets, "alice WETH");
+        assertEq(weth.balanceOf(operator), operatorBalanceBefore, "operator WETH");
+        assertEq(originARM.reservedWithdrawLiquidity(), 0, "reserved liquidity");
+        assertEq(_readLegacyWithdrawQueue(), _packLegacyWithdrawQueue(legacyQueued, legacyQueued), "legacy claimed");
     }
 
     function test_RevertWhen_ClaimRedeem_Because_AlreadyClaimed() public requestRedeemAll(alice) timejump(CLAIM_DELAY) {
@@ -135,5 +180,38 @@ contract Unit_Concrete_OriginARM_ClaimRedeem_Test_ is Unit_Shared_Test {
         assertEq(originARM.withdrawsClaimedShares(), DEFAULT_AMOUNT, "Claimed shares should be DEFAULT_AMOUNT");
         assertEq(weth.balanceOf(alice), balanceBefore + DEFAULT_AMOUNT, "Alice should receive her WETH");
         assertEq(originARM.claimable(), DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, "Claimable should be updated");
+    }
+
+    function _writeLegacyWithdrawQueue(uint128 legacyQueued, uint128 legacyClaimed) internal {
+        vm.store(
+            address(originARM),
+            bytes32(LEGACY_PACKED_WITHDRAW_QUEUE_SLOT),
+            bytes32(_packLegacyWithdrawQueue(legacyQueued, legacyClaimed))
+        );
+    }
+
+    function _writeLegacyWithdrawalRequest(
+        uint256 requestId,
+        address withdrawer,
+        bool claimed,
+        uint40 claimTimestamp,
+        uint128 assets,
+        uint128 queued
+    ) internal {
+        bytes32 requestSlot = keccak256(abi.encode(requestId, WITHDRAWAL_REQUESTS_SLOT));
+        uint256 slot0 = uint256(uint160(withdrawer)) | (claimed ? uint256(1) << 160 : 0)
+            | (uint256(claimTimestamp) << 168);
+
+        vm.store(address(originARM), requestSlot, bytes32(slot0));
+        vm.store(address(originARM), bytes32(uint256(requestSlot) + 1), bytes32(uint256(assets) | (uint256(queued) << 128)));
+        vm.store(address(originARM), bytes32(uint256(requestSlot) + 2), bytes32(uint256(0)));
+    }
+
+    function _readLegacyWithdrawQueue() internal view returns (uint256) {
+        return uint256(vm.load(address(originARM), bytes32(LEGACY_PACKED_WITHDRAW_QUEUE_SLOT)));
+    }
+
+    function _packLegacyWithdrawQueue(uint128 legacyQueued, uint128 legacyClaimed) internal pure returns (uint256) {
+        return uint256(legacyQueued) | (uint256(legacyClaimed) << 128);
     }
 }
