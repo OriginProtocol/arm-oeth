@@ -122,10 +122,7 @@ contract Unit_Concrete_OriginARM_ClaimRedeem_Test_ is Unit_Shared_Test {
         assertEq(_readLegacyWithdrawQueue(), _packLegacyWithdrawQueue(legacyQueued, legacyQueued), "legacy claimed");
     }
 
-    function test_ClaimRedeem_WhenRequestIdAtMigrationBoundaryUsesNewQueue()
-        public
-        timejump(CLAIM_DELAY)
-    {
+    function test_ClaimRedeem_WhenRequestIdAtMigrationBoundaryUsesNewQueue() public timejump(CLAIM_DELAY) {
         _migrateWithLegacyBoundary(3);
 
         vm.prank(alice);
