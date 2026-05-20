@@ -155,4 +155,44 @@ contract Unit_LidoARM_AbstractLidoAssetAdapter_Test is Unit_LidoARM_Shared_Test 
             + testableAdapter.requestShares(id2);
         assertEq(sum, totalShares, "sum == totalShares");
     }
+
+    //////////////////////////////////////////////////////
+    /// --- requestRedeem edge cases (documented behavior)
+    //////////////////////////////////////////////////////
+
+    /// @notice Documents the silent no-op when `_pullSharesAndConvertToSteth` returns 0
+    ///         (the underlying conversion produced no stETH at all — e.g. an extreme rate-
+    ///         down scenario on wstETH where shares are too small to round to any stETH).
+    ///         The current adapter returns `(sharesRequested = shares, assetsExpected = 0)`
+    ///         without queueing anything or reverting. The caller (LidoARM) increments
+    ///         `pendingRedeemAssets` by 0 — so the user's shares are NOT actually queued
+    ///         despite the non-zero `sharesRequested` return. This is a known sharp edge,
+    ///         and this test pins the behavior so a future fix becomes a deliberate change.
+    function test_RequestRedeem_ZeroAssetsOut_IsSilentNoOp() public {
+        testableAdapter.setMockAssetsOut(0);
+        testableAdapter.setMockAssetsToSharesRate(1e18);
+
+        uint256 shares = 100 ether;
+        uint256 stethBefore = steth.balanceOf(address(this));
+        uint256 queueStethBefore = steth.balanceOf(address(lidoWithdrawalQueue));
+
+        (uint256 sharesRequested, uint256 assetsExpected) = testableAdapter.requestRedeem(shares);
+
+        // Return values: sharesRequested echoes the input despite the no-op.
+        assertEq(sharesRequested, shares, "sharesRequested echoes input even on no-op");
+        assertEq(assetsExpected, 0, "assetsExpected reflects the zero conversion");
+
+        // No tokens moved: nothing pulled from the simulated ARM, nothing forwarded to the queue.
+        assertEq(steth.balanceOf(address(this)), stethBefore, "ARM stETH unchanged");
+        assertEq(steth.balanceOf(address(lidoWithdrawalQueue)), queueStethBefore, "queue stETH unchanged");
+        assertEq(steth.balanceOf(address(testableAdapter)), 0, "adapter stETH still zero");
+
+        // No queue entries created.
+        assertEq(testableAdapter.pendingRequestIdsLength(), 0, "no pending ids registered");
+
+        // Calling redeem afterwards reverts (no requests to claim), confirming nothing leaked
+        // into adapter state.
+        vm.expectRevert("Adapter: no pending requests");
+        testableAdapter.redeem(shares);
+    }
 }

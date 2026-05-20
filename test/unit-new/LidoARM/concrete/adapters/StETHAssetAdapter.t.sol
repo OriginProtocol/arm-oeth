@@ -435,4 +435,94 @@ contract Unit_LidoARM_StETHAssetAdapter_Test is Unit_LidoARM_Shared_Test {
         vm.expectRevert();
         stETHAssetAdapter.pendingRequestId(0);
     }
+
+    //////////////////////////////////////////////////////
+    /// --- state machine integration
+    //////////////////////////////////////////////////////
+
+    /// @notice End-to-end state-machine check across two requests with progressive finalization
+    ///         and three sequential claims. Catches integration-level bugs that the isolated
+    ///         partial-drain / stops-at-unfinalized / claimableRedeem tests can't, because here
+    ///         every state transition must compose with the next one — `nextPendingIndex` must
+    ///         advance exactly, mappings must clear at the right moment, and `claimableRedeem`
+    ///         must track finalization toggles in both directions.
+    function test_StateMachine_MultiRequestMixedFinalization() public {
+        // --- Setup: two requests, three queue ids (0 from req1, 1+2 from req2).
+        vm.startPrank(address(lidoARM));
+        stETHAssetAdapter.requestRedeem(500 ether); // id 0
+        stETHAssetAdapter.requestRedeem(1_500 ether); // ids 1 and 2 (chunks 1000 + 500)
+        vm.stopPrank();
+        assertEq(stETHAssetAdapter.pendingRequestIdsLength(), 3, "3 queue ids registered");
+
+        uint256 id0 = stETHAssetAdapter.pendingRequestId(0);
+        uint256 id1 = stETHAssetAdapter.pendingRequestId(1);
+        uint256 id2 = stETHAssetAdapter.pendingRequestId(2);
+
+        // --- Roll id 1 back to un-finalized; id 0 and id 2 stay finalized.
+        // This shape (finalized, NOT-finalized, finalized) is the strongest test for the
+        // adapter's "stop at first non-finalized" rule: id 2 is finalizable but unreachable
+        // until id 1 catches up, because claims are strictly FIFO.
+        lidoWithdrawalQueue.mock_setFinalized(id1, false);
+
+        // Stage 1: claimable should include id 0 only (loop breaks at id 1).
+        {
+            (uint256 cShares, uint256 cAssets) = stETHAssetAdapter.claimableRedeem();
+            assertEq(cShares, 500 ether, "stage1 claimable shares == id0");
+            assertEq(cAssets, 500 ether, "stage1 claimable assets == id0");
+        }
+
+        // Stage 2: redeem id 0; mappings for id 0 clear, id 1 and id 2 mappings untouched.
+        vm.prank(address(lidoARM));
+        (uint256 sc1,, uint256 ar1) = stETHAssetAdapter.redeem(500 ether);
+        assertEq(sc1, 500 ether, "stage2 sharesClaimed");
+        assertEq(ar1, 500 ether, "stage2 assetsReceived");
+        assertEq(stETHAssetAdapter.requestShares(id0), 0, "id0 mapping cleared");
+        assertEq(stETHAssetAdapter.requestShares(id1), 1_000 ether, "id1 mapping intact");
+        assertEq(stETHAssetAdapter.requestShares(id2), 500 ether, "id2 mapping intact");
+        // The pendingRequestIds array is append-only; only the read cursor advances.
+        assertEq(stETHAssetAdapter.pendingRequestIdsLength(), 3, "pendingIds length still 3");
+
+        // Stage 3: with id 1 still un-finalized, claimable == 0 even though id 2 IS finalized.
+        // This is the FIFO property: id 2 cannot be skipped over id 1.
+        {
+            (uint256 cShares, uint256 cAssets) = stETHAssetAdapter.claimableRedeem();
+            assertEq(cShares, 0, "stage3 claimable shares == 0 (id1 blocks id2)");
+            assertEq(cAssets, 0, "stage3 claimable assets == 0");
+        }
+
+        // Stage 4: any redeem attempt now reverts on the FIFO check.
+        vm.prank(address(lidoARM));
+        vm.expectRevert("Adapter: redeem exceeds claimable");
+        stETHAssetAdapter.redeem(1_000 ether);
+
+        // Stage 5: finalize id 1. claimable jumps to id 1 + id 2 in a single step.
+        lidoWithdrawalQueue.mock_setFinalized(id1, true);
+        {
+            (uint256 cShares, uint256 cAssets) = stETHAssetAdapter.claimableRedeem();
+            assertEq(cShares, 1_500 ether, "stage5 claimable shares == id1 + id2");
+            assertEq(cAssets, 1_500 ether, "stage5 claimable assets == id1 + id2");
+        }
+
+        // Stage 6: redeem id 1 alone (not id 1 + id 2 together). Cursor advances by exactly one.
+        vm.prank(address(lidoARM));
+        stETHAssetAdapter.redeem(1_000 ether);
+        assertEq(stETHAssetAdapter.requestShares(id1), 0, "id1 mapping cleared");
+        assertEq(stETHAssetAdapter.requestShares(id2), 500 ether, "id2 mapping intact after id1 claim");
+
+        // Stage 7: claim id 2. Adapter is fully drained but the array remains length 3.
+        vm.prank(address(lidoARM));
+        stETHAssetAdapter.redeem(500 ether);
+        assertEq(stETHAssetAdapter.requestShares(id2), 0, "id2 mapping cleared");
+        {
+            (uint256 cShares, uint256 cAssets) = stETHAssetAdapter.claimableRedeem();
+            assertEq(cShares, 0, "stage7 claimable shares == 0 (drained)");
+            assertEq(cAssets, 0, "stage7 claimable assets == 0");
+        }
+        assertEq(stETHAssetAdapter.pendingRequestIdsLength(), 3, "pendingIds length unchanged after full drain");
+
+        // Stage 8: any further redeem reverts with the empty-queue message (cursor == length).
+        vm.prank(address(lidoARM));
+        vm.expectRevert("Adapter: no pending requests");
+        stETHAssetAdapter.redeem(1 ether);
+    }
 }
