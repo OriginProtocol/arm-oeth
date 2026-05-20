@@ -36,11 +36,7 @@ contract EthenaUpgradeGuardsTest is Test {
     function test_UpgradeToAndCallMigratesWithClaimedLegacyWithdrawQueue() external {
         (Proxy proxy, EthenaARM newImpl) = _deployInitializedEthenaARMProxy();
         uint256 packedLegacyQueue = _packLegacyWithdrawQueue(1 ether, 1 ether);
-        vm.store(
-            address(proxy),
-            bytes32(LEGACY_PACKED_WITHDRAW_QUEUE_SLOT),
-            bytes32(packedLegacyQueue)
-        );
+        vm.store(address(proxy), bytes32(LEGACY_PACKED_WITHDRAW_QUEUE_SLOT), bytes32(packedLegacyQueue));
 
         proxy.upgradeToAndCall(address(newImpl), script.migrateLegacyWithdrawQueueData());
 
@@ -61,9 +57,7 @@ contract EthenaUpgradeGuardsTest is Test {
         (Proxy proxy, EthenaARM newImpl) = _deployInitializedEthenaARMProxy();
         bytes memory data = script.migrateLegacyWithdrawQueueData();
         uint256 packedLegacyQueue = _packLegacyWithdrawQueue(1 ether, 0);
-        vm.store(
-            address(proxy), bytes32(LEGACY_PACKED_WITHDRAW_QUEUE_SLOT), bytes32(packedLegacyQueue)
-        );
+        vm.store(address(proxy), bytes32(LEGACY_PACKED_WITHDRAW_QUEUE_SLOT), bytes32(packedLegacyQueue));
 
         proxy.upgradeToAndCall(address(newImpl), data);
 

@@ -165,6 +165,12 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
     error InvalidARMBuffer();
     error AlreadyMigrated();
     error ContractPaused();
+    error Insolvent();
+    error ZeroShares();
+    error ClaimDelayNotMet();
+    error QueuePendingLiquidity();
+    error NotRequesterOrOperator();
+    error AlreadyClaimed();
 
     ////////////////////////////////////////////////////
     ///                 Events
@@ -741,7 +747,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
     /// @param receiver Account that receives minted LP shares.
     /// @return shares LP shares minted.
     function _deposit(uint256 assets, address receiver) internal returns (uint256 shares) {
-        require(totalAssets() > MIN_TOTAL_SUPPLY || reservedWithdrawLiquidity == 0, "ARM: insolvent");
+        if (totalAssets() <= MIN_TOTAL_SUPPLY && reservedWithdrawLiquidity != 0) revert Insolvent();
         shares = convertToShares(assets);
 
         // Transfer liquidity from the depositor before minting LP shares.
@@ -768,8 +774,13 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
     /// @param shares LP shares to burn.
     /// @return requestId The LP withdrawal request id.
     /// @return assets The maximum liquidity assets claimable by the redeemer.
-    function requestRedeem(uint256 shares) external whenNotPaused nonReentrant returns (uint256 requestId, uint256 assets) {
-        require(shares > 0, "ARM: Zero shares");
+    function requestRedeem(uint256 shares)
+        external
+        whenNotPaused
+        nonReentrant
+        returns (uint256 requestId, uint256 assets)
+    {
+        if (shares == 0) revert ZeroShares();
 
         assets = convertToAssets(shares);
         requestId = nextWithdrawalIndex;
@@ -804,59 +815,45 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
     function claimRedeem(uint256 requestId) external whenNotPaused nonReentrant returns (uint256 assets) {
         WithdrawalRequest memory request = withdrawalRequests[requestId];
 
-        require(request.claimTimestamp <= block.timestamp, "Claim delay not met");
-
-        if (request.shares == 0) {
-            assets = _claimLegacyRedeem(requestId, request);
+        if (request.claimTimestamp > block.timestamp) revert ClaimDelayNotMet();
+        bool legacyRequest = request.shares == 0;
+        if (legacyRequest) {
+            if (request.queued > _legacyClaimable()) revert QueuePendingLiquidity();
         } else {
-            assets = _claimRedeem(requestId, request);
+            if (request.queued > claimable()) revert QueuePendingLiquidity();
         }
+        if (request.withdrawer != msg.sender && msg.sender != operator) revert NotRequesterOrOperator();
+        if (request.claimed) revert AlreadyClaimed();
+
+        if (legacyRequest) {
+            assets = request.assets;
+            // Legacy requests used asset-denominated cumulative queue accounting.
+            _deprecatedWithdrawsClaimed += SafeCast.toUint128(assets);
+        } else {
+            // In the scenario where the ARM has made a loss after the redeem request, the asset value of
+            // the redeemed shares at the time of the claim is used.
+            // This can happen if there was a significant slashing event on the base asset, eg stETH,
+            // after the redeem request was made.
+            uint256 assetsAtClaim = convertToAssets(request.shares);
+            // Use the minimum of the asset value of the redeemed shares at request or claim.
+            assets = request.assets < assetsAtClaim ? request.assets : assetsAtClaim;
+
+            // Release the full request-time reservation, even when a loss-adjusted payout is lower.
+            reservedWithdrawLiquidity -= request.assets;
+            // Cumulative claimed amount in shares, used by the FIFO gate above.
+            withdrawsClaimedShares += request.shares;
+
+            // Burn the escrowed shares after `assets` was computed so conversion uses the pre-claim supply.
+            _burn(address(this), request.shares);
+        }
+
+        // Store the request as claimed.
+        withdrawalRequests[requestId].claimed = true;
+        _pullLiquidityForRedeem(assets);
 
         // Transfer the liquidity asset to the withdrawer.
         IERC20(liquidityAsset).transfer(request.withdrawer, assets);
         emit RedeemClaimed(request.withdrawer, requestId, assets);
-    }
-
-    /// @dev Claim a legacy asset-denominated withdrawal request created before share escrow was introduced.
-    function _claimLegacyRedeem(uint256 requestId, WithdrawalRequest memory request) private returns (uint256 assets) {
-        require(request.queued <= _legacyClaimable(), "Queue pending liquidity");
-        require(request.withdrawer == msg.sender || msg.sender == operator, "Not requester or operator");
-        require(request.claimed == false, "Already claimed");
-
-        assets = request.assets;
-        // Store the request as claimed.
-        withdrawalRequests[requestId].claimed = true;
-        // Legacy requests used asset-denominated cumulative queue accounting.
-        _deprecatedWithdrawsClaimed += SafeCast.toUint128(assets);
-
-        _pullLiquidityForRedeem(assets);
-    }
-
-    /// @dev Claim a share-escrowed withdrawal request created by this implementation.
-    function _claimRedeem(uint256 requestId, WithdrawalRequest memory request) private returns (uint256 assets) {
-        require(request.queued <= claimable(), "Queue pending liquidity");
-        require(request.withdrawer == msg.sender || msg.sender == operator, "Not requester or operator");
-        require(request.claimed == false, "Already claimed");
-
-        // In the scenario where the ARM has made a loss after the redeem request, the asset value of
-        // the redeemed shares at the time of the claim is used.
-        // This can happen if there was a significant slashing event on the base asset, eg stETH,
-        // after the redeem request was made.
-        uint256 assetsAtClaim = request.shares > 0 ? convertToAssets(request.shares) : request.assets;
-        // Use the minimum of the asset value of the redeemed shares at request or claim.
-        assets = request.assets < assetsAtClaim ? request.assets : assetsAtClaim;
-
-        // Store the request as claimed.
-        withdrawalRequests[requestId].claimed = true;
-        // Release the full request-time reservation, even when a loss-adjusted payout is lower.
-        reservedWithdrawLiquidity -= request.assets;
-        // Cumulative claimed amount in shares, used by the FIFO gate above.
-        withdrawsClaimedShares += request.shares;
-
-        // Burn the escrowed shares after `assets` was computed so conversion uses the pre-claim supply.
-        _burn(address(this), request.shares);
-
-        _pullLiquidityForRedeem(assets);
     }
 
     /// @dev Pull liquidity from the active market if the ARM does not hold enough to pay a redeem claim.

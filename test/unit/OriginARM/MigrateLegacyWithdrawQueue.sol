@@ -25,7 +25,9 @@ contract Unit_Concrete_OriginARM_MigrateLegacyWithdrawQueue_Test_ is Unit_Shared
         originARM.migrateLegacyWithdrawQueue();
 
         assertEq(originARM.reservedWithdrawLiquidity(), 0, "reserved liquidity");
-        assertEq(_readLegacyWithdrawQueue(), _packLegacyWithdrawQueue(legacyQueued, legacyClaimed), "legacy queue preserved");
+        assertEq(
+            _readLegacyWithdrawQueue(), _packLegacyWithdrawQueue(legacyQueued, legacyClaimed), "legacy queue preserved"
+        );
     }
 
     function test_MigrateLegacyWithdrawQueue_When_LegacyWithdrawalsPending() public asGovernor {

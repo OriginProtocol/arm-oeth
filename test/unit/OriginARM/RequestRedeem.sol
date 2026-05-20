@@ -56,7 +56,7 @@ contract Unit_Concrete_OriginARM_RequestRedeem_Test_ is Unit_Shared_Test {
 
     function test_RevertWhen_RequestRedeem_Because_ZeroShares() public {
         vm.prank(alice);
-        vm.expectRevert("ARM: Zero shares");
+        vm.expectRevert(bytes4(keccak256("ZeroShares()")));
         originARM.requestRedeem(0);
     }
 }

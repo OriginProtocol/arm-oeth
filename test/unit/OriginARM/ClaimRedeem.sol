@@ -22,7 +22,7 @@ contract Unit_Concrete_OriginARM_ClaimRedeem_Test_ is Unit_Shared_Test {
     }
 
     function test_RevertWhen_ClaimRedeem_Because_DelayNotMet() public requestRedeemAll(alice) {
-        vm.expectRevert("Claim delay not met");
+        vm.expectRevert(bytes4(keccak256("ClaimDelayNotMet()")));
         originARM.claimRedeem(0);
     }
 
@@ -32,7 +32,7 @@ contract Unit_Concrete_OriginARM_ClaimRedeem_Test_ is Unit_Shared_Test {
         requestRedeemAll(alice)
         timejump(CLAIM_DELAY)
     {
-        vm.expectRevert("Queue pending liquidity");
+        vm.expectRevert(bytes4(keccak256("QueuePendingLiquidity()")));
         originARM.claimRedeem(0);
     }
 
@@ -42,7 +42,7 @@ contract Unit_Concrete_OriginARM_ClaimRedeem_Test_ is Unit_Shared_Test {
         timejump(CLAIM_DELAY)
         asNot(alice)
     {
-        vm.expectRevert("Not requester or operator");
+        vm.expectRevert(bytes4(keccak256("NotRequesterOrOperator()")));
         originARM.claimRedeem(0);
     }
 
@@ -113,7 +113,7 @@ contract Unit_Concrete_OriginARM_ClaimRedeem_Test_ is Unit_Shared_Test {
 
         // Attempt to claim again
         vm.prank(alice);
-        vm.expectRevert("Already claimed");
+        vm.expectRevert(bytes4(keccak256("AlreadyClaimed()")));
         originARM.claimRedeem(0);
     }
 
@@ -199,11 +199,13 @@ contract Unit_Concrete_OriginARM_ClaimRedeem_Test_ is Unit_Shared_Test {
         uint128 queued
     ) internal {
         bytes32 requestSlot = keccak256(abi.encode(requestId, WITHDRAWAL_REQUESTS_SLOT));
-        uint256 slot0 = uint256(uint160(withdrawer)) | (claimed ? uint256(1) << 160 : 0)
-            | (uint256(claimTimestamp) << 168);
+        uint256 slot0 =
+            uint256(uint160(withdrawer)) | (claimed ? uint256(1) << 160 : 0) | (uint256(claimTimestamp) << 168);
 
         vm.store(address(originARM), requestSlot, bytes32(slot0));
-        vm.store(address(originARM), bytes32(uint256(requestSlot) + 1), bytes32(uint256(assets) | (uint256(queued) << 128)));
+        vm.store(
+            address(originARM), bytes32(uint256(requestSlot) + 1), bytes32(uint256(assets) | (uint256(queued) << 128))
+        );
         vm.store(address(originARM), bytes32(uint256(requestSlot) + 2), bytes32(uint256(0)));
     }
 

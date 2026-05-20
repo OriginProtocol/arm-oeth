@@ -14,6 +14,8 @@ import {AbstractARM} from "./AbstractARM.sol";
  * @author Origin Protocol Inc
  */
 contract EtherFiARM is Initializable, AbstractARM {
+    error LegacyEtherFiWithdrawalsPending();
+
     /// @dev Deprecated queue amount retained for storage layout compatibility.
     uint256 internal _deprecatedEtherfiWithdrawalQueueAmount;
 
@@ -61,7 +63,7 @@ contract EtherFiARM is Initializable, AbstractARM {
 
     /// @dev Revert if legacy EtherFi withdrawal requests are still outstanding.
     function _checkNoLegacyWithdrawQueue() internal view override {
-        require(_deprecatedEtherfiWithdrawalQueueAmount == 0, "EtherFiARM: withdrawals pending");
+        if (_deprecatedEtherfiWithdrawalQueueAmount != 0) revert LegacyEtherFiWithdrawalsPending();
     }
 
     /// @notice This payable method is necessary for receiving ETH claimed from the EtherFi withdrawal queue.
