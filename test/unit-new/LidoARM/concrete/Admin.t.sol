@@ -22,11 +22,6 @@ import {MockERC20} from "@solmate/test/utils/mocks/MockERC20.sol";
 ///         the happy-path test asserts that side effect explicitly so the test
 ///         catches removal of any of those behaviors.
 contract Unit_LidoARM_Admin_Test is Unit_LidoARM_Shared_Test {
-    // Storage slot for `feesAccrued` (uint128 at slot 62, offset 0); verified via
-    // `forge inspect`. The upper 16 bytes of the slot are unused, so a plain
-    // `vm.store(slot, value)` is safe and does not clobber neighbors.
-    uint256 internal constant FEES_ACCRUED_SLOT = 62;
-
     // Valid price defaults inside the [PRICE_SCALE - MAX_CROSS_PRICE_DEVIATION, PRICE_SCALE] band.
     uint256 internal constant CROSS_PRICE_DEFAULT = 1e36;
     uint256 internal constant BUY_PRICE_DEFAULT = 992 * 1e33; // 0.992e36
@@ -35,6 +30,28 @@ contract Unit_LidoARM_Admin_Test is Unit_LidoARM_Shared_Test {
 
     function setUp() public override {
         super.setUp();
+    }
+
+    /// @dev Drive `feesAccrued` to a non-zero value via the real swap path so the fee tests
+    ///      exercise the same accrual logic that production callers hit. Setup: register stETH
+    ///      with the default 0.992 buy price + 20% fee, seed alice with stETH, swap 10 stETH
+    ///      worth for WETH out — the spread between cross and buy is the fee. Returns the
+    ///      actual accrued amount so callers don't need to recompute it.
+    function _accrueFeesViaSwap() internal returns (uint256 accrued) {
+        desactiveCapManager(); // default total-assets cap is 0; disable so the deposit can land
+        addBaseAsset(steth);
+        aliceFirstDeposit(100 ether); // ARM now holds 100 ether of WETH available to swap out
+
+        uint256 amountOut = 10 ether;
+        // amountIn rounding mirrors AbstractARM._swapTokensForExactTokens: amountOut * PRICE_SCALE / buyPrice + 3 wei.
+        uint256 expectedAmountIn = amountOut * PRICE_SCALE / BUY_PRICE_DEFAULT + 3;
+        deal(address(steth), alice, expectedAmountIn);
+
+        vm.prank(alice);
+        lidoARM.swapTokensForExactTokens(steth, weth, amountOut, expectedAmountIn, alice);
+
+        accrued = lidoARM.feesAccrued();
+        require(accrued > 0, "test setup: swap did not accrue fees");
     }
 
     //////////////////////////////////////////////////////
@@ -458,12 +475,8 @@ contract Unit_LidoARM_Admin_Test is Unit_LidoARM_Shared_Test {
 
     function test_SetFee_FlushesAccruedFees() public {
         // _setFee calls collectFees() internally — accrued fees must flow to the collector before
-        // the rate changes. Seed feesAccrued via direct storage write (slot is single-occupant).
-        uint256 accrued = 5 ether;
-        vm.store(address(lidoARM), bytes32(FEES_ACCRUED_SLOT), bytes32(accrued));
-        // Fund the ARM with enough WETH that collectFees does not hit the liquidity guard.
-        deal(address(weth), address(lidoARM), accrued + MIN_TOTAL_SUPPLY);
-
+        // the rate changes. Trigger the accrual through a real swap (no storage poking).
+        uint256 accrued = _accrueFeesViaSwap();
         uint256 collectorBefore = weth.balanceOf(feeCollector);
 
         vm.prank(governor);
@@ -530,10 +543,7 @@ contract Unit_LidoARM_Admin_Test is Unit_LidoARM_Shared_Test {
     }
 
     function test_CollectFees_NonZero_TransfersToCollector() public {
-        uint256 accrued = 3 ether;
-        vm.store(address(lidoARM), bytes32(FEES_ACCRUED_SLOT), bytes32(accrued));
-        deal(address(weth), address(lidoARM), accrued + MIN_TOTAL_SUPPLY);
-
+        uint256 accrued = _accrueFeesViaSwap();
         uint256 collectorBefore = weth.balanceOf(feeCollector);
 
         vm.expectEmit({emitter: address(lidoARM)});
@@ -547,10 +557,15 @@ contract Unit_LidoARM_Admin_Test is Unit_LidoARM_Shared_Test {
     }
 
     function test_CollectFees_RevertWhen_InsufficientLiquidity() public {
-        // Accrue more than the ARM holds in liquidityAsset; the require guard fires.
-        uint256 accrued = 1_000 ether;
-        vm.store(address(lidoARM), bytes32(FEES_ACCRUED_SLOT), bytes32(accrued));
-        // ARM only has MIN_TOTAL_SUPPLY from initialization (1e12 wei) — far less than 1000 ether.
+        // Natural setup for the guard: accrue some fees via a real swap, then reserve most of
+        // the ARM's WETH for an LP withdrawal so `reservedWithdrawLiquidity + fees` exceeds the
+        // on-hand WETH balance.
+        _accrueFeesViaSwap();
+
+        // After the swap the ARM holds ~90 ether of WETH; reserving 95 ether of shares pushes
+        // reservedWithdrawLiquidity past the balance even before the (small) fee is added.
+        vm.prank(alice);
+        lidoARM.requestRedeem(95 ether);
 
         vm.expectRevert("ARM: Insufficient liquidity");
         lidoARM.collectFees();
