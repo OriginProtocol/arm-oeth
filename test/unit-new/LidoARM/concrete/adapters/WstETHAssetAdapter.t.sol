@@ -9,10 +9,10 @@ import {Unit_LidoARM_Shared_Test} from "../../Shared.t.sol";
 ///         `_splitShares` arithmetic that only matters when 1 share != 1 asset.
 ///         The fixture seeds the wrapper so 1 wstETH = 1.237 stETH.
 ///
-///         NOTE: `_splitShares` contains a `splitShares == 0` fallback for ratios
-///         where the per-chunk share amount rounds down to zero. That branch is
-///         unreachable with a stETH-per-wstETH rate > 1 and is therefore not
-///         covered here.
+///         NOTE: `_splitShares` also has two defensive branches (`splitShares >
+///         remainingShares` cap and `splitShares == 0` fallback) that are
+///         unreachable with a stETH-per-wstETH rate >= 1. Those are covered via
+///         a test-only adapter in `AbstractLidoAssetAdapter.t.sol`.
 contract Unit_LidoARM_WstETHAssetAdapter_Test is Unit_LidoARM_Shared_Test {
     uint256 internal constant ARM_WSTETH_BALANCE = 5_000 ether;
 
