@@ -10,6 +10,7 @@ import {LidoARM} from "contracts/LidoARM.sol";
 import {CapManager} from "contracts/CapManager.sol";
 import {StETHAssetAdapter} from "contracts/adapters/StETHAssetAdapter.sol";
 import {WstETHAssetAdapter} from "contracts/adapters/WstETHAssetAdapter.sol";
+import {AbstractLidoAssetAdapter} from "contracts/adapters/AbstractLidoAssetAdapter.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 // Interfaces
@@ -109,11 +110,20 @@ abstract contract Unit_LidoARM_Shared_Test is Base_Test_ {
             abi.encodeWithSelector(CapManager.initialize.selector, address(lidoARMProxy))
         );
 
-        // StETHAssetAdapter Proxy
-        stETHAssetAdapterProxy.initialize(address(stETHAssetAdapterLogic), governor, "");
+        // StETHAssetAdapter Proxy. Run `initialize()` through the proxy so the adapter
+        // approves the lido withdrawal queue from the proxy's storage, not the impl's.
+        stETHAssetAdapterProxy.initialize(
+            address(stETHAssetAdapterLogic),
+            governor,
+            abi.encodeWithSelector(AbstractLidoAssetAdapter.initialize.selector)
+        );
 
-        // WstETHAssetAdapter Proxy
-        wstETHAssetAdapterProxy.initialize(address(wstETHAssetAdapterLogic), governor, "");
+        // WstETHAssetAdapter Proxy. Same rationale as above.
+        wstETHAssetAdapterProxy.initialize(
+            address(wstETHAssetAdapterLogic),
+            governor,
+            abi.encodeWithSelector(AbstractLidoAssetAdapter.initialize.selector)
+        );
 
         vm.stopPrank();
 
