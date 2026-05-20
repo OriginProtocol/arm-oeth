@@ -20,7 +20,6 @@ contract OriginAssetAdapter is Initializable, IAssetAdapter {
         otoken = IERC20(_otoken);
         liquidityAsset = IERC20(_liquidityAsset);
         vault = IOriginVault(_vault);
-        otoken.approve(_vault, type(uint256).max);
     }
 
     function initialize() external initializer {

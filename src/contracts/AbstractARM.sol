@@ -767,7 +767,12 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
     /// @param shares LP shares to burn.
     /// @return requestId The LP withdrawal request id.
     /// @return assets The maximum liquidity assets claimable by the redeemer.
-    function requestRedeem(uint256 shares) external whenNotPaused nonReentrant returns (uint256 requestId, uint256 assets) {
+    function requestRedeem(uint256 shares)
+        external
+        whenNotPaused
+        nonReentrant
+        returns (uint256 requestId, uint256 assets)
+    {
         assets = convertToAssets(shares);
         requestId = nextWithdrawalIndex;
         // Store the next withdrawal request id.

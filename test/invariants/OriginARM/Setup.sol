@@ -182,6 +182,7 @@ abstract contract Setup is Base_Test_ {
         // --- 4. Set the proxy as the OriginARM ---
         originARM = OriginARM(address(originARMProxy));
         originAssetAdapter = new OriginAssetAdapter(address(originARM), address(os), address(ws), address(vault));
+        originAssetAdapter.initialize();
         siloMarket = SiloMarket(address(siloMarketProxy));
 
         // ---
