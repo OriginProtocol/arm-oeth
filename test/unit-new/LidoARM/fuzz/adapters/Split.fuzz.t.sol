@@ -10,6 +10,9 @@ import {AbstractLidoAssetAdapter} from "contracts/adapters/AbstractLidoAssetAdap
 // Interfaces
 import {IERC20} from "contracts/Interfaces.sol";
 
+// Libraries
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+
 /// @notice Test-only adapter that exposes `_splitAmounts` and `_splitShares` as
 ///         external functions, and lets `_assetsToShares` be driven by a stored
 ///         rate. The rate is interpreted as `_assetsToShares(x) = x * rate / 1e18`,
@@ -56,7 +59,7 @@ contract ExposedLidoAdapter is AbstractLidoAssetAdapter {
     }
 
     function _assetsToShares(uint256 assets) internal view override returns (uint256) {
-        return assets * mockRate / 1e18;
+        return Math.mulDiv(assets, mockRate, 1e18, Math.Rounding.Floor);
     }
 }
 
@@ -206,7 +209,7 @@ contract Unit_Fuzz_LidoARM_Split_Test is Unit_LidoARM_Shared_Test {
         rate = _bound(rate, 1e15, 1e21);
 
         exposed.setMockRate(rate);
-        uint256 totalShares = totalAssets * rate / 1e18;
+        uint256 totalShares = Math.mulDiv(totalAssets, rate, 1e18, Math.Rounding.Floor);
         // Skip degenerate runs where rounding wipes out totalShares (rate near 1e15 with small assets).
         vm.assume(totalShares > 0);
 
@@ -214,7 +217,7 @@ contract Unit_Fuzz_LidoARM_Split_Test is Unit_LidoARM_Shared_Test {
         uint256[] memory splits = exposed.exposed_splitShares(totalShares, amounts, totalAssets);
 
         // Per-chunk lower bound: the natural conversion of the chunk's assets.
-        uint256 expectedPerFullChunk = MAX * rate / 1e18;
+        uint256 expectedPerFullChunk = Math.mulDiv(MAX, rate, 1e18, Math.Rounding.Floor);
 
         uint256 sum;
         uint256 lastIdx = splits.length - 1;
