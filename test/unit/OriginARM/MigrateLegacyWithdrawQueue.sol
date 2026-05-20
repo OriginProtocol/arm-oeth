@@ -35,6 +35,13 @@ contract Unit_Concrete_OriginARM_MigrateLegacyWithdrawQueue_Test_ is Unit_Shared
         originARM.migrateLegacyWithdrawQueue();
     }
 
+    function test_RevertWhen_MigrateLegacyWithdrawQueue_Because_LegacyOriginWithdrawalsPending() public asGovernor {
+        stdstore.target(address(originARM)).sig(originARM.vaultWithdrawalAmount.selector).checked_write(uint256(1 ether));
+
+        vm.expectRevert("OriginARM: withdrawals pending");
+        originARM.migrateLegacyWithdrawQueue();
+    }
+
     function test_RevertWhen_MigrateLegacyWithdrawQueue_Because_NewQueueAlreadyUsed()
         public
         deposit(alice, DEFAULT_AMOUNT)
