@@ -36,7 +36,7 @@ contract Fork_Concrete_LidoARM_ClaimRedeem_Test_ is Fork_Shared_Test_ {
         requestRedeemFromLidoARM(address(this), DEFAULT_AMOUNT)
     {
         skip(delay - 1);
-        vm.expectRevert("Claim delay not met");
+        vm.expectRevert(bytes4(keccak256("ClaimDelayNotMet()")));
         lidoARM.claimRedeem(0);
     }
 
@@ -54,7 +54,7 @@ contract Fork_Concrete_LidoARM_ClaimRedeem_Test_ is Fork_Shared_Test_ {
         skip(delay);
 
         // Expect revert
-        vm.expectRevert("Queue pending liquidity");
+        vm.expectRevert(bytes4(keccak256("QueuePendingLiquidity()")));
         lidoARM.claimRedeem(0);
     }
 
@@ -91,7 +91,7 @@ contract Fork_Concrete_LidoARM_ClaimRedeem_Test_ is Fork_Shared_Test_ {
 
         // Expect revert
         vm.startPrank(vm.randomAddress());
-        vm.expectRevert("Not requester or operator");
+        vm.expectRevert(bytes4(keccak256("NotRequesterOrOperator()")));
         lidoARM.claimRedeem(0);
     }
 
@@ -105,7 +105,7 @@ contract Fork_Concrete_LidoARM_ClaimRedeem_Test_ is Fork_Shared_Test_ {
         claimRequestOnLidoARM(address(this), 0)
     {
         // Expect revert
-        vm.expectRevert("Already claimed");
+        vm.expectRevert(bytes4(keccak256("AlreadyClaimed()")));
         lidoARM.claimRedeem(0);
     }
 

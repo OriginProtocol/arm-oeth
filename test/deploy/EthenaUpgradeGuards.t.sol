@@ -18,6 +18,7 @@ contract ExposedUpgradeEthenaARMScript is $028_UpgradeEthenaARMScript {
 
 contract EthenaUpgradeGuardsTest is Test {
     uint256 internal constant LEGACY_PACKED_WITHDRAW_QUEUE_SLOT = 53;
+    uint256 internal constant NEXT_WITHDRAWAL_INDEX_SLOT = 54;
     uint256 internal constant ETHENA_LEGACY_COOLDOWN_AMOUNT_SLOT = 100;
 
     ExposedUpgradeEthenaARMScript internal script;
@@ -33,17 +34,17 @@ contract EthenaUpgradeGuardsTest is Test {
         );
     }
 
-    function test_UpgradeToAndCallMigratesLegacyWithdrawQueue() external {
+    function test_UpgradeToAndCallMigratesWithClaimedLegacyWithdrawQueue() external {
         (Proxy proxy, EthenaARM newImpl) = _deployInitializedEthenaARMProxy();
-        vm.store(
-            address(proxy),
-            bytes32(LEGACY_PACKED_WITHDRAW_QUEUE_SLOT),
-            bytes32(_packLegacyWithdrawQueue(1 ether, 1 ether))
-        );
+        uint256 packedLegacyQueue = _packLegacyWithdrawQueue(1 ether, 1 ether);
+        vm.store(address(proxy), bytes32(LEGACY_PACKED_WITHDRAW_QUEUE_SLOT), bytes32(packedLegacyQueue));
+        vm.store(address(proxy), bytes32(NEXT_WITHDRAWAL_INDEX_SLOT), bytes32(uint256(3)));
 
         proxy.upgradeToAndCall(address(newImpl), script.migrateLegacyWithdrawQueueData());
 
         assertEq(EthenaARM(address(proxy)).reservedWithdrawLiquidity(), 0);
+        assertEq(EthenaARM(address(proxy)).legacyWithdrawalRequestCount(), 3);
+        assertEq(uint256(vm.load(address(proxy), bytes32(LEGACY_PACKED_WITHDRAW_QUEUE_SLOT))), packedLegacyQueue);
     }
 
     function test_RevertWhen_UpgradeToAndCall_LegacyEthenaCooldownPending() external {
@@ -64,15 +65,18 @@ contract EthenaUpgradeGuardsTest is Test {
         EthenaARM(address(proxy)).migrateLegacyWithdrawQueue();
     }
 
-    function test_RevertWhen_UpgradeToAndCall_LegacyWithdrawQueuePending() external {
+    function test_UpgradeToAndCallMigratesWithPendingLegacyWithdrawQueue() external {
         (Proxy proxy, EthenaARM newImpl) = _deployInitializedEthenaARMProxy();
         bytes memory data = script.migrateLegacyWithdrawQueueData();
-        vm.store(
-            address(proxy), bytes32(LEGACY_PACKED_WITHDRAW_QUEUE_SLOT), bytes32(_packLegacyWithdrawQueue(1 ether, 0))
-        );
+        uint256 packedLegacyQueue = _packLegacyWithdrawQueue(1 ether, 0);
+        vm.store(address(proxy), bytes32(LEGACY_PACKED_WITHDRAW_QUEUE_SLOT), bytes32(packedLegacyQueue));
+        vm.store(address(proxy), bytes32(NEXT_WITHDRAWAL_INDEX_SLOT), bytes32(uint256(3)));
 
-        vm.expectRevert();
         proxy.upgradeToAndCall(address(newImpl), data);
+
+        assertEq(EthenaARM(address(proxy)).reservedWithdrawLiquidity(), 0);
+        assertEq(EthenaARM(address(proxy)).legacyWithdrawalRequestCount(), 3);
+        assertEq(uint256(vm.load(address(proxy), bytes32(LEGACY_PACKED_WITHDRAW_QUEUE_SLOT))), packedLegacyQueue);
     }
 
     function test_RevertWhen_MigrateLegacyWithdrawQueue_CalledTwice() external {

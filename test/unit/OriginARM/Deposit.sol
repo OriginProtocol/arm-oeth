@@ -223,7 +223,7 @@ contract Unit_Concrete_OriginARM_Deposit_Test_ is Unit_Shared_Test {
         assertEq(originARM.totalAssets(), MIN_TOTAL_SUPPLY, "totalAssets should be floored at MIN_TOTAL_SUPPLY");
         assertGt(originARM.reservedWithdrawLiquidity(), 0, "should have outstanding requests");
 
-        vm.expectRevert("ARM: insolvent");
+        vm.expectRevert(bytes4(keccak256("Insolvent()")));
         vm.prank(alice);
         originARM.deposit(DEFAULT_AMOUNT);
     }
