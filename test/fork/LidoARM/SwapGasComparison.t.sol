@@ -147,6 +147,8 @@ contract Fork_Concrete_LidoARM_SwapGasUpgraded_Test is Fork_LidoARM_SwapGasCompa
                 address(lidoProxy), address(weth), address(steth), Mainnet.WSTETH, Mainnet.LIDO_WITHDRAWAL
             )
         );
+        StETHAssetAdapter(payable(stethAdapter)).initialize();
+        WstETHAssetAdapter(payable(wstethAdapter)).initialize();
 
         vm.prank(lidoProxy.owner());
         lidoARM.addBaseAsset(

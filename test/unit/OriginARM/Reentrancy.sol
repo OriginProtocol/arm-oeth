@@ -33,6 +33,7 @@ contract Unit_Concrete_OriginARM_Reentrancy_Test_ is Unit_Shared_Test {
             address(weth),
             address(new MockVault(IERC20(address(reentrantBase)), weth))
         );
+        adapter.initialize();
 
         vm.prank(governor);
         originARM.addBaseAsset(

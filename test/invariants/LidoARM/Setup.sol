@@ -159,6 +159,7 @@ abstract contract Setup is Base_Test_ {
         lidoARM = LidoARM(payable(address(lidoProxy)));
 
         stethAdapter = address(new StETHAssetAdapter(address(lidoProxy), address(weth), address(steth), lidoWithdraw));
+        StETHAssetAdapter(payable(stethAdapter)).initialize();
     }
 
     function min(uint256 a, uint256 b) public pure returns (uint256) {

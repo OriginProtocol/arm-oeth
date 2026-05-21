@@ -33,8 +33,6 @@ contract WeETHAssetAdapter is Initializable, IAssetAdapter, IERC721Receiver {
         weth = IWETH(_weth);
         etherfiWithdrawalQueue = IEETHWithdrawal(_etherfiWithdrawalQueue);
         etherfiWithdrawalNFT = IEETHWithdrawalNFT(_etherfiWithdrawalNFT);
-
-        eeth.approve(_etherfiWithdrawalQueue, type(uint256).max);
     }
 
     function initialize() external initializer {

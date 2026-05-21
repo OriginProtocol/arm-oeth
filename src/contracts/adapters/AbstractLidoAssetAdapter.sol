@@ -24,8 +24,6 @@ abstract contract AbstractLidoAssetAdapter is Initializable, IAssetAdapter {
         weth = IWETH(_weth);
         steth = ISTETH(_steth);
         lidoWithdrawalQueue = IStETHWithdrawal(_lidoWithdrawalQueue);
-
-        IERC20(_steth).approve(_lidoWithdrawalQueue, type(uint256).max);
     }
 
     function initialize() external initializer {
