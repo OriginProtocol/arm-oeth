@@ -108,6 +108,7 @@ abstract contract Fork_Shared_Test is Base_Test_ {
             Mainnet.ETHERFI_WITHDRAWAL,
             Mainnet.ETHERFI_WITHDRAWAL_NFT
         );
+        etherfiAssetAdapter.initialize();
         etherfiARM.addBaseAsset(
             address(eeth),
             address(etherfiAssetAdapter),
@@ -127,6 +128,7 @@ abstract contract Fork_Shared_Test is Base_Test_ {
             Mainnet.ETHERFI_WITHDRAWAL,
             Mainnet.ETHERFI_WITHDRAWAL_NFT
         );
+        weethAssetAdapter.initialize();
         etherfiARM.addBaseAsset(
             address(weeth),
             address(weethAssetAdapter),

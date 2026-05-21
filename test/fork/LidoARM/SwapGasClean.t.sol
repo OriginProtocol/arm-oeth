@@ -67,6 +67,8 @@ contract Fork_Concrete_LidoARM_SwapGasClean_Test is Test {
                 address(lidoProxy), address(weth), address(steth), Mainnet.WSTETH, Mainnet.LIDO_WITHDRAWAL
             )
         );
+        StETHAssetAdapter(payable(stethAdapter)).initialize();
+        WstETHAssetAdapter(payable(wstethAdapter)).initialize();
         lidoARM.addBaseAsset(
             address(steth),
             stethAdapter,
