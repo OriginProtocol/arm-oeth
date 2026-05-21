@@ -168,12 +168,12 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
     error AlreadyMigrated(); // 0xca1c3cbc
     error LegacyWithdrawalsPending(); // 0x6df56289
     error ContractPaused(); // 0xab35696f
-    error Insolvent();
-    error ZeroShares();
-    error ClaimDelayNotMet();
-    error QueuePendingLiquidity();
-    error NotRequesterOrOperator();
-    error AlreadyClaimed();
+    error Insolvent(); // 0xfc220038
+    error ZeroShares(); // 0x9811e0c7
+    error ClaimDelayNotMet(); // 0x4a1eec28
+    error QueuePendingLiquidity(); // 0xa5e8d7ac
+    error NotRequesterOrOperator(); // 0x40e6afe4
+    error AlreadyClaimed(); // 0x646cf558
 
     ////////////////////////////////////////////////////
     ///                 Events
