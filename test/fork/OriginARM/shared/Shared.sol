@@ -120,6 +120,7 @@ abstract contract Fork_Shared_Test is Base_Test_, Modifiers {
         // --- Set the proxy as the OriginARM
         originARM = OriginARM(address(originARMProxy));
         originAssetAdapter = new OriginAssetAdapter(address(originARM), address(os), address(ws), address(vault));
+        originAssetAdapter.initialize();
 
         // --- Set the SiloMarket as the market
         siloMarket = SiloMarket(address(marketAdapterProxy));

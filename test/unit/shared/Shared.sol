@@ -114,6 +114,8 @@ abstract contract Unit_Shared_Test is Base_Test_, Modifiers {
         wrappedOriginAssetAdapter = new WrappedOriginAssetAdapter(
             address(originARM), address(woeth), address(oeth), address(weth), address(vault)
         );
+        originAssetAdapter.initialize();
+        wrappedOriginAssetAdapter.initialize();
         capManager = CapManager(address(capManagerProxy));
         siloMarket = SiloMarket(address(siloMarketProxy));
 

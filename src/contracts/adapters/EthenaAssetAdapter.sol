@@ -5,23 +5,52 @@ import {EthenaUnstaker} from "../EthenaUnstaker.sol";
 import {IAssetAdapter, IERC20, IStakedUSDe, UserCooldown} from "../Interfaces.sol";
 import {Ownable} from "../Ownable.sol";
 
+/**
+ * @title Ethena sUSDe asset adapter
+ * @notice Adapter for redeeming sUSDe through Ethena cooldown unstakers into USDe.
+ * @dev Redemption requests rotate across unstaker helper contracts because sUSDe cooldowns are per account.
+ * @author Origin Protocol Inc
+ */
 contract EthenaAssetAdapter is IAssetAdapter, Ownable {
+    /// @notice Minimum delay between new cooldown requests.
     uint256 public constant DELAY_REQUEST = 30 minutes;
+    /// @notice Maximum number of rotating unstaker helper contracts.
     uint8 public constant MAX_UNSTAKERS = 42;
 
+    /// @notice ARM contract authorized to request and claim redemptions.
     address public immutable arm;
+    /// @notice USDe liquidity asset returned to the ARM.
     IERC20 public immutable usde;
+    /// @notice sUSDe token redeemed through Ethena cooldowns.
     IStakedUSDe public immutable susde;
 
+    /// @notice Rotating helper contracts that hold and cool down sUSDe.
     address[MAX_UNSTAKERS] public unstakers;
+    /// @notice Index of the next unstaker helper to use for a new request.
     uint8 public nextUnstakerIndex;
+    /// @notice Timestamp of the most recent cooldown request.
     uint32 public lastRequestTimestamp;
 
+    /// @notice sUSDe share amount pending for each unstaker helper.
     mapping(address unstaker => uint256 shares) public requestShares;
+    /// @notice Expected USDe amount pending for each unstaker helper.
     mapping(address unstaker => uint256 assets) public requestAssets;
     uint8[] internal pendingUnstakerIndexes;
     uint256 internal nextPendingIndex;
 
+    modifier onlyARM() {
+        require(msg.sender == arm, "Adapter: only ARM");
+        _;
+    }
+
+    modifier nonZeroShares(uint256 shares) {
+        require(shares > 0, "Adapter: zero shares");
+        _;
+    }
+
+    /// @param _arm ARM contract authorized to use the adapter.
+    /// @param _usde USDe token received after cooldown claims.
+    /// @param _susde sUSDe token to redeem.
     constructor(address _arm, address _usde, address _susde) {
         arm = _arm;
         usde = IERC20(_usde);
@@ -30,18 +59,30 @@ contract EthenaAssetAdapter is IAssetAdapter, Ownable {
         _setOwner(address(0));
     }
 
+    /// @notice Returns USDe as the liquidity asset produced by Ethena claims.
     function asset() external view returns (address) {
         return address(usde);
     }
 
+    /// @notice Converts sUSDe shares into expected USDe assets.
+    /// @param shares Amount of sUSDe shares.
+    /// @return assets Expected USDe assets.
     function convertToAssets(uint256 shares) external view returns (uint256 assets) {
         return susde.convertToAssets(shares);
     }
 
+    /// @notice Converts USDe assets into expected sUSDe shares.
+    /// @param assets Amount of USDe assets.
+    /// @return shares Expected sUSDe shares.
     function convertToShares(uint256 assets) external view returns (uint256 shares) {
         return susde.convertToShares(assets);
     }
 
+    /// @notice Transfers sUSDe to the next available unstaker and starts an Ethena cooldown.
+    /// @dev Requires the per-request delay to have passed and the selected unstaker to have no pending cooldown.
+    /// @param shares Amount of sUSDe shares to request for redemption.
+    /// @return sharesRequested Amount of sUSDe shares accepted into the cooldown request.
+    /// @return assetsExpected Expected USDe assets after cooldown.
     function requestRedeem(uint256 shares)
         external
         onlyARM
@@ -68,6 +109,12 @@ contract EthenaAssetAdapter is IAssetAdapter, Ownable {
         sharesRequested = shares;
     }
 
+    /// @notice Claims completed Ethena cooldowns and transfers received USDe to the ARM.
+    /// @dev Claims pending unstakers in FIFO order and requires `shares` to match complete request sizes.
+    /// @param shares Exact amount of sUSDe shares represented by pending unstakers to claim.
+    /// @return sharesClaimed Amount of sUSDe shares represented by claimed unstakers.
+    /// @return assetsExpected Expected USDe amount recorded when cooldowns were opened.
+    /// @return assetsReceived Actual USDe amount received and transferred to the ARM.
     function redeem(uint256 shares)
         external
         onlyARM
@@ -104,12 +151,17 @@ contract EthenaAssetAdapter is IAssetAdapter, Ownable {
         usde.transfer(arm, assetsReceived);
     }
 
+    /// @notice Deploys missing unstaker helper contracts.
+    /// @dev Only the owner can seed helper contracts after ownership is assigned during deployment.
     function deployUnstakers() external onlyOwner {
         for (uint256 i = 0; i < MAX_UNSTAKERS; ++i) {
             if (unstakers[i] == address(0)) unstakers[i] = address(new EthenaUnstaker(address(this), susde));
         }
     }
 
+    /// @notice Replaces the unstaker helper set.
+    /// @dev Existing helpers can only be replaced when they have no pending shares and no active cooldown.
+    /// @param _unstakers New fixed-size unstaker helper list.
     function setUnstakers(address[MAX_UNSTAKERS] calldata _unstakers) external onlyOwner {
         for (uint256 i = 0; i < MAX_UNSTAKERS; ++i) {
             address oldUnstaker = unstakers[i];
@@ -122,21 +174,14 @@ contract EthenaAssetAdapter is IAssetAdapter, Ownable {
         unstakers = _unstakers;
     }
 
+    /// @notice Returns the total number of unstaker indexes ever queued by the adapter.
     function pendingUnstakerIndexesLength() external view returns (uint256) {
         return pendingUnstakerIndexes.length;
     }
 
+    /// @notice Returns a queued unstaker index by array index.
+    /// @param index Index in the pending unstaker index array.
     function pendingUnstakerIndex(uint256 index) external view returns (uint8) {
         return pendingUnstakerIndexes[index];
-    }
-
-    modifier onlyARM() {
-        require(msg.sender == arm, "Adapter: only ARM");
-        _;
-    }
-
-    modifier nonZeroShares(uint256 shares) {
-        require(shares > 0, "Adapter: zero shares");
-        _;
     }
 }
