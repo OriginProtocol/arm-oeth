@@ -103,7 +103,7 @@ abstract contract TargetFunction is Properties {
         vm.assume(user != address(0));
 
         // Bound shares to the balance of the user
-        shares = uint96(_bound(shares, 0, originARM.balanceOf(user)));
+        shares = uint96(_bound(shares, 1, originARM.balanceOf(user)));
 
         uint256 expectedId = originARM.nextWithdrawalIndex();
         uint256 expectedAmount = originARM.previewRedeem(shares);

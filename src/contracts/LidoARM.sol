@@ -14,6 +14,8 @@ import {AbstractARM} from "./AbstractARM.sol";
  * @author Origin Protocol Inc
  */
 contract LidoARM is Initializable, AbstractARM {
+    error LegacyLidoWithdrawalsPending();
+
     /// @dev Deprecated queue amount retained for storage layout compatibility.
     uint256 internal _deprecatedLidoWithdrawalQueueAmount;
 
@@ -54,7 +56,7 @@ contract LidoARM is Initializable, AbstractARM {
 
     /// @dev Revert if legacy Lido withdrawal requests are still outstanding.
     function _checkNoLegacyWithdrawQueue() internal view override {
-        require(_deprecatedLidoWithdrawalQueueAmount == 0, "LidoARM: requests pending");
+        if (_deprecatedLidoWithdrawalQueueAmount != 0) revert LegacyLidoWithdrawalsPending();
     }
 
     /// @notice This payable method is necessary for receiving ETH claimed from the Lido withdrawal queue.

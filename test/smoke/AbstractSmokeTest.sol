@@ -2,7 +2,7 @@
 pragma solidity ^0.8.23;
 
 // Foundry imports
-import {stdStorage, StdStorage, Test} from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 
 import {DeployManager} from "script/deploy/DeployManager.s.sol";
 import {$028_UpgradeEthenaARMScript} from "script/deploy/mainnet/028_UpgradeEthenaARMScript.s.sol";
@@ -22,8 +22,6 @@ import {OriginAssetAdapter} from "contracts/adapters/OriginAssetAdapter.sol";
 import {WrappedOriginAssetAdapter} from "contracts/adapters/WrappedOriginAssetAdapter.sol";
 
 abstract contract AbstractSmokeTest is Test {
-    using stdStorage for StdStorage;
-
     /// @dev First derived-contract storage slot after AbstractARM's reserved gap.
     uint256 internal constant LEGACY_PENDING_AMOUNT_SLOT = 100;
     uint256 internal constant FEE_SCALE = 10000;
@@ -221,10 +219,9 @@ abstract contract AbstractSmokeTest is Test {
         vm.store(arm, bytes32(LEGACY_PENDING_AMOUNT_SLOT), bytes32(0));
     }
 
-    function _clearLegacyWithdrawQueueForSmoke(address arm) internal {
-        // The live fork can contain outstanding legacy LP withdrawals at the selected block.
-        // Smoke tests normalize that fork-only state so the strict production migration path can run.
-        stdstore.target(arm).sig("reservedWithdrawLiquidity()").checked_write(uint256(0));
+    function _clearLegacyWithdrawQueueForSmoke(address arm) internal pure {
+        (arm);
+        // Legacy LP withdrawals are now preserved for post-upgrade claims.
     }
 
     function _migrateLegacyWithdrawQueue(address arm) internal {

@@ -109,7 +109,7 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
 
         assertEq(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY, "totalAssets should be floored at MIN_TOTAL_SUPPLY");
 
-        vm.expectRevert("ARM: insolvent");
+        vm.expectRevert(bytes4(keccak256("Insolvent()")));
         lidoARM.deposit(DEFAULT_AMOUNT);
     }
 
