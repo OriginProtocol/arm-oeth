@@ -2,9 +2,10 @@
 pragma solidity ^0.8.23;
 
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 
-import {IAssetAdapter, IERC20, IEETHWithdrawal, IEETHWithdrawalNFT, IWETH} from "../Interfaces.sol";
+import {IAssetAdapter, IERC20, IEETHWithdrawal, IEETHWithdrawalNFT, IOwnable, IWETH} from "../Interfaces.sol";
 
 /**
  * @title Ether.fi eETH asset adapter
@@ -13,6 +14,12 @@ import {IAssetAdapter, IERC20, IEETHWithdrawal, IEETHWithdrawalNFT, IWETH} from 
  * @author Origin Protocol Inc
  */
 contract EtherFiAssetAdapter is Initializable, IAssetAdapter, IERC721Receiver {
+    /// @notice Thrown when attempting to rescue an active adapter-managed withdrawal NFT.
+    /// @param requestId Ether.fi withdrawal NFT token id.
+    error ActiveWithdrawalNFT(uint256 requestId);
+    /// @notice Thrown when a caller other than the ARM owner attempts an owner-only action.
+    error OnlyARMOwner();
+
     /// @notice ARM contract authorized to request and claim redemptions.
     address public immutable arm;
     /// @notice eETH token submitted to Ether.fi withdrawals.
@@ -29,8 +36,15 @@ contract EtherFiAssetAdapter is Initializable, IAssetAdapter, IERC721Receiver {
     uint256[] internal pendingRequestIds;
     uint256 internal nextPendingIndex;
 
+    event WithdrawalNFTRescued(uint256 indexed requestId, address indexed to);
+
     modifier onlyARM() {
         require(msg.sender == arm, "Adapter: only ARM");
+        _;
+    }
+
+    modifier onlyARMOwner() {
+        if (msg.sender != IOwnable(arm).owner()) revert OnlyARMOwner();
         _;
     }
 
@@ -156,6 +170,18 @@ contract EtherFiAssetAdapter is Initializable, IAssetAdapter, IERC721Receiver {
     /// @param index Index in the pending request id array.
     function pendingRequestId(uint256 index) external view returns (uint256) {
         return pendingRequestIds[index];
+    }
+
+    /// @notice Rescue an Ether.fi withdrawal NFT that was sent here by mistake.
+    /// @dev Reverts for active adapter-managed withdrawal NFTs so legitimate requests cannot be rescued.
+    /// @param requestId Ether.fi withdrawal NFT token id.
+    /// @param to Recipient of the rescued withdrawal NFT.
+    function rescueWithdrawalNFT(uint256 requestId, address to) external onlyARMOwner {
+        if (requestShares[requestId] != 0) revert ActiveWithdrawalNFT(requestId);
+
+        IERC721(address(etherfiWithdrawalNFT)).safeTransferFrom(address(this), to, requestId);
+
+        emit WithdrawalNFTRescued(requestId, to);
     }
 
     receive() external payable {}

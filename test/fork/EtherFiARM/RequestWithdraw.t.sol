@@ -3,11 +3,21 @@ pragma solidity 0.8.23;
 
 // Test
 import {Fork_Shared_Test} from "test/fork/EtherFiARM/shared/Shared.sol";
+import {stdStorage, StdStorage} from "forge-std/Test.sol";
+
+// Contracts
+import {EtherFiAssetAdapter} from "contracts/adapters/EtherFiAssetAdapter.sol";
+import {WeETHAssetAdapter} from "contracts/adapters/WeETHAssetAdapter.sol";
 
 // Interfaces
+import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {IWeETH} from "contracts/Interfaces.sol";
 
 contract Fork_Concrete_EtherFiARM_RequestWithdraw_Test_ is Fork_Shared_Test {
+    using stdStorage for StdStorage;
+
+    event WithdrawalNFTRescued(uint256 indexed requestId, address indexed to);
+
     function test_DelayWithdraw() public {
         // Fund the ARM with eETH from weETH
         vm.prank(address(weeth));
@@ -78,5 +88,98 @@ contract Fork_Concrete_EtherFiARM_RequestWithdraw_Test_ is Fork_Shared_Test {
 
         (,,,,, pendingRedeemAssets,,) = etherfiARM.baseAssetConfigs(address(weeth));
         assertEq(pendingRedeemAssets, 0, "pending redeem assets after claim");
+    }
+
+    function test_EETH_CannotRescueActiveWithdrawalNFT() public {
+        vm.prank(address(weeth));
+        eeth.transfer(address(etherfiARM), 1 ether);
+
+        vm.prank(operator);
+        etherfiARM.requestBaseAssetRedeem(address(eeth), 1 ether);
+        uint256 requestId = etherfiAssetAdapter.pendingRequestId(0);
+
+        vm.expectRevert(abi.encodeWithSelector(EtherFiAssetAdapter.ActiveWithdrawalNFT.selector, requestId));
+        etherfiAssetAdapter.rescueWithdrawalNFT(requestId, bob);
+    }
+
+    function test_EETH_RescueAccidentalWithdrawalNFT() public {
+        address recipient = address(0xBEEF);
+        uint256 requestId = _requestAdapterEETHWithdrawal();
+        _clearEETHAdapterRequest(requestId);
+
+        vm.expectEmit(true, true, false, true);
+        emit WithdrawalNFTRescued(requestId, recipient);
+        etherfiAssetAdapter.rescueWithdrawalNFT(requestId, recipient);
+
+        assertEq(IERC721(address(etherfiWithdrawalNFT)).ownerOf(requestId), recipient, "rescued NFT owner");
+    }
+
+    function test_WeETH_CannotRescueActiveWithdrawalNFT() public {
+        uint256 weethAmount = 1 ether;
+        deal(address(weeth), address(etherfiARM), weethAmount);
+
+        vm.prank(operator);
+        etherfiARM.requestBaseAssetRedeem(address(weeth), weethAmount);
+        uint256 requestId = weethAssetAdapter.pendingRequestId(0);
+
+        vm.expectRevert(abi.encodeWithSelector(WeETHAssetAdapter.ActiveWithdrawalNFT.selector, requestId));
+        weethAssetAdapter.rescueWithdrawalNFT(requestId, bob);
+    }
+
+    function test_WeETH_RescueAccidentalWithdrawalNFT() public {
+        address recipient = address(0xBEEF);
+        uint256 requestId = _requestAdapterWeETHWithdrawal(1 ether);
+        _clearWeETHAdapterRequest(requestId);
+
+        vm.expectEmit(true, true, false, true);
+        emit WithdrawalNFTRescued(requestId, recipient);
+        weethAssetAdapter.rescueWithdrawalNFT(requestId, recipient);
+
+        assertEq(IERC721(address(etherfiWithdrawalNFT)).ownerOf(requestId), recipient, "rescued NFT owner");
+    }
+
+    function test_EETH_OnlyARMOwnerCanRescueWithdrawalNFT() public {
+        uint256 requestId = _requestAdapterEETHWithdrawal();
+        _clearEETHAdapterRequest(requestId);
+
+        vm.prank(alice);
+        vm.expectRevert(EtherFiAssetAdapter.OnlyARMOwner.selector);
+        etherfiAssetAdapter.rescueWithdrawalNFT(requestId, bob);
+    }
+
+    function _requestAdapterEETHWithdrawal() internal returns (uint256 requestId) {
+        vm.prank(address(weeth));
+        eeth.transfer(address(etherfiARM), 1 ether);
+
+        vm.prank(operator);
+        etherfiARM.requestBaseAssetRedeem(address(eeth), 1 ether);
+
+        requestId = etherfiAssetAdapter.pendingRequestId(0);
+        assertEq(IERC721(address(etherfiWithdrawalNFT)).ownerOf(requestId), address(etherfiAssetAdapter), "NFT owner");
+    }
+
+    function _requestAdapterWeETHWithdrawal(uint256 weethAmount) internal returns (uint256 requestId) {
+        deal(address(weeth), address(etherfiARM), weethAmount);
+
+        vm.prank(operator);
+        etherfiARM.requestBaseAssetRedeem(address(weeth), weethAmount);
+
+        requestId = weethAssetAdapter.pendingRequestId(0);
+        assertEq(IERC721(address(etherfiWithdrawalNFT)).ownerOf(requestId), address(weethAssetAdapter), "NFT owner");
+    }
+
+    function _clearEETHAdapterRequest(uint256 requestId) internal {
+        stdstore.target(address(etherfiAssetAdapter)).sig("requestShares(uint256)").with_key(requestId)
+            .checked_write(uint256(0));
+        assertEq(etherfiAssetAdapter.requestShares(requestId), 0, "request shares cleared");
+    }
+
+    function _clearWeETHAdapterRequest(uint256 requestId) internal {
+        stdstore.target(address(weethAssetAdapter)).sig("requestShares(uint256)").with_key(requestId)
+            .checked_write(uint256(0));
+        stdstore.target(address(weethAssetAdapter)).sig("requestAssets(uint256)").with_key(requestId)
+            .checked_write(uint256(0));
+        assertEq(weethAssetAdapter.requestShares(requestId), 0, "request shares cleared");
+        assertEq(weethAssetAdapter.requestAssets(requestId), 0, "request assets cleared");
     }
 }

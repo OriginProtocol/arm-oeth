@@ -3,13 +3,20 @@ pragma solidity 0.8.23;
 
 // Test imports
 import {Fork_Shared_Test_} from "test/fork/shared/Shared.sol";
+import {stdStorage, StdStorage} from "forge-std/Test.sol";
 
 // Contracts
+import {AbstractLidoAssetAdapter} from "contracts/adapters/AbstractLidoAssetAdapter.sol";
 import {IERC20, IStETHWithdrawal} from "contracts/Interfaces.sol";
+import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {LidoARM} from "contracts/LidoARM.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
 
 contract Fork_Concrete_LidoARM_RequestLidoWithdrawals_Test_ is Fork_Shared_Test_ {
+    using stdStorage for StdStorage;
+
+    event WithdrawalNFTRescued(uint256 indexed requestId, address indexed to);
+
     //////////////////////////////////////////////////////
     /// --- SETUP
     //////////////////////////////////////////////////////
@@ -39,6 +46,25 @@ contract Fork_Concrete_LidoARM_RequestLidoWithdrawals_Test_ is Fork_Shared_Test_
 
         vm.expectRevert();
         lidoARM.requestBaseAssetRedeem(address(steth), amounts[0]);
+    }
+
+    function test_RevertWhen_RescueActiveWithdrawalNFT() public {
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = DEFAULT_AMOUNT;
+        uint256[] memory requestIds = _requestLidoWithdrawals(amounts);
+        uint256 requestId = requestIds[0];
+
+        vm.expectRevert(abi.encodeWithSelector(AbstractLidoAssetAdapter.ActiveWithdrawalNFT.selector, requestId));
+        AbstractLidoAssetAdapter(payable(stethAdapter)).rescueWithdrawalNFT(requestId, alice);
+    }
+
+    function test_RevertWhen_RescueWithdrawalNFT_NotARMOwner() public {
+        uint256 requestId = _requestAdapterLidoWithdrawal();
+        _clearLidoAdapterRequest(requestId);
+
+        vm.prank(alice);
+        vm.expectRevert(AbstractLidoAssetAdapter.OnlyARMOwner.selector);
+        AbstractLidoAssetAdapter(payable(stethAdapter)).rescueWithdrawalNFT(requestId, alice);
     }
 
     //////////////////////////////////////////////////////
@@ -97,5 +123,35 @@ contract Fork_Concrete_LidoARM_RequestLidoWithdrawals_Test_ is Fork_Shared_Test_
         uint256[] memory requestIds = _requestLidoWithdrawals(amounts);
 
         assertEq(requestIds, expectedLidoRequestIds);
+    }
+
+    function test_RescueAccidentalWithdrawalNFT() public {
+        address recipient = address(0xBEEF);
+        uint256 requestId = _requestAdapterLidoWithdrawal();
+        _clearLidoAdapterRequest(requestId);
+
+        vm.expectEmit(true, true, false, true);
+        emit WithdrawalNFTRescued(requestId, recipient);
+        AbstractLidoAssetAdapter(payable(stethAdapter)).rescueWithdrawalNFT(requestId, recipient);
+
+        assertEq(IERC721(address(Mainnet.LIDO_WITHDRAWAL)).ownerOf(requestId), recipient, "rescued NFT owner");
+    }
+
+    function _requestAdapterLidoWithdrawal() internal returns (uint256 requestId) {
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = DEFAULT_AMOUNT;
+        uint256[] memory requestIds = _requestLidoWithdrawals(amounts);
+        requestId = requestIds[0];
+
+        assertEq(IERC721(address(Mainnet.LIDO_WITHDRAWAL)).ownerOf(requestId), stethAdapter, "NFT owner");
+    }
+
+    function _clearLidoAdapterRequest(uint256 requestId) internal {
+        AbstractLidoAssetAdapter adapter = AbstractLidoAssetAdapter(payable(stethAdapter));
+
+        stdstore.target(address(adapter)).sig("requestShares(uint256)").with_key(requestId).checked_write(uint256(0));
+        stdstore.target(address(adapter)).sig("requestAssets(uint256)").with_key(requestId).checked_write(uint256(0));
+        assertEq(adapter.requestShares(requestId), 0, "request shares cleared");
+        assertEq(adapter.requestAssets(requestId), 0, "request assets cleared");
     }
 }

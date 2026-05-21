@@ -2,8 +2,9 @@
 pragma solidity ^0.8.23;
 
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
-import {IAssetAdapter, IERC20, IStETHWithdrawal, ISTETH, IWETH} from "../Interfaces.sol";
+import {IAssetAdapter, IERC20, IOwnable, IStETHWithdrawal, ISTETH, IWETH} from "../Interfaces.sol";
 
 /**
  * @title Shared Lido withdrawal queue asset adapter
@@ -12,6 +13,12 @@ import {IAssetAdapter, IERC20, IStETHWithdrawal, ISTETH, IWETH} from "../Interfa
  * @author Origin Protocol Inc
  */
 abstract contract AbstractLidoAssetAdapter is Initializable, IAssetAdapter {
+    /// @notice Thrown when attempting to rescue an active adapter-managed withdrawal NFT.
+    /// @param requestId Lido withdrawal NFT token id.
+    error ActiveWithdrawalNFT(uint256 requestId);
+    /// @notice Thrown when a caller other than the ARM owner attempts an owner-only action.
+    error OnlyARMOwner();
+
     /// @notice Maximum stETH amount accepted by Lido for a single withdrawal request.
     uint256 internal constant MAX_WITHDRAWAL_AMOUNT = 1000 ether;
 
@@ -32,8 +39,15 @@ abstract contract AbstractLidoAssetAdapter is Initializable, IAssetAdapter {
     uint256[] internal pendingRequestIds;
     uint256 internal nextPendingIndex;
 
+    event WithdrawalNFTRescued(uint256 indexed requestId, address indexed to);
+
     modifier onlyARM() {
         require(msg.sender == arm, "Adapter: only ARM");
+        _;
+    }
+
+    modifier onlyARMOwner() {
+        if (msg.sender != IOwnable(arm).owner()) revert OnlyARMOwner();
         _;
     }
 
@@ -184,6 +198,18 @@ abstract contract AbstractLidoAssetAdapter is Initializable, IAssetAdapter {
     /// @param index Index in the pending request id array.
     function pendingRequestId(uint256 index) external view returns (uint256) {
         return pendingRequestIds[index];
+    }
+
+    /// @notice Rescue a Lido withdrawal NFT that was sent here by mistake.
+    /// @dev Reverts for active adapter-managed withdrawal NFTs so legitimate requests cannot be rescued.
+    /// @param requestId Lido withdrawal NFT token id.
+    /// @param to Recipient of the rescued withdrawal NFT.
+    function rescueWithdrawalNFT(uint256 requestId, address to) external onlyARMOwner {
+        if (requestShares[requestId] != 0 || requestAssets[requestId] != 0) revert ActiveWithdrawalNFT(requestId);
+
+        IERC721(address(lidoWithdrawalQueue)).safeTransferFrom(address(this), to, requestId);
+
+        emit WithdrawalNFTRescued(requestId, to);
     }
 
     /// @notice Splits an amount into chunks accepted by the Lido withdrawal queue.
