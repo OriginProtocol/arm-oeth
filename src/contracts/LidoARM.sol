@@ -14,13 +14,13 @@ import {AbstractARM} from "./AbstractARM.sol";
  * @author Origin Protocol Inc
  */
 contract LidoARM is Initializable, AbstractARM {
-    error LegacyLidoWithdrawalsPending();
-
     /// @dev Deprecated queue amount retained for storage layout compatibility.
     uint256 internal _deprecatedLidoWithdrawalQueueAmount;
 
     /// @dev Deprecated withdrawal request mapping retained for storage layout compatibility.
     uint256 internal _deprecatedLidoWithdrawalRequests;
+
+    error LegacyLidoWithdrawalsPending(); // 0xd5605722
 
     /// @param _weth The address of the WETH token
     /// @param _claimDelay The delay in seconds before a user can claim a redeem from the request

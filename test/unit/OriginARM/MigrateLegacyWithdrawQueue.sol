@@ -1,9 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
+import {stdStorage, StdStorage} from "forge-std/Test.sol";
+import {AbstractARM} from "contracts/AbstractARM.sol";
+import {OriginARM} from "contracts/OriginARM.sol";
 import {Unit_Shared_Test} from "test/unit/shared/Shared.sol";
 
 contract Unit_Concrete_OriginARM_MigrateLegacyWithdrawQueue_Test_ is Unit_Shared_Test {
+    using stdStorage for StdStorage;
+
     uint256 internal constant LEGACY_PACKED_WITHDRAW_QUEUE_SLOT = 53;
     uint256 internal constant NEXT_WITHDRAWAL_INDEX_SLOT = 54;
 
@@ -45,6 +50,14 @@ contract Unit_Concrete_OriginARM_MigrateLegacyWithdrawQueue_Test_ is Unit_Shared
         assertEq(originARM.reservedWithdrawLiquidity(), 0, "reserved liquidity");
         assertEq(originARM.legacyWithdrawalRequestCount(), 3, "legacy request count");
         assertEq(_readLegacyWithdrawQueue(), _packLegacyWithdrawQueue(5 ether, 4 ether), "legacy queue preserved");
+    }
+
+    function test_RevertWhen_MigrateLegacyWithdrawQueue_Because_LegacyOriginWithdrawalsPending() public asGovernor {
+        stdstore.target(address(originARM)).sig(originARM.vaultWithdrawalAmount.selector)
+            .checked_write(uint256(1 ether));
+
+        vm.expectRevert(AbstractARM.LegacyWithdrawalsPending.selector);
+        originARM.migrateLegacyWithdrawQueue();
     }
 
     function test_RevertWhen_MigrateLegacyWithdrawQueue_Because_NewQueueAlreadyUsed()

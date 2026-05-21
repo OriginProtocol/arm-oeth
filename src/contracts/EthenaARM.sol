@@ -53,6 +53,6 @@ contract EthenaARM is Initializable, AbstractARM {
 
     /// @dev Revert if legacy Ethena cooldowns are still outstanding.
     function _checkNoLegacyWithdrawQueue() internal view override {
-        require(_deprecatedLiquidityAmountInCooldown == 0, "EthenaARM: cooldown pending");
+        if (_deprecatedLiquidityAmountInCooldown != 0) revert LegacyWithdrawalsPending();
     }
 }

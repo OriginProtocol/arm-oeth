@@ -56,6 +56,15 @@ contract EthenaUpgradeGuardsTest is Test {
         proxy.upgradeToAndCall(address(newImpl), data);
     }
 
+    function test_RevertWhen_MigrateLegacyWithdrawQueue_LegacyEthenaCooldownPending() external {
+        (Proxy proxy, EthenaARM newImpl) = _deployInitializedEthenaARMProxy();
+        proxy.upgradeTo(address(newImpl));
+        vm.store(address(proxy), bytes32(ETHENA_LEGACY_COOLDOWN_AMOUNT_SLOT), bytes32(uint256(1 ether)));
+
+        vm.expectRevert(AbstractARM.LegacyWithdrawalsPending.selector);
+        EthenaARM(address(proxy)).migrateLegacyWithdrawQueue();
+    }
+
     function test_UpgradeToAndCallMigratesWithPendingLegacyWithdrawQueue() external {
         (Proxy proxy, EthenaARM newImpl) = _deployInitializedEthenaARMProxy();
         bytes memory data = script.migrateLegacyWithdrawQueueData();

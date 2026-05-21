@@ -56,6 +56,15 @@ contract LidoUpgradeGuardsTest is Test {
         proxy.upgradeToAndCall(address(newImpl), data);
     }
 
+    function test_RevertWhen_MigrateLegacyWithdrawQueue_LegacyLidoWithdrawalRequestsPending() external {
+        (Proxy proxy, LidoARM newImpl) = _deployInitializedLidoARMProxy();
+        proxy.upgradeTo(address(newImpl));
+        vm.store(address(proxy), bytes32(LIDO_LEGACY_WITHDRAWAL_QUEUE_AMOUNT_SLOT), bytes32(uint256(1 ether)));
+
+        vm.expectRevert(LidoARM.LegacyLidoWithdrawalsPending.selector);
+        LidoARM(payable(address(proxy))).migrateLegacyWithdrawQueue();
+    }
+
     function test_UpgradeToAndCallMigratesWithPendingLegacyWithdrawQueue() external {
         (Proxy proxy, LidoARM newImpl) = _deployInitializedLidoARMProxy();
         bytes memory data = script.migrateLegacyWithdrawQueueData();

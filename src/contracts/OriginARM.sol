@@ -72,4 +72,9 @@ contract OriginARM is Initializable, AbstractARM {
     function vaultWithdrawalAmount() external view returns (uint256) {
         return _deprecatedVaultWithdrawalAmount;
     }
+
+    /// @dev Revert if legacy Origin vault withdrawal requests are still outstanding.
+    function _checkNoLegacyWithdrawQueue() internal view override {
+        if (_deprecatedVaultWithdrawalAmount != 0) revert LegacyWithdrawalsPending();
+    }
 }

@@ -146,33 +146,34 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
     ///                 Errors
     ////////////////////////////////////////////////////
 
-    error UnsupportedAsset();
-    error InvalidAsset();
-    error InvalidAdapter();
-    error AssetAlreadySupported();
-    error InvalidAssetDecimals();
-    error InvalidAdapterAsset();
-    error InvalidBuyPrice();
-    error SellPriceTooLow();
-    error CrossPriceTooLow();
-    error CrossPriceTooHigh();
-    error TooManyBaseAssets();
-    error FeeTooHigh();
-    error InvalidFeeCollector();
-    error InvalidMarket();
-    error InvalidMarketAsset();
-    error MarketAlreadySupported();
-    error MarketNotSupported();
-    error MarketActive();
-    error InvalidARMBuffer();
-    error AlreadyMigrated();
-    error ContractPaused();
-    error Insolvent();
-    error ZeroShares();
-    error ClaimDelayNotMet();
-    error QueuePendingLiquidity();
-    error NotRequesterOrOperator();
-    error AlreadyClaimed();
+    error UnsupportedAsset(); // 0x24a01144
+    error InvalidAsset(); // 0xc891add2
+    error InvalidAdapter(); // 0xfbf66df1
+    error AssetAlreadySupported(); // 0xb1093e5b
+    error InvalidAssetDecimals(); // 0xe2364765
+    error InvalidAdapterAsset(); // 0x030f0830
+    error InvalidBuyPrice(); // 0x36c64b27
+    error SellPriceTooLow(); // 0x2394065c
+    error CrossPriceTooLow(); // 0xea59e662
+    error CrossPriceTooHigh(); // 0x682101d7
+    error TooManyBaseAssets(); // 0x94049173
+    error FeeTooHigh(); // 0xcd4e6167
+    error InvalidFeeCollector(); // 0xbb0bac99
+    error InvalidMarket(); // 0x9db8d5b1
+    error InvalidMarketAsset(); // 0xb9ced245
+    error MarketAlreadySupported(); // 0xf8d9e05f
+    error MarketNotSupported(); // 0x7f972548
+    error MarketActive(); // 0xaeb31949
+    error InvalidARMBuffer(); // 0x06f77af9
+    error AlreadyMigrated(); // 0xca1c3cbc
+    error LegacyWithdrawalsPending(); // 0x6df56289
+    error ContractPaused(); // 0xab35696f
+    error Insolvent(); // 0xfc220038
+    error ZeroShares(); // 0x9811e0c7
+    error ClaimDelayNotMet(); // 0x4a1eec28
+    error QueuePendingLiquidity(); // 0xa5e8d7ac
+    error NotRequesterOrOperator(); // 0x40e6afe4
+    error AlreadyClaimed(); // 0x646cf558
 
     ////////////////////////////////////////////////////
     ///                 Events

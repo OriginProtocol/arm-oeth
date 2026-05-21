@@ -56,6 +56,15 @@ contract EtherFiUpgradeGuardsTest is Test {
         proxy.upgradeToAndCall(address(newImpl), data);
     }
 
+    function test_RevertWhen_MigrateLegacyWithdrawQueue_LegacyEtherFiWithdrawalsPending() external {
+        (Proxy proxy, EtherFiARM newImpl) = _deployInitializedEtherFiARMProxy();
+        proxy.upgradeTo(address(newImpl));
+        vm.store(address(proxy), bytes32(ETHERFI_LEGACY_WITHDRAWAL_QUEUE_AMOUNT_SLOT), bytes32(uint256(1 ether)));
+
+        vm.expectRevert(EtherFiARM.LegacyEtherFiWithdrawalsPending.selector);
+        EtherFiARM(payable(address(proxy))).migrateLegacyWithdrawQueue();
+    }
+
     function test_UpgradeToAndCallMigratesWithPendingLegacyWithdrawQueue() external {
         (Proxy proxy, EtherFiARM newImpl) = _deployInitializedEtherFiARMProxy();
         bytes memory data = script.migrateLegacyWithdrawQueueData();

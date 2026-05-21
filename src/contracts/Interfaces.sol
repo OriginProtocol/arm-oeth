@@ -298,9 +298,9 @@ struct UserCooldown {
 interface IStakedUSDe is IERC4626 {
     // Errors //
     /// @notice Error emitted when the shares amount to redeem is greater than the shares balance of the owner
-    error ExcessiveRedeemAmount();
+    error ExcessiveRedeemAmount(); // 0x63345388
     /// @notice Error emitted when the shares amount to withdraw is greater than the shares balance of the owner
-    error ExcessiveWithdrawAmount();
+    error ExcessiveWithdrawAmount(); // 0xdf53dde2
 
     function cooldownAssets(uint256 assets) external returns (uint256 shares);
 

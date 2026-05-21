@@ -14,13 +14,13 @@ import {AbstractARM} from "./AbstractARM.sol";
  * @author Origin Protocol Inc
  */
 contract EtherFiARM is Initializable, AbstractARM {
-    error LegacyEtherFiWithdrawalsPending();
-
     /// @dev Deprecated queue amount retained for storage layout compatibility.
     uint256 internal _deprecatedEtherfiWithdrawalQueueAmount;
 
     /// @dev Deprecated withdrawal request mapping retained for storage layout compatibility.
     uint256 internal _deprecatedEtherfiWithdrawalRequests;
+
+    error LegacyEtherFiWithdrawalsPending(); // 0x991777b5
 
     /// @param _weth The address of the WETH token
     /// @param _claimDelay The delay in seconds before a user can claim a redeem from the request
