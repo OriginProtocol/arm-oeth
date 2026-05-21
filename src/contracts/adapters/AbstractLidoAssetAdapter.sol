@@ -5,20 +5,47 @@ import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Ini
 
 import {IAssetAdapter, IERC20, IStETHWithdrawal, ISTETH, IWETH} from "../Interfaces.sol";
 
+/**
+ * @title Shared Lido withdrawal queue asset adapter
+ * @notice Shared adapter logic for Lido withdrawal queue redemptions into WETH.
+ * @dev Concrete implementations define how their share asset is converted into stETH before requesting withdrawals.
+ * @author Origin Protocol Inc
+ */
 abstract contract AbstractLidoAssetAdapter is Initializable, IAssetAdapter {
+    /// @notice Maximum stETH amount accepted by Lido for a single withdrawal request.
     uint256 internal constant MAX_WITHDRAWAL_AMOUNT = 1000 ether;
 
+    /// @notice ARM contract authorized to request and claim redemptions.
     address public immutable arm;
+    /// @notice WETH liquidity asset returned to the ARM.
     IWETH public immutable weth;
+    /// @notice stETH token submitted to Lido's withdrawal queue.
     ISTETH public immutable steth;
+    /// @notice Lido withdrawal queue used to request ETH redemptions.
     IStETHWithdrawal public immutable lidoWithdrawalQueue;
 
+    /// @notice Share amount represented by each Lido withdrawal request id.
     mapping(uint256 requestId => uint256 shares) public requestShares;
+    /// @notice Expected WETH amount represented by each Lido withdrawal request id.
     mapping(uint256 requestId => uint256 assets) public requestAssets;
 
     uint256[] internal pendingRequestIds;
     uint256 internal nextPendingIndex;
 
+    modifier onlyARM() {
+        require(msg.sender == arm, "Adapter: only ARM");
+        _;
+    }
+
+    modifier nonZeroShares(uint256 shares) {
+        require(shares > 0, "Adapter: zero shares");
+        _;
+    }
+
+    /// @param _arm ARM contract authorized to use the adapter.
+    /// @param _weth WETH token received after claims.
+    /// @param _steth stETH token submitted to the withdrawal queue.
+    /// @param _lidoWithdrawalQueue Lido withdrawal queue contract.
     constructor(address _arm, address _weth, address _steth, address _lidoWithdrawalQueue) {
         arm = _arm;
         weth = IWETH(_weth);
@@ -26,14 +53,21 @@ abstract contract AbstractLidoAssetAdapter is Initializable, IAssetAdapter {
         lidoWithdrawalQueue = IStETHWithdrawal(_lidoWithdrawalQueue);
     }
 
+    /// @notice Re-approves stETH for the withdrawal queue when called through a proxy.
     function initialize() external initializer {
         IERC20(address(steth)).approve(address(lidoWithdrawalQueue), type(uint256).max);
     }
 
+    /// @notice Returns WETH as the liquidity asset produced by Lido claims.
     function asset() external view returns (address) {
         return address(weth);
     }
 
+    /// @notice Requests Lido withdrawals for the supplied share amount.
+    /// @dev The stETH amount is split into chunks no larger than `MAX_WITHDRAWAL_AMOUNT` before calling Lido.
+    /// @param shares Amount of concrete adapter shares to redeem.
+    /// @return sharesRequested Amount of shares accepted into Lido withdrawal requests.
+    /// @return assetsExpected Expected WETH amount based on stETH submitted.
     function requestRedeem(uint256 shares)
         external
         onlyARM
@@ -54,6 +88,12 @@ abstract contract AbstractLidoAssetAdapter is Initializable, IAssetAdapter {
         sharesRequested = shares;
     }
 
+    /// @notice Claims finalized Lido withdrawal requests and transfers WETH to the ARM.
+    /// @dev Claims finalized pending requests in FIFO order and wraps any received ETH into WETH.
+    /// @param shares Exact amount of shares represented by finalized pending requests to claim.
+    /// @return sharesClaimed Amount of shares represented by claimed requests.
+    /// @return assetsExpected Expected WETH amount recorded when requests were opened.
+    /// @return assetsReceived Actual WETH amount received and transferred to the ARM.
     function redeem(uint256 shares)
         external
         onlyARM
@@ -111,6 +151,9 @@ abstract contract AbstractLidoAssetAdapter is Initializable, IAssetAdapter {
         IERC20(address(weth)).transfer(arm, assetsReceived);
     }
 
+    /// @notice Returns the FIFO prefix of pending Lido requests that is currently finalized and claimable.
+    /// @return claimableShares Shares represented by the currently claimable request prefix.
+    /// @return claimableAssets Expected WETH represented by the currently claimable request prefix.
     function claimableRedeem() external view returns (uint256 claimableShares, uint256 claimableAssets) {
         uint256 pendingCount = pendingRequestIds.length - nextPendingIndex;
         if (pendingCount == 0) return (0, 0);
@@ -132,14 +175,20 @@ abstract contract AbstractLidoAssetAdapter is Initializable, IAssetAdapter {
         }
     }
 
+    /// @notice Returns the total number of Lido request ids ever stored by the adapter.
     function pendingRequestIdsLength() external view returns (uint256) {
         return pendingRequestIds.length;
     }
 
+    /// @notice Returns a stored Lido request id by array index.
+    /// @param index Index in the pending request id array.
     function pendingRequestId(uint256 index) external view returns (uint256) {
         return pendingRequestIds[index];
     }
 
+    /// @notice Splits an amount into chunks accepted by the Lido withdrawal queue.
+    /// @param amount stETH amount to split.
+    /// @return amounts Array of stETH withdrawal amounts, each at most `MAX_WITHDRAWAL_AMOUNT`.
     function _splitAmounts(uint256 amount) internal pure returns (uint256[] memory amounts) {
         uint256 chunkCount = amount / MAX_WITHDRAWAL_AMOUNT;
         if (amount % MAX_WITHDRAWAL_AMOUNT != 0) chunkCount++;
@@ -153,6 +202,11 @@ abstract contract AbstractLidoAssetAdapter is Initializable, IAssetAdapter {
         }
     }
 
+    /// @notice Splits a share amount proportionally across withdrawal amount chunks.
+    /// @param totalShares Total share amount being redeemed.
+    /// @param amounts stETH chunks being requested from Lido.
+    /// @param totalAssets Total stETH amount represented by `totalShares`.
+    /// @return shareSplits Share amount assigned to each withdrawal chunk.
     function _splitShares(uint256 totalShares, uint256[] memory amounts, uint256 totalAssets)
         internal
         view
@@ -178,17 +232,15 @@ abstract contract AbstractLidoAssetAdapter is Initializable, IAssetAdapter {
         }
     }
 
-    modifier onlyARM() {
-        require(msg.sender == arm, "Adapter: only ARM");
-        _;
-    }
-
-    modifier nonZeroShares(uint256 shares) {
-        require(shares > 0, "Adapter: zero shares");
-        _;
-    }
-
+    /// @notice Pulls the concrete share asset from `owner` and converts it into stETH held by this adapter.
+    /// @param owner Address to pull shares from.
+    /// @param shares Amount of concrete share asset to pull.
+    /// @return assetsOut stETH amount available for Lido withdrawal requests.
     function _pullSharesAndConvertToSteth(address owner, uint256 shares) internal virtual returns (uint256 assetsOut);
+
+    /// @notice Converts stETH assets back to the concrete adapter share amount.
+    /// @param assets stETH amount.
+    /// @return sharesOut Concrete adapter share amount.
     function _assetsToShares(uint256 assets) internal view virtual returns (uint256 sharesOut);
 
     receive() external payable {}
