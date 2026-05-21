@@ -19,8 +19,6 @@ contract EthenaARM is Initializable, AbstractARM {
     /// @dev Deprecated request timestamp retained for storage layout compatibility.
     uint32 internal _deprecatedLastRequestTimestamp;
 
-    error LegacyEthenaCooldownPending(); // 0x0b5abdf2
-
     /// @param _usde The address of Ethena's synthetic dollar token (USDe)
     /// @param _claimDelay The delay in seconds before a user can claim a redeem from the request
     /// @param _minSharesToRedeem The minimum amount of shares to redeem from the active lending market
@@ -55,6 +53,6 @@ contract EthenaARM is Initializable, AbstractARM {
 
     /// @dev Revert if legacy Ethena cooldowns are still outstanding.
     function _checkNoLegacyWithdrawQueue() internal view override {
-        if (_deprecatedLiquidityAmountInCooldown != 0) revert LegacyEthenaCooldownPending();
+        if (_deprecatedLiquidityAmountInCooldown != 0) revert LegacyWithdrawalsPending();
     }
 }

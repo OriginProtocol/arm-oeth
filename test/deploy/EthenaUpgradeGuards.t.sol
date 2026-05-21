@@ -61,7 +61,7 @@ contract EthenaUpgradeGuardsTest is Test {
         proxy.upgradeTo(address(newImpl));
         vm.store(address(proxy), bytes32(ETHENA_LEGACY_COOLDOWN_AMOUNT_SLOT), bytes32(uint256(1 ether)));
 
-        vm.expectRevert(EthenaARM.LegacyEthenaCooldownPending.selector);
+        vm.expectRevert(AbstractARM.LegacyWithdrawalsPending.selector);
         EthenaARM(address(proxy)).migrateLegacyWithdrawQueue();
     }
 

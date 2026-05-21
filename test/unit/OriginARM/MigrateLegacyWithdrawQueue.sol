@@ -2,6 +2,7 @@
 pragma solidity 0.8.23;
 
 import {stdStorage, StdStorage} from "forge-std/Test.sol";
+import {AbstractARM} from "contracts/AbstractARM.sol";
 import {OriginARM} from "contracts/OriginARM.sol";
 import {Unit_Shared_Test} from "test/unit/shared/Shared.sol";
 
@@ -55,7 +56,7 @@ contract Unit_Concrete_OriginARM_MigrateLegacyWithdrawQueue_Test_ is Unit_Shared
         stdstore.target(address(originARM)).sig(originARM.vaultWithdrawalAmount.selector)
             .checked_write(uint256(1 ether));
 
-        vm.expectRevert(OriginARM.LegacyOriginWithdrawalsPending.selector);
+        vm.expectRevert(AbstractARM.LegacyWithdrawalsPending.selector);
         originARM.migrateLegacyWithdrawQueue();
     }
 
