@@ -115,4 +115,56 @@ contract Unit_Concrete_OriginARM_ClaimRedeem_Test_ is Unit_Shared_Test {
         assertEq(weth.balanceOf(alice), balanceBefore + DEFAULT_AMOUNT, "Alice should receive her WETH");
         assertEq(originARM.claimable(), DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, "Claimable should be updated");
     }
+
+    function test_ClaimRedeem_WithFee_AfterMarketRecoveryCollectsOnlyRecoveryGain()
+        public
+        addMarket(address(market))
+        setActiveMarket(address(market))
+        setARMBuffer(0)
+    {
+        deal(address(weth), alice, 2 * DEFAULT_AMOUNT);
+        vm.startPrank(alice);
+        weth.approve(address(originARM), type(uint256).max);
+        originARM.deposit(2 * DEFAULT_AMOUNT);
+        vm.stopPrank();
+        originARM.allocate();
+
+        uint256 aliceShares = originARM.balanceOf(alice);
+        vm.prank(alice);
+        (uint256 requestId, uint256 requestedAssets) = originARM.requestRedeem(aliceShares / 2);
+
+        uint256 marketWethBeforeLoss = weth.balanceOf(address(market));
+        vm.prank(address(market));
+        weth.transfer(address(0x1), marketWethBeforeLoss / 10);
+
+        vm.warp(block.timestamp + CLAIM_DELAY);
+        vm.prank(alice);
+        uint256 claimedAssets = originARM.claimRedeem(requestId);
+        assertLt(claimedAssets, requestedAssets, "claim should be haircut after market loss");
+
+        int128 lastAvailableAfterClaim = originARM.lastAvailableAssets();
+
+        deal(address(weth), bob, DEFAULT_AMOUNT);
+        vm.startPrank(bob);
+        weth.approve(address(originARM), DEFAULT_AMOUNT);
+        originARM.deposit(DEFAULT_AMOUNT);
+        vm.stopPrank();
+
+        uint256 donatedRecovery = marketWethBeforeLoss / 10;
+        deal(address(weth), address(market), weth.balanceOf(address(market)) + donatedRecovery);
+
+        uint256 feeBefore = weth.balanceOf(feeCollector);
+        uint256 accruedFees = originARM.feesAccrued();
+        assertGt(accruedFees, 0, "recovery should accrue a fee");
+        assertLt(accruedFees, donatedRecovery, "fee must be less than gross recovery");
+
+        originARM.collectFees();
+        assertEq(weth.balanceOf(feeCollector), feeBefore + accruedFees, "collector receives accrued recovery fee");
+        assertGt(originARM.lastAvailableAssets(), lastAvailableAfterClaim, "collection advances fee baseline");
+
+        (, bool claimed,,,,) = originARM.withdrawalRequests(requestId);
+        assertTrue(claimed, "Alice request remains claimed after fee collection");
+        assertEq(originARM.withdrawsClaimed(), requestedAssets, "fee collection does not reopen queue accounting");
+    }
+
 }
