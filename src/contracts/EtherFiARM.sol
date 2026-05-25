@@ -20,6 +20,8 @@ contract EtherFiARM is Initializable, AbstractARM {
     /// @dev Deprecated withdrawal request mapping retained for storage layout compatibility.
     uint256 internal _deprecatedEtherfiWithdrawalRequests;
 
+    error LegacyEtherFiWithdrawalsPending(); // 0x991777b5
+
     /// @param _weth The address of the WETH token
     /// @param _claimDelay The delay in seconds before a user can claim a redeem from the request
     /// @param _minSharesToRedeem The minimum amount of shares to redeem from the active lending market
@@ -61,7 +63,7 @@ contract EtherFiARM is Initializable, AbstractARM {
 
     /// @dev Revert if legacy EtherFi withdrawal requests are still outstanding.
     function _checkNoLegacyWithdrawQueue() internal view override {
-        require(_deprecatedEtherfiWithdrawalQueueAmount == 0, "EtherFiARM: withdrawals pending");
+        if (_deprecatedEtherfiWithdrawalQueueAmount != 0) revert LegacyEtherFiWithdrawalsPending();
     }
 
     /// @notice This payable method is necessary for receiving ETH claimed from the EtherFi withdrawal queue.

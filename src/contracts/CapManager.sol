@@ -12,7 +12,7 @@ import {ILiquidityProviderARM} from "./Interfaces.sol";
  * @author Origin Protocol Inc
  */
 contract CapManager is Initializable, OwnableOperable {
-    error AccountCapAlreadySet();
+    error AccountCapAlreadySet(); // 0xbd6b5eba
 
     /// @notice The address of the linked Automated Redemption Manager (ARM).
     address public immutable arm;

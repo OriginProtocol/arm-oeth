@@ -34,11 +34,36 @@ interface ICapManager {
     function postDepositHook(address liquidityProvider, uint256 assets) external;
 }
 
+/// @notice Adapter interface for assets that require protocol-specific redemption flows.
+/// @dev ARM calls adapters when a base asset cannot be redeemed synchronously into the ARM liquidity asset.
 interface IAssetAdapter {
+    /// @notice Returns the liquidity asset received by the ARM after adapter redemptions.
     function asset() external view returns (address);
+
+    /// @notice Converts adapter share tokens into the expected amount of liquidity assets.
+    /// @param shares Amount of protocol share tokens.
+    /// @return assets Expected amount of liquidity assets.
     function convertToAssets(uint256 shares) external view returns (uint256 assets);
+
+    /// @notice Converts liquidity assets into the expected amount of adapter share tokens.
+    /// @param assets Amount of liquidity assets.
+    /// @return shares Expected amount of protocol share tokens.
     function convertToShares(uint256 assets) external view returns (uint256 shares);
+
+    /// @notice Requests an asynchronous redemption from protocol share tokens into liquidity assets.
+    /// @dev Implementations pull `shares` from the ARM and record protocol request metadata for later claiming.
+    /// @param shares Amount of protocol share tokens to redeem.
+    /// @return sharesRequested Amount of share tokens accepted into the redemption request.
+    /// @return assetsExpected Expected liquidity assets from the redemption request.
     function requestRedeem(uint256 shares) external returns (uint256 sharesRequested, uint256 assetsExpected);
+
+    /// @notice Claims previously requested redemptions and sends received liquidity assets to the ARM.
+    /// @dev Claims must be made in the adapter's pending-request order and may revert if the requested shares are not
+    ///      fully claimable.
+    /// @param shares Amount of protocol share tokens represented by pending requests to claim.
+    /// @return sharesClaimed Amount of share tokens represented by claimed requests.
+    /// @return assetsExpected Expected liquidity assets recorded when the requests were opened.
+    /// @return assetsReceived Actual liquidity assets received and transferred to the ARM.
     function redeem(uint256 shares)
         external
         returns (uint256 sharesClaimed, uint256 assetsExpected, uint256 assetsReceived);
@@ -273,9 +298,9 @@ struct UserCooldown {
 interface IStakedUSDe is IERC4626 {
     // Errors //
     /// @notice Error emitted when the shares amount to redeem is greater than the shares balance of the owner
-    error ExcessiveRedeemAmount();
+    error ExcessiveRedeemAmount(); // 0x63345388
     /// @notice Error emitted when the shares amount to withdraw is greater than the shares balance of the owner
-    error ExcessiveWithdrawAmount();
+    error ExcessiveWithdrawAmount(); // 0xdf53dde2
 
     function cooldownAssets(uint256 assets) external returns (uint256 shares);
 

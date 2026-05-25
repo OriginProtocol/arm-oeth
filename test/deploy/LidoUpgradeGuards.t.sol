@@ -18,6 +18,7 @@ contract ExposedUpgradeLidoARMSwapFeeScript is $030_UpgradeLidoARMSwapFeeScript 
 
 contract LidoUpgradeGuardsTest is Test {
     uint256 internal constant LEGACY_PACKED_WITHDRAW_QUEUE_SLOT = 53;
+    uint256 internal constant NEXT_WITHDRAWAL_INDEX_SLOT = 54;
     uint256 internal constant LIDO_LEGACY_WITHDRAWAL_QUEUE_AMOUNT_SLOT = 100;
 
     ExposedUpgradeLidoARMSwapFeeScript internal script;
@@ -33,17 +34,17 @@ contract LidoUpgradeGuardsTest is Test {
         );
     }
 
-    function test_UpgradeToAndCallMigratesLegacyWithdrawQueue() external {
+    function test_UpgradeToAndCallMigratesWithClaimedLegacyWithdrawQueue() external {
         (Proxy proxy, LidoARM newImpl) = _deployInitializedLidoARMProxy();
-        vm.store(
-            address(proxy),
-            bytes32(LEGACY_PACKED_WITHDRAW_QUEUE_SLOT),
-            bytes32(_packLegacyWithdrawQueue(1 ether, 1 ether))
-        );
+        uint256 packedLegacyQueue = _packLegacyWithdrawQueue(1 ether, 1 ether);
+        vm.store(address(proxy), bytes32(LEGACY_PACKED_WITHDRAW_QUEUE_SLOT), bytes32(packedLegacyQueue));
+        vm.store(address(proxy), bytes32(NEXT_WITHDRAWAL_INDEX_SLOT), bytes32(uint256(3)));
 
         proxy.upgradeToAndCall(address(newImpl), script.migrateLegacyWithdrawQueueData());
 
         assertEq(LidoARM(payable(address(proxy))).reservedWithdrawLiquidity(), 0);
+        assertEq(LidoARM(payable(address(proxy))).legacyWithdrawalRequestCount(), 3);
+        assertEq(uint256(vm.load(address(proxy), bytes32(LEGACY_PACKED_WITHDRAW_QUEUE_SLOT))), packedLegacyQueue);
     }
 
     function test_RevertWhen_UpgradeToAndCall_LegacyLidoWithdrawalRequestsPending() external {
@@ -55,15 +56,27 @@ contract LidoUpgradeGuardsTest is Test {
         proxy.upgradeToAndCall(address(newImpl), data);
     }
 
-    function test_RevertWhen_UpgradeToAndCall_LegacyWithdrawQueuePending() external {
+    function test_RevertWhen_MigrateLegacyWithdrawQueue_LegacyLidoWithdrawalRequestsPending() external {
+        (Proxy proxy, LidoARM newImpl) = _deployInitializedLidoARMProxy();
+        proxy.upgradeTo(address(newImpl));
+        vm.store(address(proxy), bytes32(LIDO_LEGACY_WITHDRAWAL_QUEUE_AMOUNT_SLOT), bytes32(uint256(1 ether)));
+
+        vm.expectRevert(LidoARM.LegacyLidoWithdrawalsPending.selector);
+        LidoARM(payable(address(proxy))).migrateLegacyWithdrawQueue();
+    }
+
+    function test_UpgradeToAndCallMigratesWithPendingLegacyWithdrawQueue() external {
         (Proxy proxy, LidoARM newImpl) = _deployInitializedLidoARMProxy();
         bytes memory data = script.migrateLegacyWithdrawQueueData();
-        vm.store(
-            address(proxy), bytes32(LEGACY_PACKED_WITHDRAW_QUEUE_SLOT), bytes32(_packLegacyWithdrawQueue(1 ether, 0))
-        );
+        uint256 packedLegacyQueue = _packLegacyWithdrawQueue(1 ether, 0);
+        vm.store(address(proxy), bytes32(LEGACY_PACKED_WITHDRAW_QUEUE_SLOT), bytes32(packedLegacyQueue));
+        vm.store(address(proxy), bytes32(NEXT_WITHDRAWAL_INDEX_SLOT), bytes32(uint256(3)));
 
-        vm.expectRevert();
         proxy.upgradeToAndCall(address(newImpl), data);
+
+        assertEq(LidoARM(payable(address(proxy))).reservedWithdrawLiquidity(), 0);
+        assertEq(LidoARM(payable(address(proxy))).legacyWithdrawalRequestCount(), 3);
+        assertEq(uint256(vm.load(address(proxy), bytes32(LEGACY_PACKED_WITHDRAW_QUEUE_SLOT))), packedLegacyQueue);
     }
 
     function test_RevertWhen_MigrateLegacyWithdrawQueue_CalledTwice() external {

@@ -60,9 +60,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
     uint256 internal _deprecatedTraderate1;
     uint256 internal _deprecatedCrossPrice;
 
-    /// @notice Maximum liquidity assets reserved for outstanding LP withdrawal requests.
-    /// @dev Reuses the legacy packed `withdrawsQueued`/`withdrawsClaimed` storage slot.
-    uint256 public reservedWithdrawLiquidity;
+    /// @dev Legacy asset-denominated queue counters retained for storage layout compatibility.
+    uint128 internal _deprecatedWithdrawsQueued;
+    uint128 internal _deprecatedWithdrawsClaimed;
     /// @notice Index of the next LP withdrawal request.
     uint256 public nextWithdrawalIndex;
 
@@ -135,35 +135,45 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
     uint128 public withdrawsClaimedShares;
     /// @notice True when user-facing ARM actions are paused.
     bool public paused;
+    /// @notice Maximum liquidity assets reserved for outstanding LP withdrawal requests.
+    uint256 public reservedWithdrawLiquidity;
+    /// @notice First withdrawal request id that uses the new share-escrow queue semantics.
+    uint256 public legacyWithdrawalRequestCount;
 
-    uint256[33] private _gap;
+    uint256[31] private _gap;
 
     ////////////////////////////////////////////////////
     ///                 Errors
     ////////////////////////////////////////////////////
 
-    error UnsupportedAsset();
-    error InvalidAsset();
-    error InvalidAdapter();
-    error AssetAlreadySupported();
-    error InvalidAssetDecimals();
-    error InvalidAdapterAsset();
-    error InvalidBuyPrice();
-    error SellPriceTooLow();
-    error CrossPriceTooLow();
-    error CrossPriceTooHigh();
-    error TooManyBaseAssets();
-    error FeeTooHigh();
-    error InvalidFeeCollector();
-    error InvalidMarket();
-    error InvalidMarketAsset();
-    error MarketAlreadySupported();
-    error MarketNotSupported();
-    error MarketActive();
-    error InvalidARMBuffer();
-    error AlreadyMigrated();
-    error LegacyWithdrawalsPending();
-    error ContractPaused();
+    error UnsupportedAsset(); // 0x24a01144
+    error InvalidAsset(); // 0xc891add2
+    error InvalidAdapter(); // 0xfbf66df1
+    error AssetAlreadySupported(); // 0xb1093e5b
+    error InvalidAssetDecimals(); // 0xe2364765
+    error InvalidAdapterAsset(); // 0x030f0830
+    error InvalidBuyPrice(); // 0x36c64b27
+    error SellPriceTooLow(); // 0x2394065c
+    error CrossPriceTooLow(); // 0xea59e662
+    error CrossPriceTooHigh(); // 0x682101d7
+    error TooManyBaseAssets(); // 0x94049173
+    error FeeTooHigh(); // 0xcd4e6167
+    error InvalidFeeCollector(); // 0xbb0bac99
+    error InvalidMarket(); // 0x9db8d5b1
+    error InvalidMarketAsset(); // 0xb9ced245
+    error MarketAlreadySupported(); // 0xf8d9e05f
+    error MarketNotSupported(); // 0x7f972548
+    error MarketActive(); // 0xaeb31949
+    error InvalidARMBuffer(); // 0x06f77af9
+    error AlreadyMigrated(); // 0xca1c3cbc
+    error LegacyWithdrawalsPending(); // 0x6df56289
+    error ContractPaused(); // 0xab35696f
+    error Insolvent(); // 0xfc220038
+    error ZeroShares(); // 0x9811e0c7
+    error ClaimDelayNotMet(); // 0x4a1eec28
+    error QueuePendingLiquidity(); // 0xa5e8d7ac
+    error NotRequesterOrOperator(); // 0x40e6afe4
+    error AlreadyClaimed(); // 0x646cf558
 
     ////////////////////////////////////////////////////
     ///                 Events
@@ -740,7 +750,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
     /// @param receiver Account that receives minted LP shares.
     /// @return shares LP shares minted.
     function _deposit(uint256 assets, address receiver) internal returns (uint256 shares) {
-        require(totalAssets() > MIN_TOTAL_SUPPLY || reservedWithdrawLiquidity == 0, "ARM: insolvent");
+        if (totalAssets() <= MIN_TOTAL_SUPPLY && reservedWithdrawLiquidity != 0) revert Insolvent();
         shares = convertToShares(assets);
 
         // Transfer liquidity from the depositor before minting LP shares.
@@ -767,7 +777,14 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
     /// @param shares LP shares to burn.
     /// @return requestId The LP withdrawal request id.
     /// @return assets The maximum liquidity assets claimable by the redeemer.
-    function requestRedeem(uint256 shares) external whenNotPaused nonReentrant returns (uint256 requestId, uint256 assets) {
+    function requestRedeem(uint256 shares)
+        external
+        whenNotPaused
+        nonReentrant
+        returns (uint256 requestId, uint256 assets)
+    {
+        if (shares == 0) revert ZeroShares();
+
         assets = convertToAssets(shares);
         requestId = nextWithdrawalIndex;
         // Store the next withdrawal request id.
@@ -801,29 +818,49 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
     function claimRedeem(uint256 requestId) external whenNotPaused nonReentrant returns (uint256 assets) {
         WithdrawalRequest memory request = withdrawalRequests[requestId];
 
-        require(request.claimTimestamp <= block.timestamp, "Claim delay not met");
-        require(request.queued <= claimable(), "Queue pending liquidity");
-        require(request.withdrawer == msg.sender || msg.sender == operator, "Not requester or operator");
-        require(request.claimed == false, "Already claimed");
+        if (request.claimTimestamp > block.timestamp) revert ClaimDelayNotMet();
+        bool legacyRequest = requestId < legacyWithdrawalRequestCount;
+        if (legacyRequest) {
+            if (request.queued > _legacyClaimable()) revert QueuePendingLiquidity();
+        } else {
+            if (request.queued > claimable()) revert QueuePendingLiquidity();
+        }
+        if (request.withdrawer != msg.sender && msg.sender != operator) revert NotRequesterOrOperator();
+        if (request.claimed) revert AlreadyClaimed();
 
-        // In the scenario where the ARM has made a loss after the redeem request, the asset value of
-        // the redeemed shares at the time of the claim is used.
-        // This can happen if there was a significant slashing event on the base asset, eg stETH,
-        // after the redeem request was made.
-        uint256 assetsAtClaim = request.shares > 0 ? convertToAssets(request.shares) : request.assets;
-        // Use the minimum of the asset value of the redeemed shares at request or claim.
-        assets = request.assets < assetsAtClaim ? request.assets : assetsAtClaim;
+        if (legacyRequest) {
+            assets = request.assets;
+            // Legacy requests used asset-denominated cumulative queue accounting.
+            _deprecatedWithdrawsClaimed += SafeCast.toUint128(assets);
+        } else {
+            // In the scenario where the ARM has made a loss after the redeem request, the asset value of
+            // the redeemed shares at the time of the claim is used.
+            // This can happen if there was a significant slashing event on the base asset, eg stETH,
+            // after the redeem request was made.
+            uint256 assetsAtClaim = convertToAssets(request.shares);
+            // Use the minimum of the asset value of the redeemed shares at request or claim.
+            assets = request.assets < assetsAtClaim ? request.assets : assetsAtClaim;
+
+            // Release the full request-time reservation, even when a loss-adjusted payout is lower.
+            reservedWithdrawLiquidity -= request.assets;
+            // Cumulative claimed amount in shares, used by the FIFO gate above.
+            withdrawsClaimedShares += request.shares;
+
+            // Burn the escrowed shares after `assets` was computed so conversion uses the pre-claim supply.
+            _burn(address(this), request.shares);
+        }
 
         // Store the request as claimed.
         withdrawalRequests[requestId].claimed = true;
-        // Release the full request-time reservation, even when a loss-adjusted payout is lower.
-        reservedWithdrawLiquidity -= request.assets;
-        // Cumulative claimed amount in shares, used by the FIFO gate above.
-        withdrawsClaimedShares += request.shares;
+        _pullLiquidityForRedeem(assets);
 
-        // Burn the escrowed shares after `assets` was computed so conversion uses the pre-claim supply.
-        _burn(address(this), request.shares);
+        // Transfer the liquidity asset to the withdrawer.
+        IERC20(liquidityAsset).transfer(request.withdrawer, assets);
+        emit RedeemClaimed(request.withdrawer, requestId, assets);
+    }
 
+    /// @dev Pull liquidity from the active market if the ARM does not hold enough to pay a redeem claim.
+    function _pullLiquidityForRedeem(uint256 assets) private {
         // If there is not enough liquidity assets in the ARM, get from the active market if one is configured.
         // Read the active market address from storage once to save gas.
         address activeMarketMem = activeMarket;
@@ -835,10 +872,6 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
                 IERC4626(activeMarketMem).withdraw(liquidityFromMarket, address(this), address(this));
             }
         }
-
-        // Transfer the liquidity asset to the withdrawer.
-        IERC20(liquidityAsset).transfer(request.withdrawer, assets);
-        emit RedeemClaimed(request.withdrawer, requestId, assets);
     }
 
     ////////////////////////////////////////////////////
@@ -859,6 +892,16 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
         }
 
         claimableShares = withdrawsClaimedShares + convertToShares(claimableLiquidity);
+    }
+
+    /// @dev Legacy asset-denominated queue frontier for pre-upgrade withdrawal requests.
+    function _legacyClaimable() internal view returns (uint256 claimableAmount) {
+        claimableAmount = _deprecatedWithdrawsClaimed + IERC20(liquidityAsset).balanceOf(address(this));
+
+        address activeMarketMem = activeMarket;
+        if (activeMarketMem != address(0)) {
+            claimableAmount += IERC4626(activeMarketMem).maxWithdraw(address(this));
+        }
     }
 
     /// @notice Get available liquidity and base asset reserves for a supported base asset.
@@ -1169,21 +1212,16 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
         emit ARMBufferUpdated(_armBuffer);
     }
 
-    /// @notice Clear the legacy packed asset queue counter slot during the Model A upgrade.
-    /// @dev The reused slot previously packed `withdrawsQueued` in the low 128 bits and
-    /// `withdrawsClaimed` in the high 128 bits. It may be nonzero even when the old queue
-    /// is fully drained, so upgrade scripts should call this with `upgradeToAndCall`.
+    /// @notice Validate legacy queue compatibility during the Model A upgrade.
+    /// @dev The legacy packed asset queue counter slot is preserved so old pending withdrawal
+    /// requests can still be claimed after the upgrade.
     function migrateLegacyWithdrawQueue() external onlyOwner reinitializer(2) {
         _checkNoLegacyWithdrawQueue();
 
-        if (withdrawsQueuedShares != 0 || withdrawsClaimedShares != 0) revert AlreadyMigrated();
-
-        uint256 packedLegacyQueue = reservedWithdrawLiquidity;
-        uint128 legacyQueued = uint128(packedLegacyQueue);
-        uint128 legacyClaimed = uint128(packedLegacyQueue >> 128);
-        if (legacyQueued != legacyClaimed) revert LegacyWithdrawalsPending();
-
-        reservedWithdrawLiquidity = 0;
+        if (withdrawsQueuedShares != 0 || withdrawsClaimedShares != 0 || reservedWithdrawLiquidity != 0) {
+            revert AlreadyMigrated();
+        }
+        legacyWithdrawalRequestCount = nextWithdrawalIndex;
     }
 
     /// @dev Hook for protocol-specific legacy withdrawal queue checks before shared queue migration.

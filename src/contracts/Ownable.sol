@@ -6,7 +6,7 @@ pragma solidity ^0.8.23;
  * @author Origin Protocol Inc
  */
 contract Ownable {
-    error OnlyOwner();
+    error OnlyOwner(); // 0x5fc483c5
 
     /// @notice The slot used to store the owner of the contract.
     /// This is also used as the proxy admin.

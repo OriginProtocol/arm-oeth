@@ -148,6 +148,8 @@ abstract contract Fork_Shared_Test_ is Modifiers {
                 address(lidoProxy), address(weth), address(steth), address(wsteth), Mainnet.LIDO_WITHDRAWAL
             )
         );
+        StETHAssetAdapter(payable(stethAdapter)).initialize();
+        WstETHAssetAdapter(payable(wstethAdapter)).initialize();
 
         lidoARM.addBaseAsset(
             address(steth), stethAdapter, 992 * 1e33, 1001 * 1e33, type(uint128).max, type(uint128).max, 1e36, true
