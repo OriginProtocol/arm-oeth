@@ -83,6 +83,44 @@ contract Fork_Concrete_LidoARM_ClaimLidoWithdrawals_Test_ is Fork_Shared_Test_ {
         assertEq(weth.balanceOf(address(lidoARM)), balanceBefore + DEFAULT_AMOUNT);
     }
 
+    function test_ClaimLidoWithdrawals_RevertsWhenNotOperatorOrOwner()
+        public
+        requestLidoWithdrawalsOnLidoARM(amounts1)
+        mockFunctionClaimWithdrawOnLidoARM(DEFAULT_AMOUNT)
+    {
+        uint256[] memory requests = new uint256[](1);
+        requests[0] = stETHWithdrawal.getLastRequestId();
+
+        uint256 lastIndex = stETHWithdrawal.getLastCheckpointIndex();
+        uint256[] memory hintIds = stETHWithdrawal.findCheckpointHints(requests, 1, lastIndex);
+
+        vm.expectRevert("ARM: Only operator or owner can call this function.");
+        vm.prank(alice);
+        lidoARM.claimLidoWithdrawals(requests, hintIds);
+    }
+
+    function test_ClaimLidoWithdrawals_DoesNotWrapPreexistingEth()
+        public
+        asOperator
+        requestLidoWithdrawalsOnLidoARM(amounts1)
+        mockFunctionClaimWithdrawOnLidoARM(DEFAULT_AMOUNT)
+    {
+        uint256 donation = 1 ether;
+        deal(address(lidoARM), donation);
+        uint256 balanceBefore = weth.balanceOf(address(lidoARM));
+
+        uint256[] memory requests = new uint256[](1);
+        requests[0] = stETHWithdrawal.getLastRequestId();
+
+        uint256 lastIndex = stETHWithdrawal.getLastCheckpointIndex();
+        uint256[] memory hintIds = stETHWithdrawal.findCheckpointHints(requests, 1, lastIndex);
+
+        lidoARM.claimLidoWithdrawals(requests, hintIds);
+
+        assertEq(address(lidoARM).balance, donation);
+        assertEq(weth.balanceOf(address(lidoARM)), balanceBefore + DEFAULT_AMOUNT);
+    }
+
     function test_ClaimLidoWithdrawals_MultiRequest()
         public
         asOperator

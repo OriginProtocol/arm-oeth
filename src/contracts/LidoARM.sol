@@ -141,7 +141,12 @@ contract LidoARM is Initializable, AbstractARM {
      * @param hintIds The hint IDs of the withdrawal requests.
      * Call `findCheckpointHints` on the Lido withdrawal queue contract to get the hint IDs.
      */
-    function claimLidoWithdrawals(uint256[] calldata requestIds, uint256[] calldata hintIds) external {
+    function claimLidoWithdrawals(uint256[] calldata requestIds, uint256[] calldata hintIds)
+        external
+        onlyOperatorOrOwner
+    {
+        uint256 ethBalanceBefore = address(this).balance;
+
         // Claim the NFTs for ETH.
         lidoWithdrawalQueue.claimWithdrawals(requestIds, hintIds);
 
@@ -165,8 +170,9 @@ contract LidoARM is Initializable, AbstractARM {
         // this subtraction should never underflow.
         lidoWithdrawalQueueAmount -= totalAmountRequested;
 
-        // Wrap all the received ETH to WETH. This can be less than the requested amount in the event of slashing.
-        weth.deposit{value: address(this).balance}();
+        // Wrap the ETH balance increase from this claim. This can be less than the requested amount
+        // in the event of slashing, and ignores ETH donated before the claim starts.
+        weth.deposit{value: address(this).balance - ethBalanceBefore}();
 
         emit ClaimLidoWithdrawals(requestIds);
     }
