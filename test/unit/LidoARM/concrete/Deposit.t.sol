@@ -217,7 +217,7 @@ contract Unit_LidoARM_Deposit_Test is Unit_LidoARM_Shared_Test {
 
         // Expect revert due to insolvency
         vm.prank(alice);
-        vm.expectRevert("ARM: insolvent");
+        vm.expectRevert(AbstractARM.Insolvent.selector);
         lidoARM.deposit(1 ether);
     }
 }

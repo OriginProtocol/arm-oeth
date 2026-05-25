@@ -81,6 +81,7 @@ contract Unit_LidoARM_AbstractLidoAssetAdapter_Test is Unit_LidoARM_Shared_Test 
         testableAdapter = new TestableLidoAdapter({
             _arm: address(this), _weth: address(weth), _steth: address(steth), _queue: address(lidoWithdrawalQueue)
         });
+        testableAdapter.initialize();
 
         // Seed stETH at the simulated ARM and approve the adapter to pull it.
         deal(address(steth), address(this), 10_000 ether);

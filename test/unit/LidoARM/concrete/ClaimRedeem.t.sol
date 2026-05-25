@@ -477,11 +477,11 @@ contract Unit_LidoARM_ClaimRedeem_Test is Unit_LidoARM_Shared_Test {
         // Alice queued = 100 ether (in shares) -> cannot claim
         // Bob queued = 200 ether -> cannot claim either
         vm.prank(alice);
-        vm.expectRevert("Queue pending liquidity");
+        vm.expectRevert(AbstractARM.QueuePendingLiquidity.selector);
         lidoARM.claimRedeem(aliceId);
 
         vm.prank(bobby);
-        vm.expectRevert("Queue pending liquidity");
+        vm.expectRevert(AbstractARM.QueuePendingLiquidity.selector);
         lidoARM.claimRedeem(bobId);
     }
 
@@ -490,7 +490,7 @@ contract Unit_LidoARM_ClaimRedeem_Test is Unit_LidoARM_Shared_Test {
         skip(CLAIM_DELAY);
 
         vm.prank(bobby);
-        vm.expectRevert("Not requester or operator");
+        vm.expectRevert(AbstractARM.NotRequesterOrOperator.selector);
         lidoARM.claimRedeem(aliceId);
     }
 
@@ -499,7 +499,7 @@ contract Unit_LidoARM_ClaimRedeem_Test is Unit_LidoARM_Shared_Test {
         // One second short of the delay -> still locked.
         skip(CLAIM_DELAY - 1);
         vm.prank(alice);
-        vm.expectRevert("Claim delay not met");
+        vm.expectRevert(AbstractARM.ClaimDelayNotMet.selector);
         lidoARM.claimRedeem(aliceId);
     }
 
@@ -511,7 +511,7 @@ contract Unit_LidoARM_ClaimRedeem_Test is Unit_LidoARM_Shared_Test {
 
         // Re-claim attempt
         vm.prank(alice);
-        vm.expectRevert("Already claimed");
+        vm.expectRevert(AbstractARM.AlreadyClaimed.selector);
         lidoARM.claimRedeem(aliceId);
     }
 
