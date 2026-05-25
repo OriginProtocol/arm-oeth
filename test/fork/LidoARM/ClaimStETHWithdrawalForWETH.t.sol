@@ -35,6 +35,16 @@ contract Fork_Concrete_LidoARM_ClaimLidoWithdrawals_Test_ is Fork_Shared_Test_ {
     }
 
     //////////////////////////////////////////////////////
+    /// --- REVERTING TESTS
+    //////////////////////////////////////////////////////
+    function test_RevertWhen_ClaimLidoWithdrawals_NotOperatorOrOwner() public asRandomAddress {
+        uint256[] memory emptyList = new uint256[](0);
+
+        vm.expectRevert("ARM: Only operator or owner can call this function.");
+        lidoARM.claimLidoWithdrawals(emptyList, emptyList);
+    }
+
+    //////////////////////////////////////////////////////
     /// --- PASSING TESTS
     //////////////////////////////////////////////////////
     function test_ClaimLidoWithdrawals_EmptyList() public asOperator requestLidoWithdrawalsOnLidoARM(new uint256[](0)) {
@@ -79,6 +89,33 @@ contract Fork_Concrete_LidoARM_ClaimLidoWithdrawals_Test_ is Fork_Shared_Test_ {
         lidoARM.claimLidoWithdrawals(requests, hintIds);
 
         // Assertions after
+        assertEq(lidoARM.lidoWithdrawalQueueAmount(), 0);
+        assertEq(weth.balanceOf(address(lidoARM)), balanceBefore + DEFAULT_AMOUNT);
+    }
+
+    function test_ClaimLidoWithdrawals_OnlyWrapsClaimedETH()
+        public
+        asOperator
+        requestLidoWithdrawalsOnLidoARM(amounts1)
+        mockFunctionClaimWithdrawOnLidoARM(DEFAULT_AMOUNT)
+    {
+        uint256 donatedETH = 0.5 ether;
+        vm.deal(address(lidoARM), donatedETH);
+
+        uint256 balanceBefore = weth.balanceOf(address(lidoARM));
+        assertEq(address(lidoARM).balance, donatedETH);
+        assertEq(lidoARM.lidoWithdrawalQueueAmount(), DEFAULT_AMOUNT);
+
+        stETHWithdrawal.getLastRequestId();
+        uint256[] memory requests = new uint256[](1);
+        requests[0] = stETHWithdrawal.getLastRequestId();
+
+        uint256 lastIndex = stETHWithdrawal.getLastCheckpointIndex();
+        uint256[] memory hintIds = stETHWithdrawal.findCheckpointHints(requests, 1, lastIndex);
+
+        lidoARM.claimLidoWithdrawals(requests, hintIds);
+
+        assertEq(address(lidoARM).balance, donatedETH);
         assertEq(lidoARM.lidoWithdrawalQueueAmount(), 0);
         assertEq(weth.balanceOf(address(lidoARM)), balanceBefore + DEFAULT_AMOUNT);
     }

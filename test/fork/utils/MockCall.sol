@@ -71,6 +71,6 @@ contract ETHSender {
     Vm private constant vm = Vm(address(uint160(uint256(keccak256("hevm cheat code")))));
 
     function sendETH(address target) external {
-        vm.deal(target, address(this).balance);
+        vm.deal(target, target.balance + address(this).balance);
     }
 }
