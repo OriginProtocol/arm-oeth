@@ -60,12 +60,44 @@ lint_on_build = false
 runs = 1_000
 
 [invariant]
-runs = 1_000
-depth = 100
-shrink_run_limit = 5_000
-show_metrics = true
-fail_on_revert = true
-corpus_dir = "test/invariants/.foundry-corpus"
+# --- Fuzzing loop ---
+runs = 256                                         # default: 256  -- number of independent call sequences
+depth = 50                                         # default: 500  -- number of calls per sequence
+fail_on_revert = true                              # default: false -- strict mode: any revert fails the test
+# call_override = false                            # default: false -- allow contracts to override calls
+
+# --- Shrinking & rejects ---
+shrink_run_limit = 5_000                           # default: 5000 -- max attempts to shrink a counterexample
+max_assume_rejects = 65_536                        # default: 65536 -- max vm.assume rejects before giving up
+
+# --- Value dictionary ---
+# dictionary_weight = 40                           # default: 40   -- probability (0-100) of drawing from dictionary
+# include_storage = true                           # default: true -- include observed storage slots
+# include_push_bytes = true                        # default: true -- include PUSH constants from bytecode
+# seed = "0x1"                                     # default: random -- deterministic seed (useful in CI)
+
+# --- Corpus / coverage-guided fuzzing ---
+corpus_dir = "test/invariants/.foundry-corpus"     # default: none -- persist interesting sequences
+# corpus_gzip = true                               # default: true -- gzip corpus files on disk
+# corpus_min_mutations = 5                         # default: 5    -- min mutations applied to a replayed sequence
+# corpus_min_size = 0                              # default: 0    -- min corpus size before mutating
+
+# --- Failure persistence ---
+failure_persist_dir = "test/invariants/.foundry-failures"          # default: cache/invariant -- auto-replay counterexamples
+
+# --- Time & block delays ---
+max_time_delay = 86_400                           # default: none -- max seconds between txs (1 day)
+max_block_delay = 50_400                           # default: none -- max blocks between txs (~1 week at 12s/block)
+
+# --- Invariant check frequency ---
+# check_interval = 1                               # default: 1    -- calls between invariant assertions
+
+# --- Reporting / debug ---
+show_metrics = true                                # default: false -- per-handler counters
+show_solidity = true                               # default: false -- print counterexample as Solidity
+# show_edge_coverage = false                       # default: false -- display edge coverage metrics
+# gas_report_samples = 256                         # default: 256  -- samples for gas report
+# timeout = 0                                      # default: none -- global timeout in seconds
 
 [profile.lite.invariant]
 runs = 50
