@@ -13,7 +13,7 @@ contract EthenaARM is Initializable, AbstractARM {
     /// @dev Deprecated cooldown amount retained for storage layout compatibility.
     uint256 internal _deprecatedLiquidityAmountInCooldown;
     /// @dev Deprecated unstaker helper array retained for storage layout compatibility.
-    uint256 internal _deprecatedUnstakers;
+    address[42] internal _deprecatedUnstakers;
     /// @dev Deprecated unstaker index retained for storage layout compatibility.
     uint8 internal _deprecatedNextUnstakerIndex;
     /// @dev Deprecated request timestamp retained for storage layout compatibility.
