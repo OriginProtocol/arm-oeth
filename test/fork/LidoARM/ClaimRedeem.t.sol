@@ -133,7 +133,8 @@ contract Fork_Concrete_LidoARM_ClaimRedeem_Test_ is Fork_Shared_Test_ {
         if (ac) assertEq(capManager.liquidityProviderCaps(address(this)), 0);
         assertEqQueueMetadata(DEFAULT_AMOUNT, 0, 1);
         assertEqUserRequest(0, address(this), false, block.timestamp, DEFAULT_AMOUNT, DEFAULT_AMOUNT, DEFAULT_AMOUNT);
-        assertEq(lidoARM.claimable(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT);
+        (, uint256 claimableSharesBefore) = lidoARM.claimable();
+        assertEq(claimableSharesBefore, MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT);
 
         // Expected events
         vm.expectEmit({emitter: address(weth)});
@@ -156,7 +157,8 @@ contract Fork_Concrete_LidoARM_ClaimRedeem_Test_ is Fork_Shared_Test_ {
         assertEqQueueMetadata(0, DEFAULT_AMOUNT, 1);
         assertEqUserRequest(0, address(this), true, block.timestamp, DEFAULT_AMOUNT, DEFAULT_AMOUNT, DEFAULT_AMOUNT);
         assertEq(assets, DEFAULT_AMOUNT);
-        assertEq(lidoARM.claimable(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT);
+        (, uint256 claimableSharesAfter) = lidoARM.claimable();
+        assertEq(claimableSharesAfter, MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT);
     }
 
     function test_ClaimRequest_JustEnoughLiquidity_()
@@ -230,7 +232,8 @@ contract Fork_Concrete_LidoARM_ClaimRedeem_Test_ is Fork_Shared_Test_ {
         assertEqUserRequest(
             1, address(this), false, block.timestamp + delay, DEFAULT_AMOUNT / 2, DEFAULT_AMOUNT, DEFAULT_AMOUNT / 2
         );
-        assertEq(lidoARM.claimable(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT);
+        (, uint256 claimableSharesBefore) = lidoARM.claimable();
+        assertEq(claimableSharesBefore, MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT);
 
         // Expected events
         vm.expectEmit({emitter: address(weth)});
@@ -259,7 +262,8 @@ contract Fork_Concrete_LidoARM_ClaimRedeem_Test_ is Fork_Shared_Test_ {
             1, address(this), true, block.timestamp, DEFAULT_AMOUNT / 2, DEFAULT_AMOUNT, DEFAULT_AMOUNT / 2
         );
         assertEq(assets, DEFAULT_AMOUNT / 2);
-        assertEq(lidoARM.claimable(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT);
+        (, uint256 claimableSharesAfter) = lidoARM.claimable();
+        assertEq(claimableSharesAfter, MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT);
     }
 
     function test_ClaimRequest_AfterSlashing()

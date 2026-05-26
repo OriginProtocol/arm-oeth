@@ -60,9 +60,10 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
     uint256 internal _deprecatedTraderate1;
     uint256 internal _deprecatedCrossPrice;
 
-    /// @dev Legacy asset-denominated queue counters retained for storage layout compatibility.
-    uint128 internal _deprecatedWithdrawsQueued;
-    uint128 internal _deprecatedWithdrawsClaimed;
+    /// @notice Cumulative request-time liquidity asset caps queued for redemption.
+    uint128 public withdrawsQueuedAssets;
+    /// @notice Cumulative request-time liquidity asset caps claimed and released.
+    uint128 public withdrawsClaimedAssets;
     /// @notice Index of the next LP withdrawal request.
     uint256 public nextWithdrawalIndex;
 
@@ -140,7 +141,10 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
     /// @notice First withdrawal request id that uses the new share-escrow queue semantics.
     uint256 public legacyWithdrawalRequestCount;
 
-    uint256[31] private _gap;
+    /// @notice Cumulative request-time asset cap including a withdrawal request.
+    mapping(uint256 requestId => uint128 queuedAssets) public withdrawalRequestQueuedAssets;
+
+    uint256[30] private _gap;
 
     ////////////////////////////////////////////////////
     ///                 Errors
@@ -793,6 +797,10 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
         // Cumulative shares queued including this request, used for the FIFO gate at claim.
         uint128 queued = SafeCast.toUint128(withdrawsQueuedShares + shares);
         withdrawsQueuedShares = queued;
+        // Cumulative request-time liquidity caps queued including this request. Build from the current
+        // reservation so post-upgrade requests stay behind any already-outstanding withdrawal caps.
+        uint128 queuedAssets = SafeCast.toUint128(withdrawsClaimedAssets + reservedWithdrawLiquidity + assets);
+        withdrawsQueuedAssets = queuedAssets;
         // Reserve the request-time maximum liquidity payout.
         reservedWithdrawLiquidity += assets;
 
@@ -805,6 +813,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
             queued: queued,
             shares: SafeCast.toUint128(shares)
         });
+        withdrawalRequestQueuedAssets[requestId] = queuedAssets;
 
         // Escrow the redeemer's shares so they stay in totalSupply() and share losses/gains pro-rata.
         _transfer(msg.sender, address(this), shares);
@@ -823,7 +832,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
         if (legacyRequest) {
             if (request.queued > _legacyClaimable()) revert QueuePendingLiquidity();
         } else {
-            if (request.queued > claimable()) revert QueuePendingLiquidity();
+            if (!_requestClaimable(requestId, request)) revert QueuePendingLiquidity();
         }
         if (request.withdrawer != msg.sender && msg.sender != operator) revert NotRequesterOrOperator();
         if (request.claimed) revert AlreadyClaimed();
@@ -831,7 +840,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
         if (legacyRequest) {
             assets = request.assets;
             // Legacy requests used asset-denominated cumulative queue accounting.
-            _deprecatedWithdrawsClaimed += SafeCast.toUint128(assets);
+            withdrawsClaimedAssets += SafeCast.toUint128(assets);
         } else {
             // In the scenario where the ARM has made a loss after the redeem request, the asset value of
             // the redeemed shares at the time of the claim is used.
@@ -843,6 +852,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
 
             // Release the full request-time reservation, even when a loss-adjusted payout is lower.
             reservedWithdrawLiquidity -= request.assets;
+            // Cumulative claimed request-time caps, used by the asset-denominated FIFO gate.
+            withdrawsClaimedAssets += request.assets;
             // Cumulative claimed amount in shares, used by the FIFO gate above.
             withdrawsClaimedShares += request.shares;
 
@@ -878,10 +889,41 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
     ///                 Accounting
     ////////////////////////////////////////////////////
 
-    /// @notice Cumulative share queue frontier currently backed by claimable liquidity.
-    /// @return claimableShares Requests with `queued <= claimableShares` can be claimed once their delay has elapsed.
-    function claimable() public view returns (uint256 claimableShares) {
-        uint256 claimableLiquidity = IERC20(liquidityAsset).balanceOf(address(this));
+    /// @notice Cumulative asset-cap and share queue frontiers currently backed by claimable liquidity.
+    /// @return claimableAssetCaps Requests with `queuedAssets <= claimableAssetCaps` can be claimed by asset cap.
+    /// @return claimableShares Requests with `queued <= claimableShares` can be claimed by current share value.
+    function claimable() public view returns (uint256 claimableAssetCaps, uint256 claimableShares) {
+        uint256 claimableLiquidity = _claimableLiquidity();
+        claimableAssetCaps = withdrawsClaimedAssets + claimableLiquidity;
+        claimableShares = withdrawsClaimedShares + convertToShares(claimableLiquidity);
+    }
+
+    /// @notice True if an LP withdrawal request is mature, unclaimed, and backed by claimable liquidity.
+    /// @param requestId LP withdrawal request id.
+    /// @return canClaim True when the request can be claimed by the withdrawer or operator.
+    function isClaimable(uint256 requestId) public view returns (bool canClaim) {
+        WithdrawalRequest memory request = withdrawalRequests[requestId];
+        if (request.claimTimestamp > block.timestamp || request.claimed) return false;
+
+        bool legacyRequest = requestId < legacyWithdrawalRequestCount;
+        if (legacyRequest) return request.queued <= _legacyClaimable();
+
+        return _requestClaimable(requestId, request);
+    }
+
+    /// @dev True if a non-legacy request is liquid-funded by either capped assets or current share value.
+    function _requestClaimable(uint256 requestId, WithdrawalRequest memory request) internal view returns (bool) {
+        uint256 claimableLiquidity = _claimableLiquidity();
+
+        uint256 queuedAssets = withdrawalRequestQueuedAssets[requestId];
+        if (queuedAssets != 0 && queuedAssets <= withdrawsClaimedAssets + claimableLiquidity) return true;
+
+        return request.queued <= withdrawsClaimedShares + convertToShares(claimableLiquidity);
+    }
+
+    /// @dev Liquidity assets currently available to settle LP withdrawal claims.
+    function _claimableLiquidity() internal view returns (uint256 claimableLiquidity) {
+        claimableLiquidity = IERC20(liquidityAsset).balanceOf(address(this));
 
         // If there is an active lending market, add to the claimable amount.
         address activeMarketMem = activeMarket;
@@ -890,13 +932,11 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
             // maxWithdraw may return less than convertToAssets.
             claimableLiquidity += IERC4626(activeMarketMem).maxWithdraw(address(this));
         }
-
-        claimableShares = withdrawsClaimedShares + convertToShares(claimableLiquidity);
     }
 
     /// @dev Legacy asset-denominated queue frontier for pre-upgrade withdrawal requests.
     function _legacyClaimable() internal view returns (uint256 claimableAmount) {
-        claimableAmount = _deprecatedWithdrawsClaimed + IERC20(liquidityAsset).balanceOf(address(this));
+        claimableAmount = withdrawsClaimedAssets + IERC20(liquidityAsset).balanceOf(address(this));
 
         address activeMarketMem = activeMarket;
         if (activeMarketMem != address(0)) {

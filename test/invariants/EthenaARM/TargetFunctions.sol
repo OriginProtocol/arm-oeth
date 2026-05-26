@@ -151,7 +151,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         address user;
         uint256 requestId;
         uint256 claimTimestamp;
-        uint256 claimable = arm.claimable();
+        (, uint256 claimable) = arm.claimable();
         uint256 availableLiquidity = usde.balanceOf(address(arm));
         address market = arm.activeMarket();
         if (market != address(0)) {

@@ -135,7 +135,8 @@ contract Unit_Concrete_OriginARM_TotalAssets_Test_ is Unit_Shared_Test {
 
         assertEq(originARM.totalAssets(), totalAssetsBefore, "total assets should use convertToAssets");
         assertEq(originARM.convertToAssets(1 ether), assetsPerShareBefore, "asset per share should be unchanged");
-        assertEq(originARM.claimable(), 0, "claimable should still reflect liquidity constraints");
+        (, uint256 claimableShares) = originARM.claimable();
+        assertEq(claimableShares, 0, "claimable should still reflect liquidity constraints");
         assertEq(market.previewRedeem(marketShares), 0, "previewRedeem should be constrained");
         assertEq(market.convertToAssets(marketShares), marketValue, "convertToAssets should still show economic value");
     }

@@ -163,7 +163,8 @@ abstract contract TargetFunction is Properties {
         (,,, uint128 requestAssets, uint128 queued, uint128 shares) = lidoARM.withdrawalRequests(requestId);
         (,, uint40 claimTimestamp,,,) = lidoARM.withdrawalRequests(requestId);
         vm.assume(block.timestamp + lidoARM.claimDelay() >= claimTimestamp);
-        vm.assume(lidoARM.claimable() >= queued);
+        (, uint256 claimableShares) = lidoARM.claimable();
+        vm.assume(claimableShares >= queued);
 
         // Timejump to request deadline
         skip(lidoARM.claimDelay());

@@ -125,7 +125,7 @@ abstract contract Helpers is Setup, Logger {
         // Find a random element on the list with a condition, using Fisher-Yates shuffle
         uint256 len = lps.length;
         uint256[] memory indices = new uint256[](len);
-        uint256 claimable = originARM.claimable();
+        (, uint256 claimable) = originARM.claimable();
 
         // 1. Fill the indices array with 0 to n-1
         for (uint256 i; i < len; i++) {

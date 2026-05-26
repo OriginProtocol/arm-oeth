@@ -35,6 +35,9 @@ abstract contract Properties is Setup, Helpers {
     // [x] Invariant J: withdrawsClaimedShares == ∑claimed request.shares
     // [x] Invariant K: ARM escrowed shares == withdrawsQueuedShares - withdrawsClaimedShares
     // [x] Invariant L: ∑feesCollected == feeCollector.balance
+    // [x] Invariant M: withdrawsQueuedAssets >= withdrawsClaimedAssets
+    // [x] Invariant N: withdrawsQueuedAssets == ∑request.assets
+    // [x] Invariant O: withdrawsClaimedAssets == ∑claimed request.assets
     // * invariants tested directly in the handlers.
 
     using MathComparisons for uint256;
@@ -110,6 +113,18 @@ abstract contract Properties is Setup, Helpers {
         return ws.balanceOf(feeCollector) == sum_feesCollected;
     }
 
+    function property_lp_M() public view returns (bool) {
+        return originARM.withdrawsQueuedAssets() >= originARM.withdrawsClaimedAssets();
+    }
+
+    function property_lp_N() public view returns (bool) {
+        return originARM.withdrawsQueuedAssets() == sumOfRequestRedeemAmount();
+    }
+
+    function property_lp_O() public view returns (bool) {
+        return originARM.withdrawsClaimedAssets() == sumOfClaimedRequestRedeemAmount();
+    }
+
     function sumOfShares() public view returns (uint256 usersShares) {
         for (uint256 i; i < lps.length; i++) {
             usersShares += originARM.balanceOf(lps[i]);
@@ -123,6 +138,22 @@ abstract contract Properties is Setup, Helpers {
         for (uint256 i; i < len; i++) {
             (, bool claimed,, uint128 amount,,) = originARM.withdrawalRequests(i);
             if (!claimed) sum += amount;
+        }
+    }
+
+    function sumOfRequestRedeemAmount() public view returns (uint256 sum) {
+        uint256 len = originARM.nextWithdrawalIndex();
+        for (uint256 i; i < len; i++) {
+            (,,, uint128 amount,,) = originARM.withdrawalRequests(i);
+            sum += amount;
+        }
+    }
+
+    function sumOfClaimedRequestRedeemAmount() public view returns (uint256 sum) {
+        uint256 len = originARM.nextWithdrawalIndex();
+        for (uint256 i; i < len; i++) {
+            (, bool claimed,, uint128 amount,,) = originARM.withdrawalRequests(i);
+            if (claimed) sum += amount;
         }
     }
 }

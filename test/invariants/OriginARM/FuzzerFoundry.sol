@@ -56,6 +56,9 @@ contract FuzzerFoundry_OriginARM is TargetFunction {
         assertTrue(property_lp_J(), "INVARIANT J");
         assertTrue(property_lp_K(), "INVARIANT K");
         assertTrue(property_lp_L(), "INVARIANT L");
+        assertTrue(property_lp_M(), "INVARIANT M");
+        assertTrue(property_lp_N(), "INVARIANT N");
+        assertTrue(property_lp_O(), "INVARIANT O");
     }
 
     function afterInvariant() public {

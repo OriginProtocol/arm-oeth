@@ -23,6 +23,7 @@ contract Unit_Concrete_OriginARM_ClaimRedeem_Test_ is Unit_Shared_Test {
     }
 
     function test_RevertWhen_ClaimRedeem_Because_DelayNotMet() public requestRedeemAll(alice) {
+        assertFalse(originARM.isClaimable(0), "not mature");
         vm.expectRevert(bytes4(keccak256("ClaimDelayNotMet()")));
         originARM.claimRedeem(0);
     }
@@ -35,6 +36,61 @@ contract Unit_Concrete_OriginARM_ClaimRedeem_Test_ is Unit_Shared_Test {
     {
         vm.expectRevert(bytes4(keccak256("QueuePendingLiquidity()")));
         originARM.claimRedeem(0);
+    }
+
+    function test_ClaimRedeem_WhenSupportedBaseAssetDonationReducesShareFrontier()
+        public
+        requestRedeemAll(alice)
+        timejump(CLAIM_DELAY)
+    {
+        deal(address(oeth), address(originARM), MIN_TOTAL_SUPPLY + 1e7);
+
+        (uint256 claimableAssets, uint256 claimableShares) = originARM.claimable();
+        assertLt(claimableShares, DEFAULT_AMOUNT, "share frontier");
+        assertEq(claimableAssets, DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, "asset frontier");
+        assertTrue(originARM.isClaimable(0), "is claimable");
+
+        uint256 aliceBalanceBefore = weth.balanceOf(alice);
+
+        vm.prank(alice);
+        uint256 assets = originARM.claimRedeem(0);
+
+        assertEq(assets, DEFAULT_AMOUNT, "claimed assets");
+        assertEq(weth.balanceOf(alice), aliceBalanceBefore + DEFAULT_AMOUNT, "alice WETH");
+        assertEq(originARM.reservedWithdrawLiquidity(), 0, "reserved liquidity");
+        assertEq(originARM.withdrawsClaimedAssets(), DEFAULT_AMOUNT, "claimed asset caps");
+        assertEq(originARM.withdrawsClaimedShares(), DEFAULT_AMOUNT, "claimed shares");
+    }
+
+    function test_ClaimRedeem_WhenDiscountedBaseAssetBuyReducesShareFrontier()
+        public
+        requestRedeemAll(alice)
+        timejump(CLAIM_DELAY)
+    {
+        address swapper = makeAddr("swapper");
+        deal(address(oeth), swapper, 1 ether);
+
+        vm.startPrank(swapper);
+        oeth.approve(address(originARM), type(uint256).max);
+        originARM.swapTokensForExactTokens(oeth, weth, MIN_TOTAL_SUPPLY, type(uint256).max, swapper);
+        vm.stopPrank();
+
+        assertEq(weth.balanceOf(address(originARM)), DEFAULT_AMOUNT, "liquid WETH");
+        (uint256 claimableAssets, uint256 claimableShares) = originARM.claimable();
+        assertLt(claimableShares, DEFAULT_AMOUNT, "share frontier");
+        assertEq(claimableAssets, DEFAULT_AMOUNT, "asset frontier");
+        assertTrue(originARM.isClaimable(0), "is claimable");
+
+        uint256 aliceBalanceBefore = weth.balanceOf(alice);
+
+        vm.prank(alice);
+        uint256 assets = originARM.claimRedeem(0);
+
+        assertEq(assets, DEFAULT_AMOUNT, "claimed assets");
+        assertEq(weth.balanceOf(alice), aliceBalanceBefore + DEFAULT_AMOUNT, "alice WETH");
+        assertEq(originARM.reservedWithdrawLiquidity(), 0, "reserved liquidity");
+        assertEq(originARM.withdrawsClaimedAssets(), DEFAULT_AMOUNT, "claimed asset caps");
+        assertEq(originARM.withdrawsClaimedShares(), DEFAULT_AMOUNT, "claimed shares");
     }
 
     function test_RevertWhen_ClaimRedeem_Because_NotWithdrawer()
@@ -62,7 +118,8 @@ contract Unit_Concrete_OriginARM_ClaimRedeem_Test_ is Unit_Shared_Test {
         assertEq(originARM.withdrawsClaimedShares(), DEFAULT_AMOUNT, "Claimed shares should be DEFAULT_AMOUNT");
         assertEq(weth.balanceOf(alice), aliceBalanceBefore + DEFAULT_AMOUNT, "Alice should receive her WETH");
         assertEq(weth.balanceOf(operator), operatorBalanceBefore, "Operator should not receive WETH");
-        assertEq(originARM.claimable(), DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, "Claimable should be updated");
+        (, uint256 claimableShares) = originARM.claimable();
+        assertEq(claimableShares, DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, "Claimable should be updated");
     }
 
     function test_ClaimRedeem_WhenLegacyRequestClaimedByWithdrawer() public timejump(CLAIM_DELAY) {
@@ -146,6 +203,7 @@ contract Unit_Concrete_OriginARM_ClaimRedeem_Test_ is Unit_Shared_Test {
         // Alice claims her redeem
         vm.prank(alice);
         originARM.claimRedeem(0);
+        assertFalse(originARM.isClaimable(0), "already claimed");
 
         // Attempt to claim again
         vm.prank(alice);
@@ -167,7 +225,8 @@ contract Unit_Concrete_OriginARM_ClaimRedeem_Test_ is Unit_Shared_Test {
         assertEq(originARM.reservedWithdrawLiquidity(), 0, "Reserved liquidity should be released");
         assertEq(originARM.withdrawsClaimedShares(), DEFAULT_AMOUNT, "Claimed shares should be DEFAULT_AMOUNT");
         assertEq(weth.balanceOf(alice), balanceBefore + DEFAULT_AMOUNT, "Alice should receive her WETH");
-        assertEq(originARM.claimable(), DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, "Claimable should be updated");
+        (, uint256 claimableShares) = originARM.claimable();
+        assertEq(claimableShares, DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, "Claimable should be updated");
     }
 
     function test_ClaimRedeem_WithActiveMarket_EnoughLiquidity()
@@ -191,7 +250,8 @@ contract Unit_Concrete_OriginARM_ClaimRedeem_Test_ is Unit_Shared_Test {
         assertEq(originARM.reservedWithdrawLiquidity(), 0, "Reserved liquidity should be released");
         assertEq(originARM.withdrawsClaimedShares(), DEFAULT_AMOUNT, "Claimed shares should be DEFAULT_AMOUNT");
         assertEq(weth.balanceOf(alice), balanceBefore + DEFAULT_AMOUNT, "Alice should receive her WETH");
-        assertEq(originARM.claimable(), DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, "Claimable should be updated");
+        (, uint256 claimableShares) = originARM.claimable();
+        assertEq(claimableShares, DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, "Claimable should be updated");
     }
 
     function test_ClaimRedeem_WithActiveMarket_NotEnoughLiquidity()
@@ -215,7 +275,8 @@ contract Unit_Concrete_OriginARM_ClaimRedeem_Test_ is Unit_Shared_Test {
         assertEq(originARM.reservedWithdrawLiquidity(), 0, "Reserved liquidity should be released");
         assertEq(originARM.withdrawsClaimedShares(), DEFAULT_AMOUNT, "Claimed shares should be DEFAULT_AMOUNT");
         assertEq(weth.balanceOf(alice), balanceBefore + DEFAULT_AMOUNT, "Alice should receive her WETH");
-        assertEq(originARM.claimable(), DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, "Claimable should be updated");
+        (, uint256 claimableShares) = originARM.claimable();
+        assertEq(claimableShares, DEFAULT_AMOUNT + MIN_TOTAL_SUPPLY, "Claimable should be updated");
     }
 
     function _writeLegacyWithdrawQueue(uint128 legacyQueued, uint128 legacyClaimed) internal {
