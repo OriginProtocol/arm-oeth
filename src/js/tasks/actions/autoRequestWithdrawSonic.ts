@@ -1,4 +1,5 @@
 import { ethers } from "ethers";
+import { types } from "hardhat/config";
 
 import { action } from "../lib/action";
 import { autoRequestWithdraw } from "../liquidityAutomation";
@@ -9,15 +10,29 @@ action({
   name: "autoRequestWithdrawSonic",
   description: "Request withdrawals from Origin ARM on Sonic",
   chains: [146],
-  run: async ({ signer, log }) => {
+  params: (t) =>
+    t
+      .addOptionalParam(
+        "minAmount",
+        "Minimum balance required before a withdrawal request is made (token units).",
+        "300",
+        types.string,
+      )
+      .addOptionalParam(
+        "thresholdAmount",
+        "Threshold above which a withdrawal request is triggered (token units).",
+        10000,
+        types.float,
+      ),
+  run: async ({ signer, log, args }) => {
     const arm = new ethers.Contract(sonic.OriginARM, armAbi, signer);
 
     log.info("Requesting withdrawals from Origin ARM on Sonic");
     await autoRequestWithdraw({
       signer,
       arm,
-      minAmount: "300",
-      thresholdAmount: 10000,
+      minAmount: args.minAmount,
+      thresholdAmount: args.thresholdAmount,
     });
   },
 });

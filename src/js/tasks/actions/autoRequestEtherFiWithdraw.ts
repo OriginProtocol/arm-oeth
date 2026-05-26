@@ -1,4 +1,5 @@
 import { ethers } from "ethers";
+import { types } from "hardhat/config";
 
 import { action } from "../lib/action";
 import { requestEtherFiWithdrawals } from "../etherfiQueue";
@@ -10,7 +11,21 @@ action({
   name: "autoRequestEtherFiWithdraw",
   description: "Request EtherFi withdrawals from EtherFi ARM",
   chains: [1],
-  run: async ({ signer, log }) => {
+  params: (t) =>
+    t
+      .addOptionalParam(
+        "minAmount",
+        "Minimum balance required before a withdrawal request is made (token units).",
+        "0.1",
+        types.string,
+      )
+      .addOptionalParam(
+        "thresholdAmount",
+        "Threshold above which a withdrawal request is triggered (token units).",
+        10,
+        types.float,
+      ),
+  run: async ({ signer, log, args }) => {
     const eeth = new ethers.Contract(mainnet.eETH, erc20Abi, signer);
     const arm = new ethers.Contract(mainnet.etherfiARM, etherFiARMAbi, signer);
 
@@ -19,8 +34,8 @@ action({
       signer,
       eeth,
       arm,
-      minAmount: "0.1",
-      thresholdAmount: 10,
+      minAmount: args.minAmount,
+      thresholdAmount: args.thresholdAmount,
     });
   },
 });

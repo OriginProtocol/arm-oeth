@@ -1,4 +1,5 @@
 import { ethers } from "ethers";
+import { types } from "hardhat/config";
 
 import { action } from "../lib/action";
 import { requestEthenaWithdrawals } from "../ethenaQueue";
@@ -10,7 +11,21 @@ action({
   name: "autoRequestEthenaWithdraw",
   description: "Request Ethena withdrawals from Ethena ARM",
   chains: [1],
-  run: async ({ signer, log }) => {
+  params: (t) =>
+    t
+      .addOptionalParam(
+        "minAmount",
+        "Minimum balance required before a withdrawal request is made (token units).",
+        "100",
+        types.string,
+      )
+      .addOptionalParam(
+        "thresholdAmount",
+        "Threshold above which a withdrawal request is triggered (token units).",
+        1000,
+        types.float,
+      ),
+  run: async ({ signer, log, args }) => {
     const susde = new ethers.Contract(mainnet.sUSDe, erc20Abi, signer);
     const arm = new ethers.Contract(mainnet.ethenaARM, ethenaARMAbi, signer);
 
@@ -19,8 +34,8 @@ action({
       signer,
       susde,
       arm,
-      minAmount: "100",
-      thresholdAmount: 1000,
+      minAmount: args.minAmount,
+      thresholdAmount: args.thresholdAmount,
     });
   },
 });
