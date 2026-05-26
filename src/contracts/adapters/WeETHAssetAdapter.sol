@@ -110,12 +110,13 @@ contract WeETHAssetAdapter is Initializable, IAssetAdapter, IERC721Receiver {
         sharesRequested = shares;
     }
 
-    /// @notice Claims queued Ether.fi withdrawal requests and transfers received WETH to the ARM.
-    /// @dev Claims pending requests in FIFO order and wraps any received ETH into WETH.
+    /// @notice Claims queued Ether.fi withdrawal requests and sweeps WETH to the ARM.
+    /// @dev Claims pending requests in FIFO order, wraps the full ETH balance into WETH, and transfers
+    /// all adapter-held WETH to the ARM. `assetsReceived` may include previously donated ETH or WETH.
     /// @param shares Exact amount of weETH represented by pending requests to claim.
     /// @return sharesClaimed Amount of weETH represented by claimed requests.
     /// @return assetsExpected Expected WETH amount recorded when requests were opened.
-    /// @return assetsReceived Actual WETH amount received and transferred to the ARM.
+    /// @return assetsReceived Total WETH amount swept to the ARM.
     function redeem(uint256 shares)
         external
         onlyARM
@@ -147,13 +148,12 @@ contract WeETHAssetAdapter is Initializable, IAssetAdapter, IERC721Receiver {
         }
         nextPendingIndex = cursor + claimCount;
 
-        uint256 wethBefore = weth.balanceOf(address(this));
         etherfiWithdrawalNFT.batchClaimWithdraw(requestIds);
 
         uint256 ethBalance = address(this).balance;
         if (ethBalance > 0) weth.deposit{value: ethBalance}();
 
-        assetsReceived = weth.balanceOf(address(this)) - wethBefore;
+        assetsReceived = weth.balanceOf(address(this));
         IERC20(address(weth)).transfer(arm, assetsReceived);
     }
 

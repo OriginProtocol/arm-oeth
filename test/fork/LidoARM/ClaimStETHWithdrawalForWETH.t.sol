@@ -76,6 +76,28 @@ contract Fork_Concrete_LidoARM_ClaimLidoWithdrawals_Test_ is Fork_Shared_Test_ {
         assertEq(weth.balanceOf(address(lidoARM)), balanceBefore + DEFAULT_AMOUNT);
     }
 
+    function test_ClaimLidoWithdrawals_SweepsDonatedETHAndWETH()
+        public
+        asOperator
+        requestLidoWithdrawalsOnLidoARM(amounts1)
+        mockFunctionClaimWithdrawOnLidoARM(DEFAULT_AMOUNT)
+    {
+        uint256 donatedETH = 0.2 ether;
+        uint256 donatedWETH = 0.3 ether;
+
+        vm.deal(stethAdapter, donatedETH);
+        deal(address(weth), stethAdapter, donatedWETH);
+
+        uint256 balanceBefore = weth.balanceOf(address(lidoARM));
+
+        (,, uint256 assetsReceived) = lidoARM.claimBaseAssetRedeem(address(steth), DEFAULT_AMOUNT);
+
+        assertEq(assetsReceived, DEFAULT_AMOUNT + donatedETH + donatedWETH, "assets received");
+        assertEq(weth.balanceOf(address(lidoARM)), balanceBefore + assetsReceived, "ARM WETH balance");
+        assertEq(address(stethAdapter).balance, 0, "adapter ETH balance");
+        assertEq(weth.balanceOf(stethAdapter), 0, "adapter WETH balance");
+    }
+
     function test_ClaimLidoWithdrawals_MultiRequest()
         public
         asOperator
