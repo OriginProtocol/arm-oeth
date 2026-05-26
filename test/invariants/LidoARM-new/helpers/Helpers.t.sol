@@ -4,6 +4,9 @@ pragma solidity 0.8.23;
 import {Vm} from "forge-std/Vm.sol";
 import {Base_Test_} from "../base/Base.t.sol";
 
+// Mocks
+import {MockERC20} from "@solmate/test/utils/mocks/MockERC20.sol";
+
 /// @title Helpers
 /// @notice Utility functions shared across invariant target functions.
 ///         Provides user/request selection, token helpers, and array manipulation.
@@ -21,7 +24,7 @@ abstract contract Helpers is Base_Test_ {
 
         // Convert share amount to the required stETH deposit.
         uint256 requiredStETH = mockWstETH.previewMint(amount);
-        deal(address(steth), from, requiredStETH);
+        MockERC20(address(steth)).mint(from, requiredStETH);
 
         vm.startPrank(from);
         steth.approve(address(wsteth), requiredStETH);
@@ -68,7 +71,7 @@ abstract contract Helpers is Base_Test_ {
     /// @return user  The withdrawer, or address(0) if no claimable request exists.
     /// @return requestId  The withdrawal request id.
     /// @return index  Position in `_pendingRequestIds` (for removal after claim).
-    function selectUserWithPendingRequest(uint128 seed) internal view returns (address, uint256, uint256) {
+    function selectUserWithPendingRequest() internal view returns (address, uint256, uint256) {
         uint256 claimable = lidoARM.claimable();
         uint256 pendingRequestCount = _pendingRequestIds.length;
 

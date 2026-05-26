@@ -77,6 +77,8 @@ abstract contract Base_Test_ is Test {
     uint256 public constant MINIMUM_DEPOSIT = 0 wei;
     uint256 public constant INITIAL_LP_LIQUIDITY = 20_000 ether;
     uint256 public constant MIN_SHARES_TO_REQUEST = 1 wei;
+    uint256 public constant MINIMUM_BUY_PRICE = 0.8e36;
+    uint256 public constant MINUMUM_SELL_PRICE = 1.2e36;
 
     bool internal consoleLogs;
     bool internal foundryFuzzer;
@@ -85,4 +87,7 @@ abstract contract Base_Test_ is Test {
     /// --- GHOST VARIABLES
     //////////////////////////////////////////////////////
     uint256[] internal _pendingRequestIds;
+    // Per-base-asset FIFO queue of shares requested through the adapter (mirrors adapter's pendingRequestIds)
+    uint256[] internal _pendingBaseRedeemShares_stETH;
+    uint256[] internal _pendingBaseRedeemShares_wstETH;
 }
