@@ -37,6 +37,31 @@ contract Unit_Concrete_OriginARM_ClaimRedeem_Test_ is Unit_Shared_Test {
         originARM.claimRedeem(0);
     }
 
+    function test_RevertWhen_ClaimRedeem_Because_AssetsPerShareIncreaseReducesClaimableShares()
+        public
+        requestRedeemAll(alice)
+        timejump(CLAIM_DELAY)
+    {
+        (, bool claimed,, uint128 requestAssets, uint128 queuedShares, uint128 requestShares) =
+            originARM.withdrawalRequests(0);
+        assertFalse(claimed, "claimed");
+        assertEq(requestAssets, DEFAULT_AMOUNT, "request assets");
+        assertEq(queuedShares, DEFAULT_AMOUNT, "queued shares");
+        assertEq(requestShares, DEFAULT_AMOUNT, "request shares");
+        assertGe(weth.balanceOf(address(originARM)), requestAssets, "request cap is liquid funded");
+
+        uint256 assetsPerShareBefore = originARM.convertToAssets(1 ether);
+        deal(address(oeth), address(originARM), MIN_TOTAL_SUPPLY + 1e7);
+
+        assertGt(originARM.convertToAssets(1 ether), assetsPerShareBefore, "assets per share increased");
+        assertGe(weth.balanceOf(address(originARM)), requestAssets, "request cap remains liquid funded");
+        assertGt(originARM.convertToAssets(requestShares), requestAssets, "claim remains capped at request assets");
+        assertLt(originARM.claimable(), queuedShares, "claimable shares moved below request");
+
+        vm.expectRevert(bytes4(keccak256("QueuePendingLiquidity()")));
+        originARM.claimRedeem(0);
+    }
+
     function test_RevertWhen_ClaimRedeem_Because_NotWithdrawer()
         public
         requestRedeemAll(alice)
