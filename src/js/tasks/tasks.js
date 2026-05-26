@@ -40,10 +40,6 @@ const {
 } = require("./liquidity");
 const { snapMarket } = require("./markets");
 const {
-  autoRequestWithdraw,
-  autoClaimWithdraw,
-} = require("./liquidityAutomation");
-const {
   depositARM,
   requestRedeemARM,
   claimRedeemARM,
@@ -140,70 +136,13 @@ task("swapLido").setAction(async (_, __, runSuper) => {
 });
 
 // Origin ARM Liquidity management
-
-subtask(
-  "autoRequestWithdraw",
-  "Request withdrawal of base asset (WETH/OS) from the Origin Vault",
-)
-  .addOptionalParam(
-    "thresholdAmount",
-    "Minimum amount of base assets that will be withdrawn if liquidity is available in the ARM or active market",
-    100,
-    types.float,
-  )
-  .addOptionalParam(
-    "minAmount",
-    "Minimum amount of base assets that will be withdrawn if no liquidity is available in the ARM or active market",
-    0.03,
-    types.float,
-  )
-  .setAction(async (taskArgs) => {
-    const signer = await getSigner();
-
-    const armContract = await resolveArmContract("Origin");
-    const baseAssetAddress = await armContract.baseAsset();
-    const baseAsset = await ethers.getContractAt(
-      "IERC20Metadata",
-      baseAssetAddress,
-    );
-
-    await autoRequestWithdraw({
-      ...taskArgs,
-      signer,
-      baseAsset,
-      arm: armContract,
-    });
-  });
-task("autoRequestWithdraw").setAction(async (_, __, runSuper) => {
-  return runSuper();
-});
-
-subtask(
-  "autoClaimWithdraw",
-  "Claim withdrawal requests from an Origin Vault",
-).setAction(async (taskArgs) => {
-  const signer = await getSigner();
-
-  const armContract = await resolveArmContract("Origin");
-  const vaultAddress = await armContract.vault();
-  const vault = await ethers.getContractAt("IOriginVault", vaultAddress);
-  const assetAddress = await armContract.asset();
-  const liquidityAsset = await ethers.getContractAt(
-    "IERC20Metadata",
-    assetAddress,
-  );
-
-  await autoClaimWithdraw({
-    ...taskArgs,
-    signer,
-    liquidityAsset,
-    arm: armContract,
-    vault,
-  });
-});
-task("autoClaimWithdraw").setAction(async (_, __, runSuper) => {
-  return runSuper();
-});
+// autoRequestWithdraw and autoClaimWithdraw are now defined as actions in
+// src/js/tasks/actions/ (the new format introduced in commit 8ac4c78).
+// Their previous subtask/task definitions lived here and duplicated the
+// action() registrations, which broke hardhat config load with HH201 when
+// both tried to add `minAmount` on autoRequestWithdraw. The underlying
+// liquidityAutomation impls are imported directly by the action files, so
+// dropping these stubs is a pure removal.
 
 subtask(
   "requestWithdraw",
