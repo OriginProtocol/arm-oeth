@@ -35,7 +35,8 @@ contract EthenaAssetAdapter is IAssetAdapter, Ownable {
     mapping(address unstaker => uint256 shares) public requestShares;
     /// @notice Expected USDe amount pending for each unstaker helper.
     mapping(address unstaker => uint256 assets) public requestAssets;
-    uint8[] internal pendingUnstakerIndexes;
+    /// @notice Total number of unstaker cooldown requests queued by the adapter.
+    uint256 public totalRequests;
     uint256 internal nextPendingIndex;
 
     modifier onlyARM() {
@@ -99,7 +100,7 @@ contract EthenaAssetAdapter is IAssetAdapter, Ownable {
         require(cooldown.underlyingAmount == 0, "Adapter: unstaker in cooldown");
         require(requestShares[unstaker] == 0, "Adapter: unstaker pending");
 
-        pendingUnstakerIndexes.push(nextUnstakerIndex);
+        totalRequests++;
         nextUnstakerIndex = uint8((nextUnstakerIndex + 1) % MAX_UNSTAKERS);
 
         susde.transferFrom(arm, unstaker, shares);
@@ -121,12 +122,12 @@ contract EthenaAssetAdapter is IAssetAdapter, Ownable {
         nonZeroShares(shares)
         returns (uint256 sharesClaimed, uint256 assetsExpected, uint256 assetsReceived)
     {
-        uint256 length = pendingUnstakerIndexes.length;
+        uint256 length = totalRequests;
         uint256 cursor = nextPendingIndex;
         uint256 claimCount;
 
         while (cursor + claimCount < length && sharesClaimed < shares) {
-            address unstaker = unstakers[pendingUnstakerIndexes[cursor + claimCount]];
+            address unstaker = unstakers[unstakerIndexAt(cursor + claimCount)];
             uint256 requestShareAmount = requestShares[unstaker];
             require(requestShareAmount > 0, "Adapter: invalid request");
             require(sharesClaimed + requestShareAmount <= shares, "Adapter: invalid redeem amount");
@@ -140,7 +141,7 @@ contract EthenaAssetAdapter is IAssetAdapter, Ownable {
 
         uint256 balanceBefore = usde.balanceOf(address(this));
         for (uint256 i = 0; i < claimCount; ++i) {
-            address unstaker = unstakers[pendingUnstakerIndexes[cursor + i]];
+            address unstaker = unstakers[unstakerIndexAt(cursor + i)];
             delete requestShares[unstaker];
             delete requestAssets[unstaker];
             EthenaUnstaker(unstaker).claimUnstake();
@@ -174,14 +175,9 @@ contract EthenaAssetAdapter is IAssetAdapter, Ownable {
         unstakers = _unstakers;
     }
 
-    /// @notice Returns the total number of unstaker indexes ever queued by the adapter.
-    function pendingUnstakerIndexesLength() external view returns (uint256) {
-        return pendingUnstakerIndexes.length;
-    }
-
-    /// @notice Returns a queued unstaker index by array index.
-    /// @param index Index in the pending unstaker index array.
-    function pendingUnstakerIndex(uint256 index) external view returns (uint8) {
-        return pendingUnstakerIndexes[index];
+    /// @notice Returns the unstaker helper index used by a queued request.
+    /// @param requestIndex Index in the request queue.
+    function unstakerIndexAt(uint256 requestIndex) public pure returns (uint8) {
+        return uint8(requestIndex % MAX_UNSTAKERS);
     }
 }
