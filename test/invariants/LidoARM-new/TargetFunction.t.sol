@@ -230,6 +230,48 @@ abstract contract TargetFunction is Invariant_LidoARM_Setup_Test {
         shuffle(_pendingRequestIds, seed); // Shuffle pending request IDs to ensure randomness in future claim attempts
     }
 
+    function targetTransferShares(uint128 amount, uint16 from, uint16 to) public {
+        (address source, uint256 balance) = selectUserWithShares(from);
+        vm.assume(source != address(0));
+
+        // Pick a different LP as destination
+        address dest = lps[uint256(to) % LP_COUNT];
+        vm.assume(dest != source);
+
+        uint256 boundedAmount = _bound(amount, 1, balance);
+        vm.prank(source);
+        lidoARM.transfer(dest, boundedAmount);
+
+        if (consoleLogs) {
+            console.log("TransferShares: %s -> %s, amount=%18e", vm.getLabel(source), vm.getLabel(dest), boundedAmount);
+        }
+    }
+
+    function targetDonate(uint88 amount, uint8 tokenSeed) public {
+        address donor = address(0xd074);
+        uint256 boundedAmount = _bound(amount, 1, 1 ether);
+
+        uint256 pick = uint256(tokenSeed) % 3;
+        if (pick == 0) {
+            deal(address(weth), donor, boundedAmount);
+            vm.prank(donor);
+            weth.transfer(address(lidoARM), boundedAmount);
+        } else if (pick == 1) {
+            MockERC20(address(steth)).mint(donor, boundedAmount);
+            vm.prank(donor);
+            steth.transfer(address(lidoARM), boundedAmount);
+        } else {
+            dealWsteth(donor, boundedAmount);
+            vm.prank(donor);
+            wsteth.transfer(address(lidoARM), boundedAmount);
+        }
+
+        if (consoleLogs) {
+            string[3] memory names = ["WETH", "stETH", "wstETH"];
+            console.log(string.concat("Donate: ", names[pick], " %18e"), boundedAmount);
+        }
+    }
+
     ////////////////////////////////////////////////////
     /// --- BASE ASSET REDEMPTIONS
     ////////////////////////////////////////////////////
