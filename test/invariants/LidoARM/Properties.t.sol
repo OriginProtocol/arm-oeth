@@ -114,8 +114,7 @@ abstract contract Properties is TargetFunction {
             address lp = allLps[i];
             uint256 currentValue = lidoARM.convertToAssets(lidoARM.balanceOf(lp));
             uint256 pendingValue = sumOfUserPendingAssets(lp);
-            uint256 totalOut =
-                currentValue + pendingValue + ghost_userClaimed[lp] + ghost_userTransferOutValue[lp];
+            uint256 totalOut = currentValue + pendingValue + ghost_userClaimed[lp] + ghost_userTransferOutValue[lp];
             uint256 totalIn = ghost_userDeposited[lp] + ghost_userTransferInValue[lp];
             // 100 wei tolerance for accumulated rounding across multiple deposit/redeem/transfer cycles
             // Optimization mode found worst-case of 39 wei over ~80k txs.
@@ -132,8 +131,7 @@ abstract contract Properties is TargetFunction {
             address lp = allLps[i];
             uint256 currentValue = lidoARM.convertToAssets(lidoARM.balanceOf(lp));
             uint256 pendingValue = sumOfUserPendingAssets(lp);
-            uint256 totalOut =
-                currentValue + pendingValue + ghost_userClaimed[lp] + ghost_userTransferOutValue[lp];
+            uint256 totalOut = currentValue + pendingValue + ghost_userClaimed[lp] + ghost_userTransferOutValue[lp];
             uint256 totalIn = ghost_userDeposited[lp] + ghost_userTransferInValue[lp];
             if (totalIn > totalOut) {
                 int256 loss = int256(totalIn) - int256(totalOut);
@@ -193,15 +191,13 @@ abstract contract Properties is TargetFunction {
 
         // Include WETH in both markets. Use convertToAssets (economic value), not maxWithdraw
         // (which is capped by utilization and would break conservation accounting).
-        uint256 wethInMarkets = IERC4626(address(mockERC4626Market_A)).convertToAssets(
-            IERC4626(address(mockERC4626Market_A)).balanceOf(address(lidoARM))
-        )
-            + IERC4626(address(mockERC4626Market_B)).convertToAssets(
-                IERC4626(address(mockERC4626Market_B)).balanceOf(address(lidoARM))
-            );
+        uint256 wethInMarkets = IERC4626(address(mockERC4626Market_A))
+            .convertToAssets(IERC4626(address(mockERC4626Market_A)).balanceOf(address(lidoARM)))
+        + IERC4626(address(mockERC4626Market_B))
+            .convertToAssets(IERC4626(address(mockERC4626Market_B)).balanceOf(address(lidoARM)));
 
-        uint256 inflows = MIN_TOTAL_SUPPLY + sum_weth_deposit + sum_weth_swapIn + sum_weth_baseRedeemClaimed
-            + sum_weth_donated;
+        uint256 inflows =
+            MIN_TOTAL_SUPPLY + sum_weth_deposit + sum_weth_swapIn + sum_weth_baseRedeemClaimed + sum_weth_donated;
         uint256 outflows = sum_weth_swapOut + sum_weth_userClaimed + sum_weth_feesCollected;
 
         // Rewrite as: lhs + outflows + tolerance >= inflows (avoids underflow)
@@ -240,15 +236,13 @@ abstract contract Properties is TargetFunction {
     /// @notice Max WETH rounding loss from market deposit/withdraw cycles.
     function maxWethBalanceDrift() public view returns (int256) {
         uint256 armWeth = weth.balanceOf(address(lidoARM));
-        uint256 wethInMarkets = IERC4626(address(mockERC4626Market_A)).convertToAssets(
-            IERC4626(address(mockERC4626Market_A)).balanceOf(address(lidoARM))
-        )
-            + IERC4626(address(mockERC4626Market_B)).convertToAssets(
-                IERC4626(address(mockERC4626Market_B)).balanceOf(address(lidoARM))
-            );
+        uint256 wethInMarkets = IERC4626(address(mockERC4626Market_A))
+            .convertToAssets(IERC4626(address(mockERC4626Market_A)).balanceOf(address(lidoARM)))
+        + IERC4626(address(mockERC4626Market_B))
+            .convertToAssets(IERC4626(address(mockERC4626Market_B)).balanceOf(address(lidoARM)));
 
-        uint256 inflows = MIN_TOTAL_SUPPLY + sum_weth_deposit + sum_weth_swapIn + sum_weth_baseRedeemClaimed
-            + sum_weth_donated;
+        uint256 inflows =
+            MIN_TOTAL_SUPPLY + sum_weth_deposit + sum_weth_swapIn + sum_weth_baseRedeemClaimed + sum_weth_donated;
         uint256 outflows = sum_weth_swapOut + sum_weth_userClaimed + sum_weth_feesCollected;
 
         uint256 lhs = armWeth + wethInMarkets + outflows;

@@ -56,7 +56,10 @@ abstract contract TargetFunction is Invariant_LidoARM_Setup_Test {
     ////////////////////////////////////////////////////
     /// --- SWAPS
     ////////////////////////////////////////////////////
-    function targetSwapExactTokensForTokens(uint88 amount, bool stETHOrWstETH, bool buyOrSell) public ensureSharePriceNotDecreased {
+    function targetSwapExactTokensForTokens(uint88 amount, bool stETHOrWstETH, bool buyOrSell)
+        public
+        ensureSharePriceNotDecreased
+    {
         address baseAsset = stETHOrWstETH ? address(steth) : address(wsteth);
         // buyOrSell: true = ARM buys base asset (trader sends base, gets WETH)
         //            false = ARM sells base asset (trader sends WETH, gets base)
@@ -124,7 +127,10 @@ abstract contract TargetFunction is Invariant_LidoARM_Setup_Test {
         }
     }
 
-    function targetSwapTokensForExactTokens(uint88 amount, bool stETHOrWstETH, bool buyOrSell) public ensureSharePriceNotDecreased {
+    function targetSwapTokensForExactTokens(uint88 amount, bool stETHOrWstETH, bool buyOrSell)
+        public
+        ensureSharePriceNotDecreased
+    {
         address baseAsset = stETHOrWstETH ? address(steth) : address(wsteth);
         // buyOrSell: true = ARM buys base asset (trader sends base, gets WETH)
         //            false = ARM sells base asset (trader sends WETH, gets base)
@@ -626,8 +632,9 @@ abstract contract TargetFunction is Invariant_LidoARM_Setup_Test {
             // Track fee accrued: mirrors _accrueSwapFee in AbstractARM
             (uint128 buyPrice,,,, uint128 crossPrice,,,) = lidoARM.baseAssetConfigs(baseAsset);
             // round down: same as contract
-            uint256 feeMultiplier =
-                Math.mulDiv((crossPrice - buyPrice) * uint256(lidoARM.fee()), PRICE_SCALE, uint256(buyPrice) * FEE_SCALE);
+            uint256 feeMultiplier = Math.mulDiv(
+                (crossPrice - buyPrice) * uint256(lidoARM.fee()), PRICE_SCALE, uint256(buyPrice) * FEE_SCALE
+            );
             sum_fees_accrued += Math.mulDiv(amtOut, feeMultiplier, PRICE_SCALE);
         } else {
             // ARM sells base (trader sends WETH, gets base)
