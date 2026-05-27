@@ -52,10 +52,10 @@ const fetchUnstakerStates = async (signer, adapter, addresses) => {
     await signer.provider.getBlock("latest");
 
   if (!addresses) {
-    const pendingLength = await adapter.pendingUnstakerIndexesLength();
+    const requestCount = await adapter.totalRequests();
     addresses = await Promise.all(
-      Array.from({ length: Number(pendingLength) }, async (_, pendingIndex) => {
-        const index = await adapter.pendingUnstakerIndex(pendingIndex);
+      Array.from({ length: Number(requestCount) }, async (_, requestIndex) => {
+        const index = await adapter.unstakerIndexAt(requestIndex);
         const address = await adapter.unstakers(index);
         return { address, index: Number(index) };
       }),

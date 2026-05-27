@@ -24,9 +24,22 @@ contract Fork_Concrete_EtherFiARM_RequestWithdraw_Test_ is Fork_Shared_Test {
         vm.prank(0x0EF8fa4760Db8f5Cd4d993f3e3416f30f942D705);
         etherfiWithdrawalNFT.finalizeRequests(requestId);
 
+        uint256 donatedETH = 0.2 ether;
+        uint256 donatedWETH = 0.3 ether;
+
+        vm.deal(address(etherfiAssetAdapter), donatedETH);
+        deal(address(weth), address(etherfiAssetAdapter), donatedWETH);
+
+        uint256 wethBefore = weth.balanceOf(address(etherfiARM));
+
         // Claim the withdrawal
         vm.prank(operator);
-        etherfiARM.claimBaseAssetRedeem(address(eeth), 1 ether);
+        (,, uint256 assetsReceived) = etherfiARM.claimBaseAssetRedeem(address(eeth), 1 ether);
+
+        assertEq(weth.balanceOf(address(etherfiARM)), wethBefore + assetsReceived, "ARM WETH balance");
+        assertEq(address(etherfiAssetAdapter).balance, 0, "adapter ETH balance");
+        assertEq(weth.balanceOf(address(etherfiAssetAdapter)), 0, "adapter WETH balance");
+        assertGe(assetsReceived, donatedETH + donatedWETH, "donations swept");
     }
 
     function test_WeETH_ConvertToAssets_And_ConvertToShares() public view {
@@ -66,6 +79,12 @@ contract Fork_Concrete_EtherFiARM_RequestWithdraw_Test_ is Fork_Shared_Test {
         vm.prank(0x0EF8fa4760Db8f5Cd4d993f3e3416f30f942D705);
         etherfiWithdrawalNFT.finalizeRequests(requestId);
 
+        uint256 donatedETH = 0.2 ether;
+        uint256 donatedWETH = 0.3 ether;
+
+        vm.deal(address(weethAssetAdapter), donatedETH);
+        deal(address(weth), address(weethAssetAdapter), donatedWETH);
+
         uint256 wethBefore = weth.balanceOf(address(etherfiARM));
 
         vm.prank(operator);
@@ -75,6 +94,9 @@ contract Fork_Concrete_EtherFiARM_RequestWithdraw_Test_ is Fork_Shared_Test {
         assertEq(sharesClaimed, weethAmount, "shares claimed");
         assertEq(claimAssetsExpected, eethExpected, "claim assets expected");
         assertEq(assetsReceived, weth.balanceOf(address(etherfiARM)) - wethBefore, "assets received");
+        assertEq(address(weethAssetAdapter).balance, 0, "adapter ETH balance");
+        assertEq(weth.balanceOf(address(weethAssetAdapter)), 0, "adapter WETH balance");
+        assertGe(assetsReceived, donatedETH + donatedWETH, "donations swept");
 
         (,,,,, pendingRedeemAssets,,) = etherfiARM.baseAssetConfigs(address(weeth));
         assertEq(pendingRedeemAssets, 0, "pending redeem assets after claim");

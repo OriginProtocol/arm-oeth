@@ -790,7 +790,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
         // Store the next withdrawal request id.
         nextWithdrawalIndex = requestId + 1;
 
-        // Cumulative shares queued including this request, used for the FIFO gate at claim.
+        // Cumulative shares queued including this request, used for the FIFO gate at claim. The
+        // request-time asset cap is tracked separately in `assets` and is not the claimability unit.
         uint128 queued = SafeCast.toUint128(withdrawsQueuedShares + shares);
         withdrawsQueuedShares = queued;
         // Reserve the request-time maximum liquidity payout.
@@ -812,7 +813,12 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
     }
 
     /// @notice Claim liquidity assets from a matured LP withdrawal request.
-    /// @dev If assets per share decreased after request time, the claim uses the lower claim-time value.
+    /// @dev New requests use a share-denominated FIFO gate: `request.queued <= claimable()`.
+    /// If assets per share decreased after request time, the claim uses the lower claim-time value.
+    /// If non-liquid NAV increases without a matching increase in claimable liquidity, `claimable()` can
+    /// decrease in share terms even when the request-time asset cap is fully backed by liquid assets.
+    /// For example, a fully funded 90-share request can become pending if 90 liquid assets are valued
+    /// against 100.1 total assets and 100 total shares: `90 * 100 / 100.1 = 89.91` claimable shares.
     /// @param requestId LP withdrawal request id to claim.
     /// @return assets Liquidity assets transferred to the requester.
     function claimRedeem(uint256 requestId) external whenNotPaused nonReentrant returns (uint256 assets) {
@@ -879,6 +885,12 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
     ////////////////////////////////////////////////////
 
     /// @notice Cumulative share queue frontier currently backed by claimable liquidity.
+    /// @dev Converts on-hand liquidity plus active-market `maxWithdraw` into shares at the current
+    /// `totalAssets()` valuation. Because this is share-denominated, non-liquid NAV gains from supported
+    /// base-asset donations, rebases, discounted buys, adapter queues, or active-market appreciation can
+    /// reduce the returned share frontier unless claimable liquidity increases proportionally. This can
+    /// make a request remain pending even when its request-time asset cap is fully backed by liquid assets.
+    /// Legacy requests use `_legacyClaimable()`, which is asset-denominated.
     /// @return claimableShares Requests with `queued <= claimableShares` can be claimed once their delay has elapsed.
     function claimable() public view returns (uint256 claimableShares) {
         uint256 claimableLiquidity = IERC20(liquidityAsset).balanceOf(address(this));
@@ -1215,7 +1227,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
     /// @notice Validate legacy queue compatibility during the Model A upgrade.
     /// @dev The legacy packed asset queue counter slot is preserved so old pending withdrawal
     /// requests can still be claimed after the upgrade.
-    function migrateLegacyWithdrawQueue() external onlyOwner reinitializer(2) {
+    function migrateLegacyWithdrawQueue() external onlyOwner reinitializer(3) {
         _checkNoLegacyWithdrawQueue();
 
         if (withdrawsQueuedShares != 0 || withdrawsClaimedShares != 0 || reservedWithdrawLiquidity != 0) {

@@ -88,12 +88,13 @@ abstract contract AbstractLidoAssetAdapter is Initializable, IAssetAdapter {
         sharesRequested = shares;
     }
 
-    /// @notice Claims finalized Lido withdrawal requests and transfers WETH to the ARM.
-    /// @dev Claims finalized pending requests in FIFO order and wraps any received ETH into WETH.
+    /// @notice Claims finalized Lido withdrawal requests and sweeps WETH to the ARM.
+    /// @dev Claims finalized pending requests in FIFO order, wraps the full ETH balance into WETH, and transfers
+    /// all adapter-held WETH to the ARM. `assetsReceived` may include previously donated ETH or WETH.
     /// @param shares Exact amount of shares represented by finalized pending requests to claim.
     /// @return sharesClaimed Amount of shares represented by claimed requests.
     /// @return assetsExpected Expected WETH amount recorded when requests were opened.
-    /// @return assetsReceived Actual WETH amount received and transferred to the ARM.
+    /// @return assetsReceived Total WETH amount swept to the ARM.
     function redeem(uint256 shares)
         external
         onlyARM
@@ -139,7 +140,6 @@ abstract contract AbstractLidoAssetAdapter is Initializable, IAssetAdapter {
         uint256 lastCheckpointIndex = lidoWithdrawalQueue.getLastCheckpointIndex();
         uint256[] memory hintIds = lidoWithdrawalQueue.findCheckpointHints(requestIds, 1, lastCheckpointIndex);
 
-        uint256 wethBefore = weth.balanceOf(address(this));
         lidoWithdrawalQueue.claimWithdrawals(requestIds, hintIds);
 
         uint256 ethBalance = address(this).balance;
@@ -147,7 +147,7 @@ abstract contract AbstractLidoAssetAdapter is Initializable, IAssetAdapter {
             weth.deposit{value: ethBalance}();
         }
 
-        assetsReceived = weth.balanceOf(address(this)) - wethBefore;
+        assetsReceived = weth.balanceOf(address(this));
         IERC20(address(weth)).transfer(arm, assetsReceived);
     }
 
