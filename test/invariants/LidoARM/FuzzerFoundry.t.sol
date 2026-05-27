@@ -12,7 +12,7 @@ import {Properties} from "./Properties.t.sol";
 ///         - Implements invariant test functions that call property validators
 ///         - Each invariant function represents a critical system property to maintain
 ///         - Fuzzer will call targeted handlers randomly and check invariants after each call
-contract FuzzerFoundry_LidoARM_New is Properties {
+contract FuzzerFoundry_LidoARM is Properties {
     constructor() {
         consoleLogs = true;
         foundryFuzzer = true;
