@@ -14,7 +14,7 @@ import {IERC20} from "contracts/Interfaces.sol";
 
 // Mocks
 import {MockWstETH} from "../mocks/MockWstETH.sol";
-import {MockERC4626Market} from "../mocks/MockERC4626Market.sol";
+import {MockMorpho} from "../mocks/MockMorpho.sol";
 import {MockLidoWithdraw} from "../mocks/MockLidoWithdraw.sol";
 
 abstract contract Base_Test_ is Test {
@@ -34,8 +34,8 @@ abstract contract Base_Test_ is Test {
     // Mocks
     MockWstETH public mockWstETH;
     MockLidoWithdraw public lidoWithdrawalQueue;
-    MockERC4626Market public mockERC4626Market_A;
-    MockERC4626Market public mockERC4626Market_B;
+    MockMorpho public mockERC4626Market_A;
+    MockMorpho public mockERC4626Market_B;
 
     //////////////////////////////////////////////////////
     /// --- Governance, multisigs and EOAs
@@ -49,6 +49,8 @@ abstract contract Base_Test_ is Test {
     address public frank = makeAddr("frank");
     // Swapper
     address public grace = makeAddr("grace");
+    // Morpho supplier
+    address public hanna = makeAddr("hanna");
 
     // Privileged roles
     address public deployer = makeAddr("deployer");
@@ -57,7 +59,7 @@ abstract contract Base_Test_ is Test {
     address public feeCollector = makeAddr("feeCollector");
 
     address[] public lps = [alice, bobby, carol, david, elise];
-    address[] public users = [alice, bobby, carol, david, elise, frank, grace];
+    address[] public users = [alice, bobby, carol, david, elise, frank, grace, hanna];
 
     //////////////////////////////////////////////////////
     /// --- DEFAULT VALUES

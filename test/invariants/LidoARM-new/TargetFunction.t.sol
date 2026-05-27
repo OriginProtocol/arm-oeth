@@ -3,6 +3,7 @@ pragma solidity 0.8.23;
 
 import {console} from "forge-std/console.sol";
 import {MockERC20} from "@solmate/test/utils/mocks/MockERC20.sol";
+import {MockMorpho} from "./mocks/MockMorpho.sol";
 
 // Interfaces
 import {IERC20, IAssetAdapter} from "contracts/Interfaces.sol";
@@ -37,15 +38,15 @@ abstract contract TargetFunction is Invariant_LidoARM_Setup_Test {
     // ╔══════════════════════════════════════════════════════════════════════════════╗
     // ║                                ✦✦✦ LIDO ✦✦✦                                 ║
     // ╚══════════════════════════════════════════════════════════════════════════════╝
-    // [ ] Rebase
-    // [ ] FinalizeWithdrawals
+    // [x] Rebase
     //
     // ╔══════════════════════════════════════════════════════════════════════════════╗
     // ║                            ✦✦✦ ERC4626 MARKETS ✦✦✦                          ║
     // ╚══════════════════════════════════════════════════════════════════════════════╝
-    // [ ] Deposit
-    // [ ] Withdraw
-    // [ ] TransferInRewards
+    // [x] Deposit
+    // [x] Withdraw
+    // [x] TransferInRewards
+    // [x] SetUtilizationRate
     //
     // ╔══════════════════════════════════════════════════════════════════════════════╗
     // ║                                   ✦✦✦  ✦✦✦                                   ║
@@ -299,6 +300,12 @@ abstract contract TargetFunction is Invariant_LidoARM_Setup_Test {
         address picked = candidates[s % 3];
         if (picked == current) picked = candidates[(s + 1) % 3];
 
+        // Switching away from a market redeems ALL shares. Skip if the market can't cover the full redeem.
+        if (current != address(0)) {
+            uint256 shares = IERC4626(current).balanceOf(address(lidoARM));
+            vm.assume(shares == 0 || shares <= IERC4626(current).maxRedeem(address(lidoARM)));
+        }
+
         vm.prank(operator);
         lidoARM.setActiveMarket(picked);
 
@@ -319,9 +326,8 @@ abstract contract TargetFunction is Invariant_LidoARM_Setup_Test {
     }
 
     function targetSetARMBuffer(uint16 seed) public {
-        // Round to 0.01% increments: gives values like 0%, 3.57%, 17.42%, 84.01%, etc.
-        uint256 bps = _bound(seed, 0, 10_000);
-        uint256 picked = bps * 0.0001e18;
+        uint256 picked = uint256(keccak256(abi.encodePacked(seed))) % (1e18 + 1);
+        uint256 bps = picked / 0.0001e18;
 
         vm.prank(operator);
         lidoARM.setARMBuffer(picked);
@@ -332,8 +338,92 @@ abstract contract TargetFunction is Invariant_LidoARM_Setup_Test {
     }
 
     ////////////////////////////////////////////////////
-    /// --- REDEMPTION MANAGMENT
+    /// --- LIDO (external protocol simulation)
     ////////////////////////////////////////////////////
+    function targetRebase(uint16 seed) public {
+        // Simulate stETH rebase by minting proportional stETH to all holders.
+        // Max 10% APR → max ~0.027% per day → 27 bps per call.
+        uint256 rebaseBps = uint256(keccak256(abi.encodePacked(seed))) % 28;
+
+        address[3] memory holders = [address(lidoARM), address(wsteth), address(lidoWithdrawalQueue)];
+        for (uint256 i; i < holders.length; i++) {
+            uint256 bal = steth.balanceOf(holders[i]);
+            uint256 reward = bal * rebaseBps / 10_000;
+            if (reward == 0) continue;
+            MockERC20(address(steth)).mint(holders[i], reward);
+        }
+
+        if (consoleLogs) {
+            console.log("Rebase: 0.%d%d%%", rebaseBps / 10, rebaseBps % 10);
+        }
+    }
+
+    ////////////////////////////////////////////////////
+    /// --- ERC4626 MARKETS (external protocol simulation)
+    ////////////////////////////////////////////////////
+    function targetSetUtilizationRate(uint8 seed, bool marketA) public {
+        MockMorpho market = marketA ? mockERC4626Market_A : mockERC4626Market_B;
+
+        // Hash the seed to get uniform distribution across the range, avoiding _bound's edge bias
+        uint256 rate = uint256(keccak256(abi.encodePacked(seed))) % (1e18 + 1);
+        market.setUtilizationRate(rate);
+
+        if (consoleLogs) {
+            string memory label = marketA ? "A" : "B";
+            uint256 bps = rate * 10_000 / 1e18;
+            console.log(
+                string.concat("SetUtilizationRate [", label, "]: %d.%d%d%%"), bps / 100, (bps / 10) % 10, bps % 10
+            );
+        }
+    }
+
+    function targetMarketDeposit(uint128 amount, bool marketA) public {
+        MockMorpho market = marketA ? mockERC4626Market_A : mockERC4626Market_B;
+        uint256 bal = weth.balanceOf(hanna);
+        vm.assume(bal > 0);
+
+        uint256 boundedAmount = _bound(amount, 1, bal);
+        vm.prank(hanna);
+        market.deposit(boundedAmount, hanna);
+
+        if (consoleLogs) {
+            string memory label = marketA ? "A" : "B";
+            console.log(string.concat("MarketDeposit [", label, "]: %18e"), boundedAmount);
+        }
+    }
+
+    function targetMarketWithdraw(uint128 amount, bool marketA) public {
+        MockMorpho market = marketA ? mockERC4626Market_A : mockERC4626Market_B;
+        uint256 maxW = market.maxWithdraw(hanna);
+        vm.assume(maxW > 0);
+
+        uint256 boundedAmount = _bound(amount, 1, maxW);
+        vm.prank(hanna);
+        market.withdraw(boundedAmount, hanna, hanna);
+
+        if (consoleLogs) {
+            string memory label = marketA ? "A" : "B";
+            console.log(string.concat("MarketWithdraw [", label, "]: %18e"), boundedAmount);
+        }
+    }
+
+    function targetMarketTransferRewards(uint16 seed, bool marketA) public {
+        MockMorpho market = marketA ? mockERC4626Market_A : mockERC4626Market_B;
+        uint256 totalAssets = market.totalAssets();
+        vm.assume(totalAssets > 0);
+
+        // 30% APR max → ~0.082% per day → 82 bps per call
+        uint256 rewardBps = uint256(keccak256(abi.encodePacked(seed))) % 83;
+        uint256 reward = totalAssets * rewardBps / 10_000;
+        if (reward == 0) return;
+
+        deal(address(weth), address(market), weth.balanceOf(address(market)) + reward);
+
+        if (consoleLogs) {
+            string memory label = marketA ? "A" : "B";
+            console.log(string.concat("MarketRewards [", label, "]: %18e (+%d bps)"), reward, rewardBps);
+        }
+    }
 
     ////////////////////////////////////////////////////
     /// --- PRICES AND FEES MANAGEMENT
@@ -346,8 +436,10 @@ abstract contract TargetFunction is Invariant_LidoARM_Setup_Test {
 
         // buyPrice in [MINIMUM_BUY_PRICE, crossPrice - 1)
         // sellPrice in [crossPrice, MINUMUM_SELL_PRICE]
-        uint256 buyPrice = _bound(buySeed, MINIMUM_BUY_PRICE, crossPrice - 1);
-        uint256 sellPrice = _bound(sellSeed, crossPrice, MINUMUM_SELL_PRICE);
+        uint256 buyRange = crossPrice - 1 - MINIMUM_BUY_PRICE;
+        uint256 sellRange = MINUMUM_SELL_PRICE - crossPrice;
+        uint256 buyPrice = MINIMUM_BUY_PRICE + uint256(keccak256(abi.encodePacked(buySeed))) % (buyRange + 1);
+        uint256 sellPrice = crossPrice + uint256(keccak256(abi.encodePacked(sellSeed))) % (sellRange + 1);
 
         vm.prank(operator);
         lidoARM.setPrices(baseAsset, buyPrice, sellPrice, buyAmount, sellAmount);
@@ -379,7 +471,8 @@ abstract contract TargetFunction is Invariant_LidoARM_Setup_Test {
         if (exposure >= MIN_TOTAL_SUPPLY && currentCross > lo) lo = currentCross;
         vm.assume(lo <= hi);
 
-        uint256 newCrossPrice = _bound(seed, lo, hi);
+        uint256 crossRange = hi - lo;
+        uint256 newCrossPrice = lo + uint256(keccak256(abi.encodePacked(seed))) % (crossRange + 1);
 
         vm.prank(governor);
         lidoARM.setCrossPrice(baseAsset, newCrossPrice);
@@ -405,7 +498,7 @@ abstract contract TargetFunction is Invariant_LidoARM_Setup_Test {
 
     function targetSetFee(uint16 seed) public {
         // Fee in [0, FEE_SCALE / 2] (0% to 50%)
-        uint256 newFee = _bound(seed, 0, FEE_SCALE / 2);
+        uint256 newFee = uint256(keccak256(abi.encodePacked(seed))) % (FEE_SCALE / 2 + 1);
 
         // setFee calls collectFees internally, which reverts if insufficient liquidity
         uint256 fees = lidoARM.feesAccrued();

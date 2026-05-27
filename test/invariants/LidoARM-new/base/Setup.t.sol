@@ -21,8 +21,8 @@ import {IERC20} from "contracts/Interfaces.sol";
 import {WETH} from "@solmate/tokens/WETH.sol";
 import {MockERC20} from "@solmate/test/utils/mocks/MockERC20.sol";
 import {MockWstETH} from "../mocks/MockWstETH.sol";
+import {MockMorpho} from "../mocks/MockMorpho.sol";
 import {MockLidoWithdraw} from "../mocks/MockLidoWithdraw.sol";
-import {MockERC4626Market} from "../mocks/MockERC4626Market.sol";
 
 // Helpers
 import {Helpers} from "../helpers/Helpers.t.sol";
@@ -56,8 +56,8 @@ abstract contract Invariant_LidoARM_Setup_Test is Base_Test_, Helpers {
         wsteth = IERC20(address(mockWstETH));
 
         // Deploy markets
-        mockERC4626Market_A = new MockERC4626Market(weth);
-        mockERC4626Market_B = new MockERC4626Market(weth);
+        mockERC4626Market_A = new MockMorpho(address(weth));
+        mockERC4626Market_B = new MockMorpho(address(weth));
 
         // Deploy Lido withdrawal queue
         lidoWithdrawalQueue = new MockLidoWithdraw(address(steth));
@@ -153,6 +153,10 @@ abstract contract Invariant_LidoARM_Setup_Test is Base_Test_, Helpers {
             wsteth.approve(address(lidoARM), type(uint256).max);
             vm.stopPrank();
         }
+        vm.startPrank(hanna);
+        weth.approve(address(mockERC4626Market_A), type(uint256).max);
+        weth.approve(address(mockERC4626Market_B), type(uint256).max);
+        vm.stopPrank();
     }
 
     function ignite() internal {
@@ -216,5 +220,8 @@ abstract contract Invariant_LidoARM_Setup_Test is Base_Test_, Helpers {
             address lp = lps[i];
             deal(address(weth), lp, INITIAL_LP_LIQUIDITY);
         }
+
+        // 7. Give Morpho supplier initial liquidity
+        deal(address(weth), hanna, INITIAL_LP_LIQUIDITY / 10);
     }
 }
