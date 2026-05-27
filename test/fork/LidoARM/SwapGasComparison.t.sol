@@ -21,6 +21,7 @@ abstract contract Fork_LidoARM_SwapGasComparison_Base is Test {
     bytes4 internal constant INVALID_INITIALIZATION = 0xf92ee8a9;
 
     uint256 internal constant FORK_BLOCK = 24_846_066;
+    uint256 internal constant LIDO_LEGACY_WITHDRAWAL_QUEUE_AMOUNT_SLOT = 100;
     uint256 internal constant PRICE_SCALE = 1e36;
     uint256 internal constant LIQUIDITY_DEPOSIT = 1_000 ether;
     uint256 internal constant SWAP_INPUT = 100 ether;
@@ -135,6 +136,7 @@ contract Fork_Concrete_LidoARM_SwapGasUpgraded_Test is Fork_LidoARM_SwapGasCompa
         stdStorage.checked_write(
             stdStorage.sig(stdStorage.target(stdstore, address(lidoProxy)), "reservedWithdrawLiquidity()"), uint256(0)
         );
+        vm.store(address(lidoProxy), bytes32(LIDO_LEGACY_WITHDRAWAL_QUEUE_AMOUNT_SLOT), bytes32(0));
 
         vm.prank(lidoProxy.owner());
         _migrateLegacyWithdrawQueue();
