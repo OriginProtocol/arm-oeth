@@ -69,7 +69,35 @@ contract FuzzerFoundry_LidoARM_New is Properties {
         targetSelector(FuzzSelector({addr: address(this), selectors: selectors}));
     }
 
-    function invariantSwap() public view {
-        // Example invariant test function
+    function invariant_lp() public view {
+        require(property_lp_A(), "LP_A: totalSupply == 0");
+        require(property_lp_B(), "LP_B: totalSupply != sum of balances");
+        require(property_lp_C(), "LP_C: previewRedeem != totalAssets");
+        require(property_lp_D(), "LP_D: reservedWithdrawLiquidity mismatch");
+        require(property_lp_E(), "LP_E: queued < claimed");
+        require(property_lp_F(), "LP_F: queuedShares != ghost");
+        require(property_lp_G(), "LP_G: claimedShares != ghost");
+        require(property_lp_H(), "LP_H: escrowed shares mismatch");
+        require(property_lp_I(), "LP_I: feeCollector balance mismatch");
+        require(property_lp_noLoss(), "LP_LOSS: user lost value");
+    }
+
+    function invariant_withdrawalIndex() public view {
+        require(property_wi_A(), "WI_A: nextWithdrawalIndex != ghost");
+    }
+
+    function invariant_liquidity() public view {
+        require(property_llm_A(), "LLM_A: ARM holds native ETH");
+    }
+
+    function invariant_fees() public view {
+        require(property_fee_A(), "FEE_A: fee accounting mismatch");
+        require(property_fee_B(), "FEE_B: fees exceed upper bound");
+    }
+
+    function invariant_balances() public view {
+        require(property_bal_weth(), "BAL_WETH: WETH balance mismatch");
+        require(property_bal_steth(), "BAL_STETH: stETH balance mismatch");
+        require(property_bal_wsteth(), "BAL_WSTETH: wstETH balance mismatch");
     }
 }

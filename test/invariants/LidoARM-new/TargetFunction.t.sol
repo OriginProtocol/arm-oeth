@@ -2,6 +2,7 @@
 pragma solidity 0.8.23;
 
 import {console} from "forge-std/console.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {MockERC20} from "@solmate/test/utils/mocks/MockERC20.sol";
 import {MockMorpho} from "./mocks/MockMorpho.sol";
 
@@ -55,7 +56,7 @@ abstract contract TargetFunction is Invariant_LidoARM_Setup_Test {
     ////////////////////////////////////////////////////
     /// --- SWAPS
     ////////////////////////////////////////////////////
-    function targetSwapExactTokensForTokens(uint88 amount, bool stETHOrWstETH, bool buyOrSell) public {
+    function targetSwapExactTokensForTokens(uint88 amount, bool stETHOrWstETH, bool buyOrSell) public ensureSharePriceNotDecreased {
         address baseAsset = stETHOrWstETH ? address(steth) : address(wsteth);
         // buyOrSell: true = ARM buys base asset (trader sends base, gets WETH)
         //            false = ARM sells base asset (trader sends WETH, gets base)
@@ -110,7 +111,11 @@ abstract contract TargetFunction is Invariant_LidoARM_Setup_Test {
             deal(tokenIn, grace, amountIn);
         }
         vm.prank(grace);
-        lidoARM.swapExactTokensForTokens(IERC20(tokenIn), IERC20(tokenOut), amountIn, 0, grace);
+        uint256[] memory amounts =
+            lidoARM.swapExactTokensForTokens(IERC20(tokenIn), IERC20(tokenOut), amountIn, 0, grace);
+
+        // Ghost: track token flows and fees
+        _trackSwapGhosts(baseAsset, buyOrSell, amounts[0], amounts[1]);
 
         if (consoleLogs) {
             string memory label =
@@ -119,7 +124,7 @@ abstract contract TargetFunction is Invariant_LidoARM_Setup_Test {
         }
     }
 
-    function targetSwapTokensForExactTokens(uint88 amount, bool stETHOrWstETH, bool buyOrSell) public {
+    function targetSwapTokensForExactTokens(uint88 amount, bool stETHOrWstETH, bool buyOrSell) public ensureSharePriceNotDecreased {
         address baseAsset = stETHOrWstETH ? address(steth) : address(wsteth);
         // buyOrSell: true = ARM buys base asset (trader sends base, gets WETH)
         //            false = ARM sells base asset (trader sends WETH, gets base)
@@ -168,7 +173,11 @@ abstract contract TargetFunction is Invariant_LidoARM_Setup_Test {
             deal(tokenIn, grace, amountInMax);
         }
         vm.prank(grace);
-        lidoARM.swapTokensForExactTokens(IERC20(tokenIn), IERC20(tokenOut), boundedOut, amountInMax, grace);
+        uint256[] memory amounts =
+            lidoARM.swapTokensForExactTokens(IERC20(tokenIn), IERC20(tokenOut), boundedOut, amountInMax, grace);
+
+        // Ghost: track token flows and fees
+        _trackSwapGhosts(baseAsset, buyOrSell, amounts[0], amounts[1]);
 
         if (consoleLogs) {
             string memory label =
@@ -180,7 +189,7 @@ abstract contract TargetFunction is Invariant_LidoARM_Setup_Test {
     ////////////////////////////////////////////////////
     /// --- LIQUIDITY PROVIDERS
     ////////////////////////////////////////////////////
-    function targetDeposit(uint128 amount, uint16 from) public {
+    function targetDeposit(uint128 amount, uint16 from) public ensureSharePriceNotDecreased {
         (address user, uint256 balance) = selectUserWithLiqudity(from);
         vm.assume(user != address(0)); // Ensure we found a user with liquidity
 
@@ -188,6 +197,8 @@ abstract contract TargetFunction is Invariant_LidoARM_Setup_Test {
         uint256 boundedAmount = _bound(amount, MINIMUM_DEPOSIT, uint128(balance));
         vm.prank(user);
         lidoARM.deposit(boundedAmount);
+        sum_weth_deposit += boundedAmount;
+        ghost_userDeposited[user] += boundedAmount;
 
         // Log deposit details
         if (consoleLogs) {
@@ -195,14 +206,16 @@ abstract contract TargetFunction is Invariant_LidoARM_Setup_Test {
         }
     }
 
-    function targetRequestRedeem(uint128 shares, uint16 from) public {
+    function targetRequestRedeem(uint128 shares, uint16 from) public ensureSharePriceNotDecreased {
         (address user, uint256 balance) = selectUserWithShares(from);
         vm.assume(user != address(0)); // Ensure we found a user with shares to redeem
 
         // Bound shares
         uint256 boundedShares = _bound(shares, MIN_SHARES_TO_REQUEST, uint128(balance));
         vm.prank(user);
-        (uint256 requestId,) = lidoARM.requestRedeem(boundedShares);
+        (uint256 requestId, uint256 requestAssets) = lidoARM.requestRedeem(boundedShares);
+        ghost_requestCounter++;
+        sum_shares_requested += boundedShares;
 
         // Log redeem request details
         if (consoleLogs) {
@@ -213,24 +226,34 @@ abstract contract TargetFunction is Invariant_LidoARM_Setup_Test {
         shuffle(_pendingRequestIds, from); // Shuffle pending request IDs to ensure randomness in claim
     }
 
-    function targetClaimRedeem(uint16 seed) public {
+    function targetClaimRedeem(uint16 seed) public ensureSharePriceNotDecreased {
         (address user, uint256 requestId, uint256 positionInList) = selectUserWithPendingRequest();
-        vm.assume(user != address(0)); // Ensure we found a user with a pending redeem request
+        vm.assume(user != address(0));
 
+        (,,, uint128 reqAssets,, uint128 reqShares) = lidoARM.withdrawalRequests(requestId);
+
+        // claimable() passing does not guarantee claimRedeem succeeds (known limitation, see PR#247).
+        // The share-based FIFO gate can pass while the market lacks liquidity for this specific request.
         vm.prank(user);
-        lidoARM.claimRedeem(requestId);
+        try lidoARM.claimRedeem(requestId) returns (uint256 claimedAssets) {
+            sum_shares_claimed += reqShares;
+            sum_weth_userClaimed += claimedAssets;
+            ghost_userClaimed[user] += claimedAssets;
 
-        // Log claim redeem details
-        if (consoleLogs) {
-            console.log("Claim Redeem: user=%s, requestId=%d", vm.getLabel(user), requestId);
+            removeFromList(_pendingRequestIds, positionInList);
+            shuffle(_pendingRequestIds, seed);
+
+            if (consoleLogs) {
+                console.log("Claim Redeem: user=%s, requestId=%d", vm.getLabel(user), requestId);
+            }
+        } catch {
+            if (consoleLogs) {
+                console.log("Claim Redeem SKIPPED (insufficient liquidity): requestId=%d", requestId);
+            }
         }
-
-        // Remove the claimed request ID from the pending list
-        removeFromList(_pendingRequestIds, positionInList);
-        shuffle(_pendingRequestIds, seed); // Shuffle pending request IDs to ensure randomness in future claim attempts
     }
 
-    function targetTransferShares(uint128 amount, uint16 from, uint16 to) public {
+    function targetTransferShares(uint128 amount, uint16 from, uint16 to) public ensureSharePriceNotDecreased {
         (address source, uint256 balance) = selectUserWithShares(from);
         vm.assume(source != address(0));
 
@@ -239,6 +262,10 @@ abstract contract TargetFunction is Invariant_LidoARM_Setup_Test {
         vm.assume(dest != source);
 
         uint256 boundedAmount = _bound(amount, 1, balance);
+        uint256 transferValue = lidoARM.convertToAssets(boundedAmount);
+        ghost_userTransferOutValue[source] += transferValue;
+        ghost_userTransferInValue[dest] += transferValue;
+
         vm.prank(source);
         lidoARM.transfer(dest, boundedAmount);
 
@@ -247,7 +274,7 @@ abstract contract TargetFunction is Invariant_LidoARM_Setup_Test {
         }
     }
 
-    function targetDonate(uint88 amount, uint8 tokenSeed) public {
+    function targetDonate(uint88 amount, uint8 tokenSeed) public ensureSharePriceNotDecreased {
         address donor = address(0xd074);
         uint256 boundedAmount = _bound(amount, 1, 1 ether);
 
@@ -266,6 +293,11 @@ abstract contract TargetFunction is Invariant_LidoARM_Setup_Test {
             wsteth.transfer(address(lidoARM), boundedAmount);
         }
 
+        // Ghost: track donations
+        if (pick == 0) sum_weth_donated += boundedAmount;
+        else if (pick == 1) sum_steth_donated += boundedAmount;
+        else sum_wsteth_donated += boundedAmount;
+
         if (consoleLogs) {
             string[3] memory names = ["WETH", "stETH", "wstETH"];
             console.log(string.concat("Donate: ", names[pick], " %18e"), boundedAmount);
@@ -275,7 +307,7 @@ abstract contract TargetFunction is Invariant_LidoARM_Setup_Test {
     ////////////////////////////////////////////////////
     /// --- BASE ASSET REDEMPTIONS
     ////////////////////////////////////////////////////
-    function targetRequestBaseWithdrawal(uint128 amount, bool stETHOrWstETH) public {
+    function targetRequestBaseWithdrawal(uint128 amount, bool stETHOrWstETH) public ensureSharePriceNotDecreased {
         address baseAsset = stETHOrWstETH ? address(steth) : address(wsteth);
         uint256 bal = IERC20(baseAsset).balanceOf(address(lidoARM));
         vm.assume(bal > 0);
@@ -283,7 +315,11 @@ abstract contract TargetFunction is Invariant_LidoARM_Setup_Test {
         uint256 boundedAmount = _bound(amount, 1, bal);
 
         vm.prank(operator);
-        (uint256 sharesRequested,) = lidoARM.requestBaseAssetRedeem(baseAsset, boundedAmount);
+        (uint256 sharesRequested, uint256 assetsExpected) = lidoARM.requestBaseAssetRedeem(baseAsset, boundedAmount);
+
+        // Ghost: track base asset outflows
+        if (stETHOrWstETH) sum_steth_baseRedeemRequested += boundedAmount;
+        else sum_wsteth_baseRedeemRequested += boundedAmount;
 
         // Track shares in the per-asset FIFO queue
         if (stETHOrWstETH) {
@@ -298,7 +334,7 @@ abstract contract TargetFunction is Invariant_LidoARM_Setup_Test {
         }
     }
 
-    function targetClaimBaseWithdrawals(uint8 count, bool stETHOrWstETH) public {
+    function targetClaimBaseWithdrawals(uint8 count, bool stETHOrWstETH) public ensureSharePriceNotDecreased {
         address baseAsset = stETHOrWstETH ? address(steth) : address(wsteth);
         uint256[] storage queue = stETHOrWstETH ? _pendingBaseRedeemShares_stETH : _pendingBaseRedeemShares_wstETH;
         vm.assume(queue.length > 0);
@@ -314,6 +350,7 @@ abstract contract TargetFunction is Invariant_LidoARM_Setup_Test {
 
         vm.prank(operator);
         (uint256 claimed,, uint256 received) = lidoARM.claimBaseAssetRedeem(baseAsset, totalShares);
+        sum_weth_baseRedeemClaimed += received;
 
         // Remove claimed entries from the front of the queue
         for (uint256 i; i < queue.length - claimCount; i++) {
@@ -333,7 +370,7 @@ abstract contract TargetFunction is Invariant_LidoARM_Setup_Test {
     ////////////////////////////////////////////////////
     /// --- LIQUIDITY MANAGMENT
     ////////////////////////////////////////////////////
-    function targetSetActiveMarket(uint16 seed) public {
+    function targetSetActiveMarket(uint16 seed) public ensureSharePriceNotDecreased {
         address current = lidoARM.activeMarket();
         address[3] memory candidates = [address(0), address(mockERC4626Market_A), address(mockERC4626Market_B)];
 
@@ -356,7 +393,7 @@ abstract contract TargetFunction is Invariant_LidoARM_Setup_Test {
         }
     }
 
-    function targetAllocate() public {
+    function targetAllocate() public ensureSharePriceNotDecreased {
         vm.assume(lidoARM.activeMarket() != address(0));
 
         (int256 target, int256 actual) = lidoARM.allocate();
@@ -367,7 +404,7 @@ abstract contract TargetFunction is Invariant_LidoARM_Setup_Test {
         }
     }
 
-    function targetSetARMBuffer(uint16 seed) public {
+    function targetSetARMBuffer(uint16 seed) public ensureSharePriceNotDecreased {
         uint256 picked = uint256(keccak256(abi.encodePacked(seed))) % (1e18 + 1);
         uint256 bps = picked / 0.0001e18;
 
@@ -382,7 +419,7 @@ abstract contract TargetFunction is Invariant_LidoARM_Setup_Test {
     ////////////////////////////////////////////////////
     /// --- LIDO (external protocol simulation)
     ////////////////////////////////////////////////////
-    function targetRebase(uint16 seed) public {
+    function targetRebase(uint16 seed) public ensureSharePriceNotDecreased {
         // Simulate stETH rebase by minting proportional stETH to all holders.
         // Max 10% APR → max ~0.027% per day → 27 bps per call.
         uint256 rebaseBps = uint256(keccak256(abi.encodePacked(seed))) % 28;
@@ -393,6 +430,7 @@ abstract contract TargetFunction is Invariant_LidoARM_Setup_Test {
             uint256 reward = bal * rebaseBps / 10_000;
             if (reward == 0) continue;
             MockERC20(address(steth)).mint(holders[i], reward);
+            if (holders[i] == address(lidoARM)) sum_steth_rebased += reward;
         }
 
         if (consoleLogs) {
@@ -403,7 +441,7 @@ abstract contract TargetFunction is Invariant_LidoARM_Setup_Test {
     ////////////////////////////////////////////////////
     /// --- ERC4626 MARKETS (external protocol simulation)
     ////////////////////////////////////////////////////
-    function targetSetUtilizationRate(uint8 seed, bool marketA) public {
+    function targetSetUtilizationRate(uint8 seed, bool marketA) public ensureSharePriceNotDecreased {
         MockMorpho market = marketA ? mockERC4626Market_A : mockERC4626Market_B;
 
         // Hash the seed to get uniform distribution across the range, avoiding _bound's edge bias
@@ -419,7 +457,7 @@ abstract contract TargetFunction is Invariant_LidoARM_Setup_Test {
         }
     }
 
-    function targetMarketDeposit(uint128 amount, bool marketA) public {
+    function targetMarketDeposit(uint128 amount, bool marketA) public ensureSharePriceNotDecreased {
         MockMorpho market = marketA ? mockERC4626Market_A : mockERC4626Market_B;
         uint256 bal = weth.balanceOf(hanna);
         vm.assume(bal > 0);
@@ -434,7 +472,7 @@ abstract contract TargetFunction is Invariant_LidoARM_Setup_Test {
         }
     }
 
-    function targetMarketWithdraw(uint128 amount, bool marketA) public {
+    function targetMarketWithdraw(uint128 amount, bool marketA) public ensureSharePriceNotDecreased {
         MockMorpho market = marketA ? mockERC4626Market_A : mockERC4626Market_B;
         uint256 maxW = market.maxWithdraw(hanna);
         vm.assume(maxW > 0);
@@ -449,10 +487,14 @@ abstract contract TargetFunction is Invariant_LidoARM_Setup_Test {
         }
     }
 
-    function targetMarketTransferRewards(uint16 seed, bool marketA) public {
+    function targetMarketTransferRewards(uint16 seed, bool marketA) public ensureSharePriceNotDecreased {
         MockMorpho market = marketA ? mockERC4626Market_A : mockERC4626Market_B;
         uint256 totalAssets = market.totalAssets();
         vm.assume(totalAssets > 0);
+
+        // Snapshot ARM's share value before yield
+        uint256 armValueBefore =
+            IERC4626(address(market)).convertToAssets(IERC4626(address(market)).balanceOf(address(lidoARM)));
 
         // 30% APR max → ~0.082% per day → 82 bps per call
         uint256 rewardBps = uint256(keccak256(abi.encodePacked(seed))) % 83;
@@ -460,6 +502,11 @@ abstract contract TargetFunction is Invariant_LidoARM_Setup_Test {
         if (reward == 0) return;
 
         deal(address(weth), address(market), weth.balanceOf(address(market)) + reward);
+
+        // Track yield accrued to ARM
+        uint256 armValueAfter =
+            IERC4626(address(market)).convertToAssets(IERC4626(address(market)).balanceOf(address(lidoARM)));
+        if (armValueAfter > armValueBefore) sum_weth_marketYield += armValueAfter - armValueBefore;
 
         if (consoleLogs) {
             string memory label = marketA ? "A" : "B";
@@ -472,6 +519,7 @@ abstract contract TargetFunction is Invariant_LidoARM_Setup_Test {
     ////////////////////////////////////////////////////
     function targetSetPrices(bool stETHOrWstETH, uint16 buySeed, uint16 sellSeed, uint128 buyAmount, uint128 sellAmount)
         public
+        ensureSharePriceNotDecreased
     {
         address baseAsset = stETHOrWstETH ? address(steth) : address(wsteth);
         (,,,, uint128 crossPrice,,,) = lidoARM.baseAssetConfigs(baseAsset);
@@ -493,7 +541,7 @@ abstract contract TargetFunction is Invariant_LidoARM_Setup_Test {
         }
     }
 
-    function targetSetCrossPrice(bool stETHOrWstETH, uint16 seed) public {
+    function targetSetCrossPrice(bool stETHOrWstETH, uint16 seed) public updateSharePrice {
         address baseAsset = stETHOrWstETH ? address(steth) : address(wsteth);
         (uint128 buyPrice, uint128 sellPrice,,, uint128 currentCross,,,) = lidoARM.baseAssetConfigs(baseAsset);
 
@@ -525,20 +573,22 @@ abstract contract TargetFunction is Invariant_LidoARM_Setup_Test {
         }
     }
 
-    function targetCollectFees() public {
+    function targetCollectFees() public ensureSharePriceNotDecreased {
         uint256 fees = lidoARM.feesAccrued();
         uint256 reserved = lidoARM.reservedWithdrawLiquidity();
         uint256 bal = weth.balanceOf(address(lidoARM));
         vm.assume(fees > 0 && fees + reserved <= bal);
 
         lidoARM.collectFees();
+        sum_fees_collected += fees;
+        sum_weth_feesCollected += fees;
 
         if (consoleLogs) {
             console.log("CollectFees: %18e", fees);
         }
     }
 
-    function targetSetFee(uint16 seed) public {
+    function targetSetFee(uint16 seed) public ensureSharePriceNotDecreased {
         // Fee in [0, FEE_SCALE / 2] (0% to 50%)
         uint256 newFee = uint256(keccak256(abi.encodePacked(seed))) % (FEE_SCALE / 2 + 1);
 
@@ -553,6 +603,37 @@ abstract contract TargetFunction is Invariant_LidoARM_Setup_Test {
 
         if (consoleLogs) {
             console.log("SetFee: %d bps", newFee);
+        }
+
+        // setFee calls collectFees internally
+        if (fees > 0) {
+            sum_fees_collected += fees;
+            sum_weth_feesCollected += fees;
+        }
+    }
+
+    ////////////////////////////////////////////////////
+    /// --- GHOST TRACKING HELPERS
+    ////////////////////////////////////////////////////
+    function _trackSwapGhosts(address baseAsset, bool buyOrSell, uint256 amtIn, uint256 amtOut) internal {
+        if (buyOrSell) {
+            // ARM buys base (trader sends base, gets WETH)
+            if (baseAsset == address(steth)) sum_steth_swapIn += amtIn;
+            else sum_wsteth_swapIn += amtIn;
+            sum_weth_swapOut += amtOut;
+            sum_weth_buyside_out += amtOut;
+
+            // Track fee accrued: mirrors _accrueSwapFee in AbstractARM
+            (uint128 buyPrice,,,, uint128 crossPrice,,,) = lidoARM.baseAssetConfigs(baseAsset);
+            // round down: same as contract
+            uint256 feeMultiplier =
+                Math.mulDiv((crossPrice - buyPrice) * uint256(lidoARM.fee()), PRICE_SCALE, uint256(buyPrice) * FEE_SCALE);
+            sum_fees_accrued += Math.mulDiv(amtOut, feeMultiplier, PRICE_SCALE);
+        } else {
+            // ARM sells base (trader sends WETH, gets base)
+            sum_weth_swapIn += amtIn;
+            if (baseAsset == address(steth)) sum_steth_swapOut += amtOut;
+            else sum_wsteth_swapOut += amtOut;
         }
     }
 }

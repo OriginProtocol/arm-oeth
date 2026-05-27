@@ -89,7 +89,51 @@ abstract contract Base_Test_ is Test {
     /// --- GHOST VARIABLES
     //////////////////////////////////////////////////////
     uint256[] internal _pendingRequestIds;
-    // Per-base-asset FIFO queue of shares requested through the adapter (mirrors adapter's pendingRequestIds)
     uint256[] internal _pendingBaseRedeemShares_stETH;
     uint256[] internal _pendingBaseRedeemShares_wstETH;
+
+    // LP tracking
+    uint256 internal ghost_requestCounter;
+    uint256 internal sum_shares_requested;
+    uint256 internal sum_shares_claimed;
+
+    // WETH flows
+    uint256 internal sum_weth_deposit;
+    uint256 internal sum_weth_swapIn;
+    uint256 internal sum_weth_swapOut;
+    uint256 internal sum_weth_baseRedeemClaimed;
+    uint256 internal sum_weth_donated;
+    uint256 internal sum_weth_userClaimed;
+    uint256 internal sum_weth_feesCollected;
+
+    // stETH flows
+    uint256 internal sum_steth_swapIn;
+    uint256 internal sum_steth_swapOut;
+    uint256 internal sum_steth_donated;
+    uint256 internal sum_steth_baseRedeemRequested;
+    uint256 internal sum_steth_rebased;
+
+    // wstETH flows
+    uint256 internal sum_wsteth_swapIn;
+    uint256 internal sum_wsteth_swapOut;
+    uint256 internal sum_wsteth_donated;
+    uint256 internal sum_wsteth_baseRedeemRequested;
+
+    // Fee tracking
+    uint256 internal sum_fees_accrued;
+    uint256 internal sum_fees_collected;
+    uint256 internal sum_weth_buyside_out;
+
+    // Market yield accrued to ARM
+    uint256 internal sum_weth_marketYield;
+
+    // Share price tracking
+    uint256 internal ghost_lastSharePrice;
+    bool internal ghost_crossPriceChanged;
+
+    // Per-LP tracking
+    mapping(address => uint256) internal ghost_userDeposited;
+    mapping(address => uint256) internal ghost_userClaimed;
+    mapping(address => uint256) internal ghost_userTransferInValue;
+    mapping(address => uint256) internal ghost_userTransferOutValue;
 }

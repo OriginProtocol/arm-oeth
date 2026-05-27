@@ -12,6 +12,25 @@ import {MockERC20} from "@solmate/test/utils/mocks/MockERC20.sol";
 ///         Provides user/request selection, token helpers, and array manipulation.
 abstract contract Helpers is Base_Test_ {
     ////////////////////////////////////////////////////
+    /// --- MODIFIERS
+    ////////////////////////////////////////////////////
+
+    modifier ensureSharePriceNotDecreased() {
+        uint256 priceBefore = lidoARM.totalAssets() * 1e18 / lidoARM.totalSupply();
+        _;
+        uint256 priceAfter = lidoARM.totalAssets() * 1e18 / lidoARM.totalSupply();
+        // Allow 2 wei tolerance for ERC4626 convertToAssets rounding on split operations
+        require(priceAfter + 2 >= priceBefore, "SHARE_PRICE_DECREASED");
+        ghost_lastSharePrice = priceAfter;
+    }
+
+    modifier updateSharePrice() {
+        _;
+        ghost_lastSharePrice = lidoARM.totalAssets() * 1e18 / lidoARM.totalSupply();
+        ghost_crossPriceChanged = true;
+    }
+
+    ////////////////////////////////////////////////////
     /// --- DEAL HELPERS
     ////////////////////////////////////////////////////
 
@@ -114,5 +133,37 @@ abstract contract Helpers is Base_Test_ {
         require(index < arr.length, "Index out of bounds");
         arr[index] = arr[arr.length - 1];
         arr.pop();
+    }
+
+    ////////////////////////////////////////////////////
+    /// --- INVARIANT HELPERS
+    ////////////////////////////////////////////////////
+
+    /// @notice Sum of all ARM share balances across LPs, ARM escrow, dead address, and frank.
+    function sumOfUserShares() public view returns (uint256 total) {
+        for (uint256 i; i < lps.length; i++) {
+            total += lidoARM.balanceOf(lps[i]);
+        }
+        total += lidoARM.balanceOf(address(lidoARM));
+        total += lidoARM.balanceOf(0x000000000000000000000000000000000000dEaD);
+        total += lidoARM.balanceOf(frank);
+    }
+
+    /// @notice Sum of assets in all unclaimed withdrawal requests.
+    function sumOfUnclaimedRequestAssets() public view returns (uint256 total) {
+        uint256 nextIdx = lidoARM.nextWithdrawalIndex();
+        for (uint256 i; i < nextIdx; i++) {
+            (, bool claimed,, uint128 assets,,) = lidoARM.withdrawalRequests(i);
+            if (!claimed) total += assets;
+        }
+    }
+
+    /// @notice Sum of pending (unclaimed) request assets for a specific user.
+    function sumOfUserPendingAssets(address user) public view returns (uint256 total) {
+        uint256 nextIdx = lidoARM.nextWithdrawalIndex();
+        for (uint256 i; i < nextIdx; i++) {
+            (address withdrawer, bool claimed,, uint128 assets,,) = lidoARM.withdrawalRequests(i);
+            if (withdrawer == user && !claimed) total += assets;
+        }
     }
 }

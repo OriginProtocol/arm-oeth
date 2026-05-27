@@ -164,6 +164,8 @@ abstract contract Invariant_LidoARM_Setup_Test is Base_Test_, Helpers {
         deal(address(weth), frank, 1 ether);
         vm.prank(frank);
         lidoARM.deposit(1 ether);
+        sum_weth_deposit += 1 ether;
+        ghost_userDeposited[frank] = 1 ether;
 
         // 2. Add stETH and wstETH as Base Assets in the ARM
         vm.prank(governor);
@@ -223,5 +225,8 @@ abstract contract Invariant_LidoARM_Setup_Test is Base_Test_, Helpers {
 
         // 7. Give Morpho supplier initial liquidity
         deal(address(weth), hanna, INITIAL_LP_LIQUIDITY / 10);
+
+        // 8. Initialize share price tracking
+        ghost_lastSharePrice = lidoARM.totalAssets() * 1e18 / lidoARM.totalSupply();
     }
 }
