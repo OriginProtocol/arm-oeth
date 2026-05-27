@@ -20,6 +20,7 @@ abstract contract Properties is TargetFunction {
     // [x] Invariant H: ARM escrowed shares == withdrawsQueuedShares - withdrawsClaimedShares
     // [x] Invariant I: ∑feesCollected == feeCollector.balanceOf(WETH)
     // [x] Invariant Q: ∀ LP, convertToAssets(shares) + claimed + transferOut >= deposited + transferIn
+    //                   (100 wei tolerance — optimization found worst-case 39 wei / 80k txs)
     //
     // ╔══════════════════════════════════════════════════════════════════════════════╗
     // ║                       ✦✦✦ WITHDRAWAL INDEX PROPERTIES ✦✦✦                    ║
@@ -43,6 +44,7 @@ abstract contract Properties is TargetFunction {
     // [x] Invariant N: WETH balance + market value >= MIN_TOTAL_SUPPLY
     //                   + ∑deposit + ∑swapIn + ∑baseRedeemClaimed + ∑donated
     //                   - ∑swapOut - ∑userClaimed - ∑feesCollected
+    //                   (100 wei tolerance — optimization found worst-case 27 wei / 250k txs)
     // [x] Invariant O: stETH balance == ∑swapIn + ∑donated + ∑rebased
     //                                    - ∑swapOut - ∑baseRedeemRequested
     // [x] Invariant P: wstETH balance == ∑swapIn + ∑donated
@@ -52,6 +54,7 @@ abstract contract Properties is TargetFunction {
     // ║                       ✦✦✦ SHARE PRICE PROPERTIES ✦✦✦                         ║
     // ╚══════════════════════════════════════════════════════════════════════════════╝
     // [x] Invariant R: share price never decreases (enforced via modifier, except setCrossPrice)
+    //                   (2 wei tolerance — optimization found worst-case 0 wei / 250k txs)
     //
     // ╔══════════════════════════════════════════════════════════════════════════════╗
     // ║                                   ✦✦✦  ✦✦✦                                   ║
@@ -114,10 +117,29 @@ abstract contract Properties is TargetFunction {
             uint256 totalOut =
                 currentValue + pendingValue + ghost_userClaimed[lp] + ghost_userTransferOutValue[lp];
             uint256 totalIn = ghost_userDeposited[lp] + ghost_userTransferInValue[lp];
-            // 1e6 wei tolerance for accumulated rounding across multiple deposit/redeem/transfer cycles
-            if (totalOut + 1e6 < totalIn) return false;
+            // 100 wei tolerance for accumulated rounding across multiple deposit/redeem/transfer cycles
+            // Optimization mode found worst-case of 39 wei over ~80k txs.
+            if (totalOut + 100 < totalIn) return false;
         }
         return true;
+    }
+
+    /// @notice Returns the max rounding loss in wei across all LPs.
+    function maxLpLoss() public view returns (int256 maxLoss) {
+        if (ghost_crossPriceChanged) return 0;
+        address[6] memory allLps = [alice, bobby, carol, david, elise, frank];
+        for (uint256 i; i < allLps.length; i++) {
+            address lp = allLps[i];
+            uint256 currentValue = lidoARM.convertToAssets(lidoARM.balanceOf(lp));
+            uint256 pendingValue = sumOfUserPendingAssets(lp);
+            uint256 totalOut =
+                currentValue + pendingValue + ghost_userClaimed[lp] + ghost_userTransferOutValue[lp];
+            uint256 totalIn = ghost_userDeposited[lp] + ghost_userTransferInValue[lp];
+            if (totalIn > totalOut) {
+                int256 loss = int256(totalIn) - int256(totalOut);
+                if (loss > maxLoss) maxLoss = loss;
+            }
+        }
     }
 
     // ╔══════════════════════════════════════════════════════════════════════════════╗
@@ -184,8 +206,9 @@ abstract contract Properties is TargetFunction {
 
         // Rewrite as: lhs + outflows + tolerance >= inflows (avoids underflow)
         // Market yield can make lhs > inflows - outflows (ARM gained value from yield).
-        // ERC4626 rounding can lose a few wei per cycle, so allow 1e6 tolerance.
-        return armWeth + wethInMarkets + outflows + 1e6 >= inflows;
+        // ERC4626 rounding can lose a few wei per cycle.
+        // Optimization mode found worst-case of 27 wei over ~250k txs.
+        return armWeth + wethInMarkets + outflows + 100 >= inflows;
     }
 
     // 15. stETH balance == inflows - outflows
@@ -210,4 +233,37 @@ abstract contract Properties is TargetFunction {
         return armWsteth == inflows - outflows;
     }
 
+    ////////////////////////////////////////////////////
+    /// --- OPTIMIZATION METRICS
+    ////////////////////////////////////////////////////
+
+    /// @notice Max WETH rounding loss from market deposit/withdraw cycles.
+    function maxWethBalanceDrift() public view returns (int256) {
+        uint256 armWeth = weth.balanceOf(address(lidoARM));
+        uint256 wethInMarkets = IERC4626(address(mockERC4626Market_A)).convertToAssets(
+            IERC4626(address(mockERC4626Market_A)).balanceOf(address(lidoARM))
+        )
+            + IERC4626(address(mockERC4626Market_B)).convertToAssets(
+                IERC4626(address(mockERC4626Market_B)).balanceOf(address(lidoARM))
+            );
+
+        uint256 inflows = MIN_TOTAL_SUPPLY + sum_weth_deposit + sum_weth_swapIn + sum_weth_baseRedeemClaimed
+            + sum_weth_donated;
+        uint256 outflows = sum_weth_swapOut + sum_weth_userClaimed + sum_weth_feesCollected;
+
+        uint256 lhs = armWeth + wethInMarkets + outflows;
+        // Return how much inflows exceeds lhs (positive = loss)
+        if (inflows > lhs) return int256(inflows - lhs);
+        return 0;
+    }
+
+    /// @notice Max share price decrease in a single call (from modifier).
+    ///         Tracked via ghost_lastSharePrice vs current.
+    function sharePriceDrop() public view returns (int256) {
+        uint256 current = lidoARM.totalAssets() * 1e18 / lidoARM.totalSupply();
+        if (ghost_lastSharePrice > current) {
+            return int256(ghost_lastSharePrice - current);
+        }
+        return 0;
+    }
 }

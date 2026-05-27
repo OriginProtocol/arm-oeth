@@ -100,4 +100,19 @@ contract FuzzerFoundry_LidoARM_New is Properties {
         require(property_bal_steth(), "BAL_STETH: stETH balance mismatch");
         require(property_bal_wsteth(), "BAL_WSTETH: wstETH balance mismatch");
     }
+
+    /// @notice Optimization: fuzzer maximizes the worst-case LP rounding loss.
+    function invariant_optimize_maxLpLoss() public view returns (int256) {
+        return maxLpLoss();
+    }
+
+    /// @notice Optimization: fuzzer maximizes WETH balance drift from market rounding.
+    function invariant_optimize_maxWethDrift() public view returns (int256) {
+        return maxWethBalanceDrift();
+    }
+
+    /// @notice Optimization: fuzzer maximizes share price drop in a single call.
+    function invariant_optimize_maxSharePriceDrop() public view returns (int256) {
+        return sharePriceDrop();
+    }
 }

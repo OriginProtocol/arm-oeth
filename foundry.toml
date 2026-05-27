@@ -86,8 +86,8 @@ corpus_dir = "test/invariants/.foundry-corpus"     # default: none -- persist in
 failure_persist_dir = "test/invariants/.foundry-failures"          # default: cache/invariant -- auto-replay counterexamples
 
 # --- Time & block delays ---
-max_time_delay = 86_400                           # default: none -- max seconds between txs (1 day)
-max_block_delay = 50_400                           # default: none -- max blocks between txs (~1 week at 12s/block)
+max_time_delay = 86_400                            # default: none -- max seconds between txs (1 day)
+#max_block_delay = 0                               # default: none -- max blocks between txs (~1 week at 12s/block)
 
 # --- Invariant check frequency ---
 # check_interval = 1                               # default: 1    -- calls between invariant assertions
