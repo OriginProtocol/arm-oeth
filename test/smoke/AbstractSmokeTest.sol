@@ -6,6 +6,8 @@ import {Test} from "forge-std/Test.sol";
 
 import {DeployManager} from "script/deploy/DeployManager.s.sol";
 import {$028_UpgradeEthenaARMScript} from "script/deploy/mainnet/028_UpgradeEthenaARMScript.s.sol";
+import {$029_UpgradeEtherFiARMSwapFeeScript} from "script/deploy/mainnet/029_UpgradeEtherFiARMSwapFeeScript.s.sol";
+import {$030_UpgradeLidoARMSwapFeeScript} from "script/deploy/mainnet/030_UpgradeLidoARMSwapFeeScript.s.sol";
 import {Resolver} from "script/deploy/helpers/Resolver.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
 import {Proxy} from "contracts/Proxy.sol";
@@ -78,16 +80,10 @@ abstract contract AbstractSmokeTest is Test {
 
     function _upgradeLidoARM() internal {
         Proxy proxy = Proxy(payable(resolver.resolve("LIDO_ARM")));
-        LidoARM impl = new LidoARM(Mainnet.WETH, 10 minutes, 1e7, 1e18);
-        resolver.addContract("LIDO_ARM_IMPL", address(impl));
 
         _clearLegacyPendingAmount(address(proxy));
-
-        vm.prank(proxy.owner());
-        proxy.upgradeTo(address(impl));
-
         _clearLegacyWithdrawQueueForSmoke(address(proxy));
-        _migrateLegacyWithdrawQueue(address(proxy));
+        new $030_UpgradeLidoARMSwapFeeScript().run();
 
         StETHAssetAdapter stethAdapterImpl =
             new StETHAssetAdapter(address(proxy), Mainnet.WETH, Mainnet.STETH, Mainnet.LIDO_WITHDRAWAL);
@@ -117,16 +113,10 @@ abstract contract AbstractSmokeTest is Test {
 
     function _upgradeEtherFiARM() internal {
         Proxy proxy = Proxy(payable(resolver.resolve("ETHER_FI_ARM")));
-        EtherFiARM impl = new EtherFiARM(Mainnet.EETH, Mainnet.WETH, 10 minutes, 1e7, 1e18);
-        resolver.addContract("ETHER_FI_ARM_IMPL", address(impl));
 
         _clearLegacyPendingAmount(address(proxy));
-
-        vm.prank(proxy.owner());
-        proxy.upgradeTo(address(impl));
-
         _clearLegacyWithdrawQueueForSmoke(address(proxy));
-        _migrateLegacyWithdrawQueue(address(proxy));
+        new $029_UpgradeEtherFiARMSwapFeeScript().run();
 
         EtherFiAssetAdapter eethAdapterImpl = new EtherFiAssetAdapter(
             address(proxy), Mainnet.EETH, Mainnet.WETH, Mainnet.ETHERFI_WITHDRAWAL, Mainnet.ETHERFI_WITHDRAWAL_NFT
