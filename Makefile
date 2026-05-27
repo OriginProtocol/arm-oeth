@@ -19,7 +19,7 @@ default:
 	forge build
 
 install:
-	foundryup --version stable
+	foundryup --version 1.7.1
 	forge soldeer install
 	pnpm install
 
@@ -74,9 +74,8 @@ test-smoke:
 
 # Run a single invariant test: make test-invariant-lido
 test-invariant-%:
-	$(eval FAIL_ON_REVERT := $(if $(filter lido,$*),false,true))
 	$(eval CONTRACT := $(shell echo $* | awk '{print toupper(substr($$0,1,1)) substr($$0,2)}')ARM)
-	FOUNDRY_INVARIANT_FAIL_ON_REVERT=$(FAIL_ON_REVERT) FOUNDRY_MATCH_CONTRACT=FuzzerFoundry_$(CONTRACT) $(MAKE) test-base
+	FOUNDRY_INVARIANT_FAIL_ON_REVERT=true FOUNDRY_MATCH_CONTRACT=FuzzerFoundry_$(CONTRACT) $(MAKE) test-base
 
 # Run all invariant tests
 test-invariants:
