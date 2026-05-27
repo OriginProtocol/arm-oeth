@@ -1215,7 +1215,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
     /// @notice Validate legacy queue compatibility during the Model A upgrade.
     /// @dev The legacy packed asset queue counter slot is preserved so old pending withdrawal
     /// requests can still be claimed after the upgrade.
-    function migrateLegacyWithdrawQueue() external onlyOwner reinitializer(2) {
+    function migrateLegacyWithdrawQueue() external onlyOwner reinitializer(3) {
         _checkNoLegacyWithdrawQueue();
 
         if (withdrawsQueuedShares != 0 || withdrawsClaimedShares != 0 || reservedWithdrawLiquidity != 0) {

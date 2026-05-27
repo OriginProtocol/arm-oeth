@@ -17,6 +17,8 @@ contract ExposedUpgradeEthenaARMScript is $028_UpgradeEthenaARMScript {
 }
 
 contract EthenaUpgradeGuardsTest is Test {
+    bytes32 internal constant INITIALIZABLE_STORAGE_SLOT =
+        0xf0c57e16840df040f15088dc2f81fe391c3923bec73e23a9662efc9c229c6a00;
     uint256 internal constant LEGACY_PACKED_WITHDRAW_QUEUE_SLOT = 53;
     uint256 internal constant NEXT_WITHDRAWAL_INDEX_SLOT = 54;
     uint256 internal constant ETHENA_LEGACY_COOLDOWN_AMOUNT_SLOT = 100;
@@ -45,6 +47,16 @@ contract EthenaUpgradeGuardsTest is Test {
         assertEq(EthenaARM(address(proxy)).reservedWithdrawLiquidity(), 0);
         assertEq(EthenaARM(address(proxy)).legacyWithdrawalRequestCount(), 3);
         assertEq(uint256(vm.load(address(proxy), bytes32(LEGACY_PACKED_WITHDRAW_QUEUE_SLOT))), packedLegacyQueue);
+    }
+
+    function test_UpgradeToAndCallMigratesWhenInitializerVersionTwoAlreadyUsed() external {
+        (Proxy proxy, EthenaARM newImpl) = _deployInitializedEthenaARMProxy();
+        vm.store(address(proxy), INITIALIZABLE_STORAGE_SLOT, bytes32(uint256(2)));
+        vm.store(address(proxy), bytes32(NEXT_WITHDRAWAL_INDEX_SLOT), bytes32(uint256(3)));
+
+        proxy.upgradeToAndCall(address(newImpl), script.migrateLegacyWithdrawQueueData());
+
+        assertEq(EthenaARM(address(proxy)).legacyWithdrawalRequestCount(), 3);
     }
 
     function test_RevertWhen_UpgradeToAndCall_LegacyEthenaCooldownPending() external {
