@@ -33,14 +33,34 @@ contract Unit_Concrete_OriginARM_ClaimRedeem_Test_ is Unit_Shared_Test {
         originARM.claimRedeem(0);
     }
 
-    function test_RevertWhen_ClaimRedeem_Because_NotWithdrawer()
+    function test_RevertWhen_ClaimRedeem_Because_NotWithdrawerNorOperator()
         public
         requestRedeemAll(alice)
         timejump(CLAIM_DELAY)
-        asNot(alice)
     {
-        vm.expectRevert("Not requester");
+        // bob is neither the withdrawer (alice) nor the operator
+        vm.prank(bob);
+        vm.expectRevert("Not requester or operator");
         originARM.claimRedeem(0);
+    }
+
+    function test_ClaimRedeem_AsOperator() public requestRedeemAll(alice) timejump(CLAIM_DELAY) {
+        uint256 aliceBalanceBefore = weth.balanceOf(alice);
+        uint256 operatorBalanceBefore = weth.balanceOf(operator);
+
+        // Operator (not the withdrawer) claims on Alice's behalf
+        vm.prank(operator);
+        vm.expectEmit(address(originARM));
+        // Event reports the actual withdrawer (alice), not the caller
+        emit AbstractARM.RedeemClaimed(alice, 0, DEFAULT_AMOUNT);
+        originARM.claimRedeem(0);
+
+        (, bool claimed,,,,) = originARM.withdrawalRequests(0);
+        assertEq(claimed, true, "Claimed should be true");
+        assertEq(originARM.withdrawsClaimed(), DEFAULT_AMOUNT, "Claimed amount should be DEFAULT_AMOUNT");
+        // Funds go to the original withdrawer (alice), even though the operator triggered the claim
+        assertEq(weth.balanceOf(alice), aliceBalanceBefore + DEFAULT_AMOUNT, "Alice should receive the WETH");
+        assertEq(weth.balanceOf(operator), operatorBalanceBefore, "Operator balance unchanged");
     }
 
     function test_RevertWhen_ClaimRedeem_Because_AlreadyClaimed() public requestRedeemAll(alice) timejump(CLAIM_DELAY) {

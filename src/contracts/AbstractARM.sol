@@ -129,7 +129,16 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @notice Percentage of available liquid assets to keep in the ARM. 100% = 1e18.
     uint256 public armBuffer;
 
-    uint256[38] private _gap;
+    /// @notice True when user-facing ARM actions are paused.
+    bool public paused;
+
+    uint256[37] private _gap;
+
+    ////////////////////////////////////////////////////
+    ///                 Errors
+    ////////////////////////////////////////////////////
+
+    error ContractPaused(); // 0xab35696f
 
     ////////////////////////////////////////////////////
     ///                 Events
@@ -151,6 +160,21 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     event MarketRemoved(address indexed market);
     event ARMBufferUpdated(uint256 armBuffer);
     event Allocated(address indexed market, int256 targetLiquidityDelta, int256 actualLiquidityDelta);
+    event Paused(address indexed account);
+    event Unpaused(address indexed account);
+
+    ////////////////////////////////////////////////////
+    ///                 Modifiers
+    ////////////////////////////////////////////////////
+
+    modifier whenNotPaused() {
+        if (paused) revert ContractPaused();
+        _;
+    }
+
+    ////////////////////////////////////////////////////
+    ///                 Constructor
+    ////////////////////////////////////////////////////
 
     constructor(
         address _token0,
@@ -535,7 +559,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// The caller needs to have approved the contract to transfer the assets.
     /// @param assets The amount of liquidity assets to deposit
     /// @return shares The amount of shares that were minted
-    function deposit(uint256 assets) external returns (uint256 shares) {
+    function deposit(uint256 assets) external whenNotPaused returns (uint256 shares) {
         shares = _deposit(assets, msg.sender);
     }
 
@@ -544,7 +568,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @param assets The amount of liquidity assets to deposit
     /// @param receiver The address that will receive shares.
     /// @return shares The amount of shares that were minted
-    function deposit(uint256 assets, address receiver) external returns (uint256 shares) {
+    function deposit(uint256 assets, address receiver) external whenNotPaused returns (uint256 shares) {
         shares = _deposit(assets, receiver);
     }
 
@@ -587,7 +611,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
     /// @return assets The max amount of liquidity assets that will be claimable by the redeemer.
     /// The amount can be less at claim time if ARM's assets per share has decreased. This can happen
     /// from a significant slashing event on the base asset, eg stETH.
-    function requestRedeem(uint256 shares) external returns (uint256 requestId, uint256 assets) {
+    function requestRedeem(uint256 shares) external whenNotPaused returns (uint256 requestId, uint256 assets) {
         // Calculate the amount of assets to transfer to the redeemer
         assets = convertToAssets(shares);
 
@@ -634,7 +658,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         require(request.claimTimestamp <= block.timestamp, "Claim delay not met");
         // Is there enough liquidity in the ARM and lending market to claim this request?
         require(request.queued <= claimable(), "Queue pending liquidity");
-        require(request.withdrawer == msg.sender, "Not requester");
+        require(request.withdrawer == msg.sender || msg.sender == operator, "Not requester or operator");
         require(request.claimed == false, "Already claimed");
 
         // In the scenario where the ARM has made a loss from after the redeem request, the asset value of
@@ -664,10 +688,10 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
             }
         }
 
-        // transfer the liquidity asset to the withdrawer
-        IERC20(liquidityAsset).transfer(msg.sender, assets);
+        // transfer the liquidity asset to the original withdrawer
+        IERC20(liquidityAsset).transfer(request.withdrawer, assets);
 
-        emit RedeemClaimed(msg.sender, requestId, assets);
+        emit RedeemClaimed(request.withdrawer, requestId, assets);
     }
 
     /// @notice Used to work out if an ARM's withdrawal request can be claimed.
@@ -1050,5 +1074,17 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable {
         armBuffer = _armBuffer;
 
         emit ARMBufferUpdated(_armBuffer);
+    }
+
+    /// @notice Pause user-facing ARM actions.
+    function pause() external onlyOperatorOrOwner {
+        paused = true;
+        emit Paused(msg.sender);
+    }
+
+    /// @notice Unpause user-facing ARM actions.
+    function unpause() external onlyOwner {
+        paused = false;
+        emit Unpaused(msg.sender);
     }
 }
