@@ -18,8 +18,6 @@ interface ILegacyLidoARM {
 abstract contract Fork_LidoARM_SwapGasComparison_Base is Test {
     using stdStorage for StdStorage;
 
-    bytes4 internal constant INVALID_INITIALIZATION = 0xf92ee8a9;
-
     uint256 internal constant FORK_BLOCK = 24_846_066;
     uint256 internal constant LIDO_LEGACY_WITHDRAWAL_QUEUE_AMOUNT_SLOT = 100;
     uint256 internal constant PRICE_SCALE = 1e36;
@@ -138,9 +136,6 @@ contract Fork_Concrete_LidoARM_SwapGasUpgraded_Test is Fork_LidoARM_SwapGasCompa
         );
         vm.store(address(lidoProxy), bytes32(LIDO_LEGACY_WITHDRAWAL_QUEUE_AMOUNT_SLOT), bytes32(0));
 
-        vm.prank(lidoProxy.owner());
-        _migrateLegacyWithdrawQueue();
-
         uint256 sellT1 = PRICE_SCALE;
         address stethAdapter =
             address(new StETHAssetAdapter(address(lidoProxy), address(weth), address(steth), Mainnet.LIDO_WITHDRAWAL));
@@ -164,17 +159,5 @@ contract Fork_Concrete_LidoARM_SwapGasUpgraded_Test is Fork_LidoARM_SwapGasCompa
 
         vm.prank(lidoProxy.owner());
         lidoARM.setPrices(address(steth), traderate1, sellT1, type(uint128).max, type(uint128).max);
-    }
-
-    function _migrateLegacyWithdrawQueue() internal {
-        vm.prank(lidoProxy.owner());
-        (bool success, bytes memory result) =
-            address(lidoARM).call(abi.encodeWithSignature("migrateLegacyWithdrawQueue()"));
-        if (!success && result.length == 4 && bytes4(result) == INVALID_INITIALIZATION) return;
-        if (!success) {
-            assembly {
-                revert(add(result, 0x20), mload(result))
-            }
-        }
     }
 }

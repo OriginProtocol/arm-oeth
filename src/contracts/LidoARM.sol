@@ -20,8 +20,6 @@ contract LidoARM is Initializable, AbstractARM {
     /// @dev Deprecated withdrawal request mapping retained for storage layout compatibility.
     uint256 internal _deprecatedLidoWithdrawalRequests;
 
-    error LegacyLidoWithdrawalsPending(); // 0xd5605722
-
     /// @param _weth The address of the WETH token
     /// @param _claimDelay The delay in seconds before a user can claim a redeem from the request
     /// @param _minSharesToRedeem The minimum amount of shares to redeem from the active lending market
@@ -55,8 +53,8 @@ contract LidoARM is Initializable, AbstractARM {
     }
 
     /// @dev Revert if legacy Lido withdrawal requests are still outstanding.
-    function _checkNoLegacyWithdrawQueue() internal view override {
-        if (_deprecatedLidoWithdrawalQueueAmount != 0) revert LegacyLidoWithdrawalsPending();
+    function checkNoLegacyWithdrawQueue() external view {
+        require(_deprecatedLidoWithdrawalQueueAmount == 0, "Legacy Lido withdrawal pending");
     }
 
     /// @notice This payable method is necessary for receiving ETH claimed from the Lido withdrawal queue.
