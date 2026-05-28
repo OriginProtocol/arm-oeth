@@ -3,11 +3,10 @@ pragma solidity 0.8.23;
 
 // Contracts
 import {Proxy} from "contracts/Proxy.sol";
+import {Mainnet} from "contracts/utils/Addresses.sol";
 import {LidoARM} from "contracts/LidoARM.sol";
 import {EthenaARM} from "contracts/EthenaARM.sol";
 import {EtherFiARM} from "contracts/EtherFiARM.sol";
-import {OriginARM} from "contracts/OriginARM.sol";
-import {Mainnet} from "contracts/utils/Addresses.sol";
 
 // Deployment
 import {AbstractDeployScript} from "script/deploy/helpers/AbstractDeployScript.s.sol";
@@ -23,7 +22,6 @@ contract $028_UpgradeARMsPauseScript is AbstractDeployScript("028_UpgradeARMsPau
     LidoARM public lidoARMImpl;
     EtherFiARM public etherFiARMImpl;
     EthenaARM public ethenaARMImpl;
-    OriginARM public oethARMImpl;
 
     function _execute() internal override {
         uint256 claimDelay = 10 minutes;
@@ -60,28 +58,13 @@ contract $028_UpgradeARMsPauseScript is AbstractDeployScript("028_UpgradeARMsPau
             100e18 // allocateThreshold
         );
         _recordDeployment("ETHENA_ARM_IMPL", address(ethenaARMImpl));
-
-        // 4. Origin (OETH) ARM
-        oethARMImpl = new OriginARM(
-            Mainnet.OETH,
-            Mainnet.WETH,
-            Mainnet.OETH_VAULT,
-            claimDelay,
-            1e7, // minSharesToRedeem
-            1e18 // allocateThreshold
-        );
-        _recordDeployment("OETH_ARM_IMPL", address(oethARMImpl));
     }
 
-    /// @notice LidoARM and OETH ARM are upgraded via a governance proposal.
     function _buildGovernanceProposal() internal override {
-        govProposal.setDescription("Upgrade LidoARM and OETH ARM to add pause mechanism and operator-claim");
+        govProposal.setDescription("Upgrade LidoARM to add pause mechanism and operator-claim");
 
         govProposal.action(
             resolver.resolve("LIDO_ARM"), "upgradeTo(address)", abi.encode(resolver.resolve("LIDO_ARM_IMPL"))
-        );
-        govProposal.action(
-            resolver.resolve("OETH_ARM"), "upgradeTo(address)", abi.encode(resolver.resolve("OETH_ARM_IMPL"))
         );
     }
 
