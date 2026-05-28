@@ -138,7 +138,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
     /// @notice Maximum liquidity assets reserved for outstanding LP withdrawal requests.
     uint256 public reservedWithdrawLiquidity;
 
-    uint256[31] private _gap;
+    uint256[32] private _gap;
 
     ////////////////////////////////////////////////////
     ///                 Errors
