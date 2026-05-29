@@ -61,25 +61,20 @@ contract $028_UpgradeARMsPauseScript is AbstractDeployScript("028_UpgradeARMsPau
     }
 
     function _buildGovernanceProposal() internal override {
-        govProposal.setDescription("Upgrade LidoARM to add pause mechanism and operator-claim");
+        govProposal.setDescription("Upgrade LidoARM and EtherFiARM to add pause mechanism and operator-claim");
 
         govProposal.action(
             resolver.resolve("LIDO_ARM"), "upgradeTo(address)", abi.encode(resolver.resolve("LIDO_ARM_IMPL"))
         );
+
+        govProposal.action(
+            resolver.resolve("ETHER_FI_ARM"), "upgradeTo(address)", abi.encode(resolver.resolve("ETHERFI_ARM_IMPL"))
+        );
     }
 
-    /// @notice EtherFiARM and EthenaARM are owned by the multisig directly, so we upgrade them
+    /// @notice EthenaARM is owned by the multisig directly, so we upgrade it
     /// via a prank in fork simulation. On real deployment, the multisig will execute the upgrade.
     function _fork() internal override {
-        // EtherFiARM
-        Proxy etherFiProxy = Proxy(payable(resolver.resolve("ETHER_FI_ARM")));
-        address etherFiImpl = resolver.resolve("ETHERFI_ARM_IMPL");
-        if (etherFiProxy.implementation() != etherFiImpl) {
-            vm.startPrank(etherFiProxy.owner());
-            etherFiProxy.upgradeTo(etherFiImpl);
-            vm.stopPrank();
-        }
-
         // EthenaARM
         Proxy ethenaProxy = Proxy(payable(resolver.resolve("ETHENA_ARM")));
         address ethenaImpl = resolver.resolve("ETHENA_ARM_IMPL");
