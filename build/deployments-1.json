@@ -17,11 +17,11 @@
             "name": "ETHENA_ARM_CAP_MAN"
         },
         {
-            "implementation": "0x15B3ed22DA895e9E9c2Ae8223128f35DA21fE607",
+            "implementation": "0xA60c11292a3053b5161466229D9E113B18cA2a83",
             "name": "ETHENA_ARM_IMPL"
         },
         {
-            "implementation": "0x69b98667134EeE3eBF75799dacBCd604E28709ab",
+            "implementation": "0x6DB596b66FED6a9994e09EeD70b6d210F01705E5",
             "name": "ETHERFI_ARM_IMPL"
         },
         {
@@ -53,7 +53,7 @@
             "name": "LIDO_ARM_CAP_MAN"
         },
         {
-            "implementation": "0xC0297a0E39031F09406F0987C9D9D41c5dfbc3df",
+            "implementation": "0x850da2E21F1F71479E2A307EDab114777D9F6217",
             "name": "LIDO_ARM_IMPL"
         },
         {
@@ -254,6 +254,12 @@
             "name": "027_UpgradeEthenaARMScript",
             "proposalId": 1,
             "tsDeployment": 1777952339,
+            "tsGovernance": 1
+        },
+        {
+            "name": "028_UpgradeARMsPauseScript",
+            "proposalId": 0,
+            "tsDeployment": 1780037867,
             "tsGovernance": 0
         }
     ]
