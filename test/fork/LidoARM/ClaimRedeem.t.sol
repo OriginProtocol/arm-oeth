@@ -89,7 +89,7 @@ contract Fork_Concrete_LidoARM_ClaimRedeem_Test_ is Fork_Shared_Test_ {
 
         // Expect revert
         vm.startPrank(vm.randomAddress());
-        vm.expectRevert("Not requester");
+        vm.expectRevert("Not requester or operator");
         lidoARM.claimRedeem(0);
     }
 
