@@ -21,15 +21,9 @@ permissions:
 
 env:
   AWS_REGION: us-east-1
-  # Old account (current prod). Push remains primary during migration.
-  ECR_REGISTRY: 412463071885.dkr.ecr.us-east-1.amazonaws.com
+  ECR_REGISTRY: 114563866192.dkr.ecr.us-east-1.amazonaws.com
   IMAGE_NAME: talos/arm-oeth
-  AWS_ROLE_ARN: arn:aws:iam::412463071885:role/talos-gha-OriginProtocol-arm-oeth
-  # New account (parallel stack). Dual-push best-effort while we cut over.
-  # Drop these + the dual-push steps after the rolling swap; switch ECR_REGISTRY
-  # + AWS_ROLE_ARN to the new account when this is the only push.
-  NEW_ECR_REGISTRY: 114563866192.dkr.ecr.us-east-1.amazonaws.com
-  NEW_AWS_ROLE_ARN: arn:aws:iam::114563866192:role/talos-gha-OriginProtocol-arm-oeth
+  AWS_ROLE_ARN: arn:aws:iam::114563866192:role/talos-gha-OriginProtocol-arm-oeth
 
 jobs:
   build:
@@ -44,16 +38,15 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.TALOS_DEPLOY_KEY }}
 
-      - name: Configure AWS credentials (old account)
+      - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@b47578312673ae6fa5b5096b330d9fbac3d116df  # v4.2.1
         with:
           role-to-assume: ${{ env.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Login to old ECR
+      - name: Login to ECR
         uses: aws-actions/amazon-ecr-login@4625ce35226a7557230889aae2f52eb50ec3dcda  # v2.0.1
 
-      # Old account is the primary push target; tag check gates the build.
       - name: Check if image tag already exists (ECR is IMMUTABLE)
         id: tag_exists
         run: |
@@ -68,29 +61,11 @@ jobs:
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
 
-      # Layer in new-account creds so buildx can push to both ECRs from one
-      # build. configure-aws-credentials overwrites AWS env vars, but the
-      # ECR login above already cached old-account docker creds; the second
-      # login adds new-account creds to the same docker config. buildx push
-      # then uses docker's per-registry cache, not AWS env vars.
-      - name: Configure AWS credentials (new account)
-        if: steps.tag_exists.outputs.exists == 'false'
-        id: aws_new
-        uses: aws-actions/configure-aws-credentials@b47578312673ae6fa5b5096b330d9fbac3d116df  # v4.2.1
-        with:
-          role-to-assume: ${{ env.NEW_AWS_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-session-name: dual-push-${{ github.run_id }}
-
-      - name: Login to new ECR
-        if: steps.aws_new.outcome == 'success'
-        uses: aws-actions/amazon-ecr-login@4625ce35226a7557230889aae2f52eb50ec3dcda  # v2.0.1
-
       - name: Set up Docker Buildx
         if: steps.tag_exists.outputs.exists == 'false'
         uses: docker/setup-buildx-action@f7ce87c1d6bead3e36075b2ce75da1f6cc28aaca  # v3.9.0
 
-      - name: Build and push runner image to both ECRs
+      - name: Build and push runner image
         if: steps.tag_exists.outputs.exists == 'false'
         uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25  # v5.4.0
         with:
@@ -100,7 +75,6 @@ jobs:
           ssh: default
           tags: |
             ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-            ${{ env.NEW_ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
 
       - name: Print image reference + digest
         run: |
