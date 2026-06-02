@@ -100,8 +100,10 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
     mapping(address market => bool supported) public supportedMarkets;
     /// @notice Percentage of available liquid assets to keep in the ARM. 100% = 1e18.
     uint256 public armBuffer;
+
     /// @notice True when user-facing ARM actions are paused.
     bool public paused;
+
     /// @notice Accrued swap fees denominated in the liquidity asset.
     uint128 public feesAccrued;
 
@@ -727,6 +729,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
     }
 
     /// @notice Deposit liquidity assets and mint LP shares to the caller.
+    /// The caller needs to have approved the ARM contract to transfer the assets.
     /// @param assets Liquidity assets to deposit.
     /// @return shares LP shares minted.
     function deposit(uint256 assets) external whenNotPaused nonReentrant returns (uint256 shares) {
