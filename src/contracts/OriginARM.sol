@@ -49,7 +49,7 @@ contract OriginARM is Initializable, AbstractARM {
     /// The deployer that calls initialize has to approve the ARM's proxy contract to transfer 1e12 liquid assets.
     /// @param _name The name of the liquidity provider (LP) token.
     /// @param _symbol The symbol of the liquidity provider (LP) token.
-    /// @param _operator The address of the account that can request and claim Lido withdrawals.
+    /// @param _operator The address of the account that can request and claim Origin withdrawals.
     /// @param _fee The fee accrued on discounted base-asset buy swaps measured in basis points (1/100th of a percent).
     /// 10,000 = 100% fee
     /// 500 = 5% fee
@@ -74,7 +74,7 @@ contract OriginARM is Initializable, AbstractARM {
     }
 
     /// @dev Revert if legacy Origin vault withdrawal requests are still outstanding.
-    function _checkNoLegacyWithdrawQueue() internal view override {
-        if (_deprecatedVaultWithdrawalAmount != 0) revert LegacyWithdrawalsPending();
+    function checkNoLegacyWithdrawQueue() external view {
+        require(_deprecatedVaultWithdrawalAmount == 0, "Legacy Origin vault pending");
     }
 }

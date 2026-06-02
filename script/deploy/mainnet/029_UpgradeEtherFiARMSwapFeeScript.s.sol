@@ -2,7 +2,6 @@
 pragma solidity 0.8.23;
 
 import {Proxy} from "contracts/Proxy.sol";
-import {AbstractARM} from "contracts/AbstractARM.sol";
 import {EtherFiARM} from "contracts/EtherFiARM.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
 
@@ -31,7 +30,7 @@ contract $029_UpgradeEtherFiARMSwapFeeScript is AbstractDeployScript("029_Upgrad
         govProposal.action(
             etherFiARMProxy,
             "upgradeToAndCall(address,bytes)",
-            abi.encode(resolver.resolve("ETHERFI_ARM_IMPL"), _migrateLegacyWithdrawQueueData())
+            abi.encode(resolver.resolve("ETHERFI_ARM_IMPL"), _checkNoLegacyWithdrawQueueData())
         );
     }
 
@@ -43,11 +42,11 @@ contract $029_UpgradeEtherFiARMSwapFeeScript is AbstractDeployScript("029_Upgrad
 
         vm.startPrank(proxy.owner());
         EtherFiARM(payable(address(proxy))).collectFees();
-        proxy.upgradeToAndCall(impl, _migrateLegacyWithdrawQueueData());
+        proxy.upgradeToAndCall(impl, _checkNoLegacyWithdrawQueueData());
         vm.stopPrank();
     }
 
-    function _migrateLegacyWithdrawQueueData() internal pure returns (bytes memory) {
-        return abi.encodeWithSelector(AbstractARM.migrateLegacyWithdrawQueue.selector);
+    function _checkNoLegacyWithdrawQueueData() internal pure returns (bytes memory) {
+        return abi.encodeWithSelector(EtherFiARM.checkNoLegacyWithdrawQueue.selector);
     }
 }

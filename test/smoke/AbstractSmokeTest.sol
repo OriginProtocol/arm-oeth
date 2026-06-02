@@ -28,7 +28,6 @@ abstract contract AbstractSmokeTest is Test {
     uint256 internal constant LEGACY_PENDING_AMOUNT_SLOT = 100;
     uint256 internal constant FEE_SCALE = 10000;
     uint256 internal constant DELAY_REQUEST = 30 minutes;
-    bytes4 internal constant INVALID_INITIALIZATION = 0xf92ee8a9;
     /// @dev Ethena ARM proxy from mainnet deployment history. `Mainnet` does not expose this address.
     address internal constant ETHENA_ARM_PROXY = 0xCEDa2d856238aA0D12f6329de20B9115f07C366d;
 
@@ -177,7 +176,6 @@ abstract contract AbstractSmokeTest is Test {
         proxy.upgradeTo(address(impl));
 
         _clearLegacyWithdrawQueueForSmoke(address(proxy));
-        _migrateLegacyWithdrawQueue(address(proxy));
 
         OriginAssetAdapter oethAdapterImpl =
             new OriginAssetAdapter(address(proxy), Mainnet.OETH, Mainnet.WETH, Mainnet.OETH_VAULT);
@@ -212,20 +210,6 @@ abstract contract AbstractSmokeTest is Test {
     function _clearLegacyWithdrawQueueForSmoke(address arm) internal pure {
         (arm);
         // Legacy LP withdrawals are now preserved for post-upgrade claims.
-    }
-
-    function _migrateLegacyWithdrawQueue(address arm) internal {
-        (bool success, bytes memory result) = arm.staticcall(abi.encodeWithSignature("owner()"));
-        require(success, "owner lookup failed");
-
-        vm.prank(abi.decode(result, (address)));
-        (success, result) = arm.call(abi.encodeWithSignature("migrateLegacyWithdrawQueue()"));
-        if (!success && result.length == 4 && bytes4(result) == INVALID_INITIALIZATION) return;
-        if (!success) {
-            assembly {
-                revert(add(result, 0x20), mload(result))
-            }
-        }
     }
 
     function _addBaseAssetIfMissing(

@@ -3,6 +3,8 @@ pragma solidity 0.8.23;
 
 import {Unit_Shared_Test} from "test/unit/shared/Shared.sol";
 import {AbstractARM} from "contracts/AbstractARM.sol";
+import {Ownable} from "contracts/Ownable.sol";
+import {OwnableOperable} from "contracts/OwnableOperable.sol";
 
 contract Unit_Concrete_OriginARM_Pause_Test_ is Unit_Shared_Test {
     function setUp() public virtual override {
@@ -18,7 +20,7 @@ contract Unit_Concrete_OriginARM_Pause_Test_ is Unit_Shared_Test {
     /// --- pause()
     ////////////////////////////////////////////////////
     function test_RevertWhen_Pause_Because_NotOperatorNorGovernor() public asNotOperatorNorGovernor {
-        vm.expectRevert("ARM: Only operator or owner can call this function.");
+        vm.expectRevert(OwnableOperable.OnlyOperatorOrOwner.selector);
         originARM.pause();
     }
 
@@ -65,12 +67,12 @@ contract Unit_Concrete_OriginARM_Pause_Test_ is Unit_Shared_Test {
     /// --- unpause()
     ////////////////////////////////////////////////////
     function test_RevertWhen_Unpause_Because_NotGovernor() public asNotGovernor {
-        vm.expectRevert("ARM: Only owner can call this function.");
+        vm.expectRevert(Ownable.OnlyOwner.selector);
         originARM.unpause();
     }
 
     function test_RevertWhen_Unpause_Because_OperatorCannotUnpause() public asOperator {
-        vm.expectRevert("ARM: Only owner can call this function.");
+        vm.expectRevert(Ownable.OnlyOwner.selector);
         originARM.unpause();
     }
 
@@ -142,9 +144,7 @@ contract Unit_Concrete_OriginARM_Pause_Test_ is Unit_Shared_Test {
         assertEq(requestId, 0, "First request");
     }
 
-    /// @notice claimRedeem() is intentionally NOT gated by whenNotPaused so users
-    /// can always retrieve their already-queued liquidity, even while paused.
-    function test_ClaimRedeem_StillWorks_When_Paused() public {
+    function test_RevertWhen_ClaimRedeem_Because_Paused() public {
         // Alice deposits then requests a full redeem
         vm.startPrank(alice);
         uint256 shares = originARM.deposit(DEFAULT_AMOUNT);
@@ -159,8 +159,9 @@ contract Unit_Concrete_OriginARM_Pause_Test_ is Unit_Shared_Test {
         vm.warp(block.timestamp + CLAIM_DELAY);
 
         uint256 balanceBefore = weth.balanceOf(alice);
+        vm.expectRevert(AbstractARM.ContractPaused.selector);
         vm.prank(alice);
         originARM.claimRedeem(0);
-        assertEq(weth.balanceOf(alice), balanceBefore + DEFAULT_AMOUNT, "Alice should still be able to claim");
+        assertEq(weth.balanceOf(alice), balanceBefore, "Alice should not claim while paused");
     }
 }

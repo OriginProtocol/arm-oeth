@@ -4,7 +4,6 @@ pragma solidity 0.8.23;
 // Contract
 import {Proxy} from "contracts/Proxy.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
-import {AbstractARM} from "contracts/AbstractARM.sol";
 import {EthenaARM} from "contracts/EthenaARM.sol";
 
 // Deployment
@@ -33,11 +32,11 @@ contract $028_UpgradeEthenaARMScript is AbstractDeployScript("028_UpgradeEthenaA
         if (proxy.implementation() == impl) return;
 
         vm.startPrank(proxy.owner());
-        proxy.upgradeToAndCall(impl, _migrateLegacyWithdrawQueueData());
+        proxy.upgradeToAndCall(impl, _checkNoLegacyWithdrawQueueData());
         vm.stopPrank();
     }
 
-    function _migrateLegacyWithdrawQueueData() internal pure returns (bytes memory) {
-        return abi.encodeWithSelector(AbstractARM.migrateLegacyWithdrawQueue.selector);
+    function _checkNoLegacyWithdrawQueueData() internal pure returns (bytes memory) {
+        return abi.encodeWithSelector(EthenaARM.checkNoLegacyWithdrawQueue.selector);
     }
 }

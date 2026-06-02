@@ -2,7 +2,6 @@
 pragma solidity 0.8.23;
 
 import {Proxy} from "contracts/Proxy.sol";
-import {AbstractARM} from "contracts/AbstractARM.sol";
 import {LidoARM} from "contracts/LidoARM.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
 
@@ -30,7 +29,7 @@ contract $030_UpgradeLidoARMSwapFeeScript is AbstractDeployScript("030_UpgradeLi
         govProposal.action(
             lidoARMProxy,
             "upgradeToAndCall(address,bytes)",
-            abi.encode(resolver.resolve("LIDO_ARM_IMPL"), _migrateLegacyWithdrawQueueData())
+            abi.encode(resolver.resolve("LIDO_ARM_IMPL"), _checkNoLegacyWithdrawQueueData())
         );
     }
 
@@ -42,11 +41,11 @@ contract $030_UpgradeLidoARMSwapFeeScript is AbstractDeployScript("030_UpgradeLi
 
         vm.startPrank(proxy.owner());
         LidoARM(payable(address(proxy))).collectFees();
-        proxy.upgradeToAndCall(impl, _migrateLegacyWithdrawQueueData());
+        proxy.upgradeToAndCall(impl, _checkNoLegacyWithdrawQueueData());
         vm.stopPrank();
     }
 
-    function _migrateLegacyWithdrawQueueData() internal pure returns (bytes memory) {
-        return abi.encodeWithSelector(AbstractARM.migrateLegacyWithdrawQueue.selector);
+    function _checkNoLegacyWithdrawQueueData() internal pure returns (bytes memory) {
+        return abi.encodeWithSelector(LidoARM.checkNoLegacyWithdrawQueue.selector);
     }
 }
