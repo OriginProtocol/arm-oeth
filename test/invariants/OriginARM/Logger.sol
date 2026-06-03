@@ -31,7 +31,7 @@ abstract contract Logger is Setup {
         // Step 4: pad à gauche le résultat final (avec les virgules)
         string memory paddedInteger = padLeft(withCommas, targetLength);
 
-        // Step 5: formater les décimales
+        // Step 5: formatter les décimales
         string memory fractionStr = uintToFixedLengthString(fraction, 18);
 
         return string(abi.encodePacked(paddedInteger, ".", fractionStr));

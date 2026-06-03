@@ -67,7 +67,7 @@ contract Unit_Concrete_OriginARM_Setters_Test_ is Unit_Shared_Test {
     }
 
     function test_RevertWhen_SetCrossPrice_Because_CrossPriceTooLow() public asGovernor {
-        // Far bellow the limit
+        // Far below the limit
         vm.expectRevert("ARM: cross price too low");
         originARM.setCrossPrice(0);
 

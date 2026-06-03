@@ -88,7 +88,7 @@ contract Fork_Concrete_Harvester_Swap_Test_ is Fork_Shared_Test {
 
     function test_RevertWhen_Swap_Because_InvalidFromAssetAmount() public {
         // This test is failing atm due to changes on FlyTrade Quote. AmountIn is now the amount minus the fees.
-        // This breaks our SonicHarvester::swap function, because the ammount approved is the amount passed as amountIn,
+        // This breaks our SonicHarvester::swap function, because the amount approved is the amount passed as amountIn,
         // but this is missing the fees, which brings an "Allowance exceeded" error.
         vm.skip(true);
         bytes memory data = getFlyTradeQuote({
@@ -109,7 +109,7 @@ contract Fork_Concrete_Harvester_Swap_Test_ is Fork_Shared_Test {
 
     function test_RevertWhen_Swap_Because_SlippageError() public {
         // This test is failing atm due to changes on FlyTrade Quote. AmountIn is now the amount minus the fees.
-        // This breaks our SonicHarvester::swap function, because the ammount approved is the amount passed as amountIn,
+        // This breaks our SonicHarvester::swap function, because the amount approved is the amount passed as amountIn,
         // but this is missing the fees, which brings an "Allowance exceeded" error.
         vm.skip(true);
         vm.prank(OS_WHALE);
@@ -136,7 +136,7 @@ contract Fork_Concrete_Harvester_Swap_Test_ is Fork_Shared_Test {
     ////////////////////////////////////////////////////
     function test_Swap_WithMagpie_WithOracle() public {
         // This test is failing atm due to changes on FlyTrade Quote. AmountIn is now the amount minus the fees.
-        // This breaks our SonicHarvester::swap function, because the ammount approved is the amount passed as amountIn,
+        // This breaks our SonicHarvester::swap function, because the amount approved is the amount passed as amountIn,
         // but this is missing the fees, which brings an "Allowance exceeded" error.
         vm.skip(true);
         vm.prank(OS_WHALE);
@@ -168,7 +168,7 @@ contract Fork_Concrete_Harvester_Swap_Test_ is Fork_Shared_Test {
 
     function test_Swap_WithMagpie_WithoutOracle() public {
         // This test is failing atm due to changes on FlyTrade Quote. AmountIn is now the amount minus the fees.
-        // This breaks our SonicHarvester::swap function, because the ammount approved is the amount passed as amountIn,
+        // This breaks our SonicHarvester::swap function, because the amount approved is the amount passed as amountIn,
         // but this is missing the fees, which brings an "Allowance exceeded" error.
         vm.skip(true);
         vm.prank(OS_WHALE);
