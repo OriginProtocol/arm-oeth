@@ -97,7 +97,7 @@ abstract contract Base_Test_ is Test {
     //////////////////////////////////////////////////////
     function setUp() public virtual {}
 
-    /// @notice Better if called once all contract have been depoyed.
+    /// @notice Better if called once all contract have been deployed.
     function labelAll() public virtual {
         // Contracts
         _labelNotNull(address(lpcProxy), "LPC PROXY");
