@@ -138,3 +138,5 @@ Flash loan amplification is cross-cutting. It amplifies:
 - [price-manipulation](./price-manipulation.md) — provides capital to shift AMM reserves
 - [reward-calculation-errors](./reward-calculation-errors.md) — provides capital to inflate reward basis
 - [insolvency-check-bypass](./insolvency-check-bypass.md) — provides capital for price manipulation on settlement
+
+
