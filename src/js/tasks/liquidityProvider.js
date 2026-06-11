@@ -1,5 +1,9 @@
 const { parseUnits } = require("ethers");
 
+const {
+  setLiquidityProviderCaps: setLiquidityProviderCapsCore,
+  setTotalAssetsCap: setTotalAssetsCapCore,
+} = require("./admin");
 const { getSigner } = require("../utils/signers");
 const {
   parseDeployedAddress,
@@ -95,42 +99,27 @@ async function claimRedeemARM({ arm, id }) {
 
 async function setLiquidityProviderCaps({ accounts, arm, cap }) {
   const signer = await getSigner();
-
-  const capBn = parseUnits(cap.toString());
-
-  const liquidityProviders = accounts.split(",");
-
   const armContract = await resolveArmContract(arm);
-  const capManagerAddress = await armContract.capManager();
-  const capManager = await ethers.getContractAt(
-    "CapManager",
-    capManagerAddress,
-  );
 
-  log(
-    `About to set deposit cap of ${cap} WETH for liquidity providers ${liquidityProviders} for the ${arm} ARM`,
-  );
-  const tx = await capManager
-    .connect(signer)
-    .setLiquidityProviderCaps(liquidityProviders, capBn);
-  await logTxDetails(tx, "setLiquidityProviderCaps");
+  await setLiquidityProviderCapsCore({
+    accounts,
+    arm: armContract,
+    armName: arm,
+    cap,
+    signer,
+  });
 }
 
 async function setTotalAssetsCap({ arm, cap }) {
   const signer = await getSigner();
-
-  const capBn = parseUnits(cap.toString());
-
   const armContract = await resolveArmContract(arm);
-  const capManagerAddress = await armContract.capManager();
-  const capManager = await ethers.getContractAt(
-    "CapManager",
-    capManagerAddress,
-  );
 
-  log(`About to set total asset cap of ${cap} for the ${arm} ARM`);
-  const tx = await capManager.connect(signer).setTotalAssetsCap(capBn);
-  await logTxDetails(tx, "setTotalAssetsCap");
+  await setTotalAssetsCapCore({
+    arm: armContract,
+    armName: arm,
+    cap,
+    signer,
+  });
 }
 
 module.exports = {

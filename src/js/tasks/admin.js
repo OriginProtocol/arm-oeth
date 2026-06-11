@@ -170,8 +170,59 @@ async function setARMBuffer({ arm, signer, buffer }) {
   const tx = await setArmBuffer(arm, signer, bufferBN, { gasLimit });
   await logTxDetails(tx, "setARMBuffer");
 }
+
+const CAP_MANAGER_ABI = [
+  "function setLiquidityProviderCaps(address[] liquidityProviders, uint256 cap)",
+  "function setTotalAssetsCap(uint248 totalAssetsCap)",
+];
+
+// Resolve the CapManager contract of an ARM.
+async function resolveCapManager(arm, signer) {
+  const capManagerAddress = await arm.capManager();
+  if (capManagerAddress === ethers.ZeroAddress) {
+    throw new Error("No CapManager configured for the ARM");
+  }
+  return new ethers.Contract(capManagerAddress, CAP_MANAGER_ABI, signer);
+}
+
+async function setTotalAssetsCap({ arm, armName = "ARM", cap, signer }) {
+  const capBn = parseUnits(cap.toString());
+
+  const capManager = await resolveCapManager(arm, signer);
+
+  log(`About to set total asset cap of ${cap} for the ${armName} ARM`);
+  const tx = await capManager.setTotalAssetsCap(capBn);
+  await logTxDetails(tx, "setTotalAssetsCap");
+}
+
+async function setLiquidityProviderCaps({
+  accounts,
+  arm,
+  armName = "ARM",
+  cap,
+  signer,
+}) {
+  const capBn = parseUnits(cap.toString());
+
+  const liquidityProviders = Array.isArray(accounts)
+    ? accounts
+    : accounts.split(",");
+
+  const capManager = await resolveCapManager(arm, signer);
+
+  log(
+    `About to set deposit cap of ${cap} for liquidity providers ${liquidityProviders} for the ${armName} ARM`,
+  );
+  const tx = await capManager.setLiquidityProviderCaps(
+    liquidityProviders,
+    capBn,
+  );
+  await logTxDetails(tx, "setLiquidityProviderCaps");
+}
 module.exports = {
   allocate,
   collectFees,
   setARMBuffer,
+  setLiquidityProviderCaps,
+  setTotalAssetsCap,
 };
