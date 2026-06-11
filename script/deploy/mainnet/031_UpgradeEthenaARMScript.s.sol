@@ -32,10 +32,19 @@ contract $031_UpgradeEthenaARMScript is AbstractDeployScript("031_UpgradeEthenaA
             100e18 // allocateThreshold
         );
 
-        EthenaAssetAdapter adapter = new EthenaAssetAdapter(resolver.resolve("ETHENA_ARM"), Mainnet.USDE, Mainnet.SUSDE);
-
         _recordDeployment("ETHENA_ARM_IMPL", address(armImpl));
-        _recordDeployment("ETHENA_ARM_SUSDE_ADAPTER", address(adapter));
+
+        // 2. Deploy the sUSDe adapter behind a proxy. The deployer is the temporary proxy owner so it
+        // can deploy the unstaker set, then ownership is handed over to the multisig that owns the ARM.
+        EthenaAssetAdapter adapterImpl =
+            new EthenaAssetAdapter(resolver.resolve("ETHENA_ARM"), Mainnet.USDE, Mainnet.SUSDE);
+        _recordDeployment("ETHENA_ARM_SUSDE_ADAPTER_IMPL", address(adapterImpl));
+
+        Proxy adapterProxy = new Proxy();
+        adapterProxy.initialize(address(adapterImpl), deployer, "");
+        EthenaAssetAdapter(address(adapterProxy)).deployUnstakers();
+        adapterProxy.setOwner(Mainnet.GOV_MULTISIG);
+        _recordDeployment("ETHENA_ARM_SUSDE_ADAPTER", address(adapterProxy));
     }
 
     function _fork() internal override {
@@ -66,9 +75,16 @@ contract $031_UpgradeEthenaARMScript is AbstractDeployScript("031_UpgradeEthenaA
             );
         vm.stopPrank();
 
-        // The adapter is owned independently of the ARM, so configure its unstaker set from its own owner.
-        vm.prank(adapter.owner());
-        adapter.deployUnstakers();
+        // The unstakers are normally deployed at adapter deployment time in _execute(). Keep a
+        // defensive check for forks resolving an adapter whose unstaker set is not configured yet.
+        if (adapter.unstakers(0) == address(0)) {
+            vm.prank(adapter.owner());
+            adapter.deployUnstakers();
+        }
+
+        // Unpause the ARM
+        vm.prank(proxy.owner());
+        EthenaARM(payable(address(proxy))).unpause();
     }
 
     function _checkNoLegacyWithdrawQueueData() internal pure returns (bytes memory) {
