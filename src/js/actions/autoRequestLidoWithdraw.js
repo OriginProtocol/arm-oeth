@@ -2,6 +2,7 @@ const { Defender } = require("@openzeppelin/defender-sdk");
 const { ethers } = require("ethers");
 
 const { requestLidoWithdrawals } = require("../tasks/lidoQueue");
+const { runForBases } = require("./priceActionUtils");
 const { mainnet } = require("../utils/addresses");
 const erc20Abi = require("../../abis/ERC20.json");
 const lidoARMAbi = require("../../abis/LidoARM.json");
@@ -24,14 +25,19 @@ const handler = async (event) => {
   const steth = new ethers.Contract(mainnet.stETH, erc20Abi, signer);
   const arm = new ethers.Contract(mainnet.lidoARM, lidoARMAbi, signer);
 
-  await requestLidoWithdrawals({
-    signer,
-    steth,
-    arm,
-    armName: "Lido",
-    minAmount: "0.1",
-    thresholdAmount: 120,
-    maxAmount: 300,
+  await runForBases({
+    bases: ["STETH", "WSTETH"],
+    actionName: "Requesting withdrawals",
+    fn: requestLidoWithdrawals,
+    options: {
+      signer,
+      steth,
+      arm,
+      armName: "Lido",
+      minAmount: "0.1",
+      thresholdAmount: 120,
+      maxAmount: 300,
+    },
   });
 };
 

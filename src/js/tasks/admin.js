@@ -3,6 +3,13 @@ const { ethers } = require("ethers");
 const erc20Abi = require("../../abis/ERC20.json");
 
 const { logTxDetails } = require("../utils/txLogger");
+const {
+  callAllocate,
+  estimateAllocateGas,
+  estimateSetArmBufferGas,
+  setArmBuffer,
+  staticCallAllocate,
+} = require("../utils/arm");
 
 const log = require("../utils/logger")("task:admin");
 
@@ -30,8 +37,7 @@ async function allocate({
   threshold,
   execute = true,
   maxGasPrice: maxGasPriceGwei = 10,
-  // V1 on sonic everywhere else V2
-  armContractVersion = "v2",
+  armContractVersion,
 }) {
   const activeMarketAddress = await arm.activeMarket();
   if (activeMarketAddress === ethers.ZeroAddress) {
@@ -46,14 +52,11 @@ async function allocate({
 
   let liquidityDelta;
   if (armContractVersion === "v1") {
-    // The old implementation returns only liquidityDelta
     liquidityDelta = await arm.allocate.staticCall();
   } else if (armContractVersion === "v2") {
-    // 1. Call the allocate static call to get the return values
-    // Returned value is a tuple of two int256 values
     [, liquidityDelta] = await arm.allocate.staticCall();
   } else {
-    throw new Error("Invalid ARM contract version");
+    liquidityDelta = await staticCallAllocate(arm);
   }
 
   const thresholdBN = parseUnits((threshold || "10").toString(), 18);
@@ -110,10 +113,10 @@ async function allocate({
 
   if (execute) {
     // Add 10% buffer to gas limit
-    let gasLimit = await arm.connect(signer).allocate.estimateGas();
+    let gasLimit = await estimateAllocateGas(arm, signer);
     gasLimit = (gasLimit * 11n) / 10n;
 
-    const tx = await arm.connect(signer).allocate({ gasLimit });
+    const tx = await callAllocate(arm, signer, { gasLimit });
     await logTxDetails(tx, "allocate");
   }
 }
@@ -160,11 +163,11 @@ async function setARMBuffer({ arm, signer, buffer }) {
   const bufferBN = parseUnits((buffer || "0").toString(), 18);
 
   // Add 10% buffer to gas limit
-  let gasLimit = await arm.connect(signer).setARMBuffer.estimateGas(bufferBN);
+  let gasLimit = await estimateSetArmBufferGas(arm, signer, bufferBN);
   gasLimit = (gasLimit * 11n) / 10n;
 
   log(`About to set ARM buffer to ${formatUnits(bufferBN)}`);
-  const tx = await arm.connect(signer).setARMBuffer(bufferBN, { gasLimit });
+  const tx = await setArmBuffer(arm, signer, bufferBN, { gasLimit });
   await logTxDetails(tx, "setARMBuffer");
 }
 module.exports = {

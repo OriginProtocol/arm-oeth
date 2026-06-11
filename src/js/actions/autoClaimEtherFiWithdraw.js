@@ -2,6 +2,7 @@ const { Defender } = require("@openzeppelin/defender-sdk");
 const { ethers } = require("ethers");
 
 const { claimEtherFiWithdrawals } = require("../tasks/etherfiQueue");
+const { runForBases } = require("./priceActionUtils");
 const { mainnet } = require("../utils/addresses");
 const etherFiARMAbi = require("../../abis/EtherFiARM.json");
 
@@ -22,10 +23,15 @@ const handler = async (event) => {
   // References to contracts
   const arm = new ethers.Contract(mainnet.etherfiARM, etherFiARMAbi, signer);
 
-  await claimEtherFiWithdrawals({
-    signer,
-    arm,
-    armName: "EtherFi",
+  await runForBases({
+    bases: ["EETH", "WEETH"],
+    actionName: "Claiming withdrawals",
+    fn: claimEtherFiWithdrawals,
+    options: {
+      signer,
+      arm,
+      armName: "EtherFi",
+    },
   });
 };
 

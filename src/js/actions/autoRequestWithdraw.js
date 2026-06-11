@@ -2,6 +2,7 @@ const { Defender } = require("@openzeppelin/defender-sdk");
 const { ethers } = require("ethers");
 
 const { autoRequestWithdraw } = require("../tasks/liquidityAutomation");
+const { runForBases } = require("./priceActionUtils");
 const { mainnet } = require("../utils/addresses");
 const oethARMAbi = require("../../abis/OethARM.json");
 
@@ -22,12 +23,17 @@ const handler = async (event) => {
   // References to contracts
   const arm = new ethers.Contract(mainnet.OethARM, oethARMAbi, signer);
 
-  await autoRequestWithdraw({
-    signer,
-    arm,
-    armName: "Oeth",
-    minAmount: "0.1",
-    thresholdAmount: 10,
+  await runForBases({
+    bases: ["OETH", "WOETH"],
+    actionName: "Requesting withdrawals",
+    fn: autoRequestWithdraw,
+    options: {
+      signer,
+      arm,
+      armName: "Oeth",
+      minAmount: "0.1",
+      thresholdAmount: 10,
+    },
   });
 };
 

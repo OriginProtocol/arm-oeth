@@ -10,7 +10,7 @@ const { get1InchSwapQuote } = require("../utils/1Inch");
 const { flyTradeQuote } = require("../utils/fly");
 const { logTxDetails } = require("../utils/txLogger");
 const { rangeSellPrice, rangeBuyPrice } = require("../utils/pricing");
-const { parseSwapCap, resolveArmBase } = require("../utils/arm");
+const { parseSwapCap, resolveArmBase, setArmPrices } = require("../utils/arm");
 
 const log = require("../utils/logger")("task:osSiloPrice");
 
@@ -36,11 +36,12 @@ const setOSSiloPrice = async (options) => {
   } = options;
 
   log("Computing optimal price...");
-  const { baseAddress, config } = await resolveArmBase({
+  const baseContext = await resolveArmBase({
     arm,
     armName: "Origin",
     blockTag,
   });
+  const { config } = baseContext;
 
   // 1. Get annual rate scaled to 1e18 from lending markets with added premium
   const currentAnnualLendingRate = await getLendingMarketRate(
@@ -181,15 +182,14 @@ const setOSSiloPrice = async (options) => {
     }
 
     log("Updating ARM prices...");
-    const tx = await arm
-      .connect(signer)
-      .setPrices(
-        baseAddress,
-        targetBuyPrice.toString(),
-        targetSellPrice.toString(),
-        parseSwapCap(),
-        parseSwapCap(),
-      );
+    const tx = await setArmPrices({
+      baseContext,
+      signer,
+      buyPrice: targetBuyPrice.toString(),
+      sellPrice: targetSellPrice.toString(),
+      buyAmount: parseSwapCap(),
+      sellAmount: parseSwapCap(),
+    });
 
     await logTxDetails(tx, "setOSSiloPrice");
   }

@@ -2,14 +2,22 @@ const { formatUnits, parseUnits } = require("ethers");
 const { ethers } = require("ethers");
 
 const { baseWithdrawAmount } = require("./liquidityAutomation");
-const { adapterContract, resolveArmBase } = require("../utils/arm");
+const {
+  adapterContract,
+  claimBaseAssetWithdrawal,
+  requestBaseAssetWithdrawal,
+  resolveArmBase,
+} = require("../utils/arm");
 const { logTxDetails } = require("../utils/txLogger");
 const log = require("../utils/logger")("task:ethenaQueue");
 
 const requestEthenaWithdrawals = async (options) => {
-  const { signer, arm, amount } = options;
-  const { baseAddress, config } = await resolveArmBase(options);
-  const adapter = await adapterContract(config.adapter, signer);
+  const { signer, amount } = options;
+  const baseContext = await resolveArmBase(options);
+  const requestDelayContract =
+    baseContext.version === "legacy"
+      ? baseContext.compatibleArm.connect(signer)
+      : await adapterContract(baseContext.config.adapter, signer);
 
   // 1. Determine withdrawal amount: Explicit Input OR calculate from ARM and lending market balances
   const withdrawAmount = amount
@@ -18,8 +26,8 @@ const requestEthenaWithdrawals = async (options) => {
   if (!withdrawAmount || withdrawAmount === 0n) return;
 
   // 2. Check the contract request delay has passed since the last withdrawal request
-  const lastRequestTime = await adapter.lastRequestTimestamp();
-  const requestDelay = Number(await adapter.DELAY_REQUEST());
+  const lastRequestTime = await requestDelayContract.lastRequestTimestamp();
+  const requestDelay = Number(await requestDelayContract.DELAY_REQUEST());
   const currentTime = Math.floor(Date.now() / 1000);
   const timeSinceLastRequest = currentTime - Number(lastRequestTime);
   if (timeSinceLastRequest < requestDelay) {
@@ -32,9 +40,11 @@ const requestEthenaWithdrawals = async (options) => {
 
   // 3. Execution
   log(`Requesting withdrawal for ${formatUnits(withdrawAmount)} sUSDe...`);
-  const tx = await arm
-    .connect(signer)
-    .requestBaseAssetRedeem(baseAddress, withdrawAmount);
+  const tx = await requestBaseAssetWithdrawal({
+    baseContext,
+    signer,
+    amount: withdrawAmount,
+  });
   await logTxDetails(tx, "requestEthenaWithdrawal");
 };
 
@@ -43,6 +53,20 @@ const SUSDE_ADDRESS = "0x9D39A5DE30e57443BfF2A8307A4256c8797A3497";
 const SUSDE_ABI = [
   "function cooldowns(address) view returns (uint104,uint152)",
 ];
+
+const legacyEthenaUnstakers = async (legacyArm) => {
+  const unstakers = [];
+  for (let i = 0; ; i++) {
+    try {
+      const unstaker = await legacyArm.unstakers(i);
+      if (unstaker === ethers.ZeroAddress) break;
+      unstakers.push({ address: unstaker, index: i });
+    } catch {
+      break;
+    }
+  }
+  return unstakers;
+};
 
 // --- HELPER: CORE LOGIC ---
 // Fetches data for a list of addresses in PARALLEL (much faster)
@@ -73,8 +97,12 @@ const fetchUnstakerStates = async (signer, adapter, addresses) => {
   return Promise.all(
     addresses.map(async ({ address, index }) => {
       const [cooldownEnd, underlyingAmount] = await contract.cooldowns(address);
-      const shares = await adapter["requestShares(address)"](address);
-      const expectedAssets = await adapter["requestAssets(address)"](address);
+      const shares = adapter
+        ? await adapter["requestShares(address)"](address)
+        : underlyingAmount;
+      const expectedAssets = adapter
+        ? await adapter["requestAssets(address)"](address)
+        : underlyingAmount;
       const amountStr = formatUnits(underlyingAmount, 18);
       const isBalancePositive = underlyingAmount > 0 || shares > 0;
 
@@ -110,11 +138,20 @@ const fetchUnstakerStates = async (signer, adapter, addresses) => {
 // --- MAIN FUNCTIONS ---
 const ethenaWithdrawStatus = async (options) => {
   const { signer } = options;
-  const { config } = await resolveArmBase(options);
-  const adapter = await adapterContract(config.adapter, signer);
+  const baseContext = await resolveArmBase(options);
+  const adapter =
+    baseContext.version === "legacy"
+      ? undefined
+      : await adapterContract(baseContext.config.adapter, signer);
 
   // Reuse the core logic
-  const allStates = await fetchUnstakerStates(signer, adapter);
+  const allStates = await fetchUnstakerStates(
+    signer,
+    adapter,
+    baseContext.version === "legacy"
+      ? await legacyEthenaUnstakers(baseContext.compatibleArm)
+      : undefined,
+  );
 
   // Filter and Log
   const active = allStates.filter((s) => s.hasBalance);
@@ -140,14 +177,23 @@ const ethenaWithdrawStatus = async (options) => {
 };
 
 const claimEthenaWithdrawals = async (options) => {
-  const { arm, signer } = options;
-  const { baseAddress, config } = await resolveArmBase(options);
-  const adapter = await adapterContract(config.adapter, signer);
+  const { signer } = options;
+  const baseContext = await resolveArmBase(options);
+  const adapter =
+    baseContext.version === "legacy"
+      ? undefined
+      : await adapterContract(baseContext.config.adapter, signer);
 
   log(`Checking Ethena adapter withdrawal status...`);
 
   // 1. Fetch all data in parallel first (Fast)
-  const states = await fetchUnstakerStates(signer, adapter);
+  const states = await fetchUnstakerStates(
+    signer,
+    adapter,
+    baseContext.version === "legacy"
+      ? await legacyEthenaUnstakers(baseContext.compatibleArm)
+      : undefined,
+  );
 
   // 2. Log status for everyone
   states.forEach((s) => {
@@ -167,6 +213,21 @@ const claimEthenaWithdrawals = async (options) => {
   if (claimable.length > 0) {
     log(`About to claim ${claimable.length} withdrawal requests...`);
 
+    if (baseContext.version === "legacy") {
+      for (const item of claimable) {
+        log(
+          ` - Processing claim for index ${item.index}, ${item.amount} USDe and address ${item.address}`,
+        );
+        const tx = await claimBaseAssetWithdrawal({
+          baseContext,
+          signer,
+          unstakerIndex: item.index,
+        });
+        await logTxDetails(tx, `claimEthenaWithdrawal for ${item.address}`);
+      }
+      return;
+    }
+
     let shares = 0n;
     for (const item of claimable) {
       log(
@@ -175,9 +236,11 @@ const claimEthenaWithdrawals = async (options) => {
       shares += item.shares;
     }
 
-    const tx = await arm
-      .connect(signer)
-      .claimBaseAssetRedeem(baseAddress, shares);
+    const tx = await claimBaseAssetWithdrawal({
+      baseContext,
+      signer,
+      shares,
+    });
     await logTxDetails(tx, `claimEthenaWithdrawal`);
   } else {
     log("No ready USDe withdrawal requests found.");

@@ -20,7 +20,11 @@ const {
   parseDeployedAddress,
 } = require("../utils/addressParser");
 const { resolveAsset } = require("../utils/assets");
-const { adapterContract, resolveArmBase } = require("../utils/arm");
+const {
+  adapterContract,
+  getArmBuffer,
+  resolveArmBase,
+} = require("../utils/arm");
 const { logWithdrawalQueue } = require("./liquidity");
 const { swap } = require("./swap");
 
@@ -121,7 +125,12 @@ const snapLido = async ({
   if (lido) {
     await logLidoQueue(signer, blockTag);
 
-    await logLidoWithdrawals(baseContext.config.adapter, blockTag);
+    await logLidoWithdrawals(
+      baseContext.version === "legacy"
+        ? await lidoARM.getAddress()
+        : baseContext.config.adapter,
+      blockTag,
+    );
   }
   if (queue) {
     await logWithdrawalQueue(lidoARM, blockTag, liquidityWeth);
@@ -301,7 +310,7 @@ const logAssets = async (arm, blockTag, baseContext) => {
     blockTag,
   });
 
-  const buffer = await arm.armBuffer({ blockTag });
+  const buffer = await getArmBuffer(arm, blockTag);
   const bufferPercent = (buffer * 10000n) / parseUnits("1");
 
   const { amount: morphoRewards } = await getMerklRewards({
