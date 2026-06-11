@@ -5,9 +5,9 @@ pragma solidity ^0.8.23;
 import {Test} from "forge-std/Test.sol";
 
 import {DeployManager} from "script/deploy/DeployManager.s.sol";
-import {$028_UpgradeEthenaARMScript} from "script/deploy/mainnet/028_UpgradeEthenaARMScript.s.sol";
-import {$029_UpgradeEtherFiARMSwapFeeScript} from "script/deploy/mainnet/029_UpgradeEtherFiARMSwapFeeScript.s.sol";
-import {$030_UpgradeLidoARMSwapFeeScript} from "script/deploy/mainnet/030_UpgradeLidoARMSwapFeeScript.s.sol";
+import {$031_UpgradeEthenaARMScript} from "script/deploy/mainnet/031_UpgradeEthenaARMScript.s.sol";
+import {$032_UpgradeEtherFiARMSwapFeeScript} from "script/deploy/mainnet/032_UpgradeEtherFiARMSwapFeeScript.s.sol";
+import {$033_UpgradeLidoARMSwapFeeScript} from "script/deploy/mainnet/033_UpgradeLidoARMSwapFeeScript.s.sol";
 import {Resolver} from "script/deploy/helpers/Resolver.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
 import {Proxy} from "contracts/Proxy.sol";
@@ -15,11 +15,6 @@ import {LidoARM} from "contracts/LidoARM.sol";
 import {EtherFiARM} from "contracts/EtherFiARM.sol";
 import {EthenaARM} from "contracts/EthenaARM.sol";
 import {OriginARM} from "contracts/OriginARM.sol";
-import {StETHAssetAdapter} from "contracts/adapters/StETHAssetAdapter.sol";
-import {WstETHAssetAdapter} from "contracts/adapters/WstETHAssetAdapter.sol";
-import {EtherFiAssetAdapter} from "contracts/adapters/EtherFiAssetAdapter.sol";
-import {WeETHAssetAdapter} from "contracts/adapters/WeETHAssetAdapter.sol";
-import {EthenaAssetAdapter} from "contracts/adapters/EthenaAssetAdapter.sol";
 import {OriginAssetAdapter} from "contracts/adapters/OriginAssetAdapter.sol";
 import {WrappedOriginAssetAdapter} from "contracts/adapters/WrappedOriginAssetAdapter.sol";
 
@@ -57,7 +52,7 @@ abstract contract AbstractSmokeTest is Test {
         deployManager.setUp();
         _clearLegacyPendingAmount(ETHENA_ARM_PROXY);
         deployManager.run();
-        _runPendingEthena028ForSmoke();
+        _runPendingEthena031ForSmoke();
         _applyPendingMultiBaseUpgrades();
     }
 
@@ -68,13 +63,13 @@ abstract contract AbstractSmokeTest is Test {
         _upgradeOriginARM();
     }
 
-    function _runPendingEthena028ForSmoke() internal {
+    function _runPendingEthena031ForSmoke() internal {
         (bool hasBaseAssetConfigs,) =
             ETHENA_ARM_PROXY.staticcall(abi.encodeWithSignature("baseAssetConfigs(address)", Mainnet.SUSDE));
         if (hasBaseAssetConfigs) return;
 
         _clearLegacyPendingAmount(ETHENA_ARM_PROXY);
-        new $028_UpgradeEthenaARMScript().run();
+        new $031_UpgradeEthenaARMScript().run();
     }
 
     function _upgradeLidoARM() internal {
@@ -82,32 +77,10 @@ abstract contract AbstractSmokeTest is Test {
 
         _clearLegacyPendingAmount(address(proxy));
         _clearLegacyWithdrawQueueForSmoke(address(proxy));
-        new $030_UpgradeLidoARMSwapFeeScript().run();
-
-        StETHAssetAdapter stethAdapterImpl =
-            new StETHAssetAdapter(address(proxy), Mainnet.WETH, Mainnet.STETH, Mainnet.LIDO_WITHDRAWAL);
-        resolver.addContract("LIDO_ARM_STETH_ADAPTER_IMPL", address(stethAdapterImpl));
-        Proxy stethAdapterProxy = new Proxy();
-        stethAdapterProxy.initialize(
-            address(stethAdapterImpl), Mainnet.TIMELOCK, abi.encodeWithSignature("initialize()")
-        );
-        resolver.addContract("LIDO_ARM_STETH_ADAPTER", address(stethAdapterProxy));
-
-        WstETHAssetAdapter wstethAdapterImpl = new WstETHAssetAdapter(
-            address(proxy), Mainnet.WETH, Mainnet.STETH, Mainnet.WSTETH, Mainnet.LIDO_WITHDRAWAL
-        );
-        resolver.addContract("LIDO_ARM_WSTETH_ADAPTER_IMPL", address(wstethAdapterImpl));
-        Proxy wstethAdapterProxy = new Proxy();
-        wstethAdapterProxy.initialize(
-            address(wstethAdapterImpl), Mainnet.TIMELOCK, abi.encodeWithSignature("initialize()")
-        );
-        resolver.addContract("LIDO_ARM_WSTETH_ADAPTER", address(wstethAdapterProxy));
-
-        LidoARM arm = LidoARM(payable(address(proxy)));
-        vm.startPrank(arm.owner());
-        _addBaseAssetIfMissing(arm, Mainnet.STETH, address(stethAdapterProxy), 0.9996e36, 1e36, 0.99996e36, true);
-        _addBaseAssetIfMissing(arm, Mainnet.WSTETH, address(wstethAdapterProxy), 0.9996e36, 1e36, 0.99996e36, false);
-        vm.stopPrank();
+        // 033 deploys the stETH/wstETH adapters and registers them (stETH tradable, wstETH dormant) under
+        // LIDO_ARM_STETH_ADAPTER / LIDO_ARM_WSTETH_ADAPTER, so the smoke test no longer deploys or
+        // registers them itself.
+        new $033_UpgradeLidoARMSwapFeeScript().run();
     }
 
     function _upgradeEtherFiARM() internal {
@@ -115,54 +88,15 @@ abstract contract AbstractSmokeTest is Test {
 
         _clearLegacyPendingAmount(address(proxy));
         _clearLegacyWithdrawQueueForSmoke(address(proxy));
-        new $029_UpgradeEtherFiARMSwapFeeScript().run();
-
-        EtherFiAssetAdapter eethAdapterImpl = new EtherFiAssetAdapter(
-            address(proxy), Mainnet.EETH, Mainnet.WETH, Mainnet.ETHERFI_WITHDRAWAL, Mainnet.ETHERFI_WITHDRAWAL_NFT
-        );
-        resolver.addContract("ETHER_FI_ARM_EETH_ADAPTER_IMPL", address(eethAdapterImpl));
-        Proxy eethAdapterProxy = new Proxy();
-        eethAdapterProxy.initialize(address(eethAdapterImpl), Mainnet.TIMELOCK, abi.encodeWithSignature("initialize()"));
-        resolver.addContract("ETHER_FI_ARM_EETH_ADAPTER", address(eethAdapterProxy));
-
-        WeETHAssetAdapter weethAdapterImpl = new WeETHAssetAdapter(
-            address(proxy),
-            Mainnet.WEETH,
-            Mainnet.EETH,
-            Mainnet.WETH,
-            Mainnet.ETHERFI_WITHDRAWAL,
-            Mainnet.ETHERFI_WITHDRAWAL_NFT
-        );
-        resolver.addContract("ETHER_FI_ARM_WEETH_ADAPTER_IMPL", address(weethAdapterImpl));
-        Proxy weethAdapterProxy = new Proxy();
-        weethAdapterProxy.initialize(
-            address(weethAdapterImpl), Mainnet.TIMELOCK, abi.encodeWithSignature("initialize()")
-        );
-        resolver.addContract("ETHER_FI_ARM_WEETH_ADAPTER", address(weethAdapterProxy));
-
-        EtherFiARM arm = EtherFiARM(payable(address(proxy)));
-        vm.startPrank(arm.owner());
-        _addBaseAssetIfMissing(arm, Mainnet.EETH, address(eethAdapterProxy), 0.9996e36, 1e36, 0.99996e36, true);
-        _addBaseAssetIfMissing(arm, Mainnet.WEETH, address(weethAdapterProxy), 0.9996e36, 1e36, 0.99996e36, false);
-        vm.stopPrank();
+        // 032 deploys the eETH/weETH adapters and registers them (eETH tradable, weETH dormant) under
+        // ETHER_FI_ARM_EETH_ADAPTER / ETHER_FI_ARM_WEETH_ADAPTER, so the smoke test no longer deploys
+        // or registers them itself.
+        new $032_UpgradeEtherFiARMSwapFeeScript().run();
     }
 
     function _upgradeEthenaARM() internal {
-        Proxy proxy = Proxy(payable(resolver.resolve("ETHENA_ARM")));
-
-        EthenaAssetAdapter adapterImpl = new EthenaAssetAdapter(address(proxy), Mainnet.USDE, Mainnet.SUSDE);
-        resolver.addContract("ETHENA_ARM_SUSDE_ADAPTER_IMPL", address(adapterImpl));
-        Proxy adapterProxy = new Proxy();
-        adapterProxy.initialize(address(adapterImpl), address(this), "");
-        EthenaAssetAdapter adapter = EthenaAssetAdapter(address(adapterProxy));
-        adapter.deployUnstakers();
-        adapterProxy.setOwner(Mainnet.TIMELOCK);
-        resolver.addContract("ETHENA_ARM_SUSDE_ADAPTER", address(adapterProxy));
-
-        EthenaARM arm = EthenaARM(payable(address(proxy)));
-        vm.startPrank(arm.owner());
-        _addBaseAssetIfMissing(arm, Mainnet.SUSDE, address(adapterProxy), 0.998e36, 1e36, 0.99996e36, false);
-        vm.stopPrank();
+        // 031 (run by _runPendingEthena031ForSmoke) deploys the sUSDe adapter, upgrades the ARM,
+        // registers sUSDe (active) and deploys the unstakers, so the smoke test no longer does it here.
     }
 
     function _upgradeOriginARM() internal {

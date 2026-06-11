@@ -26,7 +26,7 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
         super.setUp();
         usde = IERC20(Mainnet.USDE);
         susde = IERC20(Mainnet.SUSDE);
-        operator = Mainnet.ARM_RELAYER;
+        operator = Mainnet.ETHENA_ARM_RELAYER;
 
         vm.label(address(usde), "USDE");
         vm.label(address(susde), "SUSDE");
@@ -45,7 +45,7 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
         assertEq(ethenaARM.name(), "Ethena Staked USDe ARM", "Name");
         assertEq(ethenaARM.symbol(), "ARM-sUSDe-USDe", "Symbol");
         assertEq(ethenaARM.owner(), Mainnet.TIMELOCK, "Owner");
-        assertEq(ethenaARM.operator(), Mainnet.ARM_RELAYER, "Operator");
+        assertEq(ethenaARM.operator(), Mainnet.ETHENA_ARM_RELAYER, "Operator");
         assertEq(ethenaARM.feeCollector(), Mainnet.BUYBACK_OPERATOR, "Fee collector");
         assertEq((100 * uint256(ethenaARM.fee())) / FEE_SCALE, 20, "Performance fee as a percentage");
 
@@ -58,6 +58,7 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
         assertEq(capManager.accountCapEnabled(), true, "account cap enabled");
         assertEq(capManager.totalAssetsCap(), 100000 ether, "total assets cap");
         //assertEq(capManager.liquidityProviderCaps(Mainnet.TREASURY_LP), 20000 ether, "liquidity provider cap");
+        // The CapManager still uses the original ARM relayer as operator.
         assertEq(capManager.operator(), Mainnet.ARM_RELAYER, "Operator");
         assertEq(capManager.arm(), address(ethenaARM), "arm");
     }
@@ -101,7 +102,7 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
             expectedOut = amountIn * 1e36 / price;
             expectedOut = IStakedUSDe(address(susde)).convertToShares(expectedOut);
 
-            vm.prank(Mainnet.ARM_RELAYER);
+            vm.prank(Mainnet.ETHENA_ARM_RELAYER);
             ethenaARM.setPrices(address(susde), 0.99e36, price, type(uint128).max, type(uint128).max);
         } else {
             // Trader is selling sUSDe and buying USDE
@@ -112,7 +113,7 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
             expectedOut = amountIn * price / 1e36;
             expectedOut = IStakedUSDe(address(susde)).convertToAssets(expectedOut);
 
-            vm.prank(Mainnet.ARM_RELAYER);
+            vm.prank(Mainnet.ETHENA_ARM_RELAYER);
             uint256 sellPrice = price < 0.9997e36 ? 0.99996e36 : price + 2e32;
             ethenaARM.setPrices(address(susde), price, sellPrice, type(uint128).max, type(uint128).max);
         }
@@ -138,7 +139,7 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
 
             expectedIn = IStakedUSDe(address(susde)).convertToAssets(amountOut) * price / 1e36;
 
-            vm.prank(Mainnet.ARM_RELAYER);
+            vm.prank(Mainnet.ETHENA_ARM_RELAYER);
             ethenaARM.setPrices(address(susde), 0.99e36, price, type(uint128).max, type(uint128).max);
         } else {
             // Trader is selling sUSDe and buying USDE
@@ -149,7 +150,7 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
 
             expectedIn = IStakedUSDe(address(susde)).convertToShares(amountOut) * 1e36 / price + 3;
 
-            vm.prank(Mainnet.ARM_RELAYER);
+            vm.prank(Mainnet.ETHENA_ARM_RELAYER);
             uint256 sellPrice = price < 0.9997e36 ? 0.99996e36 : price + 2e32;
             ethenaARM.setPrices(address(susde), price, sellPrice, type(uint128).max, type(uint128).max);
         }
@@ -211,7 +212,7 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
 
         // Operator requests an Ethena withdrawal
         skip(DELAY_REQUEST + 1);
-        vm.prank(Mainnet.ARM_RELAYER);
+        vm.prank(Mainnet.ETHENA_ARM_RELAYER);
         ethenaARM.requestBaseAssetRedeem(address(susde), 10 ether);
     }
 
@@ -240,7 +241,7 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
         // Claim the withdrawal
         address unstaker = ethenaAssetAdapter.unstakers(uint8(nextUnstakerIndex));
         uint256 requestShares = ethenaAssetAdapter.requestShares(unstaker);
-        vm.prank(Mainnet.ARM_RELAYER);
+        vm.prank(Mainnet.ETHENA_ARM_RELAYER);
         ethenaARM.claimBaseAssetRedeem(address(susde), requestShares);
     }
 
@@ -248,7 +249,7 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
     function test_allocate_AAVEMarket_withoutYield() external {
         _swapExactTokensForTokens(usde, susde, 0.99996e36, 1_000 ether);
 
-        vm.prank(Mainnet.ARM_RELAYER);
+        vm.prank(Mainnet.ETHENA_ARM_RELAYER);
         ethenaARM.setARMBuffer(5000); // 50%
         address activeMarket = ethenaARM.activeMarket();
 
@@ -262,7 +263,7 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
     function test_allocate_AAVEMarket_withYield() external {
         _swapExactTokensForTokens(usde, susde, 0.99996e36, 1_000 ether);
 
-        vm.prank(Mainnet.ARM_RELAYER);
+        vm.prank(Mainnet.ETHENA_ARM_RELAYER);
         ethenaARM.setARMBuffer(5000); // 50%
 
         // Allocate
@@ -277,7 +278,7 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
         IERC20(aUSDE).transfer(activeMarket, 10 ether);
 
         // Deallocate
-        vm.prank(Mainnet.ARM_RELAYER);
+        vm.prank(Mainnet.ETHENA_ARM_RELAYER);
         ethenaARM.setActiveMarket(address(0));
         uint256 balanceAfter = usde.balanceOf(address(ethenaARM));
 
