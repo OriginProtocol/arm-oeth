@@ -57,7 +57,9 @@ contract $033_UpgradeLidoARMSwapFeeScript is AbstractDeployScript("033_UpgradeLi
     }
 
     function _buildGovernanceProposal() internal override {
-        govProposal.setDescription("Collect legacy Lido ARM fees and upgrade to swap-only fee accrual");
+        govProposal.setDescription(
+            "Collect legacy Lido ARM fees, upgrade to swap-only fee accrual, register stETH and wstETH base assets with zero swap limits, and unpause the ARM"
+        );
 
         address lidoARMProxy = resolver.resolve("LIDO_ARM");
         govProposal.action(lidoARMProxy, "collectFees()", "");
@@ -98,6 +100,9 @@ contract $033_UpgradeLidoARMSwapFeeScript is AbstractDeployScript("033_UpgradeLi
                 false
             )
         );
+        // The ARM is paused ahead of the upgrade; unpause it so deposits/redeems work again.
+        // Swaps remain blocked by the zero swap limits until the operator enables them.
+        govProposal.action(lidoARMProxy, "unpause()", "");
     }
 
     function _fork() internal override {
@@ -135,6 +140,7 @@ contract $033_UpgradeLidoARMSwapFeeScript is AbstractDeployScript("033_UpgradeLi
                 BASE_ASSET_CROSS_PRICE,
                 false
             );
+        LidoARM(payable(address(proxy))).unpause();
         vm.stopPrank();
     }
 

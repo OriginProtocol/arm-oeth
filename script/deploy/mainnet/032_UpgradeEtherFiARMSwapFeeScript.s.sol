@@ -68,7 +68,9 @@ contract $032_UpgradeEtherFiARMSwapFeeScript is AbstractDeployScript("032_Upgrad
     }
 
     function _buildGovernanceProposal() internal override {
-        govProposal.setDescription("Collect legacy EtherFi ARM fees and upgrade to swap-only fee accrual");
+        govProposal.setDescription(
+            "Collect legacy EtherFi ARM fees, upgrade to swap-only fee accrual, register eETH and weETH base assets with zero swap limits, and unpause the ARM"
+        );
 
         address etherFiARMProxy = resolver.resolve("ETHER_FI_ARM");
         govProposal.action(etherFiARMProxy, "collectFees()", "");
@@ -109,6 +111,9 @@ contract $032_UpgradeEtherFiARMSwapFeeScript is AbstractDeployScript("032_Upgrad
                 false
             )
         );
+        // The ARM is paused ahead of the upgrade; unpause it so deposits/redeems work again.
+        // Swaps remain blocked by the zero swap limits until the operator enables them.
+        govProposal.action(etherFiARMProxy, "unpause()", "");
     }
 
     function _fork() internal override {
@@ -146,6 +151,7 @@ contract $032_UpgradeEtherFiARMSwapFeeScript is AbstractDeployScript("032_Upgrad
                 BASE_ASSET_CROSS_PRICE,
                 false
             );
+        EtherFiARM(payable(address(proxy))).unpause();
         vm.stopPrank();
     }
 
