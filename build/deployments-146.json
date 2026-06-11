@@ -55,7 +55,7 @@
       "tsGovernance": 1
     },
     {
-      "name": "003_UpgradeOriginARMScriptScript",
+      "name": "003_UpgradeOriginARMScript",
       "proposalId": 1,
       "tsDeployment": 1748603225,
       "tsGovernance": 1
@@ -71,6 +71,12 @@
       "proposalId": 1,
       "tsDeployment": 1755782543,
       "tsGovernance": 1
+    },
+    {
+      "name": "006_SetOriginARMTalosOperatorScript",
+      "proposalId": 1,
+      "tsDeployment": 1781037496,
+      "tsGovernance": 0
     }
   ]
 }
