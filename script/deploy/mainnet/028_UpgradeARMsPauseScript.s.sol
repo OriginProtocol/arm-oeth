@@ -61,7 +61,7 @@ contract $028_UpgradeARMsPauseScript is AbstractDeployScript("028_UpgradeARMsPau
     }
 
     function _buildGovernanceProposal() internal override {
-        govProposal.setDescription("Upgrade LidoARM and EtherFiARM to add pause mechanism and operator-claim");
+        govProposal.setDescription("Upgrade LidoARM and EtherFiARM to add pause mechanism and operator claims");
 
         govProposal.action(
             resolver.resolve("LIDO_ARM"), "upgradeTo(address)", abi.encode(resolver.resolve("LIDO_ARM_IMPL"))
