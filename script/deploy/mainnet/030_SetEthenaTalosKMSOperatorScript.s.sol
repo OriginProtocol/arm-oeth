@@ -18,9 +18,9 @@ contract $030_SetEthenaTalosKMSOperatorScript is AbstractDeployScript("030_SetEt
     function _fork() internal override {
         OwnableOperable ethenaARM = OwnableOperable(resolver.resolve("ETHENA_ARM"));
 
-        if (ethenaARM.operator() != Mainnet.TALOS_RELAYER) {
+        if (ethenaARM.operator() != Mainnet.ARM_TALOS_RELAYER) {
             vm.startPrank(ethenaARM.owner());
-            ethenaARM.setOperator(Mainnet.TALOS_RELAYER);
+            ethenaARM.setOperator(Mainnet.ARM_TALOS_RELAYER);
             vm.stopPrank();
         }
     }

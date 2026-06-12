@@ -18,8 +18,10 @@ contract $029_SetTalosKMSOperatorScript is AbstractDeployScript("029_SetTalosKMS
     function _buildGovernanceProposal() internal override {
         govProposal.setDescription("Migrate LidoARM and EtherFiARM operator to the new Talos KMS signer");
 
-        govProposal.action(resolver.resolve("LIDO_ARM"), "setOperator(address)", abi.encode(Mainnet.TALOS_RELAYER));
+        govProposal.action(resolver.resolve("LIDO_ARM"), "setOperator(address)", abi.encode(Mainnet.ARM_TALOS_RELAYER));
 
-        govProposal.action(resolver.resolve("ETHER_FI_ARM"), "setOperator(address)", abi.encode(Mainnet.TALOS_RELAYER));
+        govProposal.action(
+            resolver.resolve("ETHER_FI_ARM"), "setOperator(address)", abi.encode(Mainnet.ARM_TALOS_RELAYER)
+        );
     }
 }
