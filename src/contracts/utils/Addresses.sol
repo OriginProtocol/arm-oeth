@@ -98,6 +98,7 @@ library Sonic {
     // 5/8 multisig
     address public constant ADMIN = 0xAdDEA7933Db7d83855786EB43a238111C69B00b6;
     address public constant RELAYER = 0x531B8D5eD6db72A56cF1238D4cE478E7cB7f2825;
+    address public constant TALOS_RELAYER = 0x739212d5bAfE6AAC8Be49a60B7d003bD41DBf38b;
 
     // Tokens
     address public constant OS = 0xb1e25689D55734FD3ffFc939c4C3Eb52DFf8A794;
