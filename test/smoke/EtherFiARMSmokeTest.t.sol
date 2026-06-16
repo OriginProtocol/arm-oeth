@@ -27,7 +27,7 @@ contract Fork_EtherFiARM_Smoke_Test is AbstractSmokeTest {
         super.setUp();
         weth = IERC20(Mainnet.WETH);
         eeth = IERC20(Mainnet.EETH);
-        operator = Mainnet.ARM_RELAYER;
+        operator = Mainnet.ARM_TALOS_RELAYER;
 
         vm.label(address(weth), "WETH");
         vm.label(address(eeth), "eETH");
@@ -48,7 +48,7 @@ contract Fork_EtherFiARM_Smoke_Test is AbstractSmokeTest {
         assertEq(etherFiARM.name(), "Ether.fi ARM", "Name");
         assertEq(etherFiARM.symbol(), "ARM-WETH-eETH", "Symbol");
         assertEq(etherFiARM.owner(), Mainnet.TIMELOCK, "Owner");
-        assertEq(etherFiARM.operator(), Mainnet.ARM_RELAYER, "Operator");
+        assertEq(etherFiARM.operator(), Mainnet.ARM_TALOS_RELAYER, "Operator");
         assertEq(etherFiARM.feeCollector(), Mainnet.BUYBACK_OPERATOR, "Fee collector");
         assertEq((100 * uint256(etherFiARM.fee())) / FEE_SCALE, 20, "Performance fee as a percentage");
         assertEq(address(etherfiAssetAdapter.etherfiWithdrawalQueue()), Mainnet.ETHERFI_WITHDRAWAL, "withdrawal queue");
@@ -114,7 +114,7 @@ contract Fork_EtherFiARM_Smoke_Test is AbstractSmokeTest {
 
             expectedOut = amountIn * price / 1e36;
 
-            vm.prank(Mainnet.ARM_RELAYER);
+            vm.prank(Mainnet.ARM_TALOS_RELAYER);
             uint256 sellPrice = price < 0.9997e36 ? 0.99996e36 : price + 2e32;
             etherFiARM.setPrices(address(eeth), price, sellPrice, type(uint128).max, type(uint128).max);
         }
@@ -151,7 +151,7 @@ contract Fork_EtherFiARM_Smoke_Test is AbstractSmokeTest {
 
             expectedIn = amountOut * 1e36 / price + 3;
 
-            vm.prank(Mainnet.ARM_RELAYER);
+            vm.prank(Mainnet.ARM_TALOS_RELAYER);
             uint256 sellPrice = price < 0.9997e36 ? 0.99996e36 : price + 2e32;
             etherFiARM.setPrices(address(eeth), price, sellPrice, type(uint128).max, type(uint128).max);
         }
@@ -276,11 +276,11 @@ contract Fork_EtherFiARM_Smoke_Test is AbstractSmokeTest {
         uint256 marketBalanceBefore = morphoMarket.maxWithdraw(address(etherFiARM));
 
         // Set buffer to 0% so all liquidity goes to the lending market
-        vm.prank(Mainnet.ARM_RELAYER);
+        vm.prank(Mainnet.ARM_TALOS_RELAYER);
         etherFiARM.setARMBuffer(0);
 
         // Allocate liquidity to the lending market
-        vm.prank(Mainnet.ARM_RELAYER);
+        vm.prank(Mainnet.ARM_TALOS_RELAYER);
         (, int256 actualDelta) = etherFiARM.allocate();
 
         uint256 armWethAfter = weth.balanceOf(address(etherFiARM));
@@ -305,20 +305,20 @@ contract Fork_EtherFiARM_Smoke_Test is AbstractSmokeTest {
 
         // Deal WETH to the ARM and allocate to market with buffer at 0%
         deal(address(weth), address(etherFiARM), 100 ether);
-        vm.prank(Mainnet.ARM_RELAYER);
+        vm.prank(Mainnet.ARM_TALOS_RELAYER);
         etherFiARM.setARMBuffer(0);
-        vm.prank(Mainnet.ARM_RELAYER);
+        vm.prank(Mainnet.ARM_TALOS_RELAYER);
         etherFiARM.allocate();
 
         uint256 armWethBefore = weth.balanceOf(address(etherFiARM));
         uint256 marketBalanceBefore = morphoMarket.maxWithdraw(address(etherFiARM));
 
         // Set buffer to 100% so liquidity comes back from the lending market
-        vm.prank(Mainnet.ARM_RELAYER);
+        vm.prank(Mainnet.ARM_TALOS_RELAYER);
         etherFiARM.setARMBuffer(1e18);
 
         // Allocate liquidity from the lending market
-        vm.prank(Mainnet.ARM_RELAYER);
+        vm.prank(Mainnet.ARM_TALOS_RELAYER);
         (, int256 actualDelta) = etherFiARM.allocate();
 
         uint256 armWethAfter = weth.balanceOf(address(etherFiARM));

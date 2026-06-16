@@ -261,6 +261,18 @@
       "proposalId": "107456588163205703004763727598618132346480115183205972270610010610877561869240",
       "tsDeployment": 1780037867,
       "tsGovernance": 1781164307
+    },
+    {
+      "name": "029_SetTalosKMSOperatorScript",
+      "proposalId": "12986865731251129814295460769943611973912941096599758191915201739619928664693",
+      "tsDeployment": 1781035763,
+      "tsGovernance": 0
+    },
+    {
+      "name": "030_SetEthenaTalosKMSOperatorScript",
+      "proposalId": 1,
+      "tsDeployment": 1781035763,
+      "tsGovernance": 0
     }
   ]
 }
