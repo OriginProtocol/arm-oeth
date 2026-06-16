@@ -157,6 +157,22 @@ async function collectFees({ arm, signer }) {
   await logTxDetails(tx, "collectFees");
 }
 
+async function pauseARM({ arm, signer }) {
+  // Skip if the ARM is already paused
+  if (await arm.paused()) {
+    log("ARM is already paused");
+    return;
+  }
+
+  // Add 10% buffer to gas limit
+  let gasLimit = await arm.connect(signer).pause.estimateGas();
+  gasLimit = (gasLimit * 11n) / 10n;
+
+  log("About to pause the ARM");
+  const tx = await arm.connect(signer).pause({ gasLimit });
+  await logTxDetails(tx, "pause");
+}
+
 async function setARMBuffer({ arm, signer, buffer }) {
   if (buffer > 1) {
     throw new Error("Buffer value cannot be greater than 1");
@@ -223,6 +239,7 @@ async function setLiquidityProviderCaps({
 module.exports = {
   allocate,
   collectFees,
+  pauseARM,
   setARMBuffer,
   setLiquidityProviderCaps,
   setTotalAssetsCap,

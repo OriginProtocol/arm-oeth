@@ -296,6 +296,13 @@
   },
   {
     "type": "function",
+    "name": "checkNoLegacyWithdrawQueue",
+    "inputs": [],
+    "outputs": [],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "claimBaseAssetRedeem",
     "inputs": [
       {
@@ -596,13 +603,6 @@
   },
   {
     "type": "function",
-    "name": "migrateLegacyWithdrawQueue",
-    "inputs": [],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
     "name": "minSharesToRedeem",
     "inputs": [],
     "outputs": [
@@ -662,6 +662,26 @@
         "name": "",
         "type": "address",
         "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "pause",
+    "inputs": [],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "paused",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
       }
     ],
     "stateMutability": "view"
@@ -1194,6 +1214,13 @@
   },
   {
     "type": "function",
+    "name": "unpause",
+    "inputs": [],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
     "name": "withdrawalRequests",
     "inputs": [
       {
@@ -1556,6 +1583,19 @@
   },
   {
     "type": "event",
+    "name": "Paused",
+    "inputs": [
+      {
+        "name": "account",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
     "name": "RedeemClaimed",
     "inputs": [
       {
@@ -1679,6 +1719,49 @@
     "anonymous": false
   },
   {
+    "type": "event",
+    "name": "Unpaused",
+    "inputs": [
+      {
+        "name": "account",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "error",
+    "name": "AlreadyClaimed",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "AssetAlreadySupported",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "ClaimDelayNotMet",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "ContractPaused",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "CrossPriceTooHigh",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "CrossPriceTooLow",
+    "inputs": []
+  },
+  {
     "type": "error",
     "name": "ERC20InsufficientAllowance",
     "inputs": [
@@ -1766,12 +1849,107 @@
   },
   {
     "type": "error",
+    "name": "FeeTooHigh",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "Insolvent",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InvalidARMBuffer",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InvalidAdapter",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InvalidAdapterAsset",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InvalidAsset",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InvalidAssetDecimals",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InvalidBuyPrice",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InvalidFeeCollector",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "InvalidInitialization",
     "inputs": []
   },
   {
     "type": "error",
+    "name": "InvalidMarket",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InvalidMarketAsset",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "MarketActive",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "MarketAlreadySupported",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "MarketNotSupported",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "NotInitializing",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "NotRequesterOrOperator",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "OnlyOperatorOrOwner",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "OnlyOwner",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "QueuePendingLiquidity",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "ReentrancyGuardReentrantCall",
     "inputs": []
   },
   {
@@ -1811,5 +1989,25 @@
         "internalType": "uint256"
       }
     ]
+  },
+  {
+    "type": "error",
+    "name": "SellPriceTooLow",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "TooManyBaseAssets",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "UnsupportedAsset",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "ZeroShares",
+    "inputs": []
   }
 ]
