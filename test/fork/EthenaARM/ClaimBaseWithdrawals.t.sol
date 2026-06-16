@@ -16,39 +16,40 @@ contract Fork_Concrete_EthenaARM_ClaimBaseWithdrawals_Test_ is Fork_Shared_Test 
     //////////////////////////////////////////////////////
     function test_ClaimBaseWithdrawals_FirstRequest() public {
         vm.prank(operator);
-        ethenaARM.requestBaseWithdrawal(AMOUNT_IN);
+        ethenaARM.requestBaseAssetRedeem(address(susde), AMOUNT_IN);
 
-        uint256 amountOut = susde.convertToAssets(AMOUNT_IN);
-        uint8 unstakerIndex = ethenaARM.nextUnstakerIndex() - 1;
-        address unstakerAddress = ethenaARM.unstakers(unstakerIndex);
+        uint8 unstakerIndex = ethenaAssetAdapter.nextUnstakerIndex() - 1;
+        address unstakerAddress = ethenaAssetAdapter.unstakers(unstakerIndex);
         skip(7 days + 1);
+        uint256 shares = ethenaAssetAdapter.requestShares(unstakerAddress);
 
-        vm.expectEmit({emitter: address(ethenaARM)});
-        emit EthenaARM.ClaimBaseWithdrawals(unstakerAddress, amountOut);
-        ethenaARM.claimBaseWithdrawals(unstakerIndex);
+        vm.prank(operator);
+        ethenaARM.claimBaseAssetRedeem(address(susde), shares);
     }
 
     //////////////////////////////////////////////////////
     /// --- REVERT TESTS
     //////////////////////////////////////////////////////
     function test_RevertWhen_ClaimBaseWithdrawals_NoCooldownAmount() public {
-        vm.expectRevert("EthenaARM: No cooldown amount");
-        ethenaARM.claimBaseWithdrawals(0);
+        vm.expectRevert("Adapter: redeem exceeds claimable");
+        vm.prank(operator);
+        ethenaARM.claimBaseAssetRedeem(address(susde), AMOUNT_IN);
     }
 
     function test_RevertWhen_ClaimBaseWithdrawals_InvalidUnstakerIndex() public {
         address[42] memory emptyUnstakers;
         vm.prank(ethenaARM.owner());
-        ethenaARM.setUnstakers(emptyUnstakers);
+        ethenaAssetAdapter.setUnstakers(emptyUnstakers);
 
-        vm.expectRevert("EthenaARM: Invalid unstaker");
-        ethenaARM.claimBaseWithdrawals(0);
+        vm.expectRevert("Adapter: redeem exceeds claimable");
+        vm.prank(operator);
+        ethenaARM.claimBaseAssetRedeem(address(susde), AMOUNT_IN);
     }
 
     function test_RevertWhen_ClaimBaseWithdrawals_InvalidUnstaker() public {
         vm.prank(operator);
-        ethenaARM.requestBaseWithdrawal(AMOUNT_IN);
-        address unstaker = ethenaARM.unstakers(0);
+        ethenaARM.requestBaseAssetRedeem(address(susde), AMOUNT_IN);
+        address unstaker = ethenaAssetAdapter.unstakers(0);
         skip(7 days + 1);
         vm.expectRevert("Only ARM can request unstake");
         EthenaUnstaker(unstaker).claimUnstake();

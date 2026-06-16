@@ -3,6 +3,7 @@ import { types } from "hardhat/config";
 
 import { action } from "../lib/action";
 import { setPrices } from "../armPrices";
+import { setPricesForBases } from "../../utils/priceActionUtils";
 import { mainnet } from "../../utils/addresses";
 const ethenaARMAbi = require("../../../abis/EthenaARM.json");
 
@@ -80,22 +81,27 @@ action({
     const arm = new ethers.Contract(mainnet.ethenaARM, ethenaARMAbi, signer);
 
     log.info("Setting prices for Ethena ARM");
-    await setPrices({
-      signer,
-      arm,
-      maxSellPrice: args.maxSellPrice,
-      minSellPrice: args.minSellPrice,
-      maxBuyPrice: args.maxBuyPrice,
-      minBuyPrice: args.minBuyPrice,
-      kyber: args.kyber,
-      inch: args.inch,
-      amount: args.amount,
-      tolerance: args.tolerance,
-      fee: args.fee,
-      offset: args.offset,
-      priceOffset: true,
-      blockTag: "latest",
-      wrapped: true,
+    await setPricesForBases({
+      setPrices,
+      bases: ["SUSDE"],
+      options: {
+        signer,
+        arm,
+        armName: "Ethena",
+        maxSellPrice: args.maxSellPrice,
+        minSellPrice: args.minSellPrice,
+        maxBuyPrice: args.maxBuyPrice,
+        minBuyPrice: args.minBuyPrice,
+        kyber: args.kyber,
+        inch: args.inch,
+        amount: args.amount,
+        tolerance: args.tolerance,
+        fee: args.fee,
+        offset: args.offset,
+        priceOffset: true,
+        blockTag: "latest",
+        wrapped: true,
+      },
     });
   },
 });

@@ -3,6 +3,7 @@ import { types } from "hardhat/config";
 
 import { action } from "../lib/action";
 import { requestEthenaWithdrawals } from "../ethenaQueue";
+import { runForBases } from "../../utils/priceActionUtils";
 import { mainnet } from "../../utils/addresses";
 const erc20Abi = require("../../../abis/ERC20.json");
 const ethenaARMAbi = require("../../../abis/EthenaARM.json");
@@ -30,12 +31,18 @@ action({
     const arm = new ethers.Contract(mainnet.ethenaARM, ethenaARMAbi, signer);
 
     log.info("Requesting Ethena withdrawals");
-    await requestEthenaWithdrawals({
-      signer,
-      susde,
-      arm,
-      minAmount: args.minAmount,
-      thresholdAmount: args.thresholdAmount,
+    await runForBases({
+      bases: ["SUSDE"],
+      actionName: "Requesting withdrawals",
+      fn: requestEthenaWithdrawals,
+      options: {
+        signer,
+        susde,
+        arm,
+        armName: "Ethena",
+        minAmount: args.minAmount,
+        thresholdAmount: args.thresholdAmount,
+      },
     });
   },
 });

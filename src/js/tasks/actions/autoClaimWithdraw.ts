@@ -2,6 +2,7 @@ import { ethers } from "ethers";
 
 import { action } from "../lib/action";
 import { autoClaimWithdraw } from "../liquidityAutomation";
+import { runForBases } from "../../utils/priceActionUtils";
 import { mainnet } from "../../utils/addresses";
 const erc20Abi = require("../../../abis/ERC20.json");
 const oethARMAbi = require("../../../abis/OethARM.json");
@@ -21,12 +22,18 @@ action({
     const arm = new ethers.Contract(mainnet.OethARM, oethARMAbi, signer);
 
     log.info("Claiming withdrawals from OETH ARM");
-    await autoClaimWithdraw({
-      signer,
-      liquidityAsset,
-      arm,
-      vault,
-      confirm: true,
+    await runForBases({
+      bases: ["OETH", "WOETH"],
+      actionName: "Claiming withdrawals",
+      fn: autoClaimWithdraw,
+      options: {
+        signer,
+        liquidityAsset,
+        arm,
+        armName: "Oeth",
+        vault,
+        confirm: true,
+      },
     });
   },
 });

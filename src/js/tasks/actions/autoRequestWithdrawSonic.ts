@@ -3,6 +3,7 @@ import { types } from "hardhat/config";
 
 import { action } from "../lib/action";
 import { autoRequestWithdraw } from "../liquidityAutomation";
+import { runForBases } from "../../utils/priceActionUtils";
 import { sonic } from "../../utils/addresses";
 const armAbi = require("../../../abis/OriginARM.json");
 
@@ -28,11 +29,17 @@ action({
     const arm = new ethers.Contract(sonic.OriginARM, armAbi, signer);
 
     log.info("Requesting withdrawals from Origin ARM on Sonic");
-    await autoRequestWithdraw({
-      signer,
-      arm,
-      minAmount: args.minAmount,
-      thresholdAmount: args.thresholdAmount,
+    await runForBases({
+      bases: ["OS", "WOS"],
+      actionName: "Requesting withdrawals",
+      fn: autoRequestWithdraw,
+      options: {
+        signer,
+        arm,
+        armName: "Origin",
+        minAmount: args.minAmount,
+        thresholdAmount: args.thresholdAmount,
+      },
     });
   },
 });

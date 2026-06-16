@@ -2,6 +2,7 @@ import { ethers } from "ethers";
 
 import { action } from "../lib/action";
 import { claimLidoWithdrawals } from "../lidoQueue";
+import { runForBases } from "../../utils/priceActionUtils";
 import { mainnet } from "../../utils/addresses";
 const lidoARMAbi = require("../../../abis/LidoARM.json");
 const lidoWithdrawQueueAbi = require("../../../abis/LidoWithdrawQueue.json");
@@ -19,6 +20,16 @@ action({
     );
 
     log.info("Claiming Lido withdrawals");
-    await claimLidoWithdrawals({ signer, arm, withdrawalQueue });
+    await runForBases({
+      bases: ["STETH", "WSTETH"],
+      actionName: "Claiming withdrawals",
+      fn: claimLidoWithdrawals,
+      options: {
+        signer,
+        arm,
+        armName: "Lido",
+        withdrawalQueue,
+      },
+    });
   },
 });
