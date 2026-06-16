@@ -11,8 +11,14 @@ on:
   workflow_dispatch:
     # Manual trigger from GitHub UI
 
+# security/LOW: scope GITHUB_TOKEN to read-only and remove the
+# workflow-wide env export. Steps that genuinely need the token can
+# pass it explicitly via `env:` on that step. Smallest viable scope
+# for a read-mostly CI workflow.
+permissions:
+  contents: read
+
 env:
-  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   # Increase available memory for node to reduce ganache crashes
   # https://nodejs.org/api/cli.html#cli_max_old_space_size_size_in_megabytes
   NODE_OPTIONS: --max_old_space_size=4096
@@ -28,6 +34,8 @@ jobs:
     if: github.event_name != 'schedule'
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: Setup environment
         uses: ./.github/actions/setup
 
@@ -44,10 +52,13 @@ jobs:
     if: github.event_name != 'schedule'
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: Setup environment
         uses: ./.github/actions/setup
         with:
           install-pnpm: 'true'
+          ssh-key: ${{ secrets.TALOS_DEPLOY_KEY }}
 
       - name: Compile all contracts
         run: forge build
@@ -65,10 +76,13 @@ jobs:
     if: github.event_name != 'schedule'
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: Setup environment
         uses: ./.github/actions/setup
         with:
           install-pnpm: 'true'
+          ssh-key: ${{ secrets.TALOS_DEPLOY_KEY }}
 
       - name: Run unit tests
         run: forge test --summary --fail-fast --show-progress --mp 'test/unit/**'
@@ -82,10 +96,13 @@ jobs:
       SONIC_URL: ${{ secrets.SONIC_URL }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: Setup environment
         uses: ./.github/actions/setup
         with:
           install-pnpm: 'true'
+          ssh-key: ${{ secrets.TALOS_DEPLOY_KEY }}
 
       - name: Run fork tests
         run: forge test --summary --fail-fast --show-progress --mp 'test/fork/**'
@@ -99,10 +116,13 @@ jobs:
       SONIC_URL: ${{ secrets.SONIC_URL }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: Setup environment
         uses: ./.github/actions/setup
         with:
           install-pnpm: 'true'
+          ssh-key: ${{ secrets.TALOS_DEPLOY_KEY }}
 
       - name: Run smoke tests
         run: forge build && forge test --summary --fail-fast --show-progress --mp 'test/smoke/**'
@@ -121,6 +141,8 @@ jobs:
       FOUNDRY_PROFILE: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'ci' || 'lite' }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: Setup environment
         uses: ./.github/actions/setup
 
@@ -137,6 +159,8 @@ jobs:
       FOUNDRY_PROFILE: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'ci' || 'lite' }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: Setup environment
         uses: ./.github/actions/setup
 
@@ -153,6 +177,8 @@ jobs:
       FOUNDRY_PROFILE: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'ci' || 'lite' }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: Setup environment
         uses: ./.github/actions/setup
 

@@ -6,6 +6,7 @@
     "lint": "eslint \"src/**/*.js\"",
     "prettier": "prettier --write \"*.js\" \"src/js/**/*.js\" \"src/abis/**/*.json\"",
     "prettier:check": "prettier -c \"src/js/**/*.js\" \"src/abis/**/*.json\"",
+    "typecheck": "tsc --noEmit",
     "test": "forge test --fork-url=$MAINNET_URL --gas-report",
     "snap": "npx hardhat snap --network mainnet --amount 100"
   },
@@ -18,6 +19,7 @@
   "devDependencies": {
     "@apollo/client": "^3.11.4",
     "@ethersproject/providers": "^5.7.2",
+    "@lastdotnet/purrikey": "github:OriginProtocol/purrikey#3d10b79b567c52c0c37e630800dae6c7059bd9b8",
     "@nomicfoundation/hardhat-ethers": "3.0.7",
     "@nomicfoundation/hardhat-foundry": "^1.1.1",
     "@nomicfoundation/hardhat-network-helpers": "^1.0.10",
@@ -38,6 +40,16 @@
     "node-fetch": "^2.6.7",
     "prettier": "^3.6.2",
     "rollup": "^4.9.1",
-    "rollup-plugin-visualizer": "^5.12.0"
+    "rollup-plugin-visualizer": "^5.12.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.0"
+  },
+  "dependencies": {
+    "@talos/client": "github:oplabs/talos#6364ddc57f042529381f2abfff16da8403bf2223&path:packages/client"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@lastdotnet/purrikey"
+    ]
   }
 }

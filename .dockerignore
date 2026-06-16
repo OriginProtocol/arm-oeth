@@ -1,0 +1,21 @@
+# Foundry build artifacts
+out/
+cache/
+dependencies/
+
+# Git
+.git/
+
+# Node modules (rebuilt in Docker)
+node_modules/
+
+# Test and deploy scripts (not needed in actions container)
+test/
+script/
+src/contracts/
+
+# Misc
+.env
+.env.*
+coverage/
+lcov.info

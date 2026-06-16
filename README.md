@@ -293,6 +293,29 @@ yarn hardhat tenderlySync --network sonic
 yarn hardhat tenderlyUpload --network sonic --name ORIGIN_ARM
 ```
 
+## Automated Actions (Talos) 
+
+The `src/js/tasks/actions/*.ts` files are hardhat tasks that handle operational jobs (allocations, fee collection, withdrawal requests, etc.). In production they're driven by a container that imports [`@talos/client`](https://github.com/oplabs/talos):
+
+- **`runner.ts`** at repo root calls `runContainer({ product: "arm-oeth", workdir: "/app" })`. The library reads enabled schedules from the shared Talos Postgres, fires them via croner, and spawns each schedule's command as `pnpm hardhat <name> --network <chain>`.
+- **`migrations/seed_schedules.sql`** is a one-time seed of the `schedules` table mirroring the old `cron/cron-jobs.ts`.
+- **`src/js/tasks/lib/action.ts`** wraps the hardhat signer with `wrapSignerWithNonceQueueV6` from the library when `DATABASE_URL` is set. That routes `signer.sendTransaction` through Postgres row-locked nonce coordination.
+
+### Running actions locally
+
+Every action remains directly executable as a hardhat task on your dev machine:
+
+```bash
+pnpm hardhat allocateLido --network mainnet
+pnpm hardhat healthcheck
+```
+
+**No Postgres required.** The library's nonce queue is gated by `process.env.DATABASE_URL`: if unset, the action uses a raw ethers signer with the provider's default nonce handling — exactly the behavior you had before Automaton existed. The gate is a single check at the top of the handler; no DB connection is opened.
+
+If you opt in by setting `DATABASE_URL` (e.g., via `docker compose up`), the nonce queue engages and will try to connect to whatever that URL points at. `unset DATABASE_URL` to go back to the unwrapped path.
+
+Signer selection (`DEPLOYER_PRIVATE_KEY` → KMS via `KMS_RELAYER_ID` → `IMPERSONATE` → Defender → hardhat first signer) lives entirely in `src/js/utils/signers.ts` and is unchanged.
+
 ## Open Zeppelin Defender
 
 [Open Zeppelin Defender v2](https://docs.openzeppelin.com/defender/v2/) is used to manage the Operations account and automate AMM operational jobs like managing liquidity.
@@ -308,7 +331,7 @@ For this to work, a Defender Team API key with `Manage Actions` capabilities is 
 
 The following will set the Defender Team API key and bundle the Actions code ready for upload.
 
-```bash
+```bash 
 # Set the DEFENDER_TEAM_KEY and DEFENDER_TEAM_SECRET env vars in the .env file
 
 yarn rollup -c src/js/actions/rollup.config.cjs
