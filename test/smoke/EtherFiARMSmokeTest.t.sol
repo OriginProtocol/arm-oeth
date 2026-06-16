@@ -104,7 +104,7 @@ contract Fork_EtherFiARM_Smoke_Test is AbstractSmokeTest {
 
             expectedOut = amountIn * 1e36 / price;
 
-            vm.prank(Mainnet.ARM_RELAYER);
+            vm.prank(Mainnet.ARM_TALOS_RELAYER);
             etherFiARM.setPrices(address(eeth), price - 2e32, price, type(uint128).max, type(uint128).max);
         } else {
             // Trader is selling eETH and buying WETH
@@ -140,7 +140,7 @@ contract Fork_EtherFiARM_Smoke_Test is AbstractSmokeTest {
 
             expectedIn = amountOut * price / 1e36;
 
-            vm.prank(Mainnet.ARM_RELAYER);
+            vm.prank(Mainnet.ARM_TALOS_RELAYER);
             etherFiARM.setPrices(address(eeth), price - 2e32, price, type(uint128).max, type(uint128).max);
         } else {
             // Trader is selling eETH and buying WETH
@@ -215,7 +215,7 @@ contract Fork_EtherFiARM_Smoke_Test is AbstractSmokeTest {
         _swapExactTokensForTokens(eeth, weth, 0.9996e36, 100 ether);
 
         // Operator requests an Ether.fi withdrawal
-        vm.prank(Mainnet.ARM_RELAYER);
+        vm.prank(Mainnet.ARM_TALOS_RELAYER);
         etherFiARM.requestBaseAssetRedeem(address(eeth), 10 ether);
 
         uint256 requestId = etherfiAssetAdapter.pendingRequestId(0);
@@ -252,7 +252,7 @@ contract Fork_EtherFiARM_Smoke_Test is AbstractSmokeTest {
         etherfiWithdrawalNFT.finalizeRequests(requestId);
 
         // Claim the withdrawal
-        vm.prank(Mainnet.ARM_RELAYER);
+        vm.prank(Mainnet.ARM_TALOS_RELAYER);
         etherFiARM.claimBaseAssetRedeem(address(eeth), 10 ether);
     }
 

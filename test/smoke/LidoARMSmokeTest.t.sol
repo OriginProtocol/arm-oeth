@@ -102,7 +102,7 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
 
             expectedOut = amountIn * 1e36 / price;
 
-            vm.prank(Mainnet.ARM_RELAYER);
+            vm.prank(Mainnet.ARM_TALOS_RELAYER);
             lidoARM.setPrices(address(steth), price - 2e32, price, type(uint128).max, type(uint128).max);
         } else {
             // Trader is selling stETH and buying WETH
@@ -138,7 +138,7 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
 
             expectedIn = amountOut * price / 1e36;
 
-            vm.prank(Mainnet.ARM_RELAYER);
+            vm.prank(Mainnet.ARM_TALOS_RELAYER);
             lidoARM.setPrices(address(steth), price - 2e32, price, type(uint128).max, type(uint128).max);
         } else {
             // Trader is selling stETH and buying WETH
