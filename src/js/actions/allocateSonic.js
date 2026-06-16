@@ -21,13 +21,18 @@ const handler = async (event) => {
 
   // References to contracts
   const arm = new ethers.Contract(sonic.OriginARM, armAbi, signer);
+  const armConfig = {
+    // Pre-upgrade Sonic can be pinned to v1; omit this after upgrade for auto-detect.
+    armContractVersion: "v1",
+    // armContractVersion: "v2",
+  };
 
   await allocate({
     signer,
     arm,
+    ...armConfig,
     threshold: 10000,
     maxGasPrice: 500,
-    armContractVersion: "v1",
   });
 };
 

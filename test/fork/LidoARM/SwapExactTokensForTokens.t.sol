@@ -36,8 +36,8 @@ contract Fork_Concrete_LidoARM_SwapExactTokensForTokens_Test is Fork_Shared_Test
     /// --- REVERTING TESTS
     //////////////////////////////////////////////////////
     function test_RevertWhen_SwapExactTokensForTokens_Because_InvalidTokenOut1() public {
-        lidoARM.token0();
-        vm.expectRevert("ARM: Invalid out token");
+        IERC20(lidoARM.liquidityAsset());
+        vm.expectRevert("ARM: Invalid swap assets");
         lidoARM.swapExactTokensForTokens(
             steth, // inToken
             badToken, // outToken
@@ -48,7 +48,7 @@ contract Fork_Concrete_LidoARM_SwapExactTokensForTokens_Test is Fork_Shared_Test
     }
 
     function test_RevertWhen_SwapExactTokensForTokens_Because_InvalidTokenOut0() public {
-        vm.expectRevert("ARM: Invalid out token");
+        vm.expectRevert("ARM: Invalid swap assets");
         lidoARM.swapExactTokensForTokens(
             weth, // inToken
             badToken, // outToken
@@ -59,7 +59,7 @@ contract Fork_Concrete_LidoARM_SwapExactTokensForTokens_Test is Fork_Shared_Test
     }
 
     function test_RevertWhen_SwapExactTokensForTokens_Because_InvalidTokenIn() public {
-        vm.expectRevert("ARM: Invalid in token");
+        vm.expectRevert("ARM: Invalid swap assets");
         lidoARM.swapExactTokensForTokens(
             badToken, // inToken
             steth, // outToken
@@ -70,7 +70,7 @@ contract Fork_Concrete_LidoARM_SwapExactTokensForTokens_Test is Fork_Shared_Test
     }
 
     function test_RevertWhen_SwapExactTokensForTokens_Because_BothInvalidTokens() public {
-        vm.expectRevert("ARM: Invalid in token");
+        vm.expectRevert("ARM: Invalid swap assets");
         lidoARM.swapExactTokensForTokens(
             badToken, // inToken
             badToken, // outToken
@@ -107,7 +107,7 @@ contract Fork_Concrete_LidoARM_SwapExactTokensForTokens_Test is Fork_Shared_Test
         uint256 initialBalance = steth.balanceOf(address(lidoARM));
         deal(address(weth), address(this), initialBalance * 2);
 
-        vm.expectRevert("BALANCE_EXCEEDED"); // Lido error
+        vm.expectRevert("ARM: Insufficient liquidity");
         lidoARM.swapExactTokensForTokens(
             weth, // inToken
             steth, // outToken
@@ -218,7 +218,7 @@ contract Fork_Concrete_LidoARM_SwapExactTokensForTokens_Test is Fork_Shared_Test
         uint256 balanceSTETHBeforeARM = steth.balanceOf(address(lidoARM));
 
         // Get minimum amount of stETH to receive
-        uint256 traderates0 = lidoARM.traderate0();
+        uint256 traderates0 = (PRICE_SCALE * PRICE_SCALE / _lidoSellPrice());
         uint256 minAmount = amountIn * traderates0 / 1e36;
 
         // Expected events: Already checked in fuzz tests
@@ -265,7 +265,7 @@ contract Fork_Concrete_LidoARM_SwapExactTokensForTokens_Test is Fork_Shared_Test
         uint256 balanceSTETHBeforeARM = steth.balanceOf(address(lidoARM));
 
         // Get minimum amount of WETH to receive
-        uint256 traderates1 = lidoARM.traderate1();
+        uint256 traderates1 = _lidoBuyPrice();
         uint256 minAmount = amountIn * traderates1 / 1e36;
 
         // Expected events: Already checked in fuzz tests
@@ -348,8 +348,8 @@ contract Fork_Concrete_LidoARM_SwapExactTokensForTokens_Test is Fork_Shared_Test
         // Use random stETH/WETH sell price between 1 and 1.02,
         // the buy price doesn't matter as it is not used in this test.
         price = _bound(price, MIN_PRICE1, MAX_PRICE1);
-        lidoARM.setCrossPrice(1e36);
-        lidoARM.setPrices(MIN_PRICE0, price);
+        lidoARM.setCrossPrice(address(steth), 1e36);
+        lidoARM.setPrices(address(steth), MIN_PRICE0, price, type(uint128).max, type(uint128).max);
 
         // Set random amount of stETH in the ARM
         stethReserveGrowth = _bound(stethReserveGrowth, 0, INITIAL_BALANCE / 100);
@@ -429,7 +429,7 @@ contract Fork_Concrete_LidoARM_SwapExactTokensForTokens_Test is Fork_Shared_Test
         // Use random stETH/WETH buy price between MIN_PRICE0 and MAX_PRICE0,
         // the sell price doesn't matter as it is not used in this test.
         price = _bound(price, MIN_PRICE0, MAX_PRICE0);
-        lidoARM.setPrices(price, MAX_PRICE1);
+        lidoARM.setPrices(address(steth), price, MAX_PRICE1, type(uint128).max, type(uint128).max);
 
         // Set random amount of WETH growth in the ARM
         wethReserveGrowth = _bound(wethReserveGrowth, 0, INITIAL_BALANCE / 100);

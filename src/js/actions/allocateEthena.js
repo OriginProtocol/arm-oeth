@@ -21,10 +21,16 @@ const handler = async (event) => {
 
   // References to contracts
   const arm = new ethers.Contract(mainnet.ethenaARM, armAbi, signer);
+  const armConfig = {
+    // Pre-upgrade default: omit armContractVersion so allocation auto-detects.
+    // Post-upgrade: keep omitted, or temporarily pin "v2" while rolling out.
+    // armContractVersion: "v2",
+  };
 
   await allocate({
     signer,
     arm,
+    ...armConfig,
     threshold: 5000,
     maxGasPrice: 5,
   });

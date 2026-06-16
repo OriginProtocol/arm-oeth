@@ -2,6 +2,7 @@ const { Defender } = require("@openzeppelin/defender-sdk");
 const { ethers } = require("ethers");
 
 const { requestEthenaWithdrawals } = require("../tasks/ethenaQueue");
+const { runForBases } = require("./priceActionUtils");
 const { mainnet } = require("../utils/addresses");
 const erc20Abi = require("../../abis/ERC20.json");
 const ethenaARMAbi = require("../../abis/EthenaARM.json");
@@ -24,12 +25,18 @@ const handler = async (event) => {
   const susde = new ethers.Contract(mainnet.sUSDe, erc20Abi, signer);
   const arm = new ethers.Contract(mainnet.ethenaARM, ethenaARMAbi, signer);
 
-  await requestEthenaWithdrawals({
-    signer,
-    susde,
-    arm,
-    minAmount: "100",
-    thresholdAmount: 1000,
+  await runForBases({
+    bases: ["SUSDE"],
+    actionName: "Requesting withdrawals",
+    fn: requestEthenaWithdrawals,
+    options: {
+      signer,
+      susde,
+      arm,
+      armName: "Ethena",
+      minAmount: "100",
+      thresholdAmount: 1000,
+    },
   });
 };
 

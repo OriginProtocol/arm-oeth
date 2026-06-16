@@ -2,6 +2,7 @@ const { Defender } = require("@openzeppelin/defender-sdk");
 const { ethers } = require("ethers");
 
 const { setPrices } = require("../tasks/armPrices");
+const { setPricesForBases } = require("./priceActionUtils");
 const { mainnet } = require("../utils/addresses");
 const lidoARMAbi = require("../../abis/LidoARM.json");
 
@@ -22,24 +23,29 @@ const handler = async (event) => {
   // References to contracts
   const arm = new ethers.Contract(mainnet.lidoARM, lidoARMAbi, signer);
 
-  await setPrices({
-    signer,
-    arm,
-    // sellPrice: 0.9998,
-    // buyPrice: 0.9997,
-    maxSellPrice: 1.0,
-    minSellPrice: 0.9999,
-    maxBuyPrice: 0.999,
-    minBuyPrice: 0.998,
-    // inch: true,
-    // curve: true,
-    kyber: true,
-    amount: 100,
-    tolerance: 0.1,
-    fee: 0.5,
-    offset: 0.1,
-    priceOffset: true,
-    blockTag: "latest",
+  await setPricesForBases({
+    setPrices,
+    bases: ["STETH", "WSTETH"],
+    options: {
+      signer,
+      arm,
+      armName: "Lido",
+      // sellPrice: 0.9998,
+      // buyPrice: 0.9997,
+      maxSellPrice: 1.0,
+      minSellPrice: 0.9999,
+      maxBuyPrice: 0.999,
+      minBuyPrice: 0.998,
+      // inch: true,
+      // curve: true,
+      kyber: true,
+      amount: 100,
+      tolerance: 0.1,
+      fee: 0.5,
+      offset: 0.1,
+      priceOffset: true,
+      blockTag: "latest",
+    },
   });
 };
 

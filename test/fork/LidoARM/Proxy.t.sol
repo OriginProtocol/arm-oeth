@@ -25,16 +25,16 @@ contract Fork_Concrete_LidoARM_Proxy_Test_ is Fork_Shared_Test_ {
     //////////////////////////////////////////////////////
     function test_RevertWhen_UnauthorizedAccess() public {
         vm.startPrank(address(0x123));
-        vm.expectRevert("ARM: Only owner can call this function.");
+        vm.expectRevert(bytes4(keccak256("OnlyOwner()")));
         lidoProxy.setOwner(deployer);
 
-        vm.expectRevert("ARM: Only owner can call this function.");
+        vm.expectRevert(bytes4(keccak256("OnlyOwner()")));
         lidoProxy.initialize(address(this), address(this), "");
 
-        vm.expectRevert("ARM: Only owner can call this function.");
+        vm.expectRevert(bytes4(keccak256("OnlyOwner()")));
         lidoProxy.upgradeTo(address(this));
 
-        vm.expectRevert("ARM: Only owner can call this function.");
+        vm.expectRevert(bytes4(keccak256("OnlyOwner()")));
         lidoProxy.upgradeToAndCall(address(this), "");
         vm.stopPrank();
     }
@@ -46,7 +46,7 @@ contract Fork_Concrete_LidoARM_Proxy_Test_ is Fork_Shared_Test_ {
         address owner = Mainnet.TIMELOCK;
 
         // Deploy new implementation
-        LidoARM newImplementation = new LidoARM(Mainnet.STETH, Mainnet.WETH, Mainnet.OETH_VAULT, 10 minutes, 0, 0);
+        LidoARM newImplementation = new LidoARM(Mainnet.WETH, 10 minutes, 0, 0);
         lidoProxy.upgradeTo(address(newImplementation));
         assertEq(lidoProxy.implementation(), address(newImplementation));
 
@@ -55,15 +55,15 @@ contract Fork_Concrete_LidoARM_Proxy_Test_ is Fork_Shared_Test_ {
         assertEq(lidoARM.owner(), owner);
 
         // Ensure the storage was preserved through the upgrade.
-        assertEq(address(lidoARM.token0()), Mainnet.WETH);
-        assertEq(address(lidoARM.token1()), Mainnet.STETH);
+        assertEq(lidoARM.liquidityAsset(), Mainnet.WETH);
+        assertEq(address(steth), Mainnet.STETH);
     }
 
     function test_UpgradeAndCall() public asLidoARMOwner {
         address owner = Mainnet.TIMELOCK;
 
         // Deploy new implementation
-        LidoARM newImplementation = new LidoARM(Mainnet.STETH, Mainnet.WETH, Mainnet.OETH_VAULT, 10 minutes, 0, 0);
+        LidoARM newImplementation = new LidoARM(Mainnet.WETH, 10 minutes, 0, 0);
         bytes memory data = abi.encodeWithSignature("setOperator(address)", address(0x123));
 
         lidoProxy.upgradeToAndCall(address(newImplementation), data);

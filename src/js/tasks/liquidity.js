@@ -4,7 +4,6 @@ const utc = require("dayjs/plugin/utc");
 
 const { getBlock } = require("../utils/block");
 const { resolveArmContract } = require("../utils/addressParser");
-const { outstandingWithdrawalAmount } = require("../utils/armQueue");
 const { logWithdrawalRequests } = require("../utils/etherFi");
 const {
   logArmPrices,
@@ -16,29 +15,61 @@ const { getMerklRewards } = require("../utils/merkl");
 const { convertToAsset } = require("../utils/pricing");
 const { logTxDetails } = require("../utils/txLogger");
 const { getSigner } = require("../utils/signers");
+const {
+  adapterContract,
+  claimBaseAssetWithdrawal,
+  getArmBuffer,
+  requestBaseAssetWithdrawal,
+  resolveArmBase,
+} = require("../utils/arm");
 
 const log = require("../utils/logger")("task:liquidity");
 
 // Extend Day.js with the UTC plugin
 dayjs.extend(utc);
 
-const requestWithdraw = async ({ amount, signer, arm }) => {
+const requestWithdraw = async ({ amount, signer, arm, armName, base }) => {
   const amountBI = parseUnits(amount.toString(), 18);
+  const baseContext = await resolveArmBase({
+    arm,
+    armName,
+    base,
+  });
+  const { baseSymbol } = baseContext;
 
-  log(`About to request ${amount} oToken withdrawal`);
+  log(`About to request ${amount} ${baseSymbol} withdrawal`);
 
-  const tx = await arm.connect(signer).requestOriginWithdrawal(amountBI);
+  const tx = await requestBaseAssetWithdrawal({
+    baseContext,
+    signer,
+    amount: amountBI,
+  });
 
-  await logTxDetails(tx, "requestOriginWithdrawal");
+  await logTxDetails(tx, "requestRedeem");
 
   // TODO parse the request id from the WithdrawalRequested event on the OETH Vault
 };
 
-const claimWithdraw = async ({ id, signer, arm }) => {
-  const tx = await arm.connect(signer).claimOriginWithdrawals([id]);
+const claimWithdraw = async ({ id, signer, arm, armName, base }) => {
+  const baseContext = await resolveArmBase({
+    arm,
+    armName,
+    base,
+  });
+  let shares = 0n;
+  if (baseContext.version !== "legacy") {
+    const adapter = await adapterContract(baseContext.config.adapter, signer);
+    shares = await adapter["requestShares(uint256)"](id);
+  }
+  const tx = await claimBaseAssetWithdrawal({
+    baseContext,
+    signer,
+    shares,
+    requestIds: [id],
+  });
 
   log(`About to claim withdrawal request ${id}`);
-  await logTxDetails(tx, "claimOriginWithdrawals");
+  await logTxDetails(tx, "claimRedeem");
 };
 
 const withdrawRequestStatus = async ({ id, arm, vault }) => {
@@ -65,6 +96,7 @@ const snap = async ({
   oneInch,
   kyber,
   route,
+  base,
 }) => {
   const armContract = await resolveArmContract(arm);
 
@@ -72,7 +104,7 @@ const snap = async ({
 
   const blockTag = await getBlock(block);
 
-  const { liquidityBalance } = await logLiquidity({ arm, block });
+  const { liquidityBalance } = await logLiquidity({ arm, block, base });
 
   if (arm === "EtherFi") {
     await logWithdrawalRequests({ blockTag });
@@ -80,21 +112,30 @@ const snap = async ({
 
   await logWithdrawalQueue(armContract, blockTag, liquidityBalance);
 
-  const armPrices = await logArmPrices({ block, gas, days }, armContract);
+  const baseContext = await resolveArmBase({
+    arm: armContract,
+    armName: arm,
+    base,
+    blockTag,
+  });
+  const armPrices = await logArmPrices(
+    { block, blockTag, gas, days, ...baseContext },
+    armContract,
+  );
 
   const pair =
     arm === "Lido"
-      ? "stETH/WETH"
+      ? `${baseContext.baseSymbol}/WETH`
       : arm === "EtherFi"
-        ? "eETH/WETH"
+        ? `${baseContext.baseSymbol}/WETH`
         : arm === "Ethena"
-          ? "sUSDe/USDe"
+          ? `${baseContext.baseSymbol}/USDe`
           : arm == "Origin" && chainId === 146
-            ? "OS/wS"
-            : "OETH/WETH";
+            ? `${baseContext.baseSymbol}/wS`
+            : `${baseContext.baseSymbol}/WETH`;
   const assets = {
-    liquid: await armContract.liquidityAsset(),
-    base: await armContract.baseAsset(),
+    liquid: baseContext.liquidityAddress,
+    base: baseContext.baseAddress,
   };
 
   let wrapPrice;
@@ -134,7 +175,7 @@ const snap = async ({
   }
 };
 
-const logLiquidity = async ({ block, arm }) => {
+const logLiquidity = async ({ block, arm, base }) => {
   const blockTag = await getBlock(block);
   console.log(`\nLiquidity`);
 
@@ -151,34 +192,28 @@ const logLiquidity = async ({ block, arm }) => {
     blockTag,
   });
 
-  const baseAddress = await armContract.baseAsset();
+  const { baseAddress, baseSymbol, config } = await resolveArmBase({
+    arm: armContract,
+    armName: arm,
+    base,
+    blockTag,
+  });
   const baseAsset = await ethers.getContractAt("IERC20Metadata", baseAddress);
-  const baseSymbol = await baseAsset.symbol();
   const baseBalance = await baseAsset.balanceOf(armAddress, { blockTag });
+  const baseBalanceAssets = config.peggedToLiquidityAsset
+    ? baseBalance
+    : config.adapter === ethers.ZeroAddress
+      ? await (
+          await ethers.getContractAt(
+            ["function convertToAssets(uint256) view returns (uint256)"],
+            baseAddress,
+          )
+        ).convertToAssets(baseBalance, { blockTag })
+      : await (
+          await adapterContract(config.adapter, armContract.runner)
+        ).convertToAssets(baseBalance);
 
-  // TODO need to make this more generic
-  let baseWithdraws = 0n;
-  if (arm === "Oeth") {
-    baseWithdraws = await outstandingWithdrawalAmount({
-      withdrawer: armAddress,
-    });
-  } else if (arm === "Lido") {
-    baseWithdraws = await armContract.lidoWithdrawalQueueAmount({
-      blockTag,
-    });
-  } else if (arm === "EtherFi") {
-    baseWithdraws = await armContract.etherfiWithdrawalQueueAmount({
-      blockTag,
-    });
-  } else if (arm === "Origin") {
-    baseWithdraws = await armContract.vaultWithdrawalAmount({
-      blockTag,
-    });
-  } else if (arm === "Ethena") {
-    baseWithdraws = await armContract.liquidityAmountInCooldown({
-      blockTag,
-    });
-  }
+  const baseWithdraws = config.pendingRedeemAssets;
 
   let lendingMarketBalance = 0n;
   let lendingMarketRedeemableBalance = 0n;
@@ -188,31 +223,33 @@ const logLiquidity = async ({ block, arm }) => {
   if (arm !== "Oeth") {
     // Get the lending market from the active SiloMarket
     const marketAddress = await armContract.activeMarket({ blockTag });
-    const market = await ethers.getContractAt(
-      "Abstract4626MarketWrapper",
-      marketAddress,
-    );
-    const armShares = await market.balanceOf(armAddress, { blockTag });
-    lendingMarketBalance = await market.convertToAssets(armShares, {
-      blockTag,
-    });
-    lendingMarketRedeemableBalance = await market.previewRedeem(armShares, {
-      blockTag,
-    });
-    lendingMarketMaxWithdraw = await market.maxWithdraw(armAddress, {
-      blockTag,
-    });
-
-    if (arm !== "Ethena") {
-      const { amount } = await getMerklRewards({
-        userAddress: marketAddress,
+    if (marketAddress !== ethers.ZeroAddress) {
+      const market = await ethers.getContractAt(
+        "Abstract4626MarketWrapper",
+        marketAddress,
+      );
+      const armShares = await market.balanceOf(armAddress, { blockTag });
+      lendingMarketBalance = await market.convertToAssets(armShares, {
+        blockTag,
       });
-      morphoRewards = amount;
+      lendingMarketRedeemableBalance = await market.previewRedeem(armShares, {
+        blockTag,
+      });
+      lendingMarketMaxWithdraw = await market.maxWithdraw(armAddress, {
+        blockTag,
+      });
+
+      if (arm !== "Ethena") {
+        const { amount } = await getMerklRewards({
+          userAddress: marketAddress,
+        });
+        morphoRewards = amount;
+      }
     }
   }
 
   const total =
-    liquidityBalance + baseBalance + baseWithdraws + lendingMarketBalance;
+    liquidityBalance + baseBalanceAssets + baseWithdraws + lendingMarketBalance;
   const liquidityPercent = total == 0 ? 0 : (liquidityBalance * 10000n) / total;
   const baseWithdrawsPercent =
     total == 0 ? 0 : (baseWithdraws * 10000n) / total;
@@ -226,7 +263,7 @@ const logLiquidity = async ({ block, arm }) => {
     blockTag,
   });
   const accruedFees = await armContract.feesAccrued({ blockTag });
-  const buffer = await armContract.armBuffer({ blockTag });
+  const buffer = await getArmBuffer(armContract, blockTag);
   const bufferPercent = (buffer * 10000n) / parseUnits("1");
   const lendingMarketLiquidityShortfall =
     lendingMarketBalance - lendingMarketRedeemableBalance;

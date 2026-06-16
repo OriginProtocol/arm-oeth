@@ -3,6 +3,12 @@ const dayjs = require("dayjs");
 const utc = require("dayjs/plugin/utc");
 
 const { claimableRequests } = require("../utils/armQueue");
+const {
+  adapterContract,
+  claimBaseAssetWithdrawal,
+  requestBaseAssetWithdrawal,
+  resolveArmBase,
+} = require("../utils/arm");
 const { logTxDetails } = require("../utils/txLogger");
 
 const log = require("../utils/logger")("task:liquidity");
@@ -11,7 +17,9 @@ const log = require("../utils/logger")("task:liquidity");
 dayjs.extend(utc);
 
 const autoRequestWithdraw = async (options) => {
-  const { amount, arm, signer } = options;
+  const { amount, signer } = options;
+  const baseContext = await resolveArmBase(options);
+  const { baseSymbol } = baseContext;
 
   const withdrawAmount = amount
     ? parseUnits(amount.toString())
@@ -19,20 +27,32 @@ const autoRequestWithdraw = async (options) => {
   if (!withdrawAmount || withdrawAmount === 0n) return;
 
   log(
-    `About to request withdrawal of ${formatUnits(withdrawAmount)} base assets`,
+    `About to request withdrawal of ${formatUnits(withdrawAmount)} ${baseSymbol}`,
   );
 
-  const tx = await arm.connect(signer).requestOriginWithdrawal(withdrawAmount);
-  await logTxDetails(tx, "requestOriginWithdrawal");
+  const tx = await requestBaseAssetWithdrawal({
+    baseContext,
+    signer,
+    amount: withdrawAmount,
+  });
+  await logTxDetails(tx, "requestRedeem");
 };
 
 const autoClaimWithdraw = async ({
   signer,
   liquidityAsset,
   arm,
+  armName,
+  base,
   vault,
   confirm,
 }) => {
+  const baseContext = await resolveArmBase({ arm, armName, base });
+  const { config } = baseContext;
+  const adapter =
+    baseContext.version === "legacy"
+      ? undefined
+      : await adapterContract(config.adapter, signer);
   const liquiditySymbol = await liquidityAsset.symbol();
   // Get amount of requests that have already been claimed
   const { claimed } = await vault.withdrawalQueueMetadata();
@@ -59,7 +79,10 @@ const autoClaimWithdraw = async ({
 
   // get claimable withdrawal requests
   let requestIds = await claimableRequests({
-    withdrawer: await arm.getAddress(),
+    withdrawer:
+      baseContext.version === "legacy"
+        ? await arm.getAddress()
+        : config.adapter,
     queuedAmountClaimable,
     claimCutoff,
   });
@@ -71,23 +94,36 @@ const autoClaimWithdraw = async ({
 
   log(`About to claim requests: ${requestIds} `);
 
-  const tx = await arm.connect(signer).claimOriginWithdrawals(requestIds);
-  await logTxDetails(tx, "claimOriginWithdrawals", confirm);
+  let shares = 0n;
+  if (baseContext.version !== "legacy") {
+    for (const requestId of requestIds) {
+      shares += await adapter["requestShares(uint256)"](requestId);
+    }
+  }
+
+  const tx = await claimBaseAssetWithdrawal({
+    baseContext,
+    signer,
+    shares,
+    requestIds,
+  });
+  await logTxDetails(tx, "claimRedeem", confirm);
 
   return requestIds;
 };
 
 const baseWithdrawAmount = async (options) => {
   const { signer, arm, thresholdAmount, minAmount = "0.03" } = options;
+  const { baseAddress, baseSymbol } = await resolveArmBase(options);
 
   // Withdrawal amount is base assets in ARM if not specified
   const baseAsset = new ethers.Contract(
-    await arm.baseAsset(),
+    baseAddress,
     ["function balanceOf(address) external view returns (uint256)"],
     signer,
   );
   const withdrawAmount = await baseAsset.balanceOf(await arm.getAddress());
-  log(`${formatUnits(withdrawAmount)} withdraw amount`);
+  log(`${formatUnits(withdrawAmount)} ${baseSymbol} withdraw amount`);
 
   // Exit if less than the minimum withdrawal amount
   const minAmountBI = parseUnits(minAmount.toString(), 18);

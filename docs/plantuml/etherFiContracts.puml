@@ -8,8 +8,8 @@
 
 ' legend
 ' blue - Origin
-' ' green - new
-' ' orange - changed
+' green - new
+' orange - changed
 ' white - 3rd Party
 ' end legend
 
@@ -21,7 +21,22 @@ object "ZapperARM" as zap <<Origin>> #$originColor {
 
 object "EtherFiARM" as arm <<Origin>><<Proxy>> #$originColor {
     shares: ARM-eETH-WETH
-    assets: eETH, WETH
+    liquidity asset: WETH
+    base assets: eETH, weETH
+}
+
+object "EtherFiAssetAdapter" as eethAdapter <<Origin>><<Proxy>> #$originColor {
+    base asset: eETH
+    pegged: true
+}
+
+object "WeETHAssetAdapter" as weethAdapter <<Origin>><<Proxy>> #$originColor {
+    base asset: weETH
+    wrapped asset: eETH
+}
+
+object "weETH" as weeth <<EtherFi>> #$thirdPartyColor {
+    asset: eETH
 }
 
 object "CapManager" as capMan <<Origin>><<Proxy>> #$originColor {
@@ -43,8 +58,13 @@ object "Yearn WETH ARM Vault" as morpho <<Morpho>> #$thirdPartyColor {
 
 zap ..> arm
 arm <.> capMan
-arm ...> rm
-arm ...> wq
+arm ..> eethAdapter
+arm ..> weethAdapter
+eethAdapter ...> rm
+eethAdapter ...> wq
+weethAdapter ..> weeth
+weethAdapter ...> rm
+weethAdapter ...> wq
 arm ..> morphoMarket
 morphoMarket ..> morpho
 

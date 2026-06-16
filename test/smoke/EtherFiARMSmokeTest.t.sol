@@ -5,6 +5,7 @@ import {AbstractSmokeTest} from "./AbstractSmokeTest.sol";
 
 import {IERC20, IERC4626, IEETHWithdrawalNFT} from "contracts/Interfaces.sol";
 import {EtherFiARM} from "contracts/EtherFiARM.sol";
+import {EtherFiAssetAdapter} from "contracts/adapters/EtherFiAssetAdapter.sol";
 import {CapManager} from "contracts/CapManager.sol";
 import {Proxy} from "contracts/Proxy.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
@@ -16,6 +17,7 @@ contract Fork_EtherFiARM_Smoke_Test is AbstractSmokeTest {
     IERC20 eeth;
     Proxy armProxy;
     EtherFiARM etherFiARM;
+    EtherFiAssetAdapter etherfiAssetAdapter;
     CapManager capManager;
     IEETHWithdrawalNFT etherfiWithdrawalNFT;
     IERC4626 morphoMarket;
@@ -25,7 +27,7 @@ contract Fork_EtherFiARM_Smoke_Test is AbstractSmokeTest {
         super.setUp();
         weth = IERC20(Mainnet.WETH);
         eeth = IERC20(Mainnet.EETH);
-        operator = Mainnet.ARM_RELAYER;
+        operator = Mainnet.ARM_TALOS_RELAYER;
 
         vm.label(address(weth), "WETH");
         vm.label(address(eeth), "eETH");
@@ -33,6 +35,7 @@ contract Fork_EtherFiARM_Smoke_Test is AbstractSmokeTest {
 
         armProxy = Proxy(payable(resolver.resolve("ETHER_FI_ARM")));
         etherFiARM = EtherFiARM(payable(resolver.resolve("ETHER_FI_ARM")));
+        etherfiAssetAdapter = EtherFiAssetAdapter(payable(resolver.resolve("ETHER_FI_ARM_EETH_ADAPTER")));
         capManager = CapManager(resolver.resolve("ETHER_FI_ARM_CAP_MAN"));
         etherfiWithdrawalNFT = IEETHWithdrawalNFT(Mainnet.ETHERFI_WITHDRAWAL_NFT);
         morphoMarket = IERC4626(resolver.resolve("MORPHO_MARKET_ETHERFI"));
@@ -45,17 +48,16 @@ contract Fork_EtherFiARM_Smoke_Test is AbstractSmokeTest {
         assertEq(etherFiARM.name(), "Ether.fi ARM", "Name");
         assertEq(etherFiARM.symbol(), "ARM-WETH-eETH", "Symbol");
         assertEq(etherFiARM.owner(), Mainnet.TIMELOCK, "Owner");
-        assertEq(etherFiARM.operator(), Mainnet.ARM_RELAYER, "Operator");
+        assertEq(etherFiARM.operator(), Mainnet.ARM_TALOS_RELAYER, "Operator");
         assertEq(etherFiARM.feeCollector(), Mainnet.BUYBACK_OPERATOR, "Fee collector");
-        assertEq((100 * uint256(etherFiARM.fee())) / etherFiARM.FEE_SCALE(), 20, "Performance fee as a percentage");
-        // LidoLiquidityManager
-        assertEq(address(etherFiARM.etherfiWithdrawalQueue()), Mainnet.ETHERFI_WITHDRAWAL, "Ether.fi withdrawal queue");
-        assertEq(address(etherFiARM.eeth()), Mainnet.EETH, "eETH");
-        assertEq(address(etherFiARM.weth()), Mainnet.WETH, "WETH");
+        assertEq((100 * uint256(etherFiARM.fee())) / FEE_SCALE, 20, "Performance fee as a percentage");
+        assertEq(address(etherfiAssetAdapter.etherfiWithdrawalQueue()), Mainnet.ETHERFI_WITHDRAWAL, "withdrawal queue");
+        assertEq(address(etherfiAssetAdapter.etherfiWithdrawalNFT()), Mainnet.ETHERFI_WITHDRAWAL_NFT, "withdrawal NFT");
         assertEq(etherFiARM.liquidityAsset(), Mainnet.WETH, "liquidity asset");
         assertEq(etherFiARM.asset(), Mainnet.WETH, "ERC-4626 asset");
         assertEq(etherFiARM.claimDelay(), 10 minutes, "claim delay");
-        assertEq(etherFiARM.crossPrice(), 0.99996e36, "cross price");
+        (,,,, uint128 crossPrice,,,) = etherFiARM.baseAssetConfigs(Mainnet.EETH);
+        assertEq(crossPrice, 0.99996e36, "cross price");
 
         assertEq(capManager.accountCapEnabled(), true, "account cap enabled");
         assertEq(capManager.totalAssetsCap(), 1000 ether, "total assets cap");
@@ -102,8 +104,8 @@ contract Fork_EtherFiARM_Smoke_Test is AbstractSmokeTest {
 
             expectedOut = amountIn * 1e36 / price;
 
-            vm.prank(Mainnet.ARM_RELAYER);
-            etherFiARM.setPrices(price - 2e32, price);
+            vm.prank(Mainnet.ARM_TALOS_RELAYER);
+            etherFiARM.setPrices(address(eeth), price - 2e32, price, type(uint128).max, type(uint128).max);
         } else {
             // Trader is selling eETH and buying WETH
             // the ARM is buying eETH and selling WETH
@@ -112,9 +114,9 @@ contract Fork_EtherFiARM_Smoke_Test is AbstractSmokeTest {
 
             expectedOut = amountIn * price / 1e36;
 
-            vm.prank(Mainnet.ARM_RELAYER);
+            vm.prank(Mainnet.ARM_TALOS_RELAYER);
             uint256 sellPrice = price < 0.9997e36 ? 0.99996e36 : price + 2e32;
-            etherFiARM.setPrices(price, sellPrice);
+            etherFiARM.setPrices(address(eeth), price, sellPrice, type(uint128).max, type(uint128).max);
         }
         // Approve the ARM to transfer the input token of the swap.
         inToken.approve(address(etherFiARM), amountIn);
@@ -138,8 +140,8 @@ contract Fork_EtherFiARM_Smoke_Test is AbstractSmokeTest {
 
             expectedIn = amountOut * price / 1e36;
 
-            vm.prank(Mainnet.ARM_RELAYER);
-            etherFiARM.setPrices(price - 2e32, price);
+            vm.prank(Mainnet.ARM_TALOS_RELAYER);
+            etherFiARM.setPrices(address(eeth), price - 2e32, price, type(uint128).max, type(uint128).max);
         } else {
             // Trader is selling eETH and buying WETH
             // the ARM is buying eETH and selling WETH
@@ -149,9 +151,9 @@ contract Fork_EtherFiARM_Smoke_Test is AbstractSmokeTest {
 
             expectedIn = amountOut * 1e36 / price + 3;
 
-            vm.prank(Mainnet.ARM_RELAYER);
+            vm.prank(Mainnet.ARM_TALOS_RELAYER);
             uint256 sellPrice = price < 0.9997e36 ? 0.99996e36 : price + 2e32;
-            etherFiARM.setPrices(price, sellPrice);
+            etherFiARM.setPrices(address(eeth), price, sellPrice, type(uint128).max, type(uint128).max);
         }
         // Approve the ARM to transfer the input token of the swap.
         inToken.approve(address(etherFiARM), expectedIn + 10000);
@@ -203,7 +205,7 @@ contract Fork_EtherFiARM_Smoke_Test is AbstractSmokeTest {
     }
 
     function test_nonOwnerCannotSetOperator() external {
-        vm.expectRevert("ARM: Only owner can call this function.");
+        vm.expectRevert(bytes4(keccak256("OnlyOwner()")));
         vm.prank(operator);
         etherFiARM.setOperator(operator);
     }
@@ -212,26 +214,26 @@ contract Fork_EtherFiARM_Smoke_Test is AbstractSmokeTest {
         // trader sells eETH and buys WETH, the ARM buys eETH as a 4 bps discount
         _swapExactTokensForTokens(eeth, weth, 0.9996e36, 100 ether);
 
-        // Expected events
-        vm.expectEmit(true, false, false, false, address(etherFiARM));
-        emit EtherFiARM.RequestEtherFiWithdrawal(10 ether, 0);
-
         // Operator requests an Ether.fi withdrawal
-        vm.prank(Mainnet.ARM_RELAYER);
-        etherFiARM.requestEtherFiWithdrawal(10 ether);
+        vm.prank(Mainnet.ARM_TALOS_RELAYER);
+        etherFiARM.requestBaseAssetRedeem(address(eeth), 10 ether);
+
+        uint256 requestId = etherfiAssetAdapter.pendingRequestId(0);
+        assertNotEq(requestId, 0);
+        assertEq(etherfiAssetAdapter.requestShares(requestId), 10 ether);
     }
 
     function test_request_etherfi_withdrawal_owner() external {
         // trader sells eETH and buys WETH, the ARM buys eETH as a 4 bps discount
         _swapExactTokensForTokens(eeth, weth, 0.9996e36, 100 ether);
 
-        // Expected events
-        vm.expectEmit(true, false, false, false, address(etherFiARM));
-        emit EtherFiARM.RequestEtherFiWithdrawal(10 ether, 0);
-
         // Owner requests an Ether.fi withdrawal
         vm.prank(Mainnet.TIMELOCK);
-        etherFiARM.requestEtherFiWithdrawal(10 ether);
+        etherFiARM.requestBaseAssetRedeem(address(eeth), 10 ether);
+
+        uint256 requestId = etherfiAssetAdapter.pendingRequestId(0);
+        assertNotEq(requestId, 0);
+        assertEq(etherfiAssetAdapter.requestShares(requestId), 10 ether);
     }
 
     function test_claim_etherfi_request_with_delay() external {
@@ -240,7 +242,8 @@ contract Fork_EtherFiARM_Smoke_Test is AbstractSmokeTest {
 
         // Owner requests an Ether.fi withdrawal
         vm.prank(Mainnet.TIMELOCK);
-        uint256 requestId = etherFiARM.requestEtherFiWithdrawal(10 ether);
+        etherFiARM.requestBaseAssetRedeem(address(eeth), 10 ether);
+        uint256 requestId = etherfiAssetAdapter.pendingRequestId(0);
 
         // Process finalization on withdrawal queue
         // We cheat a bit here, because we don't follow the full finalization process it could fail
@@ -249,9 +252,8 @@ contract Fork_EtherFiARM_Smoke_Test is AbstractSmokeTest {
         etherfiWithdrawalNFT.finalizeRequests(requestId);
 
         // Claim the withdrawal
-        uint256[] memory requestIdArray = new uint256[](1);
-        requestIdArray[0] = requestId;
-        etherFiARM.claimEtherFiWithdrawals(requestIdArray);
+        vm.prank(Mainnet.ARM_TALOS_RELAYER);
+        etherFiARM.claimBaseAssetRedeem(address(eeth), 10 ether);
     }
 
     /* Lending Market Allocation Tests */
@@ -274,11 +276,11 @@ contract Fork_EtherFiARM_Smoke_Test is AbstractSmokeTest {
         uint256 marketBalanceBefore = morphoMarket.maxWithdraw(address(etherFiARM));
 
         // Set buffer to 0% so all liquidity goes to the lending market
-        vm.prank(Mainnet.ARM_RELAYER);
+        vm.prank(Mainnet.ARM_TALOS_RELAYER);
         etherFiARM.setARMBuffer(0);
 
         // Allocate liquidity to the lending market
-        vm.prank(Mainnet.ARM_RELAYER);
+        vm.prank(Mainnet.ARM_TALOS_RELAYER);
         (, int256 actualDelta) = etherFiARM.allocate();
 
         uint256 armWethAfter = weth.balanceOf(address(etherFiARM));
@@ -303,20 +305,20 @@ contract Fork_EtherFiARM_Smoke_Test is AbstractSmokeTest {
 
         // Deal WETH to the ARM and allocate to market with buffer at 0%
         deal(address(weth), address(etherFiARM), 100 ether);
-        vm.prank(Mainnet.ARM_RELAYER);
+        vm.prank(Mainnet.ARM_TALOS_RELAYER);
         etherFiARM.setARMBuffer(0);
-        vm.prank(Mainnet.ARM_RELAYER);
+        vm.prank(Mainnet.ARM_TALOS_RELAYER);
         etherFiARM.allocate();
 
         uint256 armWethBefore = weth.balanceOf(address(etherFiARM));
         uint256 marketBalanceBefore = morphoMarket.maxWithdraw(address(etherFiARM));
 
         // Set buffer to 100% so liquidity comes back from the lending market
-        vm.prank(Mainnet.ARM_RELAYER);
+        vm.prank(Mainnet.ARM_TALOS_RELAYER);
         etherFiARM.setARMBuffer(1e18);
 
         // Allocate liquidity from the lending market
-        vm.prank(Mainnet.ARM_RELAYER);
+        vm.prank(Mainnet.ARM_TALOS_RELAYER);
         (, int256 actualDelta) = etherFiARM.allocate();
 
         uint256 armWethAfter = weth.balanceOf(address(etherFiARM));

@@ -16,7 +16,6 @@ contract $020_UpgradeEthenaARMScript is AbstractDeployScript("020_UpgradeEthenaA
         // 1. Deploy new ARM implementation
         armImpl = new EthenaARM(
             Mainnet.USDE,
-            Mainnet.SUSDE,
             10 minutes, // claimDelay
             1e18, // minSharesToRedeem
             100e18 // allocateThreshold

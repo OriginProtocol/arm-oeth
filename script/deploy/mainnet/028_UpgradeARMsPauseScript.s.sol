@@ -28,9 +28,7 @@ contract $028_UpgradeARMsPauseScript is AbstractDeployScript("028_UpgradeARMsPau
 
         // 1. LidoARM
         lidoARMImpl = new LidoARM(
-            Mainnet.STETH,
             Mainnet.WETH,
-            Mainnet.LIDO_WITHDRAWAL,
             claimDelay,
             1e7, // minSharesToRedeem
             1e18 // allocateThreshold
@@ -41,18 +39,15 @@ contract $028_UpgradeARMsPauseScript is AbstractDeployScript("028_UpgradeARMsPau
         etherFiARMImpl = new EtherFiARM(
             Mainnet.EETH,
             Mainnet.WETH,
-            Mainnet.ETHERFI_WITHDRAWAL,
             claimDelay,
             1e7, // minSharesToRedeem
-            1e18, // allocateThreshold
-            Mainnet.ETHERFI_WITHDRAWAL_NFT
+            1e18 // allocateThreshold
         );
         _recordDeployment("ETHERFI_ARM_IMPL", address(etherFiARMImpl));
 
         // 3. EthenaARM
         ethenaARMImpl = new EthenaARM(
             Mainnet.USDE,
-            Mainnet.SUSDE,
             claimDelay,
             1e18, // minSharesToRedeem
             100e18 // allocateThreshold
@@ -61,7 +56,7 @@ contract $028_UpgradeARMsPauseScript is AbstractDeployScript("028_UpgradeARMsPau
     }
 
     function _buildGovernanceProposal() internal override {
-        govProposal.setDescription("Upgrade LidoARM and EtherFiARM to add pause mechanism and operator-claim");
+        govProposal.setDescription("Upgrade LidoARM and EtherFiARM to add pause mechanism and operator claims");
 
         govProposal.action(
             resolver.resolve("LIDO_ARM"), "upgradeTo(address)", abi.encode(resolver.resolve("LIDO_ARM_IMPL"))

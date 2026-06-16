@@ -88,3 +88,5 @@ make simulate-sonic-deploys  # Dry run Sonic
 - Test base class: `test/Base.sol` with standard accounts (alice, bob, charlie) and shared setup
 - Dependencies managed by Soldeer (not npm) for Solidity libs
 - Prefer flat structure with early returns over deeply nested if/else blocks
+- When writing NatSpec for scaled or non-obvious numeric parameters, include concrete examples.
+  For example: `10,000 = 100% fee`, `500 = 5% fee`, `1e18 = 100% buffer`, `0.1e18 = 10% buffer`.
