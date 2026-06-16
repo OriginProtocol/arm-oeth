@@ -617,13 +617,13 @@ task("claimRedeemARM").setAction(async (_, __, runSuper) => {
 subtask("setLiquidityProviderCaps", "Set deposit cap for liquidity providers")
   .addParam(
     "arm",
-    "Name of the ARM. eg Lido, Origin or EtherFi",
-    "Lido",
+    "Name of the ARM. eg Lido, EtherFi or Ethena",
+    undefined,
     types.string,
   )
   .addParam(
     "cap",
-    "Amount of WETH not scaled to 18 decimals",
+    "Deposit cap per account in liquidity asset units, not scaled to 18 decimals. eg 20000 = 20,000 USDe",
     undefined,
     types.float,
   )
@@ -641,13 +641,13 @@ task("setLiquidityProviderCaps").setAction(async (_, __, runSuper) => {
 subtask("setTotalAssetsCap", "Set total assets cap")
   .addParam(
     "arm",
-    "Name of the ARM. eg Lido, Origin or EtherFi",
-    "Lido",
+    "Name of the ARM. eg Lido, EtherFi or Ethena",
+    undefined,
     types.string,
   )
   .addParam(
     "cap",
-    "Amount of WETH not scaled to 18 decimals",
+    "Total assets cap in liquidity asset units, not scaled to 18 decimals. eg 100000 = 100,000 USDe",
     undefined,
     types.float,
   )
@@ -1069,13 +1069,13 @@ task("allocate").setAction(async (_, __, runSuper) => {
 });
 
 subtask("setARMBuffer", "Set the ARM buffer percentage")
-  .addOptionalParam(
+  .addParam(
     "arm",
     "The name of the ARM. eg Lido, Origin, EtherFi or Ethena",
-    "Origin",
+    undefined,
     types.string,
   )
-  .addOptionalParam(
+  .addParam(
     "buffer",
     "The new buffer value (eg 0.1 -> 10%)",
     undefined,

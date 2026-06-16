@@ -3,7 +3,12 @@ const dayjs = require("dayjs");
 const utc = require("dayjs/plugin/utc");
 
 const { claimableRequests } = require("../utils/armQueue");
-const { adapterContract, resolveArmBase } = require("../utils/arm");
+const {
+  adapterContract,
+  claimBaseAssetWithdrawal,
+  requestBaseAssetWithdrawal,
+  resolveArmBase,
+} = require("../utils/arm");
 const { logTxDetails } = require("../utils/txLogger");
 
 const log = require("../utils/logger")("task:liquidity");
@@ -12,8 +17,9 @@ const log = require("../utils/logger")("task:liquidity");
 dayjs.extend(utc);
 
 const autoRequestWithdraw = async (options) => {
-  const { amount, arm, signer } = options;
-  const { baseSymbol, baseAddress } = await resolveArmBase(options);
+  const { amount, signer } = options;
+  const baseContext = await resolveArmBase(options);
+  const { baseSymbol } = baseContext;
 
   const withdrawAmount = amount
     ? parseUnits(amount.toString())
@@ -24,9 +30,11 @@ const autoRequestWithdraw = async (options) => {
     `About to request withdrawal of ${formatUnits(withdrawAmount)} ${baseSymbol}`,
   );
 
-  const tx = await arm
-    .connect(signer)
-    .requestBaseAssetRedeem(baseAddress, withdrawAmount);
+  const tx = await requestBaseAssetWithdrawal({
+    baseContext,
+    signer,
+    amount: withdrawAmount,
+  });
   await logTxDetails(tx, "requestRedeem");
 };
 
@@ -39,8 +47,12 @@ const autoClaimWithdraw = async ({
   vault,
   confirm,
 }) => {
-  const { baseAddress, config } = await resolveArmBase({ arm, armName, base });
-  const adapter = await adapterContract(config.adapter, signer);
+  const baseContext = await resolveArmBase({ arm, armName, base });
+  const { config } = baseContext;
+  const adapter =
+    baseContext.version === "legacy"
+      ? undefined
+      : await adapterContract(config.adapter, signer);
   const liquiditySymbol = await liquidityAsset.symbol();
   // Get amount of requests that have already been claimed
   const { claimed } = await vault.withdrawalQueueMetadata();
@@ -67,7 +79,10 @@ const autoClaimWithdraw = async ({
 
   // get claimable withdrawal requests
   let requestIds = await claimableRequests({
-    withdrawer: config.adapter,
+    withdrawer:
+      baseContext.version === "legacy"
+        ? await arm.getAddress()
+        : config.adapter,
     queuedAmountClaimable,
     claimCutoff,
   });
@@ -80,13 +95,18 @@ const autoClaimWithdraw = async ({
   log(`About to claim requests: ${requestIds} `);
 
   let shares = 0n;
-  for (const requestId of requestIds) {
-    shares += await adapter["requestShares(uint256)"](requestId);
+  if (baseContext.version !== "legacy") {
+    for (const requestId of requestIds) {
+      shares += await adapter["requestShares(uint256)"](requestId);
+    }
   }
 
-  const tx = await arm
-    .connect(signer)
-    .claimBaseAssetRedeem(baseAddress, shares);
+  const tx = await claimBaseAssetWithdrawal({
+    baseContext,
+    signer,
+    shares,
+    requestIds,
+  });
   await logTxDetails(tx, "claimRedeem", confirm);
 
   return requestIds;

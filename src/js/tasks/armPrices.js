@@ -1,17 +1,22 @@
-const { formatUnits, parseUnits } = require("ethers");
+const { formatUnits, parseUnits, ZeroAddress } = require("ethers");
 
 const addresses = require("../utils/addresses");
 const {
   adapterContract,
   parseSwapCap,
   resolveArmBase,
+  setArmPrices,
 } = require("../utils/arm");
 const { abs } = require("../utils/maths");
 const { getCurvePrices } = require("../utils/curve");
 const { getKyberPrices } = require("../utils/kyber");
 const { get1InchPrices } = require("../utils/1Inch");
 const { logTxDetails } = require("../utils/txLogger");
-const { rangeSellPrice, rangeBuyPrice } = require("../utils/pricing");
+const {
+  convertToAsset,
+  rangeSellPrice,
+  rangeBuyPrice,
+} = require("../utils/pricing");
 
 const log = require("../utils/logger")("task:prices");
 
@@ -61,13 +66,13 @@ const setPrices = async (options) => {
   } = options;
 
   // 1. Get current ARM prices
-  const { baseSymbol, baseAddress, liquidityAddress, config } =
-    await resolveArmBase({
-      arm,
-      armName: options.armName,
-      base,
-      blockTag: options.blockTag,
-    });
+  const baseContext = await resolveArmBase({
+    arm,
+    armName: options.armName,
+    base,
+    blockTag: options.blockTag,
+  });
+  const { baseSymbol, baseAddress, liquidityAddress, config } = baseContext;
   const shouldAdjustWrapped =
     wrapped !== undefined ? wrapped : !config.peggedToLiquidityAsset;
 
@@ -119,9 +124,13 @@ const setPrices = async (options) => {
 
       // Adjust price down if a wrapped asset like sUSDe or wstETH
       if (shouldAdjustWrapped) {
-        const adapter = await adapterContract(config.adapter, signer);
         const amountIn = parseUnits(options.amount.toString(), 18);
-        const convertedAssets = await adapter.convertToAssets(amountIn);
+        const convertedAssets =
+          config.adapter === ZeroAddress
+            ? await convertToAsset(baseAddress, options.amount, signer)
+            : await (
+                await adapterContract(config.adapter, signer)
+              ).convertToAssets(amountIn);
         const wrapPrice = (convertedAssets * parseUnits("1")) / amountIn;
 
         log(`Base asset price : ${formatUnits(wrapPrice, 18)} base/liquid`);
@@ -304,15 +313,14 @@ const setPrices = async (options) => {
       return;
     }
 
-    const tx = await arm
-      .connect(signer)
-      .setPrices(
-        baseAddress,
-        targetBuyPrice,
-        targetSellPrice,
-        parseSwapCap(buyAmount),
-        parseSwapCap(sellAmount),
-      );
+    const tx = await setArmPrices({
+      baseContext,
+      signer,
+      buyPrice: targetBuyPrice,
+      sellPrice: targetSellPrice,
+      buyAmount: parseSwapCap(buyAmount),
+      sellAmount: parseSwapCap(sellAmount),
+    });
 
     await logTxDetails(tx, "setPrices", options.confirm);
   } else {

@@ -15,7 +15,13 @@ const { getMerklRewards } = require("../utils/merkl");
 const { convertToAsset } = require("../utils/pricing");
 const { logTxDetails } = require("../utils/txLogger");
 const { getSigner } = require("../utils/signers");
-const { adapterContract, resolveArmBase } = require("../utils/arm");
+const {
+  adapterContract,
+  claimBaseAssetWithdrawal,
+  getArmBuffer,
+  requestBaseAssetWithdrawal,
+  resolveArmBase,
+} = require("../utils/arm");
 
 const log = require("../utils/logger")("task:liquidity");
 
@@ -24,17 +30,20 @@ dayjs.extend(utc);
 
 const requestWithdraw = async ({ amount, signer, arm, armName, base }) => {
   const amountBI = parseUnits(amount.toString(), 18);
-  const { baseAddress, baseSymbol } = await resolveArmBase({
+  const baseContext = await resolveArmBase({
     arm,
     armName,
     base,
   });
+  const { baseSymbol } = baseContext;
 
   log(`About to request ${amount} ${baseSymbol} withdrawal`);
 
-  const tx = await arm
-    .connect(signer)
-    .requestBaseAssetRedeem(baseAddress, amountBI);
+  const tx = await requestBaseAssetWithdrawal({
+    baseContext,
+    signer,
+    amount: amountBI,
+  });
 
   await logTxDetails(tx, "requestRedeem");
 
@@ -42,16 +51,22 @@ const requestWithdraw = async ({ amount, signer, arm, armName, base }) => {
 };
 
 const claimWithdraw = async ({ id, signer, arm, armName, base }) => {
-  const { baseAddress, config } = await resolveArmBase({
+  const baseContext = await resolveArmBase({
     arm,
     armName,
     base,
   });
-  const adapter = await adapterContract(config.adapter, signer);
-  const shares = await adapter["requestShares(uint256)"](id);
-  const tx = await arm
-    .connect(signer)
-    .claimBaseAssetRedeem(baseAddress, shares);
+  let shares = 0n;
+  if (baseContext.version !== "legacy") {
+    const adapter = await adapterContract(baseContext.config.adapter, signer);
+    shares = await adapter["requestShares(uint256)"](id);
+  }
+  const tx = await claimBaseAssetWithdrawal({
+    baseContext,
+    signer,
+    shares,
+    requestIds: [id],
+  });
 
   log(`About to claim withdrawal request ${id}`);
   await logTxDetails(tx, "claimRedeem");
@@ -187,9 +202,16 @@ const logLiquidity = async ({ block, arm, base }) => {
   const baseBalance = await baseAsset.balanceOf(armAddress, { blockTag });
   const baseBalanceAssets = config.peggedToLiquidityAsset
     ? baseBalance
-    : await (
-        await adapterContract(config.adapter, armContract.runner)
-      ).convertToAssets(baseBalance);
+    : config.adapter === ethers.ZeroAddress
+      ? await (
+          await ethers.getContractAt(
+            ["function convertToAssets(uint256) view returns (uint256)"],
+            baseAddress,
+          )
+        ).convertToAssets(baseBalance, { blockTag })
+      : await (
+          await adapterContract(config.adapter, armContract.runner)
+        ).convertToAssets(baseBalance);
 
   const baseWithdraws = config.pendingRedeemAssets;
 
@@ -241,7 +263,7 @@ const logLiquidity = async ({ block, arm, base }) => {
     blockTag,
   });
   const accruedFees = await armContract.feesAccrued({ blockTag });
-  const buffer = await armContract.armBuffer({ blockTag });
+  const buffer = await getArmBuffer(armContract, blockTag);
   const bufferPercent = (buffer * 10000n) / parseUnits("1");
   const lendingMarketLiquidityShortfall =
     lendingMarketBalance - lendingMarketRedeemableBalance;

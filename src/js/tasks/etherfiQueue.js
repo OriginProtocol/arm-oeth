@@ -2,7 +2,12 @@ const { gql } = require("@apollo/client/core");
 const { parseUnits } = require("ethers");
 
 const { baseWithdrawAmount } = require("./liquidityAutomation");
-const { adapterContract, resolveArmBase } = require("../utils/arm");
+const {
+  adapterContract,
+  claimBaseAssetWithdrawal,
+  requestBaseAssetWithdrawal,
+  resolveArmBase,
+} = require("../utils/arm");
 const { createApolloClient } = require("../utils/apollo");
 const { logTxDetails } = require("../utils/txLogger");
 
@@ -11,8 +16,9 @@ const log = require("../utils/logger")("task:etherfiQueue");
 const uri = "https://origin.squids.live/ops-squid/graphql";
 
 const requestEtherFiWithdrawals = async (options) => {
-  const { signer, arm, amount } = options;
-  const { baseSymbol, baseAddress } = await resolveArmBase(options);
+  const { signer, amount } = options;
+  const baseContext = await resolveArmBase(options);
+  const { baseSymbol } = baseContext;
 
   const withdrawAmount = amount
     ? parseUnits(amount.toString())
@@ -20,17 +26,18 @@ const requestEtherFiWithdrawals = async (options) => {
   if (!withdrawAmount || withdrawAmount === 0n) return;
 
   log(`Requesting withdrawal for ${withdrawAmount} ${baseSymbol}...`);
-  const tx = await arm
-    .connect(signer)
-    .requestBaseAssetRedeem(baseAddress, withdrawAmount);
+  const tx = await requestBaseAssetWithdrawal({
+    baseContext,
+    signer,
+    amount: withdrawAmount,
+  });
 
   await logTxDetails(tx, "requestEtherFiWithdrawal");
 };
 
 const claimEtherFiWithdrawals = async (options) => {
-  const { arm, signer, id } = options;
-  const { baseAddress, config } = await resolveArmBase(options);
-  const adapter = await adapterContract(config.adapter, signer);
+  const { signer, id } = options;
+  const baseContext = await resolveArmBase(options);
 
   const requestIds = id
     ? // If an id is provided, just claim that one
@@ -38,6 +45,24 @@ const claimEtherFiWithdrawals = async (options) => {
     : // Get the outstanding EtherFi withdrawal requests for the ARM
       await claimableEtherFiRequests();
 
+  if (baseContext.version === "legacy") {
+    if (requestIds.length > 0) {
+      log(
+        `About to claim ${requestIds.length} withdrawal requests with\nids: ${requestIds}`,
+      );
+      const tx = await claimBaseAssetWithdrawal({
+        baseContext,
+        signer,
+        requestIds,
+      });
+      await logTxDetails(tx, "claim EtherFi withdraws");
+    } else {
+      log("No EtherFi withdrawal requests to claim");
+    }
+    return;
+  }
+
+  const adapter = await adapterContract(baseContext.config.adapter, signer);
   let shares = 0n;
   for (const requestId of requestIds) {
     shares += await adapter["requestShares(uint256)"](requestId);
@@ -51,9 +76,11 @@ const claimEtherFiWithdrawals = async (options) => {
   log(
     `About to claim ${requestIds.length} withdrawal requests with\nids: ${requestIds}`,
   );
-  const tx = await arm
-    .connect(signer)
-    .claimBaseAssetRedeem(baseAddress, shares);
+  const tx = await claimBaseAssetWithdrawal({
+    baseContext,
+    signer,
+    shares,
+  });
   await logTxDetails(tx, "claim EtherFi withdraws");
 };
 

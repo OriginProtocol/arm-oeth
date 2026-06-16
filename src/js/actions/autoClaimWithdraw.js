@@ -2,6 +2,7 @@ const { Defender } = require("@openzeppelin/defender-sdk");
 const { ethers } = require("ethers");
 
 const { autoClaimWithdraw } = require("../tasks/liquidityAutomation");
+const { runForBases } = require("./priceActionUtils");
 const { mainnet } = require("../utils/addresses");
 const erc20Abi = require("../../abis/ERC20.json");
 const oethARMAbi = require("../../abis/OethARM.json");
@@ -26,13 +27,18 @@ const handler = async (event) => {
   const vault = new ethers.Contract(mainnet.OETHVaultProxy, vaultAbi, signer);
   const arm = new ethers.Contract(mainnet.OethARM, oethARMAbi, signer);
 
-  await autoClaimWithdraw({
-    signer,
-    liquidityAsset,
-    arm,
-    armName: "Oeth",
-    vault,
-    confirm: true,
+  await runForBases({
+    bases: ["OETH", "WOETH"],
+    actionName: "Claiming withdrawals",
+    fn: autoClaimWithdraw,
+    options: {
+      signer,
+      liquidityAsset,
+      arm,
+      armName: "Oeth",
+      vault,
+      confirm: true,
+    },
   });
 };
 
