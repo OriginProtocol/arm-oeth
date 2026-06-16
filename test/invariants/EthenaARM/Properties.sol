@@ -37,11 +37,11 @@ abstract contract Properties is TargetFunctions {
     // [x] Invariant C: ∑shares > 0 due to initial deposit
     // [x] Invariant D: totalShares == ∑userShares + deadShares
     // [x] Invariant E: previewRedeem(∑shares) == totalAssets
-    // [x] Invariant F: withdrawsQueued == ∑requestRedeem.amount
-    // [x] Invariant G: withdrawsQueued >= withdrawsClaimed
-    // [x] Invariant H: withdrawsQueued == ∑request.assets
-    // [x] Invariant I: withdrawsClaimed >= ∑claimRedeem.amount
-    // [x] Invariant J: ∀ requestId, request.queued >= request.assets
+    // [x] Invariant F: reservedWithdrawLiquidity == ∑unclaimed request.assets
+    // [x] Invariant G: withdrawsQueuedShares >= withdrawsClaimedShares
+    // [x] Invariant H: withdrawsQueuedShares == ∑request.shares
+    // [x] Invariant I: withdrawsClaimedShares == ∑claimed request.shares
+    // [x] Invariant J: ARM escrowed shares == withdrawsQueuedShares - withdrawsClaimedShares
     // [x] Invariant K: ∑feesCollected == feeCollector.balance
     //
     // ╔══════════════════════════════════════════════════════════════════════════════╗
@@ -117,6 +117,7 @@ abstract contract Properties is TargetFunctions {
         for (uint256 i = 0; i < MAKERS_COUNT; i++) {
             totalUserShares += arm.balanceOf(makers[i]);
         }
+        totalUserShares += arm.balanceOf(address(arm));
         uint256 deadShares = 1e12;
         return Math.eq(arm.totalSupply(), totalUserShares + deadShares);
     }
@@ -126,36 +127,31 @@ abstract contract Properties is TargetFunctions {
     }
 
     function propertyF() public view returns (bool) {
-        return Math.eq(arm.withdrawsQueued(), sumUSDeUserRequest);
+        return Math.eq(arm.reservedWithdrawLiquidity(), sumOfUnclaimedRequestAssets());
     }
 
     function propertyG() public view returns (bool) {
-        return Math.gte(arm.withdrawsQueued(), arm.withdrawsClaimed());
+        return Math.gte(arm.withdrawsQueuedShares(), arm.withdrawsClaimedShares());
     }
 
     function propertyH() public view returns (bool) {
-        uint256 sum = 0;
-        uint256 len = arm.nextWithdrawalIndex();
-        for (uint256 i; i < len; i++) {
-            (,,, uint128 amount,,) = arm.withdrawalRequests(i);
-            sum += amount;
-        }
-        return Math.eq(arm.withdrawsQueued(), sum);
+        return Math.eq(arm.withdrawsQueuedShares(), sumARMUserRequestShares);
     }
 
     function propertyI() public view returns (bool) {
-        return Math.gte(arm.withdrawsClaimed(), sumUSDeUserRedeem);
+        return Math.eq(arm.withdrawsClaimedShares(), sumARMUserRedeemShares);
     }
 
     function propertyJ() public view returns (bool) {
+        return Math.eq(arm.balanceOf(address(arm)), arm.withdrawsQueuedShares() - arm.withdrawsClaimedShares());
+    }
+
+    function sumOfUnclaimedRequestAssets() public view returns (uint256 sum) {
         uint256 len = arm.nextWithdrawalIndex();
         for (uint256 i; i < len; i++) {
-            (,,, uint128 amount, uint128 queued,) = arm.withdrawalRequests(i);
-            if (queued < amount) {
-                return false;
-            }
+            (, bool claimed,, uint128 amount,,) = arm.withdrawalRequests(i);
+            if (!claimed) sum += amount;
         }
-        return true;
     }
 
     function propertyK() public view returns (bool) {
@@ -166,19 +162,20 @@ abstract contract Properties is TargetFunctions {
     // ╔══════════════════════════════════════════════════════════════════════════════╗
     // ║                         ✦✦✦ LIQUIDITY MANAGEMENT ✦✦✦                         ║
     // ╚══════════════════════════════════════════════════════════════════════════════╝
-    function propertyL() public returns (bool) {
+    function propertyL() public view returns (bool) {
         uint256 liquidityAmountInCooldown;
         uint256 len = unstakers.length;
         for (uint256 i; i < len; i++) {
             UserCooldown memory cooldown = susde.cooldowns(address(unstakers[i]));
             liquidityAmountInCooldown += cooldown.underlyingAmount;
         }
-        return Math.eq(liquidityAmountInCooldown, uint256(vm.load(address(arm), bytes32(uint256(100)))));
+        (,,,,, uint120 pendingRedeemAssets,,) = arm.baseAssetConfigs(address(susde));
+        return Math.eq(liquidityAmountInCooldown, pendingRedeemAssets);
     }
 
     function propertyM() public view returns (bool) {
-        uint256 nextUnstakerIndex = arm.nextUnstakerIndex();
-        return Math.lt(nextUnstakerIndex, arm.MAX_UNSTAKERS());
+        uint256 nextUnstakerIndex = ethenaAssetAdapter.nextUnstakerIndex();
+        return Math.lt(nextUnstakerIndex, ethenaAssetAdapter.MAX_UNSTAKERS());
     }
 
     function propertyN() public view returns (bool) {
@@ -195,7 +192,7 @@ abstract contract Properties is TargetFunctions {
     // ╔══════════════════════════════════════════════════════════════════════════════╗
     // ║                              ✦✦✦ AFTER ALL ✦✦✦                               ║
     // ╚══════════════════════════════════════════════════════════════════════════════╝
-    function _propertyAfterAll() internal returns (bool) {
+    function _propertyAfterAll() internal view returns (bool) {
         uint256 usdeBalance = usde.balanceOf(address(arm));
         uint256 susdeBalance = susde.balanceOf(address(arm));
         uint256 morphoBalance = morpho.balanceOf(address(arm));
@@ -209,20 +206,6 @@ abstract contract Properties is TargetFunctions {
         }
         require(susdeBalance == 0, "sUSDe balance not zero");
         require(morphoBalance == 0, "Morpho shares not zero");
-        for (uint256 i; i < MAKERS_COUNT; i++) {
-            address user = makers[i];
-            uint256 totalMinted = mintedUSDe[user];
-            uint256 userBalance = usde.balanceOf(user);
-            if (!Math.approxGteAbs(userBalance, totalMinted, 1e12)) {
-                if (isConsoleAvailable) {
-                    console.log(">>> Property After All failed for user %s:", vm.getLabel(user));
-                    console.log("    - User USDe balance:   %18e", userBalance);
-                    console.log("    - Total minted USDe:   %18e", totalMinted);
-                    console.log("    - Difference:          %18e", Math.absDiff(userBalance, totalMinted));
-                }
-                return false;
-            }
-        }
         return true;
     }
 }

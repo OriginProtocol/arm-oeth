@@ -1,6 +1,7 @@
 const { Defender } = require("@openzeppelin/defender-sdk");
 const { ethers } = require("ethers");
 const { claimEthenaWithdrawals } = require("../tasks/ethenaQueue");
+const { runForBases } = require("./priceActionUtils");
 const { mainnet } = require("../utils/addresses");
 const ethenaARMAbi = require("../../abis/EthenaARM.json");
 
@@ -21,9 +22,15 @@ const handler = async (event) => {
   // References to contracts
   const arm = new ethers.Contract(mainnet.ethenaARM, ethenaARMAbi, signer);
 
-  await claimEthenaWithdrawals({
-    signer,
-    arm,
+  await runForBases({
+    bases: ["SUSDE"],
+    actionName: "Claiming withdrawals",
+    fn: claimEthenaWithdrawals,
+    options: {
+      signer,
+      arm,
+      armName: "Ethena",
+    },
   });
 };
 

@@ -2,7 +2,9 @@ const { Defender } = require("@openzeppelin/defender-sdk");
 const { ethers } = require("ethers");
 
 const { autoClaimWithdraw } = require("../tasks/liquidityAutomation");
+const { runForBases } = require("./priceActionUtils");
 const { sonic } = require("../utils/addresses");
+const { callAllocate, estimateAllocateGas } = require("../utils/arm");
 const { logTxDetails } = require("../utils/txLogger");
 const erc20Abi = require("../../abis/ERC20.json");
 const armAbi = require("../../abis/OriginARM.json");
@@ -27,24 +29,34 @@ const handler = async (event) => {
   const vault = new ethers.Contract(sonic.OSonicVaultProxy, vaultAbi, signer);
   const arm = new ethers.Contract(sonic.OriginARM, armAbi, signer);
 
-  const requestIds = await autoClaimWithdraw({
-    signer,
-    liquidityAsset,
-    arm,
-    vault,
-    confirm: true,
-  });
+  const requestIds = (
+    await runForBases({
+      bases: ["OS", "WOS"],
+      actionName: "Claiming withdrawals",
+      fn: autoClaimWithdraw,
+      options: {
+        signer,
+        liquidityAsset,
+        arm,
+        armName: "Origin",
+        vault,
+        confirm: true,
+      },
+    })
+  )
+    .flat()
+    .filter((requestId) => requestId !== undefined);
 
   console.log(`Claimed requests "${requestIds}"`);
 
   // If any requests were claimed
   if (requestIds?.length > 0) {
     // Add 10% buffer to gas limit
-    let gasLimit = await arm.connect(signer).allocate.estimateGas();
+    let gasLimit = await estimateAllocateGas(arm, signer);
     gasLimit = (gasLimit * 12n) / 10n;
 
     // Allocate any excess liquidity to the lending market
-    const tx = await arm.allocate({ gasLimit });
+    const tx = await callAllocate(arm, signer, { gasLimit });
     await logTxDetails(tx, "allocate");
   }
 };

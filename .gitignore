@@ -26,6 +26,7 @@ artifacts
 dependencies/
 soldeer.lock
 test/invariants/.foundry-corpus
+test/invariants/.foundry-failures
 
 # Coverage
 lcov.info*

@@ -9,6 +9,7 @@ import {Modifiers} from "test/fork/OriginARM/shared/Modifiers.sol";
 import {Proxy} from "contracts/Proxy.sol";
 import {Sonic} from "contracts/utils/Addresses.sol";
 import {OriginARM} from "contracts/OriginARM.sol";
+import {OriginAssetAdapter} from "contracts/adapters/OriginAssetAdapter.sol";
 
 // Interfaces
 import {IERC20} from "contracts/Interfaces.sol";
@@ -118,12 +119,23 @@ abstract contract Fork_Shared_Test is Base_Test_, Modifiers {
 
         // --- Set the proxy as the OriginARM
         originARM = OriginARM(address(originARMProxy));
+        originAssetAdapter = new OriginAssetAdapter(address(originARM), address(os), address(ws), address(vault));
+        originAssetAdapter.initialize();
 
         // --- Set the SiloMarket as the market
         siloMarket = SiloMarket(address(marketAdapterProxy));
 
-        // set prices
+        // Register OS as the base asset.
         vm.prank(governor);
-        originARM.setPrices(992 * 1e33, 1001 * 1e33);
+        originARM.addBaseAsset(
+            address(os),
+            address(originAssetAdapter),
+            992 * 1e33,
+            1001 * 1e33,
+            type(uint128).max,
+            type(uint128).max,
+            1e36,
+            true
+        );
     }
 }

@@ -7,6 +7,8 @@ import {LidoARM} from "contracts/LidoARM.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
 import {CapManager} from "contracts/CapManager.sol";
 import {ZapperLidoARM} from "contracts/ZapperLidoARM.sol";
+import {StETHAssetAdapter} from "contracts/adapters/StETHAssetAdapter.sol";
+import {WstETHAssetAdapter} from "contracts/adapters/WstETHAssetAdapter.sol";
 import {IERC20, LegacyAMM} from "contracts/Interfaces.sol";
 
 // Deployment
@@ -19,6 +21,8 @@ contract $003_UpgradeLidoARMMainnetScript is AbstractDeployScript("003_UpgradeLi
     LidoARM lidoARM;
     CapManager capManager;
     ZapperLidoARM zapper;
+    StETHAssetAdapter stethAdapter;
+    WstETHAssetAdapter wstethAdapter;
 
     function _execute() internal override {
         // 1. Record the proxy address used for AMM v1
@@ -46,10 +50,25 @@ contract $003_UpgradeLidoARMMainnetScript is AbstractDeployScript("003_UpgradeLi
 
         // 7. Deploy Lido implementation
         uint256 claimDelay = 10 minutes;
-        lidoARMImpl = new LidoARM(Mainnet.STETH, Mainnet.WETH, Mainnet.LIDO_WITHDRAWAL, claimDelay, 0, 0);
+        lidoARMImpl = new LidoARM(Mainnet.WETH, claimDelay, 0, 0);
         _recordDeployment("LIDO_ARM_IMPL", address(lidoARMImpl));
 
-        // 8. Deploy the Zapper
+        // 8. Deploy asset adapter implementations and proxies
+        stethAdapter = new StETHAssetAdapter(Mainnet.LIDO_ARM, Mainnet.WETH, Mainnet.STETH, Mainnet.LIDO_WITHDRAWAL);
+        _recordDeployment("LIDO_ARM_STETH_ADAPTER_IMPL", address(stethAdapter));
+        Proxy stethAdapterProxy = new Proxy();
+        stethAdapterProxy.initialize(address(stethAdapter), Mainnet.TIMELOCK, abi.encodeWithSignature("initialize()"));
+        _recordDeployment("LIDO_ARM_STETH_ADAPTER", address(stethAdapterProxy));
+
+        wstethAdapter = new WstETHAssetAdapter(
+            Mainnet.LIDO_ARM, Mainnet.WETH, Mainnet.STETH, Mainnet.WSTETH, Mainnet.LIDO_WITHDRAWAL
+        );
+        _recordDeployment("LIDO_ARM_WSTETH_ADAPTER_IMPL", address(wstethAdapter));
+        Proxy wstethAdapterProxy = new Proxy();
+        wstethAdapterProxy.initialize(address(wstethAdapter), Mainnet.TIMELOCK, abi.encodeWithSignature("initialize()"));
+        _recordDeployment("LIDO_ARM_WSTETH_ADAPTER", address(wstethAdapterProxy));
+
+        // 9. Deploy the Zapper
         zapper = new ZapperLidoARM(Mainnet.WETH, Mainnet.LIDO_ARM);
         zapper.setOwner(Mainnet.STRATEGIST);
         _recordDeployment("LIDO_ARM_ZAPPER", address(zapper));
@@ -59,6 +78,8 @@ contract $003_UpgradeLidoARMMainnetScript is AbstractDeployScript("003_UpgradeLi
         Proxy lidoARMProxy_ = Proxy(payable(resolver.resolve("LIDO_ARM")));
         address lidoARMImpl_ = resolver.resolve("LIDO_ARM_IMPL");
         address capManProxy_ = resolver.resolve("LIDO_ARM_CAP_MAN");
+        address stethAdapter_ = resolver.resolve("LIDO_ARM_STETH_ADAPTER");
+        address wstethAdapter_ = resolver.resolve("LIDO_ARM_WSTETH_ADAPTER");
 
         // Skip if already upgraded on-chain
         if (lidoARMProxy_.implementation() == lidoARMImpl_) return;
@@ -94,12 +115,19 @@ contract $003_UpgradeLidoARMMainnetScript is AbstractDeployScript("003_UpgradeLi
         lidoARMProxy_.upgradeToAndCall(lidoARMImpl_, data);
         LidoARM lidoARM_ = LidoARM(payable(Mainnet.LIDO_ARM));
 
-        // Set the price that buy and sell prices can not cross
-        LidoARM(payable(Mainnet.LIDO_ARM)).setCrossPrice(0.9998e36);
-
-        // Set the buy price with a 2.5 basis point discount.
-        // The sell price has a 1 basis point discount.
-        LidoARM(payable(Mainnet.LIDO_ARM)).setPrices(0.99975e36, 0.9999e36);
+        lidoARM_.addBaseAsset(
+            Mainnet.STETH, stethAdapter_, 0.99975e36, 0.9999e36, type(uint128).max, type(uint128).max, 0.9998e36, true
+        );
+        lidoARM_.addBaseAsset(
+            Mainnet.WSTETH,
+            wstethAdapter_,
+            0.99975e36,
+            0.9999e36,
+            type(uint128).max,
+            type(uint128).max,
+            0.9998e36,
+            false
+        );
 
         // transfer ownership of the Lido ARM proxy to the mainnet 5/8 multisig
         lidoARMProxy_.setOwner(Mainnet.GOV_MULTISIG);

@@ -2,6 +2,7 @@ const { Defender } = require("@openzeppelin/defender-sdk");
 const { ethers } = require("ethers");
 
 const { claimLidoWithdrawals } = require("../tasks/lidoQueue");
+const { runForBases } = require("./priceActionUtils");
 const { mainnet } = require("../utils/addresses");
 const lidoWithdrawalQueueAbi = require("../../abis/LidoWithdrawQueue.json");
 const lidoARMAbi = require("../../abis/LidoARM.json");
@@ -28,10 +29,16 @@ const handler = async (event) => {
     signer,
   );
 
-  await claimLidoWithdrawals({
-    signer,
-    arm,
-    withdrawalQueue,
+  await runForBases({
+    bases: ["STETH", "WSTETH"],
+    actionName: "Claiming withdrawals",
+    fn: claimLidoWithdrawals,
+    options: {
+      signer,
+      arm,
+      armName: "Lido",
+      withdrawalQueue,
+    },
   });
 };
 

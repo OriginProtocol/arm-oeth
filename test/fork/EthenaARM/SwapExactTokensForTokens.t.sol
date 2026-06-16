@@ -22,7 +22,7 @@ contract Fork_Concrete_EthenaARM_swapExactTokensForTokens_Test_ is Fork_Shared_T
         uint256 susdeBalanceBefore = susde.balanceOf(address(this));
 
         // Precompute expected amount out
-        uint256 traderate = ethenaARM.traderate0();
+        uint256 traderate = _sellPrice();
         uint256 expectedAmountOut = (susde.convertToShares(AMOUNT_IN) * 1e36) / traderate;
 
         // Expected events
@@ -52,7 +52,7 @@ contract Fork_Concrete_EthenaARM_swapExactTokensForTokens_Test_ is Fork_Shared_T
         uint256 susdeBalanceBefore = susde.balanceOf(address(this));
 
         // Precompute expected amount out
-        uint256 traderate = ethenaARM.traderate0();
+        uint256 traderate = _sellPrice();
         uint256 expectedAmountOut = (susde.convertToShares(AMOUNT_IN) * 1e36) / traderate;
 
         // Expected events
@@ -84,10 +84,13 @@ contract Fork_Concrete_EthenaARM_swapExactTokensForTokens_Test_ is Fork_Shared_T
         // Record balances before swap
         uint256 usdeBalanceBefore = usde.balanceOf(address(this));
         uint256 susdeBalanceBefore = susde.balanceOf(address(this));
+        uint256 feesAccruedBefore = ethenaARM.feesAccrued();
 
         // Precompute expected amount out
-        uint256 traderate = ethenaARM.traderate1();
+        uint256 traderate = _buyPrice();
         uint256 expectedAmountOut = (susde.convertToAssets(AMOUNT_IN) * traderate) / 1e36;
+        uint256 expectedFee =
+            expectedAmountOut * _swapFeeMultiplier(_buyPrice(), _crossPrice(), ethenaARM.fee()) / PRICE_SCALE;
 
         // Expected events
         vm.expectEmit({emitter: address(susde)});
@@ -108,13 +111,16 @@ contract Fork_Concrete_EthenaARM_swapExactTokensForTokens_Test_ is Fork_Shared_T
         assertEq(obtained[1], expectedAmountOut, "Obtained USDe amount should match expected output");
         assertEq(usdeBalanceAfter, usdeBalanceBefore + expectedAmountOut, "USDe balance should have increased");
         assertEq(susdeBalanceBefore, susdeBalanceAfter + AMOUNT_IN, "SUSDe balance should have decreased");
+        assertEq(
+            ethenaARM.feesAccrued() - feesAccruedBefore, expectedFee, "Fees accrued should match output multiplier"
+        );
     }
 
     function test_swapExactTokensForTokens_SUSDE_To_USDE_WithOutstandingWithdrawals_Sig1() public {
         ethenaARM.requestRedeem(AMOUNT_IN);
 
         // Precompute expected amount out
-        uint256 traderate = ethenaARM.traderate1();
+        uint256 traderate = _buyPrice();
         uint256 expectedAmountOut = (susde.convertToAssets(AMOUNT_IN) * traderate) / 1e36;
 
         // Perform the swap
@@ -130,15 +136,15 @@ contract Fork_Concrete_EthenaARM_swapExactTokensForTokens_Test_ is Fork_Shared_T
     /// --- REVERTING TESTS
     //////////////////////////////////////////////////////
     function test_RevertWhen_swapExactTokensForTokens_Because_InvalidInToken() public {
-        vm.expectRevert(bytes("EthenaARM: Invalid token"));
+        vm.expectRevert(bytes("ARM: Invalid swap assets"));
         ethenaARM.swapExactTokensForTokens(badToken, usde, AMOUNT_IN, 0, address(this));
     }
 
     function test_RevertWhen_swapExactTokensForTokens_Because_InvalidOutToken() public {
-        vm.expectRevert(bytes("ARM: Invalid out token"));
+        vm.expectRevert(bytes("ARM: Invalid swap assets"));
         ethenaARM.swapExactTokensForTokens(usde, badToken, AMOUNT_IN, 0, address(this));
 
-        vm.expectRevert(bytes("ARM: Invalid out token"));
+        vm.expectRevert(bytes("ARM: Invalid swap assets"));
         ethenaARM.swapExactTokensForTokens(IERC20(address(susde)), badToken, AMOUNT_IN, 0, address(this));
     }
 

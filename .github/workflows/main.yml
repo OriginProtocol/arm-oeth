@@ -142,7 +142,7 @@ jobs:
 
       - name: Run invariant tests (LidoARM) [${{ env.FOUNDRY_PROFILE }}]
         run: |
-          FOUNDRY_INVARIANT_FAIL_ON_REVERT=false \
+          FOUNDRY_INVARIANT_FAIL_ON_REVERT=true \
           FOUNDRY_MATCH_CONTRACT=FuzzerFoundry_LidoARM \
           forge test --summary --fail-fast --show-progress
 

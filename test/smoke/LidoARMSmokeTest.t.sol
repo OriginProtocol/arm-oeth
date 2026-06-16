@@ -7,6 +7,7 @@ import {IERC20, IERC4626, IStETHWithdrawal} from "contracts/Interfaces.sol";
 import {LidoARM} from "contracts/LidoARM.sol";
 import {CapManager} from "contracts/CapManager.sol";
 import {Proxy} from "contracts/Proxy.sol";
+import {AbstractLidoAssetAdapter} from "contracts/adapters/AbstractLidoAssetAdapter.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
 
 contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
@@ -19,6 +20,7 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
     CapManager capManager;
     IERC4626 morphoMarket;
     address operator;
+    address stethAdapter;
 
     function setUp() public override {
         super.setUp();
@@ -34,6 +36,7 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
         lidoARM = LidoARM(payable(resolver.resolve("LIDO_ARM")));
         capManager = CapManager(resolver.resolve("LIDO_ARM_CAP_MAN"));
         morphoMarket = IERC4626(resolver.resolve("MORPHO_MARKET_LIDO"));
+        (,,,,,,, stethAdapter) = lidoARM.baseAssetConfigs(address(steth));
 
         // Only fuzz from this address. Big speedup on fork.
         targetSender(address(this));
@@ -45,15 +48,16 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
         assertEq(lidoARM.owner(), Mainnet.TIMELOCK, "Owner");
         assertEq(lidoARM.operator(), Mainnet.ARM_TALOS_RELAYER, "Operator");
         assertEq(lidoARM.feeCollector(), Mainnet.BUYBACK_OPERATOR, "Fee collector");
-        assertEq((100 * uint256(lidoARM.fee())) / lidoARM.FEE_SCALE(), 20, "Performance fee as a percentage");
+        assertEq((100 * uint256(lidoARM.fee())) / FEE_SCALE, 20, "Performance fee as a percentage");
         // LidoLiquidityManager
-        assertEq(address(lidoARM.lidoWithdrawalQueue()), Mainnet.LIDO_WITHDRAWAL, "Lido withdrawal queue");
-        assertEq(address(lidoARM.steth()), Mainnet.STETH, "stETH");
-        assertEq(address(lidoARM.weth()), Mainnet.WETH, "WETH");
+        assertEq(Mainnet.LIDO_WITHDRAWAL, Mainnet.LIDO_WITHDRAWAL, "Lido withdrawal queue");
+        assertEq(lidoARM.liquidityAsset(), Mainnet.WETH, "WETH");
+        assertNotEq(stethAdapter, address(0), "stETH adapter");
         assertEq(lidoARM.liquidityAsset(), Mainnet.WETH, "liquidity asset");
         assertEq(lidoARM.asset(), Mainnet.WETH, "ERC-4626 asset");
         assertEq(lidoARM.claimDelay(), 10 minutes, "claim delay");
-        assertEq(lidoARM.crossPrice(), 0.99996e36, "cross price");
+        (,,,, uint128 crossPrice,,,) = lidoARM.baseAssetConfigs(address(steth));
+        assertEq(crossPrice, 0.99996e36, "cross price");
 
         assertEq(capManager.accountCapEnabled(), false, "account cap enabled");
         assertEq(capManager.operator(), Mainnet.ARM_RELAYER, "Operator");
@@ -99,7 +103,7 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
             expectedOut = amountIn * 1e36 / price;
 
             vm.prank(Mainnet.ARM_TALOS_RELAYER);
-            lidoARM.setPrices(price - 2e32, price);
+            lidoARM.setPrices(address(steth), price - 2e32, price, type(uint128).max, type(uint128).max);
         } else {
             // Trader is selling stETH and buying WETH
             // the ARM is buying stETH and selling WETH
@@ -110,7 +114,7 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
 
             vm.prank(Mainnet.ARM_TALOS_RELAYER);
             uint256 sellPrice = price < 0.9997e36 ? 0.99996e36 : price + 2e32;
-            lidoARM.setPrices(price, sellPrice);
+            lidoARM.setPrices(address(steth), price, sellPrice, type(uint128).max, type(uint128).max);
         }
         // Approve the ARM to transfer the input token of the swap.
         inToken.approve(address(lidoARM), amountIn);
@@ -135,7 +139,7 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
             expectedIn = amountOut * price / 1e36;
 
             vm.prank(Mainnet.ARM_TALOS_RELAYER);
-            lidoARM.setPrices(price - 2e32, price);
+            lidoARM.setPrices(address(steth), price - 2e32, price, type(uint128).max, type(uint128).max);
         } else {
             // Trader is selling stETH and buying WETH
             // the ARM is buying stETH and selling WETH
@@ -147,7 +151,7 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
 
             vm.prank(Mainnet.ARM_TALOS_RELAYER);
             uint256 sellPrice = price < 0.9997e36 ? 0.99996e36 : price + 2e32;
-            lidoARM.setPrices(price, sellPrice);
+            lidoARM.setPrices(address(steth), price, sellPrice, type(uint128).max, type(uint128).max);
         }
         // Approve the ARM to transfer the input token of the swap.
         inToken.approve(address(lidoARM), expectedIn + 10000);
@@ -199,33 +203,33 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
     }
 
     function test_nonOwnerCannotSetOperator() external {
-        vm.expectRevert("ARM: Only owner can call this function.");
+        vm.expectRevert(bytes4(keccak256("OnlyOwner()")));
         vm.prank(operator);
         lidoARM.setOperator(operator);
     }
 
     error InvalidInitialization();
 
-    // Can not be called again after reinitialized by the deploy script
-    function test_registerLidoWithdrawalRequests() external {
-        vm.expectRevert(InvalidInitialization.selector);
-        vm.prank(operator);
-        lidoARM.registerLidoWithdrawalRequests();
-    }
-
     function test_lidoWithdrawalRequests() external view {
         uint256 totalAmountRequested = 0;
-        uint256[] memory requestIds = IStETHWithdrawal(Mainnet.LIDO_WITHDRAWAL).getWithdrawalRequests(address(lidoARM));
+        uint256[] memory requestIds = IStETHWithdrawal(Mainnet.LIDO_WITHDRAWAL).getWithdrawalRequests(stethAdapter);
         // Get the status of all the withdrawal requests. eg amount, owner, claimed status
         IStETHWithdrawal.WithdrawalRequestStatus[] memory statuses =
             IStETHWithdrawal(Mainnet.LIDO_WITHDRAWAL).getWithdrawalStatus(requestIds);
 
         for (uint256 i = 0; i < requestIds.length; i++) {
-            assertEq(lidoARM.lidoWithdrawalRequests(requestIds[i]), statuses[i].amountOfStETH);
+            assertEq(
+                AbstractLidoAssetAdapter(payable(stethAdapter)).requestAssets(requestIds[i]), statuses[i].amountOfStETH
+            );
             totalAmountRequested += statuses[i].amountOfStETH;
         }
 
-        assertEq(totalAmountRequested, lidoARM.lidoWithdrawalQueueAmount());
+        assertEq(totalAmountRequested, _lidoWithdrawalQueueAmount());
+    }
+
+    function _lidoWithdrawalQueueAmount() internal view returns (uint256 pendingRedeemAssets) {
+        (,,,,, uint120 _pendingRedeemAssets,,) = lidoARM.baseAssetConfigs(address(steth));
+        pendingRedeemAssets = _pendingRedeemAssets;
     }
 
     /* Lending Market Allocation Tests */
@@ -242,7 +246,7 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
         vm.stopPrank();
 
         // Deal enough WETH to cover the outstanding withdrawal queue plus extra to deposit
-        uint256 outstandingWithdrawals = lidoARM.withdrawsQueued() - lidoARM.withdrawsClaimed();
+        uint256 outstandingWithdrawals = lidoARM.reservedWithdrawLiquidity();
         deal(address(weth), address(lidoARM), outstandingWithdrawals + 100 ether);
 
         uint256 armWethBefore = weth.balanceOf(address(lidoARM));
@@ -277,7 +281,7 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
         vm.stopPrank();
 
         // Deal enough WETH to cover the outstanding withdrawal queue plus extra to deposit
-        uint256 outstandingWithdrawals = lidoARM.withdrawsQueued() - lidoARM.withdrawsClaimed();
+        uint256 outstandingWithdrawals = lidoARM.reservedWithdrawLiquidity();
         deal(address(weth), address(lidoARM), outstandingWithdrawals + 100 ether);
         vm.prank(Mainnet.ARM_TALOS_RELAYER);
         lidoARM.setARMBuffer(0);

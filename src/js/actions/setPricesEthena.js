@@ -2,6 +2,7 @@ const { Defender } = require("@openzeppelin/defender-sdk");
 const { ethers } = require("ethers");
 
 const { setPrices } = require("../tasks/armPrices");
+const { setPricesForBases } = require("./priceActionUtils");
 const { mainnet } = require("../utils/addresses");
 const armAbi = require("../../abis/EthenaARM.json");
 
@@ -22,25 +23,30 @@ const handler = async (event) => {
   // References to contracts
   const arm = new ethers.Contract(mainnet.ethenaARM, armAbi, signer);
 
-  await setPrices({
-    signer,
-    arm,
-    // sellPrice: 0.9998,
-    // buyPrice: 0.9997,
-    maxSellPrice: 0.99999,
-    minSellPrice: 0.99996,
-    maxBuyPrice: 0.999,
-    minBuyPrice: 0.995,
-    // inch: true,
-    // curve: true,
-    kyber: true,
-    amount: 2000,
-    tolerance: 0.3,
-    fee: 2,
-    offset: 0.4,
-    priceOffset: true,
-    blockTag: "latest",
-    wrapped: true,
+  await setPricesForBases({
+    setPrices,
+    bases: ["SUSDE"],
+    options: {
+      signer,
+      arm,
+      armName: "Ethena",
+      // sellPrice: 0.9998,
+      // buyPrice: 0.9997,
+      maxSellPrice: 0.99999,
+      minSellPrice: 0.99996,
+      maxBuyPrice: 0.999,
+      minBuyPrice: 0.995,
+      // inch: true,
+      // curve: true,
+      kyber: true,
+      amount: 2000,
+      tolerance: 0.3,
+      fee: 2,
+      offset: 0.4,
+      priceOffset: true,
+      blockTag: "latest",
+      wrapped: true,
+    },
   });
 };
 

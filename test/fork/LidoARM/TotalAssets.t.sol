@@ -43,10 +43,7 @@ contract Fork_Concrete_LidoARM_TotalAssets_Test_ is Fork_Shared_Test_ {
         uint256 assetGain = DEFAULT_AMOUNT / 2;
         deal(address(weth), address(lidoARM), weth.balanceOf(address(lidoARM)) + assetGain);
 
-        // Calculate Fees
-        uint256 fee = assetGain * 20 / 100; // 20% fee
-
-        assertEq(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT + assetGain - fee);
+        assertEq(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT + assetGain);
     }
 
     function test_TotalAssets_AfterDeposit_WithAssetGain_InSTETH()
@@ -59,12 +56,7 @@ contract Fork_Concrete_LidoARM_TotalAssets_Test_ is Fork_Shared_Test_ {
         // We are sure that steth balance is empty, so we can deal directly final amount.
         deal(address(steth), address(lidoARM), assetGain);
 
-        // Calculate Fees
-        uint256 fee = assetGain * 20 / 100; // 20% fee
-
-        assertApproxEqAbs(
-            lidoARM.totalAssets(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT + assetGain - fee, STETH_ERROR_ROUNDING
-        );
+        assertApproxEqAbs(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT + assetGain, STETH_ERROR_ROUNDING);
     }
 
     function test_TotalAssets_AfterDeposit_WithAssetLoss_InWETH()
@@ -103,7 +95,7 @@ contract Fork_Concrete_LidoARM_TotalAssets_Test_ is Fork_Shared_Test_ {
         // Request a redeem on Lido
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = swapAmount;
-        lidoARM.requestLidoWithdrawals(amounts);
+        _requestLidoWithdrawals(amounts);
 
         // Check total assets after withdrawal is the same as before
         assertApproxEqAbs(lidoARM.totalAssets(), totalAssetsBefore, STETH_ERROR_ROUNDING);
@@ -117,10 +109,10 @@ contract Fork_Concrete_LidoARM_TotalAssets_Test_ is Fork_Shared_Test_ {
         // User deposit, this will trigger a fee calculation
         lidoARM.deposit(DEFAULT_AMOUNT);
 
-        // Assert fee accrued is not null
-        assertEq(lidoARM.feesAccrued(), assetGain * 20 / 100);
+        // Passive gains are included in total assets without accruing ARM fees.
+        assertEq(lidoARM.feesAccrued(), 0);
 
-        assertEq(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT + assetGain - assetGain * 20 / 100);
+        assertEq(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY + DEFAULT_AMOUNT + assetGain);
     }
 
     function test_TotalAssets_When_ARMIsInsolvent()
@@ -131,7 +123,7 @@ contract Fork_Concrete_LidoARM_TotalAssets_Test_ is Fork_Shared_Test_ {
         // Simulate a loss of assets
         deal(address(weth), address(lidoARM), DEFAULT_AMOUNT - 1);
 
-        assertEq(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY);
+        assertEq(lidoARM.totalAssets(), DEFAULT_AMOUNT - 1);
     }
 
     function test_RevertWhen_TotalAssets_Because_MathError()
