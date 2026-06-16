@@ -58,6 +58,7 @@ jobs:
         uses: ./.github/actions/setup
         with:
           install-pnpm: 'true'
+          ssh-key: ${{ secrets.TALOS_DEPLOY_KEY }}
 
       - name: Compile all contracts
         run: forge build
@@ -81,6 +82,7 @@ jobs:
         uses: ./.github/actions/setup
         with:
           install-pnpm: 'true'
+          ssh-key: ${{ secrets.TALOS_DEPLOY_KEY }}
 
       - name: Run unit tests
         run: forge test --summary --fail-fast --show-progress --mp 'test/unit/**'
@@ -100,6 +102,7 @@ jobs:
         uses: ./.github/actions/setup
         with:
           install-pnpm: 'true'
+          ssh-key: ${{ secrets.TALOS_DEPLOY_KEY }}
 
       - name: Run fork tests
         run: forge test --summary --fail-fast --show-progress --mp 'test/fork/**'
@@ -119,6 +122,7 @@ jobs:
         uses: ./.github/actions/setup
         with:
           install-pnpm: 'true'
+          ssh-key: ${{ secrets.TALOS_DEPLOY_KEY }}
 
       - name: Run smoke tests
         run: forge build && forge test --summary --fail-fast --show-progress --mp 'test/smoke/**'
