@@ -1,3 +1,4 @@
+import { AbiCoder } from "ethers";
 import type { Signer } from "ethers";
 import { subtask, task } from "hardhat/config";
 import type { ConfigurableTaskDefinition } from "hardhat/types";
@@ -35,6 +36,80 @@ const CHAIN_NAMES: Record<number, string> = {
   146: "sonic",
   17000: "holesky",
 };
+
+const abiCoder = AbiCoder.defaultAbiCoder();
+
+function tryParseJson(value: unknown): unknown {
+  if (typeof value !== "string") return undefined;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return undefined;
+  }
+}
+
+function findRevertData(err: unknown): string | undefined {
+  const seen = new Set<unknown>();
+  const queue: unknown[] = [err];
+
+  while (queue.length > 0) {
+    const item = queue.shift();
+    if (!item || seen.has(item)) continue;
+    seen.add(item);
+
+    if (typeof item === "string") {
+      const parsed = tryParseJson(item);
+      if (parsed) queue.push(parsed);
+      continue;
+    }
+
+    if (typeof item !== "object") continue;
+    const record = item as Record<string, unknown>;
+
+    if (typeof record.data === "string" && record.data.startsWith("0x")) {
+      return record.data;
+    }
+
+    queue.push(
+      record.data,
+      record.error,
+      record.info,
+      record.body,
+      record.cause,
+      record.receipt,
+    );
+
+    const info = record.info as Record<string, unknown> | undefined;
+    if (info?.error) queue.push(info.error);
+  }
+
+  return undefined;
+}
+
+function decodeRevertData(data: string): string | undefined {
+  if (data === "0x") return "empty revert data";
+
+  if (data.startsWith("0x08c379a0")) {
+    try {
+      const [reason] = abiCoder.decode(["string"], `0x${data.slice(10)}`);
+      return `Error("${reason}")`;
+    } catch {}
+  }
+
+  if (data.startsWith("0x4e487b71")) {
+    try {
+      const [code] = abiCoder.decode(["uint256"], `0x${data.slice(10)}`);
+      return `Panic(${code})`;
+    } catch {}
+  }
+
+  return `custom/unknown error selector ${data.slice(0, 10)} data ${data}`;
+}
+
+function describeRevert(err: unknown): string | undefined {
+  const data = findRevertData(err);
+  return data ? decodeRevertData(data) : undefined;
+}
 
 function makeLog(name: string): Logger {
   const prefix = `[${name}]`;
@@ -79,11 +154,11 @@ export function createActionHandler(
       }
 
       await run({ signer, chainId, networkName, log, args: taskArgs });
-      log.info(
-        `Completed in ${((Date.now() - startTime) / 1000).toFixed(1)}s`,
-      );
+      log.info(`Completed in ${((Date.now() - startTime) / 1000).toFixed(1)}s`);
     } catch (err: any) {
       log.error(`${err?.name ?? "Error"}: ${err?.message ?? String(err)}`);
+      const revert = describeRevert(err);
+      if (revert) log.error(`Contract revert: ${revert}`);
       if (err?.stack) log.error(err.stack);
       throw err;
     }
