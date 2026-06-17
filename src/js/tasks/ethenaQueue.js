@@ -85,11 +85,13 @@ const fetchUnstakerStates = async (signer, adapter, addresses) => {
       }),
     );
   } else {
-    addresses = await Promise.all(
-      addresses.map(async (address) => ({
-        address,
-        index: Number.MAX_SAFE_INTEGER,
-      })),
+    // Callers pass { address, index } objects already (legacy path via
+    // legacyEthenaUnstakers); keep them as-is so the real unstaker index is
+    // preserved for the FIFO uint8 claim. Tolerate plain address strings too.
+    addresses = addresses.map((entry) =>
+      typeof entry === "string"
+        ? { address: entry, index: Number.MAX_SAFE_INTEGER }
+        : entry,
     );
   }
 
