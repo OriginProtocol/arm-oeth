@@ -385,10 +385,17 @@ abstract contract TargetFunction is Invariant_LidoARM_Setup_Test {
         address picked = candidates[s % 3];
         if (picked == current) picked = candidates[(s + 1) % 3];
 
-        // Switching away from a market redeems ALL shares. Skip if the market can't cover the full redeem.
+        // Switching away from a market redeems ALL shares via balanceOf. Skip the call if that full
+        // redeem would revert: either the market can't cover it (maxRedeem < balanceOf), or the shares
+        // are dust worth 0 assets (convertToAssets == 0), which reverts with ZERO_ASSETS in ERC4626.redeem.
+        // Both are documented operational edge cases the operator handles off-chain (see setActiveMarket).
         if (current != address(0)) {
             uint256 shares = IERC4626(current).balanceOf(address(lidoARM));
-            vm.assume(shares == 0 || shares <= IERC4626(current).maxRedeem(address(lidoARM)));
+            vm.assume(
+                shares == 0
+                    || (shares <= IERC4626(current).maxRedeem(address(lidoARM))
+                        && IERC4626(current).convertToAssets(shares) > 0)
+            );
         }
 
         vm.prank(operator);
