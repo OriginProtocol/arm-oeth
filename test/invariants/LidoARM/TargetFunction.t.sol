@@ -476,6 +476,9 @@ abstract contract TargetFunction is Invariant_LidoARM_Setup_Test {
         vm.assume(bal > 0);
 
         uint256 boundedAmount = _bound(amount, 1, bal);
+        // With a share price >= 1, a tiny deposit can round down to 0 shares, which reverts with
+        // ZERO_SHARES in ERC4626.deposit. Skip those amounts (a supplier would never deposit dust).
+        vm.assume(market.previewDeposit(boundedAmount) > 0);
         vm.prank(hanna);
         market.deposit(boundedAmount, hanna);
 

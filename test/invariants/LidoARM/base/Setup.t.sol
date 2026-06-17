@@ -213,9 +213,12 @@ abstract contract Invariant_LidoARM_Setup_Test is Base_Test_, Helpers {
         weth.approve(address(mockERC4626Market_B), type(uint256).max);
         mockERC4626Market_A.deposit(10_000 ether, address(this));
         mockERC4626Market_B.deposit(10_000 ether, address(this));
-        // Simulate yield in markets, ~10%
-        deal(address(weth), address(mockERC4626Market_A), 1_458 ether);
-        deal(address(weth), address(mockERC4626Market_B), 1_981 ether);
+        // Simulate accrued yield in the markets. `deal` overwrites the balance (it does not add), so
+        // the target is the 10_000 deposited + the yield. This keeps the share price above 1 (~1.15 /
+        // ~1.20) as in a real interest-bearing vault; a price below 1 would let dust shares convert to
+        // 0 assets and brick ERC4626.redeem with ZERO_ASSETS.
+        deal(address(weth), address(mockERC4626Market_A), 10_000 ether + 1_458 ether);
+        deal(address(weth), address(mockERC4626Market_B), 10_000 ether + 1_981 ether);
 
         // 6. Give LPs initial liquidity
         for (uint256 i; i < LP_COUNT; i++) {
