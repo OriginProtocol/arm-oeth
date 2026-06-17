@@ -6,6 +6,8 @@ import {Proxy} from "contracts/Proxy.sol";
 import {IERC20} from "contracts/Interfaces.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
 import {OriginARM} from "contracts/OriginARM.sol";
+import {OriginAssetAdapter} from "contracts/adapters/OriginAssetAdapter.sol";
+import {WrappedOriginAssetAdapter} from "contracts/adapters/WrappedOriginAssetAdapter.sol";
 import {MorphoMarket} from "contracts/markets/MorphoMarket.sol";
 import {Abstract4626MarketWrapper} from "contracts/markets/Abstract4626MarketWrapper.sol";
 
@@ -21,6 +23,23 @@ contract $013_UpgradeOETHARMScript is AbstractDeployScript("013_UpgradeOETHARMSc
         uint256 claimDelay = 10 minutes;
         OriginARM originARMImpl = new OriginARM(Mainnet.OETH, Mainnet.WETH, Mainnet.OETH_VAULT, claimDelay, 1e7, 1e18);
         _recordDeployment("OETH_ARM_IMPL", address(originARMImpl));
+
+        OriginAssetAdapter adapterImpl =
+            new OriginAssetAdapter(Mainnet.OETH_ARM, Mainnet.OETH, Mainnet.WETH, Mainnet.OETH_VAULT);
+        _recordDeployment("OETH_ARM_OETH_ADAPTER_IMPL", address(adapterImpl));
+        Proxy adapterProxy = new Proxy();
+        adapterProxy.initialize(address(adapterImpl), Mainnet.TIMELOCK, abi.encodeWithSignature("initialize()"));
+        _recordDeployment("OETH_ARM_OETH_ADAPTER", address(adapterProxy));
+
+        WrappedOriginAssetAdapter wrappedAdapterImpl = new WrappedOriginAssetAdapter(
+            Mainnet.OETH_ARM, Mainnet.WOETH, Mainnet.OETH, Mainnet.WETH, Mainnet.OETH_VAULT
+        );
+        _recordDeployment("OETH_ARM_WOETH_ADAPTER_IMPL", address(wrappedAdapterImpl));
+        Proxy wrappedAdapterProxy = new Proxy();
+        wrappedAdapterProxy.initialize(
+            address(wrappedAdapterImpl), Mainnet.TIMELOCK, abi.encodeWithSignature("initialize()")
+        );
+        _recordDeployment("OETH_ARM_WOETH_ADAPTER", address(wrappedAdapterProxy));
 
         // 2. Deploy MorphoMarket proxy
         Proxy morphoMarketProxy = new Proxy();
@@ -76,20 +95,49 @@ contract $013_UpgradeOETHARMScript is AbstractDeployScript("013_UpgradeOETHARMSc
             abi.encode(resolver.resolve("OETH_ARM_IMPL"), initializeData)
         );
 
-        // 6. Add Morpho Market as an active market
+        // 6. Register OETH as the base asset.
+        uint256 crossPrice = 0.9995 * 1e36;
+        govProposal.action(
+            resolver.resolve("OETH_ARM"),
+            "addBaseAsset(address,address,uint256,uint256,uint256,uint256,uint256,bool)",
+            abi.encode(
+                Mainnet.OETH,
+                resolver.resolve("OETH_ARM_OETH_ADAPTER"),
+                0.9994 * 1e36,
+                1e36,
+                type(uint128).max,
+                type(uint128).max,
+                crossPrice,
+                true
+            )
+        );
+
+        // 7. Register wOETH as a non-pegged base asset.
+        govProposal.action(
+            resolver.resolve("OETH_ARM"),
+            "addBaseAsset(address,address,uint256,uint256,uint256,uint256,uint256,bool)",
+            abi.encode(
+                Mainnet.WOETH,
+                resolver.resolve("OETH_ARM_WOETH_ADAPTER"),
+                0.9994 * 1e36,
+                1e36,
+                type(uint128).max,
+                type(uint128).max,
+                crossPrice,
+                false
+            )
+        );
+
+        // 8. Add Morpho Market as an active market
         address[] memory markets = new address[](1);
         markets[0] = resolver.resolve("MORPHO_MARKET_ORIGIN");
         govProposal.action(resolver.resolve("OETH_ARM"), "addMarkets(address[])", abi.encode(markets));
 
-        // 7. Set Morpho Market as the active market
+        // 9. Set Morpho Market as the active market
         govProposal.action(
             resolver.resolve("OETH_ARM"),
             "setActiveMarket(address)",
             abi.encode(resolver.resolve("MORPHO_MARKET_ORIGIN"))
         );
-
-        // 8. Set crossPrice to 0.9995 ETH
-        uint256 crossPrice = 0.9995 * 1e36;
-        govProposal.action(resolver.resolve("OETH_ARM"), "setCrossPrice(uint256)", abi.encode(crossPrice));
     }
 }

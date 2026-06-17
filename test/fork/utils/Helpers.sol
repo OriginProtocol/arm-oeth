@@ -3,6 +3,7 @@ pragma solidity 0.8.23;
 
 // Test imports
 import {Base_Test_} from "test/Base.sol";
+import {AbstractLidoAssetAdapter} from "contracts/adapters/AbstractLidoAssetAdapter.sol";
 
 abstract contract Helpers is Base_Test_ {
     /// @notice Override `deal()` function to handle OETH and STETH special case.
@@ -33,13 +34,13 @@ abstract contract Helpers is Base_Test_ {
         }
     }
 
-    /// @notice Asserts the equality between value of `withdrawalQueueMetadata()` and the expected values.
-    function assertEqQueueMetadata(uint256 expectedQueued, uint256 expectedClaimed, uint256 expectedNextIndex)
+    /// @notice Asserts LP withdrawal queue reservation and claimed share metadata.
+    function assertEqQueueMetadata(uint256 expectedReserved, uint256 expectedClaimedShares, uint256 expectedNextIndex)
         public
         view
     {
-        assertEq(lidoARM.withdrawsQueued(), expectedQueued, "metadata queued");
-        assertEq(lidoARM.withdrawsClaimed(), expectedClaimed, "metadata claimed");
+        assertEq(lidoARM.reservedWithdrawLiquidity(), expectedReserved, "metadata reserved");
+        assertEq(lidoARM.withdrawsClaimedShares(), expectedClaimedShares, "metadata claimed shares");
         assertEq(lidoARM.nextWithdrawalIndex(), expectedNextIndex, "metadata nextWithdrawalIndex");
     }
 
@@ -67,5 +68,49 @@ abstract contract Helpers is Base_Test_ {
         assertEq(_assets, assets, "Wrong assets");
         assertEq(_queued, queued, "Wrong queued");
         assertEq(_shares, shares, "Wrong shares");
+    }
+
+    function _lidoWithdrawalQueueAmount() internal view returns (uint256 pendingRedeemAssets) {
+        (,,,,, uint120 _pendingRedeemAssets,,) = lidoARM.baseAssetConfigs(address(steth));
+        pendingRedeemAssets = _pendingRedeemAssets;
+    }
+
+    function _lidoBuyPrice() internal view returns (uint256 buyPrice) {
+        (uint128 _buyPrice,,,,,,,) = lidoARM.baseAssetConfigs(address(steth));
+        buyPrice = _buyPrice;
+    }
+
+    function _lidoSellPrice() internal view returns (uint256 sellPrice) {
+        (, uint128 _sellPrice,,,,,,) = lidoARM.baseAssetConfigs(address(steth));
+        sellPrice = _sellPrice;
+    }
+
+    function _requestLidoWithdrawals(uint256[] memory amounts) internal returns (uint256[] memory requestIds) {
+        uint256 totalAmount;
+        for (uint256 i = 0; i < amounts.length; ++i) {
+            totalAmount += amounts[i];
+        }
+
+        if (totalAmount == 0) return new uint256[](0);
+
+        uint256 previousLength = AbstractLidoAssetAdapter(payable(stethAdapter)).pendingRequestIdsLength();
+        lidoARM.requestBaseAssetRedeem(address(steth), totalAmount);
+        uint256 newLength = AbstractLidoAssetAdapter(payable(stethAdapter)).pendingRequestIdsLength();
+
+        requestIds = new uint256[](newLength - previousLength);
+        for (uint256 i = 0; i < requestIds.length; ++i) {
+            requestIds[i] = AbstractLidoAssetAdapter(payable(stethAdapter)).pendingRequestId(previousLength + i);
+        }
+    }
+
+    function _claimLidoWithdrawals(uint256[] memory requestIds) internal {
+        if (requestIds.length == 0) return;
+
+        uint256 shares;
+        for (uint256 i = 0; i < requestIds.length; ++i) {
+            shares += AbstractLidoAssetAdapter(payable(stethAdapter)).requestShares(requestIds[i]);
+        }
+
+        lidoARM.claimBaseAssetRedeem(address(steth), shares);
     }
 }

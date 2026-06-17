@@ -6,6 +6,14 @@ inputs:
     description: 'Whether to install pnpm dependencies'
     required: false
     default: 'false'
+  ssh-key:
+    description: >-
+      SSH private key used to clone the private @talos/client dependency
+      (git@github.com:oplabs/talos.git) during `pnpm install`. Pass the
+      TALOS_DEPLOY_KEY secret from jobs that set install-pnpm: true.
+      Empty (e.g. fork PRs without secret access) skips the SSH agent.
+    required: false
+    default: ''
 
 runs:
   using: 'composite'
@@ -55,6 +63,15 @@ runs:
       with:
         node-version: '22'
         cache: 'pnpm'
+
+    # The private @talos/client dependency is cloned over SSH during
+    # `pnpm install`. Without the deploy key the clone fails with
+    # "Permission denied (publickey)" and the whole install aborts.
+    - name: Set up SSH agent for private @talos/client dependency
+      if: inputs.install-pnpm == 'true' && inputs.ssh-key != ''
+      uses: webfactory/ssh-agent@a6f90b1f127823b31d4d4a8d96047790581349bd  # v0.9.1
+      with:
+        ssh-private-key: ${{ inputs.ssh-key }}
 
     - name: Install pnpm dependencies
       if: inputs.install-pnpm == 'true'

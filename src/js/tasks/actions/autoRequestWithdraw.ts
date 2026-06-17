@@ -3,6 +3,7 @@ import { types } from "hardhat/config";
 
 import { action } from "../lib/action";
 import { autoRequestWithdraw } from "../liquidityAutomation";
+import { runForBases } from "../../utils/priceActionUtils";
 import { mainnet } from "../../utils/addresses";
 const oethARMAbi = require("../../../abis/OethARM.json");
 
@@ -28,11 +29,17 @@ action({
     const arm = new ethers.Contract(mainnet.OethARM, oethARMAbi, signer);
 
     log.info("Requesting withdrawals from OETH ARM");
-    await autoRequestWithdraw({
-      signer,
-      arm,
-      minAmount: args.minAmount,
-      thresholdAmount: args.thresholdAmount,
+    await runForBases({
+      bases: ["OETH", "WOETH"],
+      actionName: "Requesting withdrawals",
+      fn: autoRequestWithdraw,
+      options: {
+        signer,
+        arm,
+        armName: "Oeth",
+        minAmount: args.minAmount,
+        thresholdAmount: args.thresholdAmount,
+      },
     });
   },
 });

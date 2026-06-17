@@ -10,6 +10,10 @@ import {LidoARM} from "contracts/LidoARM.sol";
 import {EthenaARM} from "contracts/EthenaARM.sol";
 import {EtherFiARM} from "contracts/EtherFiARM.sol";
 import {OriginARM} from "contracts/OriginARM.sol";
+import {EthenaAssetAdapter} from "contracts/adapters/EthenaAssetAdapter.sol";
+import {EtherFiAssetAdapter} from "contracts/adapters/EtherFiAssetAdapter.sol";
+import {OriginAssetAdapter} from "contracts/adapters/OriginAssetAdapter.sol";
+import {WrappedOriginAssetAdapter} from "contracts/adapters/WrappedOriginAssetAdapter.sol";
 import {SonicHarvester} from "contracts/SonicHarvester.sol";
 import {CapManager} from "contracts/CapManager.sol";
 import {SiloMarket} from "contracts/markets/SiloMarket.sol";
@@ -29,6 +33,8 @@ import {IOriginVault} from "contracts/Interfaces.sol";
 /// @dev This contract should only be used as storage for common variables.
 /// @dev Helpers and other functions should be defined in a separate contract.
 abstract contract Base_Test_ is Test {
+    uint256 internal constant _FEE_STORAGE_SLOT = 56;
+
     //////////////////////////////////////////////////////
     /// --- CONTRACTS
     //////////////////////////////////////////////////////
@@ -44,6 +50,10 @@ abstract contract Base_Test_ is Test {
     EtherFiARM public etherfiARM;
     SonicHarvester public harvester;
     OriginARM public originARM;
+    EthenaAssetAdapter public ethenaAssetAdapter;
+    EtherFiAssetAdapter public etherfiAssetAdapter;
+    OriginAssetAdapter public originAssetAdapter;
+    WrappedOriginAssetAdapter public wrappedOriginAssetAdapter;
     CapManager public capManager;
     SiloMarket public siloMarket;
     MorphoMarket public morphoMarket;
@@ -54,6 +64,7 @@ abstract contract Base_Test_ is Test {
     IERC20 public wos;
     IERC20 public usde;
     IERC20 public oeth;
+    IERC4626 public woeth;
     IERC20 public weth;
     IERC20 public eeth;
     IERC20 public weeth;
@@ -84,12 +95,18 @@ abstract contract Base_Test_ is Test {
     address public oethWhale;
     address public feeCollector;
     address public lidoWithdraw;
+    address public stethAdapter;
+    address public wstethAdapter;
 
     //////////////////////////////////////////////////////
     /// --- DEFAULT VALUES
     //////////////////////////////////////////////////////
     uint256 public constant DEFAULT_AMOUNT = 1 ether;
     uint256 public constant MIN_TOTAL_SUPPLY = 1e12;
+    uint256 public constant MAX_CROSS_PRICE_DEVIATION = 20e32;
+    uint256 public constant PRICE_SCALE = 1e36;
+    uint256 public constant FEE_SCALE = 10000;
+    uint256 public constant DELAY_REQUEST = 30 minutes;
     uint256 public constant STETH_ERROR_ROUNDING = 2;
 
     //////////////////////////////////////////////////////
@@ -115,6 +132,7 @@ abstract contract Base_Test_ is Test {
         _labelNotNull(address(wos), "WOS");
         _labelNotNull(address(usde), "USDE");
         _labelNotNull(address(oeth), "OETH");
+        _labelNotNull(address(woeth), "WOETH");
         _labelNotNull(address(weth), "WETH");
         _labelNotNull(address(eeth), "EETH");
         _labelNotNull(address(morpho), "MORPHO");
@@ -147,5 +165,9 @@ abstract contract Base_Test_ is Test {
 
     function _labelNotNull(address _address, string memory _name) internal {
         if (_address != address(0)) vm.label(_address, _name);
+    }
+
+    function feeStorageSlot(address arm) internal view returns (bytes32 value) {
+        value = vm.load(arm, bytes32(_FEE_STORAGE_SLOT));
     }
 }

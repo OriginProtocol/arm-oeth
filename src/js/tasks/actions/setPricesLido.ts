@@ -3,6 +3,7 @@ import { types } from "hardhat/config";
 
 import { action } from "../lib/action";
 import { setPrices } from "../armPrices";
+import { setPricesForBases } from "../../utils/priceActionUtils";
 import { mainnet } from "../../utils/addresses";
 const lidoARMAbi = require("../../../abis/LidoARM.json");
 
@@ -80,21 +81,26 @@ action({
     const arm = new ethers.Contract(mainnet.lidoARM, lidoARMAbi, signer);
 
     log.info("Setting prices for Lido ARM");
-    await setPrices({
-      signer,
-      arm,
-      maxSellPrice: args.maxSellPrice,
-      minSellPrice: args.minSellPrice,
-      maxBuyPrice: args.maxBuyPrice,
-      minBuyPrice: args.minBuyPrice,
-      kyber: args.kyber,
-      inch: args.inch,
-      amount: args.amount,
-      tolerance: args.tolerance,
-      fee: args.fee,
-      offset: args.offset,
-      priceOffset: true,
-      blockTag: "latest",
+    await setPricesForBases({
+      setPrices,
+      bases: ["STETH", "WSTETH"],
+      options: {
+        signer,
+        arm,
+        armName: "Lido",
+        maxSellPrice: args.maxSellPrice,
+        minSellPrice: args.minSellPrice,
+        maxBuyPrice: args.maxBuyPrice,
+        minBuyPrice: args.minBuyPrice,
+        kyber: args.kyber,
+        inch: args.inch,
+        amount: args.amount,
+        tolerance: args.tolerance,
+        fee: args.fee,
+        offset: args.offset,
+        priceOffset: true,
+        blockTag: "latest",
+      },
     });
   },
 });

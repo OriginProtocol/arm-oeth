@@ -20,6 +20,7 @@ library Mainnet {
     address public constant ARM_MULTISIG = 0xC8F2cF4742C86295653f893214725813B16f7410;
     address public constant OETH_RELAYER = 0x4b91827516f79d6F6a1F292eD99671663b09169a;
     address public constant ARM_RELAYER = 0x39878253374355DBcc15C86458F084fb6f2d6DE7;
+    address public constant ARM_TALOS_RELAYER = 0x739212d5bAfE6AAC8Be49a60B7d003bD41DBf38b;
     address public constant BUYBACK_OPERATOR = 0xBB077E716A5f1F1B63ed5244eBFf5214E50fec8c;
 
     // Tokens
@@ -97,6 +98,7 @@ library Sonic {
     // 5/8 multisig
     address public constant ADMIN = 0xAdDEA7933Db7d83855786EB43a238111C69B00b6;
     address public constant RELAYER = 0x531B8D5eD6db72A56cF1238D4cE478E7cB7f2825;
+    address public constant TALOS_RELAYER = 0x739212d5bAfE6AAC8Be49a60B7d003bD41DBf38b;
 
     // Tokens
     address public constant OS = 0xb1e25689D55734FD3ffFc939c4C3Eb52DFf8A794;

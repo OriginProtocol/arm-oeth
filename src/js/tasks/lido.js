@@ -1,4 +1,4 @@
-const { formatUnits, parseUnits, MaxInt256 } = require("ethers");
+const { formatUnits, parseUnits } = require("ethers");
 
 const addresses = require("../utils/addresses");
 const {
@@ -19,8 +19,14 @@ const {
   parseAddress,
   parseDeployedAddress,
 } = require("../utils/addressParser");
-const { resolveAddress, resolveAsset } = require("../utils/assets");
+const { resolveAsset } = require("../utils/assets");
+const {
+  adapterContract,
+  getArmBuffer,
+  resolveArmBase,
+} = require("../utils/arm");
 const { logWithdrawalQueue } = require("./liquidity");
+const { swap } = require("./swap");
 
 const log = require("../utils/logger")("task:lido");
 
@@ -76,20 +82,35 @@ const snapLido = async ({
   user,
   cap,
   fluid,
+  base,
 }) => {
   const blockTag = await getBlock(block);
   console.log(`\nSnapshot at block ${blockTag}\n`);
   const signer = await getSigner();
+  const lidoARM = await resolveArmContract("Lido");
+  const baseContext = await resolveArmBase({
+    arm: lidoARM,
+    armName: "Lido",
+    base,
+    blockTag,
+  });
+  const assets = {
+    liquid: baseContext.liquidityAddress,
+    base: baseContext.baseAddress,
+  };
   const commonOptions = {
     amount,
     blockTag,
-    pair: "stETH/ETH",
+    pair: `${baseContext.baseSymbol}/ETH`,
+    assets,
+    fee: 10n,
+    chainId: 1n,
     gas,
     signer,
     route,
+    ...baseContext,
   };
 
-  const lidoARM = await resolveArmContract("Lido");
   const capManagerAddress = await parseDeployedAddress("LIDO_ARM_CAP_MAN");
   const capManager = await ethers.getContractAt(
     "CapManager",
@@ -99,11 +120,17 @@ const snapLido = async ({
   const { totalAssets, totalSupply, liquidityWeth } = await logAssets(
     lidoARM,
     blockTag,
+    baseContext,
   );
   if (lido) {
     await logLidoQueue(signer, blockTag);
 
-    await logLidoWithdrawals(lidoARM, blockTag);
+    await logLidoWithdrawals(
+      baseContext.version === "legacy"
+        ? await lidoARM.getAddress()
+        : baseContext.config.adapter,
+      blockTag,
+    );
   }
   if (queue) {
     await logWithdrawalQueue(lidoARM, blockTag, liquidityWeth);
@@ -156,14 +183,14 @@ const snapLido = async ({
   }
 };
 
-const logLidoWithdrawals = async (lidoARM, blockTag) => {
+const logLidoWithdrawals = async (adapterAddress, blockTag) => {
   const lidoWithdrawalQueueAddress = await parseAddress("LIDO_WITHDRAWAL");
   const stEthWithdrawQueue = await hre.ethers.getContractAt(
     "IStETHWithdrawal",
     lidoWithdrawalQueueAddress,
   );
   const outstandingRequests = await stEthWithdrawQueue.getWithdrawalRequests(
-    lidoARM.getAddress(),
+    adapterAddress,
     { blockTag },
   );
 
@@ -227,11 +254,14 @@ const logUser = async (arm, capManager, blockTag, totalSupply) => {
   console.log(`${formatUnits(userCap, 18)} cap remaining`);
 };
 
-const logAssets = async (arm, blockTag) => {
+const logAssets = async (arm, blockTag, baseContext) => {
   const weth = await resolveAsset("WETH");
   const liquidityWeth = await weth.balanceOf(arm.getAddress(), { blockTag });
 
-  const steth = await resolveAsset("STETH");
+  const baseAsset = await ethers.getContractAt(
+    "IERC20Metadata",
+    baseContext.baseAddress,
+  );
   let lendingMarketBalance = 0n;
   // Get the lending market from the active market
   // Atm we use a hardcoded address, but this should be replaced with a call to the active market once the ARM is upgraded
@@ -248,20 +278,25 @@ const logAssets = async (arm, blockTag) => {
     log("Lending market address:", marketAddress);
   }
 
-  const liquiditySteth = await steth.balanceOf(arm.getAddress(), { blockTag });
-  const liquidityLidoWithdraws = await arm.lidoWithdrawalQueueAmount({
+  const liquidityBase = await baseAsset.balanceOf(arm.getAddress(), {
     blockTag,
   });
+  const liquidityBaseAssets = baseContext.config.peggedToLiquidityAsset
+    ? liquidityBase
+    : await (
+        await adapterContract(baseContext.config.adapter, arm.runner)
+      ).convertToAssets(liquidityBase);
+  const liquidityLidoWithdraws = baseContext.config.pendingRedeemAssets;
 
   const total =
     liquidityWeth +
-    liquiditySteth +
+    liquidityBaseAssets +
     liquidityLidoWithdraws +
     lendingMarketBalance;
   const wethPercent = total == 0 ? 0 : (liquidityWeth * 10000n) / total;
   const stethWithdrawsPercent =
     total == 0 ? 0 : (liquidityLidoWithdraws * 10000n) / total;
-  const oethPercent = total == 0 ? 0 : (liquiditySteth * 10000n) / total;
+  const basePercent = total == 0 ? 0 : (liquidityBaseAssets * 10000n) / total;
   const lendingMarketPercent =
     total == 0 ? 0 : (lendingMarketBalance * 10000n) / total;
   const totalAssets = await arm.totalAssets({ blockTag });
@@ -275,7 +310,7 @@ const logAssets = async (arm, blockTag) => {
     blockTag,
   });
 
-  const buffer = await arm.armBuffer({ blockTag });
+  const buffer = await getArmBuffer(arm, blockTag);
   const bufferPercent = (buffer * 10000n) / parseUnits("1");
 
   const { amount: morphoRewards } = await getMerklRewards({
@@ -291,10 +326,9 @@ const logAssets = async (arm, blockTag) => {
     )}%`,
   );
   console.log(
-    `${formatUnits(liquiditySteth, 18).padEnd(24)} stETH ${formatUnits(
-      oethPercent,
-      2,
-    )}%`,
+    `${formatUnits(liquidityBase, 18).padEnd(24)} ${
+      baseContext.baseSymbol
+    } ${formatUnits(basePercent, 2)}%`,
   );
   console.log(
     `${formatUnits(liquidityLidoWithdraws, 18).padEnd(
@@ -306,7 +340,11 @@ const logAssets = async (arm, blockTag) => {
       24,
     )} WETH in active lending market ${formatUnits(lendingMarketPercent, 2)}%`,
   );
-  console.log(`${formatUnits(total, 18).padEnd(24)} Total WETH and stETH`);
+  console.log(
+    `${formatUnits(total, 18).padEnd(24)} Total WETH and ${
+      baseContext.baseSymbol
+    }`,
+  );
   console.log(`${formatUnits(totalAssets, 18).padEnd(24)} Total assets`);
   console.log(`${formatUnits(totalSupply, 18).padEnd(24)} Total supply`);
   console.log(`${formatUnits(assetPerShare, 18).padEnd(24)} Asset per share`);
@@ -321,55 +359,7 @@ const logAssets = async (arm, blockTag) => {
   return { totalAssets, totalSupply, liquidityWeth };
 };
 
-const swapLido = async ({ from, to, amount }) => {
-  if (from && to) {
-    throw new Error(
-      `Cannot specify both from and to asset. It has to be one or the other`,
-    );
-  }
-  const signer = await getSigner();
-  const signerAddress = await signer.getAddress();
-
-  const lidoARM = await resolveArmContract("Lido");
-
-  if (from) {
-    const fromAddress = await resolveAddress(from.toUpperCase());
-
-    const to = from === "stETH" ? "WETH" : "stETH";
-    const toAddress = await resolveAddress(to.toUpperCase());
-
-    const fromAmount = parseUnits(amount.toString(), 18);
-
-    log(`About to swap ${amount} ${from} to ${to} for ${signerAddress}`);
-
-    const tx = await lidoARM
-      .connect(signer)
-      [
-        "swapExactTokensForTokens(address,address,uint256,uint256,address)"
-      ](fromAddress, toAddress, fromAmount, 0, signerAddress);
-
-    await logTxDetails(tx, "swap exact from");
-  } else if (to) {
-    const from = to === "stETH" ? "WETH" : "stETH";
-    const fromAddress = await resolveAddress(from.toUpperCase());
-
-    const toAddress = await resolveAddress(to.toUpperCase());
-
-    const toAmount = parseUnits(amount.toString(), 18);
-
-    log(`About to swap ${from} to ${amount} ${to} for ${signerAddress}`);
-
-    const tx = await lidoARM
-      .connect(signer)
-      [
-        "swapTokensForExactTokens(address,address,uint256,uint256,address)"
-      ](fromAddress, toAddress, toAmount, MaxInt256, signerAddress);
-
-    await logTxDetails(tx, "swap exact to");
-  } else {
-    throw new Error(`Must specify either from or to asset`);
-  }
-};
+const swapLido = async (options) => swap({ ...options, arm: "Lido" });
 
 module.exports = {
   lidoWithdrawStatus,

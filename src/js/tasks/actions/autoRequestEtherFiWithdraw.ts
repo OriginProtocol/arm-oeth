@@ -3,6 +3,7 @@ import { types } from "hardhat/config";
 
 import { action } from "../lib/action";
 import { requestEtherFiWithdrawals } from "../etherfiQueue";
+import { runForBases } from "../../utils/priceActionUtils";
 import { mainnet } from "../../utils/addresses";
 const erc20Abi = require("../../../abis/ERC20.json");
 const etherFiARMAbi = require("../../../abis/EtherFiARM.json");
@@ -30,12 +31,18 @@ action({
     const arm = new ethers.Contract(mainnet.etherfiARM, etherFiARMAbi, signer);
 
     log.info("Requesting EtherFi withdrawals");
-    await requestEtherFiWithdrawals({
-      signer,
-      eeth,
-      arm,
-      minAmount: args.minAmount,
-      thresholdAmount: args.thresholdAmount,
+    await runForBases({
+      bases: ["EETH", "WEETH"],
+      actionName: "Requesting withdrawals",
+      fn: requestEtherFiWithdrawals,
+      options: {
+        signer,
+        eeth,
+        arm,
+        armName: "EtherFi",
+        minAmount: args.minAmount,
+        thresholdAmount: args.thresholdAmount,
+      },
     });
   },
 });

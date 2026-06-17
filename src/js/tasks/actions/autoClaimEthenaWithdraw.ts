@@ -2,6 +2,7 @@ import { ethers } from "ethers";
 
 import { action } from "../lib/action";
 import { claimEthenaWithdrawals } from "../ethenaQueue";
+import { runForBases } from "../../utils/priceActionUtils";
 import { mainnet } from "../../utils/addresses";
 const ethenaARMAbi = require("../../../abis/EthenaARM.json");
 
@@ -13,6 +14,15 @@ action({
     const arm = new ethers.Contract(mainnet.ethenaARM, ethenaARMAbi, signer);
 
     log.info("Claiming Ethena withdrawals");
-    await claimEthenaWithdrawals({ signer, arm });
+    await runForBases({
+      bases: ["SUSDE"],
+      actionName: "Claiming withdrawals",
+      fn: claimEthenaWithdrawals,
+      options: {
+        signer,
+        arm,
+        armName: "Ethena",
+      },
+    });
   },
 });

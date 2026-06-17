@@ -12,6 +12,8 @@ import {ILiquidityProviderARM} from "./Interfaces.sol";
  * @author Origin Protocol Inc
  */
 contract CapManager is Initializable, OwnableOperable {
+    error AccountCapAlreadySet(); // 0xbd6b5eba
+
     /// @notice The address of the linked Automated Redemption Manager (ARM).
     address public immutable arm;
 
@@ -81,7 +83,7 @@ contract CapManager is Initializable, OwnableOperable {
 
     /// @notice Enable or disable the account cap.
     function setAccountCapEnabled(bool _accountCapEnabled) external onlyOwner {
-        require(accountCapEnabled != _accountCapEnabled, "LPC: Account cap already set");
+        if (accountCapEnabled == _accountCapEnabled) revert AccountCapAlreadySet();
 
         accountCapEnabled = _accountCapEnabled;
 

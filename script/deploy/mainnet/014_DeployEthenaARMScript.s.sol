@@ -6,7 +6,8 @@ import {Proxy} from "contracts/Proxy.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
 import {EthenaARM} from "contracts/EthenaARM.sol";
 import {CapManager} from "contracts/CapManager.sol";
-import {EthenaUnstaker} from "contracts/EthenaARM.sol";
+import {EthenaAssetAdapter} from "contracts/adapters/EthenaAssetAdapter.sol";
+import {EthenaUnstaker} from "contracts/EthenaUnstaker.sol";
 import {IWETH, IStakedUSDe} from "contracts/Interfaces.sol";
 
 // Deployment
@@ -55,7 +56,6 @@ contract $014_DeployEthenaARMScript is AbstractDeployScript("014_DeployEthenaARM
         uint256 claimDelay = 10 minutes;
         EthenaARM armImpl = new EthenaARM(
             Mainnet.USDE,
-            Mainnet.SUSDE,
             claimDelay,
             1e18, // minSharesToRedeem
             100e18 // allocateThreshold
@@ -78,9 +78,25 @@ contract $014_DeployEthenaARMScript is AbstractDeployScript("014_DeployEthenaARM
         );
         armProxy.initialize(address(armImpl), deployer, armData);
 
-        // 9. Set crossPrice to 0.999 USDe which is a 10 bps discount
+        // 9. Deploy the sUSDe adapter and register sUSDe as the base asset.
         uint256 crossPrice = 0.999 * 1e36;
-        EthenaARM(payable(address(armProxy))).setCrossPrice(crossPrice);
+        EthenaAssetAdapter adapterImpl = new EthenaAssetAdapter(address(armProxy), Mainnet.USDE, Mainnet.SUSDE);
+        _recordDeployment("ETHENA_ARM_SUSDE_ADAPTER_IMPL", address(adapterImpl));
+        Proxy adapterProxy = new Proxy();
+        adapterProxy.initialize(address(adapterImpl), deployer, "");
+        EthenaAssetAdapter adapter = EthenaAssetAdapter(address(adapterProxy));
+        _recordDeployment("ETHENA_ARM_SUSDE_ADAPTER", address(adapterProxy));
+        EthenaARM(payable(address(armProxy)))
+            .addBaseAsset(
+                Mainnet.SUSDE,
+                address(adapter),
+                0.998 * 1e36,
+                1e36,
+                type(uint128).max,
+                type(uint128).max,
+                crossPrice,
+                false
+            );
 
         // 10. Add Aave Market as an active market
         address[] memory markets = new address[](1);
@@ -93,18 +109,19 @@ contract $014_DeployEthenaARMScript is AbstractDeployScript("014_DeployEthenaARM
         EthenaARM(payable(address(armProxy))).setARMBuffer(0.1e18); // 10% buffer
 
         // 13. Deploy Unstakers
-        address[MAX_UNSTAKERS] memory unstakers = _deployUnstakers();
+        address[MAX_UNSTAKERS] memory unstakers = _deployUnstakers(address(adapter));
 
-        // 18. Set Unstakers in the ARM
-        EthenaARM(payable(address(armProxy))).setUnstakers(unstakers);
+        // 18. Set Unstakers in the adapter
+        adapter.setUnstakers(unstakers);
+        adapterProxy.setOwner(Mainnet.TIMELOCK);
 
         // 14. Transfer ownership of ARM to the 5/8 multisig
         armProxy.setOwner(Mainnet.GOV_MULTISIG);
     }
 
-    function _deployUnstakers() internal returns (address[MAX_UNSTAKERS] memory unstakers) {
+    function _deployUnstakers(address adapter) internal returns (address[MAX_UNSTAKERS] memory unstakers) {
         for (uint256 i = 0; i < MAX_UNSTAKERS; i++) {
-            address unstaker = address(new EthenaUnstaker(payable(armProxy), IStakedUSDe(Mainnet.SUSDE)));
+            address unstaker = address(new EthenaUnstaker(adapter, IStakedUSDe(Mainnet.SUSDE)));
             unstakers[i] = address(unstaker);
         }
         return unstakers;

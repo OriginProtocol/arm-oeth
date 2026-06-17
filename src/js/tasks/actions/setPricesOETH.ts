@@ -3,6 +3,7 @@ import { types } from "hardhat/config";
 
 import { action } from "../lib/action";
 import { setPrices } from "../armPrices";
+import { setPricesForBases } from "../../utils/priceActionUtils";
 import { mainnet } from "../../utils/addresses";
 const armAbi = require("../../../abis/OriginARM.json");
 
@@ -77,24 +78,29 @@ action({
         types.float,
       ),
   run: async ({ signer, log, args }) => {
-    const arm = new ethers.Contract(mainnet.etherfiARM, armAbi, signer);
+    const arm = new ethers.Contract(mainnet.OethARM, armAbi, signer);
 
     log.info("Setting prices for OETH ARM");
-    await setPrices({
-      signer,
-      arm,
-      maxSellPrice: args.maxSellPrice,
-      minSellPrice: args.minSellPrice,
-      maxBuyPrice: args.maxBuyPrice,
-      minBuyPrice: args.minBuyPrice,
-      kyber: args.kyber,
-      inch: args.inch,
-      amount: args.amount,
-      tolerance: args.tolerance,
-      fee: args.fee,
-      offset: args.offset,
-      priceOffset: true,
-      blockTag: "latest",
+    await setPricesForBases({
+      setPrices,
+      bases: ["OETH", "WOETH"],
+      options: {
+        signer,
+        arm,
+        armName: "Oeth",
+        maxSellPrice: args.maxSellPrice,
+        minSellPrice: args.minSellPrice,
+        maxBuyPrice: args.maxBuyPrice,
+        minBuyPrice: args.minBuyPrice,
+        kyber: args.kyber,
+        inch: args.inch,
+        amount: args.amount,
+        tolerance: args.tolerance,
+        fee: args.fee,
+        offset: args.offset,
+        priceOffset: true,
+        blockTag: "latest",
+      },
     });
   },
 });

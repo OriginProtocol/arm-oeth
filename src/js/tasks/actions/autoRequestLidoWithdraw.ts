@@ -3,6 +3,7 @@ import { types } from "hardhat/config";
 
 import { action } from "../lib/action";
 import { requestLidoWithdrawals } from "../lidoQueue";
+import { runForBases } from "../../utils/priceActionUtils";
 import { mainnet } from "../../utils/addresses";
 const erc20Abi = require("../../../abis/ERC20.json");
 const lidoARMAbi = require("../../../abis/LidoARM.json");
@@ -36,13 +37,19 @@ action({
     const arm = new ethers.Contract(mainnet.lidoARM, lidoARMAbi, signer);
 
     log.info("Requesting Lido withdrawals");
-    await requestLidoWithdrawals({
-      signer,
-      steth,
-      arm,
-      minAmount: args.minAmount,
-      thresholdAmount: args.thresholdAmount,
-      maxAmount: args.maxAmount,
+    await runForBases({
+      bases: ["STETH", "WSTETH"],
+      actionName: "Requesting withdrawals",
+      fn: requestLidoWithdrawals,
+      options: {
+        signer,
+        steth,
+        arm,
+        armName: "Lido",
+        minAmount: args.minAmount,
+        thresholdAmount: args.thresholdAmount,
+        maxAmount: args.maxAmount,
+      },
     });
   },
 });

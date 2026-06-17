@@ -279,7 +279,12 @@ library GovHelper {
             // Fast-forward past the timelock delay
             uint256 propEta = governance.proposalEta(proposalId);
             vm.roll(block.number + 10);
-            vm.warp(propEta + 20);
+            // Never warp backwards: the timelock eta can already be in the past
+            // (e.g. proposal queued on-chain before the fork block), and rewinding
+            // time breaks protocols that rely on elapsed time (e.g. Aave interest).
+            if (propEta + 20 > block.timestamp) {
+                vm.warp(propEta + 20);
+            }
 
             // Execute the proposal actions
             vm.prank(govMultisig);

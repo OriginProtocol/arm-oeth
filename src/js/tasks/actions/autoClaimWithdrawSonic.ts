@@ -2,6 +2,8 @@ import { ethers } from "ethers";
 
 import { action } from "../lib/action";
 import { autoClaimWithdraw } from "../liquidityAutomation";
+import { callAllocate, estimateAllocateGas } from "../../utils/arm";
+import { runForBases } from "../../utils/priceActionUtils";
 import { logTxDetails } from "../../utils/txLogger";
 import { sonic } from "../../utils/addresses";
 const erc20Abi = require("../../../abis/ERC20.json");
@@ -22,22 +24,32 @@ action({
     const arm = new ethers.Contract(sonic.OriginARM, armAbi, signer);
 
     log.info("Claiming withdrawals from Origin ARM on Sonic");
-    const requestIds = await autoClaimWithdraw({
-      signer,
-      liquidityAsset,
-      arm,
-      vault,
-      confirm: true,
-    });
+    const requestIds = (
+      await runForBases({
+        bases: ["OS", "WOS"],
+        actionName: "Claiming withdrawals",
+        fn: autoClaimWithdraw,
+        options: {
+          signer,
+          liquidityAsset,
+          arm,
+          armName: "Origin",
+          vault,
+          confirm: true,
+        },
+      })
+    )
+      .flat()
+      .filter((requestId: unknown) => requestId !== undefined);
 
     log.info(`Claimed requests "${requestIds}"`);
 
     // If any requests were claimed, allocate excess liquidity to the lending market
     if (requestIds?.length > 0) {
-      let gasLimit = await (arm as any).connect(signer).allocate.estimateGas();
+      let gasLimit = await estimateAllocateGas(arm, signer);
       gasLimit = (gasLimit * 12n) / 10n;
 
-      const tx = await (arm as any).allocate({ gasLimit });
+      const tx = await callAllocate(arm, signer, { gasLimit });
       await logTxDetails(tx, "allocate");
     }
   },
