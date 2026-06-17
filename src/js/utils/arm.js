@@ -10,6 +10,8 @@ const LEGACY_ARM_ABI = [
   "function activeMarket() view returns (address)",
   "function allocate() returns (int256)",
   "function armBuffer() view returns (uint256)",
+  "function withdrawsQueued() view returns (uint256)",
+  "function withdrawsClaimed() view returns (uint256)",
   "function baseAsset() view returns (address)",
   "function DELAY_REQUEST() view returns (uint256)",
   "function claimEtherFiWithdrawals(uint256[])",
@@ -26,7 +28,7 @@ const LEGACY_ARM_ABI = [
   "function requestLidoWithdrawals(uint256[]) returns (uint256[])",
   "function requestOriginWithdrawal(uint256) returns (uint256)",
   "function setARMBuffer(uint256)",
-  "function setPrices(uint256,uint256,uint256,uint256)",
+  "function setPrices(uint256,uint256)",
   "function traderate0() view returns (uint256)",
   "function traderate1() view returns (uint256)",
   "function unstakers(uint256) view returns (address)",
@@ -228,28 +230,19 @@ const resolveArmBase = async ({ arm, armName, base, blockTag }) => {
   const baseAddress = await resolveAssetAddress(baseSymbol);
 
   let liquidityAddress;
+  let config;
   try {
     liquidityAddress = await arm.liquidityAsset({ blockTag });
-    const config = toConfigObject(
+    config = toConfigObject(
       await arm.baseAssetConfigs(baseAddress, { blockTag }),
     );
-
-    if (config.adapter === ZeroAddress) {
-      throw new Error(`${baseSymbol} is not configured on ${armName} ARM`);
-    }
-
-    return {
-      version: "multiBase",
-      armName,
-      arm,
-      compatibleArm: arm,
-      baseSymbol,
-      baseAddress,
-      liquidityAddress,
-      config,
-    };
-  } catch (err) {
-    if (!isMissingSelectorError(err)) throw err;
+  } catch {
+    // baseAssetConfigs is a public mapping on the multiBase ARM and never
+    // reverts, so any failure reading it means this is a legacy single-asset
+    // ARM (the selector is absent on-chain). Some RPCs surface that as a bare
+    // "execution reverted" with no decodable data rather than a recognizable
+    // missing-selector error, so fall back unconditionally instead of
+    // pattern-matching the error shape.
     return resolveLegacyArmBase({
       arm,
       armName,
@@ -258,6 +251,21 @@ const resolveArmBase = async ({ arm, armName, base, blockTag }) => {
       blockTag,
     });
   }
+
+  if (config.adapter === ZeroAddress) {
+    throw new Error(`${baseSymbol} is not configured on ${armName} ARM`);
+  }
+
+  return {
+    version: "multiBase",
+    armName,
+    arm,
+    compatibleArm: arm,
+    baseSymbol,
+    baseAddress,
+    liquidityAddress,
+    config,
+  };
 };
 
 const setArmPrices = async ({
@@ -269,9 +277,11 @@ const setArmPrices = async ({
   sellAmount,
 }) => {
   if (baseContext.version === "legacy") {
+    // Legacy single-asset ARMs only expose setPrices(buyPrice, sellPrice).
+    // They have no per-price liquidity limits, so buyAmount/sellAmount are dropped.
     return baseContext.compatibleArm
       .connect(signer)
-      .setPrices(buyPrice, sellPrice, buyAmount, sellAmount);
+      .setPrices(buyPrice, sellPrice);
   }
 
   return baseContext.arm
@@ -402,6 +412,34 @@ const getArmBuffer = async (arm, blockTag) => {
   }
 };
 
+const getOutstandingWithdrawals = async (arm) => {
+  // Liquidity reserved for outstanding LP withdrawal requests (asset-denominated).
+  // Legacy ARMs expose withdrawsQueued()/withdrawsClaimed(); several new ABIs
+  // dropped these getters even though the deployed legacy contracts still
+  // implement them on-chain, so fall back to the legacy ABI. The multiBase ARM
+  // tracks the same amount in reservedWithdrawLiquidity().
+  try {
+    const [queued, claimed] = await Promise.all([
+      arm.withdrawsQueued(),
+      arm.withdrawsClaimed(),
+    ]);
+    return queued - claimed;
+  } catch (err) {
+    if (!isMissingSelectorError(err)) throw err;
+  }
+  try {
+    const legacyArm = await legacyArmContract(arm);
+    const [queued, claimed] = await Promise.all([
+      legacyArm.withdrawsQueued(),
+      legacyArm.withdrawsClaimed(),
+    ]);
+    return queued - claimed;
+  } catch (err) {
+    if (!isMissingSelectorError(err)) throw err;
+    return arm.reservedWithdrawLiquidity();
+  }
+};
+
 const setArmBuffer = async (arm, signer, buffer, overrides = {}) => {
   try {
     return await arm.connect(signer).setARMBuffer(buffer, overrides);
@@ -460,6 +498,7 @@ module.exports = {
   estimateAllocateGas,
   estimateSetArmBufferGas,
   getArmBuffer,
+  getOutstandingWithdrawals,
   legacyArmContract,
   liquiditySymbol,
   normalizeBaseSymbol,

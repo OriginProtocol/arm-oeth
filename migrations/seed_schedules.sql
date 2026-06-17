@@ -20,6 +20,11 @@ INSERT INTO schedules (product, name, command, cron_expr, timezone, enabled, not
 ('arm-oeth', 'mainnet_set_prices_lido',              'cd /app && pnpm hardhat setPricesLido --network mainnet',                   '*/30 * * * *',          'UTC', false, NULL),
 ('arm-oeth', 'mainnet_set_prices_etherfi',           'cd /app && pnpm hardhat setPricesEtherFi --network mainnet',                '2,32 * * * *',          'UTC', false, NULL),
 ('arm-oeth', 'mainnet_set_prices_ethena',            'cd /app && pnpm hardhat setPricesEthena --network mainnet',                 '4 * * * *',             'UTC', false, NULL),
+-- Emergency pause actions: manual-only (enabled=false). Triggered via the UI
+-- "Run now" button; cron_expr is a placeholder and never fires while disabled.
+('arm-oeth', 'mainnet_pause_lido',                   'cd /app && pnpm hardhat pauseLido --network mainnet',                       '0 0 * * *',             'UTC', false, NULL),
+('arm-oeth', 'mainnet_pause_etherfi',                'cd /app && pnpm hardhat pauseEtherFi --network mainnet',                    '0 0 * * *',             'UTC', false, NULL),
+('arm-oeth', 'mainnet_pause_ethena',                 'cd /app && pnpm hardhat pauseEthena --network mainnet',                     '0 0 * * *',             'UTC', false, NULL),
 ('arm-oeth', 'sonic_auto_request_withdraw',          'cd /app && pnpm hardhat autoRequestWithdrawSonic --network sonic',          '48,18 * * * *',         'UTC', false, NULL),
 ('arm-oeth', 'sonic_auto_claim_withdraw',            'cd /app && pnpm hardhat autoClaimWithdrawSonic --network sonic',            '10 * * * *',            'UTC', false, NULL),
 ('arm-oeth', 'sonic_collect_fees',                   'cd /app && pnpm hardhat collectFeesSonic --network sonic',                  '55 23 * * *',           'UTC', false, NULL),

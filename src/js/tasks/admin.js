@@ -7,6 +7,7 @@ const {
   callAllocate,
   estimateAllocateGas,
   estimateSetArmBufferGas,
+  getOutstandingWithdrawals,
   setArmBuffer,
   staticCallAllocate,
 } = require("../utils/arm");
@@ -125,8 +126,7 @@ async function allocate({
 async function collectFees({ arm, signer }) {
   // Get the amount of fees to be collected
   const fees = await arm.feesAccrued();
-  const queued = await arm.withdrawsQueued();
-  const claimed = await arm.withdrawsClaimed();
+  const outstanding = await getOutstandingWithdrawals(arm);
 
   // Check there is enough liquidity to collect fees
   const liquidityAssetAddress = await arm.liquidityAsset();
@@ -138,7 +138,7 @@ async function collectFees({ arm, signer }) {
   const liquidityBalance = await liquidityAsset.balanceOf(
     await arm.getAddress(),
   );
-  const liquidityAvailable = liquidityBalance + claimed - queued;
+  const liquidityAvailable = liquidityBalance - outstanding;
   log(`Liquidity available in ARM: ${formatUnits(liquidityAvailable)}`);
 
   if (fees > liquidityAvailable) {
