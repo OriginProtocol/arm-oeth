@@ -26,7 +26,7 @@ const LEGACY_ARM_ABI = [
   "function requestLidoWithdrawals(uint256[]) returns (uint256[])",
   "function requestOriginWithdrawal(uint256) returns (uint256)",
   "function setARMBuffer(uint256)",
-  "function setPrices(uint256,uint256,uint256,uint256)",
+  "function setPrices(uint256,uint256)",
   "function traderate0() view returns (uint256)",
   "function traderate1() view returns (uint256)",
   "function unstakers(uint256) view returns (address)",
@@ -269,9 +269,11 @@ const setArmPrices = async ({
   sellAmount,
 }) => {
   if (baseContext.version === "legacy") {
+    // Legacy single-asset ARMs only expose setPrices(buyPrice, sellPrice).
+    // They have no per-price liquidity limits, so buyAmount/sellAmount are dropped.
     return baseContext.compatibleArm
       .connect(signer)
-      .setPrices(buyPrice, sellPrice, buyAmount, sellAmount);
+      .setPrices(buyPrice, sellPrice);
   }
 
   return baseContext.arm
