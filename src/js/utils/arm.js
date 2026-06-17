@@ -10,6 +10,8 @@ const LEGACY_ARM_ABI = [
   "function activeMarket() view returns (address)",
   "function allocate() returns (int256)",
   "function armBuffer() view returns (uint256)",
+  "function withdrawsQueued() view returns (uint256)",
+  "function withdrawsClaimed() view returns (uint256)",
   "function baseAsset() view returns (address)",
   "function DELAY_REQUEST() view returns (uint256)",
   "function claimEtherFiWithdrawals(uint256[])",
@@ -404,6 +406,34 @@ const getArmBuffer = async (arm, blockTag) => {
   }
 };
 
+const getOutstandingWithdrawals = async (arm) => {
+  // Liquidity reserved for outstanding LP withdrawal requests (asset-denominated).
+  // Legacy ARMs expose withdrawsQueued()/withdrawsClaimed(); several new ABIs
+  // dropped these getters even though the deployed legacy contracts still
+  // implement them on-chain, so fall back to the legacy ABI. The multiBase ARM
+  // tracks the same amount in reservedWithdrawLiquidity().
+  try {
+    const [queued, claimed] = await Promise.all([
+      arm.withdrawsQueued(),
+      arm.withdrawsClaimed(),
+    ]);
+    return queued - claimed;
+  } catch (err) {
+    if (!isMissingSelectorError(err)) throw err;
+  }
+  try {
+    const legacyArm = await legacyArmContract(arm);
+    const [queued, claimed] = await Promise.all([
+      legacyArm.withdrawsQueued(),
+      legacyArm.withdrawsClaimed(),
+    ]);
+    return queued - claimed;
+  } catch (err) {
+    if (!isMissingSelectorError(err)) throw err;
+    return arm.reservedWithdrawLiquidity();
+  }
+};
+
 const setArmBuffer = async (arm, signer, buffer, overrides = {}) => {
   try {
     return await arm.connect(signer).setARMBuffer(buffer, overrides);
@@ -462,6 +492,7 @@ module.exports = {
   estimateAllocateGas,
   estimateSetArmBufferGas,
   getArmBuffer,
+  getOutstandingWithdrawals,
   legacyArmContract,
   liquiditySymbol,
   normalizeBaseSymbol,

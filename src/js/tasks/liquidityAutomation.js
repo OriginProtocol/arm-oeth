@@ -6,6 +6,7 @@ const { claimableRequests } = require("../utils/armQueue");
 const {
   adapterContract,
   claimBaseAssetWithdrawal,
+  getOutstandingWithdrawals,
   requestBaseAssetWithdrawal,
   resolveArmBase,
 } = require("../utils/arm");
@@ -150,9 +151,7 @@ const baseWithdrawAmount = async (options) => {
   let liquidAssetAmount = await liquidAsset.balanceOf(await arm.getAddress());
   log(`${formatUnits(liquidAssetAmount)} liquid asset balance in ARM`);
 
-  const queue = await arm.withdrawsQueued();
-  const claimed = await arm.withdrawsClaimed();
-  const outstanding = queue - claimed;
+  const outstanding = await getOutstandingWithdrawals(arm);
   log(`${formatUnits(outstanding)} outstanding withdrawal requests`);
   let liquidityAvailable = liquidAssetAmount - outstanding;
   log(
