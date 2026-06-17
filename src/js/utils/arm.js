@@ -230,28 +230,19 @@ const resolveArmBase = async ({ arm, armName, base, blockTag }) => {
   const baseAddress = await resolveAssetAddress(baseSymbol);
 
   let liquidityAddress;
+  let config;
   try {
     liquidityAddress = await arm.liquidityAsset({ blockTag });
-    const config = toConfigObject(
+    config = toConfigObject(
       await arm.baseAssetConfigs(baseAddress, { blockTag }),
     );
-
-    if (config.adapter === ZeroAddress) {
-      throw new Error(`${baseSymbol} is not configured on ${armName} ARM`);
-    }
-
-    return {
-      version: "multiBase",
-      armName,
-      arm,
-      compatibleArm: arm,
-      baseSymbol,
-      baseAddress,
-      liquidityAddress,
-      config,
-    };
-  } catch (err) {
-    if (!isMissingSelectorError(err)) throw err;
+  } catch {
+    // baseAssetConfigs is a public mapping on the multiBase ARM and never
+    // reverts, so any failure reading it means this is a legacy single-asset
+    // ARM (the selector is absent on-chain). Some RPCs surface that as a bare
+    // "execution reverted" with no decodable data rather than a recognizable
+    // missing-selector error, so fall back unconditionally instead of
+    // pattern-matching the error shape.
     return resolveLegacyArmBase({
       arm,
       armName,
@@ -260,6 +251,21 @@ const resolveArmBase = async ({ arm, armName, base, blockTag }) => {
       blockTag,
     });
   }
+
+  if (config.adapter === ZeroAddress) {
+    throw new Error(`${baseSymbol} is not configured on ${armName} ARM`);
+  }
+
+  return {
+    version: "multiBase",
+    armName,
+    arm,
+    compatibleArm: arm,
+    baseSymbol,
+    baseAddress,
+    liquidityAddress,
+    config,
+  };
 };
 
 const setArmPrices = async ({
