@@ -59,6 +59,8 @@ contract Fork_EtherFiARM_Smoke_Test is AbstractSmokeTest {
         (,,,, uint128 crossPrice,,,) = etherFiARM.baseAssetConfigs(Mainnet.EETH);
         assertEq(crossPrice, 0.99996e36, "cross price");
 
+        _assertBaseAssetListed(etherFiARM.getBaseAssets(), Mainnet.EETH, "eETH listed as base asset");
+
         assertEq(capManager.accountCapEnabled(), true, "account cap enabled");
         assertEq(capManager.totalAssetsCap(), 1000 ether, "total assets cap");
         assertEq(capManager.liquidityProviderCaps(Mainnet.TREASURY_LP), 150 ether, "liquidity provider cap");

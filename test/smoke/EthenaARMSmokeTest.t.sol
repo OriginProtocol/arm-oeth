@@ -55,6 +55,8 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
         (,,,, uint128 crossPrice,,,) = ethenaARM.baseAssetConfigs(Mainnet.SUSDE);
         assertEq(crossPrice, 0.99996e36, "cross price");
 
+        _assertBaseAssetListed(ethenaARM.getBaseAssets(), Mainnet.SUSDE, "sUSDe listed as base asset");
+
         assertEq(capManager.accountCapEnabled(), true, "account cap enabled");
         assertEq(capManager.totalAssetsCap(), 100000 ether, "total assets cap");
         //assertEq(capManager.liquidityProviderCaps(Mainnet.TREASURY_LP), 20000 ether, "liquidity provider cap");

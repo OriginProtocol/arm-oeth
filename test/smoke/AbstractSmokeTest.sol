@@ -241,4 +241,18 @@ abstract contract AbstractSmokeTest is Test {
             );
         }
     }
+
+    /// @dev Assert `expected` appears in the ARM's `getBaseAssets()` list. A membership check
+    ///      rather than exact array equality keeps the assertion robust to registration order and
+    ///      to additional base assets being registered by future deployments.
+    function _assertBaseAssetListed(address[] memory baseAssets, address expected, string memory label) internal pure {
+        bool found = false;
+        for (uint256 i = 0; i < baseAssets.length; ++i) {
+            if (baseAssets[i] == expected) {
+                found = true;
+                break;
+            }
+        }
+        assertTrue(found, label);
+    }
 }
