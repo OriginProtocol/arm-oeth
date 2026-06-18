@@ -323,11 +323,10 @@ const logLiquidity = async ({ block, arm, base }) => {
 };
 
 const logWithdrawalQueue = async (arm, blockTag, liquidityWeth) => {
-  const queue = await arm.withdrawsQueued({
-    blockTag,
-  });
-  const claimed = await arm.withdrawsClaimed({ blockTag });
-  const outstanding = queue - claimed;
+  // Since the withdrawal queue refactor (#208) the queue is tracked in shares.
+  // `reservedWithdrawLiquidity` exposes the outstanding obligation directly in
+  // liquidity-asset terms, replacing the old `withdrawsQueued - withdrawsClaimed`.
+  const outstanding = await arm.reservedWithdrawLiquidity({ blockTag });
   const available = liquidityWeth - outstanding;
 
   console.log(`\nARM Withdrawal Queue`);
