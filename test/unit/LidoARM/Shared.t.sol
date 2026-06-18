@@ -82,11 +82,11 @@ abstract contract Unit_LidoARM_Shared_Test is Base_Test_ {
             _lidoWithdrawalQueue: address(lidoWithdrawalQueue)
         });
 
-        // Initialization requires 1e12 liquid assets to mint to dead address.
-        // Mint 1e12 liquid assets to the deployer.
-        deal(address(weth), deployer, 1e12);
-        // Deployer approve the proxy to transfer 1e12 liquid assets.
-        weth.approve(address(lidoARMProxy), 1e12);
+        // Initialization requires MIN_TOTAL_SUPPLY liquid assets to mint to dead address.
+        // Mint MIN_TOTAL_SUPPLY liquid assets to the deployer.
+        deal(address(weth), deployer, MIN_TOTAL_SUPPLY);
+        // Deployer approve the proxy to transfer MIN_TOTAL_SUPPLY liquid assets.
+        weth.approve(address(lidoARMProxy), MIN_TOTAL_SUPPLY);
 
         // --- Initialize Proxies
         // LidoARM Proxy

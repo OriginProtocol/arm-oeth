@@ -77,7 +77,7 @@ abstract contract TargetFunction is Properties {
     }
 
     function handler_deposit(uint8 seed, uint88 amount) public {
-        vm.assume(originARM.totalAssets() > 1e12 || originARM.reservedWithdrawLiquidity() == 0);
+        vm.assume(originARM.totalAssets() > MIN_TOTAL_SUPPLY || originARM.reservedWithdrawLiquidity() == 0);
 
         // Get a random user from the list of lps
         address user = getRandomLPs(seed);

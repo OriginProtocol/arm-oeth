@@ -161,7 +161,7 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         assertEq(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY + amount, "total assets after");
         if (ac) assertEq(capManager.liquidityProviderCaps(address(this)), 0, "lp cap after"); // All the caps are used
         assertEqQueueMetadata(0, 0, 0);
-        assertEq(shares, amount); // No perfs, so 1 ether * totalSupply (1e12) / totalAssets (1e12) = 1 ether
+        assertEq(shares, amount); // No perfs, so 1 ether * totalSupply (1e15) / totalAssets (1e15) = 1 ether
     }
 
     /// @notice Depositing into the ARM, second deposit of first user.
@@ -210,7 +210,7 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         assertEq(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY + amount * 2);
         if (ac) assertEq(capManager.liquidityProviderCaps(address(this)), 0); // All the caps are used
         assertEqQueueMetadata(0, 0, 0);
-        assertEq(shares, amount); // No perfs, so 1 ether * totalSupply (1e18 + 1e12) / totalAssets (1e18 + 1e12) = 1 ether
+        assertEq(shares, amount); // No perfs, so 1 ether * totalSupply (1e18 + 1e15) / totalAssets (1e18 + 1e15) = 1 ether
     }
 
     /// @notice Depositing into the ARM, first deposit of second user.
@@ -261,7 +261,7 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         assertEq(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY + amount * 2);
         if (ac) assertEq(capManager.liquidityProviderCaps(alice), 0); // All the caps are used
         assertEqQueueMetadata(0, 0, 0);
-        assertEq(shares, amount); // No perfs, so 1 ether * totalSupply (1e18 + 1e12) / totalAssets (1e18 + 1e12) = 1 ether
+        assertEq(shares, amount); // No perfs, so 1 ether * totalSupply (1e18 + 1e15) / totalAssets (1e18 + 1e15) = 1 ether
     }
 
     /// @notice Depositing into the ARM, first deposit of user with performance fees.
@@ -310,7 +310,7 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         uint256 shares = lidoARM.deposit(depositedAssets);
 
         assertEq(shares, expectedShares, "minted shares");
-        // No perfs, so 1 ether * totalSupply (1e12) / totalAssets (1e12) = 1 ether
+        // No perfs, so 1 ether * totalSupply (1e15) / totalAssets (1e15) = 1 ether
 
         // Assertions After
         assertEq(steth.balanceOf(address(lidoARM)), 0, "stETH balance after");
@@ -440,7 +440,7 @@ contract Fork_Concrete_LidoARM_Deposit_Test_ is Fork_Shared_Test_ {
         if (ac) assertEq(capManager.liquidityProviderCaps(alice), DEFAULT_AMOUNT * 3, "alice cap after deposit"); // All the caps are used
         // withdrawal request is now claimable
         assertEqQueueMetadata(assetsRedeem, 0, 1);
-        assertApproxEqAbs(shares, expectedShares, STETH_ERROR_ROUNDING, "shares after deposit"); // No perfs, so 1 ether * totalSupply (1e18 + 1e12) / totalAssets (1e18 + 1e12) = 1 ether
+        assertApproxEqAbs(shares, expectedShares, STETH_ERROR_ROUNDING, "shares after deposit"); // No perfs, so 1 ether * totalSupply (1e18 + 1e15) / totalAssets (1e18 + 1e15) = 1 ether
     }
 
     /// @notice Test the following scenario:

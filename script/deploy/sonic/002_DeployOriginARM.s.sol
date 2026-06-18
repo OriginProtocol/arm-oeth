@@ -47,7 +47,7 @@ contract $002_DeployOriginARMScript is AbstractDeployScript("002_DeployOriginARM
         // 7. Approve a little bit of wS to be transferred to the ARM proxy
         // This is needed for the initialize function which will mint some ARM LP tokens
         // and send to a dead address
-        IERC20(Sonic.WS).approve(address(originARMProxy), 1e12);
+        IERC20(Sonic.WS).approve(address(originARMProxy), 1e15);
 
         // 8. Initialize Proxy with Origin ARM implementation and set the owner to the deployer for now
         data = abi.encodeWithSignature(

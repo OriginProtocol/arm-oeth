@@ -50,7 +50,7 @@ contract Unit_Fuzz_LidoARM_Swap_Test is Unit_LidoARM_Shared_Test {
         deal(address(weth), address(lidoARM), 50_000 ether);
 
         // Bound the input so the ARM can pay the WETH it owes Alice without pulling from a market.
-        // The ARM's WETH balance is read live (Alice's deposit + the 1e12 minimum supply seed),
+        // The ARM's WETH balance is read live (Alice's deposit + the MIN_TOTAL_SUPPLY minimum supply seed),
         // so the cap automatically tracks setUp() changes.
         // amountOut = amountIn * 992 / 1000, so cap amountIn at armWeth * 1000 / 992.
         // Lower bound is 1 wei: the spread (amountIn - amountOut) is at least 1 wei for amountIn >= 1

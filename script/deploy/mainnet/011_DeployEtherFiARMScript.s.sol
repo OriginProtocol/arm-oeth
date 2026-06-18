@@ -58,8 +58,8 @@ contract $011_DeployEtherFiARMScript is AbstractDeployScript("011_DeployEtherFiA
 
         // 7. Give the deployer a tiny amount of WETH for the initialization
         // This can be skipped if the deployer already has WETH
-        IWETH(Mainnet.WETH).deposit{value: 1e13}();
-        IWETH(Mainnet.WETH).approve(address(armProxy), 1e13);
+        IWETH(Mainnet.WETH).deposit{value: 1e15}();
+        IWETH(Mainnet.WETH).approve(address(armProxy), 1e15);
 
         // 8. Initialize proxy, set the owner to deployer, set the operator to the ARM Relayer
         bytes memory armData = abi.encodeWithSignature(

@@ -172,7 +172,7 @@ contract Unit_LidoARM_Admin_Test is Unit_LidoARM_Shared_Test {
     }
 
     function test_AddBaseAsset_RevertWhen_InvalidAssetDecimals() public {
-        // 6-decimal token: ARM forbids non-18-decimal base assets so accounting math stays consistent.
+        // 6-decimal pegged token: direct 1:1 accounting requires base and liquidity decimals to match.
         IERC20 sixDecimal = IERC20(address(new MockERC20("USDX", "USDX", 6)));
 
         vm.prank(governor);
@@ -448,7 +448,7 @@ contract Unit_LidoARM_Admin_Test is Unit_LidoARM_Shared_Test {
         addBaseAsset(steth);
 
         // Park enough stETH on the ARM that, valued at the cross price, exposure >= MIN_TOTAL_SUPPLY.
-        // MIN_TOTAL_SUPPLY == 1e12; stETH is valued 1:1 at cross == 1e36, so any balance >= 1e12 wei
+        // MIN_TOTAL_SUPPLY == MIN_TOTAL_SUPPLY; stETH is valued 1:1 at cross == 1e36, so any balance >= MIN_TOTAL_SUPPLY wei
         // hits the guard. Deal a generous amount so the inequality is unambiguous.
         deal(address(steth), address(lidoARM), 1 ether);
 

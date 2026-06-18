@@ -33,8 +33,8 @@ contract Unit_LidoARM_ClaimRedeem_Test is Unit_LidoARM_Shared_Test {
         uint256 expectedAssets = 100 ether;
         uint256 expectedShares = 100 ether;
         assertEq(lidoARM.balanceOf(address(lidoARM)), expectedShares);
-        assertEq(lidoARM.totalAssets(), expectedAssets + 1e12);
-        assertEq(lidoARM.totalSupply(), expectedShares + 1e12);
+        assertEq(lidoARM.totalAssets(), expectedAssets + MIN_TOTAL_SUPPLY);
+        assertEq(lidoARM.totalSupply(), expectedShares + MIN_TOTAL_SUPPLY);
         assertEq(lidoARM.reservedWithdrawLiquidity(), expectedAssets);
         assertEq(lidoARM.withdrawsClaimedShares(), 0);
 
@@ -54,8 +54,8 @@ contract Unit_LidoARM_ClaimRedeem_Test is Unit_LidoARM_Shared_Test {
         assertEq(weth.balanceOf(alice), expectedAssets, "alice weth");
         assertEq(lidoARM.balanceOf(alice), 0, "alice shares");
         assertEq(lidoARM.balanceOf(address(lidoARM)), 0, "escrow");
-        assertEq(lidoARM.totalAssets(), 1e12, "totalAssets");
-        assertEq(lidoARM.totalSupply(), 1e12, "totalSupply");
+        assertEq(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY, "totalAssets");
+        assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY, "totalSupply");
         assertEq(lidoARM.reservedWithdrawLiquidity(), 0, "reserved");
         assertEq(lidoARM.withdrawsClaimedShares(), expectedShares, "claimed");
     }
@@ -65,17 +65,17 @@ contract Unit_LidoARM_ClaimRedeem_Test is Unit_LidoARM_Shared_Test {
         skip(CLAIM_DELAY);
 
         // Simulate a loss on ARM
-        uint256 lossAmount = 20 ether + 2e11; // To ensure we loss 20% of the assets.
+        uint256 lossAmount = 20 ether + MIN_TOTAL_SUPPLY / 5; // To ensure we loss 20% of the assets.
         vm.prank(address(lidoARM));
         weth.transfer(address(0), lossAmount); // Burn lossAmount WETH from the ARM balance
 
         // Given
-        uint256 expectedTotalAssets = 100 ether + 1e12 - lossAmount;
+        uint256 expectedTotalAssets = 100 ether + MIN_TOTAL_SUPPLY - lossAmount;
         uint256 expectedAliceAssets = 80 ether; // Alice should get 80% of her assets back, which is 80 WETH
         uint256 expectedShares = 100 ether; // Shares are not affected by the loss
         assertEq(lidoARM.balanceOf(address(lidoARM)), expectedShares);
         assertEq(lidoARM.totalAssets(), expectedTotalAssets);
-        assertEq(lidoARM.totalSupply(), expectedShares + 1e12);
+        assertEq(lidoARM.totalSupply(), expectedShares + MIN_TOTAL_SUPPLY);
         assertEq(lidoARM.reservedWithdrawLiquidity(), 100 ether);
         assertEq(lidoARM.withdrawsClaimedShares(), 0);
 
@@ -96,8 +96,8 @@ contract Unit_LidoARM_ClaimRedeem_Test is Unit_LidoARM_Shared_Test {
         assertEq(lidoARM.balanceOf(alice), 0, "alice shares");
         assertEq(lidoARM.balanceOf(address(lidoARM)), 0, "escrow");
         // We have the minimum returned by totalAssets, but in theory it should be 0.8e12.
-        assertEq(lidoARM.totalAssets(), 1e12, "totalAssets");
-        assertEq(lidoARM.totalSupply(), 1e12, "totalSupply");
+        assertEq(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY, "totalAssets");
+        assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY, "totalSupply");
         assertEq(lidoARM.reservedWithdrawLiquidity(), 0, "reserved");
         assertEq(lidoARM.withdrawsClaimedShares(), expectedShares, "claimed");
     }
@@ -110,17 +110,17 @@ contract Unit_LidoARM_ClaimRedeem_Test is Unit_LidoARM_Shared_Test {
         skip(CLAIM_DELAY);
 
         // Simulate a loss on ARM
-        uint256 lossAmount = 40 ether + 2e11; // To ensure we loss 20% of the assets.
+        uint256 lossAmount = 40 ether + MIN_TOTAL_SUPPLY / 5; // To ensure we loss 20% of the assets.
         vm.prank(address(lidoARM));
         weth.transfer(address(0), lossAmount); // Burn lossAmount WETH from the ARM balance
 
-        uint256 expectedTotalAssets = 200 ether + 1e12 - lossAmount;
+        uint256 expectedTotalAssets = 200 ether + MIN_TOTAL_SUPPLY - lossAmount;
         uint256 expectedAliceAssets = 80 ether; // Alice should get 80% of her assets back, which is 80 WETH
         uint256 expectedBobbyAssets = 80 ether; // Bobby should also get 80% of his assets back, which is 80 WETH
         uint256 expectedShares = 100 ether; // Shares are not affected by the loss
         assertEq(lidoARM.balanceOf(address(lidoARM)), expectedShares * 2);
         assertEq(lidoARM.totalAssets(), expectedTotalAssets);
-        assertEq(lidoARM.totalSupply(), expectedShares * 2 + 1e12);
+        assertEq(lidoARM.totalSupply(), expectedShares * 2 + MIN_TOTAL_SUPPLY);
         assertEq(lidoARM.reservedWithdrawLiquidity(), 200 ether);
         assertEq(lidoARM.withdrawsClaimedShares(), 0);
 
@@ -139,8 +139,8 @@ contract Unit_LidoARM_ClaimRedeem_Test is Unit_LidoARM_Shared_Test {
         assertEq(lidoARM.balanceOf(bobby), 0, "bobby shares");
         assertEq(lidoARM.balanceOf(address(lidoARM)), 0, "escrow");
         // We have the minimum returned by totalAssets, but in theory it should be 0.8e12.
-        assertEq(lidoARM.totalAssets(), 1e12, "totalAssets");
-        assertEq(lidoARM.totalSupply(), 1e12, "totalSupply");
+        assertEq(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY, "totalAssets");
+        assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY, "totalSupply");
         assertEq(lidoARM.reservedWithdrawLiquidity(), 0, "reserved");
         assertEq(lidoARM.withdrawsClaimedShares(), expectedShares * 2, "claimed");
     }
@@ -157,13 +157,13 @@ contract Unit_LidoARM_ClaimRedeem_Test is Unit_LidoARM_Shared_Test {
         bobbyFirstDeposit();
 
         // Simulate a 20% loss on the ARM: burn 20% of the total assets.
-        uint256 lossAmount = 40 ether + 2e11; // 20% of (200 ether + 1e12)
+        uint256 lossAmount = 40 ether + MIN_TOTAL_SUPPLY / 5; // 20% of (200 ether + MIN_TOTAL_SUPPLY)
         vm.prank(address(lidoARM));
         weth.transfer(address(0), lossAmount);
 
         // Sanity: share price is now exactly 0.8.
-        assertEq(lidoARM.totalAssets(), 160 ether + 8e11, "totalAssets after loss");
-        assertEq(lidoARM.totalSupply(), 200 ether + 1e12, "totalSupply after loss");
+        assertEq(lidoARM.totalAssets(), 160 ether + 4 * MIN_TOTAL_SUPPLY / 5, "totalAssets after loss");
+        assertEq(lidoARM.totalSupply(), 200 ether + MIN_TOTAL_SUPPLY, "totalSupply after loss");
         assertEq(lidoARM.convertToAssets(1 ether), 0.8 ether, "share price after loss");
 
         // When: Alice requests redeem of 50% of her shares (50 shares).
@@ -183,8 +183,8 @@ contract Unit_LidoARM_ClaimRedeem_Test is Unit_LidoARM_Shared_Test {
         assertEq(lidoARM.balanceOf(alice), 50 ether, "alice remaining shares");
 
         // After Alice's claim, totalAssets / totalSupply should still give 0.8 per share.
-        assertEq(lidoARM.totalAssets(), 120 ether + 8e11, "totalAssets after alice claim");
-        assertEq(lidoARM.totalSupply(), 150 ether + 1e12, "totalSupply after alice claim");
+        assertEq(lidoARM.totalAssets(), 120 ether + 4 * MIN_TOTAL_SUPPLY / 5, "totalAssets after alice claim");
+        assertEq(lidoARM.totalSupply(), 150 ether + MIN_TOTAL_SUPPLY, "totalSupply after alice claim");
         assertEq(lidoARM.convertToAssets(1 ether), 0.8 ether, "share price after alice claim");
 
         // When: Bobby requests redeem of 25% of his shares (25 shares), AFTER Alice claimed.
@@ -231,14 +231,14 @@ contract Unit_LidoARM_ClaimRedeem_Test is Unit_LidoARM_Shared_Test {
         assertEq(lidoARM.reservedWithdrawLiquidity(), 50 ether, "reserved at pre-loss price");
 
         // Now simulate a 20% loss on the ARM, AFTER Alice's request but BEFORE her claim.
-        uint256 lossAmount = 40 ether + 2e11; // 20% of (200 ether + 1e12)
+        uint256 lossAmount = 40 ether + MIN_TOTAL_SUPPLY / 5; // 20% of (200 ether + MIN_TOTAL_SUPPLY)
         vm.prank(address(lidoARM));
         weth.transfer(address(0), lossAmount);
 
         // Sanity: share price is now 0.8 (20% loss). totalSupply is unchanged: Alice's shares were
         // escrowed (not burnt) by requestRedeem, so they still share the loss pro-rata.
-        assertEq(lidoARM.totalAssets(), 160 ether + 8e11, "totalAssets after loss");
-        assertEq(lidoARM.totalSupply(), 200 ether + 1e12, "totalSupply after loss");
+        assertEq(lidoARM.totalAssets(), 160 ether + 4 * MIN_TOTAL_SUPPLY / 5, "totalAssets after loss");
+        assertEq(lidoARM.totalSupply(), 200 ether + MIN_TOTAL_SUPPLY, "totalSupply after loss");
         assertEq(lidoARM.convertToAssets(1 ether), 0.8 ether, "share price after loss");
 
         // Alice claims. The min() clause caps her payout: request.assets (50) > assetsAtClaim (40)
@@ -248,16 +248,16 @@ contract Unit_LidoARM_ClaimRedeem_Test is Unit_LidoARM_Shared_Test {
         lidoARM.claimRedeem(aliceRequestId);
         assertEq(weth.balanceOf(alice), expectedAliceAssets, "alice weth after claim");
 
-        // After Alice's claim: 120 ether + 8e11 / 150 ether + 1e12 -> share price still 0.8.
-        assertEq(lidoARM.totalAssets(), 120 ether + 8e11, "totalAssets after alice claim");
-        assertEq(lidoARM.totalSupply(), 150 ether + 1e12, "totalSupply after alice claim");
+        // After Alice's claim: 120 ether + 4 * MIN_TOTAL_SUPPLY / 5 / 150 ether + MIN_TOTAL_SUPPLY -> share price still 0.8.
+        assertEq(lidoARM.totalAssets(), 120 ether + 4 * MIN_TOTAL_SUPPLY / 5, "totalAssets after alice claim");
+        assertEq(lidoARM.totalSupply(), 150 ether + MIN_TOTAL_SUPPLY, "totalSupply after alice claim");
         assertEq(lidoARM.convertToAssets(1 ether), 0.8 ether, "share price after alice claim");
 
         // ARM recovers some funds: top up WETH so the share price becomes 0.9 (only a 10% loss).
-        // Target: assets = 0.9 * (150 ether + 1e12) = 135 ether + 9e11. Delta = 15 ether + 1e11.
-        uint256 recoveryAmount = 15 ether + 1e11;
+        // Target: assets = 0.9 * (150 ether + MIN_TOTAL_SUPPLY) = 135 ether + 9 * MIN_TOTAL_SUPPLY / 10. Delta = 15 ether + MIN_TOTAL_SUPPLY / 10.
+        uint256 recoveryAmount = 15 ether + MIN_TOTAL_SUPPLY / 10;
         deal(address(weth), address(lidoARM), weth.balanceOf(address(lidoARM)) + recoveryAmount);
-        assertEq(lidoARM.totalAssets(), 135 ether + 9e11, "totalAssets after recovery");
+        assertEq(lidoARM.totalAssets(), 135 ether + 9 * MIN_TOTAL_SUPPLY / 10, "totalAssets after recovery");
         assertEq(lidoARM.convertToAssets(1 ether), 0.9 ether, "share price after recovery");
 
         // Bobby requests 25% of his shares at the recovered price (0.9).
@@ -295,8 +295,8 @@ contract Unit_LidoARM_ClaimRedeem_Test is Unit_LidoARM_Shared_Test {
         // Yield: 20 WETH donated to the ARM. Share price rises from 1.0 to 1.1.
         uint256 yield = 20 ether;
         deal(address(weth), address(lidoARM), weth.balanceOf(address(lidoARM)) + yield);
-        assertEq(lidoARM.totalAssets(), 220 ether + 1e12, "totalAssets with yield");
-        assertEq(lidoARM.totalSupply(), 200 ether + 1e12, "totalSupply unchanged");
+        assertEq(lidoARM.totalAssets(), 220 ether + MIN_TOTAL_SUPPLY, "totalAssets with yield");
+        assertEq(lidoARM.totalSupply(), 200 ether + MIN_TOTAL_SUPPLY, "totalSupply unchanged");
 
         skip(CLAIM_DELAY);
 
@@ -310,7 +310,8 @@ contract Unit_LidoARM_ClaimRedeem_Test is Unit_LidoARM_Shared_Test {
         // After Alice's claim, the ~5 ether of upside she gave up stays in the pool. Bob's 100
         // shares should now be worth strictly more than 100 ether.
         uint256 bobShareValue = lidoARM.previewRedeem(100 ether);
-        uint256 expectedBobShareValue = Math.mulDiv(100 ether, 170 ether + 1e12, 150 ether + 1e12);
+        uint256 expectedBobShareValue =
+            Math.mulDiv(100 ether, 170 ether + MIN_TOTAL_SUPPLY, 150 ether + MIN_TOTAL_SUPPLY);
         assertEq(bobShareValue, expectedBobShareValue, "bob's share value reflects forfeited upside");
         assertGt(bobShareValue, 100 ether, "bob gained from alice's forfeited upside");
     }
@@ -321,8 +322,8 @@ contract Unit_LidoARM_ClaimRedeem_Test is Unit_LidoARM_Shared_Test {
 
         bobbyFirstDeposit();
 
-        // Loss #1: -20% on (200 ether + 1e12)
-        uint256 loss1 = 40 ether + 2e11;
+        // Loss #1: -20% on (200 ether + MIN_TOTAL_SUPPLY)
+        uint256 loss1 = 40 ether + MIN_TOTAL_SUPPLY / 5;
         vm.prank(address(lidoARM));
         weth.transfer(address(0xdead), loss1);
         assertEq(lidoARM.convertToAssets(1 ether), 0.8 ether, "price after loss #1");
@@ -337,14 +338,14 @@ contract Unit_LidoARM_ClaimRedeem_Test is Unit_LidoARM_Shared_Test {
 
         // Share price is still 0.8 after Alice's burn (loss already absorbed pro-rata).
         assertEq(lidoARM.convertToAssets(1 ether), 0.8 ether, "price still 0.8 after alice claim");
-        assertEq(lidoARM.totalAssets(), 120 ether + 8e11, "totalAssets after alice claim");
-        assertEq(lidoARM.totalSupply(), 150 ether + 1e12, "totalSupply after alice claim");
+        assertEq(lidoARM.totalAssets(), 120 ether + 4 * MIN_TOTAL_SUPPLY / 5, "totalAssets after alice claim");
+        assertEq(lidoARM.totalSupply(), 150 ether + MIN_TOTAL_SUPPLY, "totalSupply after alice claim");
 
-        // Loss #2: -20% of CURRENT totalAssets (120 ether + 8e11) -> burn 24 ether + 1.6e11
-        uint256 loss2 = 24 ether + 16e10;
+        // Loss #2: -20% of CURRENT totalAssets (120 ether + 4 * MIN_TOTAL_SUPPLY / 5).
+        uint256 loss2 = 24 ether + 4 * MIN_TOTAL_SUPPLY / 25;
         vm.prank(address(lidoARM));
         weth.transfer(address(0xdead), loss2);
-        assertEq(lidoARM.totalAssets(), 96 ether + 64e10, "totalAssets after loss #2");
+        assertEq(lidoARM.totalAssets(), 96 ether + 16 * MIN_TOTAL_SUPPLY / 25, "totalAssets after loss #2");
         // New price: 0.8 * 0.8 = 0.64
         assertEq(lidoARM.convertToAssets(1 ether), 0.64 ether, "price after loss #2");
 
@@ -423,8 +424,8 @@ contract Unit_LidoARM_ClaimRedeem_Test is Unit_LidoARM_Shared_Test {
         (uint256 aliceId,) = aliceRequest(0); // 100 shares -> request.assets = 100
         assertEq(lidoARM.reservedWithdrawLiquidity(), 100 ether, "reservation at request time");
 
-        // 20% loss on (200 ether + 1e12)
-        uint256 lossAmount = 40 ether + 2e11;
+        // 20% loss on (200 ether + MIN_TOTAL_SUPPLY)
+        uint256 lossAmount = 40 ether + MIN_TOTAL_SUPPLY / 5;
         vm.prank(address(lidoARM));
         weth.transfer(address(0xdead), lossAmount);
 
@@ -437,10 +438,10 @@ contract Unit_LidoARM_ClaimRedeem_Test is Unit_LidoARM_Shared_Test {
         assertEq(lidoARM.reservedWithdrawLiquidity(), 0, "full reservation released");
 
         // The 20 ether delta (reservation - payout) stays in the pool, raising the value
-        // backing Bob's 100 remaining shares. Bob now backs (160 + 8e11) - 80 = 80 + 8e11
-        // against 200 + 1e12 - 100 = 100 + 1e12 supply -> price still 0.8 per share.
-        assertEq(weth.balanceOf(address(lidoARM)), 80 ether + 8e11, "balance after claim");
-        assertEq(lidoARM.totalSupply(), 100 ether + 1e12, "supply after burn");
+        // backing Bob's 100 remaining shares. Bob now backs (160 + 4 * MIN_TOTAL_SUPPLY / 5) - 80 = 80 + 4 * MIN_TOTAL_SUPPLY / 5
+        // against 200 + MIN_TOTAL_SUPPLY - 100 = 100 + MIN_TOTAL_SUPPLY supply -> price still 0.8 per share.
+        assertEq(weth.balanceOf(address(lidoARM)), 80 ether + 4 * MIN_TOTAL_SUPPLY / 5, "balance after claim");
+        assertEq(lidoARM.totalSupply(), 100 ether + MIN_TOTAL_SUPPLY, "supply after burn");
         assertEq(lidoARM.convertToAssets(1 ether), 0.8 ether, "price still 0.8 for remaining LPs");
     }
 
@@ -467,13 +468,13 @@ contract Unit_LidoARM_ClaimRedeem_Test is Unit_LidoARM_Shared_Test {
         deal(address(steth), address(lidoARM), 150 ether);
 
         // Sanity: state is "balance-poor, totalAssets-rich"
-        assertEq(weth.balanceOf(address(lidoARM)), 50 ether + 1e12, "balance WETH = 50");
-        assertEq(lidoARM.totalAssets(), 200 ether + 1e12, "totalAssets unchanged");
-        assertEq(lidoARM.totalSupply(), 200 ether + 1e12, "totalSupply unchanged");
+        assertEq(weth.balanceOf(address(lidoARM)), 50 ether + MIN_TOTAL_SUPPLY, "balance WETH = 50");
+        assertEq(lidoARM.totalAssets(), 200 ether + MIN_TOTAL_SUPPLY, "totalAssets unchanged");
+        assertEq(lidoARM.totalSupply(), 200 ether + MIN_TOTAL_SUPPLY, "totalSupply unchanged");
 
         skip(CLAIM_DELAY);
 
-        // claimable() in shares = convertToShares(50 ether + 1e12) ~= 50 ether + 1e12
+        // claimable() in shares = convertToShares(50 ether + MIN_TOTAL_SUPPLY) ~= 50 ether + MIN_TOTAL_SUPPLY
         // Alice queued = 100 ether (in shares) -> cannot claim
         // Bob queued = 200 ether -> cannot claim either
         vm.prank(alice);

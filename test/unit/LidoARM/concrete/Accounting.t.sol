@@ -14,7 +14,7 @@ import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 ///         queue, yield/loss) and asserts the function's value with a
 ///         hand-computed expected.
 contract Unit_LidoARM_Accounting_Test is Unit_LidoARM_Shared_Test {
-    uint256 internal constant INITIAL = 1e12; // MIN_TOTAL_SUPPLY minted to dead at init
+    uint256 internal constant INITIAL = MIN_TOTAL_SUPPLY; // MIN_TOTAL_SUPPLY minted to dead at init
 
     function setUp() public override {
         super.setUp();

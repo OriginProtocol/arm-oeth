@@ -75,7 +75,7 @@ contract $013_UpgradeOETHARMScript is AbstractDeployScript("013_UpgradeOETHARMSc
         );
 
         // 3. Timelock needs to approve the OETH ARM to pull WETH for initialization.
-        govProposal.action(Mainnet.WETH, "approve(address,uint256)", abi.encode(resolver.resolve("OETH_ARM"), 1e12));
+        govProposal.action(Mainnet.WETH, "approve(address,uint256)", abi.encode(resolver.resolve("OETH_ARM"), 1e15));
 
         // 4. Upgrade the OETH ARM implementation, and initialize.
         bytes memory initializeData = abi.encodeWithSelector(

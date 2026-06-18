@@ -79,8 +79,8 @@ abstract contract Fork_Shared_Test is Base_Test_ {
         ethenaProxy = new Proxy();
 
         // Fund deployer with USDe and approve proxy to pull USDe for initialization
-        deal(address(usde), deployer, 1e12);
-        usde.approve(address(ethenaProxy), 1e12);
+        deal(address(usde), deployer, 1e15);
+        usde.approve(address(ethenaProxy), 1e15);
 
         // 3. Initialize Ethena ARM Proxy
         bytes memory data = abi.encodeWithSelector(

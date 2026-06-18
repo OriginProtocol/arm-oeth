@@ -61,7 +61,7 @@ abstract contract Base_Test_ is Test {
     uint256 public constant CLAIM_DELAY = 10 minutes;
     uint256 public constant DELAY_REQUEST = 30 minutes;
     uint256 public constant DEFAULT_AMOUNT = 1 ether;
-    uint256 public constant MIN_TOTAL_SUPPLY = 1e12;
+    uint256 public constant MIN_TOTAL_SUPPLY = 1e15;
     uint256 public constant MIN_SHARES_TO_REDEEM = 1e7;
     uint256 public constant MAX_CROSS_PRICE_DEVIATION = 20e32;
 }

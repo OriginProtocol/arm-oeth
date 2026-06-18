@@ -136,7 +136,7 @@ contract Unit_Fuzz_LidoARM_ClaimRedeem_Test is Unit_LidoARM_Shared_Test {
         skip(CLAIM_DELAY);
 
         // Expected payout computed via mulDiv with Floor — algebraically identical to the contract's
-        // `shares * totalAssets() / totalSupply()` (no overflow since 100e18 * (1e12 + 100e18) ≪ 2^256).
+        // `shares * totalAssets() / totalSupply()` (no overflow since 100e18 * (MIN_TOTAL_SUPPLY + 100e18) ≪ 2^256).
         // Equality must be exact, no rounding tolerance, so a bug that flips num/denom, uses post-burn
         // supply, or changes rounding direction would diverge here.
         uint256 totalAssetsAfterLoss = MIN_TOTAL_SUPPLY + 100 ether - loss;
