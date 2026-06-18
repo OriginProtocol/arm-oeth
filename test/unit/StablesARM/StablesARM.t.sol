@@ -9,24 +9,7 @@ import {CapManager} from "contracts/CapManager.sol";
 import {IERC20} from "contracts/Interfaces.sol";
 import {Proxy} from "contracts/Proxy.sol";
 import {StablesARM} from "contracts/StablesARM.sol";
-import {StableSwapAssetAdapter, IStableSwapRoute} from "contracts/adapters/StableSwapAssetAdapter.sol";
-
-contract MockStableSwapRoute is IStableSwapRoute {
-    uint256 public outputBps = 10000;
-
-    function setOutputBps(uint256 _outputBps) external {
-        outputBps = _outputBps;
-    }
-
-    function swap(address tokenIn, address tokenOut, uint256 amountIn, uint256, bytes calldata)
-        external
-        returns (uint256 amountOut)
-    {
-        IERC20(tokenIn).transferFrom(msg.sender, address(this), amountIn);
-        amountOut = amountIn * outputBps / 10000;
-        IERC20(tokenOut).transfer(msg.sender, amountOut);
-    }
-}
+import {PaxosAssetAdapter} from "contracts/adapters/PaxosAssetAdapter.sol";
 
 contract Unit_StablesARM_Test is Test {
     address internal deployer = makeAddr("deployer");
@@ -34,6 +17,7 @@ contract Unit_StablesARM_Test is Test {
     address internal operator = makeAddr("operator");
     address internal feeCollector = makeAddr("feeCollector");
     address internal alice = makeAddr("alice");
+    address internal paxosRecipient = makeAddr("paxosRecipient");
 
     MockERC20 internal usdc;
     MockERC20 internal usdg;
@@ -44,15 +28,13 @@ contract Unit_StablesARM_Test is Test {
     Proxy internal pyusdAdapterProxy;
     StablesARM internal stablesARM;
     CapManager internal capManager;
-    StableSwapAssetAdapter internal usdgAdapter;
-    StableSwapAssetAdapter internal pyusdAdapter;
-    MockStableSwapRoute internal swapRoute;
+    PaxosAssetAdapter internal usdgAdapter;
+    PaxosAssetAdapter internal pyusdAdapter;
 
     function setUp() external {
         usdc = new MockERC20("USD Coin", "USDC", 6);
         usdg = new MockERC20("Global Dollar", "USDG", 6);
         pyusd = new MockERC20("PayPal USD", "PYUSD", 6);
-        swapRoute = new MockStableSwapRoute();
 
         vm.startPrank(deployer);
         armProxy = new Proxy();
@@ -62,10 +44,8 @@ contract Unit_StablesARM_Test is Test {
 
         StablesARM armImpl = new StablesARM(address(usdc), 10 minutes, 1e6, 100e6);
         CapManager capManagerImpl = new CapManager(address(armProxy));
-        StableSwapAssetAdapter usdgAdapterImpl =
-            new StableSwapAssetAdapter(address(armProxy), address(usdg), address(usdc));
-        StableSwapAssetAdapter pyusdAdapterImpl =
-            new StableSwapAssetAdapter(address(armProxy), address(pyusd), address(usdc));
+        PaxosAssetAdapter usdgAdapterImpl = new PaxosAssetAdapter(address(armProxy), address(usdg), address(usdc));
+        PaxosAssetAdapter pyusdAdapterImpl = new PaxosAssetAdapter(address(armProxy), address(pyusd), address(usdc));
 
         usdc.mint(deployer, 1000);
         usdc.approve(address(armProxy), 1000);
@@ -85,14 +65,22 @@ contract Unit_StablesARM_Test is Test {
         capManagerProxy.initialize(
             address(capManagerImpl), governor, abi.encodeWithSelector(CapManager.initialize.selector, operator)
         );
-        usdgAdapterProxy.initialize(address(usdgAdapterImpl), governor, "");
-        pyusdAdapterProxy.initialize(address(pyusdAdapterImpl), governor, "");
+        usdgAdapterProxy.initialize(
+            address(usdgAdapterImpl),
+            governor,
+            abi.encodeWithSelector(PaxosAssetAdapter.initialize.selector, operator, paxosRecipient)
+        );
+        pyusdAdapterProxy.initialize(
+            address(pyusdAdapterImpl),
+            governor,
+            abi.encodeWithSelector(PaxosAssetAdapter.initialize.selector, operator, paxosRecipient)
+        );
         vm.stopPrank();
 
         stablesARM = StablesARM(payable(address(armProxy)));
         capManager = CapManager(address(capManagerProxy));
-        usdgAdapter = StableSwapAssetAdapter(address(usdgAdapterProxy));
-        pyusdAdapter = StableSwapAssetAdapter(address(pyusdAdapterProxy));
+        usdgAdapter = PaxosAssetAdapter(address(usdgAdapterProxy));
+        pyusdAdapter = PaxosAssetAdapter(address(pyusdAdapterProxy));
 
         vm.startPrank(governor);
         capManager.setTotalAssetsCap(1_000_000e6);
@@ -196,45 +184,67 @@ contract Unit_StablesARM_Test is Test {
         assertEq(amounts[1], 99_800_000, "amount out");
     }
 
-    function test_requestAndClaimBaseRedeemThroughConfiguredRoute() external {
+    function test_requestSubmitAndClaimBaseRedeemThroughPaxosSettlement() external {
         usdg.mint(address(stablesARM), 100e6);
-        usdc.mint(address(swapRoute), 100e6);
-
-        vm.prank(governor);
-        usdgAdapter.setSwapRoute(address(swapRoute), abi.encode("USDG-USDC"), 50);
 
         vm.prank(operator);
         (uint256 sharesRequested, uint256 assetsExpected) = stablesARM.requestBaseAssetRedeem(address(usdg), 100e6);
         assertEq(sharesRequested, 100e6, "shares requested");
         assertEq(assetsExpected, 100e6, "assets expected");
         assertEq(usdg.balanceOf(address(usdgAdapter)), 100e6, "adapter USDG");
+        assertEq(usdgAdapter.pendingShares(), 100e6, "pending shares");
 
+        bytes32 paxosRedemptionId = keccak256("paxos-redemption-id");
+        vm.prank(operator);
+        usdgAdapter.submitPaxosRedeem(100e6, paxosRedemptionId);
+        assertEq(usdg.balanceOf(paxosRecipient), 100e6, "paxos USDG");
+        assertEq(usdgAdapter.pendingShares(), 0, "pending submitted");
+        assertEq(usdgAdapter.settlingShares(), 100e6, "settling shares");
+
+        usdc.mint(address(usdgAdapter), 100e6);
         vm.prank(operator);
         (uint256 sharesClaimed,, uint256 assetsReceived) = stablesARM.claimBaseAssetRedeem(address(usdg), 100e6);
         assertEq(sharesClaimed, 100e6, "shares claimed");
         assertEq(assetsReceived, 100e6, "assets received");
         assertEq(usdc.balanceOf(address(stablesARM)), 100e6 + 1000, "ARM USDC");
-        assertEq(usdg.allowance(address(usdgAdapter), address(swapRoute)), 0, "approval cleared");
+        assertEq(usdgAdapter.settlingShares(), 0, "settling claimed");
     }
 
-    function test_claimBaseRedeemRevertsWhenRouteOutputIsBelowSlippage() external {
+    function test_claimBaseRedeemRevertsBeforePaxosSettlementArrives() external {
         usdg.mint(address(stablesARM), 100e6);
-        usdc.mint(address(swapRoute), 99e6);
-        swapRoute.setOutputBps(9900);
 
-        vm.prank(governor);
-        usdgAdapter.setSwapRoute(address(swapRoute), "", 50);
         vm.prank(operator);
         stablesARM.requestBaseAssetRedeem(address(usdg), 100e6);
+        vm.prank(operator);
+        usdgAdapter.submitPaxosRedeem(100e6, keccak256("paxos-redemption-id"));
 
         vm.prank(operator);
-        vm.expectRevert(StableSwapAssetAdapter.InsufficientSwapOutput.selector);
+        vm.expectRevert(abi.encodeWithSelector(PaxosAssetAdapter.InsufficientSettledAssets.selector, 100e6, 0));
         stablesARM.claimBaseAssetRedeem(address(usdg), 100e6);
+    }
+
+    function test_submitPaxosRedeemRequiresConfiguredRecipient() external {
+        PaxosAssetAdapter newAdapterImpl = new PaxosAssetAdapter(address(this), address(usdg), address(usdc));
+        Proxy newAdapterProxy = new Proxy();
+        newAdapterProxy.initialize(
+            address(newAdapterImpl),
+            governor,
+            abi.encodeWithSelector(PaxosAssetAdapter.initialize.selector, operator, address(0))
+        );
+        PaxosAssetAdapter unconfiguredAdapter = PaxosAssetAdapter(address(newAdapterProxy));
+
+        usdg.mint(address(this), 1e6);
+        usdg.approve(address(unconfiguredAdapter), 1e6);
+        unconfiguredAdapter.requestRedeem(1e6);
+
+        vm.prank(operator);
+        vm.expectRevert(PaxosAssetAdapter.PaxosRecipientNotConfigured.selector);
+        unconfiguredAdapter.submitPaxosRedeem(1e6, keccak256("paxos-redemption-id"));
     }
 
     function test_addPeggedBaseAssetRejectsMismatchedDecimals() external {
         MockERC20 badBase = new MockERC20("Bad Stable", "BAD", 18);
-        StableSwapAssetAdapter badAdapter = new StableSwapAssetAdapter(address(armProxy), address(usdg), address(usdc));
+        PaxosAssetAdapter badAdapter = new PaxosAssetAdapter(address(armProxy), address(usdg), address(usdc));
 
         vm.prank(governor);
         vm.expectRevert(AbstractARM.InvalidAssetDecimals.selector);

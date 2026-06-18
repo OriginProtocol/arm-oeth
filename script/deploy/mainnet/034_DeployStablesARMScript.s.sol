@@ -5,7 +5,7 @@ import {Proxy} from "contracts/Proxy.sol";
 import {CapManager} from "contracts/CapManager.sol";
 import {IERC20} from "contracts/Interfaces.sol";
 import {StablesARM} from "contracts/StablesARM.sol";
-import {StableSwapAssetAdapter} from "contracts/adapters/StableSwapAssetAdapter.sol";
+import {PaxosAssetAdapter} from "contracts/adapters/PaxosAssetAdapter.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
 
 import {AbstractDeployScript} from "script/deploy/helpers/AbstractDeployScript.s.sol";
@@ -66,18 +66,24 @@ contract $034_DeployStablesARMScript is AbstractDeployScript("034_DeployStablesA
             )
         );
 
-        StableSwapAssetAdapter usdgAdapterImpl =
-            new StableSwapAssetAdapter(address(armProxy), Mainnet.USDG, Mainnet.USDC);
+        PaxosAssetAdapter usdgAdapterImpl = new PaxosAssetAdapter(address(armProxy), Mainnet.USDG, Mainnet.USDC);
         _recordDeployment("STABLES_ARM_USDG_ADAPTER_IMPL", address(usdgAdapterImpl));
         Proxy usdgAdapterProxy = new Proxy();
-        usdgAdapterProxy.initialize(address(usdgAdapterImpl), Mainnet.TIMELOCK, "");
+        usdgAdapterProxy.initialize(
+            address(usdgAdapterImpl),
+            Mainnet.TIMELOCK,
+            abi.encodeWithSelector(PaxosAssetAdapter.initialize.selector, Mainnet.ARM_TALOS_RELAYER, address(0))
+        );
         _recordDeployment("STABLES_ARM_USDG_ADAPTER", address(usdgAdapterProxy));
 
-        StableSwapAssetAdapter pyusdAdapterImpl =
-            new StableSwapAssetAdapter(address(armProxy), Mainnet.PYUSD, Mainnet.USDC);
+        PaxosAssetAdapter pyusdAdapterImpl = new PaxosAssetAdapter(address(armProxy), Mainnet.PYUSD, Mainnet.USDC);
         _recordDeployment("STABLES_ARM_PYUSD_ADAPTER_IMPL", address(pyusdAdapterImpl));
         Proxy pyusdAdapterProxy = new Proxy();
-        pyusdAdapterProxy.initialize(address(pyusdAdapterImpl), Mainnet.TIMELOCK, "");
+        pyusdAdapterProxy.initialize(
+            address(pyusdAdapterImpl),
+            Mainnet.TIMELOCK,
+            abi.encodeWithSelector(PaxosAssetAdapter.initialize.selector, Mainnet.ARM_TALOS_RELAYER, address(0))
+        );
         _recordDeployment("STABLES_ARM_PYUSD_ADAPTER", address(pyusdAdapterProxy));
 
         StablesARM arm = StablesARM(payable(address(armProxy)));
