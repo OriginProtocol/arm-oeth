@@ -1200,4 +1200,10 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
         armBuffer = _armBuffer;
         emit ARMBufferUpdated(_armBuffer);
     }
+
+    /// @notice List of supported base assets iterated by totalAssets().
+    /// @return The supported base asset addresses.
+    function getBaseAssets() external view returns (address[] memory) {
+        return baseAssets;
+    }
 }
