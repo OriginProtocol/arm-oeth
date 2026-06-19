@@ -289,6 +289,35 @@ contract Unit_LidoARM_Admin_Test is Unit_LidoARM_Shared_Test {
     }
 
     //////////////////////////////////////////////////////
+    /// --- getBaseAssets
+    //////////////////////////////////////////////////////
+
+    function test_GetBaseAssets_EmptyByDefault() public view {
+        // No base asset registered yet, so the list is empty.
+        address[] memory assets = lidoARM.getBaseAssets();
+        assertEq(assets.length, 0, "no base assets registered");
+    }
+
+    function test_GetBaseAssets_SingleAsset() public {
+        addBaseAsset(steth);
+
+        address[] memory assets = lidoARM.getBaseAssets();
+        assertEq(assets.length, 1, "one base asset registered");
+        assertEq(assets[0], address(steth), "first base asset is stETH");
+    }
+
+    function test_GetBaseAssets_MultipleAssets_PreservesInsertionOrder() public {
+        addBaseAsset(steth);
+        addBaseAsset(wsteth);
+
+        // The list mirrors the storage array, so it reflects registration order.
+        address[] memory assets = lidoARM.getBaseAssets();
+        assertEq(assets.length, 2, "two base assets registered");
+        assertEq(assets[0], address(steth), "first base asset is stETH");
+        assertEq(assets[1], address(wsteth), "second base asset is wstETH");
+    }
+
+    //////////////////////////////////////////////////////
     /// --- setPrices
     //////////////////////////////////////////////////////
 

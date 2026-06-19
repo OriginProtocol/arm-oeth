@@ -59,6 +59,10 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
         (,,,, uint128 crossPrice,,,) = lidoARM.baseAssetConfigs(address(steth));
         assertEq(crossPrice, 0.99996e36, "cross price");
 
+        address[] memory baseAssets = lidoARM.getBaseAssets();
+        _assertBaseAssetListed(baseAssets, address(steth), "stETH listed as base asset");
+        _assertBaseAssetListed(baseAssets, Mainnet.WSTETH, "wstETH listed as base asset");
+
         assertEq(capManager.accountCapEnabled(), false, "account cap enabled");
         assertEq(capManager.operator(), Mainnet.ARM_RELAYER, "Operator");
         assertEq(capManager.arm(), address(lidoARM), "arm");

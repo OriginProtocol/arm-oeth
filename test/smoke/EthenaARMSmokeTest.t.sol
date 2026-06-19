@@ -22,6 +22,12 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
     CapManager capManager;
     address operator;
 
+    /// @dev EthenaAssetAdapter storage slots (see `forge inspect EthenaAssetAdapter storageLayout`):
+    ///      `totalRequests` is the public counter at slot 45, `nextPendingIndex` (internal FIFO claim
+    ///      cursor) immediately follows at slot 46.
+    uint256 internal constant ETHENA_ADAPTER_TOTAL_REQUESTS_SLOT = 45;
+    uint256 internal constant ETHENA_ADAPTER_NEXT_PENDING_INDEX_SLOT = 46;
+
     function setUp() public override {
         super.setUp();
         usde = IERC20(Mainnet.USDE);
@@ -54,6 +60,8 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
         assertEq(ethenaARM.claimDelay(), 10 minutes, "claim delay");
         (,,,, uint128 crossPrice,,,) = ethenaARM.baseAssetConfigs(Mainnet.SUSDE);
         assertEq(crossPrice, 0.99996e36, "cross price");
+
+        _assertBaseAssetListed(ethenaARM.getBaseAssets(), Mainnet.SUSDE, "sUSDe listed as base asset");
 
         assertEq(capManager.accountCapEnabled(), true, "account cap enabled");
         assertEq(capManager.totalAssetsCap(), 100000 ether, "total assets cap");
@@ -230,6 +238,11 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
         // trader sells sUSDe and buys USDE, the ARM buys sUSDe as a 20 bps discount
         _swapExactTokensForTokens(susde, usde, 0.998e36, 100 ether);
 
+        // On a `latest` fork the live adapter can already hold real, in-flight sUSDe cooldown
+        // requests at the head of its FIFO queue. Isolate the test's request so the claim succeeds
+        // regardless of that pre-existing on-chain state.
+        _isolateEthenaAdapterQueue();
+
         // Owner requests an Ethena withdrawal
         uint256 nextUnstakerIndex = ethenaAssetAdapter.nextUnstakerIndex();
         skip(DELAY_REQUEST + 1);
@@ -283,5 +296,26 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
         uint256 balanceAfter = usde.balanceOf(address(ethenaARM));
 
         assertGt(balanceAfter, balanceBefore, "Allocated amount with yield");
+    }
+
+    /// @dev Advance the adapter's FIFO claim cursor (`nextPendingIndex`) past every pre-existing
+    ///      pending request so the test's own request becomes the head of the claimable queue.
+    ///      `EthenaAssetAdapter.redeem()` is strictly FIFO and requires the claimed shares to match
+    ///      the front request, so on a `latest` fork — where the live adapter can already hold real,
+    ///      in-flight sUSDe cooldown requests — claiming just the test's request would revert with
+    ///      "Adapter: invalid redeem amount". The adapter preserves the invariant
+    ///      `nextUnstakerIndex == totalRequests % MAX_UNSTAKERS`, so the next request lands on the free
+    ///      unstaker `unstakers[totalRequests % MAX_UNSTAKERS]` at request index `totalRequests` — which
+    ///      is exactly where the cursor is moved to here.
+    function _isolateEthenaAdapterQueue() internal {
+        uint256 totalRequests = ethenaAssetAdapter.totalRequests();
+        // nextPendingIndex is internal, so it is written by storage slot. Verify the layout
+        // assumption (totalRequests at slot 45) first so a future reordering fails loudly instead of
+        // silently corrupting adapter state.
+        require(
+            uint256(vm.load(address(ethenaAssetAdapter), bytes32(ETHENA_ADAPTER_TOTAL_REQUESTS_SLOT))) == totalRequests,
+            "Ethena adapter storage layout changed; update queue slots"
+        );
+        vm.store(address(ethenaAssetAdapter), bytes32(ETHENA_ADAPTER_NEXT_PENDING_INDEX_SLOT), bytes32(totalRequests));
     }
 }

@@ -91,6 +91,10 @@ contract Fork_OriginARM_Smoke_Test is AbstractSmokeTest {
         assertNotEq(buyPrice, 0, "woeth buy price");
         assertEq(wrappedOriginAssetAdapter.convertToAssets(1 ether), woeth.convertToAssets(1 ether), "woeth assets");
 
+        address[] memory baseAssets = originARM.getBaseAssets();
+        _assertBaseAssetListed(baseAssets, Mainnet.OETH, "OETH listed as base asset");
+        _assertBaseAssetListed(baseAssets, Mainnet.WOETH, "wOETH listed as base asset");
+
         // Redemption
         assertEq(address(originARM.vault()), Mainnet.OETH_VAULT, "OETH Vault");
         assertEq(originARM.claimDelay(), 10 minutes, "claim delay");
