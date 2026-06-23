@@ -21,7 +21,7 @@
             "name": "ETHENA_ARM_IMPL"
         },
         {
-            "implementation": "0x6DB596b66FED6a9994e09EeD70b6d210F01705E5",
+            "implementation": "0xac9759571bDFbdD7E9C5a45A313190c28a65184c",
             "name": "ETHERFI_ARM_IMPL"
         },
         {
@@ -111,6 +111,22 @@
         {
             "implementation": "0xE620aFB67223AE03C260112aE21A717Af94C90f0",
             "name": "ETHENA_ARM_SUSDE_ADAPTER"
+        },
+        {
+            "implementation": "0xa2c52459E2D1412d889ED94FBC6D1b806Ec2c481",
+            "name": "ETHER_FI_ARM_EETH_ADAPTER_IMPL"
+        },
+        {
+            "implementation": "0xaE45aF19EDb64E1D67185a648680A6dA468aB77E",
+            "name": "ETHER_FI_ARM_EETH_ADAPTER"
+        },
+        {
+            "implementation": "0x9c89A1e5DFeb7530ea0Aa429ac1c524D767ac003",
+            "name": "ETHER_FI_ARM_WEETH_ADAPTER_IMPL"
+        },
+        {
+            "implementation": "0x4576Ca992789B1B65574B631C635BE4adf176608",
+            "name": "ETHER_FI_ARM_WEETH_ADAPTER"
         }
     ],
     "executions": [
@@ -292,6 +308,12 @@
             "name": "034_UpgradeEthenaARMGetBaseAssetsScript",
             "proposalId": 1,
             "tsDeployment": 1781855555,
+            "tsGovernance": 1
+        },
+        {
+            "name": "032_UpgradeEtherFiARMSwapFeeScript",
+            "proposalId": 0,
+            "tsDeployment": 1782201503,
             "tsGovernance": 0
         }
     ]

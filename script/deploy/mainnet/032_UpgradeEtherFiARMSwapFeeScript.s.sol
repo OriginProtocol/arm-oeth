@@ -13,7 +13,7 @@ import {GovHelper, GovProposal} from "script/deploy/helpers/GovHelper.sol";
 contract $032_UpgradeEtherFiARMSwapFeeScript is AbstractDeployScript("032_UpgradeEtherFiARMSwapFeeScript") {
     using GovHelper for GovProposal;
 
-    bool public constant override skip = true;
+    bool public constant override skip = false;
 
     // Prices are intentionally set wider than the current on-chain prices (buy ~0.9992, sell ~0.99998)
     // to discourage swaps right after the upgrade. The operator can tighten them later via setPrices().
