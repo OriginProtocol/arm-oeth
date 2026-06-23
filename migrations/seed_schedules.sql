@@ -25,6 +25,14 @@ INSERT INTO schedules (product, name, command, cron_expr, timezone, enabled, not
 ('arm-oeth', 'mainnet_pause_lido',                   'cd /app && pnpm hardhat pauseLido --network mainnet',                       '0 0 * * *',             'UTC', false, NULL),
 ('arm-oeth', 'mainnet_pause_etherfi',                'cd /app && pnpm hardhat pauseEtherFi --network mainnet',                    '0 0 * * *',             'UTC', false, NULL),
 ('arm-oeth', 'mainnet_pause_ethena',                 'cd /app && pnpm hardhat pauseEthena --network mainnet',                     '0 0 * * *',             'UTC', false, NULL),
+-- LP redeem claims on behalf of users: manual-only (enabled=false). The runner
+-- dispatches `command` verbatim, so the required `--ids` flag (a comma-separated
+-- list of request ids, eg --ids 12,13,14) must be set to the ids you want before
+-- running, by editing this row's command. The 0 below is a placeholder.
+-- cron_expr is a placeholder that never fires while disabled.
+('arm-oeth', 'mainnet_claim_redeem_lido',            'cd /app && pnpm hardhat claimRedeemLido --ids 0 --network mainnet',                '15 * * * *',            'UTC', false, NULL),
+('arm-oeth', 'mainnet_claim_redeem_etherfi',         'cd /app && pnpm hardhat claimRedeemEtherFi --ids 0 --network mainnet',             '15 * * * *',            'UTC', false, NULL),
+('arm-oeth', 'mainnet_claim_redeem_ethena',          'cd /app && pnpm hardhat claimRedeemEthena --ids 0 --network mainnet',              '15 * * * *',            'UTC', false, NULL),
 ('arm-oeth', 'sonic_auto_request_withdraw',          'cd /app && pnpm hardhat autoRequestWithdrawSonic --network sonic',          '48,18 * * * *',         'UTC', false, NULL),
 ('arm-oeth', 'sonic_auto_claim_withdraw',            'cd /app && pnpm hardhat autoClaimWithdrawSonic --network sonic',            '10 * * * *',            'UTC', false, NULL),
 ('arm-oeth', 'sonic_collect_fees',                   'cd /app && pnpm hardhat collectFeesSonic --network sonic',                  '55 23 * * *',           'UTC', false, NULL),
