@@ -45,7 +45,7 @@
     "typescript": "^5.7.0"
   },
   "dependencies": {
-    "@talos/client": "github:oplabs/talos#0a6ecc9c273561dfad4dbe69c3708f3521a1670b&path:packages/client"
+    "@talos/client": "github:oplabs/talos#e0c53b2f06b8aa627640a7cb3631140dcae14f41&path:packages/client"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
