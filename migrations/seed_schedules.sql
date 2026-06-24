@@ -25,6 +25,12 @@ INSERT INTO schedules (product, name, command, cron_expr, timezone, enabled, not
 ('arm-oeth', 'mainnet_pause_lido',                   'cd /app && pnpm hardhat pauseLido --network mainnet',                       '0 0 * * *',             'UTC', false, NULL),
 ('arm-oeth', 'mainnet_pause_etherfi',                'cd /app && pnpm hardhat pauseEtherFi --network mainnet',                    '0 0 * * *',             'UTC', false, NULL),
 ('arm-oeth', 'mainnet_pause_ethena',                 'cd /app && pnpm hardhat pauseEthena --network mainnet',                     '0 0 * * *',             'UTC', false, NULL),
+-- LP redeem claims on behalf of users: manual-only (enabled=false). The runner
+-- dispatches `command` verbatim, so the required `--arm` and `--ids` flags must
+-- be set before running, by editing this row's command. `lido` and `0` below are
+-- placeholders. For ids, use a comma-separated list, eg --ids 12,13,14.
+-- cron_expr is a placeholder that never fires while disabled.
+('arm-oeth', 'mainnet_claim_redeem',                 'cd /app && pnpm hardhat claimRedeem --arm lido --ids 0 --network mainnet',         '0 0 * * *',             'UTC', false, NULL),
 ('arm-oeth', 'sonic_auto_request_withdraw',          'cd /app && pnpm hardhat autoRequestWithdrawSonic --network sonic',          '48,18 * * * *',         'UTC', false, NULL),
 ('arm-oeth', 'sonic_auto_claim_withdraw',            'cd /app && pnpm hardhat autoClaimWithdrawSonic --network sonic',            '10 * * * *',            'UTC', false, NULL),
 ('arm-oeth', 'sonic_collect_fees',                   'cd /app && pnpm hardhat collectFeesSonic --network sonic',                  '55 23 * * *',           'UTC', false, NULL),
