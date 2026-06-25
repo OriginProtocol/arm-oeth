@@ -144,7 +144,7 @@ abstract contract TargetFunction is Properties {
         // Remove the request from the list
         removeRequest(user, id);
         sum_ws_user_claimed += assets;
-        (,,,,, uint128 requestShares) = originARM.withdrawalRequests(id);
+        uint256 requestShares = originARM.withdrawalRequestShares(id);
         sum_shares_claimed += requestShares;
     }
 
@@ -573,7 +573,7 @@ abstract contract TargetFunction is Properties {
         // No unclaimed requests
         uint256 len = originARM.nextWithdrawalIndex();
         for (uint256 i; i < len; i++) {
-            (, bool claimed,,,,) = originARM.withdrawalRequests(i);
+            (, bool claimed,,,) = originARM.withdrawalRequests(i);
             require(claimed, "All withdrawals should be claimed");
         }
         // No users with shares

@@ -361,9 +361,9 @@ abstract contract Unit_LidoARM_Shared_Test is Base_Test_ {
             bool claimed,
             uint40 claimTimestamp,
             uint128 storedAssets,
-            uint128 storedQueued,
-            uint128 storedShares
+            uint128 storedQueued
         ) = lidoARM.withdrawalRequests(requestId);
+        uint256 storedShares = lidoARM.withdrawalRequestShares(requestId);
         assertEq(withdrawer, expectedWithdrawer, "req.withdrawer");
         assertEq(claimed, false, "req.claimed");
         assertEq(claimTimestamp, expectedClaimTimestamp, "req.claimTimestamp");

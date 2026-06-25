@@ -236,7 +236,7 @@ abstract contract TargetFunction is Invariant_LidoARM_Setup_Test {
         (address user, uint256 requestId, uint256 positionInList) = selectUserWithPendingRequest();
         vm.assume(user != address(0));
 
-        (,,, uint128 reqAssets,, uint128 reqShares) = lidoARM.withdrawalRequests(requestId);
+        uint256 reqShares = lidoARM.withdrawalRequestShares(requestId);
 
         // claimable() passing does not guarantee claimRedeem succeeds (known limitation, see PR#247).
         // The share-based FIFO gate can pass while the market lacks liquidity for this specific request.

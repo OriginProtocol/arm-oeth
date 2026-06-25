@@ -66,7 +66,7 @@ contract Unit_Fuzz_LidoARM_ClaimRedeem_Test is Unit_LidoARM_Shared_Test {
         assertEq(lidoARM.reservedWithdrawLiquidity(), reservedBefore - requestAssets, "reserved released");
         assertEq(lidoARM.withdrawsClaimedShares(), claimedSharesBefore + shares, "withdrawsClaimedShares");
 
-        (, bool claimed,,,,) = lidoARM.withdrawalRequests(requestId);
+        (, bool claimed,,,) = lidoARM.withdrawalRequests(requestId);
         assertTrue(claimed, "request marked claimed");
     }
 
@@ -115,7 +115,7 @@ contract Unit_Fuzz_LidoARM_ClaimRedeem_Test is Unit_LidoARM_Shared_Test {
         // The yield stays with the remaining LPs: share price strictly above 1 after the claim.
         assertGt(lidoARM.convertToAssets(1 ether), 1 ether, "share price > 1 after claim");
 
-        (, bool claimed,,,,) = lidoARM.withdrawalRequests(requestId);
+        (, bool claimed,,,) = lidoARM.withdrawalRequests(requestId);
         assertTrue(claimed, "request marked claimed");
     }
 
@@ -171,7 +171,7 @@ contract Unit_Fuzz_LidoARM_ClaimRedeem_Test is Unit_LidoARM_Shared_Test {
         assertEq(lidoARM.balanceOf(alice), 0, "alice shares");
         assertEq(lidoARM.balanceOf(address(lidoARM)), 0, "escrow burned");
 
-        (, bool claimed,,,,) = lidoARM.withdrawalRequests(requestId);
+        (, bool claimed,,,) = lidoARM.withdrawalRequests(requestId);
         assertTrue(claimed, "request marked claimed");
     }
 
@@ -204,7 +204,7 @@ contract Unit_Fuzz_LidoARM_ClaimRedeem_Test is Unit_LidoARM_Shared_Test {
         assertEq(lidoARM.reservedWithdrawLiquidity(), 0, "reserved released");
         assertEq(lidoARM.withdrawsClaimedShares(), 50 ether, "withdrawsClaimedShares");
 
-        (, bool claimed,,,,) = lidoARM.withdrawalRequests(requestId);
+        (, bool claimed,,,) = lidoARM.withdrawalRequests(requestId);
         assertTrue(claimed, "request marked claimed");
     }
 }

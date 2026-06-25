@@ -13,8 +13,8 @@ import {IAssetAdapter, IERC20, ICapManager} from "./Interfaces.sol";
  * @title Generic Automated Redemption Manager (ARM)
  * @notice Coordinates liquidity-provider shares, two-token swaps, active market allocation, and
  * protocol-specific redemption adapters for one liquidity asset and one or more supported base assets.
- * @dev Existing ARM proxies depend on the original storage prefix. New multi-base state is appended after
- * legacy single-base storage so Lido, EtherFi, Ethena, and Origin ARMs can share this implementation.
+ * @dev Fresh-deploy ARM implementation. It intentionally omits the legacy single-base storage slots
+ * retained by AbstractARM for existing proxy upgrades.
  * @author Origin Protocol Inc
  */
 abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGuardUpgradeable {
@@ -50,22 +50,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
     uint256 public immutable claimDelay;
 
     ////////////////////////////////////////////////////
-    ///                 Storage
+    ///                 Structs
     ////////////////////////////////////////////////////
-
-    /// @dev Legacy single-base storage. Keep this prefix unchanged for existing proxy upgrades.
-    /// These fields are retained for storage/ABI compatibility and are not the source of truth for
-    /// multi-base swap pricing.
-    uint256 internal _deprecatedTraderate0;
-    uint256 internal _deprecatedTraderate1;
-    uint256 internal _deprecatedCrossPrice;
-
-    /// @dev Legacy asset-denominated queue counters retained for storage layout compatibility.
-    uint128 internal _deprecatedWithdrawsQueued;
-    uint128 internal _deprecatedWithdrawsClaimed;
-    /// @notice Index of the next LP withdrawal request.
-    uint256 public nextWithdrawalIndex;
-
     /// @notice LP withdrawal request for liquidity assets.
     struct WithdrawalRequest {
         address withdrawer;
@@ -76,39 +62,10 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
         uint128 assets;
         /// @notice Cumulative queued LP shares including this request.
         uint128 queued;
-        /// @notice LP shares escrowed when this request was made.
-        uint128 shares;
     }
 
-    /// @notice Mapping of LP withdrawal request ids to request data.
-    mapping(uint256 requestId => WithdrawalRequest) public withdrawalRequests;
-
-    /// @notice Swap fee share collected on discounted base-asset buy swaps, in basis points.
-    /// 10,000 = 100% fee
-    /// 500 = 5% fee
-    uint16 public fee;
-    /// @dev Deprecated storage retained for layout compatibility.
-    int128 internal _deprecatedLastAvailableAssets;
-    /// @notice Account or contract that can collect accrued swap fees.
-    address public feeCollector;
-    /// @notice Optional CapManager contract used to enforce LP and total asset caps.
-    address public capManager;
-
-    /// @notice Active ERC-4626 lending market used for excess liquidity.
-    address public activeMarket;
-    /// @notice Lending markets that can be used by the ARM.
-    mapping(address market => bool supported) public supportedMarkets;
-    /// @notice Percentage of available liquid assets to keep in the ARM. 100% = 1e18.
-    uint256 public armBuffer;
-
-    /// @notice True when user-facing ARM actions are paused.
-    bool public paused;
-
-    /// @notice Accrued swap fees denominated in the liquidity asset.
-    uint128 public feesAccrued;
-
     /// @notice Per-base-asset swap, valuation, and adapter configuration.
-    /// @dev Packed into three storage slots. `adapter != address(0)` is the supported-asset flag.
+    /// @dev Packed into four storage slots. `adapter != address(0)` is the supported-asset flag.
     struct BaseAssetConfig {
         /// @notice Price the ARM pays in liquidity-asset terms when buying this base asset from traders.
         uint128 buyPrice;
@@ -128,19 +85,47 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
         address adapter;
     }
 
+    ////////////////////////////////////////////////////
+    ///                 Storage
+    ////////////////////////////////////////////////////
+    /// @notice Index of the next LP withdrawal request.
+    uint256 public nextWithdrawalIndex;
+    /// @notice Mapping of LP withdrawal request ids to request data.
+    mapping(uint256 requestId => WithdrawalRequest) public withdrawalRequests;
+
+    /// @notice Optional CapManager contract used to enforce LP and total asset caps.
+    address public capManager;
+
+    /// @notice Active ERC-4626 lending market used for excess liquidity.
+    address public activeMarket;
+    /// @notice Lending markets that can be used by the ARM.
+    mapping(address market => bool supported) public supportedMarkets;
+    /// @notice Percentage of available liquid assets to keep in the ARM. 100% = 1e18.
+    uint256 public armBuffer;
+
     /// @notice Supported base assets for totalAssets() iteration.
     address[] internal baseAssets;
     /// @notice Base asset configuration. A zero adapter means unsupported.
     mapping(address asset => BaseAssetConfig) public baseAssetConfigs;
 
+    /// @notice True when user-facing ARM actions are paused.
+    bool public paused;
+    /// @notice Swap fee share collected on discounted base-asset buy swaps, in basis points.
+    /// 10,000 = 100% fee
+    /// 500 = 5% fee
+    uint16 public fee;
+    /// @notice Account or contract that can collect accrued swap fees.
+    address public feeCollector;
+    /// @notice Accrued swap fees denominated in the liquidity asset.
+    uint128 public feesAccrued;
     /// @notice Cumulative LP shares queued for redemption, used by the FIFO gate.
     uint128 public withdrawsQueuedShares;
     /// @notice Cumulative LP shares claimed and burned.
     uint128 public withdrawsClaimedShares;
     /// @notice Maximum liquidity assets reserved for outstanding LP withdrawal requests.
-    uint256 public reservedWithdrawLiquidity;
+    uint128 public reservedWithdrawLiquidity;
 
-    uint256[33] private _gap;
+    uint256[50] private _gap;
 
     ////////////////////////////////////////////////////
     ///                 Errors
@@ -172,6 +157,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
     error QueuePendingLiquidity(); // 0xa5e8d7ac
     error NotRequesterOrOperator(); // 0x40e6afe4
     error AlreadyClaimed(); // 0x646cf558
+    error InvalidWithdrawalRequest(); // 0xa0fc0d03
 
     ////////////////////////////////////////////////////
     ///                 Events
@@ -794,7 +780,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
         uint128 queued = SafeCast.toUint128(withdrawsQueuedShares + shares);
         withdrawsQueuedShares = queued;
         // Reserve the request-time maximum liquidity payout.
-        reservedWithdrawLiquidity += assets;
+        reservedWithdrawLiquidity = SafeCast.toUint128(uint256(reservedWithdrawLiquidity) + assets);
 
         uint40 claimTimestamp = uint40(block.timestamp + claimDelay);
         withdrawalRequests[requestId] = WithdrawalRequest({
@@ -802,8 +788,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
             claimed: false,
             claimTimestamp: claimTimestamp,
             assets: SafeCast.toUint128(assets),
-            queued: queued,
-            shares: SafeCast.toUint128(shares)
+            queued: queued
         });
 
         // Escrow the redeemer's shares so they stay in totalSupply() and share losses/gains pro-rata.
@@ -828,21 +813,23 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
         if (request.withdrawer != msg.sender && msg.sender != operator) revert NotRequesterOrOperator();
         if (request.claimed) revert AlreadyClaimed();
 
+        uint256 shares = withdrawalRequestShares(requestId);
+
         // In the scenario where the ARM has made a loss after the redeem request, the asset value of
         // the redeemed shares at the time of the claim is used.
         // This can happen if there was a significant slashing event on the base asset, eg stETH,
         // after the redeem request was made.
-        uint256 assetsAtClaim = convertToAssets(request.shares);
+        uint256 assetsAtClaim = convertToAssets(shares);
         // Use the minimum of the asset value of the redeemed shares at request or claim.
         assets = request.assets < assetsAtClaim ? request.assets : assetsAtClaim;
 
         // Release the full request-time reservation, even when a loss-adjusted payout is lower.
         reservedWithdrawLiquidity -= request.assets;
         // Cumulative claimed amount in shares, used by the FIFO gate above.
-        withdrawsClaimedShares += request.shares;
+        withdrawsClaimedShares += SafeCast.toUint128(shares);
 
         // Burn the escrowed shares after `assets` was computed so conversion uses the pre-claim supply.
-        _burn(address(this), request.shares);
+        _burn(address(this), shares);
 
         // Store the request as claimed.
         withdrawalRequests[requestId].claimed = true;
@@ -851,6 +838,17 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
         // Transfer the liquidity asset to the withdrawer.
         IERC20(liquidityAsset).transfer(request.withdrawer, assets);
         emit RedeemClaimed(request.withdrawer, requestId, assets);
+    }
+
+    /// @notice Get the LP shares escrowed for a withdrawal request.
+    /// @param requestId LP withdrawal request id.
+    /// @return shares LP shares represented by the request.
+    function withdrawalRequestShares(uint256 requestId) public view returns (uint256 shares) {
+        if (requestId >= nextWithdrawalIndex) revert InvalidWithdrawalRequest();
+
+        WithdrawalRequest memory request = withdrawalRequests[requestId];
+        uint256 previousQueued = requestId == 0 ? 0 : withdrawalRequests[requestId - 1].queued;
+        shares = request.queued - previousQueued;
     }
 
     /// @dev Pull liquidity from the active market if the ARM does not hold enough to pay a redeem claim.

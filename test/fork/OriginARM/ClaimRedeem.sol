@@ -76,7 +76,7 @@ contract Fork_Concrete_OriginARM_ClaimRedeem_Test_ is Fork_Shared_Test {
         setActiveMarket(address(siloMarket))
         requestRedeemAll(alice)
     {
-        (,,, uint128 requestAssets,,) = originARM.withdrawalRequests(0);
+        (,,, uint128 requestAssets,) = originARM.withdrawalRequests(0);
 
         // Assertions before claim
         assertApproxEqAbs(originARM.totalAssets(), uint256(requestAssets) + MIN_TOTAL_SUPPLY, 1, "totalAssets before");

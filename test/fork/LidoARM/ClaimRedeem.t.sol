@@ -275,7 +275,7 @@ contract Fork_Concrete_LidoARM_ClaimRedeem_Test_ is Fork_Shared_Test_ {
         weth.transfer(address(0), DEFAULT_AMOUNT / 10); // burn some WETH
 
         // Withdrawal request
-        (,,, uint128 assets,,) = lidoARM.withdrawalRequests(0);
+        (,,, uint128 assets,) = lidoARM.withdrawalRequests(0);
 
         // Main call
         uint256 claimed = lidoARM.claimRedeem(0);

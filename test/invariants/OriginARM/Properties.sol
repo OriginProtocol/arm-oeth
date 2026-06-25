@@ -121,7 +121,7 @@ abstract contract Properties is Setup, Helpers {
     function sumOfUnclaimedRequestRedeemAmount() public view returns (uint256 sum) {
         uint256 len = originARM.nextWithdrawalIndex();
         for (uint256 i; i < len; i++) {
-            (, bool claimed,, uint128 amount,,) = originARM.withdrawalRequests(i);
+            (, bool claimed,, uint128 amount,) = originARM.withdrawalRequests(i);
             if (!claimed) sum += amount;
         }
     }

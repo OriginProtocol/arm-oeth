@@ -59,9 +59,9 @@ abstract contract Helpers is Base_Test_ {
             bool _claimed,
             uint40 _claimTimestamp,
             uint128 _assets,
-            uint128 _queued,
-            uint128 _shares
+            uint128 _queued
         ) = lidoARM.withdrawalRequests(requestId);
+        uint256 _shares = lidoARM.withdrawalRequestShares(requestId);
         assertEq(_withdrawer, withdrawer, "Wrong withdrawer");
         assertEq(_claimed, claimed, "Wrong claimed");
         assertEq(_claimTimestamp, claimTimestamp, "Wrong claimTimestamp");
