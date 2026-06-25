@@ -242,32 +242,32 @@ abstract contract Unit_LidoARM_Shared_Test is Base_Test_ {
     }
 
     function buyPrice(IERC20 token) internal view returns (uint256) {
-        (uint128 _buyPrice,,,,,,,) = lidoARM.baseAssetConfigs(address(token));
+        (uint128 _buyPrice,,,,,,,,) = lidoARM.baseAssetConfigs(address(token));
         return _buyPrice;
     }
 
     function sellPrice(IERC20 token) internal view returns (uint256) {
-        (, uint128 _sellPrice,,,,,,) = lidoARM.baseAssetConfigs(address(token));
+        (, uint128 _sellPrice,,,,,,,) = lidoARM.baseAssetConfigs(address(token));
         return _sellPrice;
     }
 
     function buyLiquidityRemaining(IERC20 token) internal view returns (uint256) {
-        (,, uint128 _buyLiquidityRemaining,,,,,) = lidoARM.baseAssetConfigs(address(token));
+        (,, uint128 _buyLiquidityRemaining,,,,,,) = lidoARM.baseAssetConfigs(address(token));
         return _buyLiquidityRemaining;
     }
 
     function sellLiquidityRemaining(IERC20 token) internal view returns (uint256) {
-        (,,, uint128 _sellLiquidityRemaining,,,,) = lidoARM.baseAssetConfigs(address(token));
+        (,,, uint128 _sellLiquidityRemaining,,,,,) = lidoARM.baseAssetConfigs(address(token));
         return _sellLiquidityRemaining;
     }
 
     function crossPrice(IERC20 token) internal view returns (uint256) {
-        (,,,, uint128 _crossPrice,,,) = lidoARM.baseAssetConfigs(address(token));
+        (,,,, uint128 _crossPrice,,,,) = lidoARM.baseAssetConfigs(address(token));
         return _crossPrice;
     }
 
     function pendingRedeemAssets(IERC20 token) internal view returns (uint256) {
-        (,,,,, uint128 _pendingRedeemAssets,,) = lidoARM.baseAssetConfigs(address(token));
+        (,,,,, uint128 _pendingRedeemAssets,,,) = lidoARM.baseAssetConfigs(address(token));
         return _pendingRedeemAssets;
     }
 
@@ -356,13 +356,8 @@ abstract contract Unit_LidoARM_Shared_Test is Base_Test_ {
         uint256 expectedQueued,
         uint256 expectedShares
     ) internal view {
-        (
-            address withdrawer,
-            bool claimed,
-            uint40 claimTimestamp,
-            uint128 storedAssets,
-            uint128 storedQueued
-        ) = lidoARM.withdrawalRequests(requestId);
+        (address withdrawer, bool claimed, uint40 claimTimestamp, uint128 storedAssets, uint128 storedQueued) =
+            lidoARM.withdrawalRequests(requestId);
         uint256 storedShares = lidoARM.withdrawalRequestShares(requestId);
         assertEq(withdrawer, expectedWithdrawer, "req.withdrawer");
         assertEq(claimed, false, "req.claimed");

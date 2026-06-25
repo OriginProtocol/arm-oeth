@@ -106,17 +106,17 @@ abstract contract Fork_Shared_Test is Base_Test_ {
     }
 
     function _buyPrice() internal view returns (uint256 buyPrice) {
-        (uint128 buyPriceMem,,,,,,,) = ethenaARM.baseAssetConfigs(address(susde));
+        (uint128 buyPriceMem,,,,,,,,) = ethenaARM.baseAssetConfigs(address(susde));
         buyPrice = buyPriceMem;
     }
 
     function _sellPrice() internal view returns (uint256 sellPrice) {
-        (, uint128 sellPriceMem,,,,,,) = ethenaARM.baseAssetConfigs(address(susde));
+        (, uint128 sellPriceMem,,,,,,,) = ethenaARM.baseAssetConfigs(address(susde));
         sellPrice = sellPriceMem;
     }
 
     function _crossPrice() internal view returns (uint256 crossPrice) {
-        (,,,, uint128 crossPriceMem,,,) = ethenaARM.baseAssetConfigs(address(susde));
+        (,,,, uint128 crossPriceMem,,,,) = ethenaARM.baseAssetConfigs(address(susde));
         crossPrice = crossPriceMem;
     }
 

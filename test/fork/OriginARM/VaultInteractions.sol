@@ -16,7 +16,7 @@ contract Fork_Concrete_OriginARM_VaultInteractions_Test_ is Fork_Shared_Test {
 
         originARM.requestBaseAssetRedeem(address(os), DEFAULT_AMOUNT);
 
-        (,,,,, uint120 pendingRedeemAssets,,) = originARM.baseAssetConfigs(address(os));
+        (,,,,, uint120 pendingRedeemAssets,,,) = originARM.baseAssetConfigs(address(os));
         assertEq(pendingRedeemAssets, DEFAULT_AMOUNT, "Pending redeem assets should be updated");
     }
 

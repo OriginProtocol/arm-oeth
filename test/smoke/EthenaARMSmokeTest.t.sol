@@ -58,7 +58,14 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
         assertEq(ethenaARM.liquidityAsset(), Mainnet.USDE, "liquidity asset");
         assertEq(ethenaARM.asset(), Mainnet.USDE, "ERC-4626 asset");
         assertEq(ethenaARM.claimDelay(), 10 minutes, "claim delay");
-        (,,,, uint128 crossPrice,,,) = ethenaARM.baseAssetConfigs(Mainnet.SUSDE);
+        // The live Ethena ARM is still the 031 implementation (8-field `BaseAssetConfig`), while this
+        // branch compiles `EthenaARM` against the new 9-field struct. A typed getter call would decode
+        // 9 words from an 8-word return and revert, so read the config via a low-level staticcall and
+        // decode only the prefix up to `crossPrice` (index 4 / slot 2 — unchanged across both layouts).
+        (bool ok, bytes memory configData) =
+            address(ethenaARM).staticcall(abi.encodeWithSignature("baseAssetConfigs(address)", Mainnet.SUSDE));
+        require(ok, "baseAssetConfigs call failed");
+        (,,,, uint128 crossPrice) = abi.decode(configData, (uint128, uint128, uint128, uint128, uint128));
         assertEq(crossPrice, 0.99996e36, "cross price");
 
         _assertBaseAssetListed(ethenaARM.getBaseAssets(), Mainnet.SUSDE, "sUSDe listed as base asset");

@@ -56,7 +56,7 @@ contract Fork_EtherFiARM_Smoke_Test is AbstractSmokeTest {
         assertEq(etherFiARM.liquidityAsset(), Mainnet.WETH, "liquidity asset");
         assertEq(etherFiARM.asset(), Mainnet.WETH, "ERC-4626 asset");
         assertEq(etherFiARM.claimDelay(), 10 minutes, "claim delay");
-        (,,,, uint128 crossPrice,,,) = etherFiARM.baseAssetConfigs(Mainnet.EETH);
+        (,,,, uint128 crossPrice,,,,) = etherFiARM.baseAssetConfigs(Mainnet.EETH);
         assertEq(crossPrice, 0.99996e36, "cross price");
 
         _assertBaseAssetListed(etherFiARM.getBaseAssets(), Mainnet.EETH, "eETH listed as base asset");

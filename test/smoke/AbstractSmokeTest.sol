@@ -155,7 +155,7 @@ abstract contract AbstractSmokeTest is Test {
         uint256 crossPrice,
         bool peggedToLiquidityAsset
     ) internal {
-        (,,,,,,, address configuredAdapter) = arm.baseAssetConfigs(baseAsset);
+        (,,,,,,,, address configuredAdapter) = arm.baseAssetConfigs(baseAsset);
         if (configuredAdapter == address(0)) {
             arm.addBaseAsset(
                 baseAsset,
@@ -179,7 +179,7 @@ abstract contract AbstractSmokeTest is Test {
         uint256 crossPrice,
         bool peggedToLiquidityAsset
     ) internal {
-        (,,,,,,, address configuredAdapter) = arm.baseAssetConfigs(baseAsset);
+        (,,,,,,,, address configuredAdapter) = arm.baseAssetConfigs(baseAsset);
         if (configuredAdapter == address(0)) {
             arm.addBaseAsset(
                 baseAsset,
@@ -203,7 +203,7 @@ abstract contract AbstractSmokeTest is Test {
         uint256 crossPrice,
         bool peggedToLiquidityAsset
     ) internal {
-        (,,,,,,, address configuredAdapter) = arm.baseAssetConfigs(baseAsset);
+        (,,,,,,,, address configuredAdapter) = arm.baseAssetConfigs(baseAsset);
         if (configuredAdapter == address(0)) {
             arm.addBaseAsset(
                 baseAsset,
@@ -227,7 +227,7 @@ abstract contract AbstractSmokeTest is Test {
         uint256 crossPrice,
         bool peggedToLiquidityAsset
     ) internal {
-        (,,,,,,, address configuredAdapter) = arm.baseAssetConfigs(baseAsset);
+        (,,,,,,,, address configuredAdapter) = arm.baseAssetConfigs(baseAsset);
         if (configuredAdapter == address(0)) {
             arm.addBaseAsset(
                 baseAsset,

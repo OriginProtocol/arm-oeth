@@ -36,7 +36,7 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
         lidoARM = LidoARM(payable(resolver.resolve("LIDO_ARM")));
         capManager = CapManager(resolver.resolve("LIDO_ARM_CAP_MAN"));
         morphoMarket = IERC4626(resolver.resolve("MORPHO_MARKET_LIDO"));
-        (,,,,,,, stethAdapter) = lidoARM.baseAssetConfigs(address(steth));
+        (,,,,,,,, stethAdapter) = lidoARM.baseAssetConfigs(address(steth));
 
         // Only fuzz from this address. Big speedup on fork.
         targetSender(address(this));
@@ -56,7 +56,7 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
         assertEq(lidoARM.liquidityAsset(), Mainnet.WETH, "liquidity asset");
         assertEq(lidoARM.asset(), Mainnet.WETH, "ERC-4626 asset");
         assertEq(lidoARM.claimDelay(), 10 minutes, "claim delay");
-        (,,,, uint128 crossPrice,,,) = lidoARM.baseAssetConfigs(address(steth));
+        (,,,, uint128 crossPrice,,,,) = lidoARM.baseAssetConfigs(address(steth));
         assertEq(crossPrice, 0.99996e36, "cross price");
 
         address[] memory baseAssets = lidoARM.getBaseAssets();
@@ -232,7 +232,7 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
     }
 
     function _lidoWithdrawalQueueAmount() internal view returns (uint256 pendingRedeemAssets) {
-        (,,,,, uint120 _pendingRedeemAssets,,) = lidoARM.baseAssetConfigs(address(steth));
+        (,,,,, uint120 _pendingRedeemAssets,,,) = lidoARM.baseAssetConfigs(address(steth));
         pendingRedeemAssets = _pendingRedeemAssets;
     }
 

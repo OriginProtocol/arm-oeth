@@ -67,17 +67,17 @@ abstract contract TargetFunctions is Setup, StdUtils {
     // ║                              ✦✦✦ ETHENA ARM ✦✦✦                              ║
     // ╚══════════════════════════════════════════════════════════════════════════════╝
     function _buyPrice() internal view returns (uint256 buyPrice) {
-        (uint128 buyPriceMem,,,,,,,) = arm.baseAssetConfigs(address(susde));
+        (uint128 buyPriceMem,,,,,,,,) = arm.baseAssetConfigs(address(susde));
         buyPrice = buyPriceMem;
     }
 
     function _sellPrice() internal view returns (uint256 sellPrice) {
-        (, uint128 sellPriceMem,,,,,,) = arm.baseAssetConfigs(address(susde));
+        (, uint128 sellPriceMem,,,,,,,) = arm.baseAssetConfigs(address(susde));
         sellPrice = sellPriceMem;
     }
 
     function _crossPrice() internal view returns (uint256 crossPrice) {
-        (,,,, uint128 crossPriceMem,,,) = arm.baseAssetConfigs(address(susde));
+        (,,,, uint128 crossPriceMem,,,,) = arm.baseAssetConfigs(address(susde));
         crossPrice = crossPriceMem;
     }
 
@@ -327,7 +327,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         crossPrice = _bound(crossPrice, minCrossPrice, maxCrossPrice);
 
         uint256 susdeBalance = susde.balanceOf(address(arm));
-        (,,,,, uint120 pendingRedeemAssets,,) = arm.baseAssetConfigs(address(susde));
+        (,,,,, uint120 pendingRedeemAssets,,,) = arm.baseAssetConfigs(address(susde));
         bool loweringCrossPrice = _crossPrice() > crossPrice;
         if (loweringCrossPrice && assume(uint256(pendingRedeemAssets) < DEFAULT_MIN_TOTAL_SUPPLY)) return;
 

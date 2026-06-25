@@ -68,7 +68,7 @@ contract Fork_Concrete_EtherFiARM_RequestWithdraw_Test_ is Fork_Shared_Test {
         assertEq(assetsExpected, eethExpected, "assets expected");
         assertEq(weeth.balanceOf(address(etherfiARM)), 0, "ARM weETH balance");
 
-        (,,,,, uint120 pendingRedeemAssets,,) = etherfiARM.baseAssetConfigs(address(weeth));
+        (,,,,, uint120 pendingRedeemAssets,,,) = etherfiARM.baseAssetConfigs(address(weeth));
         assertEq(pendingRedeemAssets, eethExpected, "pending redeem assets");
 
         uint256 requestId = weethAssetAdapter.pendingRequestId(0);
@@ -98,7 +98,7 @@ contract Fork_Concrete_EtherFiARM_RequestWithdraw_Test_ is Fork_Shared_Test {
         assertEq(weth.balanceOf(address(weethAssetAdapter)), 0, "adapter WETH balance");
         assertGe(assetsReceived, donatedETH + donatedWETH, "donations swept");
 
-        (,,,,, pendingRedeemAssets,,) = etherfiARM.baseAssetConfigs(address(weeth));
+        (,,,,, pendingRedeemAssets,,,) = etherfiARM.baseAssetConfigs(address(weeth));
         assertEq(pendingRedeemAssets, 0, "pending redeem assets after claim");
     }
 }

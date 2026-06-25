@@ -58,17 +58,17 @@ abstract contract TargetFunction is Properties {
     using MathComparisons for uint256;
 
     function _buyPrice() internal view returns (uint256 buyPrice) {
-        (uint128 buyPriceMem,,,,,,,) = originARM.baseAssetConfigs(address(os));
+        (uint128 buyPriceMem,,,,,,,,) = originARM.baseAssetConfigs(address(os));
         buyPrice = buyPriceMem;
     }
 
     function _sellPrice() internal view returns (uint256 sellPrice) {
-        (, uint128 sellPriceMem,,,,,,) = originARM.baseAssetConfigs(address(os));
+        (, uint128 sellPriceMem,,,,,,,) = originARM.baseAssetConfigs(address(os));
         sellPrice = sellPriceMem;
     }
 
     function _crossPrice() internal view returns (uint256 crossPrice) {
-        (,,,, uint128 crossPriceMem,,,) = originARM.baseAssetConfigs(address(os));
+        (,,,, uint128 crossPriceMem,,,,) = originARM.baseAssetConfigs(address(os));
         crossPrice = crossPriceMem;
     }
 
@@ -237,7 +237,7 @@ abstract contract TargetFunction is Properties {
         newCrossPrice = uint120(_bound(newCrossPrice, lowerBound, upperBound));
 
         uint256 osBalance = os.balanceOf(address(originARM));
-        (,,,,, uint120 pendingRedeemAssets,,) = originARM.baseAssetConfigs(address(os));
+        (,,,,, uint120 pendingRedeemAssets,,,) = originARM.baseAssetConfigs(address(os));
         bool loweringCrossPrice = _crossPrice() > newCrossPrice;
         if (loweringCrossPrice) {
             vm.assume(uint256(pendingRedeemAssets) < MIN_TOTAL_SUPPLY);

@@ -60,7 +60,7 @@ contract Unit_LidoARM_Admin_Test is Unit_LidoARM_Shared_Test {
 
     function test_AddBaseAsset_Default() public {
         // Pre: stETH not yet registered, no allowance from ARM to adapter.
-        (,,,,,,, address adapterBefore) = lidoARM.baseAssetConfigs(address(steth));
+        (,,,,,,,, address adapterBefore) = lidoARM.baseAssetConfigs(address(steth));
         assertEq(adapterBefore, address(0), "adapter unset pre");
         assertEq(steth.allowance(address(lidoARM), address(stETHAssetAdapter)), 0, "no allowance pre");
 
@@ -90,6 +90,7 @@ contract Unit_LidoARM_Admin_Test is Unit_LidoARM_Shared_Test {
             uint128 crossP,
             uint128 pendingRedeem,
             bool pegged,
+            uint8 baseDec,
             address adapter
         ) = lidoARM.baseAssetConfigs(address(steth));
         assertEq(buyP, BUY_PRICE_DEFAULT, "buyPrice");
@@ -99,6 +100,7 @@ contract Unit_LidoARM_Admin_Test is Unit_LidoARM_Shared_Test {
         assertEq(crossP, CROSS_PRICE_DEFAULT, "crossPrice");
         assertEq(pendingRedeem, 0, "pendingRedeemAssets reset to 0");
         assertTrue(pegged, "peggedToLiquidityAsset");
+        assertEq(baseDec, 18, "baseAssetDecimals");
         assertEq(adapter, address(stETHAssetAdapter), "adapter");
 
         // Side effect: ARM approves the adapter for max stETH so requestRedeem can pull.
@@ -172,13 +174,13 @@ contract Unit_LidoARM_Admin_Test is Unit_LidoARM_Shared_Test {
     }
 
     function test_AddBaseAsset_RevertWhen_InvalidAssetDecimals() public {
-        // 6-decimal token: ARM forbids non-18-decimal base assets so accounting math stays consistent.
-        IERC20 sixDecimal = IERC20(address(new MockERC20("USDX", "USDX", 6)));
+        // 8-decimal token: the ARM only accepts base assets with 6 or 18 decimals.
+        IERC20 badDecimals = IERC20(address(new MockERC20("BAD8", "BAD8", 8)));
 
         vm.prank(governor);
         vm.expectRevert(AbstractARM.InvalidAssetDecimals.selector);
         lidoARM.addBaseAsset(
-            address(sixDecimal),
+            address(badDecimals),
             address(stETHAssetAdapter),
             BUY_PRICE_DEFAULT,
             SELL_PRICE_DEFAULT,

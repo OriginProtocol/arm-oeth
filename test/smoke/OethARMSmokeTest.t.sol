@@ -80,12 +80,12 @@ contract Fork_OriginARM_Smoke_Test is AbstractSmokeTest {
         assertEq(originARM.asset(), Mainnet.WETH, "ERC-4626 asset");
 
         // Prices
-        (uint128 buyPrice, uint128 sellPrice,,, uint128 crossPrice,,,) = originARM.baseAssetConfigs(Mainnet.OETH);
+        (uint128 buyPrice, uint128 sellPrice,,, uint128 crossPrice,,,,) = originARM.baseAssetConfigs(Mainnet.OETH);
         assertNotEq(crossPrice, 0, "cross price");
         assertNotEq(sellPrice, 0, "sell price");
         assertNotEq(buyPrice, 0, "buy price");
 
-        (buyPrice, sellPrice,,, crossPrice,,,) = originARM.baseAssetConfigs(Mainnet.WOETH);
+        (buyPrice, sellPrice,,, crossPrice,,,,) = originARM.baseAssetConfigs(Mainnet.WOETH);
         assertNotEq(crossPrice, 0, "woeth cross price");
         assertNotEq(sellPrice, 0, "woeth sell price");
         assertNotEq(buyPrice, 0, "woeth buy price");
