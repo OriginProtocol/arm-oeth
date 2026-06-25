@@ -27,7 +27,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
     uint256 internal constant MAX_CROSS_PRICE_DEVIATION = 20e32;
     /// @notice Scale used for prices.
     uint256 internal constant PRICE_SCALE = 1e36;
-    /// @notice The amount of shares minted to a dead address on initialization.
+    /// @notice The amount of LP shares (18 decimals) minted to a dead address on initialization.
     uint256 internal constant MIN_TOTAL_SUPPLY = 1e12;
     /// @notice Address with no known private key that receives initial dead shares.
     address internal constant DEAD_ACCOUNT = 0x000000000000000000000000000000000000dEaD;
@@ -48,6 +48,12 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
     address public immutable liquidityAsset;
     /// @notice Delay before an LP redeem request can be claimed in seconds. eg 600 is 10 minutes.
     uint256 public immutable claimDelay;
+    /// @notice Decimals of the liquidity asset. Must be 6 or 18. LP shares stay at 18 decimals.
+    uint8 public immutable liquidityAssetDecimals;
+    /// @notice Native-liquidity floor used by totalAssets()/insolvency/cross-price checks and pulled at init.
+    /// @dev Set in the constructor: 1e12 (1e-6 token) for an 18-decimal liquidity asset, 1 (1e-6 token)
+    /// for a 6-decimal one. The 18-decimal value is unchanged from the original MIN_TOTAL_SUPPLY usage.
+    uint256 internal immutable MIN_LIQUIDITY;
 
     ////////////////////////////////////////////////////
     ///                 Structs
@@ -79,8 +85,10 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
         uint128 crossPrice;
         /// @notice Liquidity-denominated value expected from adapter redemption queues.
         uint120 pendingRedeemAssets;
-        /// @notice If true, conversions bypass the adapter and use 1:1 amounts.
+        /// @notice If true, conversions bypass the adapter and use a 1:1 value (decimal-scaled) amount.
         bool peggedToLiquidityAsset;
+        /// @notice Decimals of this base asset. Must be 6 or 18. Packed with `adapter` in the same slot.
+        uint8 baseAssetDecimals;
         /// @notice Adapter that owns protocol-specific redemption logic for this base asset.
         address adapter;
     }
@@ -136,6 +144,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
     error InvalidAdapter(); // 0xfbf66df1
     error AssetAlreadySupported(); // 0xb1093e5b
     error InvalidAssetDecimals(); // 0xe2364765
+    error InvalidLiquidityAssetDecimals(); // 0x20689ded
     error InvalidAdapterAsset(); // 0x030f0830
     error InvalidBuyPrice(); // 0x36c64b27
     error SellPriceTooLow(); // 0x2394065c
@@ -216,10 +225,15 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
     /// @param _allocateThreshold Minimum excess liquidity delta before allocation deposits into a market.
     /// eg 1e18 is 1 liquidity asset.
     constructor(address _liquidityAsset, uint256 _claimDelay, uint256 _minSharesToRedeem, int256 _allocateThreshold) {
-        require(IERC20(_liquidityAsset).decimals() == 18);
+        uint8 decimals_ = IERC20(_liquidityAsset).decimals();
+        if (decimals_ != 6 && decimals_ != 18) revert InvalidLiquidityAssetDecimals();
         require(_allocateThreshold >= 0, "invalid allocate threshold");
 
         liquidityAsset = _liquidityAsset;
+        liquidityAssetDecimals = decimals_;
+        // Native-liquidity floor. 1e12 for an 18-decimal asset keeps existing deployments unchanged;
+        // 1 for a 6-decimal asset is the same 1e-6-token magnitude.
+        MIN_LIQUIDITY = decimals_ == 18 ? 1e12 : 1;
         claimDelay = _claimDelay;
         minSharesToRedeem = _minSharesToRedeem;
         allocateThreshold = _allocateThreshold;
@@ -233,7 +247,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
     ////////////////////////////////////////////////////
 
     /// @notice Initialize storage for the proxy.
-    /// @dev The initializer caller must approve this ARM proxy to transfer `MIN_TOTAL_SUPPLY` liquidity assets.
+    /// @dev The initializer caller must approve this ARM proxy to transfer `MIN_LIQUIDITY` liquidity assets.
     /// @param _operator Account allowed to run operator-only actions.
     /// @param _name LP token name.
     /// @param _symbol LP token symbol.
@@ -254,9 +268,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
         __ERC20_init(_name, _symbol);
         __ReentrancyGuard_init();
 
-        // Transfer a small bit of liquidity from the initializer to this contract.
-        IERC20(liquidityAsset).transferFrom(msg.sender, address(this), MIN_TOTAL_SUPPLY);
-        // Mint a small amount of shares to a dead account so total supply can never be zero.
+        // Transfer a small bit of liquidity (native decimals) from the initializer to this contract.
+        IERC20(liquidityAsset).transferFrom(msg.sender, address(this), MIN_LIQUIDITY);
+        // Mint a small amount of 18-decimal shares to a dead account so total supply can never be zero.
         // This avoids donation attacks when there are no assets in the ARM contract.
         _mint(DEAD_ACCOUNT, MIN_TOTAL_SUPPLY);
 
@@ -521,21 +535,42 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
     }
 
     /// @dev Convert base shares to liquidity assets, bypassing the adapter for pegged assets.
+    /// Amounts are in native token decimals.
     /// @param config Base asset config that controls conversion behavior.
-    /// @param shares Base asset share amount.
-    /// @return assets Liquidity-denominated asset amount.
+    /// @param shares Base asset share amount (native base decimals).
+    /// @return assets Liquidity-denominated asset amount (native liquidity decimals).
     function _convertToAssets(BaseAssetConfig memory config, uint256 shares) internal view returns (uint256 assets) {
-        if (config.peggedToLiquidityAsset) return shares;
+        // Pegged assets are 1:1 in value; only adjust for any base/liquidity decimal difference.
+        if (config.peggedToLiquidityAsset) return _scaleBaseToLiquidity(config.baseAssetDecimals, shares);
         return IAssetAdapter(config.adapter).convertToAssets(shares);
     }
 
     /// @dev Convert liquidity assets to base shares, bypassing the adapter for pegged assets.
+    /// Amounts are in native token decimals.
     /// @param config Base asset config that controls conversion behavior.
-    /// @param assets Liquidity-denominated asset amount.
-    /// @return shares Base asset share amount.
+    /// @param assets Liquidity-denominated asset amount (native liquidity decimals).
+    /// @return shares Base asset share amount (native base decimals).
     function _convertToShares(BaseAssetConfig memory config, uint256 assets) internal view returns (uint256 shares) {
-        if (config.peggedToLiquidityAsset) return assets;
+        if (config.peggedToLiquidityAsset) return _scaleLiquidityToBase(config.baseAssetDecimals, assets);
         return IAssetAdapter(config.adapter).convertToShares(assets);
+    }
+
+    /// @dev Scale a native base amount to native liquidity decimals for a 1:1-valued (pegged) asset.
+    /// Decimals are constrained to {6, 18}, so the only adjustment is a factor of 1e12. Identity when equal.
+    /// Division truncates, leaving any sub-unit dust in the ARM (favoring LPs).
+    function _scaleBaseToLiquidity(uint8 baseDecimals, uint256 amount) internal view returns (uint256) {
+        uint8 liqDecimals = liquidityAssetDecimals;
+        if (baseDecimals == liqDecimals) return amount;
+        return liqDecimals > baseDecimals ? amount * 1e12 : amount / 1e12;
+    }
+
+    /// @dev Scale a native liquidity amount to native base decimals for a 1:1-valued (pegged) asset.
+    /// Decimals are constrained to {6, 18}, so the only adjustment is a factor of 1e12. Identity when equal.
+    /// Division truncates, leaving any sub-unit dust in the ARM (favoring LPs).
+    function _scaleLiquidityToBase(uint8 baseDecimals, uint256 amount) internal view returns (uint256) {
+        uint8 liqDecimals = liquidityAssetDecimals;
+        if (baseDecimals == liqDecimals) return amount;
+        return baseDecimals > liqDecimals ? amount * 1e12 : amount / 1e12;
     }
 
     /// @dev Accrue fees on discounted buy-side swaps using the recognized NAV gain.
@@ -578,7 +613,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
         if (newBaseAsset == address(0)) revert InvalidAsset();
         if (adapter == address(0)) revert InvalidAdapter();
         if (baseAssetConfigs[newBaseAsset].adapter != address(0)) revert AssetAlreadySupported();
-        if (IERC20(newBaseAsset).decimals() != 18) revert InvalidAssetDecimals();
+        uint8 bd = IERC20(newBaseAsset).decimals();
+        if (bd != 6 && bd != 18) revert InvalidAssetDecimals();
         if (IAssetAdapter(adapter).asset() != liquidityAsset) revert InvalidAdapterAsset();
         if (newCrossPrice < PRICE_SCALE - MAX_CROSS_PRICE_DEVIATION) revert CrossPriceTooLow();
         if (newCrossPrice > PRICE_SCALE) revert CrossPriceTooHigh();
@@ -595,6 +631,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
             crossPrice: SafeCast.toUint128(newCrossPrice),
             pendingRedeemAssets: 0,
             peggedToLiquidityAsset: peggedToLiquidityAsset,
+            baseAssetDecimals: bd,
             adapter: adapter
         });
 
@@ -652,7 +689,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
         if (newCrossPrice < config.crossPrice) {
             uint256 baseAssetExposure =
                 _convertToAssets(config, IERC20(priceBaseAsset).balanceOf(address(this))) + config.pendingRedeemAssets;
-            if (baseAssetExposure >= MIN_TOTAL_SUPPLY) revert TooManyBaseAssets();
+            if (baseAssetExposure >= MIN_LIQUIDITY) revert TooManyBaseAssets();
         }
 
         config.crossPrice = SafeCast.toUint128(newCrossPrice);
@@ -735,7 +772,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
     /// @param receiver Account that receives minted LP shares.
     /// @return shares LP shares minted.
     function _deposit(uint256 assets, address receiver) internal returns (uint256 shares) {
-        if (totalAssets() <= MIN_TOTAL_SUPPLY && reservedWithdrawLiquidity != 0) revert Insolvent();
+        if (totalAssets() <= MIN_LIQUIDITY && reservedWithdrawLiquidity != 0) revert Insolvent();
         shares = convertToShares(assets);
 
         // Transfer liquidity from the depositor before minting LP shares.
@@ -922,13 +959,13 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
         uint256 newAvailableAssets = _availableAssets();
         uint256 feesAccruedMem = feesAccrued;
         // total assets should only go up from the initial deposit amount that is burnt,
-        // but in case of something unforeseen, return at least MIN_TOTAL_SUPPLY.
-        // An example scenario that will return MIN_TOTAL_SUPPLY is:
+        // but in case of something unforeseen, return at least MIN_LIQUIDITY.
+        // An example scenario that will return MIN_LIQUIDITY is:
         // First LP deposits and then requests a redeem of all their ARM shares.
         // While waiting to claim their request, the ARM suffers a loss of assets. eg lending market loss.
         // When they claim their request, newAvailableAssets can be zero as the ARM assets can be less than
         // the outstanding withdrawal request that was calculated before the loss.
-        if (feesAccruedMem + MIN_TOTAL_SUPPLY >= newAvailableAssets) return MIN_TOTAL_SUPPLY;
+        if (feesAccruedMem + MIN_LIQUIDITY >= newAvailableAssets) return MIN_LIQUIDITY;
         // Remove accrued swap fees from the available assets.
         return newAvailableAssets - feesAccruedMem;
     }
