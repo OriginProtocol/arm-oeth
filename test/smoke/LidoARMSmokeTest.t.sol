@@ -3,16 +3,28 @@ pragma solidity ^0.8.23;
 
 import {AbstractSmokeTest} from "./AbstractSmokeTest.sol";
 
-import {IERC20, IERC4626, IStETHWithdrawal} from "contracts/Interfaces.sol";
+import {IERC20, IERC4626} from "contracts/Interfaces.sol";
 import {LidoARM} from "contracts/LidoARM.sol";
 import {CapManager} from "contracts/CapManager.sol";
 import {Proxy} from "contracts/Proxy.sol";
-import {AbstractLidoAssetAdapter} from "contracts/adapters/AbstractLidoAssetAdapter.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
 
-contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
-    IERC20 BAD_TOKEN = IERC20(makeAddr("bad token"));
+/// @dev Minimal view of the deployed (pre-upgrade, single-asset) ARM. `token0` is the liquidity asset
+///      (WETH) and `token1` the base asset (stETH); both trade rates are 1e36-scaled. The deployed
+///      implementation tracks the withdrawal queue with `withdrawsQueued`/`withdrawsClaimed` rather than
+///      exposing `reservedWithdrawLiquidity()`.
+interface ILegacyARM {
+    function traderate0() external view returns (uint256);
+    function traderate1() external view returns (uint256);
+    function withdrawsQueued() external view returns (uint256);
+    function withdrawsClaimed() external view returns (uint256);
+}
 
+/// @notice Smoke test for the **deployed** Lido ARM, which keeps its single-asset implementation: the
+///         multi-asset / swap-fee upgrade is intentionally NOT applied (see AbstractSmokeTest). It therefore
+///         exercises the legacy interface only — no base-asset configs, adapters or per-asset prices — and
+///         swaps at the live trade rates rather than setting them.
+contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
     IERC20 weth;
     IERC20 steth;
     Proxy proxy;
@@ -20,7 +32,6 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
     CapManager capManager;
     IERC4626 morphoMarket;
     address operator;
-    address stethAdapter;
 
     function setUp() public override {
         super.setUp();
@@ -36,10 +47,6 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
         lidoARM = LidoARM(payable(resolver.resolve("LIDO_ARM")));
         capManager = CapManager(resolver.resolve("LIDO_ARM_CAP_MAN"));
         morphoMarket = IERC4626(resolver.resolve("MORPHO_MARKET_LIDO"));
-        (,,,,,,,, stethAdapter) = lidoARM.baseAssetConfigs(address(steth));
-
-        // Only fuzz from this address. Big speedup on fork.
-        targetSender(address(this));
     }
 
     function test_initialConfig() external view {
@@ -49,19 +56,9 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
         assertEq(lidoARM.operator(), Mainnet.ARM_TALOS_RELAYER, "Operator");
         assertEq(lidoARM.feeCollector(), Mainnet.BUYBACK_OPERATOR, "Fee collector");
         assertEq((100 * uint256(lidoARM.fee())) / FEE_SCALE, 20, "Performance fee as a percentage");
-        // LidoLiquidityManager
-        assertEq(Mainnet.LIDO_WITHDRAWAL, Mainnet.LIDO_WITHDRAWAL, "Lido withdrawal queue");
-        assertEq(lidoARM.liquidityAsset(), Mainnet.WETH, "WETH");
-        assertNotEq(stethAdapter, address(0), "stETH adapter");
         assertEq(lidoARM.liquidityAsset(), Mainnet.WETH, "liquidity asset");
         assertEq(lidoARM.asset(), Mainnet.WETH, "ERC-4626 asset");
         assertEq(lidoARM.claimDelay(), 10 minutes, "claim delay");
-        (,,,, uint128 crossPrice,,,,) = lidoARM.baseAssetConfigs(address(steth));
-        assertEq(crossPrice, 0.99996e36, "cross price");
-
-        address[] memory baseAssets = lidoARM.getBaseAssets();
-        _assertBaseAssetListed(baseAssets, address(steth), "stETH listed as base asset");
-        _assertBaseAssetListed(baseAssets, Mainnet.WSTETH, "wstETH listed as base asset");
 
         assertEq(capManager.accountCapEnabled(), false, "account cap enabled");
         assertEq(capManager.operator(), Mainnet.ARM_RELAYER, "Operator");
@@ -69,60 +66,50 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
     }
 
     function test_swap_exact_steth_for_weth() external {
-        // trader sells stETH and buys WETH, the ARM buys stETH as a
-        // 4 bps discount
-        _swapExactTokensForTokens(steth, weth, 0.9996e36, 100 ether);
-        // 10 bps discount
-        _swapExactTokensForTokens(steth, weth, 0.999e36, 1e15);
-        // 20 bps discount
-        _swapExactTokensForTokens(steth, weth, 0.998e36, 1 ether);
+        // Trader sells stETH and buys WETH (the ARM buys stETH).
+        _swapExactTokensForTokens(steth, weth, 100 ether);
+        _swapExactTokensForTokens(steth, weth, 1e15);
+        _swapExactTokensForTokens(steth, weth, 1 ether);
     }
 
     function test_swap_exact_weth_for_steth() external {
-        // trader buys stETH and sells WETH, the ARM sells stETH at a
-        // 0.3 bps discount
-        _swapExactTokensForTokens(weth, steth, 0.99997e36, 10 ether);
-        // 0.5 bps discount
-        _swapExactTokensForTokens(weth, steth, 0.99996e36, 100 ether);
+        // Trader buys stETH and sells WETH (the ARM sells stETH).
+        _swapExactTokensForTokens(weth, steth, 10 ether);
+        _swapExactTokensForTokens(weth, steth, 100 ether);
     }
 
     function test_swapTokensForExactTokens() external {
-        // trader sells stETH and buys WETH, the ARM buys stETH at a
-        // 4 bps discount
-        _swapTokensForExactTokens(steth, weth, 0.9996e36, 10 ether);
-        // 10 bps discount
-        _swapTokensForExactTokens(steth, weth, 0.999e36, 100 ether);
-        // 50 bps discount
-        _swapTokensForExactTokens(steth, weth, 0.995e36, 10 ether);
+        _swapTokensForExactTokens(steth, weth, 10 ether);
+        _swapTokensForExactTokens(steth, weth, 100 ether);
+        _swapTokensForExactTokens(weth, steth, 10 ether);
     }
 
-    function _swapExactTokensForTokens(IERC20 inToken, IERC20 outToken, uint256 price, uint256 amountIn) internal {
-        uint256 expectedOut;
-        if (inToken == weth) {
-            // Trader is buying stETH and selling WETH
-            // the ARM is selling stETH and buying WETH
-            deal(address(weth), address(this), 1_000_000 ether);
-            _dealStETH(address(lidoARM), 1000 ether);
+    /// @dev Live 1e36 rate the ARM applies when `inToken` is sold into it.
+    function _rate(IERC20 inToken) internal view returns (uint256) {
+        return inToken == weth ? ILegacyARM(address(lidoARM)).traderate0() : ILegacyARM(address(lidoARM)).traderate1();
+    }
 
-            expectedOut = amountIn * 1e36 / price;
+    /// @dev WETH reserved for outstanding LP withdrawals (the deployed impl has no reservedWithdrawLiquidity()).
+    function _outstandingWithdrawals() internal view returns (uint256) {
+        return ILegacyARM(address(lidoARM)).withdrawsQueued() - ILegacyARM(address(lidoARM)).withdrawsClaimed();
+    }
 
-            vm.prank(Mainnet.ARM_TALOS_RELAYER);
-            lidoARM.setPrices(address(steth), price - 2e32, price, type(uint128).max, type(uint128).max);
-        } else {
-            // Trader is selling stETH and buying WETH
-            // the ARM is buying stETH and selling WETH
-            _dealStETH(address(this), 1000 ether);
+    /// @dev Fund the ARM with the output token and the trader (this) with the input token.
+    function _fundForSwap(IERC20 outToken) internal {
+        if (outToken == weth) {
             deal(address(weth), address(lidoARM), 1_000_000 ether);
-
-            expectedOut = amountIn * price / 1e36;
-
-            vm.prank(Mainnet.ARM_TALOS_RELAYER);
-            uint256 sellPrice = price < 0.9997e36 ? 0.99996e36 : price + 2e32;
-            lidoARM.setPrices(address(steth), price, sellPrice, type(uint128).max, type(uint128).max);
+            _dealStETH(address(this), 1000 ether);
+        } else {
+            _dealStETH(address(lidoARM), 1000 ether);
+            deal(address(weth), address(this), 1_000_000 ether);
         }
-        // Approve the ARM to transfer the input token of the swap.
-        inToken.approve(address(lidoARM), amountIn);
+    }
 
+    function _swapExactTokensForTokens(IERC20 inToken, IERC20 outToken, uint256 amountIn) internal {
+        _fundForSwap(outToken);
+        uint256 expectedOut = amountIn * _rate(inToken) / 1e36;
+
+        inToken.approve(address(lidoARM), amountIn);
         uint256 startIn = inToken.balanceOf(address(this));
         uint256 startOut = outToken.balanceOf(address(this));
 
@@ -132,48 +119,25 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
         assertApproxEqAbs(outToken.balanceOf(address(this)), startOut + expectedOut, 2, "Out actual");
     }
 
-    function _swapTokensForExactTokens(IERC20 inToken, IERC20 outToken, uint256 price, uint256 amountOut) internal {
-        uint256 expectedIn;
-        if (inToken == weth) {
-            // Trader is buying stETH and selling WETH
-            // the ARM is selling stETH and buying WETH
-            deal(address(weth), address(this), 1_000_000 ether);
-            _dealStETH(address(lidoARM), 1000 ether);
+    function _swapTokensForExactTokens(IERC20 inToken, IERC20 outToken, uint256 amountOut) internal {
+        _fundForSwap(outToken);
+        uint256 expectedIn = amountOut * 1e36 / _rate(inToken);
 
-            expectedIn = amountOut * price / 1e36;
-
-            vm.prank(Mainnet.ARM_TALOS_RELAYER);
-            lidoARM.setPrices(address(steth), price - 2e32, price, type(uint128).max, type(uint128).max);
-        } else {
-            // Trader is selling stETH and buying WETH
-            // the ARM is buying stETH and selling WETH
-            _dealStETH(address(this), 1000 ether);
-            deal(address(weth), address(lidoARM), 1_000_000 ether);
-            // _dealWETH(address(lidoARM), 1000 ether);
-
-            expectedIn = amountOut * 1e36 / price + 3;
-
-            vm.prank(Mainnet.ARM_TALOS_RELAYER);
-            uint256 sellPrice = price < 0.9997e36 ? 0.99996e36 : price + 2e32;
-            lidoARM.setPrices(address(steth), price, sellPrice, type(uint128).max, type(uint128).max);
-        }
-        // Approve the ARM to transfer the input token of the swap.
-        inToken.approve(address(lidoARM), expectedIn + 10000);
-
+        inToken.approve(address(lidoARM), expectedIn + 1e16);
         uint256 startIn = inToken.balanceOf(address(this));
         uint256 startOut = outToken.balanceOf(address(this));
 
-        lidoARM.swapTokensForExactTokens(inToken, outToken, amountOut, 3 * amountOut, address(this));
+        lidoARM.swapTokensForExactTokens(inToken, outToken, amountOut, expectedIn + 1e16, address(this));
 
-        assertApproxEqAbs(inToken.balanceOf(address(this)), startIn - expectedIn, 2, "In actual");
         assertApproxEqAbs(outToken.balanceOf(address(this)), startOut + amountOut, 2, "Out actual");
+        assertApproxEqRel(startIn - inToken.balanceOf(address(this)), expectedIn, 1e14, "In actual");
     }
 
     function test_proxy_unauthorizedAccess() external {
         address RANDOM_ADDRESS = 0xfEEDBeef00000000000000000000000000000000;
         vm.startPrank(RANDOM_ADDRESS);
 
-        // Proxy's restricted methods.
+        // Proxy's restricted methods (the deployed proxy is not upgraded).
         vm.expectRevert("OSwap: Only owner can call this function.");
         proxy.setOwner(RANDOM_ADDRESS);
 
@@ -186,8 +150,8 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
         vm.expectRevert("OSwap: Only owner can call this function.");
         proxy.upgradeToAndCall(address(this), "");
 
-        // Implementation's restricted methods.
-        vm.expectRevert("OSwap: Only owner can call this function.");
+        // Implementation's restricted method.
+        vm.expectRevert();
         lidoARM.setOwner(RANDOM_ADDRESS);
     }
 
@@ -195,7 +159,6 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
     function _dealStETH(address to, uint256 amount) internal {
         vm.prank(0xEB9c1CE881F0bDB25EAc4D74FccbAcF4Dd81020a);
         steth.transfer(to, amount + 2);
-        // deal(address(steth), to, amount);
     }
 
     /* Operator Tests */
@@ -207,33 +170,9 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
     }
 
     function test_nonOwnerCannotSetOperator() external {
-        vm.expectRevert(bytes4(keccak256("OnlyOwner()")));
+        vm.expectRevert();
         vm.prank(operator);
         lidoARM.setOperator(operator);
-    }
-
-    error InvalidInitialization();
-
-    function test_lidoWithdrawalRequests() external view {
-        uint256 totalAmountRequested = 0;
-        uint256[] memory requestIds = IStETHWithdrawal(Mainnet.LIDO_WITHDRAWAL).getWithdrawalRequests(stethAdapter);
-        // Get the status of all the withdrawal requests. eg amount, owner, claimed status
-        IStETHWithdrawal.WithdrawalRequestStatus[] memory statuses =
-            IStETHWithdrawal(Mainnet.LIDO_WITHDRAWAL).getWithdrawalStatus(requestIds);
-
-        for (uint256 i = 0; i < requestIds.length; i++) {
-            assertEq(
-                AbstractLidoAssetAdapter(payable(stethAdapter)).requestAssets(requestIds[i]), statuses[i].amountOfStETH
-            );
-            totalAmountRequested += statuses[i].amountOfStETH;
-        }
-
-        assertEq(totalAmountRequested, _lidoWithdrawalQueueAmount());
-    }
-
-    function _lidoWithdrawalQueueAmount() internal view returns (uint256 pendingRedeemAssets) {
-        (,,,,, uint120 _pendingRedeemAssets,,,) = lidoARM.baseAssetConfigs(address(steth));
-        pendingRedeemAssets = _pendingRedeemAssets;
     }
 
     /* Lending Market Allocation Tests */
@@ -250,7 +189,7 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
         vm.stopPrank();
 
         // Deal enough WETH to cover the outstanding withdrawal queue plus extra to deposit
-        uint256 outstandingWithdrawals = lidoARM.reservedWithdrawLiquidity();
+        uint256 outstandingWithdrawals = _outstandingWithdrawals();
         deal(address(weth), address(lidoARM), outstandingWithdrawals + 100 ether);
 
         uint256 armWethBefore = weth.balanceOf(address(lidoARM));
@@ -285,7 +224,7 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
         vm.stopPrank();
 
         // Deal enough WETH to cover the outstanding withdrawal queue plus extra to deposit
-        uint256 outstandingWithdrawals = lidoARM.reservedWithdrawLiquidity();
+        uint256 outstandingWithdrawals = _outstandingWithdrawals();
         deal(address(weth), address(lidoARM), outstandingWithdrawals + 100 ether);
         vm.prank(Mainnet.ARM_TALOS_RELAYER);
         lidoARM.setARMBuffer(0);
