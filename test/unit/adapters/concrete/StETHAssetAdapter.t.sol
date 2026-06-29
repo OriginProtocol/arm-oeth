@@ -2,16 +2,16 @@
 pragma solidity 0.8.23;
 
 // Test
-import {Unit_EtherARM_Shared_Test} from "../../EtherARM/Shared.t.sol";
+import {Unit_Lido_Shared_Test} from "../shared/Shared.t.sol";
 
 // Contracts
 import {AbstractLidoAssetAdapter} from "contracts/adapters/AbstractLidoAssetAdapter.sol";
 
 /// @notice Direct unit tests for `AbstractLidoAssetAdapter` exercised through
 ///         `StETHAssetAdapter` (1:1 share/asset math). Covers the adapter
-///         contract in isolation by pranking `address(etherARM)` — the ARM-side
+///         contract in isolation by pranking `address(arm)` — the ARM-side
 ///         flow already has coverage in `BaseAssetRedeem.t.sol`.
-contract Unit_LidoARM_StETHAssetAdapter_Test is Unit_EtherARM_Shared_Test {
+contract Unit_LidoARM_StETHAssetAdapter_Test is Unit_Lido_Shared_Test {
     uint256 internal constant ARM_STETH_BALANCE = 5_000 ether;
 
     function setUp() public override {
@@ -20,7 +20,7 @@ contract Unit_LidoARM_StETHAssetAdapter_Test is Unit_EtherARM_Shared_Test {
         // addBaseAsset registers the adapter and sets the ARM → adapter approval for stETH.
         addBaseAsset(steth);
         // Seed the ARM with enough stETH to cover the largest multi-chunk request in this file.
-        deal(address(steth), address(etherARM), ARM_STETH_BALANCE);
+        deal(address(steth), address(arm), ARM_STETH_BALANCE);
     }
 
     //////////////////////////////////////////////////////
@@ -53,7 +53,7 @@ contract Unit_LidoARM_StETHAssetAdapter_Test is Unit_EtherARM_Shared_Test {
     }
 
     function test_RequestRedeem_RevertWhen_ZeroShares() public {
-        vm.prank(address(etherARM));
+        vm.prank(address(arm));
         vm.expectRevert("Adapter: zero shares");
         stETHAssetAdapter.requestRedeem(0);
     }
@@ -65,7 +65,7 @@ contract Unit_LidoARM_StETHAssetAdapter_Test is Unit_EtherARM_Shared_Test {
     }
 
     function test_Redeem_RevertWhen_ZeroShares() public {
-        vm.prank(address(etherARM));
+        vm.prank(address(arm));
         vm.expectRevert("Adapter: zero shares");
         stETHAssetAdapter.redeem(0);
     }
@@ -77,13 +77,13 @@ contract Unit_LidoARM_StETHAssetAdapter_Test is Unit_EtherARM_Shared_Test {
         uint256 shares = 500 ether;
 
         // Pre
-        assertEq(steth.balanceOf(address(etherARM)), ARM_STETH_BALANCE, "ARM stETH pre");
+        assertEq(steth.balanceOf(address(arm)), ARM_STETH_BALANCE, "ARM stETH pre");
         assertEq(steth.balanceOf(address(stETHAssetAdapter)), 0, "adapter stETH pre");
         assertEq(steth.balanceOf(address(lidoWithdrawalQueue)), 0, "queue stETH pre");
         assertEq(stETHAssetAdapter.pendingRequestIdsLength(), 0, "pendingIds pre");
 
         // When
-        vm.prank(address(etherARM));
+        vm.prank(address(arm));
         (uint256 sharesRequested, uint256 assetsExpected) = stETHAssetAdapter.requestRedeem(shares);
 
         // Then — return values (1:1 math)
@@ -91,7 +91,7 @@ contract Unit_LidoARM_StETHAssetAdapter_Test is Unit_EtherARM_Shared_Test {
         assertEq(assetsExpected, shares, "assetsExpected");
 
         // stETH flowed ARM → withdrawal queue, adapter holds no residual stETH.
-        assertEq(steth.balanceOf(address(etherARM)), ARM_STETH_BALANCE - shares, "ARM stETH post");
+        assertEq(steth.balanceOf(address(arm)), ARM_STETH_BALANCE - shares, "ARM stETH post");
         assertEq(steth.balanceOf(address(stETHAssetAdapter)), 0, "adapter stETH post");
         assertEq(steth.balanceOf(address(lidoWithdrawalQueue)), shares, "queue stETH post");
 
@@ -111,7 +111,7 @@ contract Unit_LidoARM_StETHAssetAdapter_Test is Unit_EtherARM_Shared_Test {
     function test_RequestRedeem_ExactBoundary_1000Ether() public {
         uint256 shares = 1_000 ether;
 
-        vm.prank(address(etherARM));
+        vm.prank(address(arm));
         stETHAssetAdapter.requestRedeem(shares);
 
         // Exactly one chunk; no second request created.
@@ -125,7 +125,7 @@ contract Unit_LidoARM_StETHAssetAdapter_Test is Unit_EtherARM_Shared_Test {
     function test_RequestRedeem_JustAboveBoundary_1001Ether() public {
         uint256 shares = 1_001 ether;
 
-        vm.prank(address(etherARM));
+        vm.prank(address(arm));
         stETHAssetAdapter.requestRedeem(shares);
 
         assertEq(stETHAssetAdapter.pendingRequestIdsLength(), 2, "two chunks above boundary");
@@ -144,7 +144,7 @@ contract Unit_LidoARM_StETHAssetAdapter_Test is Unit_EtherARM_Shared_Test {
     function test_RequestRedeem_MultiChunk_2500Ether() public {
         uint256 shares = 2_500 ether;
 
-        vm.prank(address(etherARM));
+        vm.prank(address(arm));
         stETHAssetAdapter.requestRedeem(shares);
 
         assertEq(stETHAssetAdapter.pendingRequestIdsLength(), 3, "three chunks");
@@ -163,7 +163,7 @@ contract Unit_LidoARM_StETHAssetAdapter_Test is Unit_EtherARM_Shared_Test {
     }
 
     function test_RequestRedeem_TwoSequentialCalls() public {
-        vm.startPrank(address(etherARM));
+        vm.startPrank(address(arm));
         stETHAssetAdapter.requestRedeem(300 ether);
         stETHAssetAdapter.requestRedeem(200 ether);
         vm.stopPrank();
@@ -182,10 +182,10 @@ contract Unit_LidoARM_StETHAssetAdapter_Test is Unit_EtherARM_Shared_Test {
     function test_Redeem_SingleRequest() public {
         uint256 shares = 500 ether;
 
-        vm.startPrank(address(etherARM));
+        vm.startPrank(address(arm));
         stETHAssetAdapter.requestRedeem(shares);
 
-        uint256 armWethBefore = weth.balanceOf(address(etherARM));
+        uint256 armWethBefore = weth.balanceOf(address(arm));
         uint256 id = stETHAssetAdapter.pendingRequestId(0);
 
         // When
@@ -198,7 +198,7 @@ contract Unit_LidoARM_StETHAssetAdapter_Test is Unit_EtherARM_Shared_Test {
         assertEq(assetsReceived, shares, "assetsReceived");
 
         // WETH lands on the ARM; adapter holds no residual ETH or WETH.
-        assertEq(weth.balanceOf(address(etherARM)), armWethBefore + shares, "ARM weth post");
+        assertEq(weth.balanceOf(address(arm)), armWethBefore + shares, "ARM weth post");
         assertEq(weth.balanceOf(address(stETHAssetAdapter)), 0, "adapter weth post");
         assertEq(address(stETHAssetAdapter).balance, 0, "adapter eth post");
 
@@ -210,11 +210,11 @@ contract Unit_LidoARM_StETHAssetAdapter_Test is Unit_EtherARM_Shared_Test {
     }
 
     function test_Redeem_MultipleRequests_FullDrain() public {
-        vm.startPrank(address(etherARM));
+        vm.startPrank(address(arm));
         stETHAssetAdapter.requestRedeem(400 ether);
         stETHAssetAdapter.requestRedeem(600 ether);
 
-        uint256 armWethBefore = weth.balanceOf(address(etherARM));
+        uint256 armWethBefore = weth.balanceOf(address(arm));
         uint256 id0 = stETHAssetAdapter.pendingRequestId(0);
         uint256 id1 = stETHAssetAdapter.pendingRequestId(1);
 
@@ -223,7 +223,7 @@ contract Unit_LidoARM_StETHAssetAdapter_Test is Unit_EtherARM_Shared_Test {
 
         assertEq(sharesClaimed, 1_000 ether, "sharesClaimed");
         assertEq(assetsReceived, 1_000 ether, "assetsReceived");
-        assertEq(weth.balanceOf(address(etherARM)), armWethBefore + 1_000 ether, "ARM weth post");
+        assertEq(weth.balanceOf(address(arm)), armWethBefore + 1_000 ether, "ARM weth post");
 
         // Both mappings cleared.
         assertEq(stETHAssetAdapter.requestShares(id0), 0, "id0 cleared");
@@ -232,13 +232,13 @@ contract Unit_LidoARM_StETHAssetAdapter_Test is Unit_EtherARM_Shared_Test {
 
     function test_Redeem_PartialDrain_FirstChunkOnly() public {
         // Single requestRedeem(2500) creates three chunks: 1000/1000/500.
-        vm.startPrank(address(etherARM));
+        vm.startPrank(address(arm));
         stETHAssetAdapter.requestRedeem(2_500 ether);
 
         uint256 id0 = stETHAssetAdapter.pendingRequestId(0);
         uint256 id1 = stETHAssetAdapter.pendingRequestId(1);
         uint256 id2 = stETHAssetAdapter.pendingRequestId(2);
-        uint256 armWethBefore = weth.balanceOf(address(etherARM));
+        uint256 armWethBefore = weth.balanceOf(address(arm));
 
         // Redeem only the first chunk's shares.
         (uint256 sharesClaimed,, uint256 assetsReceived) = stETHAssetAdapter.redeem(1_000 ether);
@@ -246,7 +246,7 @@ contract Unit_LidoARM_StETHAssetAdapter_Test is Unit_EtherARM_Shared_Test {
 
         assertEq(sharesClaimed, 1_000 ether, "sharesClaimed");
         assertEq(assetsReceived, 1_000 ether, "assetsReceived");
-        assertEq(weth.balanceOf(address(etherARM)), armWethBefore + 1_000 ether, "ARM weth post");
+        assertEq(weth.balanceOf(address(arm)), armWethBefore + 1_000 ether, "ARM weth post");
 
         // Only id0 cleared; id1 and id2 still queued.
         assertEq(stETHAssetAdapter.requestShares(id0), 0, "id0 cleared");
@@ -260,65 +260,65 @@ contract Unit_LidoARM_StETHAssetAdapter_Test is Unit_EtherARM_Shared_Test {
     function test_Redeem_WrapsEthToWeth() public {
         uint256 shares = 750 ether;
 
-        vm.startPrank(address(etherARM));
+        vm.startPrank(address(arm));
         stETHAssetAdapter.requestRedeem(shares);
 
-        uint256 armWethBefore = weth.balanceOf(address(etherARM));
+        uint256 armWethBefore = weth.balanceOf(address(arm));
         stETHAssetAdapter.redeem(shares);
         vm.stopPrank();
 
         assertEq(address(stETHAssetAdapter).balance, 0, "adapter eth post");
         assertEq(weth.balanceOf(address(stETHAssetAdapter)), 0, "adapter weth post");
-        assertEq(weth.balanceOf(address(etherARM)) - armWethBefore, shares, "ARM weth delta == eth received");
+        assertEq(weth.balanceOf(address(arm)) - armWethBefore, shares, "ARM weth delta == eth received");
     }
 
     //////////////////////////////////////////////////////
     /// --- redeem — revert branch coverage
     //////////////////////////////////////////////////////
     function test_Redeem_RevertWhen_NoPendingRequests() public {
-        vm.prank(address(etherARM));
+        vm.prank(address(arm));
         vm.expectRevert("Adapter: no pending requests");
         stETHAssetAdapter.redeem(1 ether);
     }
 
     function test_Redeem_RevertWhen_FirstUnfinalized() public {
-        vm.prank(address(etherARM));
+        vm.prank(address(arm));
         stETHAssetAdapter.requestRedeem(500 ether);
 
         uint256 id0 = stETHAssetAdapter.pendingRequestId(0);
         lidoWithdrawalQueue.mock_setFinalized(id0, false);
 
-        vm.prank(address(etherARM));
+        vm.prank(address(arm));
         vm.expectRevert("Adapter: redeem exceeds claimable");
         stETHAssetAdapter.redeem(500 ether);
     }
 
     function test_Redeem_RevertWhen_FirstAlreadyClaimed() public {
-        vm.prank(address(etherARM));
+        vm.prank(address(arm));
         stETHAssetAdapter.requestRedeem(500 ether);
 
         uint256 id0 = stETHAssetAdapter.pendingRequestId(0);
         lidoWithdrawalQueue.mock_setClaimed(id0, true);
 
-        vm.prank(address(etherARM));
+        vm.prank(address(arm));
         vm.expectRevert("Adapter: redeem exceeds claimable");
         stETHAssetAdapter.redeem(500 ether);
     }
 
     function test_Redeem_RevertWhen_FirstOwnerChanged() public {
-        vm.prank(address(etherARM));
+        vm.prank(address(arm));
         stETHAssetAdapter.requestRedeem(500 ether);
 
         uint256 id0 = stETHAssetAdapter.pendingRequestId(0);
         lidoWithdrawalQueue.mock_setOwner(id0, alice);
 
-        vm.prank(address(etherARM));
+        vm.prank(address(arm));
         vm.expectRevert("Adapter: redeem exceeds claimable");
         stETHAssetAdapter.redeem(500 ether);
     }
 
     function test_Redeem_StopsAtFirstUnfinalized() public {
-        vm.startPrank(address(etherARM));
+        vm.startPrank(address(arm));
         stETHAssetAdapter.requestRedeem(300 ether);
         stETHAssetAdapter.requestRedeem(200 ether);
         vm.stopPrank();
@@ -327,32 +327,32 @@ contract Unit_LidoARM_StETHAssetAdapter_Test is Unit_EtherARM_Shared_Test {
         lidoWithdrawalQueue.mock_setFinalized(id1, false);
 
         // Redeeming the first id's shares still succeeds; loop breaks before consuming id1.
-        vm.prank(address(etherARM));
+        vm.prank(address(arm));
         (uint256 sharesClaimed,,) = stETHAssetAdapter.redeem(300 ether);
         assertEq(sharesClaimed, 300 ether, "claimed first only");
 
         // Redeeming further reverts since id1 is still un-finalized.
-        vm.prank(address(etherARM));
+        vm.prank(address(arm));
         vm.expectRevert("Adapter: redeem exceeds claimable");
         stETHAssetAdapter.redeem(200 ether);
     }
 
     function test_Redeem_RevertWhen_InvalidRedeemAmount_FirstChunkOvershoots() public {
         // 1500 → chunks of 1000 + 500. Redeeming 700 overshoots the first chunk.
-        vm.prank(address(etherARM));
+        vm.prank(address(arm));
         stETHAssetAdapter.requestRedeem(1_500 ether);
 
-        vm.prank(address(etherARM));
+        vm.prank(address(arm));
         vm.expectRevert("Adapter: invalid redeem amount");
         stETHAssetAdapter.redeem(700 ether);
     }
 
     function test_Redeem_RevertWhen_InvalidRedeemAmount_BetweenChunks() public {
         // 1500 → chunks of 1000 + 500. Redeeming 1200 lands between the two chunk totals.
-        vm.prank(address(etherARM));
+        vm.prank(address(arm));
         stETHAssetAdapter.requestRedeem(1_500 ether);
 
-        vm.prank(address(etherARM));
+        vm.prank(address(arm));
         vm.expectRevert("Adapter: invalid redeem amount");
         stETHAssetAdapter.redeem(1_200 ether);
     }
@@ -367,7 +367,7 @@ contract Unit_LidoARM_StETHAssetAdapter_Test is Unit_EtherARM_Shared_Test {
     }
 
     function test_ClaimableRedeem_AllFinalized_ReturnsSum() public {
-        vm.startPrank(address(etherARM));
+        vm.startPrank(address(arm));
         stETHAssetAdapter.requestRedeem(300 ether);
         stETHAssetAdapter.requestRedeem(200 ether);
         vm.stopPrank();
@@ -378,7 +378,7 @@ contract Unit_LidoARM_StETHAssetAdapter_Test is Unit_EtherARM_Shared_Test {
     }
 
     function test_ClaimableRedeem_StopsAtFirstUnfinalized() public {
-        vm.startPrank(address(etherARM));
+        vm.startPrank(address(arm));
         stETHAssetAdapter.requestRedeem(300 ether);
         stETHAssetAdapter.requestRedeem(200 ether);
         vm.stopPrank();
@@ -392,7 +392,7 @@ contract Unit_LidoARM_StETHAssetAdapter_Test is Unit_EtherARM_Shared_Test {
     }
 
     function test_ClaimableRedeem_UpdatesAfterPartialRedeem() public {
-        vm.startPrank(address(etherARM));
+        vm.startPrank(address(arm));
         stETHAssetAdapter.requestRedeem(300 ether);
         stETHAssetAdapter.requestRedeem(200 ether);
 
@@ -411,17 +411,17 @@ contract Unit_LidoARM_StETHAssetAdapter_Test is Unit_EtherARM_Shared_Test {
     function test_PendingRequestIdsLength_GrowsWithRequests() public {
         assertEq(stETHAssetAdapter.pendingRequestIdsLength(), 0, "initial");
 
-        vm.prank(address(etherARM));
+        vm.prank(address(arm));
         stETHAssetAdapter.requestRedeem(500 ether);
         assertEq(stETHAssetAdapter.pendingRequestIdsLength(), 1, "after single-chunk request");
 
-        vm.prank(address(etherARM));
+        vm.prank(address(arm));
         stETHAssetAdapter.requestRedeem(1_500 ether);
         assertEq(stETHAssetAdapter.pendingRequestIdsLength(), 3, "after two-chunk request");
     }
 
     function test_PendingRequestId_IndexableAndOrdered() public {
-        vm.prank(address(etherARM));
+        vm.prank(address(arm));
         stETHAssetAdapter.requestRedeem(2_500 ether);
 
         // Mock counter increments by one per chunk, so ids are 0,1,2 in order.
@@ -448,7 +448,7 @@ contract Unit_LidoARM_StETHAssetAdapter_Test is Unit_EtherARM_Shared_Test {
     ///         must track finalization toggles in both directions.
     function test_StateMachine_MultiRequestMixedFinalization() public {
         // --- Setup: two requests, three queue ids (0 from req1, 1+2 from req2).
-        vm.startPrank(address(etherARM));
+        vm.startPrank(address(arm));
         stETHAssetAdapter.requestRedeem(500 ether); // id 0
         stETHAssetAdapter.requestRedeem(1_500 ether); // ids 1 and 2 (chunks 1000 + 500)
         vm.stopPrank();
@@ -472,7 +472,7 @@ contract Unit_LidoARM_StETHAssetAdapter_Test is Unit_EtherARM_Shared_Test {
         }
 
         // Stage 2: redeem id 0; mappings for id 0 clear, id 1 and id 2 mappings untouched.
-        vm.prank(address(etherARM));
+        vm.prank(address(arm));
         (uint256 sc1,, uint256 ar1) = stETHAssetAdapter.redeem(500 ether);
         assertEq(sc1, 500 ether, "stage2 sharesClaimed");
         assertEq(ar1, 500 ether, "stage2 assetsReceived");
@@ -491,7 +491,7 @@ contract Unit_LidoARM_StETHAssetAdapter_Test is Unit_EtherARM_Shared_Test {
         }
 
         // Stage 4: any redeem attempt now reverts on the FIFO check.
-        vm.prank(address(etherARM));
+        vm.prank(address(arm));
         vm.expectRevert("Adapter: redeem exceeds claimable");
         stETHAssetAdapter.redeem(1_000 ether);
 
@@ -504,13 +504,13 @@ contract Unit_LidoARM_StETHAssetAdapter_Test is Unit_EtherARM_Shared_Test {
         }
 
         // Stage 6: redeem id 1 alone (not id 1 + id 2 together). Cursor advances by exactly one.
-        vm.prank(address(etherARM));
+        vm.prank(address(arm));
         stETHAssetAdapter.redeem(1_000 ether);
         assertEq(stETHAssetAdapter.requestShares(id1), 0, "id1 mapping cleared");
         assertEq(stETHAssetAdapter.requestShares(id2), 500 ether, "id2 mapping intact after id1 claim");
 
         // Stage 7: claim id 2. Adapter is fully drained but the array remains length 3.
-        vm.prank(address(etherARM));
+        vm.prank(address(arm));
         stETHAssetAdapter.redeem(500 ether);
         assertEq(stETHAssetAdapter.requestShares(id2), 0, "id2 mapping cleared");
         {
@@ -521,7 +521,7 @@ contract Unit_LidoARM_StETHAssetAdapter_Test is Unit_EtherARM_Shared_Test {
         assertEq(stETHAssetAdapter.pendingRequestIdsLength(), 3, "pendingIds length unchanged after full drain");
 
         // Stage 8: any further redeem reverts with the empty-queue message (cursor == length).
-        vm.prank(address(etherARM));
+        vm.prank(address(arm));
         vm.expectRevert("Adapter: no pending requests");
         stETHAssetAdapter.redeem(1 ether);
     }

@@ -5,7 +5,7 @@ pragma solidity 0.8.23;
 import {Test} from "forge-std/Test.sol";
 
 // Contracts
-import {EtherARM} from "contracts/EtherARM.sol";
+import {MultiAssetARM} from "contracts/MultiAssetARM.sol";
 import {CapManager} from "contracts/CapManager.sol";
 import {StETHAssetAdapter} from "contracts/adapters/StETHAssetAdapter.sol";
 import {WstETHAssetAdapter} from "contracts/adapters/WstETHAssetAdapter.sol";
@@ -14,16 +14,18 @@ import {WstETHAssetAdapter} from "contracts/adapters/WstETHAssetAdapter.sol";
 import {IERC20} from "contracts/Interfaces.sol";
 
 // Mocks
-import {MockWstETH} from "./mocks/MockWstETH.sol";
-import {MockERC4626Market} from "./mocks/MockERC4626Market.sol";
-import {MockLidoWithdraw} from "./mocks/MockLidoWithdraw.sol";
+import {MockWstETH} from "../mocks/MockWstETH.sol";
+import {MockERC4626Market} from "../mocks/MockERC4626Market.sol";
+import {MockLidoWithdraw} from "../mocks/MockLidoWithdraw.sol";
 
-abstract contract Base_Test_ is Test {
+/// @notice Base harness for the Lido asset-adapter unit tests. Deploys a generic {MultiAssetARM} (WETH
+///         liquidity) with stETH/wstETH base assets wired to the real Lido adapters, so the adapters can be
+///         exercised in isolation by pranking the ARM.
+abstract contract Base_Lido_Test is Test {
     //////////////////////////////////////////////////////
     /// --- CONTRACTS
     //////////////////////////////////////////////////////
-    // Main contracts
-    EtherARM public etherARM;
+    MultiAssetARM public arm;
     CapManager public capManager;
     StETHAssetAdapter public stETHAssetAdapter;
     WstETHAssetAdapter public wstETHAssetAdapter;

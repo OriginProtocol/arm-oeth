@@ -2,11 +2,11 @@
 pragma solidity 0.8.23;
 
 // Test
-import {Base_Test_} from "./Base.t.sol";
+import {Base_Lido_Test} from "./Base.t.sol";
 
 // Contracts
 import {Proxy} from "contracts/Proxy.sol";
-import {EtherARM} from "contracts/EtherARM.sol";
+import {MultiAssetARM} from "contracts/MultiAssetARM.sol";
 import {CapManager} from "contracts/CapManager.sol";
 import {StETHAssetAdapter} from "contracts/adapters/StETHAssetAdapter.sol";
 import {WstETHAssetAdapter} from "contracts/adapters/WstETHAssetAdapter.sol";
@@ -19,11 +19,11 @@ import {IERC20} from "contracts/Interfaces.sol";
 // Mocks
 import {WETH} from "@solmate/tokens/WETH.sol";
 import {MockERC20} from "@solmate/test/utils/mocks/MockERC20.sol";
-import {MockWstETH} from "./mocks/MockWstETH.sol";
-import {MockERC4626Market} from "./mocks/MockERC4626Market.sol";
-import {MockLidoWithdraw} from "./mocks/MockLidoWithdraw.sol";
+import {MockWstETH} from "../mocks/MockWstETH.sol";
+import {MockERC4626Market} from "../mocks/MockERC4626Market.sol";
+import {MockLidoWithdraw} from "../mocks/MockLidoWithdraw.sol";
 
-abstract contract Unit_EtherARM_Shared_Test is Base_Test_ {
+abstract contract Unit_Lido_Shared_Test is Base_Lido_Test {
     //////////////////////////////////////////////////////
     /// --- SETUP
     //////////////////////////////////////////////////////
@@ -55,27 +55,27 @@ abstract contract Unit_EtherARM_Shared_Test is Base_Test_ {
         vm.startPrank(deployer);
 
         // --- Deploy Proxies
-        Proxy etherARMProxy = new Proxy();
+        Proxy armProxy = new Proxy();
         Proxy capManagerProxy = new Proxy();
         Proxy stETHAssetAdapterProxy = new Proxy();
         Proxy wstETHAssetAdapterProxy = new Proxy();
 
         // --- Deploy Logic contracts
-        EtherARM etherARMLogic = new EtherARM({
-            _weth: address(weth),
+        MultiAssetARM armLogic = new MultiAssetARM({
+            _liquidityAsset: address(weth),
             _claimDelay: CLAIM_DELAY,
             _minSharesToRedeem: MIN_SHARES_TO_REDEEM,
             _allocateThreshold: 1 ether
         });
-        CapManager capManagerLogic = new CapManager({_arm: address(etherARMProxy)});
+        CapManager capManagerLogic = new CapManager({_arm: address(armProxy)});
         StETHAssetAdapter stETHAssetAdapterLogic = new StETHAssetAdapter({
-            _arm: address(etherARMProxy),
+            _arm: address(armProxy),
             _weth: address(weth),
             _steth: address(steth),
             _lidoWithdrawalQueue: address(lidoWithdrawalQueue)
         });
         WstETHAssetAdapter wstETHAssetAdapterLogic = new WstETHAssetAdapter({
-            _arm: address(etherARMProxy),
+            _arm: address(armProxy),
             _weth: address(weth),
             _steth: address(steth),
             _wsteth: address(wsteth),
@@ -86,15 +86,15 @@ abstract contract Unit_EtherARM_Shared_Test is Base_Test_ {
         // Mint 1e12 liquid assets to the deployer.
         deal(address(weth), deployer, 1e12);
         // Deployer approve the proxy to transfer 1e12 liquid assets.
-        weth.approve(address(etherARMProxy), 1e12);
+        weth.approve(address(armProxy), 1e12);
 
         // --- Initialize Proxies
-        // EtherARM Proxy
-        etherARMProxy.initialize(
-            address(etherARMLogic),
+        // MultiAssetARM Proxy
+        armProxy.initialize(
+            address(armLogic),
             governor,
             abi.encodeWithSelector(
-                EtherARM.initialize.selector,
+                MultiAssetARM.initialize.selector,
                 "Ether ARM",
                 "ETHER-ARM",
                 operator,
@@ -108,7 +108,7 @@ abstract contract Unit_EtherARM_Shared_Test is Base_Test_ {
         capManagerProxy.initialize(
             address(capManagerLogic),
             governor,
-            abi.encodeWithSelector(CapManager.initialize.selector, address(etherARMProxy))
+            abi.encodeWithSelector(CapManager.initialize.selector, address(armProxy))
         );
 
         // StETHAssetAdapter Proxy. Run `initialize()` through the proxy so the adapter
@@ -129,7 +129,7 @@ abstract contract Unit_EtherARM_Shared_Test is Base_Test_ {
         vm.stopPrank();
 
         // --- Set the proxy's implementation to the logic contract
-        etherARM = EtherARM(payable(address(etherARMProxy)));
+        arm = MultiAssetARM(payable(address(armProxy)));
         capManager = CapManager(address(capManagerProxy));
         stETHAssetAdapter = StETHAssetAdapter(payable(address(stETHAssetAdapterProxy)));
         wstETHAssetAdapter = WstETHAssetAdapter(payable(address(wstETHAssetAdapterProxy)));
@@ -140,7 +140,7 @@ abstract contract Unit_EtherARM_Shared_Test is Base_Test_ {
         vm.label(address(steth), "STETH");
         vm.label(address(wsteth), "WSTETH");
         vm.label(address(mockWstETH), "WSTETH");
-        vm.label(address(etherARM), "ETHER ARM PROXY");
+        vm.label(address(arm), "MULTI-ASSET ARM PROXY");
         vm.label(address(capManager), "CAP MANAGER PROXY");
         vm.label(address(stETHAssetAdapter), "STETH ASSET ADAPTER PROXY");
         vm.label(address(wstETHAssetAdapter), "WSTETH ASSET ADAPTER PROXY");
@@ -151,38 +151,38 @@ abstract contract Unit_EtherARM_Shared_Test is Base_Test_ {
 
     function approveSpending() internal {
         vm.startPrank(alice);
-        weth.approve(address(etherARM), type(uint256).max);
-        steth.approve(address(etherARM), type(uint256).max);
-        wsteth.approve(address(etherARM), type(uint256).max);
+        weth.approve(address(arm), type(uint256).max);
+        steth.approve(address(arm), type(uint256).max);
+        wsteth.approve(address(arm), type(uint256).max);
         vm.stopPrank();
 
         vm.startPrank(bobby);
-        weth.approve(address(etherARM), type(uint256).max);
-        steth.approve(address(etherARM), type(uint256).max);
-        wsteth.approve(address(etherARM), type(uint256).max);
+        weth.approve(address(arm), type(uint256).max);
+        steth.approve(address(arm), type(uint256).max);
+        wsteth.approve(address(arm), type(uint256).max);
         vm.stopPrank();
     }
 
     function desactiveCapManager() internal {
         vm.prank(governor);
-        etherARM.setCapManager(address(0));
+        arm.setCapManager(address(0));
     }
 
     function addMarket(address market) internal {
         address[] memory markets = new address[](1);
         markets[0] = market;
         vm.prank(governor);
-        etherARM.addMarkets(markets);
+        arm.addMarkets(markets);
     }
 
     function setActiveMarket(address market) internal {
         vm.prank(governor);
-        etherARM.setActiveMarket(market);
+        arm.setActiveMarket(market);
     }
 
     function setARMBuffer(uint256 buffer) internal {
         vm.prank(governor);
-        etherARM.setARMBuffer(buffer);
+        arm.setARMBuffer(buffer);
     }
 
     function aliceFirstDeposit() internal {
@@ -205,17 +205,17 @@ abstract contract Unit_EtherARM_Shared_Test is Base_Test_ {
         vm.startPrank(user);
         // Give the user some WETH
         deal(address(weth), user, amount);
-        // The user approve EtherARM to spend his WETH
-        weth.approve(address(etherARM), type(uint256).max);
-        // The user deposit the specified amount of WETH to EtherARM
-        etherARM.deposit(amount);
+        // The user approve the ARM to spend his WETH
+        weth.approve(address(arm), type(uint256).max);
+        // The user deposit the specified amount of WETH to the ARM
+        arm.deposit(amount);
         vm.stopPrank();
     }
 
     function addBaseAsset(IERC20 token) internal {
         vm.prank(governor);
         if (token == steth) {
-            etherARM.addBaseAsset(
+            arm.addBaseAsset(
                 address(steth),
                 address(stETHAssetAdapter),
                 992 * 1e33,
@@ -226,7 +226,7 @@ abstract contract Unit_EtherARM_Shared_Test is Base_Test_ {
                 true
             );
         } else if (token == wsteth) {
-            etherARM.addBaseAsset(
+            arm.addBaseAsset(
                 address(wsteth),
                 address(wstETHAssetAdapter),
                 992 * 1e33,
@@ -242,32 +242,32 @@ abstract contract Unit_EtherARM_Shared_Test is Base_Test_ {
     }
 
     function buyPrice(IERC20 token) internal view returns (uint256) {
-        (uint128 _buyPrice,,,,,,,,) = etherARM.baseAssetConfigs(address(token));
+        (uint128 _buyPrice,,,,,,,,) = arm.baseAssetConfigs(address(token));
         return _buyPrice;
     }
 
     function sellPrice(IERC20 token) internal view returns (uint256) {
-        (, uint128 _sellPrice,,,,,,,) = etherARM.baseAssetConfigs(address(token));
+        (, uint128 _sellPrice,,,,,,,) = arm.baseAssetConfigs(address(token));
         return _sellPrice;
     }
 
     function buyLiquidityRemaining(IERC20 token) internal view returns (uint256) {
-        (,, uint128 _buyLiquidityRemaining,,,,,,) = etherARM.baseAssetConfigs(address(token));
+        (,, uint128 _buyLiquidityRemaining,,,,,,) = arm.baseAssetConfigs(address(token));
         return _buyLiquidityRemaining;
     }
 
     function sellLiquidityRemaining(IERC20 token) internal view returns (uint256) {
-        (,,, uint128 _sellLiquidityRemaining,,,,,) = etherARM.baseAssetConfigs(address(token));
+        (,,, uint128 _sellLiquidityRemaining,,,,,) = arm.baseAssetConfigs(address(token));
         return _sellLiquidityRemaining;
     }
 
     function crossPrice(IERC20 token) internal view returns (uint256) {
-        (,,,, uint128 _crossPrice,,,,) = etherARM.baseAssetConfigs(address(token));
+        (,,,, uint128 _crossPrice,,,,) = arm.baseAssetConfigs(address(token));
         return _crossPrice;
     }
 
     function pendingRedeemAssets(IERC20 token) internal view returns (uint256) {
-        (,,,,, uint128 _pendingRedeemAssets,,,) = etherARM.baseAssetConfigs(address(token));
+        (,,,,, uint128 _pendingRedeemAssets,,,) = arm.baseAssetConfigs(address(token));
         return _pendingRedeemAssets;
     }
 
@@ -276,7 +276,7 @@ abstract contract Unit_EtherARM_Shared_Test is Base_Test_ {
         uint256 assetCrossPrice = crossPrice(token);
         uint256 feeMultiplier = assetBuyPrice == 0
             ? 0
-            : (assetCrossPrice - assetBuyPrice) * uint256(etherARM.fee()) * PRICE_SCALE / (assetBuyPrice * FEE_SCALE);
+            : (assetCrossPrice - assetBuyPrice) * uint256(arm.fee()) * PRICE_SCALE / (assetBuyPrice * FEE_SCALE);
 
         return amountOut * feeMultiplier / PRICE_SCALE;
     }
@@ -342,10 +342,10 @@ abstract contract Unit_EtherARM_Shared_Test is Base_Test_ {
 
     function requestRedeem(address user, uint256 sharesToRedeem) internal returns (uint256 requestId, uint256 assets) {
         if (sharesToRedeem == 0) {
-            sharesToRedeem = etherARM.balanceOf(user);
+            sharesToRedeem = arm.balanceOf(user);
         }
         vm.prank(user);
-        (requestId, assets) = etherARM.requestRedeem(sharesToRedeem);
+        (requestId, assets) = arm.requestRedeem(sharesToRedeem);
     }
 
     function _assertStoredRequest(
@@ -357,8 +357,8 @@ abstract contract Unit_EtherARM_Shared_Test is Base_Test_ {
         uint256 expectedShares
     ) internal view {
         (address withdrawer, bool claimed, uint40 claimTimestamp, uint128 storedAssets, uint128 storedQueued) =
-            etherARM.withdrawalRequests(requestId);
-        uint256 storedShares = etherARM.withdrawalRequestShares(requestId);
+            arm.withdrawalRequests(requestId);
+        uint256 storedShares = arm.withdrawalRequestShares(requestId);
         assertEq(withdrawer, expectedWithdrawer, "req.withdrawer");
         assertEq(claimed, false, "req.claimed");
         assertEq(claimTimestamp, expectedClaimTimestamp, "req.claimTimestamp");

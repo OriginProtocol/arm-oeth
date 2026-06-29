@@ -2,7 +2,7 @@
 pragma solidity 0.8.23;
 
 // Test
-import {Unit_EtherARM_Shared_Test} from "../Shared.t.sol";
+import {Unit_MultiAssetARM_Shared_Test} from "../Shared.t.sol";
 
 // Interfaces
 import {IERC20} from "contracts/Interfaces.sol";
@@ -14,7 +14,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 /// @notice Fuzzes both exact-input and exact-output swaps between the Lido ARM liquidity asset and
 ///         stETH to confirm price, fee accrual, balances, liquidity accounting, and totalAssets all
 ///         behave consistently across the input/output and price ranges.
-contract Unit_Fuzz_EtherARM_Swap_Test is Unit_EtherARM_Shared_Test {
+contract Unit_Fuzz_MultiAssetARM_Swap_Test is Unit_MultiAssetARM_Shared_Test {
     using Math for uint256;
 
     //////////////////////////////////////////////////////
@@ -38,16 +38,35 @@ contract Unit_Fuzz_EtherARM_Swap_Test is Unit_EtherARM_Shared_Test {
     function setUp() public override {
         super.setUp();
         desactiveCapManager();
-        addBaseAsset(steth);
-        addBaseAsset(wsteth);
-        seedWstETHWithTargetExchangeRate();
+        addBaseAsset(peg18);
+    }
+
+    /// @dev Start from a clean registry (the generic harness pre-registers a matrix; these fuzz tests
+    ///      register peg18 on demand with the price assumptions hardcoded above).
+    function _registerInitialBaseAssets() internal override {}
+
+    /// @dev Registers peg18 as a pegged base asset with the 0.992 buy / 1.001 sell / 1.0 cross prices
+    ///      this file's expected-value math assumes.
+    function addBaseAsset(IERC20 token) internal {
+        require(token == peg18, "unsupported base asset");
+        vm.prank(governor);
+        arm.addBaseAsset(
+            address(peg18),
+            address(adapterPeg18),
+            992 * 1e33,
+            1001 * 1e33,
+            type(uint128).max,
+            type(uint128).max,
+            1e36,
+            true
+        );
     }
 
     //////////////////////////////////////////////////////
     /// ---   SwapExactTokensForTokens (exact input)   ---
     //////////////////////////////////////////////////////
-    function testFuzz_SwapExactTokensForTokens_Steth_To_Weth_Amount(uint128 stethAmount) public {
-        deal(address(weth), address(etherARM), 50_000 ether);
+    function testFuzz_SwapExactTokensForTokens_Steth_To_Weth_Amount(uint128 peg18Amount) public {
+        deal(address(liquidity), address(arm), 50_000 ether);
 
         // Bound the input so the ARM can pay the WETH it owes Alice without pulling from a market.
         // The ARM's WETH balance is read live (Alice's deposit + the 1e12 minimum supply seed),
@@ -56,9 +75,9 @@ contract Unit_Fuzz_EtherARM_Swap_Test is Unit_EtherARM_Shared_Test {
         // Lower bound is 1 wei: the spread (amountIn - amountOut) is at least 1 wei for amountIn >= 1
         // because integer truncation of (amountIn * 992 / 1000) loses fractional WETH, which is required
         // for the totalAssets-must-strictly-increase assertion to hold.
-        uint256 armWeth = weth.balanceOf(address(etherARM));
+        uint256 armWeth = liquidity.balanceOf(address(arm));
         uint256 maxAmountIn = armWeth * BUY_PRICE_DENOMINATOR / BUY_PRICE_NUMERATOR;
-        uint256 amountIn = _bound(uint256(stethAmount), 1, maxAmountIn);
+        uint256 amountIn = _bound(uint256(peg18Amount), 1, maxAmountIn);
 
         // Expected output is computed without going through the contract's PRICE_SCALE path, so a
         // bug that swaps numerator/denominator or changes the buy price would be caught here.
@@ -70,52 +89,52 @@ contract Unit_Fuzz_EtherARM_Swap_Test is Unit_EtherARM_Shared_Test {
         // WETH balance and turn revert paths into spurious failures.
         assertLe(expectedAmountOut, armWeth, "amountOut exceeds ARM WETH balance");
 
-        deal(address(steth), alice, amountIn);
+        deal(address(peg18), alice, amountIn);
 
-        assertEq(etherARM.feesAccrued(), 0);
-        assertEq(weth.balanceOf(alice), 0);
-        assertEq(steth.balanceOf(alice), amountIn);
+        assertEq(arm.feesAccrued(), 0);
+        assertEq(liquidity.balanceOf(alice), 0);
+        assertEq(peg18.balanceOf(alice), amountIn);
 
-        uint256 buyLiquidityBefore = buyLiquidityRemaining(steth);
-        uint256 sellLiquidityBefore = sellLiquidityRemaining(steth);
-        uint256 armWethBefore = weth.balanceOf(address(etherARM));
-        uint256 armStethBefore = steth.balanceOf(address(etherARM));
-        uint256 totalAssetsBefore = etherARM.totalAssets();
+        uint256 buyLiquidityBefore = buyLiquidityRemaining(peg18);
+        uint256 sellLiquidityBefore = sellLiquidityRemaining(peg18);
+        uint256 armWethBefore = liquidity.balanceOf(address(arm));
+        uint256 armStethBefore = peg18.balanceOf(address(arm));
+        uint256 totalAssetsBefore = arm.totalAssets();
 
         // Expect events
-        vm.expectEmit({emitter: address(steth)});
-        emit IERC20.Transfer(alice, address(etherARM), amountIn);
-        vm.expectEmit({emitter: address(weth)});
-        emit IERC20.Transfer(address(etherARM), alice, expectedAmountOut);
+        vm.expectEmit({emitter: address(peg18)});
+        emit IERC20.Transfer(alice, address(arm), amountIn);
+        vm.expectEmit({emitter: address(liquidity)});
+        emit IERC20.Transfer(address(arm), alice, expectedAmountOut);
 
         // When
         vm.prank(alice);
-        uint256[] memory amounts = etherARM.swapExactTokensForTokens(steth, weth, amountIn, expectedAmountOut, alice);
+        uint256[] memory amounts = arm.swapExactTokensForTokens(peg18, liquidity, amountIn, expectedAmountOut, alice);
 
         // Then
         // Note: Temporary 1 wei tolerance while the fee rounding issue is being fixed.
-        assertApproxEqAbs(etherARM.feesAccrued(), expectedFee, 1);
-        assertEq(buyLiquidityRemaining(steth), buyLiquidityBefore - expectedAmountOut);
-        assertEq(sellLiquidityRemaining(steth), sellLiquidityBefore);
-        assertEq(weth.balanceOf(alice), expectedAmountOut);
-        assertEq(steth.balanceOf(alice), 0);
-        assertEq(weth.balanceOf(address(etherARM)), armWethBefore - expectedAmountOut);
-        assertEq(steth.balanceOf(address(etherARM)), armStethBefore + amountIn);
+        assertApproxEqAbs(arm.feesAccrued(), expectedFee, 1);
+        assertEq(buyLiquidityRemaining(peg18), buyLiquidityBefore - expectedAmountOut);
+        assertEq(sellLiquidityRemaining(peg18), sellLiquidityBefore);
+        assertEq(liquidity.balanceOf(alice), expectedAmountOut);
+        assertEq(peg18.balanceOf(alice), 0);
+        assertEq(liquidity.balanceOf(address(arm)), armWethBefore - expectedAmountOut);
+        assertEq(peg18.balanceOf(address(arm)), armStethBefore + amountIn);
         assertEq(amounts.length, 2);
         assertEq(amounts[0], amountIn);
         assertEq(amounts[1], expectedAmountOut);
-        assertGt(etherARM.totalAssets(), totalAssetsBefore);
+        assertGt(arm.totalAssets(), totalAssetsBefore);
         // Note: Temporary 1 wei tolerance while the fee rounding issue is being fixed.
-        assertApproxEqAbs(etherARM.totalAssets(), totalAssetsBefore + expectedTotalAssetsIncrease - expectedFee, 1);
+        assertApproxEqAbs(arm.totalAssets(), totalAssetsBefore + expectedTotalAssetsIncrease - expectedFee, 1);
     }
 
     function testFuzz_SwapExactTokensForTokens_Steth_To_Weth_BuyPrice(uint128 fuzzedBuyPrice) public {
         // Isolate the price dimension: amountIn is fixed so any failure points at the price/fee math
         // rather than at amount bounding or liquidity exhaustion.
         uint256 amountIn = 50 ether;
-        uint256 wethSeed = 50_000 ether;
-        deal(address(weth), address(etherARM), wethSeed);
-        deal(address(steth), alice, amountIn);
+        uint256 liquiditySeed = 50_000 ether;
+        deal(address(liquidity), address(arm), liquiditySeed);
+        deal(address(peg18), alice, amountIn);
 
         // Valid buyPrice range from AbstractARM._validatePrices:
         // buyPrice >= MAX_CROSS_PRICE_DEVIATION (20e32) and buyPrice < crossPrice (1e36 here).
@@ -123,14 +142,14 @@ contract Unit_Fuzz_EtherARM_Swap_Test is Unit_EtherARM_Shared_Test {
         uint256 spread;
         uint256 buyPriceFuzzed;
         {
-            uint256 crossPriceCurrent = crossPrice(steth);
+            uint256 crossPriceCurrent = crossPrice(peg18);
             buyPriceFuzzed = _bound(uint256(fuzzedBuyPrice), MAX_CROSS_PRICE_DEVIATION, crossPriceCurrent - 1);
             spread = crossPriceCurrent - buyPriceFuzzed;
 
             // Resolve every setPrices arg before the prank so no view-call between them consumes it.
-            uint128 sellPriceArg = uint128(sellPrice(steth));
+            uint128 sellPriceArg = uint128(sellPrice(peg18));
             vm.prank(governor);
-            etherARM.setPrices(address(steth), buyPriceFuzzed, sellPriceArg, type(uint128).max, type(uint128).max);
+            arm.setPrices(address(peg18), buyPriceFuzzed, sellPriceArg, type(uint128).max, type(uint128).max);
         }
 
         // Expected output uses the same scaling as the contract because there is no algebraic
@@ -149,47 +168,47 @@ contract Unit_Fuzz_EtherARM_Swap_Test is Unit_EtherARM_Shared_Test {
         // Property guard: buyPrice < crossPrice guarantees amountOut < amountIn (trader pays the spread).
         assertLt(expectedAmountOut, amountIn);
 
-        uint256 buyLiquidityBefore = buyLiquidityRemaining(steth);
-        uint256 sellLiquidityBefore = sellLiquidityRemaining(steth);
-        uint256 totalAssetsBefore = etherARM.totalAssets();
+        uint256 buyLiquidityBefore = buyLiquidityRemaining(peg18);
+        uint256 sellLiquidityBefore = sellLiquidityRemaining(peg18);
+        uint256 totalAssetsBefore = arm.totalAssets();
 
         // Expect events
-        vm.expectEmit({emitter: address(steth)});
-        emit IERC20.Transfer(alice, address(etherARM), amountIn);
-        vm.expectEmit({emitter: address(weth)});
-        emit IERC20.Transfer(address(etherARM), alice, expectedAmountOut);
+        vm.expectEmit({emitter: address(peg18)});
+        emit IERC20.Transfer(alice, address(arm), amountIn);
+        vm.expectEmit({emitter: address(liquidity)});
+        emit IERC20.Transfer(address(arm), alice, expectedAmountOut);
 
         // When
         vm.prank(alice);
-        uint256[] memory amounts = etherARM.swapExactTokensForTokens(steth, weth, amountIn, expectedAmountOut, alice);
+        uint256[] memory amounts = arm.swapExactTokensForTokens(peg18, liquidity, amountIn, expectedAmountOut, alice);
 
         // Then
         // Tolerance of 2 wei: the two formulas above each truncate at one step, so they can disagree
         // by up to 1 wei from rounding, plus the contract's PRICE_SCALE intermediate truncation can
         // shift the result by another wei at extreme prices.
-        assertApproxEqAbs(etherARM.feesAccrued(), expectedFee, 2);
-        assertEq(buyLiquidityRemaining(steth), buyLiquidityBefore - expectedAmountOut);
-        assertEq(sellLiquidityRemaining(steth), sellLiquidityBefore);
-        assertEq(weth.balanceOf(alice), expectedAmountOut);
-        assertEq(steth.balanceOf(alice), 0);
+        assertApproxEqAbs(arm.feesAccrued(), expectedFee, 2);
+        assertEq(buyLiquidityRemaining(peg18), buyLiquidityBefore - expectedAmountOut);
+        assertEq(sellLiquidityRemaining(peg18), sellLiquidityBefore);
+        assertEq(liquidity.balanceOf(alice), expectedAmountOut);
+        assertEq(peg18.balanceOf(alice), 0);
         // The ARM started with the WETH seed and zero stETH; the swap moves expectedAmountOut WETH out
         // and amountIn stETH in.
-        assertEq(weth.balanceOf(address(etherARM)), wethSeed - expectedAmountOut);
-        assertEq(steth.balanceOf(address(etherARM)), amountIn);
+        assertEq(liquidity.balanceOf(address(arm)), liquiditySeed - expectedAmountOut);
+        assertEq(peg18.balanceOf(address(arm)), amountIn);
         assertEq(amounts.length, 2);
         assertEq(amounts[0], amountIn);
         assertEq(amounts[1], expectedAmountOut);
         // fee = gain * feeRate / FEE_SCALE algebraically, so with feeRate = 20% < 100% the gain
         // always exceeds the fee and totalAssets must strictly increase.
-        assertGt(etherARM.totalAssets(), totalAssetsBefore);
-        assertApproxEqAbs(etherARM.totalAssets(), totalAssetsBefore + expectedTotalAssetsIncrease - expectedFee, 2);
+        assertGt(arm.totalAssets(), totalAssetsBefore);
+        assertApproxEqAbs(arm.totalAssets(), totalAssetsBefore + expectedTotalAssetsIncrease - expectedFee, 2);
     }
 
-    function testFuzz_SwapExactTokensForTokens_Weth_To_Steth_Amount(uint128 wethAmount) public {
+    function testFuzz_SwapExactTokensForTokens_Weth_To_Steth_Amount(uint128 liquidityAmount) public {
         // Seed stETH liquidity so the ARM can pay out the base asset. The WETH side does not need
         // seeding here because the trader is bringing WETH in.
         uint256 armStethSeed = 50_000 ether;
-        deal(address(steth), address(etherARM), armStethSeed);
+        deal(address(peg18), address(arm), armStethSeed);
 
         // Bound the input so amountOut never exceeds the ARM's stETH balance.
         // amountOut = amountIn * 1000 / 1001 (PRICE_SCALE / sellPrice), so cap amountIn at
@@ -197,9 +216,9 @@ contract Unit_Fuzz_EtherARM_Swap_Test is Unit_EtherARM_Shared_Test {
         // Lower bound is 1 wei: the spread (amountIn - amountOut) is at least 1 wei for amountIn >= 1
         // because integer truncation of (amountIn * 1000 / 1001) loses fractional stETH, which is
         // required for the totalAssets-must-strictly-increase assertion to hold.
-        uint256 armSteth = steth.balanceOf(address(etherARM));
+        uint256 armSteth = peg18.balanceOf(address(arm));
         uint256 maxAmountIn = armSteth.mulDiv(SELL_PRICE_NUMERATOR, SELL_PRICE_DENOMINATOR);
-        uint256 amountIn = _bound(uint256(wethAmount), 1, maxAmountIn);
+        uint256 amountIn = _bound(uint256(liquidityAmount), 1, maxAmountIn);
 
         // Expected output is computed without going through the contract's PRICE_SCALE path, so a
         // bug that swaps numerator/denominator or changes the sell price would be caught here.
@@ -210,51 +229,51 @@ contract Unit_Fuzz_EtherARM_Swap_Test is Unit_EtherARM_Shared_Test {
         // stETH balance and turn revert paths into spurious failures.
         assertLe(expectedAmountOut, armSteth, "amountOut exceeds ARM stETH balance");
 
-        deal(address(weth), alice, amountIn);
+        deal(address(liquidity), alice, amountIn);
 
-        uint256 feeAccruedBefore = etherARM.feesAccrued();
-        assertEq(weth.balanceOf(alice), amountIn);
-        uint256 stethBalanceBefore = steth.balanceOf(alice);
+        uint256 feeAccruedBefore = arm.feesAccrued();
+        assertEq(liquidity.balanceOf(alice), amountIn);
+        uint256 peg18BalanceBefore = peg18.balanceOf(alice);
 
-        uint256 buyLiquidityBefore = buyLiquidityRemaining(steth);
-        uint256 sellLiquidityBefore = sellLiquidityRemaining(steth);
-        uint256 armWethBefore = weth.balanceOf(address(etherARM));
-        uint256 armStethBefore = steth.balanceOf(address(etherARM));
-        uint256 totalAssetsBefore = etherARM.totalAssets();
+        uint256 buyLiquidityBefore = buyLiquidityRemaining(peg18);
+        uint256 sellLiquidityBefore = sellLiquidityRemaining(peg18);
+        uint256 armWethBefore = liquidity.balanceOf(address(arm));
+        uint256 armStethBefore = peg18.balanceOf(address(arm));
+        uint256 totalAssetsBefore = arm.totalAssets();
 
         // Expect events
-        vm.expectEmit({emitter: address(weth)});
-        emit IERC20.Transfer(alice, address(etherARM), amountIn);
-        vm.expectEmit({emitter: address(steth)});
-        emit IERC20.Transfer(address(etherARM), alice, expectedAmountOut);
+        vm.expectEmit({emitter: address(liquidity)});
+        emit IERC20.Transfer(alice, address(arm), amountIn);
+        vm.expectEmit({emitter: address(peg18)});
+        emit IERC20.Transfer(address(arm), alice, expectedAmountOut);
 
         // When
         vm.prank(alice);
-        uint256[] memory amounts = etherARM.swapExactTokensForTokens(weth, steth, amountIn, expectedAmountOut, alice);
+        uint256[] memory amounts = arm.swapExactTokensForTokens(liquidity, peg18, amountIn, expectedAmountOut, alice);
 
         // Then
         // No fees on sell side: feesAccrued must stay exactly where it was.
-        assertEq(etherARM.feesAccrued(), feeAccruedBefore);
-        assertEq(buyLiquidityRemaining(steth), buyLiquidityBefore);
-        assertEq(sellLiquidityRemaining(steth), sellLiquidityBefore - expectedAmountOut);
-        assertEq(weth.balanceOf(alice), 0);
-        assertEq(steth.balanceOf(alice), stethBalanceBefore + expectedAmountOut);
-        assertEq(weth.balanceOf(address(etherARM)), armWethBefore + amountIn);
-        assertEq(steth.balanceOf(address(etherARM)), armStethBefore - expectedAmountOut);
+        assertEq(arm.feesAccrued(), feeAccruedBefore);
+        assertEq(buyLiquidityRemaining(peg18), buyLiquidityBefore);
+        assertEq(sellLiquidityRemaining(peg18), sellLiquidityBefore - expectedAmountOut);
+        assertEq(liquidity.balanceOf(alice), 0);
+        assertEq(peg18.balanceOf(alice), peg18BalanceBefore + expectedAmountOut);
+        assertEq(liquidity.balanceOf(address(arm)), armWethBefore + amountIn);
+        assertEq(peg18.balanceOf(address(arm)), armStethBefore - expectedAmountOut);
         assertEq(amounts.length, 2);
         assertEq(amounts[0], amountIn);
         assertEq(amounts[1], expectedAmountOut);
-        assertGt(etherARM.totalAssets(), totalAssetsBefore);
-        assertEq(etherARM.totalAssets(), totalAssetsBefore + expectedTotalAssetsIncrease);
+        assertGt(arm.totalAssets(), totalAssetsBefore);
+        assertEq(arm.totalAssets(), totalAssetsBefore + expectedTotalAssetsIncrease);
     }
 
     function testFuzz_SwapExactTokensForTokens_Weth_To_Steth_SellPrice(uint128 fuzzedSellPrice) public {
         // Isolate the price dimension: amountIn is fixed so any failure points at the price math
         // rather than at amount bounding or liquidity exhaustion.
         uint256 amountIn = 25 ether;
-        uint256 stethSeed = 50_000 ether;
-        deal(address(steth), address(etherARM), stethSeed);
-        deal(address(weth), alice, amountIn);
+        uint256 peg18Seed = 50_000 ether;
+        deal(address(peg18), address(arm), peg18Seed);
+        deal(address(liquidity), alice, amountIn);
 
         // Valid sellPrice range from AbstractARM._validatePrices: sellPrice >= crossPrice.
         // Use crossPrice + 1 as the lower bound to guarantee a strictly positive spread, which is
@@ -262,15 +281,13 @@ contract Unit_Fuzz_EtherARM_Swap_Test is Unit_EtherARM_Shared_Test {
         // Reuse the existing buyPrice from setUp() — _validatePrices also requires buyPrice < crossPrice.
         uint256 sellPriceFuzzed;
         {
-            uint256 crossPriceCurrent = crossPrice(steth);
+            uint256 crossPriceCurrent = crossPrice(peg18);
             sellPriceFuzzed = _bound(uint256(fuzzedSellPrice), crossPriceCurrent + 1, type(uint128).max);
 
             // Resolve every setPrices arg before the prank so no view-call between them consumes it.
-            uint128 buyPriceArg = uint128(buyPrice(steth));
+            uint128 buyPriceArg = uint128(buyPrice(peg18));
             vm.prank(governor);
-            etherARM.setPrices(
-                address(steth), buyPriceArg, uint128(sellPriceFuzzed), type(uint128).max, type(uint128).max
-            );
+            arm.setPrices(address(peg18), buyPriceArg, uint128(sellPriceFuzzed), type(uint128).max, type(uint128).max);
         }
 
         // amountOut = amountIn * PRICE_SCALE / sellPrice (pegged base asset, no adapter conversion).
@@ -282,52 +299,52 @@ contract Unit_Fuzz_EtherARM_Swap_Test is Unit_EtherARM_Shared_Test {
         // Property guard: sellPrice > crossPrice guarantees amountOut < amountIn (trader pays the spread).
         assertLt(expectedAmountOut, amountIn);
 
-        uint256 buyLiquidityBefore = buyLiquidityRemaining(steth);
-        uint256 sellLiquidityBefore = sellLiquidityRemaining(steth);
-        uint256 armWethBefore = weth.balanceOf(address(etherARM));
-        uint256 totalAssetsBefore = etherARM.totalAssets();
+        uint256 buyLiquidityBefore = buyLiquidityRemaining(peg18);
+        uint256 sellLiquidityBefore = sellLiquidityRemaining(peg18);
+        uint256 armWethBefore = liquidity.balanceOf(address(arm));
+        uint256 totalAssetsBefore = arm.totalAssets();
 
         // Expect events
-        vm.expectEmit({emitter: address(weth)});
-        emit IERC20.Transfer(alice, address(etherARM), amountIn);
-        vm.expectEmit({emitter: address(steth)});
-        emit IERC20.Transfer(address(etherARM), alice, expectedAmountOut);
+        vm.expectEmit({emitter: address(liquidity)});
+        emit IERC20.Transfer(alice, address(arm), amountIn);
+        vm.expectEmit({emitter: address(peg18)});
+        emit IERC20.Transfer(address(arm), alice, expectedAmountOut);
 
         // When
         vm.prank(alice);
-        uint256[] memory amounts = etherARM.swapExactTokensForTokens(weth, steth, amountIn, expectedAmountOut, alice);
+        uint256[] memory amounts = arm.swapExactTokensForTokens(liquidity, peg18, amountIn, expectedAmountOut, alice);
 
         // Then
         // No fees on sell side: feesAccrued must stay at 0.
-        assertEq(etherARM.feesAccrued(), 0);
-        assertEq(buyLiquidityRemaining(steth), buyLiquidityBefore);
-        assertEq(sellLiquidityRemaining(steth), sellLiquidityBefore - expectedAmountOut);
-        assertEq(weth.balanceOf(alice), 0);
-        assertEq(steth.balanceOf(alice), expectedAmountOut);
-        assertEq(weth.balanceOf(address(etherARM)), armWethBefore + amountIn);
-        assertEq(steth.balanceOf(address(etherARM)), stethSeed - expectedAmountOut);
+        assertEq(arm.feesAccrued(), 0);
+        assertEq(buyLiquidityRemaining(peg18), buyLiquidityBefore);
+        assertEq(sellLiquidityRemaining(peg18), sellLiquidityBefore - expectedAmountOut);
+        assertEq(liquidity.balanceOf(alice), 0);
+        assertEq(peg18.balanceOf(alice), expectedAmountOut);
+        assertEq(liquidity.balanceOf(address(arm)), armWethBefore + amountIn);
+        assertEq(peg18.balanceOf(address(arm)), peg18Seed - expectedAmountOut);
         assertEq(amounts.length, 2);
         assertEq(amounts[0], amountIn);
         assertEq(amounts[1], expectedAmountOut);
-        assertGt(etherARM.totalAssets(), totalAssetsBefore);
+        assertGt(arm.totalAssets(), totalAssetsBefore);
         // Exact equality on the sell side: no fee path runs, so no rounding tolerance is needed.
-        assertEq(etherARM.totalAssets(), totalAssetsBefore + expectedTotalAssetsIncrease);
+        assertEq(arm.totalAssets(), totalAssetsBefore + expectedTotalAssetsIncrease);
     }
 
     //////////////////////////////////////////////////////
     /// ---   SwapTokensForExactTokens (exact output)  ---
     //////////////////////////////////////////////////////
 
-    function testFuzz_SwapTokensForExactTokens_Steth_To_Weth_Amount(uint128 wethAmount) public {
+    function testFuzz_SwapTokensForExactTokens_Steth_To_Weth_Amount(uint128 liquidityAmount) public {
         // Seed WETH liquidity so the ARM can pay out the exact amountOut to the trader.
-        uint256 wethSeed = 50_000 ether;
-        deal(address(weth), address(etherARM), wethSeed);
+        uint256 liquiditySeed = 50_000 ether;
+        deal(address(liquidity), address(arm), liquiditySeed);
 
         // amountOut (WETH) is bounded by the ARM's WETH balance.
         // Lower bound is 1 wei: even at amountOut = 1, the 3 wei rounding buffer gives a positive
         // spread so the totalAssets-must-strictly-increase assertion holds.
-        uint256 armWeth = weth.balanceOf(address(etherARM));
-        uint256 amountOut = _bound(uint256(wethAmount), 1, armWeth);
+        uint256 armWeth = liquidity.balanceOf(address(arm));
+        uint256 amountOut = _bound(uint256(liquidityAmount), 1, armWeth);
 
         // amountIn = amountOut * 1000 / 992 + 3 (mathematical equivalent of
         // contract's amountOut * PRICE_SCALE / buyPrice + 3). Going through the simple ratio
@@ -336,65 +353,65 @@ contract Unit_Fuzz_EtherARM_Swap_Test is Unit_EtherARM_Shared_Test {
         uint256 expectedTotalAssetsIncrease = expectedAmountIn - amountOut;
         uint256 expectedFee = expectedTotalAssetsIncrease.mulDiv(DEFAULT_FEE, FEE_SCALE);
 
-        deal(address(steth), alice, expectedAmountIn);
+        deal(address(peg18), alice, expectedAmountIn);
 
-        assertEq(etherARM.feesAccrued(), 0);
-        assertEq(weth.balanceOf(alice), 0);
-        assertEq(steth.balanceOf(alice), expectedAmountIn);
+        assertEq(arm.feesAccrued(), 0);
+        assertEq(liquidity.balanceOf(alice), 0);
+        assertEq(peg18.balanceOf(alice), expectedAmountIn);
 
-        uint256 buyLiquidityBefore = buyLiquidityRemaining(steth);
-        uint256 sellLiquidityBefore = sellLiquidityRemaining(steth);
-        uint256 armWethBefore = weth.balanceOf(address(etherARM));
-        uint256 armStethBefore = steth.balanceOf(address(etherARM));
-        uint256 totalAssetsBefore = etherARM.totalAssets();
+        uint256 buyLiquidityBefore = buyLiquidityRemaining(peg18);
+        uint256 sellLiquidityBefore = sellLiquidityRemaining(peg18);
+        uint256 armWethBefore = liquidity.balanceOf(address(arm));
+        uint256 armStethBefore = peg18.balanceOf(address(arm));
+        uint256 totalAssetsBefore = arm.totalAssets();
 
         // Expect events
-        vm.expectEmit({emitter: address(steth)});
-        emit IERC20.Transfer(alice, address(etherARM), expectedAmountIn);
-        vm.expectEmit({emitter: address(weth)});
-        emit IERC20.Transfer(address(etherARM), alice, amountOut);
+        vm.expectEmit({emitter: address(peg18)});
+        emit IERC20.Transfer(alice, address(arm), expectedAmountIn);
+        vm.expectEmit({emitter: address(liquidity)});
+        emit IERC20.Transfer(address(arm), alice, amountOut);
 
         // When
         vm.prank(alice);
-        uint256[] memory amounts = etherARM.swapTokensForExactTokens(steth, weth, amountOut, expectedAmountIn, alice);
+        uint256[] memory amounts = arm.swapTokensForExactTokens(peg18, liquidity, amountOut, expectedAmountIn, alice);
 
         // Then
         // Note: Temporary 1 wei tolerance while the fee rounding issue is being fixed.
-        assertApproxEqAbs(etherARM.feesAccrued(), expectedFee, 1);
-        assertEq(buyLiquidityRemaining(steth), buyLiquidityBefore - amountOut);
-        assertEq(sellLiquidityRemaining(steth), sellLiquidityBefore);
-        assertEq(weth.balanceOf(alice), amountOut);
-        assertEq(steth.balanceOf(alice), 0);
-        assertEq(weth.balanceOf(address(etherARM)), armWethBefore - amountOut);
-        assertEq(steth.balanceOf(address(etherARM)), armStethBefore + expectedAmountIn);
+        assertApproxEqAbs(arm.feesAccrued(), expectedFee, 1);
+        assertEq(buyLiquidityRemaining(peg18), buyLiquidityBefore - amountOut);
+        assertEq(sellLiquidityRemaining(peg18), sellLiquidityBefore);
+        assertEq(liquidity.balanceOf(alice), amountOut);
+        assertEq(peg18.balanceOf(alice), 0);
+        assertEq(liquidity.balanceOf(address(arm)), armWethBefore - amountOut);
+        assertEq(peg18.balanceOf(address(arm)), armStethBefore + expectedAmountIn);
         assertEq(amounts.length, 2);
         assertEq(amounts[0], expectedAmountIn);
         assertEq(amounts[1], amountOut);
-        assertGt(etherARM.totalAssets(), totalAssetsBefore);
+        assertGt(arm.totalAssets(), totalAssetsBefore);
         // Note: Temporary 1 wei tolerance while the fee rounding issue is being fixed.
-        assertApproxEqAbs(etherARM.totalAssets(), totalAssetsBefore + expectedTotalAssetsIncrease - expectedFee, 1);
+        assertApproxEqAbs(arm.totalAssets(), totalAssetsBefore + expectedTotalAssetsIncrease - expectedFee, 1);
     }
 
     function testFuzz_SwapTokensForExactTokens_Steth_To_Weth_BuyPrice(uint128 fuzzedBuyPrice) public {
         // Isolate the price dimension: amountOut is fixed so any failure points at the price/fee math
         // rather than at amount bounding or liquidity exhaustion.
         uint256 amountOut = 50 ether;
-        uint256 wethSeed = 50_000 ether;
-        deal(address(weth), address(etherARM), wethSeed);
+        uint256 liquiditySeed = 50_000 ether;
+        deal(address(liquidity), address(arm), liquiditySeed);
 
         // Valid buyPrice range from AbstractARM._validatePrices:
         // buyPrice >= MAX_CROSS_PRICE_DEVIATION (20e32) and buyPrice < crossPrice (1e36 here).
         uint256 spread;
         uint256 buyPriceFuzzed;
         {
-            uint256 crossPriceCurrent = crossPrice(steth);
+            uint256 crossPriceCurrent = crossPrice(peg18);
             buyPriceFuzzed = _bound(uint256(fuzzedBuyPrice), MAX_CROSS_PRICE_DEVIATION, crossPriceCurrent - 1);
             spread = crossPriceCurrent - buyPriceFuzzed;
 
             // Resolve every setPrices arg before the prank so no view-call between them consumes it.
-            uint128 sellPriceArg = uint128(sellPrice(steth));
+            uint128 sellPriceArg = uint128(sellPrice(peg18));
             vm.prank(governor);
-            etherARM.setPrices(address(steth), buyPriceFuzzed, sellPriceArg, type(uint128).max, type(uint128).max);
+            arm.setPrices(address(peg18), buyPriceFuzzed, sellPriceArg, type(uint128).max, type(uint128).max);
         }
 
         // expectedAmountIn uses the same scaling as the contract because there is no algebraic
@@ -413,54 +430,54 @@ contract Unit_Fuzz_EtherARM_Swap_Test is Unit_EtherARM_Shared_Test {
         // Property guard: buyPrice < crossPrice guarantees amountIn > amountOut (trader pays the spread).
         assertGt(expectedAmountIn, amountOut);
 
-        deal(address(steth), alice, expectedAmountIn);
+        deal(address(peg18), alice, expectedAmountIn);
 
-        uint256 buyLiquidityBefore = buyLiquidityRemaining(steth);
-        uint256 sellLiquidityBefore = sellLiquidityRemaining(steth);
-        uint256 totalAssetsBefore = etherARM.totalAssets();
+        uint256 buyLiquidityBefore = buyLiquidityRemaining(peg18);
+        uint256 sellLiquidityBefore = sellLiquidityRemaining(peg18);
+        uint256 totalAssetsBefore = arm.totalAssets();
 
         // Expect events
-        vm.expectEmit({emitter: address(steth)});
-        emit IERC20.Transfer(alice, address(etherARM), expectedAmountIn);
-        vm.expectEmit({emitter: address(weth)});
-        emit IERC20.Transfer(address(etherARM), alice, amountOut);
+        vm.expectEmit({emitter: address(peg18)});
+        emit IERC20.Transfer(alice, address(arm), expectedAmountIn);
+        vm.expectEmit({emitter: address(liquidity)});
+        emit IERC20.Transfer(address(arm), alice, amountOut);
 
         // When
         vm.prank(alice);
-        uint256[] memory amounts = etherARM.swapTokensForExactTokens(steth, weth, amountOut, expectedAmountIn, alice);
+        uint256[] memory amounts = arm.swapTokensForExactTokens(peg18, liquidity, amountOut, expectedAmountIn, alice);
 
         // Then
         // Tolerance of 2 wei: each formula truncates at a different step, so they can disagree by
         // up to 1 wei from rounding, plus the contract's PRICE_SCALE intermediate truncation can
         // shift the result by another wei at extreme prices.
-        assertApproxEqAbs(etherARM.feesAccrued(), expectedFee, 2);
-        assertEq(buyLiquidityRemaining(steth), buyLiquidityBefore - amountOut);
-        assertEq(sellLiquidityRemaining(steth), sellLiquidityBefore);
-        assertEq(weth.balanceOf(alice), amountOut);
-        assertEq(steth.balanceOf(alice), 0);
+        assertApproxEqAbs(arm.feesAccrued(), expectedFee, 2);
+        assertEq(buyLiquidityRemaining(peg18), buyLiquidityBefore - amountOut);
+        assertEq(sellLiquidityRemaining(peg18), sellLiquidityBefore);
+        assertEq(liquidity.balanceOf(alice), amountOut);
+        assertEq(peg18.balanceOf(alice), 0);
         // The ARM started with the WETH seed and zero stETH; the swap moves amountOut WETH out
         // and expectedAmountIn stETH in.
-        assertEq(weth.balanceOf(address(etherARM)), wethSeed - amountOut);
-        assertEq(steth.balanceOf(address(etherARM)), expectedAmountIn);
+        assertEq(liquidity.balanceOf(address(arm)), liquiditySeed - amountOut);
+        assertEq(peg18.balanceOf(address(arm)), expectedAmountIn);
         assertEq(amounts.length, 2);
         assertEq(amounts[0], expectedAmountIn);
         assertEq(amounts[1], amountOut);
         // fee = gain * feeRate / FEE_SCALE algebraically, so with feeRate = 20% < 100% the gain
         // always exceeds the fee and totalAssets must strictly increase.
-        assertGt(etherARM.totalAssets(), totalAssetsBefore);
-        assertApproxEqAbs(etherARM.totalAssets(), totalAssetsBefore + expectedTotalAssetsIncrease - expectedFee, 2);
+        assertGt(arm.totalAssets(), totalAssetsBefore);
+        assertApproxEqAbs(arm.totalAssets(), totalAssetsBefore + expectedTotalAssetsIncrease - expectedFee, 2);
     }
 
-    function testFuzz_SwapTokensForExactTokens_Weth_To_Steth_Amount(uint128 stethAmount) public {
+    function testFuzz_SwapTokensForExactTokens_Weth_To_Steth_Amount(uint128 peg18Amount) public {
         // Seed stETH liquidity so the ARM can pay out the exact amountOut to the trader.
         uint256 armStethSeed = 50_000 ether;
-        deal(address(steth), address(etherARM), armStethSeed);
+        deal(address(peg18), address(arm), armStethSeed);
 
         // amountOut (stETH) is bounded by the ARM's stETH balance.
         // Lower bound is 1 wei: even at amountOut = 1, the 3 wei rounding buffer gives a positive
         // spread so the totalAssets-must-strictly-increase assertion holds.
-        uint256 armSteth = steth.balanceOf(address(etherARM));
-        uint256 amountOut = _bound(uint256(stethAmount), 1, armSteth);
+        uint256 armSteth = peg18.balanceOf(address(arm));
+        uint256 amountOut = _bound(uint256(peg18Amount), 1, armSteth);
 
         // amountIn = amountOut * 1001 / 1000 + 3 (mathematical equivalent of
         // contract's amountOut * sellPrice / PRICE_SCALE + 3). Going through the simple ratio
@@ -468,65 +485,63 @@ contract Unit_Fuzz_EtherARM_Swap_Test is Unit_EtherARM_Shared_Test {
         uint256 expectedAmountIn = amountOut.mulDiv(SELL_PRICE_NUMERATOR, SELL_PRICE_DENOMINATOR) + ROUNDING_BUFFER;
         uint256 expectedTotalAssetsIncrease = expectedAmountIn - amountOut;
 
-        deal(address(weth), alice, expectedAmountIn);
+        deal(address(liquidity), alice, expectedAmountIn);
 
-        uint256 feeAccruedBefore = etherARM.feesAccrued();
-        assertEq(weth.balanceOf(alice), expectedAmountIn);
-        uint256 stethBalanceBefore = steth.balanceOf(alice);
+        uint256 feeAccruedBefore = arm.feesAccrued();
+        assertEq(liquidity.balanceOf(alice), expectedAmountIn);
+        uint256 peg18BalanceBefore = peg18.balanceOf(alice);
 
-        uint256 buyLiquidityBefore = buyLiquidityRemaining(steth);
-        uint256 sellLiquidityBefore = sellLiquidityRemaining(steth);
-        uint256 armWethBefore = weth.balanceOf(address(etherARM));
-        uint256 armStethBefore = steth.balanceOf(address(etherARM));
-        uint256 totalAssetsBefore = etherARM.totalAssets();
+        uint256 buyLiquidityBefore = buyLiquidityRemaining(peg18);
+        uint256 sellLiquidityBefore = sellLiquidityRemaining(peg18);
+        uint256 armWethBefore = liquidity.balanceOf(address(arm));
+        uint256 armStethBefore = peg18.balanceOf(address(arm));
+        uint256 totalAssetsBefore = arm.totalAssets();
 
         // Expect events
-        vm.expectEmit({emitter: address(weth)});
-        emit IERC20.Transfer(alice, address(etherARM), expectedAmountIn);
-        vm.expectEmit({emitter: address(steth)});
-        emit IERC20.Transfer(address(etherARM), alice, amountOut);
+        vm.expectEmit({emitter: address(liquidity)});
+        emit IERC20.Transfer(alice, address(arm), expectedAmountIn);
+        vm.expectEmit({emitter: address(peg18)});
+        emit IERC20.Transfer(address(arm), alice, amountOut);
 
         // When
         vm.prank(alice);
-        uint256[] memory amounts = etherARM.swapTokensForExactTokens(weth, steth, amountOut, expectedAmountIn, alice);
+        uint256[] memory amounts = arm.swapTokensForExactTokens(liquidity, peg18, amountOut, expectedAmountIn, alice);
 
         // Then
         // No fees on sell side: feesAccrued must stay exactly where it was.
-        assertEq(etherARM.feesAccrued(), feeAccruedBefore);
-        assertEq(buyLiquidityRemaining(steth), buyLiquidityBefore);
-        assertEq(sellLiquidityRemaining(steth), sellLiquidityBefore - amountOut);
-        assertEq(weth.balanceOf(alice), 0);
-        assertEq(steth.balanceOf(alice), stethBalanceBefore + amountOut);
-        assertEq(weth.balanceOf(address(etherARM)), armWethBefore + expectedAmountIn);
-        assertEq(steth.balanceOf(address(etherARM)), armStethBefore - amountOut);
+        assertEq(arm.feesAccrued(), feeAccruedBefore);
+        assertEq(buyLiquidityRemaining(peg18), buyLiquidityBefore);
+        assertEq(sellLiquidityRemaining(peg18), sellLiquidityBefore - amountOut);
+        assertEq(liquidity.balanceOf(alice), 0);
+        assertEq(peg18.balanceOf(alice), peg18BalanceBefore + amountOut);
+        assertEq(liquidity.balanceOf(address(arm)), armWethBefore + expectedAmountIn);
+        assertEq(peg18.balanceOf(address(arm)), armStethBefore - amountOut);
         assertEq(amounts.length, 2);
         assertEq(amounts[0], expectedAmountIn);
         assertEq(amounts[1], amountOut);
-        assertGt(etherARM.totalAssets(), totalAssetsBefore);
-        assertEq(etherARM.totalAssets(), totalAssetsBefore + expectedTotalAssetsIncrease);
+        assertGt(arm.totalAssets(), totalAssetsBefore);
+        assertEq(arm.totalAssets(), totalAssetsBefore + expectedTotalAssetsIncrease);
     }
 
     function testFuzz_SwapTokensForExactTokens_Weth_To_Steth_SellPrice(uint128 fuzzedSellPrice) public {
         // Isolate the price dimension: amountOut is fixed so any failure points at the price math
         // rather than at amount bounding or liquidity exhaustion.
         uint256 amountOut = 25 ether;
-        uint256 stethSeed = 50_000 ether;
-        deal(address(steth), address(etherARM), stethSeed);
+        uint256 peg18Seed = 50_000 ether;
+        deal(address(peg18), address(arm), peg18Seed);
 
         // Valid sellPrice range from AbstractARM._validatePrices: sellPrice >= crossPrice.
         // Use crossPrice + 1 as the lower bound to guarantee a strictly positive spread, which is
         // required for the totalAssets-must-strictly-increase assertion.
         uint256 sellPriceFuzzed;
         {
-            uint256 crossPriceCurrent = crossPrice(steth);
+            uint256 crossPriceCurrent = crossPrice(peg18);
             sellPriceFuzzed = _bound(uint256(fuzzedSellPrice), crossPriceCurrent + 1, type(uint128).max);
 
             // Resolve every setPrices arg before the prank so no view-call between them consumes it.
-            uint128 buyPriceArg = uint128(buyPrice(steth));
+            uint128 buyPriceArg = uint128(buyPrice(peg18));
             vm.prank(governor);
-            etherARM.setPrices(
-                address(steth), buyPriceArg, uint128(sellPriceFuzzed), type(uint128).max, type(uint128).max
-            );
+            arm.setPrices(address(peg18), buyPriceArg, uint128(sellPriceFuzzed), type(uint128).max, type(uint128).max);
         }
 
         // amountIn = amountOut * sellPrice / PRICE_SCALE + 3 (pegged base asset, no adapter conversion).
@@ -538,37 +553,37 @@ contract Unit_Fuzz_EtherARM_Swap_Test is Unit_EtherARM_Shared_Test {
         // Property guard: sellPrice > crossPrice guarantees amountIn > amountOut (trader pays the spread).
         assertGt(expectedAmountIn, amountOut);
 
-        deal(address(weth), alice, expectedAmountIn);
+        deal(address(liquidity), alice, expectedAmountIn);
 
-        uint256 buyLiquidityBefore = buyLiquidityRemaining(steth);
-        uint256 sellLiquidityBefore = sellLiquidityRemaining(steth);
-        uint256 armWethBefore = weth.balanceOf(address(etherARM));
-        uint256 totalAssetsBefore = etherARM.totalAssets();
+        uint256 buyLiquidityBefore = buyLiquidityRemaining(peg18);
+        uint256 sellLiquidityBefore = sellLiquidityRemaining(peg18);
+        uint256 armWethBefore = liquidity.balanceOf(address(arm));
+        uint256 totalAssetsBefore = arm.totalAssets();
 
         // Expect events
-        vm.expectEmit({emitter: address(weth)});
-        emit IERC20.Transfer(alice, address(etherARM), expectedAmountIn);
-        vm.expectEmit({emitter: address(steth)});
-        emit IERC20.Transfer(address(etherARM), alice, amountOut);
+        vm.expectEmit({emitter: address(liquidity)});
+        emit IERC20.Transfer(alice, address(arm), expectedAmountIn);
+        vm.expectEmit({emitter: address(peg18)});
+        emit IERC20.Transfer(address(arm), alice, amountOut);
 
         // When
         vm.prank(alice);
-        uint256[] memory amounts = etherARM.swapTokensForExactTokens(weth, steth, amountOut, expectedAmountIn, alice);
+        uint256[] memory amounts = arm.swapTokensForExactTokens(liquidity, peg18, amountOut, expectedAmountIn, alice);
 
         // Then
         // No fees on sell side: feesAccrued must stay at 0.
-        assertEq(etherARM.feesAccrued(), 0);
-        assertEq(buyLiquidityRemaining(steth), buyLiquidityBefore);
-        assertEq(sellLiquidityRemaining(steth), sellLiquidityBefore - amountOut);
-        assertEq(weth.balanceOf(alice), 0);
-        assertEq(steth.balanceOf(alice), amountOut);
-        assertEq(weth.balanceOf(address(etherARM)), armWethBefore + expectedAmountIn);
-        assertEq(steth.balanceOf(address(etherARM)), stethSeed - amountOut);
+        assertEq(arm.feesAccrued(), 0);
+        assertEq(buyLiquidityRemaining(peg18), buyLiquidityBefore);
+        assertEq(sellLiquidityRemaining(peg18), sellLiquidityBefore - amountOut);
+        assertEq(liquidity.balanceOf(alice), 0);
+        assertEq(peg18.balanceOf(alice), amountOut);
+        assertEq(liquidity.balanceOf(address(arm)), armWethBefore + expectedAmountIn);
+        assertEq(peg18.balanceOf(address(arm)), peg18Seed - amountOut);
         assertEq(amounts.length, 2);
         assertEq(amounts[0], expectedAmountIn);
         assertEq(amounts[1], amountOut);
-        assertGt(etherARM.totalAssets(), totalAssetsBefore);
+        assertGt(arm.totalAssets(), totalAssetsBefore);
         // Exact equality on the sell side: no fee path runs, so no rounding tolerance is needed.
-        assertEq(etherARM.totalAssets(), totalAssetsBefore + expectedTotalAssetsIncrease);
+        assertEq(arm.totalAssets(), totalAssetsBefore + expectedTotalAssetsIncrease);
     }
 }

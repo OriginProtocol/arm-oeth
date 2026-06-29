@@ -2,7 +2,7 @@
 pragma solidity 0.8.23;
 
 // Test
-import {Unit_EtherARM_Shared_Test} from "../../EtherARM/Shared.t.sol";
+import {Unit_Lido_Shared_Test} from "../shared/Shared.t.sol";
 
 // Contracts
 import {AbstractLidoAssetAdapter} from "contracts/adapters/AbstractLidoAssetAdapter.sol";
@@ -65,7 +65,7 @@ contract ExposedLidoAdapter is AbstractLidoAssetAdapter {
 ///         functions feed `requestRedeem` and their invariants are essential to
 ///         the ARM's withdrawal accounting (queue chunks sum to the request,
 ///         share splits sum to the user's redeem amount).
-contract Unit_Fuzz_LidoARM_Split_Test is Unit_EtherARM_Shared_Test {
+contract Unit_Fuzz_LidoARM_Split_Test is Unit_Lido_Shared_Test {
     ExposedLidoAdapter internal exposed;
     uint256 internal MAX;
 

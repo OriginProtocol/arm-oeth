@@ -292,7 +292,7 @@
             "name": "034_UpgradeEthenaARMGetBaseAssetsScript",
             "proposalId": 1,
             "tsDeployment": 1781855555,
-            "tsGovernance": 0
+            "tsGovernance": 1
         }
     ]
 }

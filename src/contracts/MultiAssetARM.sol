@@ -4,27 +4,32 @@ pragma solidity ^0.8.23;
 import {AbstractARM} from "./AbstractARM.sol";
 
 /**
- * @title Ether Automated Redemption Manager (ARM)
- * @dev This implementation supports multiple Liquidity Providers (LPs) with single buy and sell prices.
- * It also integrates to a CapManager contract that caps the amount of assets a liquidity provider
- * can deposit and caps the ARM's total assets.
- * A fee is accrued on discounted base-asset buy swaps.
+ * @title Multi-Asset Automated Redemption Manager (ARM)
+ * @notice A generic ARM that manages a single liquidity asset and multiple base assets. The liquidity asset
+ * can have 6 or 18 decimals (e.g. USDC or WETH); base assets can independently have 6 or 18 decimals and be
+ * either pegged 1:1 to the liquidity asset or redeemed through an external adapter. The decimal scaling and
+ * validation are handled entirely by {AbstractARM}, so no asset-specific logic lives here.
+ * @dev Supports multiple Liquidity Providers (LPs) with single buy and sell prices per base asset.
+ * It also integrates a CapManager contract that caps the amount of assets a liquidity provider can deposit
+ * and caps the ARM's total assets. A fee is accrued on discounted base-asset buy swaps.
  * @author Origin Protocol Inc
  */
-contract EtherARM is AbstractARM {
-    /// @param _weth The address of the WETH token
+contract MultiAssetARM is AbstractARM {
+    /// @param _liquidityAsset The address of the liquidity (quote) asset, e.g. USDC (6 decimals) or WETH
+    /// (18 decimals). Must have 6 or 18 decimals.
     /// @param _claimDelay The delay in seconds before a user can claim a redeem from the request
     /// @param _minSharesToRedeem The minimum amount of shares to redeem from the active lending market
     /// @param _allocateThreshold The minimum amount of liquidity assets in excess of the ARM buffer before
     /// the ARM can allocate to a active lending market.
-    constructor(address _weth, uint256 _claimDelay, uint256 _minSharesToRedeem, int256 _allocateThreshold)
-        AbstractARM(_weth, _claimDelay, _minSharesToRedeem, _allocateThreshold)
+    constructor(address _liquidityAsset, uint256 _claimDelay, uint256 _minSharesToRedeem, int256 _allocateThreshold)
+        AbstractARM(_liquidityAsset, _claimDelay, _minSharesToRedeem, _allocateThreshold)
     {
         _disableInitializers();
     }
 
     /// @notice Initialize the storage variables stored in the proxy contract.
-    /// The deployer that calls initialize has to approve the ARM's proxy contract to transfer 1e12 WETH.
+    /// The deployer that calls initialize has to approve the ARM's proxy contract to transfer MIN_LIQUIDITY of
+    /// the liquidity asset (1e12 for an 18-decimal asset, 1 for a 6-decimal asset).
     /// @param _name The name of the liquidity provider (LP) token.
     /// @param _symbol The symbol of the liquidity provider (LP) token.
     /// @param _operator The address of the account that can request and claim base-asset redemptions.

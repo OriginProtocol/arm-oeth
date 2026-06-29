@@ -2,7 +2,7 @@
 pragma solidity 0.8.23;
 
 // Test
-import {Unit_EtherARM_Shared_Test} from "../../EtherARM/Shared.t.sol";
+import {Unit_Lido_Shared_Test} from "../shared/Shared.t.sol";
 
 // Contracts
 import {AbstractLidoAssetAdapter} from "contracts/adapters/AbstractLidoAssetAdapter.sol";
@@ -70,7 +70,7 @@ contract TestableLidoAdapter is AbstractLidoAssetAdapter {
 ///         shipped concrete adapters under consistent math, so we drive them
 ///         through a `TestableLidoAdapter` that injects arbitrary values for
 ///         `_pullSharesAndConvertToSteth` and `_assetsToShares`.
-contract Unit_LidoARM_AbstractLidoAssetAdapter_Test is Unit_EtherARM_Shared_Test {
+contract Unit_LidoARM_AbstractLidoAssetAdapter_Test is Unit_Lido_Shared_Test {
     TestableLidoAdapter internal testableAdapter;
 
     function setUp() public override {

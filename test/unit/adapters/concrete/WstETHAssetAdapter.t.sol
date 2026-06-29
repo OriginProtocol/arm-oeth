@@ -2,7 +2,7 @@
 pragma solidity 0.8.23;
 
 // Test
-import {Unit_EtherARM_Shared_Test} from "../../EtherARM/Shared.t.sol";
+import {Unit_Lido_Shared_Test} from "../shared/Shared.t.sol";
 
 /// @notice Non-1:1 unit tests for `AbstractLidoAssetAdapter` exercised through
 ///         `WstETHAssetAdapter`. Coverage of the wrap/unwrap path and the
@@ -13,7 +13,7 @@ import {Unit_EtherARM_Shared_Test} from "../../EtherARM/Shared.t.sol";
 ///         remainingShares` cap and `splitShares == 0` fallback) that are
 ///         unreachable with a stETH-per-wstETH rate >= 1. Those are covered via
 ///         a test-only adapter in `AbstractLidoAssetAdapter.t.sol`.
-contract Unit_LidoARM_WstETHAssetAdapter_Test is Unit_EtherARM_Shared_Test {
+contract Unit_LidoARM_WstETHAssetAdapter_Test is Unit_Lido_Shared_Test {
     uint256 internal constant ARM_WSTETH_BALANCE = 5_000 ether;
 
     function setUp() public override {
@@ -23,7 +23,7 @@ contract Unit_LidoARM_WstETHAssetAdapter_Test is Unit_EtherARM_Shared_Test {
         // exchange rate is set when the helper computes the stETH required to mint.
         seedWstETHWithTargetExchangeRate();
         addBaseAsset(wsteth);
-        dealWsteth(address(etherARM), ARM_WSTETH_BALANCE);
+        dealWsteth(address(arm), ARM_WSTETH_BALANCE);
     }
 
     //////////////////////////////////////////////////////
@@ -49,11 +49,11 @@ contract Unit_LidoARM_WstETHAssetAdapter_Test is Unit_EtherARM_Shared_Test {
         uint256 expectedStETH = 123.7 ether; // 100 * 1.237
 
         // Pre
-        assertEq(wsteth.balanceOf(address(etherARM)), ARM_WSTETH_BALANCE, "ARM wstETH pre");
+        assertEq(wsteth.balanceOf(address(arm)), ARM_WSTETH_BALANCE, "ARM wstETH pre");
         assertEq(steth.balanceOf(address(lidoWithdrawalQueue)), 0, "queue stETH pre");
 
         // When
-        vm.prank(address(etherARM));
+        vm.prank(address(arm));
         (uint256 sharesRequested, uint256 assetsExpected) = wstETHAssetAdapter.requestRedeem(shares);
 
         // Return values: shares are wstETH; assets are stETH (the asset the queue receives).
@@ -62,7 +62,7 @@ contract Unit_LidoARM_WstETHAssetAdapter_Test is Unit_EtherARM_Shared_Test {
 
         // Token flow: ARM lost wstETH; adapter holds no residual wstETH or stETH;
         // queue received the unwrapped stETH amount.
-        assertEq(wsteth.balanceOf(address(etherARM)), ARM_WSTETH_BALANCE - shares, "ARM wstETH post");
+        assertEq(wsteth.balanceOf(address(arm)), ARM_WSTETH_BALANCE - shares, "ARM wstETH post");
         assertEq(wsteth.balanceOf(address(wstETHAssetAdapter)), 0, "adapter wstETH post");
         assertEq(steth.balanceOf(address(wstETHAssetAdapter)), 0, "adapter stETH post");
         assertEq(steth.balanceOf(address(lidoWithdrawalQueue)), expectedStETH, "queue stETH post");
@@ -79,7 +79,7 @@ contract Unit_LidoARM_WstETHAssetAdapter_Test is Unit_EtherARM_Shared_Test {
         uint256 shares = 900 ether;
         uint256 expectedStETH = 1_113.3 ether;
 
-        vm.prank(address(etherARM));
+        vm.prank(address(arm));
         (, uint256 assetsExpected) = wstETHAssetAdapter.requestRedeem(shares);
         assertEq(assetsExpected, expectedStETH, "assetsExpected total");
 
@@ -105,7 +105,7 @@ contract Unit_LidoARM_WstETHAssetAdapter_Test is Unit_EtherARM_Shared_Test {
         uint256 shares = 2_000 ether;
         uint256 expectedStETH = 2_474 ether;
 
-        vm.prank(address(etherARM));
+        vm.prank(address(arm));
         (, uint256 assetsExpected) = wstETHAssetAdapter.requestRedeem(shares);
         assertEq(assetsExpected, expectedStETH, "assetsExpected total");
 
@@ -134,10 +134,10 @@ contract Unit_LidoARM_WstETHAssetAdapter_Test is Unit_EtherARM_Shared_Test {
         uint256 shares = 100 ether; // 100 wstETH
         uint256 expectedStETH = 123.7 ether;
 
-        vm.startPrank(address(etherARM));
+        vm.startPrank(address(arm));
         wstETHAssetAdapter.requestRedeem(shares);
 
-        uint256 armWethBefore = weth.balanceOf(address(etherARM));
+        uint256 armWethBefore = weth.balanceOf(address(arm));
         (uint256 sharesClaimed, uint256 assetsExpected, uint256 assetsReceived) = wstETHAssetAdapter.redeem(shares);
         vm.stopPrank();
 
@@ -146,7 +146,7 @@ contract Unit_LidoARM_WstETHAssetAdapter_Test is Unit_EtherARM_Shared_Test {
         assertEq(assetsReceived, expectedStETH, "assetsReceived (WETH)");
 
         // ARM receives WETH equal to the unwrapped stETH amount, NOT the wstETH share count.
-        assertEq(weth.balanceOf(address(etherARM)) - armWethBefore, expectedStETH, "ARM WETH delta");
+        assertEq(weth.balanceOf(address(arm)) - armWethBefore, expectedStETH, "ARM WETH delta");
         assertEq(weth.balanceOf(address(wstETHAssetAdapter)), 0, "adapter WETH post");
         assertEq(address(wstETHAssetAdapter).balance, 0, "adapter ETH post");
     }
@@ -156,7 +156,7 @@ contract Unit_LidoARM_WstETHAssetAdapter_Test is Unit_EtherARM_Shared_Test {
         // the partial-drain path with non-1:1 share/asset arithmetic.
         uint256 shares = 900 ether;
 
-        vm.startPrank(address(etherARM));
+        vm.startPrank(address(arm));
         wstETHAssetAdapter.requestRedeem(shares);
 
         uint256 id0 = wstETHAssetAdapter.pendingRequestId(0);
@@ -165,13 +165,13 @@ contract Unit_LidoARM_WstETHAssetAdapter_Test is Unit_EtherARM_Shared_Test {
         uint256 firstChunkAssets = wstETHAssetAdapter.requestAssets(id0); // 1000 stETH
         uint256 secondChunkShares = wstETHAssetAdapter.requestShares(id1);
 
-        uint256 armWethBefore = weth.balanceOf(address(etherARM));
+        uint256 armWethBefore = weth.balanceOf(address(arm));
         (uint256 sharesClaimed,, uint256 assetsReceived) = wstETHAssetAdapter.redeem(firstChunkShares);
         vm.stopPrank();
 
         assertEq(sharesClaimed, firstChunkShares, "sharesClaimed == first chunk shares");
         assertEq(assetsReceived, firstChunkAssets, "assetsReceived == first chunk stETH");
-        assertEq(weth.balanceOf(address(etherARM)) - armWethBefore, firstChunkAssets, "ARM WETH delta");
+        assertEq(weth.balanceOf(address(arm)) - armWethBefore, firstChunkAssets, "ARM WETH delta");
 
         // id0 cleared, id1 retained — nextPendingIndex moved forward by exactly one.
         assertEq(wstETHAssetAdapter.requestShares(id0), 0, "id0 cleared");
