@@ -412,7 +412,8 @@ const getArmBuffer = async (arm, blockTag) => {
   }
 };
 
-const getOutstandingWithdrawals = async (arm) => {
+const getOutstandingWithdrawals = async (arm, blockTag) => {
+  const opts = blockTag === undefined ? [] : [{ blockTag }];
   // Liquidity reserved for outstanding LP withdrawal requests (asset-denominated).
   // Legacy ARMs expose withdrawsQueued()/withdrawsClaimed(); several new ABIs
   // dropped these getters even though the deployed legacy contracts still
@@ -420,8 +421,8 @@ const getOutstandingWithdrawals = async (arm) => {
   // tracks the same amount in reservedWithdrawLiquidity().
   try {
     const [queued, claimed] = await Promise.all([
-      arm.withdrawsQueued(),
-      arm.withdrawsClaimed(),
+      arm.withdrawsQueued(...opts),
+      arm.withdrawsClaimed(...opts),
     ]);
     return queued - claimed;
   } catch (err) {
@@ -430,13 +431,13 @@ const getOutstandingWithdrawals = async (arm) => {
   try {
     const legacyArm = await legacyArmContract(arm);
     const [queued, claimed] = await Promise.all([
-      legacyArm.withdrawsQueued(),
-      legacyArm.withdrawsClaimed(),
+      legacyArm.withdrawsQueued(...opts),
+      legacyArm.withdrawsClaimed(...opts),
     ]);
     return queued - claimed;
   } catch (err) {
     if (!isMissingSelectorError(err)) throw err;
-    return arm.reservedWithdrawLiquidity();
+    return arm.reservedWithdrawLiquidity(...opts);
   }
 };
 
