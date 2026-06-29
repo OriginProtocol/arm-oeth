@@ -437,30 +437,30 @@ contract Unit_Concrete_LidoARM_SwapExactTokensForTokens_Test is Unit_LidoARM_Sha
     //////////////////////////////////////////////////////
     function test_SwapExactTokensForTokens_RevertWhen_InvalidSwapAssets() public {
         // Same token for both sides of the swap, even if it's a supported base asset
-        vm.expectRevert("ARM: Invalid swap assets");
+        vm.expectRevert(AbstractARM.InvalidSwapAssets.selector);
         lidoARM.swapExactTokensForTokens(steth, steth, 1 ether, 1 ether, alice);
 
         // Same token for both sides of the swap, even if it's liquidity asset
-        vm.expectRevert("ARM: Invalid swap assets");
+        vm.expectRevert(AbstractARM.InvalidSwapAssets.selector);
         lidoARM.swapExactTokensForTokens(weth, weth, 1 ether, 1 ether, alice);
 
         // Both tokens are base assets supported by the ARM
-        vm.expectRevert("ARM: Invalid swap assets");
+        vm.expectRevert(AbstractARM.InvalidSwapAssets.selector);
         lidoARM.swapExactTokensForTokens(steth, wsteth, 1 ether, 1 ether, alice);
 
         // Unsupported token as liquidity asset
-        vm.expectRevert("ARM: Invalid swap assets");
+        vm.expectRevert(AbstractARM.InvalidSwapAssets.selector);
         lidoARM.swapExactTokensForTokens(steth, IERC20(address(0x1234)), 1 ether, 1 ether, alice);
 
         // Unsupported token as base asset
-        vm.expectRevert("ARM: Invalid swap assets");
+        vm.expectRevert(AbstractARM.InvalidSwapAssets.selector);
         lidoARM.swapExactTokensForTokens(weth, IERC20(address(0x1234)), 1 ether, 1 ether, alice);
     }
 
     function test_SwapExactTokensForTokens_RevertWhen_InsufficientLiquidity() public {
         // Not enough liquidity - no active market and the swap amount exceeds the ARM's balance.
         uint256 amountIn = weth.balanceOf(address(lidoARM)) + 1 ether;
-        vm.expectRevert("ARM: Insufficient liquidity");
+        vm.expectRevert(AbstractARM.InsufficientLiquidity.selector);
         lidoARM.swapExactTokensForTokens(steth, weth, amountIn, 0, alice);
 
         // Route excess WETH through the mock market so the swap must pull the shortfall from it.
@@ -475,24 +475,24 @@ contract Unit_Concrete_LidoARM_SwapExactTokensForTokens_Test is Unit_LidoARM_Sha
         vm.stopPrank();
 
         // Still not enough liquidity - the market buffer plus the ARM's balance is insufficient.
-        vm.expectRevert("ARM: Insufficient liquidity");
+        vm.expectRevert(AbstractARM.InsufficientLiquidity.selector);
         lidoARM.swapExactTokensForTokens(steth, weth, amountIn, 0, alice);
 
         vm.prank(governor);
         lidoARM.setPrices(address(steth), 992 * 1e33, 1001 * 1e33, 1 ether, 2 ether);
         // Not enough sell liquidity at this price
-        vm.expectRevert("ARM: Insufficient liquidity");
+        vm.expectRevert(AbstractARM.InsufficientLiquidity.selector);
         lidoARM.swapExactTokensForTokens(steth, weth, 10 ether, 0, alice);
 
         // Not enough buy liquidity at this price
-        vm.expectRevert("ARM: Insufficient liquidity");
+        vm.expectRevert(AbstractARM.InsufficientLiquidity.selector);
         lidoARM.swapExactTokensForTokens(weth, steth, 10 ether, 0, alice);
 
         vm.prank(governor);
         lidoARM.setPrices(address(steth), 20e32, 1e36, 10 ether, 5 ether);
         deal(address(steth), address(lidoARM), 10 ether);
         // The buy-side cap check should run before fee accrual, even when the requested swap would overflow fees.
-        vm.expectRevert("ARM: Insufficient liquidity");
+        vm.expectRevert(AbstractARM.InsufficientLiquidity.selector);
         lidoARM.swapExactTokensForTokens(weth, steth, 7 ether, 0, alice);
     }
 
@@ -504,7 +504,7 @@ contract Unit_Concrete_LidoARM_SwapExactTokensForTokens_Test is Unit_LidoARM_Sha
         // Direct overload:
         // swapExactTokensForTokens(IERC20,IERC20,uint256,uint256,address).
         vm.prank(alice);
-        vm.expectRevert("ARM: Insufficient output amount");
+        vm.expectRevert(AbstractARM.InsufficientOutputAmount.selector);
         lidoARM.swapExactTokensForTokens(steth, weth, amountIn, amountOutMin, alice);
 
         // Route through the Uniswap V2-compatible overload:
@@ -516,13 +516,13 @@ contract Unit_Concrete_LidoARM_SwapExactTokensForTokens_Test is Unit_LidoARM_Sha
         deal(address(steth), alice, amountIn);
 
         vm.prank(alice);
-        vm.expectRevert("ARM: Insufficient output amount");
+        vm.expectRevert(AbstractARM.InsufficientOutputAmount.selector);
         lidoARM.swapExactTokensForTokens(amountIn, amountOutMin, path, alice, block.timestamp);
     }
 
     function test_SwapExactTokensForTokens_RevertWhen_InvalidPathLength() public {
         address[] memory path = new address[](3);
-        vm.expectRevert("ARM: Invalid path length");
+        vm.expectRevert(AbstractARM.InvalidPathLength.selector);
         lidoARM.swapExactTokensForTokens(0, 0, path, alice, 0);
     }
 
@@ -530,7 +530,7 @@ contract Unit_Concrete_LidoARM_SwapExactTokensForTokens_Test is Unit_LidoARM_Sha
         address[] memory path = new address[](2);
         path[0] = address(steth);
         path[1] = address(weth);
-        vm.expectRevert("ARM: Deadline expired");
+        vm.expectRevert(AbstractARM.DeadlineExpired.selector);
         lidoARM.swapExactTokensForTokens(0, 0, path, alice, block.timestamp - 1);
     }
 

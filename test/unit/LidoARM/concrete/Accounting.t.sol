@@ -4,6 +4,9 @@ pragma solidity 0.8.23;
 // Test
 import {Unit_LidoARM_Shared_Test} from "../Shared.t.sol";
 
+// Contracts
+import {AbstractARM} from "contracts/AbstractARM.sol";
+
 // Interfaces
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 
@@ -311,7 +314,7 @@ contract Unit_LidoARM_Accounting_Test is Unit_LidoARM_Shared_Test {
 
     function test_Accounting_GetReserves_RevertWhen_UnsupportedAsset() public {
         // WETH is the liquidity asset, not a base asset.
-        vm.expectRevert("ARM: unsupported asset");
+        vm.expectRevert(AbstractARM.UnsupportedAsset.selector);
         lidoARM.getReserves(address(weth));
     }
 

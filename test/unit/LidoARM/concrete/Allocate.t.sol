@@ -4,6 +4,9 @@ pragma solidity 0.8.23;
 // Test
 import {Unit_LidoARM_Shared_Test} from "../Shared.t.sol";
 
+// Contracts
+import {AbstractARM} from "contracts/AbstractARM.sol";
+
 /// @notice Coverage for `AbstractARM.allocate()` / `_allocate()`. Exercises both the deposit
 ///         (positive delta) and withdraw (negative delta) branches, including the
 ///         maxRedeem-fallback path when the market cannot meet the desired withdraw amount.
@@ -15,7 +18,7 @@ contract Unit_LidoARM_Allocate_Test is Unit_LidoARM_Shared_Test {
 
     function test_Allocate_RevertWhen_NoActiveMarket() public {
         vm.prank(alice);
-        vm.expectRevert("ARM: no active market");
+        vm.expectRevert(AbstractARM.NoActiveMarket.selector);
         lidoARM.allocate();
     }
 

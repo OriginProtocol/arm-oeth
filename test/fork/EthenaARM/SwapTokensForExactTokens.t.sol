@@ -5,6 +5,7 @@ pragma solidity 0.8.23;
 import {Fork_Shared_Test} from "test/fork/EthenaARM/shared/Shared.sol";
 
 // Contracts
+import {AbstractARM} from "contracts/AbstractARM.sol";
 import {EthenaARM} from "contracts/EthenaARM.sol";
 
 // Interfaces
@@ -117,32 +118,32 @@ contract Fork_Concrete_EthenaARM_swapTokensForExactTokens_Test_ is Fork_Shared_T
     /// --- REVERTING TESTS
     //////////////////////////////////////////////////////
     function test_RevertWhen_swapTokensForExactTokens_Because_InvalidInToken() public {
-        vm.expectRevert(bytes("ARM: Invalid swap assets"));
+        vm.expectRevert(AbstractARM.InvalidSwapAssets.selector);
         ethenaARM.swapTokensForExactTokens(badToken, usde, AMOUNT_OUT, 0, address(this));
     }
 
     function test_RevertWhen_swapTokensForExactTokens_Because_InvalidOutToken() public {
-        vm.expectRevert(bytes("ARM: Invalid swap assets"));
+        vm.expectRevert(AbstractARM.InvalidSwapAssets.selector);
         ethenaARM.swapTokensForExactTokens(usde, badToken, AMOUNT_OUT, 0, address(this));
 
-        vm.expectRevert(bytes("ARM: Invalid swap assets"));
+        vm.expectRevert(AbstractARM.InvalidSwapAssets.selector);
         ethenaARM.swapTokensForExactTokens(IERC20(address(susde)), badToken, AMOUNT_OUT, 0, address(this));
     }
 
     function test_RevertWhen_swapTokensForExactTokens_Because_InsufficientOutputAmount() public {
         uint256 lowMaxAmountIn = 10 ether;
 
-        vm.expectRevert(bytes("ARM: Excess input amount"));
+        vm.expectRevert(AbstractARM.ExcessInputAmount.selector);
         ethenaARM.swapTokensForExactTokens(IERC20(address(susde)), usde, AMOUNT_OUT, lowMaxAmountIn, address(this));
 
-        vm.expectRevert(bytes("ARM: Excess input amount"));
+        vm.expectRevert(AbstractARM.ExcessInputAmount.selector);
         ethenaARM.swapTokensForExactTokens(usde, IERC20(address(susde)), AMOUNT_OUT, lowMaxAmountIn, address(this));
 
         address[] memory path = new address[](2);
         path[0] = address(usde);
         path[1] = address(susde);
 
-        vm.expectRevert(bytes("ARM: Excess input amount"));
+        vm.expectRevert(AbstractARM.ExcessInputAmount.selector);
         ethenaARM.swapTokensForExactTokens(AMOUNT_OUT, lowMaxAmountIn, path, address(this), block.timestamp + 1 hours);
     }
 
@@ -152,7 +153,7 @@ contract Fork_Concrete_EthenaARM_swapTokensForExactTokens_Test_ is Fork_Shared_T
         path[0] = address(susde);
         path[1] = address(usde);
 
-        vm.expectRevert(bytes("ARM: Deadline expired"));
+        vm.expectRevert(AbstractARM.DeadlineExpired.selector);
         ethenaARM.swapTokensForExactTokens(AMOUNT_OUT, type(uint256).max, path, address(this), pastDeadline);
     }
 
@@ -160,7 +161,7 @@ contract Fork_Concrete_EthenaARM_swapTokensForExactTokens_Test_ is Fork_Shared_T
         address[] memory shortPath = new address[](1);
         shortPath[0] = address(susde);
 
-        vm.expectRevert(bytes("ARM: Invalid path length"));
+        vm.expectRevert(AbstractARM.InvalidPathLength.selector);
         ethenaARM.swapTokensForExactTokens(AMOUNT_OUT, 0, shortPath, address(this), block.timestamp + 1 hours);
 
         address[] memory longPath = new address[](3);
@@ -168,7 +169,7 @@ contract Fork_Concrete_EthenaARM_swapTokensForExactTokens_Test_ is Fork_Shared_T
         longPath[1] = address(usde);
         longPath[2] = address(susde);
 
-        vm.expectRevert(bytes("ARM: Invalid path length"));
+        vm.expectRevert(AbstractARM.InvalidPathLength.selector);
         ethenaARM.swapTokensForExactTokens(AMOUNT_OUT, 0, longPath, address(this), block.timestamp + 1 hours);
     }
 }

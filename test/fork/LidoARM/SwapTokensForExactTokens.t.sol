@@ -4,6 +4,7 @@ pragma solidity 0.8.23;
 // Test imports
 import {Fork_Shared_Test_} from "test/fork/shared/Shared.sol";
 
+import {AbstractARM} from "contracts/AbstractARM.sol";
 import {IERC20} from "contracts/Interfaces.sol";
 
 contract Fork_Concrete_LidoARM_SwapTokensForExactTokens_Test is Fork_Shared_Test_ {
@@ -37,7 +38,7 @@ contract Fork_Concrete_LidoARM_SwapTokensForExactTokens_Test is Fork_Shared_Test
     //////////////////////////////////////////////////////
     function test_RevertWhen_SwapTokensForExactTokens_Because_InvalidTokenOut1() public {
         IERC20(lidoARM.liquidityAsset());
-        vm.expectRevert("ARM: Invalid swap assets");
+        vm.expectRevert(AbstractARM.InvalidSwapAssets.selector);
         lidoARM.swapTokensForExactTokens(
             steth, // inToken
             badToken, // outToken
@@ -48,7 +49,7 @@ contract Fork_Concrete_LidoARM_SwapTokensForExactTokens_Test is Fork_Shared_Test
     }
 
     function test_RevertWhen_SwapTokensForExactTokens_Because_InvalidTokenOut0() public {
-        vm.expectRevert("ARM: Invalid swap assets");
+        vm.expectRevert(AbstractARM.InvalidSwapAssets.selector);
         lidoARM.swapTokensForExactTokens(
             weth, // inToken
             badToken, // outToken
@@ -59,7 +60,7 @@ contract Fork_Concrete_LidoARM_SwapTokensForExactTokens_Test is Fork_Shared_Test
     }
 
     function test_RevertWhen_SwapTokensForExactTokens_Because_InvalidTokenIn() public {
-        vm.expectRevert("ARM: Invalid swap assets");
+        vm.expectRevert(AbstractARM.InvalidSwapAssets.selector);
         lidoARM.swapTokensForExactTokens(
             badToken, // inToken
             steth, // outToken
@@ -70,7 +71,7 @@ contract Fork_Concrete_LidoARM_SwapTokensForExactTokens_Test is Fork_Shared_Test
     }
 
     function test_RevertWhen_SwapTokensForExactTokens_Because_BothInvalidTokens() public {
-        vm.expectRevert("ARM: Invalid swap assets");
+        vm.expectRevert(AbstractARM.InvalidSwapAssets.selector);
         lidoARM.swapTokensForExactTokens(
             badToken, // inToken
             badToken, // outToken
@@ -131,7 +132,7 @@ contract Fork_Concrete_LidoARM_SwapTokensForExactTokens_Test is Fork_Shared_Test
         deal(address(steth), address(lidoARM), 100 wei);
 
         // Test for this function signature: swapTokensForExactTokens(IERC20,IERC20,uint56,uint256,address)
-        vm.expectRevert("ARM: Excess input amount");
+        vm.expectRevert(AbstractARM.ExcessInputAmount.selector);
         lidoARM.swapTokensForExactTokens(
             weth, // inToken
             steth, // outToken
@@ -144,7 +145,7 @@ contract Fork_Concrete_LidoARM_SwapTokensForExactTokens_Test is Fork_Shared_Test
         address[] memory path = new address[](2);
         path[0] = address(weth);
         path[1] = address(steth);
-        vm.expectRevert("ARM: Excess input amount");
+        vm.expectRevert(AbstractARM.ExcessInputAmount.selector);
         lidoARM.swapTokensForExactTokens(
             1, // amountOut
             0, // amountInMax
@@ -155,7 +156,7 @@ contract Fork_Concrete_LidoARM_SwapTokensForExactTokens_Test is Fork_Shared_Test
     }
 
     function test_RevertWhen_SwapTokensForExactTokens_Because_InvalidePathLength() public {
-        vm.expectRevert("ARM: Invalid path length");
+        vm.expectRevert(AbstractARM.InvalidPathLength.selector);
         lidoARM.swapTokensForExactTokens(
             1, // amountOut
             1, // amountInMax
@@ -166,7 +167,7 @@ contract Fork_Concrete_LidoARM_SwapTokensForExactTokens_Test is Fork_Shared_Test
     }
 
     function test_RevertWhen_SwapTokensForExactTokens_Because_DeadlineExpired() public {
-        vm.expectRevert("ARM: Deadline expired");
+        vm.expectRevert(AbstractARM.DeadlineExpired.selector);
         lidoARM.swapTokensForExactTokens(
             1, // amountOut
             1, // amountInMax

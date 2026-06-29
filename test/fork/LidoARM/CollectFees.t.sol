@@ -41,7 +41,7 @@ contract Fork_Concrete_LidoARM_CollectFees_Test_ is Fork_Shared_Test_ {
     function test_RevertWhen_CollectFees_Because_InsufficientLiquidity() public {
         _swapBaseForLiquidity(99_955e15, 100 ether);
 
-        vm.expectRevert("ARM: Insufficient liquidity");
+        vm.expectRevert(AbstractARM.InsufficientLiquidity.selector);
         lidoARM.collectFees();
     }
 

@@ -8,6 +8,7 @@ import {AbstractSmokeTest} from "./AbstractSmokeTest.sol";
 import {IERC20, IERC4626} from "contracts/Interfaces.sol";
 import {Proxy} from "contracts/Proxy.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
+import {AbstractARM} from "contracts/AbstractARM.sol";
 import {OriginARM} from "contracts/OriginARM.sol";
 import {OriginAssetAdapter} from "contracts/adapters/OriginAssetAdapter.sol";
 import {WrappedOriginAssetAdapter} from "contracts/adapters/WrappedOriginAssetAdapter.sol";
@@ -227,38 +228,38 @@ contract Fork_OriginARM_Smoke_Test is AbstractSmokeTest {
     }
 
     function test_wrongInTokenExactIn() external {
-        vm.expectRevert("ARM: Invalid swap assets");
+        vm.expectRevert(AbstractARM.InvalidSwapAssets.selector);
         originARM.swapExactTokensForTokens(BAD_TOKEN, oeth, 10 ether, 0, address(this));
-        vm.expectRevert("ARM: Invalid swap assets");
+        vm.expectRevert(AbstractARM.InvalidSwapAssets.selector);
         originARM.swapExactTokensForTokens(BAD_TOKEN, weth, 10 ether, 0, address(this));
     }
 
     function test_wrongOutTokenExactIn() external {
-        vm.expectRevert("ARM: Invalid swap assets");
+        vm.expectRevert(AbstractARM.InvalidSwapAssets.selector);
         originARM.swapTokensForExactTokens(weth, BAD_TOKEN, 10 ether, 10 ether, address(this));
-        vm.expectRevert("ARM: Invalid swap assets");
+        vm.expectRevert(AbstractARM.InvalidSwapAssets.selector);
         originARM.swapTokensForExactTokens(oeth, BAD_TOKEN, 10 ether, 10 ether, address(this));
-        vm.expectRevert("ARM: Invalid swap assets");
+        vm.expectRevert(AbstractARM.InvalidSwapAssets.selector);
         originARM.swapTokensForExactTokens(weth, weth, 10 ether, 10 ether, address(this));
-        vm.expectRevert("ARM: Invalid swap assets");
+        vm.expectRevert(AbstractARM.InvalidSwapAssets.selector);
         originARM.swapTokensForExactTokens(oeth, oeth, 10 ether, 10 ether, address(this));
     }
 
     function test_wrongInTokenExactOut() external {
-        vm.expectRevert("ARM: Invalid swap assets");
+        vm.expectRevert(AbstractARM.InvalidSwapAssets.selector);
         originARM.swapTokensForExactTokens(BAD_TOKEN, oeth, 10 ether, 10 ether, address(this));
-        vm.expectRevert("ARM: Invalid swap assets");
+        vm.expectRevert(AbstractARM.InvalidSwapAssets.selector);
         originARM.swapTokensForExactTokens(BAD_TOKEN, weth, 10 ether, 10 ether, address(this));
     }
 
     function test_wrongOutTokenExactOut() external {
-        vm.expectRevert("ARM: Invalid swap assets");
+        vm.expectRevert(AbstractARM.InvalidSwapAssets.selector);
         originARM.swapTokensForExactTokens(weth, BAD_TOKEN, 10 ether, 10 ether, address(this));
-        vm.expectRevert("ARM: Invalid swap assets");
+        vm.expectRevert(AbstractARM.InvalidSwapAssets.selector);
         originARM.swapTokensForExactTokens(oeth, BAD_TOKEN, 10 ether, 10 ether, address(this));
-        vm.expectRevert("ARM: Invalid swap assets");
+        vm.expectRevert(AbstractARM.InvalidSwapAssets.selector);
         originARM.swapTokensForExactTokens(weth, weth, 10 ether, 10 ether, address(this));
-        vm.expectRevert("ARM: Invalid swap assets");
+        vm.expectRevert(AbstractARM.InvalidSwapAssets.selector);
         originARM.swapTokensForExactTokens(oeth, oeth, 10 ether, 10 ether, address(this));
     }
 

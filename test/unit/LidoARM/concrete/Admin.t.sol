@@ -598,7 +598,7 @@ contract Unit_LidoARM_Admin_Test is Unit_LidoARM_Shared_Test {
         vm.prank(alice);
         lidoARM.requestRedeem(95 ether);
 
-        vm.expectRevert("ARM: Insufficient liquidity");
+        vm.expectRevert(AbstractARM.InsufficientLiquidity.selector);
         lidoARM.collectFees();
     }
 
