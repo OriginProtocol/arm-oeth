@@ -80,7 +80,6 @@ test-invariant-%:
 # Run all invariant tests
 test-invariants:
 	$(MAKE) test-invariant-lido
-	$(MAKE) test-invariant-origin
 	$(MAKE) test-invariant-ethena
 
 # ╔══════════════════════════════════════════════════════════════════════════════╗

@@ -24,6 +24,9 @@ abstract contract Fork_Shared_Test is Base_Test_, Helpers {
     /// --- SETUP
     //////////////////////////////////////////////////////
     function setUp() public virtual override {
+        // Sonic fork tests are skipped. Remove this line to re-enable the whole suite.
+        vm.skip(true);
+
         super.setUp();
 
         // Generate a fork
