@@ -293,6 +293,12 @@
             "proposalId": 1,
             "tsDeployment": 1781855555,
             "tsGovernance": 1
+        },
+        {
+            "name": "035_UnpauseEthenaARMScript",
+            "proposalId": 105952564920326880829480980653921695351704517467605619581569766325476268429476,
+            "tsDeployment": 1782206279,
+            "tsGovernance": 1
         }
     ]
 }

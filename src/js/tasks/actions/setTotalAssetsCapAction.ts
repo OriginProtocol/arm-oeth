@@ -2,38 +2,37 @@ import { types } from "hardhat/config";
 
 import { action } from "../lib/action";
 import { resolveMainnetARM } from "../lib/arm";
-import { claimArmRedeems } from "../armRedeemQueue";
+import { setTotalAssetsCap } from "../admin";
 
 action({
-  name: "claimRedeem",
-  description:
-    "Claim one or more matured LP redeem requests on behalf of users",
+  name: "setTotalAssetsCapAction",
+  description: "Set Total Assets Cap - Mainnet",
   chains: [1],
   params: (t) =>
     t
       .addParam(
         "arm",
-        "ARM to claim from: lido, etherfi, or ethena",
+        "ARM to set total assets cap for: lido, etherfi, ethena, or oeth",
         undefined,
         types.string,
       )
       .addParam(
-        "ids",
-        "Comma-separated LP withdrawal request ids to claim, eg 12,13,14",
+        "cap",
+        "Total assets cap in liquidity asset units, where 100000 = 100,000 USDe",
         undefined,
-        types.string,
+        types.float,
       ),
   run: async ({ signer, log, args }) => {
     const arm = resolveMainnetARM({
       arm: String(args.arm),
       signer,
-      supportedArms: ["lido", "etherfi", "ethena"],
     });
-    await claimArmRedeems({
+    log.info(`Setting ${arm.name} ARM total assets cap to ${args.cap}`);
+    await setTotalAssetsCap({
+      signer,
       arm: arm.contract,
       armName: arm.name,
-      ids: args.ids,
-      log,
+      cap: args.cap,
     });
   },
 });

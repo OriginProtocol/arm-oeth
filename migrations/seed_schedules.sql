@@ -31,6 +31,13 @@ INSERT INTO schedules (product, name, command, cron_expr, timezone, enabled, not
 -- placeholders. For ids, use a comma-separated list, eg --ids 12,13,14.
 -- cron_expr is a placeholder that never fires while disabled.
 ('arm-oeth', 'mainnet_claim_redeem',                 'cd /app && pnpm hardhat claimRedeem --arm lido --ids 0 --network mainnet',         '0 0 * * *',             'UTC', false, NULL),
+-- ARM buffer changes: manual-only (enabled=false). Edit `--arm` and `--buffer`
+-- before using "Run now". 0.1 = 10% buffer, 1 = 100% buffer.
+('arm-oeth', 'Set ARM Buffer - Mainnet',             'cd /app && pnpm hardhat setARMBufferAction --arm lido --buffer 0.1 --network mainnet', '0 0 * * *',          'UTC', false, NULL),
+-- ARM cap changes: manual-only (enabled=false). Edit `--arm`, `--accounts`,
+-- and/or `--cap` before using "Run now".
+('arm-oeth', 'Set Liquidity Provider Caps - Mainnet','cd /app && pnpm hardhat setLiquidityProviderCapsAction --arm lido --accounts 0x0000000000000000000000000000000000000000 --cap 20000 --network mainnet', '0 0 * * *', 'UTC', false, NULL),
+('arm-oeth', 'Set Total Assets Cap - Mainnet',       'cd /app && pnpm hardhat setTotalAssetsCapAction --arm lido --cap 100000 --network mainnet', '0 0 * * *',         'UTC', false, NULL),
 ('arm-oeth', 'sonic_auto_request_withdraw',          'cd /app && pnpm hardhat autoRequestWithdrawSonic --network sonic',          '48,18 * * * *',         'UTC', false, NULL),
 ('arm-oeth', 'sonic_auto_claim_withdraw',            'cd /app && pnpm hardhat autoClaimWithdrawSonic --network sonic',            '10 * * * *',            'UTC', false, NULL),
 ('arm-oeth', 'sonic_collect_fees',                   'cd /app && pnpm hardhat collectFeesSonic --network sonic',                  '55 23 * * *',           'UTC', false, NULL),
