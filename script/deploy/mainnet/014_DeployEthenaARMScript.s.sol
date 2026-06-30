@@ -64,7 +64,7 @@ contract $014_DeployEthenaARMScript is AbstractDeployScript("014_DeployEthenaARM
 
         // 7. Give the deployer a tiny amount of USDe for the initialization
         // This can be skipped if the deployer already has USDe
-        IWETH(Mainnet.USDE).approve(address(armProxy), 1e13);
+        IWETH(Mainnet.USDE).approve(address(armProxy), 1e15);
 
         // 8. Initialize proxy, set the owner to deployer, set the operator to the ARM Relayer
         bytes memory armData = abi.encodeWithSignature(

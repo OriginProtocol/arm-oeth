@@ -122,7 +122,7 @@ abstract contract Fork_Shared_Test_ is Modifiers {
         LidoARM lidoImpl = new LidoARM(address(weth), 10 minutes, 0, 0);
 
         // Deployer will need WETH to initialize the ARM.
-        deal(address(weth), address(this), 1e12);
+        deal(address(weth), address(this), 1e15);
         weth.approve(address(lidoProxy), type(uint256).max);
         steth.approve(address(lidoProxy), type(uint256).max);
 

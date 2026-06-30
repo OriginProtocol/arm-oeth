@@ -102,7 +102,7 @@ abstract contract Base_Test_ is Test {
     /// --- DEFAULT VALUES
     //////////////////////////////////////////////////////
     uint256 public constant DEFAULT_AMOUNT = 1 ether;
-    uint256 public constant MIN_TOTAL_SUPPLY = 1e12;
+    uint256 public constant MIN_TOTAL_SUPPLY = 1e15;
     uint256 public constant MAX_CROSS_PRICE_DEVIATION = 20e32;
     uint256 public constant PRICE_SCALE = 1e36;
     uint256 public constant FEE_SCALE = 10000;

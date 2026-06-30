@@ -45,10 +45,10 @@ contract Unit_LidoARM_Allocate_Test is Unit_LidoARM_Shared_Test {
         vm.prank(alice);
         lidoARM.allocate();
 
-        // Everything (100 ether + the init 1e12 dead-share WETH) lands in the market.
-        assertEq(mockERC4626Market.balanceOf(address(lidoARM)), 100 ether + 1e12, "market post");
+        // Everything (100 ether + the init MIN_TOTAL_SUPPLY dead-share WETH) lands in the market.
+        assertEq(mockERC4626Market.balanceOf(address(lidoARM)), 100 ether + MIN_TOTAL_SUPPLY, "market post");
         assertEq(weth.balanceOf(address(lidoARM)), 0, "ARM WETH post");
-        assertEq(lidoARM.totalAssets(), 100 ether + 1e12, "totalAssets preserved");
+        assertEq(lidoARM.totalAssets(), 100 ether + MIN_TOTAL_SUPPLY, "totalAssets preserved");
     }
 
     function test_Allocate_PositiveDelta_WithOutstandingWithdraw() public {
@@ -61,7 +61,7 @@ contract Unit_LidoARM_Allocate_Test is Unit_LidoARM_Shared_Test {
         vm.prank(alice);
         lidoARM.allocate();
 
-        assertEq(mockERC4626Market.balanceOf(address(lidoARM)), 50 ether + 1e12, "market post");
+        assertEq(mockERC4626Market.balanceOf(address(lidoARM)), 50 ether + MIN_TOTAL_SUPPLY, "market post");
         assertEq(weth.balanceOf(address(lidoARM)), 50 ether, "reserved liquidity stays in ARM");
         assertEq(lidoARM.reservedWithdrawLiquidity(), 50 ether, "reservedWithdrawLiquidity");
     }
@@ -72,15 +72,15 @@ contract Unit_LidoARM_Allocate_Test is Unit_LidoARM_Shared_Test {
         addMarket(address(mockERC4626Market));
         setActiveMarket(address(mockERC4626Market));
         // buffer is 0 by default, so the setActiveMarket call already moved everything into the market.
-        assertEq(mockERC4626Market.balanceOf(address(lidoARM)), 100 ether + 1e12, "market pre");
+        assertEq(mockERC4626Market.balanceOf(address(lidoARM)), 100 ether + MIN_TOTAL_SUPPLY, "market pre");
         assertEq(weth.balanceOf(address(lidoARM)), 0, "ARM WETH pre");
 
         setARMBuffer(0.3 ether);
         vm.prank(alice);
         lidoARM.allocate();
 
-        uint256 expectedArm = (100 ether + 1e12) * 30 / 100;
-        uint256 expectedMarket = (100 ether + 1e12) - expectedArm;
+        uint256 expectedArm = (100 ether + MIN_TOTAL_SUPPLY) * 30 / 100;
+        uint256 expectedMarket = (100 ether + MIN_TOTAL_SUPPLY) - expectedArm;
         assertEq(weth.balanceOf(address(lidoARM)), expectedArm, "ARM WETH post");
         assertEq(mockERC4626Market.balanceOf(address(lidoARM)), expectedMarket, "market post");
     }
@@ -89,14 +89,14 @@ contract Unit_LidoARM_Allocate_Test is Unit_LidoARM_Shared_Test {
         aliceFirstDeposit();
         addMarket(address(mockERC4626Market));
         setActiveMarket(address(mockERC4626Market));
-        assertEq(mockERC4626Market.balanceOf(address(lidoARM)), 100 ether + 1e12, "market pre");
+        assertEq(mockERC4626Market.balanceOf(address(lidoARM)), 100 ether + MIN_TOTAL_SUPPLY, "market pre");
 
         setARMBuffer(1e18); // 100% in ARM
         vm.prank(alice);
         lidoARM.allocate();
 
         assertEq(mockERC4626Market.balanceOf(address(lidoARM)), 0, "market post");
-        assertEq(weth.balanceOf(address(lidoARM)), 100 ether + 1e12, "ARM WETH post");
+        assertEq(weth.balanceOf(address(lidoARM)), 100 ether + MIN_TOTAL_SUPPLY, "ARM WETH post");
     }
 
     function test_Allocate_NegativeDelta_FullWithdraw_NotEnoughLiquidityOnMarket_AboveThreshold() public {
@@ -107,10 +107,10 @@ contract Unit_LidoARM_Allocate_Test is Unit_LidoARM_Shared_Test {
         addBaseAsset(steth);
         addMarket(address(mockERC4626Market));
         setActiveMarket(address(mockERC4626Market));
-        assertEq(mockERC4626Market.balanceOf(address(lidoARM)), 100 ether + 1e12, "market pre");
+        assertEq(mockERC4626Market.balanceOf(address(lidoARM)), 100 ether + MIN_TOTAL_SUPPLY, "market pre");
 
         // Market loses 50% of its WETH. Shares stay; their convertToAssets value halves.
-        uint256 halved = (100 ether + 1e12) / 2;
+        uint256 halved = (100 ether + MIN_TOTAL_SUPPLY) / 2;
         deal(address(weth), address(mockERC4626Market), halved);
 
         // Phantom stETH in the ARM raises totalAssets above what the market can pay out.
@@ -169,8 +169,8 @@ contract Unit_LidoARM_Allocate_Test is Unit_LidoARM_Shared_Test {
         addMarket(address(mockERC4626Market));
         setActiveMarket(address(mockERC4626Market));
 
-        uint256 expectedArm = (100 ether + 1e12) * 20 / 100;
-        uint256 expectedMarket = (100 ether + 1e12) - expectedArm;
+        uint256 expectedArm = (100 ether + MIN_TOTAL_SUPPLY) * 20 / 100;
+        uint256 expectedMarket = (100 ether + MIN_TOTAL_SUPPLY) - expectedArm;
         assertEq(weth.balanceOf(address(lidoARM)), expectedArm, "ARM WETH pre");
         assertEq(mockERC4626Market.balanceOf(address(lidoARM)), expectedMarket, "market pre");
 

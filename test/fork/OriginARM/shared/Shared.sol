@@ -93,11 +93,11 @@ abstract contract Fork_Shared_Test is Base_Test_, Modifiers {
         // --- Deploy SiloMarket implementation
         siloMarket = new SiloMarket(address(originARMProxy), Sonic.SILO_VARLAMORE_S_VAULT, Sonic.SILO_VARLAMORE_S_GAUGE);
 
-        // Initialization requires 1e12 liquid assets to mint to dead address.
-        // Deployer approve the proxy to transfer 1e12 liquid assets.
-        ws.approve(address(originARMProxy), 1e12);
-        // Mint 1e12 liquid assets to the deployer.
-        deal(address(ws), deployer, 1e12);
+        // Initialization requires 1e15 liquid assets to mint to dead address.
+        // Deployer approve the proxy to transfer 1e15 liquid assets.
+        ws.approve(address(originARMProxy), 1e15);
+        // Mint 1e15 liquid assets to the deployer.
+        deal(address(ws), deployer, 1e15);
 
         // --- Initialize the proxy
         originARMProxy.initialize(

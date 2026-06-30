@@ -81,7 +81,7 @@ abstract contract Fork_Shared_Test is Base_Test_ {
         EtherFiARM etherfiImpl = new EtherFiARM(address(eeth), address(weth), 10 minutes, 0, 0);
 
         // Deployer will need WETH to initialize the ARM.
-        deal(address(weth), deployer, 1e12);
+        deal(address(weth), deployer, 1e15);
         weth.approve(address(etherfiProxy), type(uint256).max);
         eeth.approve(address(etherfiProxy), type(uint256).max);
 

@@ -67,12 +67,13 @@ abstract contract Properties is TargetFunctions {
     // ╚══════════════════════════════════════════════════════════════════════════════╝
     function propertyA() public view returns (bool) {
         uint256 usdeBalance = usde.balanceOf(address(arm));
-        uint256 inflow = 1e12 + sumUSDeSwapIn + sumUSDeUserDeposit + sumUSDeMarketWithdraw + sumUSDeBaseRedeem;
+        uint256 inflow =
+            DEFAULT_MIN_TOTAL_SUPPLY + sumUSDeSwapIn + sumUSDeUserDeposit + sumUSDeMarketWithdraw + sumUSDeBaseRedeem;
         uint256 outflow = sumUSDeSwapOut + sumUSDeUserRedeem + sumUSDeMarketDeposit + sumUSDeFeesCollected;
         // console.log(">>> Property A:");
         // console.log("    - USDe balance:         %18e", usdeBalance);
         // console.log("    - Inflow breakdown:");
-        // console.log("        o Initial buffer:   %18e", uint256(1e12));
+        // console.log("        o Initial buffer:   %18e", DEFAULT_MIN_TOTAL_SUPPLY);
         // console.log("        o Swap In:          %18e", sumUSDeSwapIn);
         // console.log("        o User Deposit:     %18e", sumUSDeUserDeposit);
         // console.log("        o Market Withdraw:  %18e", sumUSDeMarketWithdraw);
@@ -118,7 +119,7 @@ abstract contract Properties is TargetFunctions {
             totalUserShares += arm.balanceOf(makers[i]);
         }
         totalUserShares += arm.balanceOf(address(arm));
-        uint256 deadShares = 1e12;
+        uint256 deadShares = DEFAULT_MIN_TOTAL_SUPPLY;
         return Math.eq(arm.totalSupply(), totalUserShares + deadShares);
     }
 

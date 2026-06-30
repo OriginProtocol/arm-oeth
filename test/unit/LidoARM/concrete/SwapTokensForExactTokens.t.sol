@@ -220,7 +220,7 @@ contract Unit_Concrete_LidoARM_SwapTokensForExactTokens_Test is Unit_LidoARM_Sha
         assertEq(lidoARM.feesAccrued(), 0);
         assertEq(weth.balanceOf(alice), 0);
         assertEq(steth.balanceOf(alice), expectedAmountIn);
-        // The 50% buffer applies to Alice's 100 WETH deposit plus the 1e12 minimum liquidity.
+        // The 50% buffer applies to Alice's 100 WETH deposit plus the MIN_TOTAL_SUPPLY minimum liquidity.
         assertEq(weth.balanceOf(address(lidoARM)), 50 ether + MIN_TOTAL_SUPPLY / 2);
         assertEq(steth.balanceOf(address(mockERC4626Market)), 0);
 

@@ -64,7 +64,7 @@ abstract contract Properties is Setup, Helpers {
         for (uint256 i; i < markets.length; i++) {
             wsInMarket += IERC4626(markets[i]).maxWithdraw(address(originARM));
         }
-        return (ws.balanceOf(address(originARM)) + wsInMarket + outflow).gteApproxAbs(inflow, 1e12);
+        return (ws.balanceOf(address(originARM)) + wsInMarket + outflow).gteApproxAbs(inflow, MIN_TOTAL_SUPPLY);
     }
 
     function property_swap_B() public view returns (bool) {

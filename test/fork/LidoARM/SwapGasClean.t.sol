@@ -42,7 +42,7 @@ contract Fork_Concrete_LidoARM_SwapGasClean_Test is Test {
 
         LidoARM lidoImpl = new LidoARM(Mainnet.WETH, 10 minutes, 0, 0);
 
-        deal(address(weth), address(this), 1e12);
+        deal(address(weth), address(this), 1e15);
         weth.approve(address(lidoProxy), type(uint256).max);
 
         lidoProxy.initialize(

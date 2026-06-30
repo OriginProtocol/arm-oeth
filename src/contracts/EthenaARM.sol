@@ -31,7 +31,8 @@ contract EthenaARM is Initializable, AbstractARM {
     }
 
     /// @notice Initialize the storage variables stored in the proxy contract.
-    /// The deployer that calls initialize has to approve the ARM's proxy contract to transfer 1e12 USDe.
+    /// The deployer that calls initialize has to approve the ARM's proxy contract to transfer 1e15 base units
+    /// (0.001 USDe).
     /// @param _name The name of the liquidity provider (LP) token.
     /// @param _symbol The symbol of the liquidity provider (LP) token.
     /// @param _operator The address of the account that can request and claim withdrawals.

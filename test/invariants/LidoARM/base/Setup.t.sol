@@ -92,11 +92,11 @@ abstract contract Invariant_LidoARM_Setup_Test is Base_Test_, Helpers {
             _lidoWithdrawalQueue: address(lidoWithdrawalQueue)
         });
 
-        // Initialization requires 1e12 liquid assets to mint to dead address.
-        // Mint 1e12 liquid assets to the deployer.
-        deal(address(weth), deployer, 1e12);
-        // Deployer approve the proxy to transfer 1e12 liquid assets.
-        weth.approve(address(lidoARMProxy), 1e12);
+        // Initialization requires 1e15 liquid assets to mint to dead address.
+        // Mint 1e15 liquid assets to the deployer.
+        deal(address(weth), deployer, 1e15);
+        // Deployer approve the proxy to transfer 1e15 liquid assets.
+        weth.approve(address(lidoARMProxy), 1e15);
 
         // --- Initialize Proxies
         // LidoARM Proxy

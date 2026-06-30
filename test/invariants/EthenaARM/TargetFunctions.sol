@@ -82,7 +82,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
     }
 
     function targetARMDeposit(uint88 amount, uint256 randomAddressIndex) external ensureExchangeRateIncrease {
-        vm.assume(arm.totalAssets() > 1e12 || arm.reservedWithdrawLiquidity() == 0);
+        vm.assume(arm.totalAssets() > DEFAULT_MIN_TOTAL_SUPPLY || arm.reservedWithdrawLiquidity() == 0);
         // Select a random user from makers
         address user = makers[randomAddressIndex % MAKERS_COUNT];
 

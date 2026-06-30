@@ -76,7 +76,7 @@ abstract contract Base_Test_ {
     uint256 internal constant TRADERS_COUNT = 3;
     uint256 internal constant UNSTAKERS_COUNT = 42;
     uint256 internal constant DEFAULT_CLAIM_DELAY = 10 minutes;
-    uint256 internal constant DEFAULT_MIN_TOTAL_SUPPLY = 1e12;
+    uint256 internal constant DEFAULT_MIN_TOTAL_SUPPLY = 1e15;
     uint256 internal constant DEFAULT_ALLOCATE_THRESHOLD = 1e18;
     uint256 internal constant DEFAULT_MIN_SHARES_TO_REDEEM = 1e7;
 

@@ -57,7 +57,7 @@ contract Unit_LidoARM_RequestRedeem_Test is Unit_LidoARM_Shared_Test {
         assertEq(assets, expectedAssets, "assets");
         assertEq(lidoARM.balanceOf(alice), 100 ether - shares, "alice shares");
         assertEq(lidoARM.balanceOf(address(lidoARM)), shares, "escrow");
-        assertEq(lidoARM.totalSupply(), 1e12 + 100 ether, "totalSupply");
+        assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY + 100 ether, "totalSupply");
         assertEq(lidoARM.nextWithdrawalIndex(), 1, "nextIndex");
         assertEq(lidoARM.withdrawsQueuedShares(), shares, "queued");
         assertEq(lidoARM.reservedWithdrawLiquidity(), expectedAssets, "reserved");
@@ -73,14 +73,15 @@ contract Unit_LidoARM_RequestRedeem_Test is Unit_LidoARM_Shared_Test {
         deal(address(weth), address(lidoARM), weth.balanceOf(address(lidoARM)) + yield);
 
         uint256 shares = 50 ether;
-        uint256 expectedAssets = shares.mulDiv(1e12 + 100 ether + yield, 1e12 + 100 ether, Math.Rounding.Floor);
+        uint256 expectedAssets =
+            shares.mulDiv(MIN_TOTAL_SUPPLY + 100 ether + yield, MIN_TOTAL_SUPPLY + 100 ether, Math.Rounding.Floor);
         uint256 expectedClaimTimestamp = block.timestamp + CLAIM_DELAY;
 
         assertGt(expectedAssets, shares, "assets > shares");
         assertEq(lidoARM.convertToAssets(shares), expectedAssets, "convertToAssets");
         assertEq(lidoARM.previewRedeem(shares), expectedAssets, "previewRedeem");
-        assertEq(lidoARM.totalAssets(), 1e12 + 100 ether + yield, "totalAssets pre");
-        assertEq(lidoARM.totalSupply(), 1e12 + 100 ether, "totalSupply pre");
+        assertEq(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY + 100 ether + yield, "totalAssets pre");
+        assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY + 100 ether, "totalSupply pre");
         assertEq(lidoARM.nextWithdrawalIndex(), 0, "nextIndex pre");
         assertEq(lidoARM.withdrawsQueuedShares(), 0, "queued pre");
         assertEq(lidoARM.reservedWithdrawLiquidity(), 0, "reserved pre");
@@ -100,8 +101,8 @@ contract Unit_LidoARM_RequestRedeem_Test is Unit_LidoARM_Shared_Test {
         assertEq(assets, expectedAssets, "assets");
         assertEq(lidoARM.balanceOf(alice), 100 ether - shares, "alice shares");
         assertEq(lidoARM.balanceOf(address(lidoARM)), shares, "escrow");
-        assertEq(lidoARM.totalSupply(), 1e12 + 100 ether, "totalSupply");
-        assertEq(lidoARM.totalAssets(), 1e12 + 100 ether + yield, "totalAssets");
+        assertEq(lidoARM.totalSupply(), MIN_TOTAL_SUPPLY + 100 ether, "totalSupply");
+        assertEq(lidoARM.totalAssets(), MIN_TOTAL_SUPPLY + 100 ether + yield, "totalAssets");
         assertEq(lidoARM.nextWithdrawalIndex(), 1, "nextIndex");
         assertEq(lidoARM.withdrawsQueuedShares(), shares, "queued");
         assertEq(lidoARM.reservedWithdrawLiquidity(), expectedAssets, "reserved");

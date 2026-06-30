@@ -27,8 +27,6 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
     uint256 internal constant MAX_CROSS_PRICE_DEVIATION = 20e32;
     /// @notice Scale used for prices.
     uint256 internal constant PRICE_SCALE = 1e36;
-    /// @notice The amount of shares minted to a dead address on initialization.
-    uint256 internal constant MIN_TOTAL_SUPPLY = 1e12;
     /// @notice Address with no known private key that receives initial dead shares.
     address internal constant DEAD_ACCOUNT = 0x000000000000000000000000000000000000dEaD;
     /// @notice Scale of the swap fee. 10,000 = 100%.
@@ -46,6 +44,11 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
     int256 public immutable allocateThreshold;
     /// @notice Asset used for LP deposits, LP redeem claims, and base-asset quote pricing.
     address public immutable liquidityAsset;
+    /// @notice Decimals of the liquidity asset and LP share token.
+    uint8 internal immutable liquidityAssetDecimals;
+    /// @notice Dead-share amount minted on initialization, scaled to liquidity asset decimals.
+    /// 1e15 = 0.001 of an 18-decimal asset; 1,000 = 0.001 of a 6-decimal asset.
+    uint256 public immutable minTotalSupply;
     /// @notice Delay before an LP redeem request can be claimed in seconds. eg 600 is 10 minutes.
     uint256 public immutable claimDelay;
 
@@ -150,6 +153,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
     error InvalidAsset(); // 0xc891add2
     error InvalidAdapter(); // 0xfbf66df1
     error AssetAlreadySupported(); // 0xb1093e5b
+    error InvalidLiquidityAssetDecimals(); // 0x20689ded
     error InvalidAssetDecimals(); // 0xe2364765
     error InvalidAdapterAsset(); // 0x030f0830
     error InvalidBuyPrice(); // 0x36c64b27
@@ -228,12 +232,16 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
     /// eg 600 is 10 minutes.
     /// @param _minSharesToRedeem Minimum active market shares to redeem when pulling liquidity.
     /// @param _allocateThreshold Minimum excess liquidity delta before allocation deposits into a market.
-    /// eg 1e18 is 1 liquidity asset.
+    /// eg 1e18 is 1 18-decimal liquidity asset and 1e6 is 1 6-decimal liquidity asset.
     constructor(address _liquidityAsset, uint256 _claimDelay, uint256 _minSharesToRedeem, int256 _allocateThreshold) {
-        require(IERC20(_liquidityAsset).decimals() == 18);
+        uint8 decimals_ = IERC20(_liquidityAsset).decimals();
+        if (decimals_ != 6 && decimals_ != 18) revert InvalidLiquidityAssetDecimals();
         require(_allocateThreshold >= 0, "invalid allocate threshold");
 
         liquidityAsset = _liquidityAsset;
+        liquidityAssetDecimals = decimals_;
+        // 1e15 = 0.001 of an 18-decimal asset; 1,000 = 0.001 of a 6-decimal asset.
+        minTotalSupply = 10 ** decimals_ / 1e3;
         claimDelay = _claimDelay;
         minSharesToRedeem = _minSharesToRedeem;
         allocateThreshold = _allocateThreshold;
@@ -247,7 +255,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
     ////////////////////////////////////////////////////
 
     /// @notice Initialize storage for the proxy.
-    /// @dev The initializer caller must approve this ARM proxy to transfer `MIN_TOTAL_SUPPLY` liquidity assets.
+    /// @dev The initializer caller must approve this ARM proxy to transfer `minTotalSupply` liquidity assets.
+    /// For example, 1e15 = 0.001 of an 18-decimal asset and 1,000 = 0.001 of a 6-decimal asset.
     /// @param _operator Account allowed to run operator-only actions.
     /// @param _name LP token name.
     /// @param _symbol LP token symbol.
@@ -269,10 +278,10 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
         __ReentrancyGuard_init();
 
         // Transfer a small bit of liquidity from the initializer to this contract.
-        IERC20(liquidityAsset).transferFrom(msg.sender, address(this), MIN_TOTAL_SUPPLY);
+        IERC20(liquidityAsset).transferFrom(msg.sender, address(this), minTotalSupply);
         // Mint a small amount of shares to a dead account so total supply can never be zero.
         // This avoids donation attacks when there are no assets in the ARM contract.
-        _mint(DEAD_ACCOUNT, MIN_TOTAL_SUPPLY);
+        _mint(DEAD_ACCOUNT, minTotalSupply);
 
         _setFee(_fee);
         _setFeeCollector(_feeCollector);
@@ -592,8 +601,10 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
         if (newBaseAsset == address(0)) revert InvalidAsset();
         if (adapter == address(0)) revert InvalidAdapter();
         if (baseAssetConfigs[newBaseAsset].adapter != address(0)) revert AssetAlreadySupported();
-        if (IERC20(newBaseAsset).decimals() != 18) revert InvalidAssetDecimals();
         if (IAssetAdapter(adapter).asset() != liquidityAsset) revert InvalidAdapterAsset();
+        if (peggedToLiquidityAsset && IERC20(newBaseAsset).decimals() != liquidityAssetDecimals) {
+            revert InvalidAssetDecimals();
+        }
         if (newCrossPrice < PRICE_SCALE - MAX_CROSS_PRICE_DEVIATION) revert CrossPriceTooLow();
         if (newCrossPrice > PRICE_SCALE) revert CrossPriceTooHigh();
         _validatePrices(buyPrice, sellPrice, newCrossPrice);
@@ -666,7 +677,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
         if (newCrossPrice < config.crossPrice) {
             uint256 baseAssetExposure =
                 _convertToAssets(config, IERC20(priceBaseAsset).balanceOf(address(this))) + config.pendingRedeemAssets;
-            if (baseAssetExposure >= MIN_TOTAL_SUPPLY) revert TooManyBaseAssets();
+            if (baseAssetExposure >= minTotalSupply) revert TooManyBaseAssets();
         }
 
         config.crossPrice = SafeCast.toUint128(newCrossPrice);
@@ -749,7 +760,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
     /// @param receiver Account that receives minted LP shares.
     /// @return shares LP shares minted.
     function _deposit(uint256 assets, address receiver) internal returns (uint256 shares) {
-        if (totalAssets() <= MIN_TOTAL_SUPPLY && reservedWithdrawLiquidity != 0) revert Insolvent();
+        if (totalAssets() <= minTotalSupply && reservedWithdrawLiquidity != 0) revert Insolvent();
         shares = convertToShares(assets);
 
         // Transfer liquidity from the depositor before minting LP shares.
@@ -924,13 +935,13 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
         uint256 newAvailableAssets = _availableAssets();
         uint256 feesAccruedMem = feesAccrued;
         // total assets should only go up from the initial deposit amount that is burnt,
-        // but in case of something unforeseen, return at least MIN_TOTAL_SUPPLY.
-        // An example scenario that will return MIN_TOTAL_SUPPLY is:
+        // but in case of something unforeseen, return at least the initialization dead-share amount.
+        // An example scenario that will return this floor is:
         // First LP deposits and then requests a redeem of all their ARM shares.
         // While waiting to claim their request, the ARM suffers a loss of assets. eg lending market loss.
         // When they claim their request, newAvailableAssets can be zero as the ARM assets can be less than
         // the outstanding withdrawal request that was calculated before the loss.
-        if (feesAccruedMem + MIN_TOTAL_SUPPLY >= newAvailableAssets) return MIN_TOTAL_SUPPLY;
+        if (feesAccruedMem + minTotalSupply >= newAvailableAssets) return minTotalSupply;
         // Remove accrued swap fees from the available assets.
         return newAvailableAssets - feesAccruedMem;
     }
@@ -940,6 +951,12 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
     /// @return The liquidity asset address.
     function asset() external view virtual returns (address) {
         return liquidityAsset;
+    }
+
+    /// @notice ERC-20 decimals for ARM LP shares.
+    /// @return Decimals of the liquidity asset used by this ARM.
+    function decimals() public view virtual override returns (uint8) {
+        return liquidityAssetDecimals;
     }
 
     /// @dev Calculate ARM asset value before accrued swap fees are removed.
