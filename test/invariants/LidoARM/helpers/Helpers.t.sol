@@ -99,8 +99,7 @@ abstract contract Helpers is Base_Test_ {
 
         for (uint256 i; i < pendingRequestCount; i++) {
             uint256 requestId = _pendingRequestIds[i];
-            (address user, bool claimed, uint40 claimTimestamp,, uint128 queued,) =
-                lidoARM.withdrawalRequests(requestId);
+            (address user, bool claimed, uint40 claimTimestamp,, uint128 queued) = lidoARM.withdrawalRequests(requestId);
             if (claimTimestamp > block.timestamp) continue; // Claim delay not elapsed
             if (queued > claimable) continue; // FIFO gate: not enough backed liquidity
 
@@ -153,7 +152,7 @@ abstract contract Helpers is Base_Test_ {
     function sumOfUnclaimedRequestAssets() public view returns (uint256 total) {
         uint256 nextIdx = lidoARM.nextWithdrawalIndex();
         for (uint256 i; i < nextIdx; i++) {
-            (, bool claimed,, uint128 assets,,) = lidoARM.withdrawalRequests(i);
+            (, bool claimed,, uint128 assets,) = lidoARM.withdrawalRequests(i);
             if (!claimed) total += assets;
         }
     }
@@ -162,7 +161,7 @@ abstract contract Helpers is Base_Test_ {
     function sumOfUserPendingAssets(address user) public view returns (uint256 total) {
         uint256 nextIdx = lidoARM.nextWithdrawalIndex();
         for (uint256 i; i < nextIdx; i++) {
-            (address withdrawer, bool claimed,, uint128 assets,,) = lidoARM.withdrawalRequests(i);
+            (address withdrawer, bool claimed,, uint128 assets,) = lidoARM.withdrawalRequests(i);
             if (withdrawer == user && !claimed) total += assets;
         }
     }

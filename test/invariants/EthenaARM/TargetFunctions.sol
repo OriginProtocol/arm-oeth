@@ -67,17 +67,17 @@ abstract contract TargetFunctions is Setup, StdUtils {
     // ║                              ✦✦✦ ETHENA ARM ✦✦✦                              ║
     // ╚══════════════════════════════════════════════════════════════════════════════╝
     function _buyPrice() internal view returns (uint256 buyPrice) {
-        (uint128 buyPriceMem,,,,,,,) = arm.baseAssetConfigs(address(susde));
+        (uint128 buyPriceMem,,,,,,,,) = arm.baseAssetConfigs(address(susde));
         buyPrice = buyPriceMem;
     }
 
     function _sellPrice() internal view returns (uint256 sellPrice) {
-        (, uint128 sellPriceMem,,,,,,) = arm.baseAssetConfigs(address(susde));
+        (, uint128 sellPriceMem,,,,,,,) = arm.baseAssetConfigs(address(susde));
         sellPrice = sellPriceMem;
     }
 
     function _crossPrice() internal view returns (uint256 crossPrice) {
-        (,,,, uint128 crossPriceMem,,,) = arm.baseAssetConfigs(address(susde));
+        (,,,, uint128 crossPriceMem,,,,) = arm.baseAssetConfigs(address(susde));
         crossPrice = crossPriceMem;
     }
 
@@ -196,7 +196,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
 
         // Claim redeem as user
         uint256 balanceBefore = usde.balanceOf(address(arm));
-        (,,,,, uint128 requestShares) = arm.withdrawalRequests(requestId);
+        uint256 requestShares = arm.withdrawalRequestShares(requestId);
         vm.prank(user);
         uint256 amount = arm.claimRedeem(requestId);
 
@@ -327,7 +327,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         crossPrice = _bound(crossPrice, minCrossPrice, maxCrossPrice);
 
         uint256 susdeBalance = susde.balanceOf(address(arm));
-        (,,,,, uint120 pendingRedeemAssets,,) = arm.baseAssetConfigs(address(susde));
+        (,,,,, uint120 pendingRedeemAssets,,,) = arm.baseAssetConfigs(address(susde));
         bool loweringCrossPrice = _crossPrice() > crossPrice;
         if (loweringCrossPrice && assume(uint256(pendingRedeemAssets) < DEFAULT_MIN_TOTAL_SUPPLY)) return;
 
@@ -928,7 +928,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         vm.warp(block.timestamp + DEFAULT_CLAIM_DELAY);
         uint256 nextWithdrawalIndex = arm.nextWithdrawalIndex();
         for (uint256 i; i < nextWithdrawalIndex; i++) {
-            (address user, bool claimed,,,,) = arm.withdrawalRequests(i);
+            (address user, bool claimed,,,) = arm.withdrawalRequests(i);
             if (claimed) continue;
             vm.prank(user);
             arm.claimRedeem(i);

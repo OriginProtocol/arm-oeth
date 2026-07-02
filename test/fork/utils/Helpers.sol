@@ -54,14 +54,9 @@ abstract contract Helpers is Base_Test_ {
         uint256 queued,
         uint256 shares
     ) public view {
-        (
-            address _withdrawer,
-            bool _claimed,
-            uint40 _claimTimestamp,
-            uint128 _assets,
-            uint128 _queued,
-            uint128 _shares
-        ) = lidoARM.withdrawalRequests(requestId);
+        (address _withdrawer, bool _claimed, uint40 _claimTimestamp, uint128 _assets, uint128 _queued) =
+            lidoARM.withdrawalRequests(requestId);
+        uint256 _shares = lidoARM.withdrawalRequestShares(requestId);
         assertEq(_withdrawer, withdrawer, "Wrong withdrawer");
         assertEq(_claimed, claimed, "Wrong claimed");
         assertEq(_claimTimestamp, claimTimestamp, "Wrong claimTimestamp");
@@ -71,17 +66,17 @@ abstract contract Helpers is Base_Test_ {
     }
 
     function _lidoWithdrawalQueueAmount() internal view returns (uint256 pendingRedeemAssets) {
-        (,,,,, uint120 _pendingRedeemAssets,,) = lidoARM.baseAssetConfigs(address(steth));
+        (,,,,, uint120 _pendingRedeemAssets,,,) = lidoARM.baseAssetConfigs(address(steth));
         pendingRedeemAssets = _pendingRedeemAssets;
     }
 
     function _lidoBuyPrice() internal view returns (uint256 buyPrice) {
-        (uint128 _buyPrice,,,,,,,) = lidoARM.baseAssetConfigs(address(steth));
+        (uint128 _buyPrice,,,,,,,,) = lidoARM.baseAssetConfigs(address(steth));
         buyPrice = _buyPrice;
     }
 
     function _lidoSellPrice() internal view returns (uint256 sellPrice) {
-        (, uint128 _sellPrice,,,,,,) = lidoARM.baseAssetConfigs(address(steth));
+        (, uint128 _sellPrice,,,,,,,) = lidoARM.baseAssetConfigs(address(steth));
         sellPrice = _sellPrice;
     }
 

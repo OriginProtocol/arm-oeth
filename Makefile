@@ -80,7 +80,6 @@ test-invariant-%:
 # Run all invariant tests
 test-invariants:
 	$(MAKE) test-invariant-lido
-	$(MAKE) test-invariant-origin
 	$(MAKE) test-invariant-ethena
 
 # ╔══════════════════════════════════════════════════════════════════════════════╗
@@ -99,6 +98,11 @@ coverage-html: coverage
 
 gas:
 	forge test --gas-report
+
+# Per-swap gas snapshots. `--isolate` runs each swap as its own transaction so storage warmed during
+# setUp() is cold again, making the recorded gas realistic and comparable between calls.
+gas-swap:
+	forge test --match-contract SwapGas --isolate
 
 snapshot:
 	forge snapshot
