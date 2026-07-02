@@ -12,31 +12,25 @@
 
 ![Proxy Storage](../../docs/ProxyStorage.svg)
 
-## OETH ARM
+## ARM
 
 ### Hierarchy
 
-![OETH ARM Hierarchy](../../docs/OEthARMHierarchy.svg)
+![ARM Hierarchy](../../docs/ARMHierarchy.svg)
 
-## Squashed
+## MultiAsset Squashed
 
-![OETH ARM Squashed](../../docs/OEthARMSquashed.svg)
+![MultiAsset ARM Squashed](../../docs/MultiAssetARMSquashed.svg)
 
-## Storage
+### Public Squashed
 
-![OETH ARM Storage](../../docs/OEthARMStorage.svg)
+![MultiAsset ARM Public Squashed](../../docs/MultiAssetARMPublicSquashed.svg)
 
-## Lido ARM
-
-### Hierarchy
-
-![Lido ARM Hierarchy](../../docs/LidoARMHierarchy.svg)
-
-## Squashed
+## Lido Squashed
 
 ![Lido ARM Squashed](../../docs/LidoARMSquashed.svg)
 
-<!-- ## OETH ARM Storage
+<!-- ## Lido ARM Storage
 
 ![Lido ARM Storage](../../docs/LidoARMStorage.svg) -->
 
