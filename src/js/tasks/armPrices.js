@@ -14,6 +14,7 @@ const { get1InchPrices } = require("../utils/1Inch");
 const { logTxDetails } = require("../utils/txLogger");
 const {
   convertToAsset,
+  calculatePriceOffset,
   rangeSellPrice,
   rangeBuyPrice,
 } = require("../utils/pricing");
@@ -33,6 +34,8 @@ const log = require("../utils/logger")("task:prices");
  * curve/inch/kyber - whether to use Curve/1Inch/Kyber for reference prices
  * market - Ethers contract of the ARM's active lending market. Only used for Morpho markets
  * offset - price offset in basis points to add to the reference buy price when calculating target prices
+ * dynamicOffset - if true, scale the offset from 0 to the DEX spread based on distance from cross price
+ * dynamicOffsetFullSpreadPrice - price where dynamic offset reaches 100% of the DEX spread
  * priceOffset - whether to use the offset-based approach for calculating target prices, or just calculate off the reference mid price and fee
  * dryrun - if true, will not actually call setPrices on the ARM, just log the target prices
  * base - base asset symbol. eg STETH, WSTETH, EETH, WEETH, SUSDE, OETH, WOETH, OS
@@ -63,6 +66,8 @@ const setPrices = async (options) => {
     wrapped,
     buyAmount,
     sellAmount,
+    dynamicOffset,
+    dynamicOffsetFullSpreadPrice,
   } = options;
 
   // 1. Get current ARM prices
@@ -174,8 +179,18 @@ const setPrices = async (options) => {
     );
 
     // 2.2 Calculate target prices
-    const offsetBN = parseUnits(offset.toString(), 14);
     if (priceOffset && referencePrices.sellPrice) {
+      const offsetBN = calculatePriceOffset({
+        offset,
+        dynamicOffset,
+        dynamicOffsetFullSpreadPrice,
+        referencePrices,
+        crossPrice: config.crossPrice,
+      });
+      const dexSpread =
+        referencePrices.buyPrice > referencePrices.sellPrice
+          ? referencePrices.buyPrice - referencePrices.sellPrice
+          : 0n;
       // If price offset is provided, adjust the target prices accordingly
       log(`\nCalculating target prices based on offset:`);
       // Target buy price is the reference sell price plus the offset
@@ -184,6 +199,12 @@ const setPrices = async (options) => {
       targetSellPrice =
         targetBuyPrice + parseUnits(fee.toString(), 32) * BigInt(2);
       log(`offset             : ${formatUnits(offsetBN, 14)} basis points`);
+      if (dynamicOffset) {
+        log(
+          `dynamic offset     : full spread at ${dynamicOffsetFullSpreadPrice}`,
+        );
+        log(`DEX spread         : ${formatUnits(dexSpread, 18)}`);
+      }
       log(
         `fee                : ${formatUnits(
           BigInt(fee * 1000000),
@@ -193,6 +214,7 @@ const setPrices = async (options) => {
       log(`target sell price  : ${formatUnits(targetSellPrice, 36)}`);
       log(`target buy price   : ${formatUnits(targetBuyPrice, 36)}`);
     } else {
+      const offsetBN = parseUnits(offset.toString(), 14);
       // If no price offset, calculate target prices based fee and offset
       log(`\nCalculating target prices based on fee:`);
       const FeeScale = BigInt(1e6);

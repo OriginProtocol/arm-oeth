@@ -66,6 +66,18 @@ action({
         types.float,
       )
       .addOptionalParam(
+        "dynamicOffset",
+        "Use a dynamic offset that scales from zero at cross price to the DEX spread at the full-spread price.",
+        false,
+        types.boolean,
+      )
+      .addOptionalParam(
+        "dynamicOffsetFullSpreadPrice",
+        "DEX sell price where dynamic offset reaches 100% of the DEX spread.",
+        0.999,
+        types.float,
+      )
+      .addOptionalParam(
         "tolerance",
         "Tolerance used when comparing target and current prices.",
         0.3,
@@ -98,6 +110,8 @@ action({
         tolerance: args.tolerance,
         fee: args.fee,
         offset: args.offset,
+        dynamicOffset: args.dynamicOffset,
+        dynamicOffsetFullSpreadPrice: args.dynamicOffsetFullSpreadPrice,
         priceOffset: true,
         blockTag: "latest",
       },

@@ -4,6 +4,7 @@ import { types } from "hardhat/config";
 import { action } from "../lib/action";
 import { setPrices } from "../armPrices";
 import { setPricesForBases } from "../../utils/priceActionUtils";
+import { resolveEthenaAggregatorAmount } from "../../utils/ethenaPricing";
 import { mainnet } from "../../utils/addresses";
 const ethenaARMAbi = require("../../../abis/EthenaARM.json");
 
@@ -43,8 +44,8 @@ action({
       )
       .addOptionalParam(
         "amount",
-        "Reference swap amount used when fetching aggregator quotes.",
-        2000,
+        "Override for the reference swap amount used when fetching aggregator quotes.",
+        undefined,
         types.float,
       )
       .addOptionalParam(
@@ -66,6 +67,18 @@ action({
         types.float,
       )
       .addOptionalParam(
+        "dynamicOffset",
+        "Use a dynamic offset that scales from zero at cross price to the DEX spread at the full-spread price.",
+        false,
+        types.boolean,
+      )
+      .addOptionalParam(
+        "dynamicOffsetFullSpreadPrice",
+        "DEX sell price where dynamic offset reaches 100% of the DEX spread.",
+        0.999,
+        types.float,
+      )
+      .addOptionalParam(
         "tolerance",
         "Tolerance used when comparing target and current prices.",
         0.09,
@@ -81,6 +94,14 @@ action({
     const arm = new ethers.Contract(mainnet.ethenaARM, ethenaARMAbi, signer);
 
     log.info("Setting prices for Ethena ARM");
+    const amount = await resolveEthenaAggregatorAmount({
+      arm,
+      amount: args.amount,
+      log,
+      blockTag: "latest",
+    });
+    if (amount === undefined) return;
+
     await setPricesForBases({
       setPrices,
       bases: ["SUSDE"],
@@ -94,10 +115,12 @@ action({
         minBuyPrice: args.minBuyPrice,
         kyber: args.kyber,
         inch: args.inch,
-        amount: args.amount,
+        amount,
         tolerance: args.tolerance,
         fee: args.fee,
         offset: args.offset,
+        dynamicOffset: args.dynamicOffset,
+        dynamicOffsetFullSpreadPrice: args.dynamicOffsetFullSpreadPrice,
         priceOffset: true,
         blockTag: "latest",
         wrapped: true,
