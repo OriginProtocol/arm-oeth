@@ -3,6 +3,8 @@ const { ethers } = require("ethers");
 
 const log = require("../utils/logger")("task:utils:pricing");
 
+const PRICE_SCALE = parseUnits("1", 18);
+
 const convertToAsset = async (vaultAddress, amount, signer) => {
   const vault = new ethers.Contract(
     vaultAddress,
@@ -15,6 +17,55 @@ const convertToAsset = async (vaultAddress, amount, signer) => {
   const assetPrice =
     (assetAmount * parseUnits("1")) / parseUnits(amount.toString(), 18);
   return assetPrice;
+};
+
+const calculateDynamicPriceOffset = ({
+  referencePrices,
+  crossPrice,
+  dynamicOffsetFullSpreadPrice,
+}) => {
+  const crossPriceScaled = crossPrice / PRICE_SCALE;
+  const fullSpreadPrice = parseUnits(
+    dynamicOffsetFullSpreadPrice.toString(),
+    18,
+  );
+
+  if (fullSpreadPrice >= crossPriceScaled) {
+    throw new Error(
+      `dynamicOffsetFullSpreadPrice ${dynamicOffsetFullSpreadPrice} must be below cross price ${formatUnits(
+        crossPriceScaled,
+        18,
+      )}`,
+    );
+  }
+
+  const dexSellPrice = referencePrices.sellPrice;
+  const dexBuyPrice = referencePrices.buyPrice;
+  const spread = dexBuyPrice > dexSellPrice ? dexBuyPrice - dexSellPrice : 0n;
+
+  if (dexSellPrice >= crossPriceScaled) return 0n;
+  if (dexSellPrice <= fullSpreadPrice) return spread;
+
+  return (
+    (spread * (crossPriceScaled - dexSellPrice)) /
+    (crossPriceScaled - fullSpreadPrice)
+  );
+};
+
+const calculatePriceOffset = ({
+  offset,
+  dynamicOffset,
+  dynamicOffsetFullSpreadPrice,
+  referencePrices,
+  crossPrice,
+}) => {
+  if (!dynamicOffset) return parseUnits(offset.toString(), 14);
+
+  return calculateDynamicPriceOffset({
+    referencePrices,
+    crossPrice,
+    dynamicOffsetFullSpreadPrice,
+  });
 };
 
 const rangeSellPrice = (targetSellPrice, minSellPrice, maxSellPrice) => {
@@ -102,6 +153,8 @@ const convertReth = async (rethAmount, signer) => {
 
 module.exports = {
   convertToAsset,
+  calculateDynamicPriceOffset,
+  calculatePriceOffset,
   rangeSellPrice,
   rangeBuyPrice,
   convertReth,
