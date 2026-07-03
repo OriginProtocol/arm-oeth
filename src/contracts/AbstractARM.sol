@@ -601,10 +601,10 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
     /// eg 0.998e36 is 0.998 liquidity asset per base asset.
     /// @param sellPrice Price the ARM charges when selling this base asset to traders.
     /// eg 1e36 is 1 liquidity asset per base asset.
-    /// @param buyAmount Liquidity-asset amount the ARM can pay out at the buy price.
-    /// eg 100e18 allows the ARM to pay out 100 liquidity assets.
-    /// @param sellAmount Base-asset amount the ARM can sell at the sell price.
-    /// eg 100e18 allows the ARM to sell 100 base assets.
+    /// @param buyAmount Liquidity-asset amount the ARM can pay out at the buy price, in native liquidity decimals.
+    /// eg 100e18 pays out 100 liquidity assets with 18 decimals, 100e6 with 6 decimals.
+    /// @param sellAmount Base-asset amount the ARM can sell at the sell price, in native base decimals.
+    /// eg 100e18 sells 100 base assets with 18 decimals, 100e6 with 6 decimals.
     /// @param newCrossPrice totalAssets() valuation price for this base asset.
     /// eg 1e36 values the base asset at 1 liquidity asset.
     /// @param peggedToLiquidityAsset True for 1:1 assets that should skip adapter conversion calls.
@@ -652,10 +652,10 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
     /// eg 0.998e36 is 0.998 liquidity asset per base asset.
     /// @param sellPrice Price the ARM charges when selling this base asset to traders.
     /// eg 1e36 is 1 liquidity asset per base asset.
-    /// @param buyAmount Liquidity-asset amount the ARM can pay out at the buy price.
-    /// eg 100e18 allows the ARM to pay out 100 liquidity assets.
-    /// @param sellAmount Base-asset amount the ARM can sell at the sell price.
-    /// eg 100e18 allows the ARM to sell 100 base assets.
+    /// @param buyAmount Liquidity-asset amount the ARM can pay out at the buy price, in native liquidity decimals.
+    /// eg 100e18 pays out 100 liquidity assets with 18 decimals, 100e6 with 6 decimals.
+    /// @param sellAmount Base-asset amount the ARM can sell at the sell price, in native base decimals.
+    /// eg 100e18 sells 100 base assets with 18 decimals, 100e6 with 6 decimals.
     function setPrices(
         address priceBaseAsset,
         uint256 buyPrice,
