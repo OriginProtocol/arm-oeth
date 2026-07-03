@@ -621,8 +621,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
         if (newBaseAsset == address(0)) revert InvalidAsset();
         if (adapter == address(0)) revert InvalidAdapter();
         if (baseAssetConfigs[newBaseAsset].adapter != address(0)) revert AssetAlreadySupported();
-        uint8 bd = IERC20(newBaseAsset).decimals();
-        if (bd != 6 && bd != 18) revert InvalidAssetDecimals();
+        uint8 baseDecimals = IERC20(newBaseAsset).decimals();
+        if (baseDecimals != 6 && baseDecimals != 18) revert InvalidAssetDecimals();
         if (IAssetAdapter(adapter).asset() != liquidityAsset) revert InvalidAdapterAsset();
         if (newCrossPrice < PRICE_SCALE - MAX_CROSS_PRICE_DEVIATION) revert CrossPriceTooLow();
         if (newCrossPrice > PRICE_SCALE) revert CrossPriceTooHigh();
@@ -639,7 +639,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
             crossPrice: SafeCast.toUint128(newCrossPrice),
             pendingRedeemAssets: 0,
             peggedToLiquidityAsset: peggedToLiquidityAsset,
-            baseAssetDecimals: bd,
+            baseAssetDecimals: baseDecimals,
             adapter: adapter
         });
 
