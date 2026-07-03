@@ -118,15 +118,16 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
     mapping(address asset => BaseAssetConfig) public baseAssetConfigs;
 
     /// @notice True when user-facing ARM actions are paused.
+    /// Packed with `fee` and `feesAccrued` in the same slot as all three are read on swaps.
     bool public paused;
     /// @notice Swap fee share collected on discounted base-asset buy swaps, in basis points.
     /// 10,000 = 100% fee
     /// 500 = 5% fee
     uint16 public fee;
-    /// @notice Account or contract that can collect accrued swap fees.
-    address public feeCollector;
     /// @notice Accrued swap fees denominated in the liquidity asset.
     uint128 public feesAccrued;
+    /// @notice Account or contract that can collect accrued swap fees.
+    address public feeCollector;
     /// @notice Cumulative LP shares queued for redemption, used by the FIFO gate.
     uint128 public withdrawsQueuedShares;
     /// @notice Cumulative LP shares claimed and burned.
