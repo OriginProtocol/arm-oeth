@@ -569,9 +569,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
     /// Decimals are constrained to {6, 18}, so the only adjustment is a factor of 1e12. Identity when equal.
     /// Division truncates, leaving any sub-unit dust in the ARM (favoring LPs).
     function _scaleBaseToLiquidity(uint8 baseDecimals, uint256 amount) internal view returns (uint256) {
-        uint8 liqDecimals = liquidityAssetDecimals;
-        if (baseDecimals == liqDecimals) return amount;
-        return liqDecimals > baseDecimals ? amount * 1e12 : amount / 1e12;
+        if (baseDecimals == liquidityAssetDecimals) return amount;
+        return liquidityAssetDecimals > baseDecimals ? amount * 1e12 : amount / 1e12;
     }
 
     /// @dev Scale a native liquidity amount to native base decimals for a 1:1-valued (pegged) asset.
