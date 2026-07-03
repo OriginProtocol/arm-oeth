@@ -281,7 +281,7 @@ abstract contract Fork_Shared_Test is Base_Test_ {
     }
 
     function _pendingRedeemAssets(IERC20 token) internal view returns (uint256 pending) {
-        (,,,,, uint120 _pending,,,) = arm.baseAssetConfigs(address(token));
+        (,,,,, uint128 _pending,,,) = arm.baseAssetConfigs(address(token));
         pending = _pending;
     }
 

@@ -66,7 +66,7 @@ abstract contract Helpers is Base_Test_ {
     }
 
     function _lidoWithdrawalQueueAmount() internal view returns (uint256 pendingRedeemAssets) {
-        (,,,,, uint120 _pendingRedeemAssets,,,) = lidoARM.baseAssetConfigs(address(steth));
+        (,,,,, uint128 _pendingRedeemAssets,,,) = lidoARM.baseAssetConfigs(address(steth));
         pendingRedeemAssets = _pendingRedeemAssets;
     }
 

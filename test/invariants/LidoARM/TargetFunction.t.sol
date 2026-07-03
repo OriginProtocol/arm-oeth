@@ -571,7 +571,7 @@ abstract contract TargetFunction is Invariant_LidoARM_Setup_Test {
         vm.assume(lo <= hi);
 
         // Lowering crossPrice reverts if ARM has base asset exposure >= MIN_TOTAL_SUPPLY.
-        (,,,,, uint120 pendingRedeem,,, address adapter) = lidoARM.baseAssetConfigs(baseAsset);
+        (,,,,, uint128 pendingRedeem,,, address adapter) = lidoARM.baseAssetConfigs(baseAsset);
         uint256 baseBalance = IERC20(baseAsset).balanceOf(address(lidoARM));
         uint256 exposure = IAssetAdapter(adapter).convertToAssets(baseBalance) + pendingRedeem;
         if (exposure >= MIN_TOTAL_SUPPLY && currentCross > lo) lo = currentCross;

@@ -169,7 +169,7 @@ abstract contract Properties is TargetFunctions {
             UserCooldown memory cooldown = susde.cooldowns(address(unstakers[i]));
             liquidityAmountInCooldown += cooldown.underlyingAmount;
         }
-        (,,,,, uint120 pendingRedeemAssets,,,) = arm.baseAssetConfigs(address(susde));
+        (,,,,, uint128 pendingRedeemAssets,,,) = arm.baseAssetConfigs(address(susde));
         return Math.eq(liquidityAmountInCooldown, pendingRedeemAssets);
     }
 

@@ -84,10 +84,11 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
         /// @notice Valuation price used by totalAssets(), scaled to 36 decimals.
         uint128 crossPrice;
         /// @notice Liquidity-denominated value expected from adapter redemption queues.
-        uint120 pendingRedeemAssets;
+        uint128 pendingRedeemAssets;
         /// @notice If true, conversions bypass the adapter and use a 1:1 value (decimal-scaled) amount.
+        /// Packed with `baseAssetDecimals` and `adapter` in the same slot as all three are read on conversions.
         bool peggedToLiquidityAsset;
-        /// @notice Decimals of this base asset. Must be 6 or 18. Packed with `adapter` in the same slot.
+        /// @notice Decimals of this base asset. Must be 6 or 18.
         uint8 baseAssetDecimals;
         /// @notice Adapter that owns protocol-specific redemption logic for this base asset.
         address adapter;
@@ -724,7 +725,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
 
         (sharesRequested, assetsExpected) = IAssetAdapter(config.adapter).requestRedeem(shares);
         // Track the liquidity-denominated value expected back from the adapter queue.
-        config.pendingRedeemAssets = SafeCast.toUint120(uint256(config.pendingRedeemAssets) + assetsExpected);
+        config.pendingRedeemAssets = SafeCast.toUint128(uint256(config.pendingRedeemAssets) + assetsExpected);
     }
 
     /// @notice Claim protocol redemptions through a base asset adapter.
@@ -745,7 +746,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
 
         (sharesClaimed, assetsExpected, assetsReceived) = IAssetAdapter(config.adapter).redeem(shares);
         // Remove expected queue value. Any received shortfall remains reflected in totalAssets().
-        config.pendingRedeemAssets = SafeCast.toUint120(uint256(config.pendingRedeemAssets) - assetsExpected);
+        config.pendingRedeemAssets = SafeCast.toUint128(uint256(config.pendingRedeemAssets) - assetsExpected);
     }
 
     ////////////////////////////////////////////////////
