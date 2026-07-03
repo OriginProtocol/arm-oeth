@@ -966,13 +966,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
     function totalAssets() public view virtual returns (uint256) {
         uint256 newAvailableAssets = _availableAssets();
         uint256 feesAccruedMem = feesAccrued;
-        // total assets should only go up from the initial deposit amount that is burnt,
-        // but in case of something unforeseen, return at least MIN_LIQUIDITY.
-        // An example scenario that will return MIN_LIQUIDITY is:
-        // First LP deposits and then requests a redeem of all their ARM shares.
-        // While waiting to claim their request, the ARM suffers a loss of assets. eg lending market loss.
-        // When they claim their request, newAvailableAssets can be zero as the ARM assets can be less than
-        // the outstanding withdrawal request that was calculated before the loss.
+        // totalAssets() should normally stay at or above the initial MIN_LIQUIDITY deposit.
+        // Clamp to MIN_LIQUIDITY if unforeseen losses or fee accounting would otherwise push
+        // available assets down to, or below, the initialized floor.
         if (feesAccruedMem + MIN_LIQUIDITY >= newAvailableAssets) return MIN_LIQUIDITY;
         // Remove accrued swap fees from the available assets.
         return newAvailableAssets - feesAccruedMem;
