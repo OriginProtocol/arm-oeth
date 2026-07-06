@@ -20,7 +20,8 @@ abstract contract Properties is TargetFunction {
     // [x] Invariant H: ARM escrowed shares == withdrawsQueuedShares - withdrawsClaimedShares
     // [x] Invariant I: ∑feesCollected == feeCollector.balanceOf(WETH)
     // [x] Invariant Q: ∀ LP, convertToAssets(shares) + claimed + transferOut >= deposited + transferIn
-    //                   (100 wei tolerance — optimization found worst-case 39 wei / 80k txs)
+    //                   (tolerance = 100 wei base + depositCount × shareValue, since each deposit rounds
+    //                    shares down by up to one share's worth of assets in favour of the vault)
     //
     // ╔══════════════════════════════════════════════════════════════════════════════╗
     // ║                       ✦✦✦ WITHDRAWAL INDEX PROPERTIES ✦✦✦                    ║
@@ -116,14 +117,25 @@ abstract contract Properties is TargetFunction {
             uint256 pendingValue = sumOfUserPendingAssets(lp);
             uint256 totalOut = currentValue + pendingValue + ghost_userClaimed[lp] + ghost_userTransferOutValue[lp];
             uint256 totalIn = ghost_userDeposited[lp] + ghost_userTransferInValue[lp];
-            // 100 wei tolerance for accumulated rounding across multiple deposit/redeem/transfer cycles
-            // Optimization mode found worst-case of 39 wei over ~80k txs.
-            if (totalOut + 100 < totalIn) return false;
+            if (totalOut + lpLossTolerance(lp) < totalIn) return false;
         }
         return true;
     }
 
-    /// @notice Returns the max rounding loss in wei across all LPs.
+    /// @notice Per-LP allowed rounding loss in wei.
+    /// @dev Each ERC4626-style deposit mints `floor(assets * totalSupply / netAssets)` shares, so the
+    ///      depositor forfeits up to the value of one share (rounded in favour of the vault). That loss is
+    ///      unavoidable and grows linearly with the number of deposits, so the tolerance must scale with the
+    ///      deposit count times the current share value, not stay a fixed constant. A 100 wei base absorbs
+    ///      the redeem/transfer rounding that does not scale with deposits.
+    function lpLossTolerance(address lp) internal view returns (uint256) {
+        uint256 totalSupply = lidoARM.totalSupply();
+        // Value of one share, rounded up: the maximum assets a single deposit can round away.
+        uint256 shareValueCeil = (lidoARM.totalAssets() + totalSupply - 1) / totalSupply;
+        return 100 + ghost_userDepositCount[lp] * shareValueCeil;
+    }
+
+    /// @notice Returns the max rounding loss (over its per-LP tolerance) in wei across all LPs.
     function maxLpLoss() public view returns (int256 maxLoss) {
         if (ghost_crossPriceChanged) return 0;
         address[6] memory allLps = [alice, bobby, carol, david, elise, frank];
@@ -133,8 +145,10 @@ abstract contract Properties is TargetFunction {
             uint256 pendingValue = sumOfUserPendingAssets(lp);
             uint256 totalOut = currentValue + pendingValue + ghost_userClaimed[lp] + ghost_userTransferOutValue[lp];
             uint256 totalIn = ghost_userDeposited[lp] + ghost_userTransferInValue[lp];
-            if (totalIn > totalOut) {
-                int256 loss = int256(totalIn) - int256(totalOut);
+            uint256 tolerance = lpLossTolerance(lp);
+            // Only surface loss that exceeds the unavoidable per-deposit rounding allowance.
+            if (totalIn > totalOut + tolerance) {
+                int256 loss = int256(totalIn) - int256(totalOut) - int256(tolerance);
                 if (loss > maxLoss) maxLoss = loss;
             }
         }
