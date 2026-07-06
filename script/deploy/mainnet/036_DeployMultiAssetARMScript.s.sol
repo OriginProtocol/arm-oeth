@@ -24,7 +24,7 @@ import {AbstractDeployScript} from "script/deploy/helpers/AbstractDeployScript.s
 /// @dev Mirrors the proven 011_DeployEtherFiARMScript structure, generalised to the unified
 ///      MultiAssetARM and the two extra Lido assets. No lending market is wired up here (idle WETH
 ///      stays in the ARM until a market is added in a follow-up script).
-contract $035_DeployMultiAssetARMScript is AbstractDeployScript("035_DeployMultiAssetARMScript") {
+contract $036_DeployMultiAssetARMScript is AbstractDeployScript("036_DeployMultiAssetARMScript") {
     /// @dev Owner of the ARM, CapManager and all adapter proxies: the mainnet 2/8 multisig.
     address internal constant OWNER_2_OF_8 = Mainnet.ARM_MULTISIG;
     /// @dev Operational "strategist" role (request/claim redemptions, set prices): the Talos KMS relayer.
