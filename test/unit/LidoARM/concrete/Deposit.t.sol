@@ -199,6 +199,25 @@ contract Unit_LidoARM_Deposit_Test is Unit_LidoARM_Shared_Test {
         assertEq(lidoARM.totalSupply(), totalSupplyBefore + expectedShares, "totalSupply");
     }
 
+    function test_Deposit_WithBackedAccruedFees() public {
+        _generateFees();
+        uint256 fees = lidoARM.feesAccrued();
+        assertGt(fees, 0, "fees accrued");
+
+        // Keep enough gross assets above the accrued-fee floor so deposits remain open.
+        deal(address(steth), address(lidoARM), 0);
+        deal(address(weth), address(lidoARM), fees + 1e12 + 1 ether);
+
+        uint256 amount = 1 ether;
+        uint256 expectedShares = lidoARM.convertToShares(amount);
+        deal(address(weth), bobby, amount);
+
+        vm.prank(bobby);
+        lidoARM.deposit(amount);
+
+        assertEq(lidoARM.balanceOf(bobby), expectedShares, "bobby shares");
+    }
+
     //////////////////////////////////////////////////////
     /// ---                  REVERTS                   ---
     //////////////////////////////////////////////////////
@@ -219,5 +238,33 @@ contract Unit_LidoARM_Deposit_Test is Unit_LidoARM_Shared_Test {
         vm.prank(alice);
         vm.expectRevert(AbstractARM.Insolvent.selector);
         lidoARM.deposit(1 ether);
+    }
+
+    function test_Deposit_RevertWhen_AccruedFeesUndercollateralized() public {
+        _generateFees();
+        uint256 fees = lidoARM.feesAccrued();
+        assertGt(fees, 0, "fees accrued");
+        assertEq(lidoARM.reservedWithdrawLiquidity(), 0, "no reserved withdrawals");
+
+        // Simulate a loss that leaves accrued fees undercollateralized at the asset floor.
+        deal(address(steth), address(lidoARM), 0);
+        deal(address(weth), address(lidoARM), fees + 1e12);
+
+        vm.expectRevert(AbstractARM.Insolvent.selector);
+        vm.prank(alice);
+        lidoARM.deposit(1 ether);
+    }
+
+    //////////////////////////////////////////////////////
+    /// --- Helpers
+    //////////////////////////////////////////////////////
+    function _generateFees() internal {
+        aliceFirstDeposit();
+        addBaseAsset(steth);
+
+        uint256 amountIn = 10 ether;
+        deal(address(steth), bobby, amountIn);
+        vm.prank(bobby);
+        lidoARM.swapExactTokensForTokens(steth, weth, amountIn, 0, bobby);
     }
 }
