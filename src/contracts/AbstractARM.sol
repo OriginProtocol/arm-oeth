@@ -780,8 +780,17 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
     /// @param receiver Account that receives minted LP shares.
     /// @return shares LP shares minted.
     function _deposit(uint256 assets, address receiver) internal returns (uint256 shares) {
-        if (totalAssets() <= MIN_LIQUIDITY && reservedWithdrawLiquidity != 0) revert Insolvent();
-        shares = convertToShares(assets);
+        uint256 grossAssets = _availableAssets();
+        uint256 feesAccruedMem = feesAccrued;
+
+        // Treat accrued fees as a senior liability. If gross assets no longer cover
+        // accrued fees plus the minimum native-liquidity floor, new deposits would be
+        // minted against the floor and backfill the shortfall, so block deposits.
+        bool atAssetFloor = feesAccruedMem + MIN_LIQUIDITY >= grossAssets;
+        if (atAssetFloor && (feesAccruedMem != 0 || reservedWithdrawLiquidity != 0)) revert Insolvent();
+
+        uint256 netAssets = atAssetFloor ? MIN_LIQUIDITY : grossAssets - feesAccruedMem;
+        shares = assets * totalSupply() / netAssets;
 
         // Transfer liquidity from the depositor before minting LP shares.
         IERC20(liquidityAsset).transferFrom(msg.sender, address(this), assets);
