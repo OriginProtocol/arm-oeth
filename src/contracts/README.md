@@ -26,13 +26,9 @@
 
 ![MultiAsset ARM Public Squashed](../../docs/MultiAssetARMPublicSquashed.svg)
 
-## Lido Squashed
+### Storage
 
-![Lido ARM Squashed](../../docs/LidoARMSquashed.svg)
-
-<!-- ## Lido ARM Storage
-
-![Lido ARM Storage](../../docs/LidoARMStorage.svg) -->
+![MultiAsset ARM Storage](../../docs/MultiAssetARMStorage.svg)
 
 ## Cap Manager
 
