@@ -5,6 +5,7 @@ pragma solidity 0.8.23;
 import {Fork_Shared_Test} from "test/fork/EthenaARM/shared/Shared.sol";
 
 // Contracts
+import {AbstractARM} from "contracts/AbstractARM.sol";
 import {EthenaARM} from "contracts/EthenaARM.sol";
 
 // Interfaces
@@ -136,32 +137,32 @@ contract Fork_Concrete_EthenaARM_swapExactTokensForTokens_Test_ is Fork_Shared_T
     /// --- REVERTING TESTS
     //////////////////////////////////////////////////////
     function test_RevertWhen_swapExactTokensForTokens_Because_InvalidInToken() public {
-        vm.expectRevert(bytes("ARM: Invalid swap assets"));
+        vm.expectRevert(AbstractARM.InvalidSwapAssets.selector);
         ethenaARM.swapExactTokensForTokens(badToken, usde, AMOUNT_IN, 0, address(this));
     }
 
     function test_RevertWhen_swapExactTokensForTokens_Because_InvalidOutToken() public {
-        vm.expectRevert(bytes("ARM: Invalid swap assets"));
+        vm.expectRevert(AbstractARM.InvalidSwapAssets.selector);
         ethenaARM.swapExactTokensForTokens(usde, badToken, AMOUNT_IN, 0, address(this));
 
-        vm.expectRevert(bytes("ARM: Invalid swap assets"));
+        vm.expectRevert(AbstractARM.InvalidSwapAssets.selector);
         ethenaARM.swapExactTokensForTokens(IERC20(address(susde)), badToken, AMOUNT_IN, 0, address(this));
     }
 
     function test_RevertWhen_swapExactTokensForTokens_Because_InsufficientOutputAmount() public {
         uint256 highMinAmountOut = 1_000_000 ether;
 
-        vm.expectRevert(bytes("ARM: Insufficient output amount"));
+        vm.expectRevert(AbstractARM.InsufficientOutputAmount.selector);
         ethenaARM.swapExactTokensForTokens(IERC20(address(susde)), usde, AMOUNT_IN, highMinAmountOut, address(this));
 
-        vm.expectRevert(bytes("ARM: Insufficient output amount"));
+        vm.expectRevert(AbstractARM.InsufficientOutputAmount.selector);
         ethenaARM.swapExactTokensForTokens(usde, IERC20(address(susde)), AMOUNT_IN, highMinAmountOut, address(this));
 
         address[] memory path = new address[](2);
         path[0] = address(usde);
         path[1] = address(susde);
 
-        vm.expectRevert(bytes("ARM: Insufficient output amount"));
+        vm.expectRevert(AbstractARM.InsufficientOutputAmount.selector);
         ethenaARM.swapExactTokensForTokens(AMOUNT_IN, highMinAmountOut, path, address(this), block.timestamp + 1 hours);
     }
 
@@ -171,7 +172,7 @@ contract Fork_Concrete_EthenaARM_swapExactTokensForTokens_Test_ is Fork_Shared_T
         path[0] = address(susde);
         path[1] = address(usde);
 
-        vm.expectRevert(bytes("ARM: Deadline expired"));
+        vm.expectRevert(AbstractARM.DeadlineExpired.selector);
         ethenaARM.swapExactTokensForTokens(AMOUNT_IN, 0, path, address(this), pastDeadline);
     }
 
@@ -179,7 +180,7 @@ contract Fork_Concrete_EthenaARM_swapExactTokensForTokens_Test_ is Fork_Shared_T
         address[] memory shortPath = new address[](1);
         shortPath[0] = address(susde);
 
-        vm.expectRevert(bytes("ARM: Invalid path length"));
+        vm.expectRevert(AbstractARM.InvalidPathLength.selector);
         ethenaARM.swapExactTokensForTokens(AMOUNT_IN, 0, shortPath, address(this), block.timestamp + 1 hours);
 
         address[] memory longPath = new address[](3);
@@ -187,14 +188,14 @@ contract Fork_Concrete_EthenaARM_swapExactTokensForTokens_Test_ is Fork_Shared_T
         longPath[1] = address(usde);
         longPath[2] = address(susde);
 
-        vm.expectRevert(bytes("ARM: Invalid path length"));
+        vm.expectRevert(AbstractARM.InvalidPathLength.selector);
         ethenaARM.swapExactTokensForTokens(AMOUNT_IN, 0, longPath, address(this), block.timestamp + 1 hours);
     }
 
     function test_RevertWhen_swapExactTokensForTokens_Because_InsufficientLiquidity() public {
         ethenaARM.requestRedeem(ethenaARM.balanceOf(address(this)));
 
-        vm.expectRevert(bytes("ARM: Insufficient liquidity"));
+        vm.expectRevert(AbstractARM.InsufficientLiquidity.selector);
         ethenaARM.swapExactTokensForTokens(IERC20(address(susde)), usde, AMOUNT_IN, 0, address(this));
     }
 }

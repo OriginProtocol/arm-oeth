@@ -66,7 +66,7 @@ abstract contract TargetFunction is Invariant_LidoARM_Setup_Test {
         address tokenIn = buyOrSell ? baseAsset : address(weth);
         address tokenOut = buyOrSell ? address(weth) : baseAsset;
 
-        (uint128 buyPrice, uint128 sellPrice, uint128 buyLiqRemaining, uint128 sellLiqRemaining,,,,) =
+        (uint128 buyPrice, uint128 sellPrice, uint128 buyLiqRemaining, uint128 sellLiqRemaining,,,,,) =
             lidoARM.baseAssetConfigs(baseAsset);
 
         // 1. Max output the ARM can deliver
@@ -137,7 +137,7 @@ abstract contract TargetFunction is Invariant_LidoARM_Setup_Test {
         address tokenIn = buyOrSell ? baseAsset : address(weth);
         address tokenOut = buyOrSell ? address(weth) : baseAsset;
 
-        (uint128 buyPrice, uint128 sellPrice, uint128 buyLiqRemaining, uint128 sellLiqRemaining,,,,) =
+        (uint128 buyPrice, uint128 sellPrice, uint128 buyLiqRemaining, uint128 sellLiqRemaining,,,,,) =
             lidoARM.baseAssetConfigs(baseAsset);
 
         // 1. Max output the ARM can deliver
@@ -236,7 +236,7 @@ abstract contract TargetFunction is Invariant_LidoARM_Setup_Test {
         (address user, uint256 requestId, uint256 positionInList) = selectUserWithPendingRequest();
         vm.assume(user != address(0));
 
-        (,,, uint128 reqAssets,, uint128 reqShares) = lidoARM.withdrawalRequests(requestId);
+        uint256 reqShares = lidoARM.withdrawalRequestShares(requestId);
 
         // claimable() passing does not guarantee claimRedeem succeeds (known limitation, see PR#247).
         // The share-based FIFO gate can pass while the market lacks liquidity for this specific request.
@@ -538,7 +538,7 @@ abstract contract TargetFunction is Invariant_LidoARM_Setup_Test {
         ensureSharePriceNotDecreased
     {
         address baseAsset = stETHOrWstETH ? address(steth) : address(wsteth);
-        (,,,, uint128 crossPrice,,,) = lidoARM.baseAssetConfigs(baseAsset);
+        (,,,, uint128 crossPrice,,,,) = lidoARM.baseAssetConfigs(baseAsset);
 
         // buyPrice in [MINIMUM_BUY_PRICE, crossPrice - 1)
         // sellPrice in [crossPrice, MINUMUM_SELL_PRICE]
@@ -559,7 +559,7 @@ abstract contract TargetFunction is Invariant_LidoARM_Setup_Test {
 
     function targetSetCrossPrice(bool stETHOrWstETH, uint16 seed) public updateSharePrice {
         address baseAsset = stETHOrWstETH ? address(steth) : address(wsteth);
-        (uint128 buyPrice, uint128 sellPrice,,, uint128 currentCross,,,) = lidoARM.baseAssetConfigs(baseAsset);
+        (uint128 buyPrice, uint128 sellPrice,,, uint128 currentCross,,,,) = lidoARM.baseAssetConfigs(baseAsset);
 
         // crossPrice in [PRICE_SCALE - MAX_CROSS_PRICE_DEVIATION, PRICE_SCALE]
         // Must also satisfy: buyPrice < crossPrice <= sellPrice
@@ -571,7 +571,7 @@ abstract contract TargetFunction is Invariant_LidoARM_Setup_Test {
         vm.assume(lo <= hi);
 
         // Lowering crossPrice reverts if ARM has base asset exposure >= MIN_TOTAL_SUPPLY.
-        (,,,,, uint120 pendingRedeem,, address adapter) = lidoARM.baseAssetConfigs(baseAsset);
+        (,,,,, uint128 pendingRedeem,,, address adapter) = lidoARM.baseAssetConfigs(baseAsset);
         uint256 baseBalance = IERC20(baseAsset).balanceOf(address(lidoARM));
         uint256 exposure = IAssetAdapter(adapter).convertToAssets(baseBalance) + pendingRedeem;
         if (exposure >= MIN_TOTAL_SUPPLY && currentCross > lo) lo = currentCross;
@@ -640,7 +640,7 @@ abstract contract TargetFunction is Invariant_LidoARM_Setup_Test {
             sum_weth_buyside_out += amtOut;
 
             // Track fee accrued: mirrors _accrueSwapFee in AbstractARM
-            (uint128 buyPrice,,,, uint128 crossPrice,,,) = lidoARM.baseAssetConfigs(baseAsset);
+            (uint128 buyPrice,,,, uint128 crossPrice,,,,) = lidoARM.baseAssetConfigs(baseAsset);
             // round down: same as contract
             uint256 feeMultiplier = Math.mulDiv(
                 (crossPrice - buyPrice) * uint256(lidoARM.fee()), PRICE_SCALE, uint256(buyPrice) * FEE_SCALE
