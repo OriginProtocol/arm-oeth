@@ -151,6 +151,11 @@ contract Fork_PaxosARM_Smoke_Test is AbstractSmokeTest {
 
         usdc.approve(address(stablesARM), amountIn);
 
+        // The deployment registers base assets with zero swap liquidity, so the operator must set
+        // the buy/sell amounts before any swap is possible.
+        vm.prank(operator);
+        stablesARM.setPrices(address(usdg), 0.998e36, 1e36, type(uint128).max, type(uint128).max);
+
         uint256 startIn = usdc.balanceOf(address(this));
         uint256 startOut = usdg.balanceOf(address(this));
 

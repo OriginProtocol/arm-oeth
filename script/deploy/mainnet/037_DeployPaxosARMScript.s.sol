@@ -154,8 +154,8 @@ contract $037_DeployPaxosARMScript is AbstractDeployScript("037_DeployPaxosARMSc
                 address(adapterProxy),
                 BUY_PRICE,
                 SELL_PRICE,
-                type(uint128).max,
-                type(uint128).max,
+                0, // buyAmount: no swaps until the Operator sets the swap limits via setPrices()
+                0, // sellAmount
                 CROSS_PRICE,
                 true
             );
