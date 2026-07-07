@@ -47,7 +47,8 @@ contract $037_DeployPaxosARMScript is AbstractDeployScript("037_DeployPaxosARMSc
     ///      Used only in fork states to seed the pranked deployer with the MIN_LIQUIDITY dust that
     ///      initialize() pulls.
     address internal constant USDC_WHALE = 0x37305B1cD40574E4C5Ce33f8e8306Be057fD7341;
-    /// @dev 1000 = 0.001 USDC. Comfortable margin over the 1 wei of USDC that initialize() pulls.
+    /// @dev 1000 = 0.001 USDC. Comfortable margin over the 1 atomic unit
+    ///      of USDC (0.000001 USDC) that initialize() pulls.
     uint256 internal constant USDC_SEED = 1000;
 
     function _execute() internal override {
