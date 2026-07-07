@@ -30,18 +30,21 @@ contract PaxosAssetAdapter is Initializable, IAssetAdapter, OwnableOperable {
     error PaxosRecipientNotConfigured(); // 0x11f03d8a
     error RedeemAmountTooHigh(); // 0xc4526429
     error InsufficientSettledAssets(uint256 required, uint256 available); // 0x34b0f470
+    error OnlyARM(); // 0x1628bf2a
+    error ZeroShares(); // 0x9811e0c7
+    error DecimalsMismatch(); // 0x5a8dbaed
 
     event PaxosRecipientUpdated(address indexed paxosRecipient);
     event PaxosRedeemSubmitted(bytes32 indexed paxosRedemptionId, uint256 shares, address indexed paxosRecipient);
     event ExcessLiquidityRecovered(address indexed to, uint256 amount);
 
     modifier onlyARM() {
-        require(msg.sender == arm, "Adapter: only ARM");
+        if (msg.sender != arm) revert OnlyARM();
         _;
     }
 
     modifier nonZeroShares(uint256 shares) {
-        require(shares > 0, "Adapter: zero shares");
+        if (shares == 0) revert ZeroShares();
         _;
     }
 
@@ -53,7 +56,7 @@ contract PaxosAssetAdapter is Initializable, IAssetAdapter, OwnableOperable {
         baseAsset = IERC20(_baseAsset);
         liquidityAsset = IERC20(_liquidityAsset);
 
-        require(baseAsset.decimals() == liquidityAsset.decimals(), "Adapter: decimals mismatch");
+        if (baseAsset.decimals() != liquidityAsset.decimals()) revert DecimalsMismatch();
 
         _setOwner(address(0));
         _disableInitializers();

@@ -74,7 +74,7 @@ contract Unit_PaxosAssetAdapter_Test is Test {
 
     function test_Constructor_RevertWhen_DecimalsMismatch() public {
         MockERC20 dai = new MockERC20("Dai Stablecoin", "DAI", 18);
-        vm.expectRevert("Adapter: decimals mismatch");
+        vm.expectRevert(PaxosAssetAdapter.DecimalsMismatch.selector);
         new PaxosAssetAdapter(arm, address(pyusd), address(dai));
     }
 
@@ -143,25 +143,25 @@ contract Unit_PaxosAssetAdapter_Test is Test {
     //////////////////////////////////////////////////////
     function test_RequestRedeem_RevertWhen_NotARM() public {
         vm.prank(alice);
-        vm.expectRevert("Adapter: only ARM");
+        vm.expectRevert(PaxosAssetAdapter.OnlyARM.selector);
         adapter.requestRedeem(100e6);
     }
 
     function test_RequestRedeem_RevertWhen_ZeroShares() public {
         vm.prank(arm);
-        vm.expectRevert("Adapter: zero shares");
+        vm.expectRevert(PaxosAssetAdapter.ZeroShares.selector);
         adapter.requestRedeem(0);
     }
 
     function test_Redeem_RevertWhen_NotARM() public {
         vm.prank(alice);
-        vm.expectRevert("Adapter: only ARM");
+        vm.expectRevert(PaxosAssetAdapter.OnlyARM.selector);
         adapter.redeem(100e6);
     }
 
     function test_Redeem_RevertWhen_ZeroShares() public {
         vm.prank(arm);
-        vm.expectRevert("Adapter: zero shares");
+        vm.expectRevert(PaxosAssetAdapter.ZeroShares.selector);
         adapter.redeem(0);
     }
 
@@ -173,7 +173,7 @@ contract Unit_PaxosAssetAdapter_Test is Test {
 
     function test_SubmitPaxosRedeem_RevertWhen_ZeroShares() public {
         vm.prank(operator);
-        vm.expectRevert("Adapter: zero shares");
+        vm.expectRevert(PaxosAssetAdapter.ZeroShares.selector);
         adapter.submitPaxosRedeem(0, bytes32("id"));
     }
 
