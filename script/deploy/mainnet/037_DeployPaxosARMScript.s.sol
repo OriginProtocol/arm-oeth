@@ -161,7 +161,8 @@ contract $037_DeployPaxosARMScript is AbstractDeployScript("037_DeployPaxosARMSc
             );
         }
 
-        // 10. Hand ownership of the ARM to the 2/8 multisig.
+        // 10. Hand ownership of the ARM to the 2/8 multisig. The owner will later be moved to the
+        //     Timelock (governance) before the CapManager is removed.
         armProxy.setOwner(OWNER_2_OF_8);
     }
 }
