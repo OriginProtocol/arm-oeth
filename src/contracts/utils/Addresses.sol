@@ -72,6 +72,11 @@ library Mainnet {
 
     // Aave USDe Vault
     address public constant AAVE_USDE_VAULT = 0x0DC20109Ea012f050BeDA184844c1eD5ec6dA33A;
+
+    // Paxos
+    // Placeholder Paxos deposit address the Stables ARM adapters redeem to.
+    // TODO: replace with the real Paxos deposit address once Paxos provides it.
+    address public constant PAXOS_RECIPIENT = 0x000000000000000000000000000000000000dEaD;
 }
 
 library Holesky {

@@ -33,11 +33,6 @@ contract $037_DeployPaxosARMScript is AbstractDeployScript("037_DeployPaxosARMSc
     ///      Talos KMS relayer.
     address internal constant OPERATOR_TALOS = Mainnet.ARM_TALOS_RELAYER;
 
-    /// @dev Placeholder Paxos deposit address configured at deployment so each adapter ships with a
-    ///      non-zero recipient. TODO: the adapter owner replaces it with the real Paxos deposit
-    ///      address via setPaxosRecipient() once Paxos provides it.
-    address internal constant PAXOS_RECIPIENT_PLACEHOLDER = 0x000000000000000000000000000000000000dEaD;
-
     /// @dev Initial price band shared by both Paxos base assets, scaled to 1e36. The operator
     ///      (Talos) tunes these per asset via setPrices() after deployment.
     /// 0.99997e36 = base asset valued at 0.99997 USDC in totalAssets() (0.3 bps discount, as the
@@ -127,9 +122,7 @@ contract $037_DeployPaxosARMScript is AbstractDeployScript("037_DeployPaxosARMSc
             adapterProxy.initialize(
                 address(adapterImpl),
                 OWNER_2_OF_8,
-                abi.encodeWithSelector(
-                    PaxosAssetAdapter.initialize.selector, OPERATOR_TALOS, PAXOS_RECIPIENT_PLACEHOLDER
-                )
+                abi.encodeWithSelector(PaxosAssetAdapter.initialize.selector, OPERATOR_TALOS, Mainnet.PAXOS_RECIPIENT)
             );
             _recordDeployment("STABLES_ARM_PYUSD_ADAPTER", address(adapterProxy));
             arm.addBaseAsset(
@@ -153,9 +146,7 @@ contract $037_DeployPaxosARMScript is AbstractDeployScript("037_DeployPaxosARMSc
             adapterProxy.initialize(
                 address(adapterImpl),
                 OWNER_2_OF_8,
-                abi.encodeWithSelector(
-                    PaxosAssetAdapter.initialize.selector, OPERATOR_TALOS, PAXOS_RECIPIENT_PLACEHOLDER
-                )
+                abi.encodeWithSelector(PaxosAssetAdapter.initialize.selector, OPERATOR_TALOS, Mainnet.PAXOS_RECIPIENT)
             );
             _recordDeployment("STABLES_ARM_USDG_ADAPTER", address(adapterProxy));
             arm.addBaseAsset(

@@ -56,11 +56,7 @@ contract Fork_PaxosARM_Smoke_Test is AbstractSmokeTest {
         assertEq(pyusdAdapter.asset(), Mainnet.USDC, "PYUSD adapter liquidity asset");
         assertEq(pyusdAdapter.owner(), Mainnet.STRATEGIST, "PYUSD adapter owner");
         assertEq(pyusdAdapter.operator(), operator, "PYUSD adapter operator");
-        assertEq(
-            pyusdAdapter.paxosRecipient(),
-            0x000000000000000000000000000000000000dEaD,
-            "PYUSD adapter paxos recipient placeholder"
-        );
+        assertEq(pyusdAdapter.paxosRecipient(), Mainnet.PAXOS_RECIPIENT, "PYUSD adapter paxos recipient placeholder");
         assertEq(pyusdAdapter.pendingShares(), 0, "PYUSD adapter pending shares");
         assertEq(pyusdAdapter.settlingShares(), 0, "PYUSD adapter settling shares");
 
@@ -70,11 +66,7 @@ contract Fork_PaxosARM_Smoke_Test is AbstractSmokeTest {
         assertEq(usdgAdapter.asset(), Mainnet.USDC, "USDG adapter liquidity asset");
         assertEq(usdgAdapter.owner(), Mainnet.STRATEGIST, "USDG adapter owner");
         assertEq(usdgAdapter.operator(), operator, "USDG adapter operator");
-        assertEq(
-            usdgAdapter.paxosRecipient(),
-            0x000000000000000000000000000000000000dEaD,
-            "USDG adapter paxos recipient placeholder"
-        );
+        assertEq(usdgAdapter.paxosRecipient(), Mainnet.PAXOS_RECIPIENT, "USDG adapter paxos recipient placeholder");
         assertEq(usdgAdapter.pendingShares(), 0, "USDG adapter pending shares");
         assertEq(usdgAdapter.settlingShares(), 0, "USDG adapter settling shares");
 
