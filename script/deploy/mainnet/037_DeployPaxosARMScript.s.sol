@@ -87,11 +87,11 @@ contract $037_DeployPaxosARMScript is AbstractDeployScript("037_DeployPaxosARMSc
         });
         _recordDeployment("STABLES_ARM_IMPL", address(armImpl));
 
-        // 6. Give the deployer the MIN_LIQUIDITY (1 wei of USDC for a 6-decimal asset) that
+        // 6. Give the deployer the MIN_LIQUIDITY (1 atomic unit of USDC, i.e. 0.000001 USDC) that
         //    initialize() pulls to seed dead shares. 035 wraps ETH into WETH for this, but USDC
         //    cannot be wrapped from ETH and the pranked deployer holds no USDC on a fork, so in
         //    fork states a dust amount is borrowed from the Sky/Maker LitePSM whale.
-        //    In REAL_DEPLOYING the deployer wallet must already hold at least 1 wei of USDC.
+        //    In REAL_DEPLOYING the deployer wallet must already hold at least 1 atomic unit of USDC.
         if (state != State.REAL_DEPLOYING) {
             vm.stopPrank();
             vm.prank(USDC_WHALE);
