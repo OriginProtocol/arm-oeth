@@ -73,7 +73,6 @@ contract PaxosAssetAdapter is Initializable, IAssetAdapter, OwnableOperable {
     /// @notice Set the Paxos on-chain deposit address used for future submissions.
     /// @param _paxosRecipient Paxos deposit address for the adapter's base asset.
     function setPaxosRecipient(address _paxosRecipient) external onlyOwner {
-        if (_paxosRecipient == address(0)) revert InvalidPaxosRecipient();
         _setPaxosRecipient(_paxosRecipient);
     }
 
@@ -174,8 +173,9 @@ contract PaxosAssetAdapter is Initializable, IAssetAdapter, OwnableOperable {
     }
 
     function _setPaxosRecipient(address _paxosRecipient) internal {
+        if (_paxosRecipient == address(0)) revert InvalidPaxosRecipient();
         paxosRecipient = _paxosRecipient;
-
+        
         emit PaxosRecipientUpdated(_paxosRecipient);
     }
 }
