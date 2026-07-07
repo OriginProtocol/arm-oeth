@@ -19,7 +19,7 @@ import {State} from "script/deploy/helpers/DeploymentTypes.sol";
 ///         whose redemption queue is fully off-chain: the operator submits queued base assets to a
 ///         Paxos deposit address and Paxos Actions settle USDC 1:1 back to the adapter. Ownership
 ///         of the ARM, its CapManager and both adapter proxies is handed to the multi-chain 2/8
-///         multisig (`STRATEGIST`); the operational role ("strategist") is the Talos KMS relayer
+///         multisig (`STRATEGIST`); the operational role is the Talos KMS relayer
 ///         (`ARM_TALOS_RELAYER`).
 /// @dev Mirrors the proven 035_DeployMultiAssetARMScript structure with 6-decimal (USDC) analogues
 ///      of its 18-decimal (WETH) parameters. The adapters' `paxosRecipient` is deliberately left
@@ -29,9 +29,9 @@ import {State} from "script/deploy/helpers/DeploymentTypes.sol";
 contract $037_DeployPaxosARMScript is AbstractDeployScript("037_DeployPaxosARMScript") {
     /// @dev Owner of the ARM, CapManager and both PaxosAssetAdapter proxies: the multi-chain 2/8 multisig.
     address internal constant OWNER_2_OF_8 = Mainnet.STRATEGIST;
-    /// @dev Operational "strategist" role (request/claim redemptions, submit Paxos redeems, set
-    ///      prices): the Talos KMS relayer.
-    address internal constant STRATEGIST_TALOS = Mainnet.ARM_TALOS_RELAYER;
+    /// @dev Operational role (request/claim redemptions, submit Paxos redeems, set prices): the
+    ///      Talos KMS relayer.
+    address internal constant OPERATOR_TALOS = Mainnet.ARM_TALOS_RELAYER;
 
     /// @dev Initial price band shared by both Paxos base assets, scaled to 1e36. The operator
     ///      (Talos) tunes these per asset via setPrices() after deployment.
@@ -63,7 +63,7 @@ contract $037_DeployPaxosARMScript is AbstractDeployScript("037_DeployPaxosARMSc
         _recordDeployment("STABLES_ARM_CAP_IMPL", address(capManagerImpl));
 
         // Initialize the CapManager with Talos as operator; keep the deployer as owner for now.
-        bytes memory capManData = abi.encodeWithSignature("initialize(address)", STRATEGIST_TALOS);
+        bytes memory capManData = abi.encodeWithSignature("initialize(address)", OPERATOR_TALOS);
         capManProxy.initialize(address(capManagerImpl), deployer, capManData);
         CapManager capManager = CapManager(address(capManProxy));
 
@@ -103,7 +103,7 @@ contract $037_DeployPaxosARMScript is AbstractDeployScript("037_DeployPaxosARMSc
             "initialize(string,string,address,uint256,address,address)",
             "Stables ARM", // name
             "ARM-USDC-Stables", // symbol
-            STRATEGIST_TALOS, // operator
+            OPERATOR_TALOS, // operator
             2000, // 20% performance fee
             Mainnet.BUYBACK_OPERATOR, // fee collector
             address(capManager)
@@ -120,7 +120,7 @@ contract $037_DeployPaxosARMScript is AbstractDeployScript("037_DeployPaxosARMSc
             adapterProxy.initialize(
                 address(adapterImpl),
                 OWNER_2_OF_8,
-                abi.encodeWithSelector(PaxosAssetAdapter.initialize.selector, STRATEGIST_TALOS, address(0))
+                abi.encodeWithSelector(PaxosAssetAdapter.initialize.selector, OPERATOR_TALOS, address(0))
             );
             _recordDeployment("STABLES_ARM_PYUSD_ADAPTER", address(adapterProxy));
             arm.addBaseAsset(
@@ -144,7 +144,7 @@ contract $037_DeployPaxosARMScript is AbstractDeployScript("037_DeployPaxosARMSc
             adapterProxy.initialize(
                 address(adapterImpl),
                 OWNER_2_OF_8,
-                abi.encodeWithSelector(PaxosAssetAdapter.initialize.selector, STRATEGIST_TALOS, address(0))
+                abi.encodeWithSelector(PaxosAssetAdapter.initialize.selector, OPERATOR_TALOS, address(0))
             );
             _recordDeployment("STABLES_ARM_USDG_ADAPTER", address(adapterProxy));
             arm.addBaseAsset(
