@@ -35,8 +35,9 @@ contract $037_DeployPaxosARMScript is AbstractDeployScript("037_DeployPaxosARMSc
 
     /// @dev Initial price band shared by both Paxos base assets, scaled to 1e36. The operator
     ///      (Talos) tunes these per asset via setPrices() after deployment.
-    /// 0.999e36 = base asset valued at 0.999 USDC in totalAssets()
-    uint256 internal constant CROSS_PRICE = 0.999e36;
+    /// 0.99997e36 = base asset valued at 0.99997 USDC in totalAssets() (0.3 bps discount, as the
+    ///              Paxos assets trade at around 1 bps)
+    uint256 internal constant CROSS_PRICE = 0.99997e36;
     /// 0.998e36 = ARM pays 0.998 USDC per base asset bought from traders (must stay below cross)
     uint256 internal constant BUY_PRICE = 0.998e36;
     /// 1e36 = ARM charges 1 USDC per base asset sold to traders (must stay at/above cross)

@@ -104,7 +104,7 @@ contract Fork_PaxosARM_Smoke_Test is AbstractSmokeTest {
         assertEq(sellPrice, 1e36, string.concat(label, " sell price"));
         assertEq(buyLiquidityRemaining, type(uint128).max, string.concat(label, " buy liquidity remaining"));
         assertEq(sellLiquidityRemaining, type(uint128).max, string.concat(label, " sell liquidity remaining"));
-        assertEq(crossPrice, 0.999e36, string.concat(label, " cross price"));
+        assertEq(crossPrice, 0.99997e36, string.concat(label, " cross price"));
         assertEq(pendingRedeemAssets, 0, string.concat(label, " pending redeem assets"));
         assertEq(peggedToLiquidityAsset, true, string.concat(label, " pegged"));
         assertEq(baseAssetDecimals, 6, string.concat(label, " base asset decimals"));
