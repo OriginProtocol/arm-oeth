@@ -336,7 +336,7 @@
             "name": "037_DeployPaxosARMScript",
             "proposalId": 1,
             "tsDeployment": 1783421579,
-            "tsGovernance": 0
+            "tsGovernance": 1
         }
     ]
 }
