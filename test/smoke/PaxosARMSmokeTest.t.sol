@@ -102,8 +102,8 @@ contract Fork_PaxosARM_Smoke_Test is AbstractSmokeTest {
 
         assertEq(buyPrice, 0.998e36, string.concat(label, " buy price"));
         assertEq(sellPrice, 1e36, string.concat(label, " sell price"));
-        assertEq(buyLiquidityRemaining, type(uint128).max, string.concat(label, " buy liquidity remaining"));
-        assertEq(sellLiquidityRemaining, type(uint128).max, string.concat(label, " sell liquidity remaining"));
+        assertEq(buyLiquidityRemaining, 0, string.concat(label, " buy liquidity remaining"));
+        assertEq(sellLiquidityRemaining, 0, string.concat(label, " sell liquidity remaining"));
         assertEq(crossPrice, 0.99997e36, string.concat(label, " cross price"));
         assertEq(pendingRedeemAssets, 0, string.concat(label, " pending redeem assets"));
         assertEq(peggedToLiquidityAsset, true, string.concat(label, " pegged"));
@@ -123,6 +123,11 @@ contract Fork_PaxosARM_Smoke_Test is AbstractSmokeTest {
         deal(address(pyusd), address(this), 1_000e6);
 
         pyusd.approve(address(stablesARM), amountIn);
+
+        // The deployment registers base assets with zero swap liquidity, so the operator must set
+        // the buy/sell amounts before any swap is possible.
+        vm.prank(operator);
+        stablesARM.setPrices(address(pyusd), 0.998e36, 1e36, type(uint128).max, type(uint128).max);
 
         uint256 startIn = pyusd.balanceOf(address(this));
         uint256 startOut = usdc.balanceOf(address(this));
