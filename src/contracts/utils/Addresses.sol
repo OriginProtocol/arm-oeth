@@ -37,6 +37,7 @@ library Mainnet {
     address public constant SIUSD = 0xDBDC1Ef57537E34680B898E1FEBD3D68c7389bCB;
     address public constant IUSD = 0x48f9e38f3070AD8945DFEae3FA70987722E3D89c;
     address public constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+    address public constant USDG = 0xe343167631d89B6Ffc58B88d6b7fB0228795491D;
     address public constant OUSD = 0x2A8e1E676Ec238d8A992307B495b45B3fEAa5e86;
     address public constant RETH = 0xae78736Cd615f374D3085123A210448E74Fc6393;
     address public constant PYUSD = 0x6c3ea9036406852006290770BEdFcAbA0e23A0e8;
@@ -71,6 +72,11 @@ library Mainnet {
 
     // Aave USDe Vault
     address public constant AAVE_USDE_VAULT = 0x0DC20109Ea012f050BeDA184844c1eD5ec6dA33A;
+
+    // Paxos
+    // Placeholder Paxos deposit address the Stables ARM adapters redeem to.
+    // TODO: replace with the real Paxos deposit address once Paxos provides it.
+    address public constant PAXOS_RECIPIENT = 0x000000000000000000000000000000000000dEaD;
 }
 
 library Holesky {

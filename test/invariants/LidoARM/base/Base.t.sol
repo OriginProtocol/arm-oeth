@@ -133,6 +133,7 @@ abstract contract Base_Test_ is Test {
 
     // Per-LP tracking
     mapping(address => uint256) internal ghost_userDeposited;
+    mapping(address => uint256) internal ghost_userDepositCount;
     mapping(address => uint256) internal ghost_userClaimed;
     mapping(address => uint256) internal ghost_userTransferInValue;
     mapping(address => uint256) internal ghost_userTransferOutValue;
