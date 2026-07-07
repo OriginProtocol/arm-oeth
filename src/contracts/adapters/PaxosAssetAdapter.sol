@@ -159,17 +159,15 @@ contract PaxosAssetAdapter is Initializable, IAssetAdapter, OwnableOperable {
 
     /// @notice Recovers liquidity asset held beyond what `settlingShares` still owes, e.g. donated tokens
     ///         or a Paxos settlement that arrived after its `settlingShares` was already closed out.
-    /// @param to Recipient of the recovered liquidity asset.
-    function recoverExcessLiquidity(address to) external onlyOwner {
-        require(to != address(0), "Adapter: zero address");
-
+    /// @dev The recovered liquidity asset is always sent to the ARM.
+    function recoverExcessLiquidity() external onlyOwner {
         uint256 balance = liquidityAsset.balanceOf(address(this));
         uint256 settlingSharesMem = settlingShares;
         uint256 excess = balance > settlingSharesMem ? balance - settlingSharesMem : 0;
 
-        liquidityAsset.transfer(to, excess);
+        liquidityAsset.transfer(arm, excess);
 
-        emit ExcessLiquidityRecovered(to, excess);
+        emit ExcessLiquidityRecovered(arm, excess);
     }
 
     function _setPaxosRecipient(address _paxosRecipient) internal {

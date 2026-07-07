@@ -444,13 +444,7 @@ contract Unit_PaxosAssetAdapter_Test is Test {
     function test_RecoverExcessLiquidity_RevertWhen_NotOwner() public {
         vm.prank(alice);
         vm.expectRevert(Ownable.OnlyOwner.selector);
-        adapter.recoverExcessLiquidity(alice);
-    }
-
-    function test_RecoverExcessLiquidity_RevertWhen_ZeroAddress() public {
-        vm.prank(governor);
-        vm.expectRevert("Adapter: zero address");
-        adapter.recoverExcessLiquidity(address(0));
+        adapter.recoverExcessLiquidity();
     }
 
     function test_RecoverExcessLiquidity_TransfersOnlyBalanceAboveSettlingShares() public {
@@ -463,11 +457,11 @@ contract Unit_PaxosAssetAdapter_Test is Test {
         usdc.mint(address(adapter), 300e6 + 40e6);
 
         vm.expectEmit(true, false, false, true, address(adapter));
-        emit ExcessLiquidityRecovered(governor, 40e6);
+        emit ExcessLiquidityRecovered(arm, 40e6);
         vm.prank(governor);
-        adapter.recoverExcessLiquidity(governor);
+        adapter.recoverExcessLiquidity();
 
-        assertEq(usdc.balanceOf(governor), 40e6, "only the excess is recovered");
+        assertEq(usdc.balanceOf(arm), 40e6, "only the excess is recovered");
         assertEq(usdc.balanceOf(address(adapter)), 300e6, "settlingShares-backed balance untouched");
         assertEq(adapter.settlingShares(), 300e6, "settlingShares unchanged");
     }
@@ -480,9 +474,9 @@ contract Unit_PaxosAssetAdapter_Test is Test {
         usdc.mint(address(adapter), 100e6);
 
         vm.prank(governor);
-        adapter.recoverExcessLiquidity(governor);
+        adapter.recoverExcessLiquidity();
 
-        assertEq(usdc.balanceOf(governor), 0, "nothing to recover");
+        assertEq(usdc.balanceOf(arm), 0, "nothing to recover");
         assertEq(usdc.balanceOf(address(adapter)), 100e6, "adapter balance untouched");
     }
 }
