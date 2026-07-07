@@ -107,11 +107,17 @@ contract Unit_PaxosAssetAdapter_Test is Test {
         assertEq(fresh.owner(), governor, "proxy owner");
     }
 
-    function test_Initialize_ZeroRecipient_LeavesRecipientUnset() public {
-        PaxosAssetAdapter bare = _deployAdapter(address(0));
+    function test_Initialize_RevertWhen_ZeroRecipient() public {
+        PaxosAssetAdapter impl = new PaxosAssetAdapter(arm, address(pyusd), address(usdc));
+        Proxy proxy = new Proxy();
 
-        assertEq(bare.operator(), operator, "operator");
-        assertEq(bare.paxosRecipient(), address(0), "paxosRecipient unset");
+        // The Paxos recipient is mandatory: initializing with `address(0)` reverts with
+        // `InvalidPaxosRecipient`. The proxy swallows the delegatecall revert data (`require(success)`),
+        // so we can only assert that initialization reverts.
+        vm.expectRevert();
+        proxy.initialize(
+            address(impl), governor, abi.encodeWithSelector(PaxosAssetAdapter.initialize.selector, operator, address(0))
+        );
     }
 
     function test_Initialize_RevertWhen_CalledTwice() public {
@@ -295,17 +301,19 @@ contract Unit_PaxosAssetAdapter_Test is Test {
     }
 
     function test_SubmitPaxosRedeem_RevertWhen_RecipientNotConfigured() public {
-        PaxosAssetAdapter bare = _deployAdapter(address(0));
-        pyusd.mint(arm, 100e6);
+        // The recipient can no longer be zeroed through the public API (both `initialize` and
+        // `setPaxosRecipient` reject `address(0)`), so force the storage slot to exercise the defensive
+        // guard that stops `submitPaxosRedeem` from burning base assets to `address(0)`.
         vm.prank(arm);
-        pyusd.approve(address(bare), type(uint256).max);
+        adapter.requestRedeem(100e6);
 
-        vm.prank(arm);
-        bare.requestRedeem(100e6);
+        // `paxosRecipient` occupies storage slot 50 (`forge inspect PaxosAssetAdapter storage-layout`).
+        vm.store(address(adapter), bytes32(uint256(50)), bytes32(0));
+        assertEq(adapter.paxosRecipient(), address(0), "recipient forced to zero");
 
         vm.prank(operator);
         vm.expectRevert(PaxosAssetAdapter.PaxosRecipientNotConfigured.selector);
-        bare.submitPaxosRedeem(100e6, bytes32("id"));
+        adapter.submitPaxosRedeem(100e6, bytes32("id"));
     }
 
     //////////////////////////////////////////////////////

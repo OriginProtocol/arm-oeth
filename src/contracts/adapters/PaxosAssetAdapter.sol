@@ -62,9 +62,9 @@ contract PaxosAssetAdapter is Initializable, IAssetAdapter, OwnableOperable {
         _disableInitializers();
     }
 
-    /// @notice Initialize the adapter operator and optional Paxos recipient.
+    /// @notice Initialize the adapter operator and Paxos recipient.
     /// @param _operator Account that can submit queued redemptions to Paxos.
-    /// @param _paxosRecipient Paxos on-chain deposit address. `address(0)` leaves submission disabled.
+    /// @param _paxosRecipient Paxos on-chain deposit address. Must be non-zero, otherwise reverts.
     function initialize(address _operator, address _paxosRecipient) external initializer {
         _initOwnableOperable(_operator);
         _setPaxosRecipient(_paxosRecipient);
@@ -175,7 +175,7 @@ contract PaxosAssetAdapter is Initializable, IAssetAdapter, OwnableOperable {
     function _setPaxosRecipient(address _paxosRecipient) internal {
         if (_paxosRecipient == address(0)) revert InvalidPaxosRecipient();
         paxosRecipient = _paxosRecipient;
-        
+
         emit PaxosRecipientUpdated(_paxosRecipient);
     }
 }
