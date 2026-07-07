@@ -22,16 +22,21 @@ import {State} from "script/deploy/helpers/DeploymentTypes.sol";
 ///         multisig (`STRATEGIST`); the operational role is the Talos KMS relayer
 ///         (`ARM_TALOS_RELAYER`).
 /// @dev Mirrors the proven 035_DeployMultiAssetARMScript structure with 6-decimal (USDC) analogues
-///      of its 18-decimal (WETH) parameters. The adapters' `paxosRecipient` is deliberately left
-///      unset (address(0)) at deployment - the adapter owner configures it later via
-///      setPaxosRecipient() once the Paxos deposit addresses are known. No lending market is wired
-///      up here (idle USDC stays in the ARM until a market is added in a follow-up script).
+///      of its 18-decimal (WETH) parameters. The adapters' `paxosRecipient` is set to a placeholder
+///      at deployment - the adapter owner replaces it with the real Paxos deposit address via
+///      setPaxosRecipient() once Paxos provides it. No lending market is wired up here (idle USDC
+///      stays in the ARM until a market is added in a follow-up script).
 contract $037_DeployPaxosARMScript is AbstractDeployScript("037_DeployPaxosARMScript") {
     /// @dev Owner of the ARM, CapManager and both PaxosAssetAdapter proxies: the multi-chain 2/8 multisig.
     address internal constant OWNER_2_OF_8 = Mainnet.STRATEGIST;
     /// @dev Operational role (request/claim redemptions, submit Paxos redeems, set prices): the
     ///      Talos KMS relayer.
     address internal constant OPERATOR_TALOS = Mainnet.ARM_TALOS_RELAYER;
+
+    /// @dev Placeholder Paxos deposit address configured at deployment so each adapter ships with a
+    ///      non-zero recipient. TODO: the adapter owner replaces it with the real Paxos deposit
+    ///      address via setPaxosRecipient() once Paxos provides it.
+    address internal constant PAXOS_RECIPIENT_PLACEHOLDER = 0x000000000000000000000000000000000000dEaD;
 
     /// @dev Initial price band shared by both Paxos base assets, scaled to 1e36. The operator
     ///      (Talos) tunes these per asset via setPrices() after deployment.
@@ -118,11 +123,13 @@ contract $037_DeployPaxosARMScript is AbstractDeployScript("037_DeployPaxosARMSc
             PaxosAssetAdapter adapterImpl = new PaxosAssetAdapter(address(armProxy), Mainnet.PYUSD, Mainnet.USDC);
             _recordDeployment("STABLES_ARM_PYUSD_ADAPTER_IMPL", address(adapterImpl));
             Proxy adapterProxy = new Proxy();
-            // paxosRecipient is deliberately unset - the 2/8 multisig owner sets it via setPaxosRecipient().
+            // paxosRecipient is a placeholder - the 2/8 multisig owner replaces it via setPaxosRecipient().
             adapterProxy.initialize(
                 address(adapterImpl),
                 OWNER_2_OF_8,
-                abi.encodeWithSelector(PaxosAssetAdapter.initialize.selector, OPERATOR_TALOS, address(0))
+                abi.encodeWithSelector(
+                    PaxosAssetAdapter.initialize.selector, OPERATOR_TALOS, PAXOS_RECIPIENT_PLACEHOLDER
+                )
             );
             _recordDeployment("STABLES_ARM_PYUSD_ADAPTER", address(adapterProxy));
             arm.addBaseAsset(
@@ -142,11 +149,13 @@ contract $037_DeployPaxosARMScript is AbstractDeployScript("037_DeployPaxosARMSc
             PaxosAssetAdapter adapterImpl = new PaxosAssetAdapter(address(armProxy), Mainnet.USDG, Mainnet.USDC);
             _recordDeployment("STABLES_ARM_USDG_ADAPTER_IMPL", address(adapterImpl));
             Proxy adapterProxy = new Proxy();
-            // paxosRecipient is deliberately unset - the 2/8 multisig owner sets it via setPaxosRecipient().
+            // paxosRecipient is a placeholder - the 2/8 multisig owner replaces it via setPaxosRecipient().
             adapterProxy.initialize(
                 address(adapterImpl),
                 OWNER_2_OF_8,
-                abi.encodeWithSelector(PaxosAssetAdapter.initialize.selector, OPERATOR_TALOS, address(0))
+                abi.encodeWithSelector(
+                    PaxosAssetAdapter.initialize.selector, OPERATOR_TALOS, PAXOS_RECIPIENT_PLACEHOLDER
+                )
             );
             _recordDeployment("STABLES_ARM_USDG_ADAPTER", address(adapterProxy));
             arm.addBaseAsset(
