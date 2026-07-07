@@ -111,6 +111,38 @@
         {
             "implementation": "0xE620aFB67223AE03C260112aE21A717Af94C90f0",
             "name": "ETHENA_ARM_SUSDE_ADAPTER"
+        },
+        {
+            "implementation": "0x03D727Fc343FE42621DD28074350f99d005f0D18",
+            "name": "STABLES_ARM"
+        },
+        {
+            "implementation": "0x93D182bF55F9B320a731cEbD1c39916319241FFE",
+            "name": "STABLES_ARM_CAP_MAN"
+        },
+        {
+            "implementation": "0xE63730c6D1045A183E7153F6cB915b8a8f464525",
+            "name": "STABLES_ARM_CAP_IMPL"
+        },
+        {
+            "implementation": "0x16dd498828Ecd2835d113e838Af18A4b7f7B10F3",
+            "name": "STABLES_ARM_IMPL"
+        },
+        {
+            "implementation": "0x0CD57291231E4ba8788E13939eD9aA22825A0F11",
+            "name": "STABLES_ARM_PYUSD_ADAPTER_IMPL"
+        },
+        {
+            "implementation": "0x720395F299526b1EeD73D15cdFA8a9788084EBce",
+            "name": "STABLES_ARM_PYUSD_ADAPTER"
+        },
+        {
+            "implementation": "0xbf87518d0c366D0E0A5aF12720d85f10640f6fF6",
+            "name": "STABLES_ARM_USDG_ADAPTER_IMPL"
+        },
+        {
+            "implementation": "0xC905Cd9DC6d4032282494ca792b3e93Dac737554",
+            "name": "STABLES_ARM_USDG_ADAPTER"
         }
     ],
     "executions": [
@@ -296,9 +328,15 @@
         },
         {
             "name": "035_UnpauseEthenaARMScript",
-            "proposalId": 105952564920326880829480980653921695351704517467605619581569766325476268429476,
+            "proposalId": "105952564920326880829480980653921695351704517467605619581569766325476268429476",
             "tsDeployment": 1782206279,
             "tsGovernance": 1
+        },
+        {
+            "name": "037_DeployPaxosARMScript",
+            "proposalId": 1,
+            "tsDeployment": 1783421579,
+            "tsGovernance": 0
         }
     ]
 }
