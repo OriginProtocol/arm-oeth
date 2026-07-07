@@ -18,8 +18,8 @@ import {State} from "script/deploy/helpers/DeploymentTypes.sol";
 ///         base assets: PYUSD and USDG. Each base asset is wired to its own PaxosAssetAdapter,
 ///         whose redemption queue is fully off-chain: the operator submits queued base assets to a
 ///         Paxos deposit address and Paxos Actions settle USDC 1:1 back to the adapter. Ownership
-///         of the ARM, its CapManager and both adapter proxies is handed to the mainnet 2/8
-///         multisig (`ARM_MULTISIG`); the operational role ("strategist") is the Talos KMS relayer
+///         of the ARM, its CapManager and both adapter proxies is handed to the multi-chain 2/8
+///         multisig (`STRATEGIST`); the operational role ("strategist") is the Talos KMS relayer
 ///         (`ARM_TALOS_RELAYER`).
 /// @dev Mirrors the proven 035_DeployMultiAssetARMScript structure with 6-decimal (USDC) analogues
 ///      of its 18-decimal (WETH) parameters. The adapters' `paxosRecipient` is deliberately left
@@ -27,8 +27,8 @@ import {State} from "script/deploy/helpers/DeploymentTypes.sol";
 ///      setPaxosRecipient() once the Paxos deposit addresses are known. No lending market is wired
 ///      up here (idle USDC stays in the ARM until a market is added in a follow-up script).
 contract $037_DeployPaxosARMScript is AbstractDeployScript("037_DeployPaxosARMScript") {
-    /// @dev Owner of the ARM, CapManager and both PaxosAssetAdapter proxies: the mainnet 2/8 multisig.
-    address internal constant OWNER_2_OF_8 = Mainnet.ARM_MULTISIG;
+    /// @dev Owner of the ARM, CapManager and both PaxosAssetAdapter proxies: the multi-chain 2/8 multisig.
+    address internal constant OWNER_2_OF_8 = Mainnet.STRATEGIST;
     /// @dev Operational "strategist" role (request/claim redemptions, submit Paxos redeems, set
     ///      prices): the Talos KMS relayer.
     address internal constant STRATEGIST_TALOS = Mainnet.ARM_TALOS_RELAYER;
