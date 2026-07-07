@@ -77,7 +77,7 @@ contract Fork_PaxosARM_Smoke_Test is AbstractSmokeTest {
         assertEq(capManager.arm(), address(stablesARM), "cap manager arm");
         assertEq(capManager.totalAssetsCap(), 100_000e6, "total assets cap");
         assertEq(capManager.accountCapEnabled(), true, "account cap enabled");
-        assertEq(capManager.liquidityProviderCaps(Mainnet.TREASURY_LP), 20_000e6, "liquidity provider cap");
+        assertEq(capManager.liquidityProviderCaps(Mainnet.TREASURY_LP), 100_000e6, "liquidity provider cap");
         assertEq(capManager.operator(), operator, "cap manager operator");
         assertEq(capManager.owner(), Mainnet.STRATEGIST, "cap manager owner");
     }

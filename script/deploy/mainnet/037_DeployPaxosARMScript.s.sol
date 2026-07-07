@@ -74,7 +74,7 @@ contract $037_DeployPaxosARMScript is AbstractDeployScript("037_DeployPaxosARMSc
         capManager.setAccountCapEnabled(true);
         address[] memory lpAccounts = new address[](1);
         lpAccounts[0] = Mainnet.TREASURY_LP;
-        capManager.setLiquidityProviderCaps(lpAccounts, 20_000e6); // 20,000 USDC
+        capManager.setLiquidityProviderCaps(lpAccounts, 100_000e6); // 100,000 USDC
 
         // 4. Hand the CapManager to the 2/8 multisig.
         capManProxy.setOwner(OWNER_2_OF_8);
