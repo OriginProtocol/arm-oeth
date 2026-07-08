@@ -41,14 +41,14 @@ contract Fork_PaxosARM_Smoke_Test is AbstractSmokeTest {
     }
 
     function test_initialConfig() external view {
-        assertEq(stablesARM.name(), "Stables ARM", "Name");
-        assertEq(stablesARM.symbol(), "ARM-USDC-Stables", "Symbol");
-        assertEq(stablesARM.owner(), Mainnet.MULTISIG_2_OF_8, "Owner");
-        assertEq(stablesARM.operator(), operator, "Operator");
-        assertEq(stablesARM.feeCollector(), Mainnet.BUYBACK_OPERATOR, "Fee collector");
-        assertEq(stablesARM.fee(), 2000, "Performance fee");
-        assertEq(stablesARM.liquidityAsset(), Mainnet.USDC, "liquidity asset");
-        assertEq(stablesARM.claimDelay(), 10 minutes, "claim delay");
+        assertEq(usdARM.name(), "Stables ARM", "Name");
+        assertEq(usdARM.symbol(), "ARM-USDC-Stables", "Symbol");
+        assertEq(usdARM.owner(), Mainnet.MULTISIG_2_OF_8, "Owner");
+        assertEq(usdARM.operator(), operator, "Operator");
+        assertEq(usdARM.feeCollector(), Mainnet.BUYBACK_OPERATOR, "Fee collector");
+        assertEq(usdARM.fee(), 2000, "Performance fee");
+        assertEq(usdARM.liquidityAsset(), Mainnet.USDC, "liquidity asset");
+        assertEq(usdARM.claimDelay(), 10 minutes, "claim delay");
 
         // PYUSD adapter
         assertEq(pyusdAdapter.arm(), address(usdARM), "PYUSD adapter arm");
