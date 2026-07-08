@@ -111,6 +111,54 @@
         {
             "implementation": "0xE620aFB67223AE03C260112aE21A717Af94C90f0",
             "name": "ETHENA_ARM_SUSDE_ADAPTER"
+        },
+        {
+            "implementation": "0x2eB65593f1b1eBdf42926652c7ddeAa6B9d49E0F",
+            "name": "LST_ARM"
+        },
+        {
+            "implementation": "0xC5B14e27d65f3980E916D1c0153094C2D4756b6F",
+            "name": "LST_ARM_CAP_MAN"
+        },
+        {
+            "implementation": "0x763B0Cd7E2B0339253d8389cf976479783E93266",
+            "name": "LST_ARM_CAP_IMPL"
+        },
+        {
+            "implementation": "0x00E4F11F66F5847f4d8D14a79bde455002270BDc",
+            "name": "LST_ARM_IMPL"
+        },
+        {
+            "implementation": "0x01B962792FE1f9Ebe78B5975fFEb6bb6B187F303",
+            "name": "LST_ARM_STETH_ADAPTER_IMPL"
+        },
+        {
+            "implementation": "0x4A871E2B9866a0E1b1D4F3883d55C33c7F276EF4",
+            "name": "LST_ARM_STETH_ADAPTER"
+        },
+        {
+            "implementation": "0x1a0ABe61144ffE3B7d72022415Ea681faa74d523",
+            "name": "LST_ARM_WSTETH_ADAPTER_IMPL"
+        },
+        {
+            "implementation": "0xA1B79Be8adC9b85Fad09eA116D3D79273eD6B13A",
+            "name": "LST_ARM_WSTETH_ADAPTER"
+        },
+        {
+            "implementation": "0x274924183d0314303365Da7F28DD067609DEB7C5",
+            "name": "LST_ARM_EETH_ADAPTER_IMPL"
+        },
+        {
+            "implementation": "0x9B0873bc440c149708A43a8C97de77bcc74613b1",
+            "name": "LST_ARM_EETH_ADAPTER"
+        },
+        {
+            "implementation": "0x39c0a3f671c136322B021481e0FF9699920fBDA9",
+            "name": "LST_ARM_WEETH_ADAPTER_IMPL"
+        },
+        {
+            "implementation": "0xa409D5F154b36D2Fd123c5A7E615241cf0877517",
+            "name": "LST_ARM_WEETH_ADAPTER"
         }
     ],
     "executions": [
@@ -296,8 +344,14 @@
         },
         {
             "name": "035_UnpauseEthenaARMScript",
-            "proposalId": 105952564920326880829480980653921695351704517467605619581569766325476268429476,
+            "proposalId": "105952564920326880829480980653921695351704517467605619581569766325476268429476",
             "tsDeployment": 1782206279,
+            "tsGovernance": 1
+        },
+        {
+            "name": "036_DeployMultiAssetARMScript",
+            "proposalId": 1,
+            "tsDeployment": 1783493495,
             "tsGovernance": 1
         }
     ]
