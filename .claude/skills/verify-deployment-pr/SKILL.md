@@ -5,7 +5,7 @@ description: >-
   confirms every deployed contract is listed in the PR description, that the
   on-chain verified source matches the codebase via `make match`, that
   constructor args match the deploy script's `_execute()`, that any proxy
-  initialize/interaction matches the script, and that the on-chain GOVERNOR_SIX
+  initialize/interaction matches the script, and that the on-chain GOVERNANCE
   proposal (and/or multisig upgrade) matches the script's `_buildGovernanceProposal()`.
   Emits a full report plus a short, GitHub-pasteable MD summary file.
   Use when asked to review, verify, audit, or sign off on an executed
@@ -74,7 +74,7 @@ block explorer (via `cast source` / Etherscan) or a read-only RPC.
    These are the source of truth for check 3 (there is no per-contract `.args` JSON).
 5. **Parse governance** from `_buildGovernanceProposal()`: each
    `govProposal.action(target, "sig", abi.encode(args))`. Also read `_fork()` — ARMs upgraded
-   by **multisig directly** (e.g. EthenaARM, owned by `ARM_MULTISIG`) are pranked there, NOT
+   by **multisig directly** (e.g. EthenaARM, owned by `MULTISIG_2_OF_8`) are pranked there, NOT
    in the proposal; they are a manual/Safe follow-up, not part of the on-chain Governor proposal.
 6. **Find the proposalId.** Prefer the one in the PR body (`Proposal Id:`); also read the
    `executions[]` entry for this script in `build/deployments-<chainId>.json` (`.proposalId`).
@@ -136,7 +136,7 @@ confidence (High/Med/Low). Absence of evidence is ⚠️/❌, never ✅.
   check — this is the common case for upgrade PRs like #254); ❌ args differ (show the diff).
 
 **5 — Governance proposal matches the deploy script**
-- arm-oeth's Governor is `Mainnet.GOVERNOR_SIX = 0x1D3Fbd4d129Ddd2372EA85c5Fa00b2682081c9EC`
+- arm-oeth's Governor is `Mainnet.GOVERNANCE = 0x1D3Fbd4d129Ddd2372EA85c5Fa00b2682081c9EC`
   (the same OZ Governor origin-dollar uses). Read it directly with `cast` — the 78-digit
   proposalId works natively as a decimal, no ethers/hardhat needed:
   - `cast call $GOV "state(uint256)(uint8)" <id> --rpc-url $MAINNET_URL`
@@ -153,7 +153,7 @@ confidence (High/Med/Low). Absence of evidence is ⚠️/❌, never ✅.
   directly (e.g. EthenaARM), those proxies are NOT in the Governor `getActions`. Verify each:
   1. **Find the controlling Safe — read the proxy's `owner()`, don't assume.**
      `cast call <proxy> "owner()(address)"`. (Observed: the EthenaARM proxy is owned by
-     `GOV_MULTISIG 0xbe2AB3d3…`, **not** `ARM_MULTISIG` — always read it on-chain.)
+     `MULTISIG_5_OF_8 0xbe2AB3d3…`, **not** `MULTISIG_2_OF_8` — always read it on-chain.)
   2. Read the proxy's current impl: `cast call <proxy> "implementation()(address)"` (or the EIP-1967
      slot). If it already equals the new impl → ✅ executed.
   3. If it doesn't, the upgrade is pending in the Safe — pull it from the Safe Transaction Service
@@ -197,7 +197,7 @@ Verdict: <VERIFIED | BLOCKERS FOUND>
 ### 5. Proposal diff   <on-chain getActions vs script actions; + multisig-direct upgrades>
 
 ## Human still owes (manual)
-- Multisig-direct upgrades from _fork() (e.g. EthenaARM via ARM_MULTISIG) — confirm Safe execution.
+- Multisig-direct upgrades from _fork() (e.g. EthenaARM via MULTISIG_2_OF_8) — confirm Safe execution.
 - That the PR's stated intent matches the on-chain effect (judgment).
 - Anything marked ⚠️ above (incl. proposalId PR-body vs deployments JSON mismatch, if any).
 ```
@@ -263,9 +263,9 @@ Safe-tx sentence.
 | Deployed contracts | `deployWithConfirmation()` + `deployments/<net>/<Name>.json` | `_recordDeployment()` in `_execute()` + `build/deployments-<chainId>.json` |
 | Constructor args | `<Name>.json` `.args` | `new X(...)` in `_execute()`, symbols from `Addresses.sol` (no args JSON) |
 | Governance source | `deploymentWithGovernanceProposal({actions})` | `_buildGovernanceProposal()` (`govProposal.action(...)`) |
-| Governance read | ethers + GovernorSix ABI (hardhat task overflows on big id) | plain `cast call GOVERNOR_SIX "getActions/state"` (big id native) |
-| Governor contract | GovernorSix | **same contract** — `GOVERNOR_SIX 0x1D3Fbd4d…` |
-| Split governance | (single proposal) | some ARMs via Governor, some via `ARM_MULTISIG` direct (in `_fork()`) |
+| Governance read | ethers + GovernorSix ABI (hardhat task overflows on big id) | plain `cast call GOVERNANCE "getActions/state"` (big id native) |
+| Governor contract | GovernorSix | **same contract** — `GOVERNANCE 0x1D3Fbd4d…` |
+| Split governance | (single proposal) | some ARMs via Governor, some via `MULTISIG_2_OF_8` direct (in `_fork()`) |
 | What the PR changes | deploy script + per-contract JSON | usually only `build/deployments-<chainId>.json` |
 | Per-network artifact | `deployments/<net>/` | `build/deployments-1.json` (mainnet) / `-146.json` (Sonic) |
 

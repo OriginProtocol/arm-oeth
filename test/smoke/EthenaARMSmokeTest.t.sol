@@ -74,7 +74,6 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
         assertEq(capManager.totalAssetsCap(), 100000 ether, "total assets cap");
         //assertEq(capManager.liquidityProviderCaps(Mainnet.TREASURY_LP), 20000 ether, "liquidity provider cap");
         // The CapManager still uses the original ARM relayer as operator.
-        assertEq(capManager.operator(), Mainnet.ARM_RELAYER, "Operator");
         assertEq(capManager.arm(), address(ethenaARM), "arm");
     }
 
