@@ -90,7 +90,9 @@ contract $036_DeployMultiAssetARMScript is AbstractDeployScript("036_DeployMulti
                 new StETHAssetAdapter(address(armProxy), Mainnet.WETH, Mainnet.STETH, Mainnet.LIDO_WITHDRAWAL);
             _recordDeployment("ETH_ARM_STETH_ADAPTER_IMPL", address(adapterImpl));
             Proxy adapterProxy = new Proxy();
-            adapterProxy.initialize(address(adapterImpl), Mainnet.MULTISIG_2_OF_8, abi.encodeWithSignature("initialize()"));
+            adapterProxy.initialize(
+                address(adapterImpl), Mainnet.MULTISIG_2_OF_8, abi.encodeWithSignature("initialize()")
+            );
             _recordDeployment("ETH_ARM_STETH_ADAPTER", address(adapterProxy));
             arm.addBaseAsset(
                 Mainnet.STETH,
@@ -111,7 +113,9 @@ contract $036_DeployMultiAssetARMScript is AbstractDeployScript("036_DeployMulti
             );
             _recordDeployment("ETH_ARM_WSTETH_ADAPTER_IMPL", address(adapterImpl));
             Proxy adapterProxy = new Proxy();
-            adapterProxy.initialize(address(adapterImpl), Mainnet.MULTISIG_2_OF_8, abi.encodeWithSignature("initialize()"));
+            adapterProxy.initialize(
+                address(adapterImpl), Mainnet.MULTISIG_2_OF_8, abi.encodeWithSignature("initialize()")
+            );
             _recordDeployment("ETH_ARM_WSTETH_ADAPTER", address(adapterProxy));
             arm.addBaseAsset(
                 Mainnet.WSTETH,
@@ -136,7 +140,9 @@ contract $036_DeployMultiAssetARMScript is AbstractDeployScript("036_DeployMulti
             );
             _recordDeployment("ETH_ARM_EETH_ADAPTER_IMPL", address(adapterImpl));
             Proxy adapterProxy = new Proxy();
-            adapterProxy.initialize(address(adapterImpl), Mainnet.MULTISIG_2_OF_8, abi.encodeWithSignature("initialize()"));
+            adapterProxy.initialize(
+                address(adapterImpl), Mainnet.MULTISIG_2_OF_8, abi.encodeWithSignature("initialize()")
+            );
             _recordDeployment("ETH_ARM_EETH_ADAPTER", address(adapterProxy));
             arm.addBaseAsset(
                 Mainnet.EETH,
@@ -162,7 +168,9 @@ contract $036_DeployMultiAssetARMScript is AbstractDeployScript("036_DeployMulti
             );
             _recordDeployment("ETH_ARM_WEETH_ADAPTER_IMPL", address(adapterImpl));
             Proxy adapterProxy = new Proxy();
-            adapterProxy.initialize(address(adapterImpl), Mainnet.MULTISIG_2_OF_8, abi.encodeWithSignature("initialize()"));
+            adapterProxy.initialize(
+                address(adapterImpl), Mainnet.MULTISIG_2_OF_8, abi.encodeWithSignature("initialize()")
+            );
             _recordDeployment("ETH_ARM_WEETH_ADAPTER", address(adapterProxy));
             arm.addBaseAsset(
                 Mainnet.WEETH,
