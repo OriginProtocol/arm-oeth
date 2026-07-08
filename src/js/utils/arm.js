@@ -141,6 +141,15 @@ const isMissingSelectorError = (err) =>
   err?.data === "0x" ||
   err?.info?.error?.data === "0x";
 
+const isMissingSelectorOrBareRevertError = (err) =>
+  isMissingSelectorError(err) ||
+  (err?.name === "ProviderError" && err?.message === "execution reverted");
+
+const errorSummary = (err) =>
+  [err?.name, err?.code, err?.message, err?.data || err?.info?.error?.data]
+    .filter(Boolean)
+    .join(": ");
+
 const legacyArmContract = async (arm, signerOrProvider) =>
   new Contract(
     await arm.getAddress(),
@@ -414,9 +423,11 @@ const getArmBuffer = async (arm, blockTag) => {
 
 const getOutstandingWithdrawals = async (arm, blockTag) => {
   const opts = blockTag === undefined ? [] : [{ blockTag }];
+  let reservedWithdrawLiquidityError;
+  let currentAbiWithdrawalsError;
   // Liquidity reserved for outstanding LP withdrawal requests (asset-denominated).
   // Newer ARMs track the asset-denominated amount directly in
-  // reservedWithdrawLiquidity(). Legacy ARMs expose
+  // reservedWithdrawLiquidity(). Legacy Lido and EtherFi ARMs expose
   // withdrawsQueued()/withdrawsClaimed(); several new ABIs dropped these getters
   // even though the deployed legacy contracts still implement them on-chain, so
   // fall back to the legacy ABI.
@@ -424,7 +435,13 @@ const getOutstandingWithdrawals = async (arm, blockTag) => {
     try {
       return await arm.reservedWithdrawLiquidity(...opts);
     } catch (err) {
-      if (!isMissingSelectorError(err)) throw err;
+      reservedWithdrawLiquidityError = err;
+      if (!isMissingSelectorOrBareRevertError(err)) {
+        throw new Error(
+          `Failed to read outstanding withdrawals via reservedWithdrawLiquidity(): ${errorSummary(err)}`,
+          { cause: err },
+        );
+      }
     }
   }
 
@@ -435,7 +452,13 @@ const getOutstandingWithdrawals = async (arm, blockTag) => {
     ]);
     return queued - claimed;
   } catch (err) {
-    if (!isMissingSelectorError(err)) throw err;
+    currentAbiWithdrawalsError = err;
+    if (!isMissingSelectorError(err)) {
+      throw new Error(
+        `Failed to read outstanding withdrawals via withdrawsQueued()/withdrawsClaimed(): ${errorSummary(err)}`,
+        { cause: err },
+      );
+    }
   }
   try {
     const legacyArm = await legacyArmContract(arm);
@@ -445,8 +468,27 @@ const getOutstandingWithdrawals = async (arm, blockTag) => {
     ]);
     return queued - claimed;
   } catch (err) {
-    if (!isMissingSelectorError(err)) throw err;
-    return arm.reservedWithdrawLiquidity(...opts);
+    if (!isMissingSelectorError(err)) {
+      throw new Error(
+        `Failed to read outstanding withdrawals via legacy withdrawsQueued()/withdrawsClaimed(): ${errorSummary(err)}`,
+        { cause: err },
+      );
+    }
+
+    const armAddress = await arm.getAddress();
+    const reservedResult = reservedWithdrawLiquidityError
+      ? `failed (${errorSummary(reservedWithdrawLiquidityError)})`
+      : "was not available in the current ABI";
+    const currentAbiResult = currentAbiWithdrawalsError
+      ? `failed (${errorSummary(currentAbiWithdrawalsError)})`
+      : "was not attempted";
+    throw new Error(
+      `Unable to read outstanding withdrawals for ARM ${armAddress}: ` +
+        `reservedWithdrawLiquidity() ${reservedResult}; ` +
+        `current ABI withdrawsQueued()/withdrawsClaimed() ${currentAbiResult}; ` +
+        `legacy ABI withdrawsQueued()/withdrawsClaimed() failed (${errorSummary(err)})`,
+      { cause: err },
+    );
   }
 };
 
