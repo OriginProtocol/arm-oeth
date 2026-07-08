@@ -12,7 +12,7 @@ import {GovHelper, GovProposal} from "script/deploy/helpers/GovHelper.sol";
 ///         goes through a Timelock governance proposal — the same path used for LidoARM/EtherFiARM.
 ///         There is nothing to deploy; the script only builds the `unpause()` proposal.
 /// @dev `make simulate` runs this through DeployManager against the latest mainnet state (where the ARM
-///      is Timelock-owned) and logs the GOVERNOR_SIX `propose()` calldata to submit. Fork/smoke tests
+///      is Timelock-owned) and logs the GOVERNANCE `propose()` calldata to submit. Fork/smoke tests
 ///      must therefore run against a post-transfer block (the default `latest`, per .env.example); at an
 ///      earlier block the ARM is not yet Timelock-owned and the proposal simulation reverts.
 contract $035_UnpauseEthenaARMScript is AbstractDeployScript("035_UnpauseEthenaARMScript") {

@@ -82,8 +82,8 @@ abstract contract Fork_Shared_Test_ is Modifiers {
         deployer = makeAddr("deployer");
         feeCollector = makeAddr("fee collector");
 
-        operator = Mainnet.ARM_RELAYER;
-        governor = Mainnet.GOVERNOR_FIVE;
+        operator = Mainnet.ARM_TALOS_RELAYER;
+        governor = Mainnet.MULTISIG_5_OF_8;
         oethWhale = Mainnet.WOETH;
 
         // Contracts.

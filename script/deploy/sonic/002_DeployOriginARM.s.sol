@@ -56,7 +56,7 @@ contract $002_DeployOriginARMScript is AbstractDeployScript("002_DeployOriginARM
             "ARM-WS-OS",
             Sonic.RELAYER,
             2000, // 20% fee
-            Sonic.STRATEGIST,
+            Sonic.MULTISIG_2_OF_8,
             address(capManProxy)
         );
         originARMProxy.initialize(address(originARMImpl), deployer, data);
