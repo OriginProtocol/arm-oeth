@@ -427,7 +427,7 @@ const getOutstandingWithdrawals = async (arm, blockTag) => {
   let currentAbiWithdrawalsError;
   // Liquidity reserved for outstanding LP withdrawal requests (asset-denominated).
   // Newer ARMs track the asset-denominated amount directly in
-  // reservedWithdrawLiquidity(). Legacy ARMs expose
+  // reservedWithdrawLiquidity(). Legacy Lido and EtherFi ARMs expose
   // withdrawsQueued()/withdrawsClaimed(); several new ABIs dropped these getters
   // even though the deployed legacy contracts still implement them on-chain, so
   // fall back to the legacy ABI.
