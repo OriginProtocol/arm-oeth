@@ -111,6 +111,38 @@
         {
             "implementation": "0xE620aFB67223AE03C260112aE21A717Af94C90f0",
             "name": "ETHENA_ARM_SUSDE_ADAPTER"
+        },
+        {
+            "implementation": "0x5c68a604d39A639C0b8CC115f0823C50272CF13a",
+            "name": "USD_ARM"
+        },
+        {
+            "implementation": "0xAAB4F9e842e5D34ec61B1DBAAE8EBa4559F0eEF6",
+            "name": "USD_ARM_CAP_MAN"
+        },
+        {
+            "implementation": "0x70A7Af16c180141839656d571ff4ef3be155c48e",
+            "name": "USD_ARM_CAP_IMPL"
+        },
+        {
+            "implementation": "0x1405CDB24f93A60d023400cb03787bB8576EE490",
+            "name": "USD_ARM_IMPL"
+        },
+        {
+            "implementation": "0x50223D4f7c027DF74939555E92584C6332c613B2",
+            "name": "USD_ARM_PYUSD_ADAPTER_IMPL"
+        },
+        {
+            "implementation": "0x0C9ac6D63B2b2A1b502E29eC47a53d0966Ea9465",
+            "name": "USD_ARM_PYUSD_ADAPTER"
+        },
+        {
+            "implementation": "0x7c4c0B599E17C3Ad4ae37Ba61Eef50980e13203B",
+            "name": "USD_ARM_USDG_ADAPTER_IMPL"
+        },
+        {
+            "implementation": "0xAb98aC901B8A26636d9cf3Cf38d9aCdcD045788f",
+            "name": "USD_ARM_USDG_ADAPTER"
         }
     ],
     "executions": [
@@ -296,8 +328,14 @@
         },
         {
             "name": "035_UnpauseEthenaARMScript",
-            "proposalId": 105952564920326880829480980653921695351704517467605619581569766325476268429476,
+            "proposalId": "105952564920326880829480980653921695351704517467605619581569766325476268429476",
             "tsDeployment": 1782206279,
+            "tsGovernance": 1
+        },
+        {
+            "name": "037_DeployUSDARMScript",
+            "proposalId": 1,
+            "tsDeployment": 1783493495,
             "tsGovernance": 1
         }
     ]
