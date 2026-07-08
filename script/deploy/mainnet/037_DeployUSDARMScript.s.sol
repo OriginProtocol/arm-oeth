@@ -13,22 +13,22 @@ import {PaxosAssetAdapter} from "contracts/adapters/PaxosAssetAdapter.sol";
 import {AbstractDeployScript} from "script/deploy/helpers/AbstractDeployScript.s.sol";
 import {State} from "script/deploy/helpers/DeploymentTypes.sol";
 
-/// @title Deploy the Stables ARM (USDC-quoted MultiAssetARM with Paxos base assets)
+/// @title Deploy the USD ARM (USDC-quoted MultiAssetARM with Paxos base assets)
 /// @notice Deploys a single MultiAssetARM with USDC as the liquidity asset and two Paxos-issued
 ///         base assets: PYUSD and USDG. Each base asset is wired to its own PaxosAssetAdapter,
 ///         whose redemption queue is fully off-chain: the operator submits queued base assets to a
 ///         Paxos deposit address and Paxos Actions settle USDC 1:1 back to the adapter. Ownership
 ///         of the ARM, its CapManager and both adapter proxies is handed to the multi-chain 2/8
-///         multisig (`STRATEGIST`); the operational role is the Talos KMS relayer
+///         multisig (`MULTISIG_2_OF_8`); the operational role is the Talos KMS relayer
 ///         (`ARM_TALOS_RELAYER`).
 /// @dev Mirrors the proven 035_DeployMultiAssetARMScript structure with 6-decimal (USDC) analogues
 ///      of its 18-decimal (WETH) parameters. The adapters' `paxosRecipient` is set to a placeholder
 ///      at deployment - the adapter owner replaces it with the real Paxos deposit address via
 ///      setPaxosRecipient() once Paxos provides it. No lending market is wired up here (idle USDC
 ///      stays in the ARM until a market is added in a follow-up script).
-contract $037_DeployPaxosARMScript is AbstractDeployScript("037_DeployPaxosARMScript") {
+contract $037_DeployUSDARMScript is AbstractDeployScript("037_DeployUSDARMScript") {
     /// @dev Owner of the ARM, CapManager and both PaxosAssetAdapter proxies: the multi-chain 2/8 multisig.
-    address internal constant OWNER_2_OF_8 = Mainnet.STRATEGIST;
+    address internal constant OWNER_2_OF_8 = Mainnet.MULTISIG_2_OF_8;
     /// @dev Operational role (request/claim redemptions, submit Paxos redeems, set prices): the
     ///      Talos KMS relayer.
     address internal constant OPERATOR_TALOS = Mainnet.ARM_TALOS_RELAYER;
@@ -54,15 +54,15 @@ contract $037_DeployPaxosARMScript is AbstractDeployScript("037_DeployPaxosARMSc
     function _execute() internal override {
         // 1. Deploy the ARM proxy.
         Proxy armProxy = new Proxy();
-        _recordDeployment("STABLES_ARM", address(armProxy));
+        _recordDeployment("USD_ARM", address(armProxy));
 
         // 2. Deploy the CapManager (proxy + implementation), owned by the 2/8 multisig and
         //    operated by Talos.
         Proxy capManProxy = new Proxy();
-        _recordDeployment("STABLES_ARM_CAP_MAN", address(capManProxy));
+        _recordDeployment("USD_ARM_CAP_MAN", address(capManProxy));
 
         CapManager capManagerImpl = new CapManager(address(armProxy));
-        _recordDeployment("STABLES_ARM_CAP_IMPL", address(capManagerImpl));
+        _recordDeployment("USD_ARM_CAP_IMPL", address(capManagerImpl));
 
         // Initialize the CapManager with Talos as operator; keep the deployer as owner for now.
         bytes memory capManData = abi.encodeWithSignature("initialize(address)", OPERATOR_TALOS);
@@ -85,7 +85,7 @@ contract $037_DeployPaxosARMScript is AbstractDeployScript("037_DeployPaxosARMSc
         MultiAssetARM armImpl = new MultiAssetARM({
             _liquidityAsset: Mainnet.USDC, _claimDelay: 10 minutes, _minSharesToRedeem: 1e6, _allocateThreshold: 100e6
         });
-        _recordDeployment("STABLES_ARM_IMPL", address(armImpl));
+        _recordDeployment("USD_ARM_IMPL", address(armImpl));
 
         // 6. Give the deployer the MIN_LIQUIDITY (1 atomic unit of USDC, i.e. 0.000001 USDC) that
         //    initialize() pulls to seed dead shares. 035 wraps ETH into WETH for this, but USDC
@@ -103,8 +103,8 @@ contract $037_DeployPaxosARMScript is AbstractDeployScript("037_DeployPaxosARMSc
         // 7. Initialize the ARM proxy: deployer stays owner during setup, Talos is the operator.
         bytes memory armData = abi.encodeWithSignature(
             "initialize(string,string,address,uint256,address,address)",
-            "Stables ARM", // name
-            "ARM-USDC-Stables", // symbol
+            "USD ARM", // name
+            "ARM-USD", // symbol
             OPERATOR_TALOS, // operator
             2000, // 20% performance fee
             Mainnet.BUYBACK_OPERATOR, // fee collector
@@ -116,7 +116,7 @@ contract $037_DeployPaxosARMScript is AbstractDeployScript("037_DeployPaxosARMSc
         // 8. Deploy the PYUSD Paxos adapter (pegged 1:1) and register PYUSD.
         {
             PaxosAssetAdapter adapterImpl = new PaxosAssetAdapter(address(armProxy), Mainnet.PYUSD, Mainnet.USDC);
-            _recordDeployment("STABLES_ARM_PYUSD_ADAPTER_IMPL", address(adapterImpl));
+            _recordDeployment("USD_ARM_PYUSD_ADAPTER_IMPL", address(adapterImpl));
             Proxy adapterProxy = new Proxy();
             // paxosRecipient is a placeholder - the 2/8 multisig owner replaces it via setPaxosRecipient().
             adapterProxy.initialize(
@@ -124,7 +124,7 @@ contract $037_DeployPaxosARMScript is AbstractDeployScript("037_DeployPaxosARMSc
                 OWNER_2_OF_8,
                 abi.encodeWithSelector(PaxosAssetAdapter.initialize.selector, OPERATOR_TALOS, Mainnet.PAXOS_RECIPIENT)
             );
-            _recordDeployment("STABLES_ARM_PYUSD_ADAPTER", address(adapterProxy));
+            _recordDeployment("USD_ARM_PYUSD_ADAPTER", address(adapterProxy));
             arm.addBaseAsset(
                 Mainnet.PYUSD,
                 address(adapterProxy),
@@ -140,7 +140,7 @@ contract $037_DeployPaxosARMScript is AbstractDeployScript("037_DeployPaxosARMSc
         // 9. Deploy the USDG Paxos adapter (pegged 1:1) and register USDG.
         {
             PaxosAssetAdapter adapterImpl = new PaxosAssetAdapter(address(armProxy), Mainnet.USDG, Mainnet.USDC);
-            _recordDeployment("STABLES_ARM_USDG_ADAPTER_IMPL", address(adapterImpl));
+            _recordDeployment("USD_ARM_USDG_ADAPTER_IMPL", address(adapterImpl));
             Proxy adapterProxy = new Proxy();
             // paxosRecipient is a placeholder - the 2/8 multisig owner replaces it via setPaxosRecipient().
             adapterProxy.initialize(
@@ -148,7 +148,7 @@ contract $037_DeployPaxosARMScript is AbstractDeployScript("037_DeployPaxosARMSc
                 OWNER_2_OF_8,
                 abi.encodeWithSelector(PaxosAssetAdapter.initialize.selector, OPERATOR_TALOS, Mainnet.PAXOS_RECIPIENT)
             );
-            _recordDeployment("STABLES_ARM_USDG_ADAPTER", address(adapterProxy));
+            _recordDeployment("USD_ARM_USDG_ADAPTER", address(adapterProxy));
             arm.addBaseAsset(
                 Mainnet.USDG,
                 address(adapterProxy),

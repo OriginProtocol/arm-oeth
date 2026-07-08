@@ -31,7 +31,7 @@ import {Mainnet} from "src/contracts/utils/Addresses.sol";
 contract UpdateGovernanceMetadata is Script {
     string constant DEPLOY_FILE = "build/deployments-1.json";
 
-    IGovernance constant governance = IGovernance(Mainnet.GOVERNOR_SIX);
+    IGovernance constant governance = IGovernance(Mainnet.GOVERNANCE);
 
     // Resolver at the same deterministic address used by the deploy framework
     Resolver internal resolver = Resolver(address(uint160(uint256(keccak256("Resolver")))));
@@ -137,7 +137,7 @@ contract UpdateGovernanceMetadata is Script {
         cmd[1] = string.concat(vm.projectRoot(), "/script/automation/find_gov_prop_execution_timestamp.sh");
         cmd[2] = vm.toString(proposalId);
         cmd[3] = vm.envString("MAINNET_URL");
-        cmd[4] = vm.toString(Mainnet.GOVERNOR_SIX);
+        cmd[4] = vm.toString(Mainnet.GOVERNANCE);
         cmd[5] = vm.toString(tsDeployment);
 
         bytes memory result = vm.ffi(cmd);

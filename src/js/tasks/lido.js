@@ -305,7 +305,7 @@ const logAssets = async (arm, blockTag, baseContext) => {
     blockTag,
   });
   const feesAccrued = await arm.feesAccrued({ blockTag });
-  const strategistAddress = await parseAddress("STRATEGIST");
+  const strategistAddress = await parseAddress("MULTISIG_2_OF_8");
   const wethInStrategist = await weth.balanceOf(strategistAddress, {
     blockTag,
   });

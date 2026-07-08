@@ -43,7 +43,7 @@ contract $031_UpgradeEthenaARMScript is AbstractDeployScript("031_UpgradeEthenaA
         Proxy adapterProxy = new Proxy();
         adapterProxy.initialize(address(adapterImpl), deployer, "");
         EthenaAssetAdapter(address(adapterProxy)).deployUnstakers();
-        adapterProxy.setOwner(Mainnet.GOV_MULTISIG);
+        adapterProxy.setOwner(Mainnet.MULTISIG_5_OF_8);
         _recordDeployment("ETHENA_ARM_SUSDE_ADAPTER", address(adapterProxy));
     }
 

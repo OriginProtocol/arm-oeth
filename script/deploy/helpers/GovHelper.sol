@@ -169,7 +169,7 @@ library GovHelper {
     /// @param log Whether logging is enabled
     /// @param prop The proposal to log calldata for
     function logProposalData(bool log, GovProposal memory prop) internal view {
-        IGovernance governance = IGovernance(Mainnet.GOVERNOR_SIX);
+        IGovernance governance = IGovernance(Mainnet.GOVERNANCE);
 
         // Ensure proposal doesn't already exist
         require(governance.proposalSnapshot(id(prop)) == 0, "Proposal already exists");
@@ -197,10 +197,10 @@ library GovHelper {
     /// @param prop The proposal to simulate
     function simulate(bool log, GovProposal memory prop) internal {
         // ===== Setup: Label addresses for trace readability =====
-        address govMultisig = Mainnet.GOV_MULTISIG;
+        address govMultisig = Mainnet.MULTISIG_5_OF_8;
         vm.label(govMultisig, "Gov Multisig");
 
-        IGovernance governance = IGovernance(Mainnet.GOVERNOR_SIX);
+        IGovernance governance = IGovernance(Mainnet.GOVERNANCE);
         vm.label(address(governance), "Governance");
 
         // ===== Compute proposal ID =====
@@ -307,7 +307,7 @@ library GovHelper {
 /// @title IGovernance
 /// @notice Interface for the OpenZeppelin Governor contract used by the protocol.
 /// @dev Defines the functions needed for proposal lifecycle management.
-///      The actual governance contract is at Mainnet.GOVERNOR_SIX.
+///      The actual governance contract is at Mainnet.GOVERNANCE.
 interface IGovernance {
     /// @notice Enumeration of possible proposal states.
     /// @dev Proposals progress through these states during their lifecycle.

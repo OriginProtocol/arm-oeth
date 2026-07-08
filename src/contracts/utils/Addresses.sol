@@ -6,72 +6,49 @@ library Common {
 }
 
 library Mainnet {
-    // Governance
+    // Governance, Multisig and EOAs
     address public constant TIMELOCK = 0x35918cDE7233F2dD33fA41ae3Cb6aE0e42E0e69F;
-    address public constant GOVERNOR_FIVE = 0x3cdD07c16614059e66344a7b579DAB4f9516C0b6;
-    address public constant GOVERNOR_SIX = 0x1D3Fbd4d129Ddd2372EA85c5Fa00b2682081c9EC;
-    address public constant STRATEGIST = 0x4FF1b9D9ba8558F5EAfCec096318eA0d8b541971;
-    address public constant TREASURY = 0x70fCE97d671E81080CA3ab4cc7A59aAc2E117137;
+    address public constant GOVERNANCE = 0x1D3Fbd4d129Ddd2372EA85c5Fa00b2682081c9EC;
     address public constant TREASURY_LP = 0x6E3fddab68Bf1EBaf9daCF9F7907c7Bc0951D1dc;
-
-    // Multisig and EOAs
-    address public constant INITIAL_DEPLOYER = address(0x1001);
-    address public constant GOV_MULTISIG = 0xbe2AB3d3d8F6a32b96414ebbd865dBD276d3d899;
-    address public constant ARM_MULTISIG = 0xC8F2cF4742C86295653f893214725813B16f7410;
-    address public constant OETH_RELAYER = 0x4b91827516f79d6F6a1F292eD99671663b09169a;
-    address public constant ARM_RELAYER = 0x39878253374355DBcc15C86458F084fb6f2d6DE7;
-    address public constant ARM_TALOS_RELAYER = 0x739212d5bAfE6AAC8Be49a60B7d003bD41DBf38b;
+    address public constant MULTISIG_2_OF_8 = 0x4FF1b9D9ba8558F5EAfCec096318eA0d8b541971;
+    address public constant MULTISIG_5_OF_8 = 0xbe2AB3d3d8F6a32b96414ebbd865dBD276d3d899;
     address public constant BUYBACK_OPERATOR = 0xBB077E716A5f1F1B63ed5244eBFf5214E50fec8c;
+    address public constant ARM_TALOS_RELAYER = 0x739212d5bAfE6AAC8Be49a60B7d003bD41DBf38b;
 
-    // Tokens
+    // ETH - Tokens
     address public constant OETH = 0x856c4Efb76C1D1AE02e20CEB03A2A6a08b0b8dC3;
     address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address public constant EETH = 0x35fA164735182de50811E8e2E824cFb9B6118ac2;
+    address public constant RETH = 0xae78736Cd615f374D3085123A210448E74Fc6393;
     address public constant WEETH = 0xCd5fE23C85820F7B72D0926FC9b05b43E359b7ee;
     address public constant STETH = 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84;
     address public constant WOETH = 0xDcEe70654261AF21C44c093C300eD3Bb97b78192;
     address public constant WSTETH = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
-    address public constant MORPHO = 0x58D97B57BB95320F9a05dC918Aef65434969c2B2;
-    address public constant USDE = 0x4c9EDD5852cd905f086C759E8383e09bff1E68B3;
-    address public constant SUSDE = 0x9D39A5DE30e57443BfF2A8307A4256c8797A3497;
-    address public constant SIUSD = 0xDBDC1Ef57537E34680B898E1FEBD3D68c7389bCB;
-    address public constant IUSD = 0x48f9e38f3070AD8945DFEae3FA70987722E3D89c;
+    // USD - Tokens
+    address public constant OUSD = 0x2A8e1E676Ec238d8A992307B495b45B3fEAa5e86;
     address public constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
     address public constant USDG = 0xe343167631d89B6Ffc58B88d6b7fB0228795491D;
-    address public constant OUSD = 0x2A8e1E676Ec238d8A992307B495b45B3fEAa5e86;
-    address public constant RETH = 0xae78736Cd615f374D3085123A210448E74Fc6393;
+    address public constant USDE = 0x4c9EDD5852cd905f086C759E8383e09bff1E68B3;
+    address public constant IUSD = 0x48f9e38f3070AD8945DFEae3FA70987722E3D89c;
+    address public constant SUSDE = 0x9D39A5DE30e57443BfF2A8307A4256c8797A3497;
+    address public constant SIUSD = 0xDBDC1Ef57537E34680B898E1FEBD3D68c7389bCB;
     address public constant PYUSD = 0x6c3ea9036406852006290770BEdFcAbA0e23A0e8;
+    // Tokens
+    address public constant MORPHO = 0x58D97B57BB95320F9a05dC918Aef65434969c2B2;
 
-    // Contracts
+    // Origin
     address public constant OETH_VAULT = 0x39254033945AA2E4809Cc2977E7087BEE48bd7Ab;
-    address public constant OETH_ARM = 0x6bac785889A4127dB0e0CeFEE88E0a9F1Aaf3cC7;
-    address public constant LIDO_ARM = 0x85B78AcA6Deae198fBF201c82DAF6Ca21942acc6;
-    address public constant ARM_BUYBACK = 0xBa0E6d6ea72cDc0D6f9fCdcc04147c671BA83dB5;
-    address public constant ETHERFI_ARM = 0xfB0A3CF9B019BFd8827443d131b235B3E0FC58d2;
 
     // Lido
     address public constant LIDO_WITHDRAWAL = 0x889edC2eDab5f40e902b864aD4d7AdE8E412F9B1;
-    address public constant LIDO_EL_VAULT = 0x388C818CA8B9251b393131C08a736A67ccB19297;
-    address public constant LIDO_WITHDRAWAL_MANAGER = 0xB9D7934878B5FB9610B3fE8A5e441e8fad7E293f;
 
     // EtherFi
     address public constant ETHERFI_WITHDRAWAL = 0x308861A430be4cce5502d0A12724771Fc6DaF216;
     address public constant ETHERFI_LIQUIDITY_POOL = 0x308861A430be4cce5502d0A12724771Fc6DaF216;
     address public constant ETHERFI_WITHDRAWAL_NFT = 0x7d5706f6ef3F89B3951E23e557CDFBC3239D4E2c;
 
-    // Morpho Market
-    address public constant MORPHO_MARKET_MEVCAPITAL = 0x9a8bC3B04b7f3D87cfC09ba407dCED575f2d61D8;
-    address public constant MORPHO_MARKET_ETHERFI = 0x4881Ef0BF6d2365D3dd6499ccd7532bcdBCE0658;
-    address public constant MORPHO_MARKET_YEARN_OG = 0xE89371eAaAC6D46d4C3ED23453241987916224FC;
-    address public constant MORPHO_MARKET_OETH_VAULT = 0x3Dfe70B05657949A5dB340754aD664810ac63b21;
-    // Apostro Ethena USDe is currently the only curated Morpho market that takes USDe
-    address public constant MORPHO_MARKET_ETHENA = 0x4EDfaB296F8Eb15aC0907CF9eCb7079b1679Da57;
-
     // Merkle Distributor
     address public constant MERKLE_DISTRIBUTOR = 0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae;
-
-    // Aave USDe Vault
-    address public constant AAVE_USDE_VAULT = 0x0DC20109Ea012f050BeDA184844c1eD5ec6dA33A;
 
     // Paxos
     // Placeholder Paxos deposit address the Stables ARM adapters redeem to.
@@ -100,7 +77,7 @@ library Sonic {
     // Multisig and EOAs
     address public constant INITIAL_DEPLOYER = 0x3Ba227D87c2A7aB89EAaCEFbeD9bfa0D15Ad249A;
     // 2/8 multisig
-    address public constant STRATEGIST = 0x63cdd3072F25664eeC6FAEFf6dAeB668Ea4de94a;
+    address public constant MULTISIG_2_OF_8 = 0x63cdd3072F25664eeC6FAEFf6dAeB668Ea4de94a;
     // 5/8 multisig
     address public constant ADMIN = 0xAdDEA7933Db7d83855786EB43a238111C69B00b6;
     address public constant RELAYER = 0x531B8D5eD6db72A56cF1238D4cE478E7cB7f2825;

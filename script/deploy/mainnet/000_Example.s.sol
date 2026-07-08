@@ -154,7 +154,7 @@ contract $000_Example is AbstractDeployScript("000_Example") {
         // govProposal.action(
         //     address(newContract),
         //     "transferOwnership(address)",
-        //     abi.encode(Mainnet.GOVERNOR_SIX)
+        //     abi.encode(Mainnet.GOVERNANCE)
         // );
 
         // Example 4: Multiple parameter function

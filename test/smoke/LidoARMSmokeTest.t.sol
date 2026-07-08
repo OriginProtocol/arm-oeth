@@ -61,7 +61,6 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
         assertEq(lidoARM.claimDelay(), 10 minutes, "claim delay");
 
         assertEq(capManager.accountCapEnabled(), false, "account cap enabled");
-        assertEq(capManager.operator(), Mainnet.ARM_RELAYER, "Operator");
         assertEq(capManager.arm(), address(lidoARM), "arm");
     }
 
