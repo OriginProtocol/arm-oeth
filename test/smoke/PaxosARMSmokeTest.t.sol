@@ -41,8 +41,8 @@ contract Fork_PaxosARM_Smoke_Test is AbstractSmokeTest {
     }
 
     function test_initialConfig() external view {
-        assertEq(usdARM.name(), "Stables ARM", "Name");
-        assertEq(usdARM.symbol(), "ARM-USDC-Stables", "Symbol");
+        assertEq(usdARM.name(), "USD ARM", "Name");
+        assertEq(usdARM.symbol(), "ARM-USD", "Symbol");
         assertEq(usdARM.owner(), Mainnet.MULTISIG_2_OF_8, "Owner");
         assertEq(usdARM.operator(), operator, "Operator");
         assertEq(usdARM.feeCollector(), Mainnet.BUYBACK_OPERATOR, "Fee collector");
