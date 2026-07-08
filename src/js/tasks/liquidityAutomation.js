@@ -119,9 +119,11 @@ const baseWithdrawAmount = async (options) => {
     arm,
     thresholdAmount,
     minAmount = "0.03",
-    // Decimals shared by the ARM's base and liquidity assets. eg 18 for
-    // sUSDe/USDe, 6 for PYUSD/USDC.
+    // Base asset decimals. eg 18 for sUSDe, 6 for PYUSD.
     decimals = 18,
+    // Liquidity asset decimals, which can differ from the base asset ones,
+    // eg an 18 decimals base asset over a 6 decimals USDC liquidity asset.
+    liquidityDecimals = decimals,
   } = options;
   const { baseAddress, baseSymbol } = await resolveArmBase(options);
 
@@ -158,14 +160,16 @@ const baseWithdrawAmount = async (options) => {
   );
   let liquidAssetAmount = await liquidAsset.balanceOf(await arm.getAddress());
   log(
-    `${formatUnits(liquidAssetAmount, decimals)} liquid asset balance in ARM`,
+    `${formatUnits(liquidAssetAmount, liquidityDecimals)} liquid asset balance in ARM`,
   );
 
   const outstanding = await getOutstandingWithdrawals(arm);
-  log(`${formatUnits(outstanding, decimals)} outstanding withdrawal requests`);
+  log(
+    `${formatUnits(outstanding, liquidityDecimals)} outstanding withdrawal requests`,
+  );
   let liquidityAvailable = liquidAssetAmount - outstanding;
   log(
-    `${formatUnits(liquidityAvailable, decimals)} liquidity available in ARM after accounting for outstanding withdrawal requests`,
+    `${formatUnits(liquidityAvailable, liquidityDecimals)} liquidity available in ARM after accounting for outstanding withdrawal requests`,
   );
 
   // Get the amount of liquidity available in the active market if one exists
@@ -180,26 +184,29 @@ const baseWithdrawAmount = async (options) => {
       await arm.getAddress(),
     );
     log(
-      `${formatUnits(lendingMarketLiquidityAmount, decimals)} liquidity available in lending market`,
+      `${formatUnits(lendingMarketLiquidityAmount, liquidityDecimals)} liquidity available in lending market`,
     );
 
     // Add liquidity in ARM and lending market together to determine if we can skip the withdrawal
     liquidityAvailable += lendingMarketLiquidityAmount;
   }
 
-  // If liquidity available is above the minimum amount, skip withdrawal
-  if (liquidityAvailable > minAmountBI) {
+  // If liquidity available is above the minimum amount, skip withdrawal.
+  // minAmount is re-parsed at liquidity decimals as the assets are pegged
+  // ~1:1 but can have different decimals.
+  const minLiquidityBI = parseUnits(minAmount.toString(), liquidityDecimals);
+  if (liquidityAvailable > minLiquidityBI) {
     console.log(
       `withdraw amount of ${formatUnits(
         withdrawAmount,
         decimals,
-      )} is below ${thresholdAmount} threshold and ${formatUnits(liquidityAvailable, decimals)} liquidity is still available, so not withdrawing`,
+      )} is below ${thresholdAmount} threshold and ${formatUnits(liquidityAvailable, liquidityDecimals)} liquidity is still available, so not withdrawing`,
     );
     return 0n;
   }
 
   log(
-    `Only ${formatUnits(liquidityAvailable, decimals)} liquidity available, withdrawing ${formatUnits(withdrawAmount, decimals)} despite being below minimum threshold of ${thresholdAmount}`,
+    `Only ${formatUnits(liquidityAvailable, liquidityDecimals)} liquidity available, withdrawing ${formatUnits(withdrawAmount, decimals)} despite being below minimum threshold of ${thresholdAmount}`,
   );
 
   return withdrawAmount;

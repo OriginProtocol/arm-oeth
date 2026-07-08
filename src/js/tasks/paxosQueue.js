@@ -25,6 +25,15 @@ const PLACEHOLDER_PAXOS_RECIPIENT =
 const paxosAdapterContract = (adapterAddress, signer) =>
   new ethers.Contract(adapterAddress, PAXOS_ADAPTER_ABI, signer);
 
+const tokenDecimals = async (tokenAddress, signer) =>
+  Number(
+    await new ethers.Contract(
+      tokenAddress,
+      ["function decimals() view returns (uint8)"],
+      signer,
+    ).decimals(),
+  );
+
 // Off-chain generated reconciliation tag, indexed in the adapter's
 // PaxosRedeemSubmitted event. eg "PYUSD-1783421435"
 const newPaxosRedemptionId = (baseSymbol) =>
@@ -37,13 +46,15 @@ const newPaxosRedemptionId = (baseSymbol) =>
 const requestPaxosWithdrawals = async (options) => {
   const { signer, amount } = options;
   const baseContext = await resolveArmBase(options);
-  const { baseSymbol, config } = baseContext;
+  const { baseSymbol, config, liquidityAddress } = baseContext;
   const decimals = Number(config.baseAssetDecimals ?? 6);
+  // The liquidity asset decimals can differ from the base asset ones
+  const liquidityDecimals = await tokenDecimals(liquidityAddress, signer);
 
   // 1. Determine withdrawal amount: explicit input or calculate from ARM and lending market balances
   const withdrawAmount = amount
     ? parseUnits(amount.toString(), decimals)
-    : await baseWithdrawAmount({ ...options, decimals });
+    : await baseWithdrawAmount({ ...options, decimals, liquidityDecimals });
   if (withdrawAmount && withdrawAmount !== 0n) {
     log(
       `Requesting redeem of ${formatUnits(withdrawAmount, decimals)} ${baseSymbol}`,
@@ -95,17 +106,29 @@ const claimPaxosWithdrawals = async (options) => {
     ["function balanceOf(address) external view returns (uint256)"],
     signer,
   );
-  const [settlingShares, settledBalance] = await Promise.all([
-    adapter.settlingShares(),
-    liquidityAsset.balanceOf(config.adapter),
-  ]);
+  const [settlingShares, settledBalance, liquidityDecimals] = await Promise.all(
+    [
+      adapter.settlingShares(),
+      liquidityAsset.balanceOf(config.adapter),
+      tokenDecimals(liquidityAddress, signer),
+    ],
+  );
+
+  // The settled balance is liquidity denominated while shares are base
+  // denominated. The redemption is 1:1 so only scale the decimals, which is
+  // an identity for the current PaxosAssetAdapter as its constructor
+  // enforces equal decimals.
+  const settledShares =
+    liquidityDecimals >= decimals
+      ? settledBalance / 10n ** BigInt(liquidityDecimals - decimals)
+      : settledBalance * 10n ** BigInt(decimals - liquidityDecimals);
 
   const claimable =
-    settlingShares < settledBalance ? settlingShares : settledBalance;
+    settlingShares < settledShares ? settlingShares : settledShares;
   const minAmountBI = parseUnits(minAmount.toString(), decimals);
   if (claimable === 0n || claimable < minAmountBI) {
     log(
-      `Only ${formatUnits(claimable, decimals)} claimable for ${baseSymbol} (${formatUnits(settlingShares, decimals)} settling, ${formatUnits(settledBalance, decimals)} settled), skipping claim`,
+      `Only ${formatUnits(claimable, decimals)} claimable for ${baseSymbol} (${formatUnits(settlingShares, decimals)} settling, ${formatUnits(settledBalance, liquidityDecimals)} settled), skipping claim`,
     );
     return;
   }

@@ -74,12 +74,16 @@ const getKyberSwapQuote = async ({
   throw Error(`Call to Kyber swap route API failed: Rate-limited`);
 };
 
+// Scale a token amount to 18 decimals so price ratios are 1e18-scaled even
+// when the base and liquidity assets have different decimals (6 or 18).
+const scaleTo18 = (amount, decimals) => amount * 10n ** BigInt(18 - decimals);
+
 /**
  * Gets Kyber prices for buying and selling the base asset using the liquid asset.
  * @param {*} amount Amount not scaled to token decimals
  * @param {*} assets liquidity and base asset addresses. eg WETH and stETH
- * @param {*} decimals token decimals used to scale amount. The buy and sell
- * price ratios assume the base and liquid assets have the same decimals.
+ * @param {*} baseDecimals decimals of the base asset. eg 18 for stETH, 6 for PYUSD
+ * @param {*} liquidityDecimals decimals of the liquidity asset. eg 18 for WETH, 6 for USDC
  */
 const getKyberPrices = async (
   amount,
@@ -87,31 +91,37 @@ const getKyberPrices = async (
     liquid: addresses.mainnet.WETH,
     base: addresses.mainnet.stETH,
   },
-  decimals = 18,
+  baseDecimals = 18,
+  liquidityDecimals = baseDecimals,
 ) => {
-  const amountBI = parseUnits(amount.toString(), decimals);
+  const liquidAmountIn = parseUnits(amount.toString(), liquidityDecimals);
 
   const buyQuote = await getKyberSwapQuote({
     tokenIn: assets.liquid,
     tokenOut: assets.base,
-    amountIn: amountBI, // liquid amount
+    amountIn: liquidAmountIn, // liquid amount
     excludedSources: originSources,
   });
   const buyToAmount = BigInt(buyQuote.amountOut);
   // stETH/ETH rate = ETH amount / stETH amount
-  const buyPrice = (amountBI * BigInt(1e18)) / buyToAmount;
+  const buyPrice =
+    (scaleTo18(liquidAmountIn, liquidityDecimals) * BigInt(1e18)) /
+    scaleTo18(buyToAmount, baseDecimals);
 
   await sleep(800);
 
+  const baseAmountIn = parseUnits(amount.toString(), baseDecimals);
   const sellQuote = await getKyberSwapQuote({
     tokenIn: assets.base,
     tokenOut: assets.liquid,
-    amountIn: amountBI, // base amount
+    amountIn: baseAmountIn, // base amount
     excludedSources: originSources,
   });
   const sellToAmount = BigInt(sellQuote.amountOut);
   // stETH/WETH rate = WETH amount / stETH amount
-  const sellPrice = (sellToAmount * BigInt(1e18)) / amountBI;
+  const sellPrice =
+    (scaleTo18(sellToAmount, liquidityDecimals) * BigInt(1e18)) /
+    scaleTo18(baseAmountIn, baseDecimals);
 
   const midPrice = (buyPrice + sellPrice) / 2n;
   const spread = buyPrice - sellPrice;

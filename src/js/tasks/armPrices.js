@@ -1,4 +1,4 @@
-const { formatUnits, parseUnits, ZeroAddress } = require("ethers");
+const { Contract, formatUnits, parseUnits, ZeroAddress } = require("ethers");
 
 const addresses = require("../utils/addresses");
 const {
@@ -20,6 +20,10 @@ const {
 } = require("../utils/pricing");
 
 const log = require("../utils/logger")("task:prices");
+
+// Scale a token amount to 18 decimals so ratios between amounts of assets
+// with different decimals (6 or 18) stay 1e18-scaled.
+const scaleTo18 = (value, decimals) => value * 10n ** BigInt(18 - decimals);
 
 /**
  *
@@ -80,9 +84,9 @@ const setPrices = async (options) => {
   const { baseSymbol, baseAddress, liquidityAddress, config } = baseContext;
   const shouldAdjustWrapped =
     wrapped !== undefined ? wrapped : !config.peggedToLiquidityAsset;
-  // Decimals used to scale the aggregator quote amount. Legacy ARM configs
-  // don't expose baseAssetDecimals as all their assets are 18 decimals.
-  const quoteDecimals = Number(config.baseAssetDecimals ?? 18);
+  // Base asset decimals used to scale aggregator quote amounts. Legacy ARM
+  // configs don't expose baseAssetDecimals as all their assets are 18 decimals.
+  const baseDecimals = Number(config.baseAssetDecimals ?? 18);
 
   log(`Getting current ARM prices:`);
   log(`base asset         : ${baseSymbol}`);
@@ -106,6 +110,17 @@ const setPrices = async (options) => {
         ? 10n
         : 30n;
 
+    // The liquidity asset decimals are not in the base asset config so read
+    // them on-chain. Can differ from the base asset decimals, eg an 18
+    // decimals base asset over a 6 decimals USDC liquidity asset.
+    const liquidityDecimals = Number(
+      await new Contract(
+        liquidityAddress,
+        ["function decimals() view returns (uint8)"],
+        signer,
+      ).decimals(),
+    );
+
     // 2.1 Get reference prices
     let referencePrices;
     if (midPrice) {
@@ -125,11 +140,17 @@ const setPrices = async (options) => {
             assets,
             inchFee,
             1,
-            quoteDecimals,
+            baseDecimals,
+            liquidityDecimals,
           )
         : kyber
           ? // 2.1.c Or from Kyber if specified
-            await getKyberPrices(options.amount, assets, quoteDecimals)
+            await getKyberPrices(
+              options.amount,
+              assets,
+              baseDecimals,
+              liquidityDecimals,
+            )
           : // 2.1.d Or from Curve if specified
             await getCurvePrices({
               ...options,
@@ -138,14 +159,20 @@ const setPrices = async (options) => {
 
       // Adjust price down if a wrapped asset like sUSDe or wstETH
       if (shouldAdjustWrapped) {
-        const amountIn = parseUnits(options.amount.toString(), 18);
+        const amountIn = parseUnits(options.amount.toString(), baseDecimals);
+        // The legacy convertToAsset path returns 18 decimals while the adapter
+        // converts a base decimals input to liquidity decimals
         const convertedAssets =
           config.adapter === ZeroAddress
             ? await convertToAsset(baseAddress, options.amount, signer)
             : await (
                 await adapterContract(config.adapter, signer)
               ).convertToAssets(amountIn);
-        const wrapPrice = (convertedAssets * parseUnits("1")) / amountIn;
+        const convertedDecimals =
+          config.adapter === ZeroAddress ? 18 : liquidityDecimals;
+        const wrapPrice =
+          (scaleTo18(convertedAssets, convertedDecimals) * parseUnits("1")) /
+          scaleTo18(amountIn, baseDecimals);
 
         log(`Base asset price : ${formatUnits(wrapPrice, 18)} base/liquid`);
 

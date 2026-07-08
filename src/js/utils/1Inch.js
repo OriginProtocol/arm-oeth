@@ -94,8 +94,8 @@ const get1InchSwapQuote = async ({
  * 30 = 0.3% for non-stable coins. eg OS
  * https://portal.1inch.dev/documentation/faq/infrastructure-fee
  * @param {*} chainId chain id of the network to quote on
- * @param {*} decimals token decimals used to scale amount. The buy and sell
- * price ratios assume the base and liquid assets have the same decimals.
+ * @param {*} baseDecimals decimals of the base asset. eg 18 for stETH, 6 for PYUSD
+ * @param {*} liquidityDecimals decimals of the liquidity asset. eg 18 for WETH, 6 for USDC
  */
 const get1InchPrices = async (
   amount,
@@ -105,35 +105,44 @@ const get1InchPrices = async (
   },
   fee = 10n,
   chainId = 1,
-  decimals = 18,
+  baseDecimals = 18,
+  liquidityDecimals = baseDecimals,
 ) => {
-  const amountBI = parseUnits(amount.toString(), decimals);
+  // Scale amounts to 18 decimals so price ratios are 1e18-scaled even when
+  // the base and liquidity assets have different decimals (6 or 18).
+  const scaleTo18 = (value, decimals) => value * 10n ** BigInt(18 - decimals);
+  const liquidAmountIn = parseUnits(amount.toString(), liquidityDecimals);
 
   const buyQuote = await get1InchSwapQuote({
     fromAsset: assets.liquid,
     toAsset: assets.base,
-    fromAmount: amountBI, // liquid amount
+    fromAmount: liquidAmountIn, // liquid amount
     excludedProtocols: origin1InchProtocols,
     chainId,
   });
   // base buy amount adjusted by 1Inch's infrastructure fee
   const buyToAmount = (BigInt(buyQuote.dstAmount) * (10000n + fee)) / 10000n;
   // stETH/ETH rate = ETH amount / stETH amount
-  const buyPrice = (amountBI * BigInt(1e18)) / buyToAmount;
+  const buyPrice =
+    (scaleTo18(liquidAmountIn, liquidityDecimals) * BigInt(1e18)) /
+    scaleTo18(buyToAmount, baseDecimals);
 
   await sleep(800);
 
+  const baseAmountIn = parseUnits(amount.toString(), baseDecimals);
   const sellQuote = await get1InchSwapQuote({
     fromAsset: assets.base,
     toAsset: assets.liquid,
-    fromAmount: amountBI, // base amount
+    fromAmount: baseAmountIn, // base amount
     excludedProtocols: origin1InchProtocols,
     chainId,
   });
   // liquid sell amount adjusted by 1Inch's infrastructure fee
   const sellToAmount = (BigInt(sellQuote.dstAmount) * (10000n + fee)) / 10000n;
   // stETH/WETH rate = WETH amount / stETH amount
-  const sellPrice = (sellToAmount * BigInt(1e18)) / amountBI;
+  const sellPrice =
+    (scaleTo18(sellToAmount, liquidityDecimals) * BigInt(1e18)) /
+    scaleTo18(baseAmountIn, baseDecimals);
 
   const midPrice = (buyPrice + sellPrice) / 2n;
   const spread = buyPrice - sellPrice;

@@ -15,6 +15,12 @@ action({
   params: (t) =>
     t
       .addOptionalParam(
+        "bases",
+        "Comma-separated list of base assets to request withdrawals for.",
+        "PYUSD,USDG",
+        types.string,
+      )
+      .addOptionalParam(
         "minAmount",
         "Minimum balance required before a withdrawal request is made (token units).",
         "100",
@@ -31,7 +37,7 @@ action({
 
     log.info("Requesting USD ARM withdrawals via Paxos");
     await runForBases({
-      bases: ["PYUSD", "USDG"],
+      bases: String(args.bases).split(","),
       actionName: "Requesting withdrawals",
       fn: requestPaxosWithdrawals,
       options: {

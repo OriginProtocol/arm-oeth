@@ -1,6 +1,10 @@
-const { formatUnits } = require("ethers");
+const { formatUnits, parseUnits } = require("ethers");
 
 const { resolveArmBase } = require("./arm");
+
+// Below this the aggregators return unusable quotes: dust amounts get
+// quantized into garbage price ratios and Kyber rejects the request outright
+const MIN_USD_AGGREGATOR_AMOUNT = parseUnits("100", 6); // 100 USDC
 
 const hasAmountOverride = (amount) => amount !== undefined && amount !== null;
 
@@ -33,9 +37,9 @@ const resolveUsdAggregatorAmount = async ({
   });
   const liquidityAssets = readReserveLiquidity(reserves);
 
-  if (liquidityAssets === 0n) {
+  if (liquidityAssets < MIN_USD_AGGREGATOR_AMOUNT) {
     log?.info?.(
-      "Skipping USD price update: no withdrawable USDC available in ARM or lending market",
+      `Skipping USD price update: only ${formatUnits(liquidityAssets, 6)} USDC withdrawable in ARM and lending market, below the ${formatUnits(MIN_USD_AGGREGATOR_AMOUNT, 6)} USDC minimum aggregator quote amount`,
     );
     return undefined;
   }
