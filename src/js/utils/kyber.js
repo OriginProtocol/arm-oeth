@@ -76,8 +76,10 @@ const getKyberSwapQuote = async ({
 
 /**
  * Gets Kyber prices for buying and selling the base asset using the liquid asset.
- * @param {*} amount Amount not scaled to 18 decimals
+ * @param {*} amount Amount not scaled to token decimals
  * @param {*} assets liquidity and base asset addresses. eg WETH and stETH
+ * @param {*} decimals token decimals used to scale amount. The buy and sell
+ * price ratios assume the base and liquid assets have the same decimals.
  */
 const getKyberPrices = async (
   amount,
@@ -85,8 +87,9 @@ const getKyberPrices = async (
     liquid: addresses.mainnet.WETH,
     base: addresses.mainnet.stETH,
   },
+  decimals = 18,
 ) => {
-  const amountBI = parseUnits(amount.toString(), 18);
+  const amountBI = parseUnits(amount.toString(), decimals);
 
   const buyQuote = await getKyberSwapQuote({
     tokenIn: assets.liquid,

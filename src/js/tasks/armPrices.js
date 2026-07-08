@@ -80,6 +80,9 @@ const setPrices = async (options) => {
   const { baseSymbol, baseAddress, liquidityAddress, config } = baseContext;
   const shouldAdjustWrapped =
     wrapped !== undefined ? wrapped : !config.peggedToLiquidityAsset;
+  // Decimals used to scale the aggregator quote amount. Legacy ARM configs
+  // don't expose baseAssetDecimals as all their assets are 18 decimals.
+  const quoteDecimals = Number(config.baseAssetDecimals ?? 18);
 
   log(`Getting current ARM prices:`);
   log(`base asset         : ${baseSymbol}`);
@@ -117,10 +120,16 @@ const setPrices = async (options) => {
       // 2.1 Get latest market prices if no midPrice is provided
       referencePrices = inch
         ? // 2.1.b Otherwise, get prices from 1Inch
-          await get1InchPrices(options.amount, assets, inchFee)
+          await get1InchPrices(
+            options.amount,
+            assets,
+            inchFee,
+            1,
+            quoteDecimals,
+          )
         : kyber
           ? // 2.1.c Or from Kyber if specified
-            await getKyberPrices(options.amount, assets)
+            await getKyberPrices(options.amount, assets, quoteDecimals)
           : // 2.1.d Or from Curve if specified
             await getCurvePrices({
               ...options,

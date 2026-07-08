@@ -114,7 +114,15 @@ const autoClaimWithdraw = async ({
 };
 
 const baseWithdrawAmount = async (options) => {
-  const { signer, arm, thresholdAmount, minAmount = "0.03" } = options;
+  const {
+    signer,
+    arm,
+    thresholdAmount,
+    minAmount = "0.03",
+    // Decimals shared by the ARM's base and liquidity assets. eg 18 for
+    // sUSDe/USDe, 6 for PYUSD/USDC.
+    decimals = 18,
+  } = options;
   const { baseAddress, baseSymbol } = await resolveArmBase(options);
 
   // Withdrawal amount is base assets in ARM if not specified
@@ -124,16 +132,16 @@ const baseWithdrawAmount = async (options) => {
     signer,
   );
   const withdrawAmount = await baseAsset.balanceOf(await arm.getAddress());
-  log(`${formatUnits(withdrawAmount)} ${baseSymbol} withdraw amount`);
+  log(`${formatUnits(withdrawAmount, decimals)} ${baseSymbol} withdraw amount`);
 
   // Exit if less than the minimum withdrawal amount
-  const minAmountBI = parseUnits(minAmount.toString(), 18);
+  const minAmountBI = parseUnits(minAmount.toString(), decimals);
   if (withdrawAmount <= minAmountBI) {
     console.log(`Not enough base assets left in the ARM to withdraw`);
     return 0n;
   }
 
-  const thresholdAmountBI = parseUnits(thresholdAmount.toString());
+  const thresholdAmountBI = parseUnits(thresholdAmount.toString(), decimals);
 
   // If above minimum threshold, return the withdraw amount
   if (withdrawAmount > thresholdAmountBI) {
@@ -149,13 +157,15 @@ const baseWithdrawAmount = async (options) => {
     signer,
   );
   let liquidAssetAmount = await liquidAsset.balanceOf(await arm.getAddress());
-  log(`${formatUnits(liquidAssetAmount)} liquid asset balance in ARM`);
+  log(
+    `${formatUnits(liquidAssetAmount, decimals)} liquid asset balance in ARM`,
+  );
 
   const outstanding = await getOutstandingWithdrawals(arm);
-  log(`${formatUnits(outstanding)} outstanding withdrawal requests`);
+  log(`${formatUnits(outstanding, decimals)} outstanding withdrawal requests`);
   let liquidityAvailable = liquidAssetAmount - outstanding;
   log(
-    `${formatUnits(liquidityAvailable)} liquidity available in ARM after accounting for outstanding withdrawal requests`,
+    `${formatUnits(liquidityAvailable, decimals)} liquidity available in ARM after accounting for outstanding withdrawal requests`,
   );
 
   // Get the amount of liquidity available in the active market if one exists
@@ -170,7 +180,7 @@ const baseWithdrawAmount = async (options) => {
       await arm.getAddress(),
     );
     log(
-      `${formatUnits(lendingMarketLiquidityAmount)} liquidity available in lending market`,
+      `${formatUnits(lendingMarketLiquidityAmount, decimals)} liquidity available in lending market`,
     );
 
     // Add liquidity in ARM and lending market together to determine if we can skip the withdrawal
@@ -182,13 +192,14 @@ const baseWithdrawAmount = async (options) => {
     console.log(
       `withdraw amount of ${formatUnits(
         withdrawAmount,
-      )} is below ${thresholdAmount} threshold and ${formatUnits(liquidityAvailable)} liquidity is still available, so not withdrawing`,
+        decimals,
+      )} is below ${thresholdAmount} threshold and ${formatUnits(liquidityAvailable, decimals)} liquidity is still available, so not withdrawing`,
     );
     return 0n;
   }
 
   log(
-    `Only ${formatUnits(liquidityAvailable)} liquidity available, withdrawing ${formatUnits(withdrawAmount)} despite being below minimum threshold of ${thresholdAmount}`,
+    `Only ${formatUnits(liquidityAvailable, decimals)} liquidity available, withdrawing ${formatUnits(withdrawAmount, decimals)} despite being below minimum threshold of ${thresholdAmount}`,
   );
 
   return withdrawAmount;

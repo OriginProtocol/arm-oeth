@@ -87,12 +87,15 @@ const get1InchSwapQuote = async ({
 
 /**
  * Gets 1Inch prices for buying and selling the base asset using the liquid asset.
- * @param {*} amount Amount not scaled to 18 decimals
+ * @param {*} amount Amount not scaled to token decimals
  * @param {*} assets liquidity and base asset addresses. eg WETH and stETH
  * @param {BigInt} fee 1Inch infrastructure fee in basis points.
  * 10 = 0.1% for stable coins. eg stETH
  * 30 = 0.3% for non-stable coins. eg OS
  * https://portal.1inch.dev/documentation/faq/infrastructure-fee
+ * @param {*} chainId chain id of the network to quote on
+ * @param {*} decimals token decimals used to scale amount. The buy and sell
+ * price ratios assume the base and liquid assets have the same decimals.
  */
 const get1InchPrices = async (
   amount,
@@ -102,8 +105,9 @@ const get1InchPrices = async (
   },
   fee = 10n,
   chainId = 1,
+  decimals = 18,
 ) => {
-  const amountBI = parseUnits(amount.toString(), 18);
+  const amountBI = parseUnits(amount.toString(), decimals);
 
   const buyQuote = await get1InchSwapQuote({
     fromAsset: assets.liquid,

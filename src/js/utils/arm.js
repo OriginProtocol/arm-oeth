@@ -41,6 +41,7 @@ const ARM_BASES = {
   Ethena: { defaultBase: "SUSDE", liquidity: "USDE" },
   Oeth: { defaultBase: "OETH", liquidity: "WETH" },
   Origin: { defaultBase: "OS", liquidity: "WS" },
+  USD: { defaultBase: "PYUSD", liquidity: "USDC" },
 };
 
 const BASE_ALIASES = {
@@ -49,6 +50,8 @@ const BASE_ALIASES = {
   EETH: "EETH",
   WEETH: "WEETH",
   SUSDE: "SUSDE",
+  PYUSD: "PYUSD",
+  USDG: "USDG",
   OETH: "OETH",
   WOETH: "WOETH",
   OS: "OS",
@@ -61,12 +64,15 @@ const assetAddressesBySymbol = () => ({
   EETH: addresses.mainnet.eETH,
   WEETH: addresses.mainnet.weETH,
   SUSDE: addresses.mainnet.sUSDe,
+  PYUSD: addresses.mainnet.PYUSD,
+  USDG: addresses.mainnet.USDG,
   OETH: addresses.mainnet.OETHProxy,
   WOETH: addresses.mainnet.WOETH,
   OS: addresses.sonic.OSonicProxy,
   WOS: addresses.sonic.WOS,
   WETH: addresses.mainnet.WETH,
   USDE: addresses.mainnet.USDe,
+  USDC: addresses.mainnet.USDC,
   WS: addresses.sonic.WS,
 });
 
@@ -122,6 +128,9 @@ const toConfigObject = (config) => ({
   crossPrice: config.crossPrice ?? config[4],
   pendingRedeemAssets: config.pendingRedeemAssets ?? config[5],
   peggedToLiquidityAsset: config.peggedToLiquidityAsset ?? config[6],
+  // Named access only as older baseAssetConfigs tuple layouts don't have
+  // this field and their positional indexes differ.
+  baseAssetDecimals: config.baseAssetDecimals,
   adapter: config.adapter ?? config[7],
 });
 

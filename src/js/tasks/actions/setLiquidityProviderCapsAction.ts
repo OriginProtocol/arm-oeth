@@ -12,7 +12,7 @@ action({
     t
       .addParam(
         "arm",
-        "ARM to set liquidity provider caps for: lido, etherfi, ethena, or oeth",
+        "ARM to set liquidity provider caps for: lido, etherfi, ethena, oeth, or usd",
         undefined,
         types.string,
       )
@@ -24,7 +24,7 @@ action({
       )
       .addParam(
         "cap",
-        "Deposit cap per account in liquidity asset units, where 20000 = 20,000 USDe",
+        "Deposit cap per account in liquidity asset units, where 20000 = 20,000 USDe/USDC",
         undefined,
         types.float,
       ),
@@ -42,6 +42,7 @@ action({
       armName: arm.name,
       accounts: args.accounts,
       cap: args.cap,
+      decimals: arm.decimals,
     });
   },
 });
