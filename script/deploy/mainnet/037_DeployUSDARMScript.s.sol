@@ -13,7 +13,7 @@ import {PaxosAssetAdapter} from "contracts/adapters/PaxosAssetAdapter.sol";
 import {AbstractDeployScript} from "script/deploy/helpers/AbstractDeployScript.s.sol";
 import {State} from "script/deploy/helpers/DeploymentTypes.sol";
 
-/// @title Deploy the Stables ARM (USDC-quoted MultiAssetARM with Paxos base assets)
+/// @title Deploy the USD ARM (USDC-quoted MultiAssetARM with Paxos base assets)
 /// @notice Deploys a single MultiAssetARM with USDC as the liquidity asset and two Paxos-issued
 ///         base assets: PYUSD and USDG. Each base asset is wired to its own PaxosAssetAdapter,
 ///         whose redemption queue is fully off-chain: the operator submits queued base assets to a
