@@ -493,7 +493,7 @@ task("redeemAll").setAction(async (_, __, runSuper) => {
 subtask("depositARM", "Deposit to an ARM and receive ARM LP tokens")
   .addParam(
     "arm",
-    "Name of the ARM. eg Lido, Origin, EtherFi or Ethena",
+    "Name of the ARM. eg Lido, Origin, EtherFi, Ethena or USD",
     "Lido",
     types.string,
   )
@@ -505,10 +505,11 @@ subtask("depositARM", "Deposit to an ARM and receive ARM LP tokens")
   )
   .addOptionalParam(
     "asset",
-    "Symbol of the asset to deposit. eg ETH, WETH, S or WS",
-    "WETH",
+    "Symbol of the asset to deposit. Defaults to the ARM liquidity asset. eg ETH, WETH, S, WS, USDe or USDC",
+    undefined,
     types.string,
   )
+  .addOptionalParam("execute", "Execute the transaction", true, types.boolean)
   .setAction(depositARM);
 task("depositARM").setAction(async (_, __, runSuper) => {
   return runSuper();
@@ -517,7 +518,7 @@ task("depositARM").setAction(async (_, __, runSuper) => {
 subtask("requestRedeemARM", "Request redeem from an ARM")
   .addParam(
     "arm",
-    "Name of the ARM. eg Lido, Origin, EtherFi or Ethena",
+    "Name of the ARM. eg Lido, Origin, EtherFi, Ethena or USD",
     "Lido",
     types.string,
   )
@@ -527,6 +528,7 @@ subtask("requestRedeemARM", "Request redeem from an ARM")
     undefined,
     types.float,
   )
+  .addOptionalParam("execute", "Execute the transaction", true, types.boolean)
   .setAction(requestRedeemARM);
 task("requestRedeemARM").setAction(async (_, __, runSuper) => {
   return runSuper();
@@ -535,11 +537,12 @@ task("requestRedeemARM").setAction(async (_, __, runSuper) => {
 subtask("claimRedeemARM", "Claim from a previously requested ARM redeem")
   .addParam(
     "arm",
-    "Name of the ARM. eg Lido, Origin, EtherFi or Ethena",
+    "Name of the ARM. eg Lido, Origin, EtherFi, Ethena or USD",
     "Lido",
     types.string,
   )
   .addParam("id", "Request identifier", undefined, types.float)
+  .addOptionalParam("execute", "Execute the transaction", true, types.boolean)
   .setAction(claimRedeemARM);
 task("claimRedeemARM").setAction(async (_, __, runSuper) => {
   return runSuper();
@@ -1004,7 +1007,7 @@ task("allocate").setAction(async (_, __, runSuper) => {
 subtask("setARMBuffer", "Set the ARM buffer percentage")
   .addParam(
     "arm",
-    "The name of the ARM. eg Lido, Origin, EtherFi or Ethena",
+    "The name of the ARM. eg Lido, Origin, EtherFi, Ethena or USD",
     undefined,
     types.string,
   )
@@ -1014,12 +1017,13 @@ subtask("setARMBuffer", "Set the ARM buffer percentage")
     undefined,
     types.float,
   )
-  .setAction(async ({ arm, buffer }) => {
+  .addOptionalParam("execute", "Execute the transaction", true, types.boolean)
+  .setAction(async ({ arm, buffer, execute }) => {
     const signer = await getSigner();
 
     const armContract = await resolveArmContract(arm);
 
-    await setARMBuffer({ signer, arm: armContract, buffer });
+    await setARMBuffer({ signer, arm: armContract, buffer, execute });
   });
 task("setARMBuffer").setAction(async (_, __, runSuper) => {
   return runSuper();

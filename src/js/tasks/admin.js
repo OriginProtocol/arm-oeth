@@ -178,11 +178,16 @@ async function pauseARM({ arm, signer }) {
   await logTxDetails(tx, "pause");
 }
 
-async function setARMBuffer({ arm, signer, buffer }) {
+async function setARMBuffer({ arm, signer, buffer, execute = true }) {
   if (buffer > 1) {
     throw new Error("Buffer value cannot be greater than 1");
   }
   const bufferBN = parseUnits((buffer || "0").toString(), 18);
+
+  if (!execute) {
+    log(`Would set ARM buffer to ${formatUnits(bufferBN)}`);
+    return;
+  }
 
   // Add 10% buffer to gas limit
   let gasLimit = await estimateSetArmBufferGas(arm, signer, bufferBN);

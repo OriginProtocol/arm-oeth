@@ -119,8 +119,8 @@ const logDiscount = (marketPrice, days) => {
 };
 
 const logArmPrices = async (options, arm) => {
-  const { blockTag, gas, days } = options;
-  console.log(`\nARM Prices`);
+  const { blockTag, gas, days, pair } = options;
+  console.log(`\nARM Prices${pair ? ` (${pair})` : ""}`);
   const baseContext =
     options.baseAddress && options.config
       ? options
@@ -255,8 +255,17 @@ const logMarketPrices = async ({
 const log1InchPrices = async (options, armPrices) => {
   const { amount, assets, fee, chainId, wrapPrice } = options;
   const route = options.route ?? true;
+  const baseDecimals = Number(options.config?.baseAssetDecimals ?? 18);
+  const liquidityDecimals = Number(options.liquidityDecimals ?? baseDecimals);
 
-  const marketPrices = await get1InchPrices(amount, assets, fee, chainId);
+  const marketPrices = await get1InchPrices(
+    amount,
+    assets,
+    fee,
+    chainId,
+    baseDecimals,
+    liquidityDecimals,
+  );
 
   if (wrapPrice) {
     unwrapPrices(marketPrices, wrapPrice);
@@ -727,8 +736,15 @@ const logKyberRouteSummary = async (quote, sideLabel) => {
 const logKyberPrices = async (options, armPrices) => {
   const { amount, assets, wrapPrice } = options;
   const route = options.route ?? true;
+  const baseDecimals = Number(options.config?.baseAssetDecimals ?? 18);
+  const liquidityDecimals = Number(options.liquidityDecimals ?? baseDecimals);
 
-  const marketPrices = await getKyberPrices(amount, assets);
+  const marketPrices = await getKyberPrices(
+    amount,
+    assets,
+    baseDecimals,
+    liquidityDecimals,
+  );
 
   if (wrapPrice) {
     unwrapPrices(marketPrices, wrapPrice);
