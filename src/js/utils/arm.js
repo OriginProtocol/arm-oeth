@@ -533,6 +533,7 @@ const adapterContract = async (adapterAddress, signerOrProvider) =>
       "function claimableRedeem() view returns (uint256,uint256)",
       "function lastRequestTimestamp() view returns (uint32)",
       "function DELAY_REQUEST() view returns (uint256)",
+      "function MAX_UNSTAKERS() view returns (uint8)",
       "function totalRequests() view returns (uint256)",
       "function unstakerIndexAt(uint256) view returns (uint8)",
       "function unstakers(uint256) view returns (address)",
