@@ -2,6 +2,7 @@ const { Contract, ZeroAddress, parseUnits } = require("ethers");
 
 const addresses = require("./addresses");
 const { parseAddress } = require("./addressParser");
+const { normalizeArmName } = require("./armNames");
 
 const MAX_SWAP_LIQUIDITY = (1n << 128n) - 1n;
 const PRICE_SCALE = parseUnits("1", 36);
@@ -85,12 +86,14 @@ const normalizeBaseSymbol = (base) => {
 };
 
 const defaultBaseSymbol = (armName) => {
+  armName = normalizeArmName(armName);
   const config = ARM_BASES[armName];
   if (!config) throw new Error(`Unsupported ARM ${armName}`);
   return config.defaultBase;
 };
 
 const liquiditySymbol = (armName) => {
+  armName = normalizeArmName(armName);
   const config = ARM_BASES[armName];
   if (!config) throw new Error(`Unsupported ARM ${armName}`);
   return config.liquidity;
@@ -110,6 +113,26 @@ const symbolForAddress = async (address) => {
     if (knownAddress?.toLowerCase() === lowerAddress) return symbol;
   }
   return address;
+};
+
+const getArmBaseSymbols = async ({ arm, armName, base, blockTag }) => {
+  const requestedBaseSymbol = normalizeBaseSymbol(base);
+  if (requestedBaseSymbol) return [requestedBaseSymbol];
+
+  armName = normalizeArmName(armName);
+  if (arm.getBaseAssets) {
+    try {
+      const opts = blockTag === undefined ? [] : [{ blockTag }];
+      const baseAssetAddresses = await arm.getBaseAssets(...opts);
+      if (baseAssetAddresses.length > 0) {
+        return Promise.all(baseAssetAddresses.map(symbolForAddress));
+      }
+    } catch (err) {
+      if (!isMissingSelectorOrBareRevertError(err)) throw err;
+    }
+  }
+
+  return [defaultBaseSymbol(armName)];
 };
 
 const parseSwapCap = (amount) => {
@@ -243,6 +266,7 @@ const resolveLegacyArmBase = async ({
 };
 
 const resolveArmBase = async ({ arm, armName, base, blockTag }) => {
+  armName = normalizeArmName(armName);
   const requestedBaseSymbol = normalizeBaseSymbol(base);
   const baseSymbol = requestedBaseSymbol ?? defaultBaseSymbol(armName);
   const baseAddress = await resolveAssetAddress(baseSymbol);
@@ -558,10 +582,12 @@ module.exports = {
   defaultBaseSymbol,
   estimateAllocateGas,
   estimateSetArmBufferGas,
+  getArmBaseSymbols,
   getArmBuffer,
   getOutstandingWithdrawals,
   legacyArmContract,
   liquiditySymbol,
+  normalizeArmName,
   normalizeBaseSymbol,
   parseSwapCap,
   requestBaseAssetWithdrawal,

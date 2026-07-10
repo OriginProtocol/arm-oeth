@@ -18,8 +18,10 @@ const { getSigner } = require("../utils/signers");
 const {
   adapterContract,
   claimBaseAssetWithdrawal,
+  getArmBaseSymbols,
   getArmBuffer,
   getOutstandingWithdrawals,
+  normalizeArmName,
   requestBaseAssetWithdrawal,
   resolveArmBase,
 } = require("../utils/arm");
@@ -28,6 +30,14 @@ const log = require("../utils/logger")("task:liquidity");
 
 // Extend Day.js with the UTC plugin
 dayjs.extend(utc);
+
+const scaleDecimals = (value, fromDecimals, toDecimals) => {
+  if (fromDecimals === toDecimals) return value;
+  if (fromDecimals > toDecimals) {
+    return value / 10n ** BigInt(fromDecimals - toDecimals);
+  }
+  return value * 10n ** BigInt(toDecimals - fromDecimals);
+};
 
 const requestWithdraw = async ({ amount, signer, arm, armName, base }) => {
   const amountBI = parseUnits(amount.toString(), 18);
@@ -99,31 +109,65 @@ const snap = async ({
   route,
   base,
 }) => {
+  arm = normalizeArmName(arm);
   const armContract = await resolveArmContract(arm);
 
   const { chainId } = await ethers.provider.getNetwork();
 
   const blockTag = await getBlock(block);
 
-  const { liquidityBalance } = await logLiquidity({ arm, block, base });
+  const { baseContexts, liquidityBalance, liquidityDecimals } =
+    await logLiquidity({
+      arm,
+      block,
+      base,
+    });
 
   if (arm === "EtherFi") {
     await logWithdrawalRequests({ blockTag });
   }
 
-  await logWithdrawalQueue(armContract, blockTag, liquidityBalance);
-
-  const baseContext = await resolveArmBase({
-    arm: armContract,
-    armName: arm,
-    base,
-    blockTag,
-  });
-  const armPrices = await logArmPrices(
-    { block, blockTag, gas, days, ...baseContext },
+  await logWithdrawalQueue(
     armContract,
+    blockTag,
+    liquidityBalance,
+    liquidityDecimals,
   );
 
+  for (const baseContext of baseContexts) {
+    await logSnapForBase({
+      arm,
+      armContract,
+      baseContext,
+      block,
+      blockTag,
+      days,
+      gas,
+      amount,
+      oneInch,
+      kyber,
+      route,
+      chainId,
+      liquidityDecimals,
+    });
+  }
+};
+
+const logSnapForBase = async ({
+  arm,
+  armContract,
+  baseContext,
+  block,
+  blockTag,
+  days,
+  gas,
+  amount,
+  oneInch,
+  kyber,
+  route,
+  chainId,
+  liquidityDecimals,
+}) => {
   const pair =
     arm === "Lido"
       ? `${baseContext.baseSymbol}/WETH`
@@ -131,9 +175,16 @@ const snap = async ({
         ? `${baseContext.baseSymbol}/WETH`
         : arm === "Ethena"
           ? `${baseContext.baseSymbol}/USDe`
-          : arm == "Origin" && chainId === 146
-            ? `${baseContext.baseSymbol}/wS`
-            : `${baseContext.baseSymbol}/WETH`;
+          : arm === "USD"
+            ? `${baseContext.baseSymbol}/USDC`
+            : arm == "Origin" && chainId === 146
+              ? `${baseContext.baseSymbol}/wS`
+              : `${baseContext.baseSymbol}/WETH`;
+  const armPrices = await logArmPrices(
+    { block, blockTag, gas, days, pair, ...baseContext },
+    armContract,
+  );
+
   const assets = {
     liquid: baseContext.liquidityAddress,
     base: baseContext.baseAddress,
@@ -161,7 +212,17 @@ const snap = async ({
     const fee = arm === "Lido" ? 10n : 30n;
 
     await log1InchPrices(
-      { amount, assets, fee, pair, chainId, wrapPrice, route },
+      {
+        amount,
+        assets,
+        fee,
+        pair,
+        chainId,
+        wrapPrice,
+        route,
+        liquidityDecimals,
+        ...baseContext,
+      },
       armPrices,
     );
 
@@ -172,11 +233,81 @@ const snap = async ({
 
   if (kyber && chainId !== 146) {
     // Kyber does not support Sonic
-    await logKyberPrices({ amount, assets, pair, wrapPrice, route }, armPrices);
+    await logKyberPrices(
+      {
+        amount,
+        assets,
+        pair,
+        wrapPrice,
+        route,
+        liquidityDecimals,
+        ...baseContext,
+      },
+      armPrices,
+    );
   }
 };
 
+const getLiquidityBaseRows = async ({
+  armContract,
+  arm,
+  base,
+  blockTag,
+  liquidityDecimals,
+}) => {
+  const baseSymbols = await getArmBaseSymbols({
+    arm: armContract,
+    armName: arm,
+    base,
+    blockTag,
+  });
+  const armAddress = await armContract.getAddress();
+
+  return Promise.all(
+    baseSymbols.map(async (baseSymbol) => {
+      const baseContext = await resolveArmBase({
+        arm: armContract,
+        armName: arm,
+        base: baseSymbol,
+        blockTag,
+      });
+      const baseAsset = await ethers.getContractAt(
+        "IERC20Metadata",
+        baseContext.baseAddress,
+      );
+      const baseDecimals = Number(await baseAsset.decimals());
+      const baseBalance = await baseAsset.balanceOf(armAddress, {
+        blockTag,
+      });
+      const baseBalanceAssets = baseContext.config.peggedToLiquidityAsset
+        ? scaleDecimals(baseBalance, baseDecimals, liquidityDecimals)
+        : baseContext.config.adapter === ethers.ZeroAddress
+          ? await (
+              await ethers.getContractAt(
+                ["function convertToAssets(uint256) view returns (uint256)"],
+                baseContext.baseAddress,
+              )
+            ).convertToAssets(baseBalance, { blockTag })
+          : await (
+              await adapterContract(
+                baseContext.config.adapter,
+                armContract.runner,
+              )
+            ).convertToAssets(baseBalance);
+
+      return {
+        baseContext,
+        baseDecimals,
+        baseBalance,
+        baseBalanceAssets,
+        baseWithdraws: baseContext.config.pendingRedeemAssets,
+      };
+    }),
+  );
+};
+
 const logLiquidity = async ({ block, arm, base }) => {
+  arm = normalizeArmName(arm);
   const blockTag = await getBlock(block);
   console.log(`\nLiquidity`);
 
@@ -188,33 +319,22 @@ const logLiquidity = async ({ block, arm, base }) => {
     "IERC20Metadata",
     liquidityAddress,
   );
-  const liquiditySymbol = await liquidAsset.symbol();
+  const [liquiditySymbol, liquidityDecimalsRaw] = await Promise.all([
+    liquidAsset.symbol(),
+    liquidAsset.decimals(),
+  ]);
+  const liquidityDecimals = Number(liquidityDecimalsRaw);
   const liquidityBalance = await liquidAsset.balanceOf(armAddress, {
     blockTag,
   });
 
-  const { baseAddress, baseSymbol, config } = await resolveArmBase({
-    arm: armContract,
-    armName: arm,
-    base,
+  const baseRows = await getLiquidityBaseRows({
+    armContract,
+    arm,
     blockTag,
+    base,
+    liquidityDecimals,
   });
-  const baseAsset = await ethers.getContractAt("IERC20Metadata", baseAddress);
-  const baseBalance = await baseAsset.balanceOf(armAddress, { blockTag });
-  const baseBalanceAssets = config.peggedToLiquidityAsset
-    ? baseBalance
-    : config.adapter === ethers.ZeroAddress
-      ? await (
-          await ethers.getContractAt(
-            ["function convertToAssets(uint256) view returns (uint256)"],
-            baseAddress,
-          )
-        ).convertToAssets(baseBalance, { blockTag })
-      : await (
-          await adapterContract(config.adapter, armContract.runner)
-        ).convertToAssets(baseBalance);
-
-  const baseWithdraws = config.pendingRedeemAssets;
 
   let lendingMarketBalance = 0n;
   let lendingMarketRedeemableBalance = 0n;
@@ -250,11 +370,13 @@ const logLiquidity = async ({ block, arm, base }) => {
   }
 
   const total =
-    liquidityBalance + baseBalanceAssets + baseWithdraws + lendingMarketBalance;
+    liquidityBalance +
+    baseRows.reduce(
+      (sum, row) => sum + row.baseBalanceAssets + row.baseWithdraws,
+      0n,
+    ) +
+    lendingMarketBalance;
   const liquidityPercent = total == 0 ? 0 : (liquidityBalance * 10000n) / total;
-  const baseWithdrawsPercent =
-    total == 0 ? 0 : (baseWithdraws * 10000n) / total;
-  const basePercent = total == 0 ? 0 : (baseBalance * 10000n) / total;
   const lendingMarketPercent =
     total == 0 ? 0 : (lendingMarketBalance * 10000n) / total;
 
@@ -270,30 +392,31 @@ const logLiquidity = async ({ block, arm, base }) => {
     lendingMarketBalance - lendingMarketRedeemableBalance;
 
   console.log(
-    `${formatUnits(liquidityBalance, 18)} ${liquiditySymbol} ${formatUnits(
-      liquidityPercent,
-      2,
-    )}%`,
-  );
-  console.log(
-    `${formatUnits(baseBalance, 18)} ${baseSymbol} ${formatUnits(
-      basePercent,
-      2,
-    )}%`,
-  );
-  console.log(
     `${formatUnits(
-      baseWithdraws,
-      18,
-    )} ${baseSymbol} in withdrawal requests ${formatUnits(
-      baseWithdrawsPercent,
-      2,
-    )}%`,
+      liquidityBalance,
+      liquidityDecimals,
+    )} ${liquiditySymbol} ${formatUnits(liquidityPercent, 2)}%`,
   );
+  for (const row of baseRows) {
+    const basePercent =
+      total == 0 ? 0 : (row.baseBalanceAssets * 10000n) / total;
+    const baseWithdrawsPercent =
+      total == 0 ? 0 : (row.baseWithdraws * 10000n) / total;
+    console.log(
+      `${formatUnits(row.baseBalance, row.baseDecimals)} ${
+        row.baseContext.baseSymbol
+      } ${formatUnits(basePercent, 2)}%`,
+    );
+    console.log(
+      `${formatUnits(row.baseWithdraws, liquidityDecimals)} ${
+        row.baseContext.baseSymbol
+      } in withdrawal requests ${formatUnits(baseWithdrawsPercent, 2)}%`,
+    );
+  }
   console.log(
     `${formatUnits(
       lendingMarketBalance,
-      18,
+      liquidityDecimals,
     )} ${liquiditySymbol} in active lending market ${formatUnits(
       lendingMarketPercent,
       2,
@@ -302,34 +425,56 @@ const logLiquidity = async ({ block, arm, base }) => {
   console.log(
     `${formatUnits(
       lendingMarketRedeemableBalance,
-      18,
+      liquidityDecimals,
     )} lending market previewRedeem`,
   );
   console.log(
-    `${formatUnits(lendingMarketMaxWithdraw, 18)} lending market maxWithdraw`,
+    `${formatUnits(
+      lendingMarketMaxWithdraw,
+      liquidityDecimals,
+    )} lending market maxWithdraw`,
   );
   console.log(
-    `${formatUnits(lendingMarketLiquidityShortfall, 18)} lending market liquidity shortfall`,
+    `${formatUnits(
+      lendingMarketLiquidityShortfall,
+      liquidityDecimals,
+    )} lending market liquidity shortfall`,
   );
-  console.log(`${formatUnits(total, 18)} raw total assets`);
+  console.log(`${formatUnits(total, liquidityDecimals)} raw total assets`);
 
-  console.log(`${formatUnits(accruedFees, 18)} accrued fees`);
-  console.log(`${formatUnits(totalAssets, 18)} total assets`);
+  console.log(`${formatUnits(accruedFees, liquidityDecimals)} accrued fees`);
+  console.log(`${formatUnits(totalAssets, liquidityDecimals)} total assets`);
   console.log(`${formatUnits(totalSupply, 18)} total supply`);
-  console.log(`${formatUnits(assetPerShare, 18)} asset per share`);
+  console.log(
+    `${formatUnits(assetPerShare, liquidityDecimals)} asset per share`,
+  );
   console.log(`liquidity buffer ${formatUnits(bufferPercent, 2)}%`);
   console.log(`${formatUnits(morphoRewards, 18)} MORPHO rewards claimable`);
 
-  return { total, liquidityBalance };
+  return {
+    total,
+    baseContexts: baseRows.map((row) => row.baseContext),
+    liquidityBalance,
+    liquidityDecimals,
+  };
 };
 
-const logWithdrawalQueue = async (arm, blockTag, liquidityWeth) => {
+const logWithdrawalQueue = async (
+  arm,
+  blockTag,
+  liquidityBalance,
+  liquidityDecimals = 18,
+) => {
   const outstanding = await getOutstandingWithdrawals(arm, blockTag);
-  const available = liquidityWeth - outstanding;
+  const available = liquidityBalance - outstanding;
 
   console.log(`\nARM Withdrawal Queue`);
-  console.log(`${formatUnits(outstanding, 18).padEnd(23)} outstanding`);
-  console.log(`${formatUnits(available, 18).padEnd(23)} available`);
+  console.log(
+    `${formatUnits(outstanding, liquidityDecimals).padEnd(23)} outstanding`,
+  );
+  console.log(
+    `${formatUnits(available, liquidityDecimals).padEnd(23)} available`,
+  );
 };
 
 module.exports = {
