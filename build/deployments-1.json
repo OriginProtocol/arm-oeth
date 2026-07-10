@@ -143,6 +143,54 @@
         {
             "implementation": "0xAb98aC901B8A26636d9cf3Cf38d9aCdcD045788f",
             "name": "USD_ARM_USDG_ADAPTER"
+        },
+        {
+            "implementation": "0xB9B85dFEe7E53654180C28427a4B3dF46d4b988A",
+            "name": "ETH_ARM"
+        },
+        {
+            "implementation": "0xf129dF4442aB86dc93D82aF4c6339A619163f93c",
+            "name": "ETH_ARM_CAP_MAN"
+        },
+        {
+            "implementation": "0xdf15C16C73F352fEf32A9B1B9d76aB9383a489B3",
+            "name": "ETH_ARM_CAP_IMPL"
+        },
+        {
+            "implementation": "0xC92bBE73fa0D1d9908aF8E2dF5dFE1996D57a911",
+            "name": "ETH_ARM_IMPL"
+        },
+        {
+            "implementation": "0x1c3A844E572Cc59C4a007E6d2B3Eba62Fdbf216c",
+            "name": "ETH_ARM_STETH_ADAPTER_IMPL"
+        },
+        {
+            "implementation": "0x6190ae78517D50c50D1C58144b79610Bc92593D5",
+            "name": "ETH_ARM_STETH_ADAPTER"
+        },
+        {
+            "implementation": "0xc6fF6ce92FC5f24F8c0e3CaEC9Bcb26C307D1dee",
+            "name": "ETH_ARM_WSTETH_ADAPTER_IMPL"
+        },
+        {
+            "implementation": "0xf990AD13867640305ad2B00D980817A1AfC1d68B",
+            "name": "ETH_ARM_WSTETH_ADAPTER"
+        },
+        {
+            "implementation": "0xf617233753bdBfcDB09093A3F04041467303DF3a",
+            "name": "ETH_ARM_EETH_ADAPTER_IMPL"
+        },
+        {
+            "implementation": "0x9e409A4a0259b494B3A993Ca06466aa7523d6871",
+            "name": "ETH_ARM_EETH_ADAPTER"
+        },
+        {
+            "implementation": "0x89f12CcE7C51DfDBBF83c00dEa15455B19c88D02",
+            "name": "ETH_ARM_WEETH_ADAPTER_IMPL"
+        },
+        {
+            "implementation": "0xf9cEDb3154c6502328C7B09c773a43a0b9C801eb",
+            "name": "ETH_ARM_WEETH_ADAPTER"
         }
     ],
     "executions": [
@@ -336,6 +384,12 @@
             "name": "037_DeployUSDARMScript",
             "proposalId": 1,
             "tsDeployment": 1783493495,
+            "tsGovernance": 1
+        },
+        {
+            "name": "036_DeployMultiAssetARMScript",
+            "proposalId": 1,
+            "tsDeployment": 1783504775,
             "tsGovernance": 1
         }
     ]
