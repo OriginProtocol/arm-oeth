@@ -8,6 +8,10 @@ const {
   requestBaseAssetWithdrawal,
   resolveArmBase,
 } = require("../utils/arm");
+const {
+  orderPendingUnstakerStates,
+  selectClaimableFifoPrefix,
+} = require("../utils/ethenaQueue");
 const { logTxDetails } = require("../utils/txLogger");
 const log = require("../utils/logger")("task:ethenaQueue");
 
@@ -74,14 +78,21 @@ const fetchUnstakerStates = async (signer, adapter, addresses) => {
   const contract = new ethers.Contract(SUSDE_ADDRESS, SUSDE_ABI, signer);
   const { timestamp: currentTimestamp } =
     await signer.provider.getBlock("latest");
+  let requestCount;
+  let maxUnstakers;
 
   if (!addresses) {
-    const requestCount = await adapter.totalRequests();
+    [requestCount, maxUnstakers] = await Promise.all([
+      adapter.totalRequests(),
+      adapter.MAX_UNSTAKERS(),
+    ]);
+    const unstakerCount = Number(
+      requestCount < maxUnstakers ? requestCount : maxUnstakers,
+    );
     addresses = await Promise.all(
-      Array.from({ length: Number(requestCount) }, async (_, requestIndex) => {
-        const index = await adapter.unstakerIndexAt(requestIndex);
+      Array.from({ length: unstakerCount }, async (_, index) => {
         const address = await adapter.unstakers(index);
-        return { address, index: Number(index) };
+        return { address, index };
       }),
     );
   } else {
@@ -96,7 +107,7 @@ const fetchUnstakerStates = async (signer, adapter, addresses) => {
   }
 
   // Promise.all executes all RPC calls simultaneously
-  return Promise.all(
+  const states = await Promise.all(
     addresses.map(async ({ address, index }) => {
       const [cooldownEnd, underlyingAmount] = await contract.cooldowns(address);
       const shares = adapter
@@ -135,6 +146,10 @@ const fetchUnstakerStates = async (signer, adapter, addresses) => {
       };
     }),
   );
+
+  if (!adapter) return states;
+
+  return orderPendingUnstakerStates(states, requestCount, maxUnstakers);
 };
 
 // --- MAIN FUNCTIONS ---
@@ -249,12 +264,6 @@ const claimEthenaWithdrawals = async (options) => {
   }
 };
 
-const selectClaimableFifoPrefix = (states) => {
-  const firstUnreadyIndex = states.findIndex((s) => !s.isReady);
-  if (firstUnreadyIndex === -1) return states;
-  return states.slice(0, firstUnreadyIndex);
-};
-
 // --- UTILS ---
 function getTimeDifference(date1, date2) {
   const diff = Math.abs(new Date(date2) - new Date(date1));
@@ -269,5 +278,6 @@ module.exports = {
   requestEthenaWithdrawals,
   claimEthenaWithdrawals,
   ethenaWithdrawStatus,
+  orderPendingUnstakerStates,
   selectClaimableFifoPrefix,
 };
