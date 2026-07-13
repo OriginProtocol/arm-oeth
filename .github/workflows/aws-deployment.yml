@@ -73,6 +73,8 @@ jobs:
           file: ./dockerfile-actions
           push: true
           ssh: default
+          build-args: |
+            GIT_COMMIT_SHA=${{ github.sha }}
           tags: |
             ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
 
