@@ -12,13 +12,13 @@ action({
     t
       .addParam(
         "arm",
-        "ARM to set total assets cap for: lido, etherfi, ethena, or oeth",
+        "ARM to set total assets cap for: lido, etherfi, ethena, oeth, or usd",
         undefined,
         types.string,
       )
       .addParam(
         "cap",
-        "Total assets cap in liquidity asset units, where 100000 = 100,000 USDe",
+        "Total assets cap in liquidity asset units, where 100000 = 100,000 USDe/USDC",
         undefined,
         types.float,
       ),
@@ -33,6 +33,7 @@ action({
       arm: arm.contract,
       armName: arm.name,
       cap: args.cap,
+      decimals: arm.decimals,
     });
   },
 });

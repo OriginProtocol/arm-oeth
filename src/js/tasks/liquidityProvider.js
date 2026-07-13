@@ -5,6 +5,7 @@ const {
   setTotalAssetsCap: setTotalAssetsCapCore,
 } = require("./admin");
 const { getSigner } = require("../utils/signers");
+const { liquiditySymbol, normalizeArmName } = require("../utils/arm");
 const {
   parseDeployedAddress,
   resolveArmContract,
@@ -13,67 +14,78 @@ const { logTxDetails } = require("../utils/txLogger");
 
 const log = require("../utils/logger")("task:lpCap");
 
-async function depositARM({ amount, asset, arm }) {
+const resolveLiquidityAssetContext = async (armContract) => {
+  const liquidityAddress = await armContract.liquidityAsset();
+  const liquidityAsset = await ethers.getContractAt(
+    "IERC20Metadata",
+    liquidityAddress,
+  );
+
+  const [symbol, decimals] = await Promise.all([
+    liquidityAsset.symbol(),
+    liquidityAsset.decimals(),
+  ]);
+
+  return {
+    address: liquidityAddress,
+    decimals: Number(decimals),
+    symbol: symbol.toUpperCase(),
+  };
+};
+
+async function depositARM({ amount, asset, arm, execute = true }) {
   const signer = await getSigner();
-
-  const amountBn = parseUnits(amount.toString());
-
+  const armName = normalizeArmName(arm);
   const armContract = await resolveArmContract(arm);
+  const liquidityAsset = await resolveLiquidityAssetContext(armContract);
+  const expectedAsset = liquiditySymbol(armName);
+  const assetSymbol = (asset ?? expectedAsset).toUpperCase();
 
-  if (asset == "WETH") {
-    log(`About to deposit ${amount} WETH to the ${arm} ARM`);
+  if (assetSymbol === liquidityAsset.symbol) {
+    const amountBn = parseUnits(amount.toString(), liquidityAsset.decimals);
+    log(
+      `About to deposit ${amount} ${liquidityAsset.symbol} to the ${armName} ARM`,
+    );
+    if (!execute) return;
     const tx = await armContract.connect(signer).deposit(amountBn);
     await logTxDetails(tx, "deposit");
-  } else if (asset == "ETH") {
+  } else if (assetSymbol == "ETH") {
+    const amountBn = parseUnits(amount.toString(), 18);
     const zapperAddress = await parseDeployedAddress("ARM_ZAPPER");
     const zapper = await ethers.getContractAt("ZapperARM", zapperAddress);
 
     const armAddress = await armContract.getAddress();
 
     log(`About to deposit ${amount} ETH to ARM ${armAddress} via the Zapper`);
+    if (!execute) return;
     const tx = await zapper
       .connect(signer)
       .deposit(armAddress, { value: amountBn });
     await logTxDetails(tx, "zap deposit");
-  } else if (asset == "WS") {
-    const armAddress = await parseDeployedAddress(`${arm.toUpperCase()}_ARM`);
-    const armContract = await ethers.getContractAt(`${arm}ARM`, armAddress);
-
-    // Add 10% buffer to gas limit
-    let gasLimit = await armContract
-      .connect(signer)
-      ["deposit(uint256)"].estimateGas(amountBn);
-    gasLimit = (gasLimit * 11n) / 10n;
-
-    log(`About to deposit ${amount} ${asset} to the ${arm} ARM`);
-    const tx = await armContract
-      .connect(signer)
-      ["deposit(uint256)"](amountBn, { gasLimit });
-    await logTxDetails(tx, "deposit");
-  } else if (asset == "S") {
+  } else if (assetSymbol == "S") {
+    const amountBn = parseUnits(amount.toString(), 18);
     const zapperAddress = await parseDeployedAddress(
-      `${arm.toUpperCase()}_ARM_ZAPPER`,
+      `${armName.toUpperCase()}_ARM_ZAPPER`,
     );
     const zapper = await ethers.getContractAt("ZapperARM", zapperAddress);
-    const armAddress = await parseDeployedAddress(`${arm.toUpperCase()}_ARM`);
+    const armAddress = await armContract.getAddress();
 
-    log(`About to deposit ${amount} ${asset} to the ${arm} ARM via the Zapper`);
+    log(
+      `About to deposit ${amount} ${assetSymbol} to the ${armName} ARM via the Zapper`,
+    );
+    if (!execute) return;
     const tx = await zapper
       .connect(signer)
       .deposit(armAddress, { value: amountBn });
     await logTxDetails(tx, "zap deposit");
-  } else if (asset == "USDE") {
-    log(`About to deposit ${amount} USDe to the ${arm} ARM`);
-    const tx = await armContract.connect(signer).deposit(amountBn);
-    await logTxDetails(tx, "deposit");
   } else {
     throw new Error(
-      `Unsupported asset type: ${asset}. Supported types are WETH, ETH, WS, S and USDe.`,
+      `Unsupported asset type: ${assetSymbol}. ${armName} ARM deposits use ${liquidityAsset.symbol}. Native deposits are supported for ETH and S zappers.`,
     );
   }
 }
 
-async function requestRedeemARM({ arm, amount }) {
+async function requestRedeemARM({ arm, amount, execute = true }) {
   const signer = await getSigner();
 
   const amountBn = parseUnits(amount.toString());
@@ -83,16 +95,18 @@ async function requestRedeemARM({ arm, amount }) {
   log(
     `About to request a redeem of ${amount} of LP tokens from the ${arm} ARM`,
   );
+  if (!execute) return;
   const tx = await armContract.connect(signer).requestRedeem(amountBn);
   await logTxDetails(tx, "requestRedeem");
 }
 
-async function claimRedeemARM({ arm, id }) {
+async function claimRedeemARM({ arm, id, execute = true }) {
   const signer = await getSigner();
 
   const armContract = await resolveArmContract(arm);
 
   log(`About to claim request with id ${id} from the ${arm} ARM`);
+  if (!execute) return;
   const tx = await armContract.connect(signer).claimRedeem(id);
   await logTxDetails(tx, "claimRedeem");
 }

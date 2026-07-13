@@ -38,6 +38,8 @@ async function allocate({
   threshold,
   execute = true,
   maxGasPrice: maxGasPriceGwei = 10,
+  // Decimals of the ARM's liquidity asset. eg 18 for WETH, 6 for USDC.
+  decimals = 18,
   // Omitted (undefined) means auto-detect the ARM contract version.
   armContractVersion = /** @type {string | undefined} */ (undefined),
 }) {
@@ -61,14 +63,14 @@ async function allocate({
     liquidityDelta = await staticCallAllocate(arm);
   }
 
-  const thresholdBN = parseUnits((threshold || "10").toString(), 18);
+  const thresholdBN = parseUnits((threshold || "10").toString(), decimals);
   const withinThreshold =
     liquidityDelta < thresholdBN && liquidityDelta > -thresholdBN;
 
   // If the delta is positive and within threshold, skip
   if (withinThreshold && liquidityDelta >= 0n) {
     log(
-      `Only ${formatUnits(liquidityDelta)} liquidity delta, skipping allocation as threshold is ${formatUnits(thresholdBN)}`,
+      `Only ${formatUnits(liquidityDelta, decimals)} liquidity delta, skipping allocation as threshold is ${formatUnits(thresholdBN, decimals)}`,
     );
     return;
   }
@@ -88,28 +90,29 @@ async function allocate({
     // If liquidity delta is within threshold but there are still more than threshold assets available in the market, skip
     if (withinThreshold && availableAssets > thresholdBN) {
       log(
-        `Only ${formatUnits(liquidityDelta)} liquidity delta and ${formatUnits(availableAssets)} available assets > ${formatUnits(thresholdBN)} threshold, skipping allocation`,
+        `Only ${formatUnits(liquidityDelta, decimals)} liquidity delta and ${formatUnits(availableAssets, decimals)} available assets > ${formatUnits(thresholdBN, decimals)} threshold, skipping allocation`,
       );
       return;
     }
 
     // Skip if transferring a small amount as its not gas efficient
-    if (availableAssets < parseUnits("0.1", 18)) {
+    if (availableAssets < parseUnits("0.1", decimals)) {
       log(
-        `Only ${formatUnits(availableAssets)} liquidity available in the active lending market, skipping allocation`,
+        `Only ${formatUnits(availableAssets, decimals)} liquidity available in the active lending market, skipping allocation`,
       );
       return;
     }
 
     // Either the delta is above threshold or there is a small amount left in the market
     log(
-      `Only ${formatUnits(availableAssets)} available in the active lending market, proceeding with allocation to drain remaining liquidity`,
+      `Only ${formatUnits(availableAssets, decimals)} available in the active lending market, proceeding with allocation to drain remaining liquidity`,
     );
   }
 
   log(
     `About to allocate ${formatUnits(
       liquidityDelta,
+      decimals,
     )} to/from the active lending market`,
   );
 
@@ -123,7 +126,7 @@ async function allocate({
   }
 }
 
-async function collectFees({ arm, signer }) {
+async function collectFees({ arm, signer, decimals = 18 }) {
   // Get the amount of fees to be collected
   const fees = await arm.feesAccrued();
   const outstanding = await getOutstandingWithdrawals(arm);
@@ -139,11 +142,13 @@ async function collectFees({ arm, signer }) {
     await arm.getAddress(),
   );
   const liquidityAvailable = liquidityBalance - outstanding;
-  log(`Liquidity available in ARM: ${formatUnits(liquidityAvailable)}`);
+  log(
+    `Liquidity available in ARM: ${formatUnits(liquidityAvailable, decimals)}`,
+  );
 
   if (fees > liquidityAvailable) {
     console.log(
-      `Not enough liquidity to collect ${formatUnits(fees)} in fees. The ARM only has ${formatUnits(liquidityAvailable)} available.`,
+      `Not enough liquidity to collect ${formatUnits(fees, decimals)} in fees. The ARM only has ${formatUnits(liquidityAvailable, decimals)} available.`,
     );
     return;
   }
@@ -152,7 +157,7 @@ async function collectFees({ arm, signer }) {
   let gasLimit = await arm.connect(signer).collectFees.estimateGas();
   gasLimit = (gasLimit * 11n) / 10n;
 
-  log(`About to collect ${formatUnits(fees)} ARM fees`);
+  log(`About to collect ${formatUnits(fees, decimals)} ARM fees`);
   const tx = await arm.connect(signer).collectFees({ gasLimit });
   await logTxDetails(tx, "collectFees");
 }
@@ -173,11 +178,16 @@ async function pauseARM({ arm, signer }) {
   await logTxDetails(tx, "pause");
 }
 
-async function setARMBuffer({ arm, signer, buffer }) {
+async function setARMBuffer({ arm, signer, buffer, execute = true }) {
   if (buffer > 1) {
     throw new Error("Buffer value cannot be greater than 1");
   }
   const bufferBN = parseUnits((buffer || "0").toString(), 18);
+
+  if (!execute) {
+    log(`Would set ARM buffer to ${formatUnits(bufferBN)}`);
+    return;
+  }
 
   // Add 10% buffer to gas limit
   let gasLimit = await estimateSetArmBufferGas(arm, signer, bufferBN);
@@ -202,8 +212,15 @@ async function resolveCapManager(arm, signer) {
   return new ethers.Contract(capManagerAddress, CAP_MANAGER_ABI, signer);
 }
 
-async function setTotalAssetsCap({ arm, armName = "ARM", cap, signer }) {
-  const capBn = parseUnits(cap.toString());
+async function setTotalAssetsCap({
+  arm,
+  armName = "ARM",
+  cap,
+  signer,
+  // Decimals of the ARM's liquidity asset. eg 18 for WETH, 6 for USDC.
+  decimals = 18,
+}) {
+  const capBn = parseUnits(cap.toString(), decimals);
 
   const capManager = await resolveCapManager(arm, signer);
 
@@ -218,8 +235,10 @@ async function setLiquidityProviderCaps({
   armName = "ARM",
   cap,
   signer,
+  // Decimals of the ARM's liquidity asset. eg 18 for WETH, 6 for USDC.
+  decimals = 18,
 }) {
-  const capBn = parseUnits(cap.toString());
+  const capBn = parseUnits(cap.toString(), decimals);
 
   const liquidityProviders = Array.isArray(accounts)
     ? accounts

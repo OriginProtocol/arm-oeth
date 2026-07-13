@@ -26,11 +26,14 @@ addresses.mainnet.USDe = "0x4c9EDD5852cd905f086C759E8383e09bff1E68B3";
 addresses.mainnet.sUSDe = "0x9D39A5DE30e57443BfF2A8307A4256c8797A3497";
 addresses.mainnet.USDC = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
 addresses.mainnet.USDT = "0xdAC17F958D2ee523a2206206994597C13D831ec7";
+addresses.mainnet.PYUSD = "0x6c3ea9036406852006290770BEdFcAbA0e23A0e8";
+addresses.mainnet.USDG = "0xe343167631d89B6Ffc58B88d6b7fB0228795491D";
 
 addresses.mainnet.OethARM = "0x6bac785889A4127dB0e0CeFEE88E0a9F1Aaf3cC7";
 addresses.mainnet.lidoARM = "0x85B78AcA6Deae198fBF201c82DAF6Ca21942acc6";
 addresses.mainnet.etherfiARM = "0xfB0A3CF9B019BFd8827443d131b235B3E0FC58d2";
 addresses.mainnet.ethenaARM = "0xCEDa2d856238aA0D12f6329de20B9115f07C366d";
+addresses.mainnet.usdARM = "0x5c68a604d39A639C0b8CC115f0823C50272CF13a";
 
 // Lido
 addresses.mainnet.lidoWithdrawalQueue =

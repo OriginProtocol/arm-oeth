@@ -11,20 +11,26 @@ INSERT INTO schedules (product, name, command, cron_expr, timezone, enabled, not
 ('arm-oeth', 'mainnet_auto_claim_etherfi_withdraw',  'cd /app && pnpm hardhat autoClaimEtherFiWithdraw --network mainnet',        '40 * * * *',            'UTC', false, NULL),
 ('arm-oeth', 'mainnet_auto_request_ethena_withdraw', 'cd /app && pnpm hardhat autoRequestEthenaWithdraw --network mainnet',       '12 * * * *',            'UTC', false, NULL),
 ('arm-oeth', 'mainnet_auto_claim_ethena_withdraw',   'cd /app && pnpm hardhat autoClaimEthenaWithdraw --network mainnet',         '40 * * * *',            'UTC', false, NULL),
+('arm-oeth', 'mainnet_auto_request_usd_withdraw',    'cd /app && pnpm hardhat autoRequestUSDWithdraw --network mainnet',          '14 * * * *',            'UTC', false, NULL),
+('arm-oeth', 'mainnet_auto_claim_usd_withdraw',      'cd /app && pnpm hardhat autoClaimUSDWithdraw --network mainnet',            '44 * * * *',            'UTC', false, NULL),
 ('arm-oeth', 'mainnet_collect_lido_fees',            'cd /app && pnpm hardhat collectLidoFees --network mainnet',                 '30 12 * * *',           'UTC', false, NULL),
 ('arm-oeth', 'mainnet_collect_etherfi_fees',         'cd /app && pnpm hardhat collectEtherFiFees --network mainnet',              '45 23 * * *',           'UTC', false, NULL),
 ('arm-oeth', 'mainnet_collect_ethena_fees',          'cd /app && pnpm hardhat collectEthenaFees --network mainnet',               '45 23 * * *',           'UTC', false, NULL),
+('arm-oeth', 'mainnet_collect_usd_fees',             'cd /app && pnpm hardhat collectUSDFees --network mainnet',                  '50 23 * * *',           'UTC', false, NULL),
 ('arm-oeth', 'mainnet_allocate_lido',                'cd /app && pnpm hardhat allocateLido --network mainnet',                    '38,08 * * * *',         'UTC', false, NULL),
 ('arm-oeth', 'mainnet_allocate_etherfi',             'cd /app && pnpm hardhat allocateEtherFi --network mainnet',                 '52 * * * *',            'UTC', false, NULL),
 ('arm-oeth', 'mainnet_allocate_ethena',              'cd /app && pnpm hardhat allocateEthena --network mainnet',                  '28 * * * *',            'UTC', false, NULL),
+('arm-oeth', 'mainnet_allocate_usd',                 'cd /app && pnpm hardhat allocateUSD --network mainnet',                     '26 * * * *',            'UTC', false, NULL),
 ('arm-oeth', 'mainnet_set_prices_lido',              'cd /app && pnpm hardhat setPricesLido --network mainnet',                   '*/30 * * * *',          'UTC', false, NULL),
 ('arm-oeth', 'mainnet_set_prices_etherfi',           'cd /app && pnpm hardhat setPricesEtherFi --network mainnet',                '2,32 * * * *',          'UTC', false, NULL),
 ('arm-oeth', 'mainnet_set_prices_ethena',            'cd /app && pnpm hardhat setPricesEthena --network mainnet',                 '4 * * * *',             'UTC', false, NULL),
+('arm-oeth', 'mainnet_set_prices_usd',               'cd /app && pnpm hardhat setPricesUSD --network mainnet',                    '6 * * * *',             'UTC', false, NULL),
 -- Emergency pause actions: manual-only (enabled=false). Triggered via the UI
 -- "Run now" button; cron_expr is a placeholder and never fires while disabled.
 ('arm-oeth', 'mainnet_pause_lido',                   'cd /app && pnpm hardhat pauseLido --network mainnet',                       '0 0 * * *',             'UTC', false, NULL),
 ('arm-oeth', 'mainnet_pause_etherfi',                'cd /app && pnpm hardhat pauseEtherFi --network mainnet',                    '0 0 * * *',             'UTC', false, NULL),
 ('arm-oeth', 'mainnet_pause_ethena',                 'cd /app && pnpm hardhat pauseEthena --network mainnet',                     '0 0 * * *',             'UTC', false, NULL),
+('arm-oeth', 'mainnet_pause_usd',                    'cd /app && pnpm hardhat pauseUSD --network mainnet',                        '0 0 * * *',             'UTC', false, NULL),
 -- LP redeem claims on behalf of users: manual-only (enabled=false). The runner
 -- dispatches `command` verbatim, so the required `--arm` and `--ids` flags must
 -- be set before running, by editing this row's command. `lido` and `0` below are

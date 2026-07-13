@@ -114,7 +114,17 @@ const autoClaimWithdraw = async ({
 };
 
 const baseWithdrawAmount = async (options) => {
-  const { signer, arm, thresholdAmount, minAmount = "0.03" } = options;
+  const {
+    signer,
+    arm,
+    thresholdAmount,
+    minAmount = "0.03",
+    // Base asset decimals. eg 18 for sUSDe, 6 for PYUSD.
+    decimals = 18,
+    // Liquidity asset decimals, which can differ from the base asset ones,
+    // eg an 18 decimals base asset over a 6 decimals USDC liquidity asset.
+    liquidityDecimals = decimals,
+  } = options;
   const { baseAddress, baseSymbol } = await resolveArmBase(options);
 
   // Withdrawal amount is base assets in ARM if not specified
@@ -124,16 +134,16 @@ const baseWithdrawAmount = async (options) => {
     signer,
   );
   const withdrawAmount = await baseAsset.balanceOf(await arm.getAddress());
-  log(`${formatUnits(withdrawAmount)} ${baseSymbol} withdraw amount`);
+  log(`${formatUnits(withdrawAmount, decimals)} ${baseSymbol} withdraw amount`);
 
   // Exit if less than the minimum withdrawal amount
-  const minAmountBI = parseUnits(minAmount.toString(), 18);
+  const minAmountBI = parseUnits(minAmount.toString(), decimals);
   if (withdrawAmount <= minAmountBI) {
     console.log(`Not enough base assets left in the ARM to withdraw`);
     return 0n;
   }
 
-  const thresholdAmountBI = parseUnits(thresholdAmount.toString());
+  const thresholdAmountBI = parseUnits(thresholdAmount.toString(), decimals);
 
   // If above minimum threshold, return the withdraw amount
   if (withdrawAmount > thresholdAmountBI) {
@@ -149,13 +159,17 @@ const baseWithdrawAmount = async (options) => {
     signer,
   );
   let liquidAssetAmount = await liquidAsset.balanceOf(await arm.getAddress());
-  log(`${formatUnits(liquidAssetAmount)} liquid asset balance in ARM`);
+  log(
+    `${formatUnits(liquidAssetAmount, liquidityDecimals)} liquid asset balance in ARM`,
+  );
 
   const outstanding = await getOutstandingWithdrawals(arm);
-  log(`${formatUnits(outstanding)} outstanding withdrawal requests`);
+  log(
+    `${formatUnits(outstanding, liquidityDecimals)} outstanding withdrawal requests`,
+  );
   let liquidityAvailable = liquidAssetAmount - outstanding;
   log(
-    `${formatUnits(liquidityAvailable)} liquidity available in ARM after accounting for outstanding withdrawal requests`,
+    `${formatUnits(liquidityAvailable, liquidityDecimals)} liquidity available in ARM after accounting for outstanding withdrawal requests`,
   );
 
   // Get the amount of liquidity available in the active market if one exists
@@ -170,25 +184,29 @@ const baseWithdrawAmount = async (options) => {
       await arm.getAddress(),
     );
     log(
-      `${formatUnits(lendingMarketLiquidityAmount)} liquidity available in lending market`,
+      `${formatUnits(lendingMarketLiquidityAmount, liquidityDecimals)} liquidity available in lending market`,
     );
 
     // Add liquidity in ARM and lending market together to determine if we can skip the withdrawal
     liquidityAvailable += lendingMarketLiquidityAmount;
   }
 
-  // If liquidity available is above the minimum amount, skip withdrawal
-  if (liquidityAvailable > minAmountBI) {
+  // If liquidity available is above the minimum amount, skip withdrawal.
+  // minAmount is re-parsed at liquidity decimals as the assets are pegged
+  // ~1:1 but can have different decimals.
+  const minLiquidityBI = parseUnits(minAmount.toString(), liquidityDecimals);
+  if (liquidityAvailable > minLiquidityBI) {
     console.log(
       `withdraw amount of ${formatUnits(
         withdrawAmount,
-      )} is below ${thresholdAmount} threshold and ${formatUnits(liquidityAvailable)} liquidity is still available, so not withdrawing`,
+        decimals,
+      )} is below ${thresholdAmount} threshold and ${formatUnits(liquidityAvailable, liquidityDecimals)} liquidity is still available, so not withdrawing`,
     );
     return 0n;
   }
 
   log(
-    `Only ${formatUnits(liquidityAvailable)} liquidity available, withdrawing ${formatUnits(withdrawAmount)} despite being below minimum threshold of ${thresholdAmount}`,
+    `Only ${formatUnits(liquidityAvailable, liquidityDecimals)} liquidity available, withdrawing ${formatUnits(withdrawAmount, decimals)} despite being below minimum threshold of ${thresholdAmount}`,
   );
 
   return withdrawAmount;

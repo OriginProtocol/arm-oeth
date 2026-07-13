@@ -2,6 +2,7 @@ const { Contract, ZeroAddress, parseUnits } = require("ethers");
 
 const addresses = require("./addresses");
 const { parseAddress } = require("./addressParser");
+const { normalizeArmName } = require("./armNames");
 
 const MAX_SWAP_LIQUIDITY = (1n << 128n) - 1n;
 const PRICE_SCALE = parseUnits("1", 36);
@@ -41,6 +42,7 @@ const ARM_BASES = {
   Ethena: { defaultBase: "SUSDE", liquidity: "USDE" },
   Oeth: { defaultBase: "OETH", liquidity: "WETH" },
   Origin: { defaultBase: "OS", liquidity: "WS" },
+  USD: { defaultBase: "PYUSD", liquidity: "USDC" },
 };
 
 const BASE_ALIASES = {
@@ -49,6 +51,8 @@ const BASE_ALIASES = {
   EETH: "EETH",
   WEETH: "WEETH",
   SUSDE: "SUSDE",
+  PYUSD: "PYUSD",
+  USDG: "USDG",
   OETH: "OETH",
   WOETH: "WOETH",
   OS: "OS",
@@ -61,12 +65,15 @@ const assetAddressesBySymbol = () => ({
   EETH: addresses.mainnet.eETH,
   WEETH: addresses.mainnet.weETH,
   SUSDE: addresses.mainnet.sUSDe,
+  PYUSD: addresses.mainnet.PYUSD,
+  USDG: addresses.mainnet.USDG,
   OETH: addresses.mainnet.OETHProxy,
   WOETH: addresses.mainnet.WOETH,
   OS: addresses.sonic.OSonicProxy,
   WOS: addresses.sonic.WOS,
   WETH: addresses.mainnet.WETH,
   USDE: addresses.mainnet.USDe,
+  USDC: addresses.mainnet.USDC,
   WS: addresses.sonic.WS,
 });
 
@@ -79,12 +86,14 @@ const normalizeBaseSymbol = (base) => {
 };
 
 const defaultBaseSymbol = (armName) => {
+  armName = normalizeArmName(armName);
   const config = ARM_BASES[armName];
   if (!config) throw new Error(`Unsupported ARM ${armName}`);
   return config.defaultBase;
 };
 
 const liquiditySymbol = (armName) => {
+  armName = normalizeArmName(armName);
   const config = ARM_BASES[armName];
   if (!config) throw new Error(`Unsupported ARM ${armName}`);
   return config.liquidity;
@@ -106,6 +115,26 @@ const symbolForAddress = async (address) => {
   return address;
 };
 
+const getArmBaseSymbols = async ({ arm, armName, base, blockTag }) => {
+  const requestedBaseSymbol = normalizeBaseSymbol(base);
+  if (requestedBaseSymbol) return [requestedBaseSymbol];
+
+  armName = normalizeArmName(armName);
+  if (arm.getBaseAssets) {
+    try {
+      const opts = blockTag === undefined ? [] : [{ blockTag }];
+      const baseAssetAddresses = await arm.getBaseAssets(...opts);
+      if (baseAssetAddresses.length > 0) {
+        return Promise.all(baseAssetAddresses.map(symbolForAddress));
+      }
+    } catch (err) {
+      if (!isMissingSelectorOrBareRevertError(err)) throw err;
+    }
+  }
+
+  return [defaultBaseSymbol(armName)];
+};
+
 const parseSwapCap = (amount) => {
   if (amount === undefined || amount === null) return MAX_SWAP_LIQUIDITY;
   if (typeof amount === "bigint") return amount;
@@ -122,6 +151,9 @@ const toConfigObject = (config) => ({
   crossPrice: config.crossPrice ?? config[4],
   pendingRedeemAssets: config.pendingRedeemAssets ?? config[5],
   peggedToLiquidityAsset: config.peggedToLiquidityAsset ?? config[6],
+  // Named access only as older baseAssetConfigs tuple layouts don't have
+  // this field and their positional indexes differ.
+  baseAssetDecimals: config.baseAssetDecimals,
   adapter: config.adapter ?? config[7],
 });
 
@@ -234,6 +266,7 @@ const resolveLegacyArmBase = async ({
 };
 
 const resolveArmBase = async ({ arm, armName, base, blockTag }) => {
+  armName = normalizeArmName(armName);
   const requestedBaseSymbol = normalizeBaseSymbol(base);
   const baseSymbol = requestedBaseSymbol ?? defaultBaseSymbol(armName);
   const baseAddress = await resolveAssetAddress(baseSymbol);
@@ -550,10 +583,12 @@ module.exports = {
   defaultBaseSymbol,
   estimateAllocateGas,
   estimateSetArmBufferGas,
+  getArmBaseSymbols,
   getArmBuffer,
   getOutstandingWithdrawals,
   legacyArmContract,
   liquiditySymbol,
+  normalizeArmName,
   normalizeBaseSymbol,
   parseSwapCap,
   requestBaseAssetWithdrawal,

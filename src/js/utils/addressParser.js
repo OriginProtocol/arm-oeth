@@ -1,18 +1,23 @@
 const { parse } = require("@solidity-parser/parser");
 const { readFileSync } = require("fs");
 
+const {
+  contractNameForArm,
+  deployNameForArm,
+  normalizeArmName,
+} = require("./armNames");
+const multiAssetARMAbi = require("../../abis/MultiAssetARM.json");
+
 const log = require("./logger")("utils:addressParser");
 
 const resolveArmContract = async (arm) => {
-  const deployName =
-    arm === "EtherFi"
-      ? "ETHER_FI_ARM"
-      : arm === "Oeth"
-        ? "OETH_ARM"
-        : `${arm.toUpperCase()}_ARM`;
+  const deployName = deployNameForArm(arm);
   const armAddress = await parseDeployedAddress(deployName);
-  const contractName = arm === "Oeth" ? "OriginARM" : `${arm}ARM`;
-  const armContract = await ethers.getContractAt(contractName, armAddress);
+  const contractNameOrAbi =
+    normalizeArmName(arm) === "USD"
+      ? multiAssetARMAbi
+      : contractNameForArm(arm);
+  const armContract = await ethers.getContractAt(contractNameOrAbi, armAddress);
 
   return armContract;
 };
