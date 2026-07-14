@@ -78,6 +78,8 @@ All ARMs are deployed behind `Proxy.sol` (EIP-1967) for upgradeability.
 
 Actions are bundled via: `pnpm rollup -c src/js/actions/rollup.config.cjs`
 
+**Scheduled actions (Talos):** the runner's cron/manual actions live in `src/js/tasks/actions/*.ts`, are scheduled in `migrations/seed_schedules.sql`, and are catalogued in `docs/ACTIONS.md`. When you add, remove, or change the behaviour of a scheduled action, update `docs/ACTIONS.md` in the same change.
+
 ## Deployment
 
 Deployment scripts are in `script/deploy/` organized by chain (`mainnet/`, `sonic/`). Numbered scripts (e.g. `011_DeployEtherFiARMScript.s.sol`) are auto-discovered and ordered by `DeployManager.s.sol`. See `script/deploy/ARCHITECTURE.md` for the full deployment framework documentation.
