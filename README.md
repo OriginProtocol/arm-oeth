@@ -301,6 +301,8 @@ The `src/js/tasks/actions/*.ts` files are hardhat tasks that handle operational 
 - **`migrations/seed_schedules.sql`** is a one-time seed of the `schedules` table mirroring the old `cron/cron-jobs.ts`.
 - **`src/js/tasks/lib/action.ts`** wraps the hardhat signer with `wrapSignerWithNonceQueueV6` from the library when `DATABASE_URL` is set. That routes `signer.sendTransaction` through Postgres row-locked nonce coordination.
 
+Every scheduled action — its cadence and one-line purpose — is catalogued in [`docs/ACTIONS.md`](docs/ACTIONS.md).
+
 ### Running actions locally
 
 Every action remains directly executable as a hardhat task on your dev machine:
