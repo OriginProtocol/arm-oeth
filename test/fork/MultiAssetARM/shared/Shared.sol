@@ -35,6 +35,11 @@ interface IAdapterQueue {
     function requestShares(uint256 requestId) external view returns (uint256);
 }
 
+/// @notice Minimal EtherFi liquidity-pool interface used to acquire backed eETH on a fork.
+interface IEtherFiLiquidityPool {
+    function deposit() external payable returns (uint256);
+}
+
 /// @notice Shared fork setup for the MultiAssetARM suite. Deploys a single MultiAssetARM (WETH
 ///         liquidity) with the four Lido/EtherFi base assets and their adapters wired to the real
 ///         mainnet protocol contracts. Mirrors the structure of test/fork/EthenaARM/shared/Shared.sol.
@@ -248,14 +253,17 @@ abstract contract Fork_Shared_Test is Base_Test_ {
     /// --- TOKEN ACQUISITION (rebasing tokens cannot use `deal` directly)
     //////////////////////////////////////////////////////
     /// @notice stETH and eETH are rebasing share tokens, so editing their balance slot breaks accounting.
-    ///         Acquire them from a whale instead: the wstETH wrapper holds the stETH backing and the weETH
-    ///         wrapper holds the eETH backing. wstETH/weETH/WETH are plain ERC20s and use the default deal.
+    ///         Acquire stETH from the wstETH wrapper and mint fully backed eETH through EtherFi's liquidity
+    ///         pool. Taking eETH from the weETH wrapper would leave it underbacked and make unwrap revert.
+    ///         wstETH/weETH/WETH are plain ERC20s and use the default deal.
     function deal(address token, address to, uint256 amount) internal override {
         if (token == address(steth)) {
             vm.prank(address(wsteth));
             steth.transfer(to, amount);
         } else if (token == address(eeth)) {
-            vm.prank(address(weeth));
+            uint256 depositAmount = amount + 1 ether;
+            vm.deal(address(this), address(this).balance + depositAmount);
+            IEtherFiLiquidityPool(Mainnet.ETHERFI_LIQUIDITY_POOL).deposit{value: depositAmount}();
             eeth.transfer(to, amount);
         } else {
             super.deal(token, to, amount);
@@ -327,10 +335,21 @@ abstract contract Fork_Shared_Test is Base_Test_ {
         queue.finalize{value: ethToLock}(lastRequestId, LIDO_MAX_SHARE_RATE);
     }
 
-    /// @notice Finalizes EtherFi withdrawal requests up to and including `requestId` via the NFT admin,
-    ///         and tops up the liquidity pool so the subsequent claim can pay out in ETH.
-    function _finalizeEtherFi(uint256 requestId) internal {
-        vm.deal(Mainnet.ETHERFI_LIQUIDITY_POOL, Mainnet.ETHERFI_LIQUIDITY_POOL.balance + 100_000 ether);
+    /// @notice Finalizes EtherFi withdrawal requests up to and including `requestId` via the NFT admin.
+    /// @dev The current EtherFi implementation requires finalized withdrawal ETH to be transferred from
+    ///      the liquidity pool into the withdrawal NFT's segregated escrow. Older implementations paid
+    ///      claims directly from the liquidity pool, so only fund the escrow when its getter is available.
+    function _finalizeEtherFi(uint256 requestId, uint256 assetsExpected) internal {
+        vm.deal(Mainnet.ETHERFI_LIQUIDITY_POOL, Mainnet.ETHERFI_LIQUIDITY_POOL.balance + assetsExpected);
+
+        (bool usesEscrow,) =
+            Mainnet.ETHERFI_WITHDRAWAL_NFT.staticcall(abi.encodeWithSignature("ethAmountLockedForWithdrawal()"));
+        if (usesEscrow) {
+            vm.prank(Mainnet.ETHERFI_LIQUIDITY_POOL);
+            (bool funded,) = payable(Mainnet.ETHERFI_WITHDRAWAL_NFT).call{value: assetsExpected}("");
+            require(funded, "EtherFi escrow funding failed");
+        }
+
         vm.prank(ETHERFI_WITHDRAW_ADMIN);
         IEETHWithdrawalNFT(Mainnet.ETHERFI_WITHDRAWAL_NFT).finalizeRequests(requestId);
     }

@@ -91,7 +91,7 @@ contract Fork_Concrete_MultiAssetARM_ClaimBaseWithdrawals_Test_ is Fork_Shared_T
         (, uint256 assetsExpectedAtRequest) = arm.requestBaseAssetRedeem(address(token), AMOUNT);
         uint256 id0 = _queue(token).pendingRequestId(0);
 
-        _finalizeEtherFi(id0);
+        _finalizeEtherFi(id0, assetsExpectedAtRequest);
 
         uint256 armWethBefore = weth.balanceOf(address(arm));
 
