@@ -1,4 +1,5 @@
 import { ethers } from "ethers";
+import { types } from "hardhat/config";
 
 import { action } from "../lib/action";
 import { autoClaimWithdraw } from "../liquidityAutomation";
@@ -12,13 +13,16 @@ action({
   name: "autoClaimWithdraw",
   description: "Claim withdrawals from OETH ARM",
   chains: [1],
-  run: async ({ signer, log }) => {
+  params: (t) =>
+    t.addOptionalParam(
+      "id",
+      "Specific OETH withdrawal request identifier to claim. (default: all)",
+      undefined,
+      types.string,
+    ),
+  run: async ({ signer, log, args }) => {
     const liquidityAsset = new ethers.Contract(mainnet.WETH, erc20Abi, signer);
-    const vault = new ethers.Contract(
-      mainnet.OETHVaultProxy,
-      vaultAbi,
-      signer
-    );
+    const vault = new ethers.Contract(mainnet.OETHVaultProxy, vaultAbi, signer);
     const arm = new ethers.Contract(mainnet.OethARM, oethARMAbi, signer);
 
     log.info("Claiming withdrawals from OETH ARM");
@@ -33,6 +37,7 @@ action({
         armName: "Oeth",
         vault,
         confirm: true,
+        id: args.id,
       },
     });
   },

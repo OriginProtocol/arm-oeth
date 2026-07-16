@@ -123,6 +123,12 @@ const claimLidoWithdrawals = async (options) => {
   let shares;
   if (id) {
     shares = await adapter["requestShares(uint256)"](id);
+    if (shares === 0n) {
+      log(
+        `Withdrawal request ${id} does not belong to the ${baseContext.baseSymbol} adapter`,
+      );
+      return;
+    }
   } else {
     try {
       [shares] = await adapter.claimableRedeem();

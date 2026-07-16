@@ -47,6 +47,7 @@ const autoClaimWithdraw = async ({
   base,
   vault,
   confirm,
+  id,
 }) => {
   const baseContext = await resolveArmBase({ arm, armName, base });
   const { config } = baseContext;
@@ -79,14 +80,16 @@ const autoClaimWithdraw = async ({
   );
 
   // get claimable withdrawal requests
-  let requestIds = await claimableRequests({
-    withdrawer:
-      baseContext.version === "legacy"
-        ? await arm.getAddress()
-        : config.adapter,
-    queuedAmountClaimable,
-    claimCutoff,
-  });
+  let requestIds = id
+    ? [id]
+    : await claimableRequests({
+        withdrawer:
+          baseContext.version === "legacy"
+            ? await arm.getAddress()
+            : config.adapter,
+        queuedAmountClaimable,
+        claimCutoff,
+      });
 
   if (requestIds.length === 0) {
     log("No claimable requests");
@@ -99,6 +102,12 @@ const autoClaimWithdraw = async ({
   if (baseContext.version !== "legacy") {
     for (const requestId of requestIds) {
       shares += await adapter["requestShares(uint256)"](requestId);
+    }
+    if (shares === 0n) {
+      log(
+        `Withdrawal request${requestIds.length === 1 ? "" : "s"} ${requestIds} does not belong to the ${baseContext.baseSymbol} adapter`,
+      );
+      return [];
     }
   }
 
