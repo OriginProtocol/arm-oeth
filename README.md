@@ -1,6 +1,6 @@
 # Automated Redemption Manager (ARM)
 
-There are currently six ARM contracts:
+There are currently five ARM contracts:
 
 1. [Lido ARM](https://docs.originprotocol.com/automated-redemption-manager-arm/steth-arm) on Ethereum with stETH as the base asset and WETH as the liquidity asset.
 2. [EtherFi ARM](https://docs.originprotocol.com/automated-redemption-manager-arm/eeth-arm) on Ethereum with eETH as the base asset and WETH as the liquidity asset.
