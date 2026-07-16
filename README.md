@@ -100,11 +100,27 @@ function swapTokensForExactTokens(
 ) external returns (uint256[] memory amounts);
 
 /**
- * @notice Get the available liquidity for a each token in the ARM.
- * @return reserve0 The available liquidity for token0
- * @return reserve1 The available liquidity for token1
+ * @notice Get the available reserves for each token in the ARM.
+ * @dev Applies to the Lido, EtherFi, OETH and OS ARMs.
+ * @return reserve0 The available liquidity for token0.
+ * @return reserve1 The available liquidity for token1.
  */
 function getReserves() external view returns (uint256 reserve0, uint256 reserve1);
+
+/**
+ * @notice Get available liquidity and base asset reserves for a supported base asset.
+ * @dev Applies to the Ethena and USD ARMs.
+ * For the Ethena ARM, reserveBaseAsset is sUSDe and liquidityAssets are USDe.
+ * For the USD ARM, reserveBaseAsset is PYUSD or USDG and liquidityAssets are USDC.
+ * Liquidity assets are net of outstanding LP withdrawal claims.
+ * @param reserveBaseAsset Supported base asset whose reserve should be returned.
+ * @return liquidityAssets Available liquidity assets.
+ * @return baseAssetReserve Base assets held directly by the ARM.
+ */
+function getReserves(address reserveBaseAsset)
+    external
+    view
+    returns (uint256 liquidityAssets, uint256 baseAssetReserve);
 ```
 
 ## Liquidity Provider Interface
