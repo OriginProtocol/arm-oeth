@@ -1,4 +1,5 @@
 import { ethers } from "ethers";
+import { types } from "hardhat/config";
 
 import { action } from "../lib/action";
 import { autoClaimWithdraw } from "../liquidityAutomation";
@@ -14,13 +15,16 @@ action({
   name: "autoClaimWithdrawSonic",
   description: "Claim withdrawals from Origin ARM on Sonic and allocate",
   chains: [146],
-  run: async ({ signer, log }) => {
+  params: (t) =>
+    t.addOptionalParam(
+      "id",
+      "Specific OS withdrawal request identifier to claim. (default: all)",
+      undefined,
+      types.string,
+    ),
+  run: async ({ signer, log, args }) => {
     const liquidityAsset = new ethers.Contract(sonic.WS, erc20Abi, signer);
-    const vault = new ethers.Contract(
-      sonic.OSonicVaultProxy,
-      vaultAbi,
-      signer
-    );
+    const vault = new ethers.Contract(sonic.OSonicVaultProxy, vaultAbi, signer);
     const arm = new ethers.Contract(sonic.OriginARM, armAbi, signer);
 
     log.info("Claiming withdrawals from Origin ARM on Sonic");
@@ -36,6 +40,7 @@ action({
           armName: "Origin",
           vault,
           confirm: true,
+          id: args.id,
         },
       })
     )

@@ -11,6 +11,15 @@ import {Proxy} from "contracts/Proxy.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
 
 contract Fork_PaxosARM_Smoke_Test is AbstractSmokeTest {
+    /// @dev 0.998e36 = 0.998 USDC per base asset, the automation's minimum buy price.
+    uint256 internal constant MIN_BUY_PRICE = 0.998e36;
+    /// @dev 0.99995e36 = 0.99995 USDC per base asset, the automation's maximum buy price.
+    uint256 internal constant MAX_BUY_PRICE = 0.99995e36;
+    /// @dev 0.99997e36 = 0.99997 USDC per base asset, the automation's minimum sell price.
+    uint256 internal constant MIN_SELL_PRICE = 0.99997e36;
+    /// @dev 1e36 = 1 USDC per base asset, the automation's maximum sell price.
+    uint256 internal constant MAX_SELL_PRICE = 1e36;
+
     IERC20 usdc;
     IERC20 pyusd;
     IERC20 usdg;
@@ -56,9 +65,7 @@ contract Fork_PaxosARM_Smoke_Test is AbstractSmokeTest {
         assertEq(pyusdAdapter.asset(), Mainnet.USDC, "PYUSD adapter liquidity asset");
         assertEq(pyusdAdapter.owner(), Mainnet.MULTISIG_2_OF_8, "PYUSD adapter owner");
         assertEq(pyusdAdapter.operator(), operator, "PYUSD adapter operator");
-        assertEq(pyusdAdapter.paxosRecipient(), Mainnet.PAXOS_RECIPIENT, "PYUSD adapter paxos recipient placeholder");
-        assertEq(pyusdAdapter.pendingShares(), 0, "PYUSD adapter pending shares");
-        assertEq(pyusdAdapter.settlingShares(), 0, "PYUSD adapter settling shares");
+        assertNotEq(pyusdAdapter.paxosRecipient(), address(0), "PYUSD adapter paxos recipient");
 
         // USDG adapter
         assertEq(usdgAdapter.arm(), address(usdARM), "USDG adapter arm");
@@ -66,9 +73,7 @@ contract Fork_PaxosARM_Smoke_Test is AbstractSmokeTest {
         assertEq(usdgAdapter.asset(), Mainnet.USDC, "USDG adapter liquidity asset");
         assertEq(usdgAdapter.owner(), Mainnet.MULTISIG_2_OF_8, "USDG adapter owner");
         assertEq(usdgAdapter.operator(), operator, "USDG adapter operator");
-        assertEq(usdgAdapter.paxosRecipient(), Mainnet.PAXOS_RECIPIENT, "USDG adapter paxos recipient placeholder");
-        assertEq(usdgAdapter.pendingShares(), 0, "USDG adapter pending shares");
-        assertEq(usdgAdapter.settlingShares(), 0, "USDG adapter settling shares");
+        assertNotEq(usdgAdapter.paxosRecipient(), address(0), "USDG adapter paxos recipient");
 
         address[] memory baseAssets = usdARM.getBaseAssets();
         _assertBaseAssetListed(baseAssets, Mainnet.PYUSD, "PYUSD listed as base asset");
@@ -90,22 +95,18 @@ contract Fork_PaxosARM_Smoke_Test is AbstractSmokeTest {
     function _assertBaseAssetConfig(address baseAsset, address expectedAdapter, string memory label) internal view {
         (
             uint128 buyPrice,
-            uint128 sellPrice,
-            uint128 buyLiquidityRemaining,
-            uint128 sellLiquidityRemaining,
-            uint128 crossPrice,
-            uint128 pendingRedeemAssets,
+            uint128 sellPrice,,,
+            uint128 crossPrice,,
             bool peggedToLiquidityAsset,
             uint8 baseAssetDecimals,
             address adapter
         ) = usdARM.baseAssetConfigs(baseAsset);
 
-        assertEq(buyPrice, 0.998e36, string.concat(label, " buy price"));
-        assertEq(sellPrice, 1e36, string.concat(label, " sell price"));
-        assertEq(buyLiquidityRemaining, 0, string.concat(label, " buy liquidity remaining"));
-        assertEq(sellLiquidityRemaining, 0, string.concat(label, " sell liquidity remaining"));
+        assertGe(buyPrice, MIN_BUY_PRICE, string.concat(label, " minimum buy price"));
+        assertLe(buyPrice, MAX_BUY_PRICE, string.concat(label, " maximum buy price"));
+        assertGe(sellPrice, MIN_SELL_PRICE, string.concat(label, " minimum sell price"));
+        assertLe(sellPrice, MAX_SELL_PRICE, string.concat(label, " maximum sell price"));
         assertEq(crossPrice, 0.99997e36, string.concat(label, " cross price"));
-        assertEq(pendingRedeemAssets, 0, string.concat(label, " pending redeem assets"));
         assertEq(peggedToLiquidityAsset, true, string.concat(label, " pegged"));
         assertEq(baseAssetDecimals, 6, string.concat(label, " base asset decimals"));
         assertEq(adapter, expectedAdapter, string.concat(label, " adapter"));
@@ -178,6 +179,9 @@ contract Fork_PaxosARM_Smoke_Test is AbstractSmokeTest {
     ///      adapter (mocked with deal), and the operator claims the USDC back into the ARM.
     function _paxosSettlementCycle(IERC20 baseAsset, PaxosAssetAdapter adapter) internal {
         uint256 shares = 1_000e6;
+        uint256 pendingSharesBefore = adapter.pendingShares();
+        uint256 settlingSharesBefore = adapter.settlingShares();
+        (,,,,, uint128 pendingRedeemAssetsBefore,,,) = usdARM.baseAssetConfigs(address(baseAsset));
 
         // Give the ARM base asset inventory (as if bought from traders).
         deal(address(baseAsset), address(usdARM), shares);
@@ -188,8 +192,8 @@ contract Fork_PaxosARM_Smoke_Test is AbstractSmokeTest {
         // 1. Operator queues the base assets for Paxos redemption. The adapter pulls them from the ARM.
         vm.prank(operator);
         usdARM.requestBaseAssetRedeem(address(baseAsset), shares);
-        assertEq(adapter.pendingShares(), shares, "pending shares after request");
-        assertEq(baseAsset.balanceOf(address(adapter)), shares, "adapter base balance after request");
+        assertEq(adapter.pendingShares(), pendingSharesBefore + shares, "pending shares after request");
+        assertGe(baseAsset.balanceOf(address(adapter)), shares, "adapter base balance after request");
 
         // 2. Owner configures the Paxos deposit address (mocked as a test address).
         address paxosRecipient = makeAddr("paxosRecipient");
@@ -200,8 +204,8 @@ contract Fork_PaxosARM_Smoke_Test is AbstractSmokeTest {
         vm.prank(operator);
         adapter.submitPaxosRedeem(shares, bytes32("id"));
         assertEq(baseAsset.balanceOf(paxosRecipient), shares, "paxos recipient base balance");
-        assertEq(adapter.pendingShares(), 0, "pending shares after submit");
-        assertEq(adapter.settlingShares(), shares, "settling shares after submit");
+        assertEq(adapter.pendingShares(), pendingSharesBefore, "pending shares after submit");
+        assertEq(adapter.settlingShares(), settlingSharesBefore + shares, "settling shares after submit");
 
         // 4. Mock the off-chain Paxos settlement: USDC lands on the adapter 1:1.
         deal(address(usdc), address(adapter), shares);
@@ -210,11 +214,11 @@ contract Fork_PaxosARM_Smoke_Test is AbstractSmokeTest {
         vm.prank(operator);
         usdARM.claimBaseAssetRedeem(address(baseAsset), shares);
 
-        assertEq(adapter.pendingShares(), 0, "pending shares after claim");
-        assertEq(adapter.settlingShares(), 0, "settling shares after claim");
+        assertEq(adapter.pendingShares(), pendingSharesBefore, "pending shares after claim");
+        assertEq(adapter.settlingShares(), settlingSharesBefore, "settling shares after claim");
         assertEq(usdc.balanceOf(address(usdARM)), armUsdcBefore + shares, "ARM USDC balance after claim");
         (,,,,, uint128 pendingRedeemAssets,,,) = usdARM.baseAssetConfigs(address(baseAsset));
-        assertEq(pendingRedeemAssets, 0, "pending redeem assets after claim");
+        assertEq(pendingRedeemAssets, pendingRedeemAssetsBefore, "pending redeem assets after claim");
         assertGe(usdARM.totalAssets(), totalAssetsBefore, "total assets not decreased");
     }
 

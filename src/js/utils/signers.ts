@@ -1,10 +1,8 @@
 import { JsonRpcProvider, Signer, Wallet } from "ethers";
-import { Defender } from "@openzeppelin/defender-sdk";
 import * as hhHelpers from "@nomicfoundation/hardhat-network-helpers";
 import {
   createDb,
   createPool,
-  wrapSignerWithDefenderRecorderV6,
   wrapSignerWithNonceQueueV6,
 } from "@talos/client";
 
@@ -88,43 +86,6 @@ async function getKmsSigner(): Promise<Signer> {
 }
 
 // ---------------------------------------------------------------------------
-// Defender relayer signer
-// ---------------------------------------------------------------------------
-
-type DefenderSpeed = "safeLow" | "average" | "fast" | "fastest";
-
-async function getDefenderSigner(): Promise<Signer> {
-  const speed = (process.env.SPEED || "fastest") as string;
-  const validSpeeds: DefenderSpeed[] = [
-    "safeLow",
-    "average",
-    "fast",
-    "fastest",
-  ];
-  if (!validSpeeds.includes(speed as DefenderSpeed)) {
-    console.error(
-      `Defender Relay Speed param must be either 'safeLow', 'average', 'fast' or 'fastest'. Not "${speed}"`,
-    );
-    process.exit(2);
-  }
-  const credentials = {
-    relayerApiKey: process.env.DEFENDER_RELAYER_KEY,
-    relayerApiSecret: process.env.DEFENDER_RELAYER_SECRET,
-  };
-  const client = new Defender(credentials);
-  const provider = client.relaySigner.getProvider({ ethersVersion: "v6" });
-
-  const signer = await client.relaySigner.getSigner(provider, {
-    speed: speed as DefenderSpeed,
-    ethersVersion: "v6",
-  });
-  log(
-    `Using Defender Relayer account ${await signer.getAddress()} from env vars DEFENDER_RELAYER_KEY and DEFENDER_RELAYER_SECRET`,
-  );
-  return signer as unknown as Signer;
-}
-
-// ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
 
@@ -136,9 +97,8 @@ async function getDefenderSigner(): Promise<Signer> {
  *  2. `DEPLOYER_PRIVATE_KEY` env var (Wallet from private key)
  *  3. AWS KMS credentials (`AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY`)
  *  4. `IMPERSONATE` env var (impersonate + fund on a fork)
- *  5. Defender Relayer (`DEFENDER_RELAYER_KEY` + `DEFENDER_RELAYER_SECRET`)
- *  6. First hardhat signer (from the configured network)
- *  7. Random wallet (last resort)
+ *  5. First hardhat signer (from the configured network)
+ *  6. Random wallet (last resort)
  */
 export async function getSigner(address?: string): Promise<Signer> {
   if (address) {
@@ -158,34 +118,6 @@ export async function getSigner(address?: string): Promise<Signer> {
     return maybeWrap(wallet);
   }
 
-  // Per-action override set by talos dispatch when the operator checked
-  // the "Use Defender Relayer signer" box on this action. Skip KMS and
-  // route through Defender for this run only. Throw a structured error
-  // if the env vars aren't actually present so the failure surfaces
-  // cleanly in run_logs instead of as an SDK 401.
-  if (process.env.USE_DEFENDER_SIGNER === "1") {
-    if (
-      !process.env.DEFENDER_RELAYER_KEY ||
-      !process.env.DEFENDER_RELAYER_SECRET
-    ) {
-      throw new Error(
-        "USE_DEFENDER_SIGNER=1 was requested but DEFENDER_RELAYER_KEY / " +
-          "DEFENDER_RELAYER_SECRET are not configured on this runner. " +
-          "Either uncheck the Defender option on this action or configure the env vars.",
-      );
-    }
-    // Defender's relayer manages nonce + gas + retries server-side, so
-    // the nonce-queue wrap is both broken (Defender can't sign offline)
-    // and unnecessary. The recorder wrapper instead inserts a single row
-    // into nonce_queue_transactions post-broadcast so the tx hash still
-    // shows up on talos's Transactions page linked to its run.
-    const signer = await getDefenderSigner();
-    const db = getNonceDb();
-    return db
-      ? wrapSignerWithDefenderRecorderV6(signer, { db })
-      : signer;
-  }
-
   if (hasAwsKmsCredentials()) {
     return maybeWrap(await getKmsSigner());
   }
@@ -201,11 +133,6 @@ export async function getSigner(address?: string): Promise<Signer> {
       `Impersonating account ${impersonateAddr} from IMPERSONATE environment variable`,
     );
     return await impersonateAndFund(impersonateAddr);
-  }
-
-  // Defender Relayer
-  if (process.env.DEFENDER_RELAYER_KEY && process.env.DEFENDER_RELAYER_SECRET) {
-    return maybeWrap(await getDefenderSigner());
   }
 
   const signers = await hre.ethers.getSigners();

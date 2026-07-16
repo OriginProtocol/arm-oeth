@@ -33,7 +33,6 @@ test/invariants/.foundry-failures
 lcov.info*
 crytic-export
 
-# Defender Actions
 dist
 cache_hardhat
 

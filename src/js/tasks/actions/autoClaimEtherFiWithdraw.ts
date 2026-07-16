@@ -1,4 +1,5 @@
 import { ethers } from "ethers";
+import { types } from "hardhat/config";
 
 import { action } from "../lib/action";
 import { claimEtherFiWithdrawals } from "../etherfiQueue";
@@ -10,7 +11,14 @@ action({
   name: "autoClaimEtherFiWithdraw",
   description: "Claim EtherFi withdrawals from EtherFi ARM",
   chains: [1],
-  run: async ({ signer, log }) => {
+  params: (t) =>
+    t.addOptionalParam(
+      "id",
+      "Specific EtherFi withdrawal request identifier to claim. (default: all)",
+      undefined,
+      types.string,
+    ),
+  run: async ({ signer, log, args }) => {
     const arm = new ethers.Contract(mainnet.etherfiARM, etherFiARMAbi, signer);
 
     log.info("Claiming EtherFi withdrawals");
@@ -22,6 +30,7 @@ action({
         signer,
         arm,
         armName: "EtherFi",
+        id: args.id,
       },
     });
   },
