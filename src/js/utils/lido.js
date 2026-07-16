@@ -3,7 +3,6 @@ const { mainnet } = require("./addresses");
 const erc20Abi = require("../../abis/ERC20.json");
 
 const getLidoQueueData = async (signer, blockTag) => {
-  // This needs to work in a Defender Action so can't use resolveAsset which uses Hardhat's getContractAt
   const stETH = new ethers.Contract(mainnet.stETH, erc20Abi, signer);
 
   // get stETH in the withdrawal queue

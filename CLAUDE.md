@@ -62,10 +62,8 @@ All ARMs are deployed behind `Proxy.sol` (EIP-1967) for upgradeability.
 
 ### Off-Chain Automation (`src/js/`)
 
-- **`src/js/actions/`** - OpenZeppelin Defender Actions (auto-withdraw, auto-claim, price setting, fee collection, allocation). Bundled with rollup.
-- **`src/js/tasks/`** - Hardhat tasks for admin operations.
-
-Actions are bundled via: `pnpm rollup -c src/js/actions/rollup.config.cjs`
+- **`src/js/tasks/actions/`** - Talos scheduled actions.
+- **`src/js/tasks/`** - Hardhat tasks for admin and operational jobs.
 
 **Scheduled actions (Talos):** the runner's cron/manual actions live in `src/js/tasks/actions/*.ts`, are scheduled in `migrations/seed_schedules.sql`, and are catalogued in `docs/ACTIONS.md`. When you add, remove, or change the behaviour of a scheduled action, update `docs/ACTIONS.md` in the same change.
 
