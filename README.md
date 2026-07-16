@@ -1,12 +1,12 @@
 # Automated Redemption Manager (ARM)
 
-There are currently three ARM contracts:
+There are currently six ARM contracts:
 
 1. [Lido ARM](https://docs.originprotocol.com/automated-redemption-manager-arm/steth-arm) on Ethereum with stETH as the base asset and WETH as the liquidity asset.
 2. [EtherFi ARM](https://docs.originprotocol.com/automated-redemption-manager-arm/eeth-arm) on Ethereum with eETH as the base asset and WETH as the liquidity asset.
-3. Ethena ARM on Ethereum with sUSDe as the base asset and USDe as the liquidity asset.
-2. [OS ARM](https://docs.originprotocol.com/os-arm) on Sonic with OS as the base asset and wS as the liquidity asset.
-3. OETH ARM on Ethereum with OETH as the base asset and WETH as the liquidity asset.
+3. [Ethena ARM](https://docs.originprotocol.com/automated-redemption-manager-arm/susde-arm) on Ethereum with sUSDe as the base asset and USDe as the liquidity asset.
+4. USD ARM on Ethereum with PYUSD and USDG as base assets and USDC as the liquidity asset.
+5. [OS ARM](https://docs.originprotocol.com/os-arm) on Sonic with OS as the base asset and wS as the liquidity asset.
 
 ## Deployed Contracts
 
@@ -293,7 +293,7 @@ yarn hardhat tenderlySync --network sonic
 yarn hardhat tenderlyUpload --network sonic --name ORIGIN_ARM
 ```
 
-## Automated Actions (Talos) 
+## Automated Actions (Talos)
 
 The `src/js/tasks/actions/*.ts` files are hardhat tasks that handle operational jobs (allocations, fee collection, withdrawal requests, etc.). In production they're driven by a container that imports [`@talos/client`](https://github.com/oplabs/talos):
 
@@ -333,7 +333,7 @@ For this to work, a Defender Team API key with `Manage Actions` capabilities is 
 
 The following will set the Defender Team API key and bundle the Actions code ready for upload.
 
-```bash 
+```bash
 # Set the DEFENDER_TEAM_KEY and DEFENDER_TEAM_SECRET env vars in the .env file
 
 yarn rollup -c src/js/actions/rollup.config.cjs
