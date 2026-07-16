@@ -1,4 +1,5 @@
 import { ethers } from "ethers";
+import { types } from "hardhat/config";
 
 import { action } from "../lib/action";
 import { claimLidoWithdrawals } from "../lidoQueue";
@@ -11,12 +12,19 @@ action({
   name: "autoClaimLidoWithdraw",
   description: "Claim Lido withdrawals from Lido ARM",
   chains: [1],
-  run: async ({ signer, log }) => {
+  params: (t) =>
+    t.addOptionalParam(
+      "id",
+      "Specific Lido withdrawal request identifier to claim. (default: all)",
+      undefined,
+      types.string,
+    ),
+  run: async ({ signer, log, args }) => {
     const arm = new ethers.Contract(mainnet.lidoARM, lidoARMAbi, signer);
     const withdrawalQueue = new ethers.Contract(
       mainnet.lidoWithdrawalQueue,
       lidoWithdrawQueueAbi,
-      signer
+      signer,
     );
 
     log.info("Claiming Lido withdrawals");
@@ -29,6 +37,7 @@ action({
         arm,
         armName: "Lido",
         withdrawalQueue,
+        id: args.id,
       },
     });
   },

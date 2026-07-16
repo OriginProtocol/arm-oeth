@@ -1,10 +1,5 @@
 const { ethereumAddress } = require("./regex");
 const { parseAddress } = require("./addressParser");
-// Commented out as Hardhat will load a version of ethers with helper function getContractAt
-// which comes from the @nomicfoundation/hardhat-ethers package.
-// The following needs to be uncommented if building for an Autotask
-// const { ethers } = require("ethers");
-
 const log = require("../utils/logger")("utils:assets");
 
 /**
