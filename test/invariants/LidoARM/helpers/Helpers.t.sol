@@ -59,9 +59,10 @@ abstract contract Helpers is Base_Test_ {
     /// @notice Pick the first LP (round-robin from `seed`) that holds WETH.
     /// @return user  Address of the selected LP, or address(0) if none found.
     /// @return balance  WETH balance of the selected LP.
-    function selectUserWithLiqudity(uint16 seed) internal view returns (address, uint256) {
+    function selectUserWithLiqudity(uint256 seed) internal view returns (address, uint256) {
+        uint256 start = seed % LP_COUNT;
         for (uint256 i; i < LP_COUNT; i++) {
-            address user = lps[(seed + i) % LP_COUNT];
+            address user = lps[(start + i) % LP_COUNT];
             if (weth.balanceOf(user) > 0) {
                 return (user, weth.balanceOf(user));
             }
@@ -72,9 +73,10 @@ abstract contract Helpers is Base_Test_ {
     /// @notice Pick the first LP (round-robin from `seed`) that holds ARM shares.
     /// @return user  Address of the selected LP, or address(0) if none found.
     /// @return balance  ARM share balance of the selected LP.
-    function selectUserWithShares(uint16 seed) internal view returns (address, uint256) {
+    function selectUserWithShares(uint256 seed) internal view returns (address, uint256) {
+        uint256 start = seed % LP_COUNT;
         for (uint256 i; i < LP_COUNT; i++) {
-            address user = lps[(seed + i) % LP_COUNT];
+            address user = lps[(start + i) % LP_COUNT];
             if (lidoARM.balanceOf(user) > 0) {
                 return (user, lidoARM.balanceOf(user));
             }
