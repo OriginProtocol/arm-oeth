@@ -97,6 +97,22 @@ abstract contract Deposit_Test is Unit_MultiAssetARM_Shared_Test {
         arm.deposit(LIQUIDITY_UNIT());
     }
 
+    function test_Deposit_RevertWhen_AssetLossReachesFloorWithLiveLps() public {
+        firstDeposit(alice, DEFAULT_AMOUNT());
+        assertGt(arm.totalSupply(), MIN_TOTAL_SUPPLY, "live LP shares exist");
+        assertEq(arm.feesAccrued(), 0, "no accrued fees");
+        assertEq(arm.reservedWithdrawLiquidity(), 0, "no reserved withdrawals");
+
+        // Simulate a real loss that leaves only the native-liquidity floor backing live LP shares.
+        _setArmBalances(MIN_LIQUIDITY(), 0);
+        assertEq(arm.totalAssets(), MIN_LIQUIDITY(), "at asset floor");
+
+        _mint(liquidity, bobby, LIQUIDITY_UNIT());
+        vm.expectRevert(AbstractARM.Insolvent.selector);
+        vm.prank(bobby);
+        arm.deposit(LIQUIDITY_UNIT());
+    }
+
     function _generateFees() internal returns (uint256 fees) {
         firstDeposit(alice, DEFAULT_AMOUNT());
 

@@ -199,11 +199,13 @@ abstract contract TargetFunction is Invariant_LidoARM_Setup_Test {
         (address user, uint256 balance) = selectUserWithLiqudity(from);
         vm.assume(user != address(0)); // Ensure we found a user with liquidity
 
-        // Mirror AbstractARM._deposit's Insolvent() guard: at the asset floor (totalAssets() clamped to
-        // MIN_LIQUIDITY == 1e12) deposits revert when any senior liability (accrued fees or reserved LP
-        // redeems) is outstanding. Skip those inputs so strict-mode fuzzing does not fail on the revert.
+        // Mirror AbstractARM._deposit's Insolvent() guard: at the asset floor, deposits are allowed
+        // only before any live LP shares exist and when there are no senior liabilities.
         vm.assume(
-            lidoARM.totalAssets() > 1e12 || (lidoARM.feesAccrued() == 0 && lidoARM.reservedWithdrawLiquidity() == 0)
+            lidoARM.totalAssets() > 1e12
+                || (lidoARM.totalSupply() == MIN_TOTAL_SUPPLY
+                    && lidoARM.feesAccrued() == 0
+                    && lidoARM.reservedWithdrawLiquidity() == 0)
         );
 
         // Bound amount
