@@ -1,1 +1,4 @@
+autoInstallPeers: false
 minimumReleaseAge: 10080
+minimumReleaseAgeExclude:
+  - '@oplabs/talos-client'

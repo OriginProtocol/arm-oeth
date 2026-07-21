@@ -1,10 +1,5 @@
 import { JsonRpcProvider, Signer, Wallet } from "ethers";
 import * as hhHelpers from "@nomicfoundation/hardhat-network-helpers";
-import {
-  createDb,
-  createPool,
-  wrapSignerWithNonceQueueV6,
-} from "@oplabs/talos-client";
 
 import { ethereumAddress, privateKey } from "./regex";
 
@@ -18,6 +13,9 @@ let dbInstance: unknown = null;
 function getNonceDb(): unknown {
   if (!process.env.DATABASE_URL) return null;
   if (!dbInstance) {
+    // Optional peer: only production/DB-backed runs need the Talos client.
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { createDb, createPool } = require("@oplabs/talos-client");
     const pool = createPool({ connectionString: process.env.DATABASE_URL });
     dbInstance = createDb(pool);
   }
@@ -30,6 +28,8 @@ function getNonceDb(): unknown {
 function maybeWrap<S extends Signer>(rawSigner: S): S {
   const db = getNonceDb();
   if (!db) return rawSigner;
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { wrapSignerWithNonceQueueV6 } = require("@oplabs/talos-client");
   return wrapSignerWithNonceQueueV6(rawSigner, { db });
 }
 

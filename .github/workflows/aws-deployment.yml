@@ -7,8 +7,9 @@ name: AWS — build runner image
 #
 # Triggers on `main`.
 #
-# Requires the TALOS_DEPLOY_KEY repo secret for the @oplabs/talos-client
-# git-install (SSH deploy key against oplabs/talos).
+# The image installs @oplabs/talos-client from the oplabs GitHub Packages
+# registry using the TALOS_PACKAGE_TOKEN secret. It must contain a PAT with
+# read:packages access to the oplabs package.
 
 on:
   push:
@@ -32,11 +33,6 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
-
-      - name: Set up SSH agent for @oplabs/talos-client deploy key
-        uses: webfactory/ssh-agent@a6f90b1f127823b31d4d4a8d96047790581349bd # v0.9.1
-        with:
-          ssh-private-key: ${{ secrets.TALOS_DEPLOY_KEY }}
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@b47578312673ae6fa5b5096b330d9fbac3d116df # v4.2.1
@@ -72,7 +68,8 @@ jobs:
           context: .
           file: ./dockerfile-actions
           push: true
-          ssh: default
+          secrets: |
+            talos_package_token=${{ secrets.TALOS_PACKAGE_TOKEN }}
           build-args: |
             GIT_COMMIT_SHA=${{ github.sha }}
           tags: |

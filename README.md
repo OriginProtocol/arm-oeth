@@ -319,6 +319,19 @@ The `src/js/tasks/actions/*.ts` files are hardhat tasks that handle operational 
 
 Every scheduled action — its cadence and one-line purpose — is catalogued in [`docs/ACTIONS.md`](docs/ACTIONS.md).
 
+`@oplabs/talos-client` is an optional peer dependency and is therefore not
+installed by the normal `pnpm install`. The runner image installs it explicitly
+from GitHub Packages. For a local image build, expose a token only through the
+BuildKit secret used by Compose:
+
+```bash
+TALOS_PACKAGE_TOKEN="<PAT>" docker compose build actions
+```
+
+Use a classic PAT with `read:packages` access to the oplabs package (and SSO
+authorization where required). The AWS image workflow reads it from the
+`TALOS_PACKAGE_TOKEN` repository secret.
+
 ### Running actions locally
 
 Every action remains directly executable as a hardhat task on your dev machine:

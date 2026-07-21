@@ -19,7 +19,6 @@ RUN apt-get update \
   ca-certificates \
   curl \
   git \
-  openssh-client \
   build-essential \
   python3 \
   bsdutils \
@@ -32,9 +31,6 @@ RUN apt-get update \
 # chown /app and switch USER just before CMD.
 RUN groupadd -r runner && useradd -r -g runner -m -d /home/runner runner
 
-RUN mkdir -p /root/.ssh \
-  && ssh-keyscan -t ed25519,rsa github.com >> /root/.ssh/known_hosts
-
 # Foundry (forge/cast/anvil) — required at hardhat config load time
 # because hardhat.config.js loads @nomicfoundation/hardhat-foundry.
 # Pulled from the digest-pinned `foundry` builder stage at the top of
@@ -43,12 +39,19 @@ COPY --from=foundry /usr/local/bin/forge /usr/local/bin/cast /usr/local/bin/anvi
 
 WORKDIR /app
 
-# Install dependencies first for better caching. Requires BuildKit SSH
-# forwarding (e.g. Railway deploy key) to resolve @automaton/client.
-COPY package.json pnpm-lock.yaml ./
-RUN --mount=type=ssh \
+# Install the public dependencies first for better caching. The Talos client is
+# an optional peer dependency, so install it explicitly using a GitHub Packages
+# PAT supplied as a BuildKit secret. The PAT needs read:packages access to the
+# oplabs package.
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+RUN --mount=type=cache,id=arm-oeth-pnpm-store,target=/root/.local/share/pnpm/store \
+    npm install -g pnpm@10.33.2 && pnpm install --frozen-lockfile
+RUN --mount=type=secret,id=talos_package_token,required=true \
     --mount=type=cache,id=arm-oeth-pnpm-store,target=/root/.local/share/pnpm/store \
-    npm install -g pnpm@10.33.4 && pnpm install --frozen-lockfile
+    TOKEN="$(cat /run/secrets/talos_package_token)" \
+    && printf '@oplabs:registry=https://npm.pkg.github.com\n//npm.pkg.github.com/:_authToken=%s\n' "$TOKEN" > /tmp/talos.npmrc \
+    && npm_config_userconfig=/tmp/talos.npmrc pnpm add --save-prod @oplabs/talos-client@0.0.1 \
+    && rm -f /tmp/talos.npmrc
 
 # Copy the rest of the workspace.
 COPY . .
