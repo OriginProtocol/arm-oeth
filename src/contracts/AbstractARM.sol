@@ -243,7 +243,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
         liquidityAssetDecimals = decimals_;
         // Native-liquidity floor. 1e12 for an 18-decimal asset keeps existing deployments unchanged;
         // 1 for a 6-decimal asset is the same 1e-6-token magnitude.
-        MIN_LIQUIDITY = decimals_ == 18 ? 1e12 : 1;
+        MIN_LIQUIDITY = 10 ** (decimals_ - 6);
         claimDelay = _claimDelay;
         minSharesToRedeem = _minSharesToRedeem;
         allocateThreshold = _allocateThreshold;
