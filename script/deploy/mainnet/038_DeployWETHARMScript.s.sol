@@ -99,8 +99,8 @@ contract $038_DeployWETHARMScript is AbstractDeployScript("038_DeployWETHARMScri
                 address(adapterProxy),
                 BUY_PRICE,
                 SELL_PRICE,
-                type(uint128).max,
-                type(uint128).max,
+                0, // buyAmount: no swaps until the operator sets the swap limits via setPrices()
+                0, // sellAmount
                 CROSS_PRICE,
                 true
             );
@@ -122,8 +122,8 @@ contract $038_DeployWETHARMScript is AbstractDeployScript("038_DeployWETHARMScri
                 address(adapterProxy),
                 BUY_PRICE,
                 SELL_PRICE,
-                type(uint128).max,
-                type(uint128).max,
+                0, // buyAmount: no swaps until the operator sets the swap limits via setPrices()
+                0, // sellAmount
                 CROSS_PRICE,
                 false
             );
@@ -149,8 +149,8 @@ contract $038_DeployWETHARMScript is AbstractDeployScript("038_DeployWETHARMScri
                 address(adapterProxy),
                 BUY_PRICE,
                 SELL_PRICE,
-                type(uint128).max,
-                type(uint128).max,
+                0, // buyAmount: no swaps until the operator sets the swap limits via setPrices()
+                0, // sellAmount
                 CROSS_PRICE,
                 true
             );
@@ -177,8 +177,8 @@ contract $038_DeployWETHARMScript is AbstractDeployScript("038_DeployWETHARMScri
                 address(adapterProxy),
                 BUY_PRICE,
                 SELL_PRICE,
-                type(uint128).max,
-                type(uint128).max,
+                0, // buyAmount: no swaps until the operator sets the swap limits via setPrices()
+                0, // sellAmount
                 CROSS_PRICE,
                 false
             );

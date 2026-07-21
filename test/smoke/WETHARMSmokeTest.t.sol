@@ -65,8 +65,8 @@ contract Fork_WETHARM_Smoke_Test is AbstractSmokeTest {
 
         assertEq(buyPrice, 0.9997e36, "buy price");
         assertEq(sellPrice, 1e36, "sell price");
-        assertEq(buyLiquidityRemaining, type(uint128).max, "buy liquidity");
-        assertEq(sellLiquidityRemaining, type(uint128).max, "sell liquidity");
+        assertEq(buyLiquidityRemaining, 0, "buy liquidity disabled");
+        assertEq(sellLiquidityRemaining, 0, "sell liquidity disabled");
         assertEq(crossPrice, 0.99996e36, "cross price");
         assertEq(pendingRedeemAssets, 0, "pending redeem assets");
         assertEq(peggedToLiquidityAsset, pegged, "pegged");
