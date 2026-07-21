@@ -277,16 +277,4 @@ abstract contract Unit_MultiAssetARM_Shared_Test is Base_MultiAssetARM_Test {
     function adapterOf(IERC20 token) internal view returns (address v) {
         (,,,,,,,, v) = arm.baseAssetConfigs(address(token));
     }
-
-    //////////////////////////////////////////////////////
-    /// --- FEE HELPER
-    //////////////////////////////////////////////////////
-    function expectedBuySideFee(IERC20 token, uint256 amountOut) internal view returns (uint256) {
-        uint256 assetBuyPrice = buyPrice(token);
-        uint256 assetCrossPrice = crossPrice(token);
-        uint256 feeMultiplier = assetBuyPrice == 0
-            ? 0
-            : (assetCrossPrice - assetBuyPrice) * uint256(arm.fee()) * PRICE_SCALE / (assetBuyPrice * FEE_SCALE);
-        return amountOut * feeMultiplier / PRICE_SCALE;
-    }
 }

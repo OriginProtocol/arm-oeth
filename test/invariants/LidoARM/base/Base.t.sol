@@ -123,6 +123,7 @@ abstract contract Base_Test_ is Test {
     uint256 internal sum_fees_accrued;
     uint256 internal sum_fees_collected;
     uint256 internal sum_weth_buyside_out;
+    uint256 internal sum_buyside_realized_gain;
 
     // Market yield accrued to ARM
     uint256 internal sum_weth_marketYield;

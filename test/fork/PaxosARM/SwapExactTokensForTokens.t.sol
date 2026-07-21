@@ -69,8 +69,7 @@ contract Fork_Concrete_PaxosARM_swapExactTokensForTokens_Test_ is Fork_Shared_Te
     function _swapBuy(IERC20 token) internal {
         uint256 buyPrice = _buyPrice(token);
         uint256 expectedAmountOut = AMOUNT_IN * buyPrice / PRICE_SCALE;
-        uint256 expectedFee =
-            expectedAmountOut * _swapFeeMultiplier(buyPrice, _crossPrice(token), arm.fee()) / PRICE_SCALE;
+        uint256 expectedFee = _expectedBuySideFee(token, AMOUNT_IN, expectedAmountOut);
 
         uint256 usdcBefore = usdc.balanceOf(address(this));
         uint256 baseBefore = token.balanceOf(address(this));

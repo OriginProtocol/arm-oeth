@@ -181,17 +181,9 @@ abstract contract Properties is TargetFunction {
         return lidoARM.feesAccrued() + sum_fees_collected == sum_fees_accrued;
     }
 
-    // 13. Upper bound: fees cannot exceed max spread * max fee on total buy-side volume
+    // 13. Upper bound: fees cannot exceed the maximum 50% fee applied to realized buy-side gains.
     function property_fee_B() public view returns (bool) {
-        // maxSpread = (PRICE_SCALE - MINIMUM_BUY_PRICE) / MINIMUM_BUY_PRICE
-        // maxFee = FEE_SCALE / 2
-        // round up: conservative upper bound
-        uint256 maxFees = Math.mulDiv(
-            sum_weth_buyside_out,
-            (PRICE_SCALE - MINIMUM_BUY_PRICE) * (FEE_SCALE / 2),
-            MINIMUM_BUY_PRICE * FEE_SCALE,
-            Math.Rounding.Ceil
-        );
+        uint256 maxFees = sum_buyside_realized_gain * (FEE_SCALE / 2) / FEE_SCALE;
         return lidoARM.feesAccrued() + sum_fees_collected <= maxFees;
     }
 
