@@ -4,14 +4,14 @@ import {
   createDb,
   createPool,
   wrapSignerWithNonceQueueV6,
-} from "@talos/client";
+} from "@oplabs/talos-client";
 
 import { ethereumAddress, privateKey } from "./regex";
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const log = require("./logger")("utils:signers");
 
-// `@talos/client` ships without .d.ts so the ambient decl in
+// `@oplabs/talos-client` ships without .d.ts so the ambient decl in
 // src/js/types/talos-client.d.ts types imports as `any`; the Db handle
 // is therefore typed loosely here but used opaquely.
 let dbInstance: unknown = null;

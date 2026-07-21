@@ -311,7 +311,7 @@ yarn hardhat tenderlyUpload --network sonic --name ORIGIN_ARM
 
 ## Automated Actions (Talos)
 
-The `src/js/tasks/actions/*.ts` files are hardhat tasks that handle operational jobs (allocations, fee collection, withdrawal requests, etc.). In production they're driven by a container that imports [`@talos/client`](https://github.com/oplabs/talos):
+The `src/js/tasks/actions/*.ts` files are hardhat tasks that handle operational jobs (allocations, fee collection, withdrawal requests, etc.). In production they're driven by a container that imports [`@oplabs/talos-client`](https://github.com/oplabs/talos):
 
 - **`runner.ts`** at repo root calls `runContainer({ product: "arm-oeth", workdir: "/app" })`. The library reads enabled schedules from the shared Talos Postgres, fires them via croner, and spawns each schedule's command as `pnpm hardhat <name> --network <chain>`.
 - **`migrations/seed_schedules.sql`** is a one-time seed of the `schedules` table mirroring the old `cron/cron-jobs.ts`.
