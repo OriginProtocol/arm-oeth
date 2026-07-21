@@ -24,7 +24,7 @@ contract Fork_PaxosARM_Smoke_Test is AbstractSmokeTest {
     IERC20 pyusd;
     IERC20 usdg;
     Proxy armProxy;
-    MultiAssetARM usdARM;
+    MultiAssetARM usdcARM;
     PaxosAssetAdapter pyusdAdapter;
     PaxosAssetAdapter usdgAdapter;
     CapManager capManager;
@@ -42,25 +42,25 @@ contract Fork_PaxosARM_Smoke_Test is AbstractSmokeTest {
         vm.label(address(usdg), "USDG");
         vm.label(address(operator), "OPERATOR");
 
-        armProxy = Proxy(payable(resolver.resolve("USD_ARM")));
-        usdARM = MultiAssetARM(payable(resolver.resolve("USD_ARM")));
-        pyusdAdapter = PaxosAssetAdapter(resolver.resolve("USD_ARM_PYUSD_ADAPTER"));
-        usdgAdapter = PaxosAssetAdapter(resolver.resolve("USD_ARM_USDG_ADAPTER"));
-        capManager = CapManager(resolver.resolve("USD_ARM_CAP_MAN"));
+        armProxy = Proxy(payable(resolver.resolve("USDC_ARM")));
+        usdcARM = MultiAssetARM(payable(resolver.resolve("USDC_ARM")));
+        pyusdAdapter = PaxosAssetAdapter(resolver.resolve("USDC_ARM_PYUSD_ADAPTER"));
+        usdgAdapter = PaxosAssetAdapter(resolver.resolve("USDC_ARM_USDG_ADAPTER"));
+        capManager = CapManager(resolver.resolve("USDC_ARM_CAP_MAN"));
     }
 
     function test_initialConfig() external view {
-        assertEq(usdARM.name(), "USD ARM", "Name");
-        assertEq(usdARM.symbol(), "ARM-USD", "Symbol");
-        assertEq(usdARM.owner(), Mainnet.MULTISIG_2_OF_8, "Owner");
-        assertEq(usdARM.operator(), operator, "Operator");
-        assertEq(usdARM.feeCollector(), Mainnet.BUYBACK_OPERATOR, "Fee collector");
-        assertEq(usdARM.fee(), 2000, "Performance fee");
-        assertEq(usdARM.liquidityAsset(), Mainnet.USDC, "liquidity asset");
-        assertEq(usdARM.claimDelay(), 10 minutes, "claim delay");
+        assertEq(usdcARM.name(), "USDC ARM", "Name");
+        assertEq(usdcARM.symbol(), "ARM-USDC", "Symbol");
+        assertEq(usdcARM.owner(), Mainnet.MULTISIG_2_OF_8, "Owner");
+        assertEq(usdcARM.operator(), operator, "Operator");
+        assertEq(usdcARM.feeCollector(), Mainnet.BUYBACK_OPERATOR, "Fee collector");
+        assertEq(usdcARM.fee(), 2000, "Performance fee");
+        assertEq(usdcARM.liquidityAsset(), Mainnet.USDC, "liquidity asset");
+        assertEq(usdcARM.claimDelay(), 10 minutes, "claim delay");
 
         // PYUSD adapter
-        assertEq(pyusdAdapter.arm(), address(usdARM), "PYUSD adapter arm");
+        assertEq(pyusdAdapter.arm(), address(usdcARM), "PYUSD adapter arm");
         assertEq(address(pyusdAdapter.baseAsset()), Mainnet.PYUSD, "PYUSD adapter base asset");
         assertEq(pyusdAdapter.asset(), Mainnet.USDC, "PYUSD adapter liquidity asset");
         assertEq(pyusdAdapter.owner(), Mainnet.MULTISIG_2_OF_8, "PYUSD adapter owner");
@@ -68,18 +68,18 @@ contract Fork_PaxosARM_Smoke_Test is AbstractSmokeTest {
         assertNotEq(pyusdAdapter.paxosRecipient(), address(0), "PYUSD adapter paxos recipient");
 
         // USDG adapter
-        assertEq(usdgAdapter.arm(), address(usdARM), "USDG adapter arm");
+        assertEq(usdgAdapter.arm(), address(usdcARM), "USDG adapter arm");
         assertEq(address(usdgAdapter.baseAsset()), Mainnet.USDG, "USDG adapter base asset");
         assertEq(usdgAdapter.asset(), Mainnet.USDC, "USDG adapter liquidity asset");
         assertEq(usdgAdapter.owner(), Mainnet.MULTISIG_2_OF_8, "USDG adapter owner");
         assertEq(usdgAdapter.operator(), operator, "USDG adapter operator");
         assertNotEq(usdgAdapter.paxosRecipient(), address(0), "USDG adapter paxos recipient");
 
-        address[] memory baseAssets = usdARM.getBaseAssets();
+        address[] memory baseAssets = usdcARM.getBaseAssets();
         _assertBaseAssetListed(baseAssets, Mainnet.PYUSD, "PYUSD listed as base asset");
         _assertBaseAssetListed(baseAssets, Mainnet.USDG, "USDG listed as base asset");
 
-        assertEq(capManager.arm(), address(usdARM), "cap manager arm");
+        assertEq(capManager.arm(), address(usdcARM), "cap manager arm");
         assertEq(capManager.totalAssetsCap(), 100_000e6, "total assets cap");
         assertEq(capManager.accountCapEnabled(), true, "account cap enabled");
         assertEq(capManager.liquidityProviderCaps(Mainnet.TREASURY_LP), 100_000e6, "liquidity provider cap");
@@ -100,7 +100,7 @@ contract Fork_PaxosARM_Smoke_Test is AbstractSmokeTest {
             bool peggedToLiquidityAsset,
             uint8 baseAssetDecimals,
             address adapter
-        ) = usdARM.baseAssetConfigs(baseAsset);
+        ) = usdcARM.baseAssetConfigs(baseAsset);
 
         assertGe(buyPrice, MIN_BUY_PRICE, string.concat(label, " minimum buy price"));
         assertLe(buyPrice, MAX_BUY_PRICE, string.concat(label, " maximum buy price"));
@@ -120,20 +120,20 @@ contract Fork_PaxosARM_Smoke_Test is AbstractSmokeTest {
 
         // Give the ARM USDC inventory and the trader PYUSD. Deal directly - deposits from
         // arbitrary accounts are blocked by the CapManager's account caps.
-        deal(address(usdc), address(usdARM), 1_000_000e6);
+        deal(address(usdc), address(usdcARM), 1_000_000e6);
         deal(address(pyusd), address(this), 1_000e6);
 
-        pyusd.approve(address(usdARM), amountIn);
+        pyusd.approve(address(usdcARM), amountIn);
 
         // The deployment registers base assets with zero swap liquidity, so the operator must set
         // the buy/sell amounts before any swap is possible.
         vm.prank(operator);
-        usdARM.setPrices(address(pyusd), 0.998e36, 1e36, type(uint128).max, type(uint128).max);
+        usdcARM.setPrices(address(pyusd), 0.998e36, 1e36, type(uint128).max, type(uint128).max);
 
         uint256 startIn = pyusd.balanceOf(address(this));
         uint256 startOut = usdc.balanceOf(address(this));
 
-        usdARM.swapExactTokensForTokens(pyusd, usdc, amountIn, 0, address(this));
+        usdcARM.swapExactTokensForTokens(pyusd, usdc, amountIn, 0, address(this));
 
         assertEq(pyusd.balanceOf(address(this)), startIn - amountIn, "PYUSD in actual");
         assertEq(usdc.balanceOf(address(this)), startOut + expectedOut, "USDC out actual");
@@ -147,20 +147,20 @@ contract Fork_PaxosARM_Smoke_Test is AbstractSmokeTest {
 
         // Give the ARM USDG inventory and the trader USDC. Deal directly - deposits from
         // arbitrary accounts are blocked by the CapManager's account caps.
-        deal(address(usdg), address(usdARM), 1_000e6);
+        deal(address(usdg), address(usdcARM), 1_000e6);
         deal(address(usdc), address(this), 1_000e6);
 
-        usdc.approve(address(usdARM), amountIn);
+        usdc.approve(address(usdcARM), amountIn);
 
         // The deployment registers base assets with zero swap liquidity, so the operator must set
         // the buy/sell amounts before any swap is possible.
         vm.prank(operator);
-        usdARM.setPrices(address(usdg), 0.998e36, 1e36, type(uint128).max, type(uint128).max);
+        usdcARM.setPrices(address(usdg), 0.998e36, 1e36, type(uint128).max, type(uint128).max);
 
         uint256 startIn = usdc.balanceOf(address(this));
         uint256 startOut = usdg.balanceOf(address(this));
 
-        usdARM.swapExactTokensForTokens(usdc, usdg, amountIn, 0, address(this));
+        usdcARM.swapExactTokensForTokens(usdc, usdg, amountIn, 0, address(this));
 
         assertEq(usdc.balanceOf(address(this)), startIn - amountIn, "USDC in actual");
         assertEq(usdg.balanceOf(address(this)), startOut + expectedOut, "USDG out actual");
@@ -181,17 +181,17 @@ contract Fork_PaxosARM_Smoke_Test is AbstractSmokeTest {
         uint256 shares = 1_000e6;
         uint256 pendingSharesBefore = adapter.pendingShares();
         uint256 settlingSharesBefore = adapter.settlingShares();
-        (,,,,, uint128 pendingRedeemAssetsBefore,,,) = usdARM.baseAssetConfigs(address(baseAsset));
+        (,,,,, uint128 pendingRedeemAssetsBefore,,,) = usdcARM.baseAssetConfigs(address(baseAsset));
 
         // Give the ARM base asset inventory (as if bought from traders).
-        deal(address(baseAsset), address(usdARM), shares);
+        deal(address(baseAsset), address(usdcARM), shares);
 
-        uint256 totalAssetsBefore = usdARM.totalAssets();
-        uint256 armUsdcBefore = usdc.balanceOf(address(usdARM));
+        uint256 totalAssetsBefore = usdcARM.totalAssets();
+        uint256 armUsdcBefore = usdc.balanceOf(address(usdcARM));
 
         // 1. Operator queues the base assets for Paxos redemption. The adapter pulls them from the ARM.
         vm.prank(operator);
-        usdARM.requestBaseAssetRedeem(address(baseAsset), shares);
+        usdcARM.requestBaseAssetRedeem(address(baseAsset), shares);
         assertEq(adapter.pendingShares(), pendingSharesBefore + shares, "pending shares after request");
         assertGe(baseAsset.balanceOf(address(adapter)), shares, "adapter base balance after request");
 
@@ -212,14 +212,14 @@ contract Fork_PaxosARM_Smoke_Test is AbstractSmokeTest {
 
         // 5. Operator claims the settled USDC back into the ARM.
         vm.prank(operator);
-        usdARM.claimBaseAssetRedeem(address(baseAsset), shares);
+        usdcARM.claimBaseAssetRedeem(address(baseAsset), shares);
 
         assertEq(adapter.pendingShares(), pendingSharesBefore, "pending shares after claim");
         assertEq(adapter.settlingShares(), settlingSharesBefore, "settling shares after claim");
-        assertEq(usdc.balanceOf(address(usdARM)), armUsdcBefore + shares, "ARM USDC balance after claim");
-        (,,,,, uint128 pendingRedeemAssets,,,) = usdARM.baseAssetConfigs(address(baseAsset));
+        assertEq(usdc.balanceOf(address(usdcARM)), armUsdcBefore + shares, "ARM USDC balance after claim");
+        (,,,,, uint128 pendingRedeemAssets,,,) = usdcARM.baseAssetConfigs(address(baseAsset));
         assertEq(pendingRedeemAssets, pendingRedeemAssetsBefore, "pending redeem assets after claim");
-        assertGe(usdARM.totalAssets(), totalAssetsBefore, "total assets not decreased");
+        assertGe(usdcARM.totalAssets(), totalAssetsBefore, "total assets not decreased");
     }
 
     function test_proxy_unauthorizedAccess() external {
@@ -245,7 +245,7 @@ contract Fork_PaxosARM_Smoke_Test is AbstractSmokeTest {
 
         // Implementation's restricted methods.
         vm.expectRevert(onlyOwnerError);
-        usdARM.setOwner(RANDOM_ADDRESS);
+        usdcARM.setOwner(RANDOM_ADDRESS);
     }
 
     /// @dev Assert `expected` appears in the ARM's `getBaseAssets()` list. A membership check

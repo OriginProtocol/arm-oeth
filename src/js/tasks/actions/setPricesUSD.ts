@@ -10,7 +10,7 @@ const multiAssetARMAbi = require("../../../abis/MultiAssetARM.json");
 
 action({
   name: "setPricesUSD",
-  description: "Set prices for USD ARM",
+  description: "Set prices for USDC ARM",
   chains: [1],
   // Price points are operator-overridable from the scheduled command in
   // talos (talos UI → schedules → command field).
@@ -97,7 +97,7 @@ action({
   run: async ({ signer, log, args }) => {
     const arm = new ethers.Contract(mainnet.usdARM, multiAssetARMAbi, signer);
 
-    log.info("Setting prices for USD ARM");
+    log.info("Setting prices for USDC ARM");
     const amount = await resolveUsdAggregatorAmount({
       arm,
       amount: args.amount,
@@ -112,7 +112,7 @@ action({
       options: {
         signer,
         arm,
-        armName: "USD",
+        armName: "USDC",
         maxSellPrice: args.maxSellPrice,
         minSellPrice: args.minSellPrice,
         maxBuyPrice: args.maxBuyPrice,
