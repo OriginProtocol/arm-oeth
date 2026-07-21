@@ -38,8 +38,13 @@
     "ts-node": "^10.9.2",
     "typescript": "^5.7.0"
   },
-  "dependencies": {
+  "peerDependencies": {
     "@oplabs/talos-client": "0.0.1"
+  },
+  "peerDependenciesMeta": {
+    "@oplabs/talos-client": {
+      "optional": true
+    }
   },
   "pnpm": {
     "onlyBuiltDependencies": [
