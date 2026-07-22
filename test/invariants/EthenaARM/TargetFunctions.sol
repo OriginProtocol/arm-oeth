@@ -84,10 +84,13 @@ abstract contract TargetFunctions is Setup, StdUtils {
     }
 
     function targetARMDeposit(uint256 amount, uint256 randomAddressIndex) external ensureExchangeRateIncrease {
-        // Mirror AbstractARM._deposit's Insolvent() guard: when the ARM sits at the asset floor
-        // (totalAssets() clamped to MIN_LIQUIDITY == 1e12), deposits revert if any senior liability
-        // (accrued fees OR reserved LP withdrawals) is outstanding. Skip those inputs instead of reverting.
-        if (assume(arm.totalAssets() > 1e12 || (arm.feesAccrued() == 0 && arm.reservedWithdrawLiquidity() == 0))) {
+        // Mirror AbstractARM._deposit's Insolvent() guard: at the asset floor, deposits are allowed
+        // only before any live LP shares exist and when there are no senior liabilities.
+        bool initialDeposit = arm.totalSupply() == DEFAULT_MIN_TOTAL_SUPPLY;
+        if (assume(
+                arm.totalAssets() > 1e12
+                    || (initialDeposit && arm.feesAccrued() == 0 && arm.reservedWithdrawLiquidity() == 0)
+            )) {
             return;
         }
         // Select a random user from makers

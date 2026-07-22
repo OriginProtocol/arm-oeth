@@ -97,22 +97,20 @@ abstract contract Deposit_Test is Unit_MultiAssetARM_Shared_Test {
         arm.deposit(LIQUIDITY_UNIT());
     }
 
-    function test_Deposit_WhenAccruedFeesExactlyBacked() public {
-        uint256 fees = _generateFees();
+    function test_Deposit_RevertWhen_AssetLossReachesFloorWithLiveLps() public {
+        firstDeposit(alice, DEFAULT_AMOUNT());
+        assertGt(arm.totalSupply(), MIN_TOTAL_SUPPLY, "live LP shares exist");
+        assertEq(arm.feesAccrued(), 0, "no accrued fees");
         assertEq(arm.reservedWithdrawLiquidity(), 0, "no reserved withdrawals");
 
-        _setArmBalances(fees + MIN_LIQUIDITY(), 0);
+        // Simulate a real loss that leaves only the native-liquidity floor backing live LP shares.
+        _setArmBalances(MIN_LIQUIDITY(), 0);
+        assertEq(arm.totalAssets(), MIN_LIQUIDITY(), "at asset floor");
 
-        uint256 amount = LIQUIDITY_UNIT();
-        uint256 expectedShares = amount * arm.totalSupply() / MIN_LIQUIDITY();
-        _mint(liquidity, bobby, amount);
-
+        _mint(liquidity, bobby, LIQUIDITY_UNIT());
+        vm.expectRevert(AbstractARM.Insolvent.selector);
         vm.prank(bobby);
-        uint256 shares = arm.deposit(amount);
-
-        assertEq(shares, expectedShares, "shares returned");
-        assertEq(arm.balanceOf(bobby), expectedShares, "bobby shares");
-        assertEq(arm.totalAssets(), MIN_LIQUIDITY() + amount, "net assets increase by deposit");
+        arm.deposit(LIQUIDITY_UNIT());
     }
 
     function _generateFees() internal returns (uint256 fees) {

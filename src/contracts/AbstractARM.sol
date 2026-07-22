@@ -786,11 +786,12 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
         uint256 grossAssets = _availableAssets();
         uint256 feesAccruedMem = feesAccrued;
 
-        // Treat accrued fees as a senior liability. If gross assets no longer cover
-        // accrued fees plus the minimum native-liquidity floor, new deposits would be
-        // minted against the floor and backfill the shortfall, so block deposits.
-        bool atAssetFloor = feesAccruedMem + MIN_LIQUIDITY > grossAssets;
-        if (atAssetFloor && (feesAccruedMem != 0 || reservedWithdrawLiquidity != 0)) revert Insolvent();
+        // At the native-liquidity floor, a new deposit would either backfill senior liabilities
+        // or dilute live LPs after a real asset loss. Allow only the initial deposit, when the dead
+        // shares are the entire supply and no fees or withdrawals are outstanding.
+        bool atAssetFloor = feesAccruedMem + MIN_LIQUIDITY >= grossAssets;
+        bool hasLiveLps = totalSupply() > MIN_TOTAL_SUPPLY;
+        if (atAssetFloor && (hasLiveLps || feesAccruedMem != 0 || reservedWithdrawLiquidity != 0)) revert Insolvent();
 
         uint256 netAssets = atAssetFloor ? MIN_LIQUIDITY : grossAssets - feesAccruedMem;
         shares = assets * totalSupply() / netAssets;
