@@ -89,12 +89,30 @@ abstract contract Deposit_Test is Unit_MultiAssetARM_Shared_Test {
         uint256 fees = _generateFees();
         assertEq(arm.reservedWithdrawLiquidity(), 0, "no reserved withdrawals");
 
-        // Simulate a loss that leaves accrued fees undercollateralized at the asset floor.
-        _setArmBalances(fees + MIN_LIQUIDITY(), 0);
+        // Simulate a loss that leaves accrued fees undercollateralized below the asset floor.
+        _setArmBalances(fees + MIN_LIQUIDITY() - 1, 0);
 
         vm.expectRevert(AbstractARM.Insolvent.selector);
         vm.prank(alice);
         arm.deposit(LIQUIDITY_UNIT());
+    }
+
+    function test_Deposit_WhenAccruedFeesExactlyBacked() public {
+        uint256 fees = _generateFees();
+        assertEq(arm.reservedWithdrawLiquidity(), 0, "no reserved withdrawals");
+
+        _setArmBalances(fees + MIN_LIQUIDITY(), 0);
+
+        uint256 amount = LIQUIDITY_UNIT();
+        uint256 expectedShares = amount * arm.totalSupply() / MIN_LIQUIDITY();
+        _mint(liquidity, bobby, amount);
+
+        vm.prank(bobby);
+        uint256 shares = arm.deposit(amount);
+
+        assertEq(shares, expectedShares, "shares returned");
+        assertEq(arm.balanceOf(bobby), expectedShares, "bobby shares");
+        assertEq(arm.totalAssets(), MIN_LIQUIDITY() + amount, "net assets increase by deposit");
     }
 
     function _generateFees() internal returns (uint256 fees) {
