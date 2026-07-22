@@ -35,7 +35,11 @@ contract PaxosAssetAdapter is Initializable, IAssetAdapter, OwnableOperable {
     error DecimalsMismatch(); // 0x5a8dbaed
 
     event PaxosRecipientUpdated(address indexed paxosRecipient);
+    /// @notice Emitted when base assets are queued for redemption, where `100e6` is 100 tokens for 6-decimal assets.
+    event PaxosRedeemRequested(uint256 shares, uint256 assetsExpected);
     event PaxosRedeemSubmitted(bytes32 indexed paxosRedemptionId, uint256 shares, address indexed paxosRecipient);
+    /// @notice Emitted when settled liquidity assets are transferred to the ARM, where `100e6` is 100 USDC.
+    event PaxosRedeemClaimed(uint256 shares, uint256 assetsExpected, uint256 assetsReceived);
     event ExcessLiquidityRecovered(address indexed to, uint256 amount);
 
     modifier onlyARM() {
@@ -132,6 +136,8 @@ contract PaxosAssetAdapter is Initializable, IAssetAdapter, OwnableOperable {
 
         sharesRequested = shares;
         assetsExpected = shares;
+
+        emit PaxosRedeemRequested(sharesRequested, assetsExpected);
     }
 
     /// @notice Claims settled USDC after Paxos Actions complete on-chain settlement to this adapter.
@@ -157,6 +163,8 @@ contract PaxosAssetAdapter is Initializable, IAssetAdapter, OwnableOperable {
         sharesClaimed = shares;
         assetsExpected = shares;
         assetsReceived = shares;
+
+        emit PaxosRedeemClaimed(sharesClaimed, assetsExpected, assetsReceived);
     }
 
     /// @notice Recovers liquidity asset held beyond what `settlingShares` still owes, e.g. donated tokens

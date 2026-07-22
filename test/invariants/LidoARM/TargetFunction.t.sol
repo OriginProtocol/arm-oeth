@@ -2,7 +2,6 @@
 pragma solidity 0.8.23;
 
 import {console} from "forge-std/console.sol";
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {MockERC20} from "@solmate/test/utils/mocks/MockERC20.sol";
 import {MockMorpho} from "./mocks/MockMorpho.sol";
 
@@ -672,13 +671,14 @@ abstract contract TargetFunction is Invariant_LidoARM_Setup_Test {
             sum_weth_swapOut += amtOut;
             sum_weth_buyside_out += amtOut;
 
-            // Track fee accrued: mirrors _accrueSwapFee in AbstractARM
-            (uint128 buyPrice,,,, uint128 crossPrice,,,,) = lidoARM.baseAssetConfigs(baseAsset);
-            // round down: same as contract
-            uint256 feeMultiplier = Math.mulDiv(
-                (crossPrice - buyPrice) * uint256(lidoARM.fee()), PRICE_SCALE, uint256(buyPrice) * FEE_SCALE
-            );
-            sum_fees_accrued += Math.mulDiv(amtOut, feeMultiplier, PRICE_SCALE);
+            // Track the realized buy-side gain and fee using the same conversion and rounding as AbstractARM.
+            (,,,, uint128 crossPrice,, bool peggedToLiquidityAsset,, address adapter) =
+                lidoARM.baseAssetConfigs(baseAsset);
+            uint256 convertedAmountIn = peggedToLiquidityAsset ? amtIn : IAssetAdapter(adapter).convertToAssets(amtIn);
+            uint256 realizedAssets = convertedAmountIn * crossPrice / PRICE_SCALE;
+            uint256 gain = realizedAssets > amtOut ? realizedAssets - amtOut : 0;
+            sum_buyside_realized_gain += gain;
+            sum_fees_accrued += gain * uint256(lidoARM.fee()) / FEE_SCALE;
         } else {
             // ARM sells base (trader sends WETH, gets base)
             sum_weth_swapIn += amtIn;

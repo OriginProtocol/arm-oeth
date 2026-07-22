@@ -7,12 +7,12 @@ const multiAssetARMAbi = require("../../../abis/MultiAssetARM.json");
 
 action({
   name: "allocateUSD",
-  description: "Allocate liquidity for USD ARM",
+  description: "Allocate liquidity for USDC ARM",
   chains: [1],
   run: async ({ signer, log }) => {
     const arm = new ethers.Contract(mainnet.usdARM, multiAssetARMAbi, signer);
 
-    log.info("Allocating liquidity for USD ARM");
+    log.info("Allocating liquidity for USDC ARM");
     await allocate({
       signer,
       arm,

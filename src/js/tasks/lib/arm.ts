@@ -37,7 +37,7 @@ const MAINNET_ARMS = {
   usd: {
     abi: multiAssetARMAbi,
     address: mainnet.usdARM,
-    name: "USD",
+    name: "USDC",
     decimals: 6,
   },
 };

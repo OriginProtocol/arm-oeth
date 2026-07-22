@@ -22,6 +22,8 @@ import {Math} from "./helpers/Math.sol";
 /// @title TargetFunctions
 /// @notice TargetFunctions contract for tests, containing the target functions that should be tested.
 ///         This is the entry point with the contract we are testing. Ideally, it should never revert.
+/// @dev Target parameters use full ABI words so corpus mutations remain decodable in strict mode. Handlers
+///      derive booleans and bound narrower values internally.
 abstract contract TargetFunctions is Setup, StdUtils {
     // ╔══════════════════════════════════════════════════════════════════════════════╗
     // ║                              ✦✦✦ ETHENA ARM ✦✦✦                              ║
@@ -98,7 +100,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         uint256 totalAssets = arm.totalAssets();
         // Min amount to avoid 0 shares minting
         uint256 minAmount = totalAssets / totalSupply + 1;
-        amount = uint88(_bound(amount, minAmount, type(uint88).max));
+        amount = _bound(amount, minAmount, type(uint88).max);
 
         // Mint amount to user
         MockERC20(address(usde)).mint(user, amount);
@@ -119,13 +121,13 @@ abstract contract TargetFunctions is Setup, StdUtils {
         mintedUSDe[user] += amount;
     }
 
-    function targetARMRequestRedeem(uint88 shareAmount, uint248) external ensureExchangeRateIncrease {
+    function targetARMRequestRedeem(uint256 shareAmount, uint256) external ensureExchangeRateIncrease {
         address user;
         uint256 balance;
         (user, balance) = Find.getUserWithARMShares(makers, address(arm));
         if (assume(user != address(0))) return;
         // Bound shareAmount to [1, balance]
-        shareAmount = uint88(_bound(shareAmount, 1, balance));
+        shareAmount = _bound(shareAmount, 1, balance);
 
         // Request redeem as user
         vm.prank(user);
@@ -151,7 +153,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         sumARMUserRequestShares += shareAmount;
     }
 
-    function targetARMClaimRedeem(uint248 randomAddressIndex, uint248 randomArrayIndex)
+    function targetARMClaimRedeem(uint256 randomAddressIndex, uint256 randomArrayIndex)
         external
         ensureExchangeRateIncrease
         ensureTimeIncrease
@@ -171,8 +173,8 @@ abstract contract TargetFunctions is Setup, StdUtils {
             (user, requestId, claimTimestamp) = Find.getUserRequestWithAmount(
                 Find.GetUserRequestWithAmountStruct({
                     arm: address(arm),
-                    randomAddressIndex: randomAddressIndex,
-                    randomArrayIndex: randomArrayIndex,
+                    randomAddressIndex: uint248(randomAddressIndex),
+                    randomArrayIndex: uint248(randomArrayIndex),
                     users: makers,
                     claimable: uint128(claimable),
                     availableLiquidity: uint128(availableLiquidity)
@@ -241,7 +243,8 @@ abstract contract TargetFunctions is Setup, StdUtils {
         }
     }
 
-    function targetARMSetActiveMarket(bool isActive) external ensureExchangeRateIncrease {
+    function targetARMSetActiveMarket(uint256 activeSeed) external ensureExchangeRateIncrease {
+        bool isActive = activeSeed % 2 == 0;
         // If isActive is true it will `setActiveMarket` with MorphoMarket
         // else it will set it to address(0)
         address currentMarket = arm.activeMarket();
@@ -386,10 +389,11 @@ abstract contract TargetFunctions is Setup, StdUtils {
         }
     }
 
-    function targetARMSwapExactTokensForTokens(bool token0ForToken1, uint88 amountIn, uint256 randomAddressIndex)
+    function targetARMSwapExactTokensForTokens(uint256 sideSeed, uint256 amountIn, uint256 randomAddressIndex)
         external
         ensureExchangeRateIncrease
     {
+        bool token0ForToken1 = sideSeed % 2 == 0;
         (IERC20 tokenIn, IERC20 tokenOut) = token0ForToken1
             ? (IERC20(address(usde)), IERC20(address(susde)))
             : (IERC20(address(susde)), IERC20(address(usde)));
@@ -413,7 +417,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         if (assume(maxAmountIn > 0)) return;
 
         // Bound amountIn
-        amountIn = uint88(_bound(amountIn, 1, maxAmountIn));
+        amountIn = _bound(amountIn, 1, Math.min(maxAmountIn, type(uint88).max));
         // Select a random user from makers
         address user = traders[randomAddressIndex % TRADERS_COUNT];
 
@@ -460,10 +464,11 @@ abstract contract TargetFunctions is Setup, StdUtils {
         }
     }
 
-    function targetARMSwapTokensForExactTokens(bool token0ForToken1, uint88 amountOut, uint256 randomAddressIndex)
+    function targetARMSwapTokensForExactTokens(uint256 sideSeed, uint256 amountOut, uint256 randomAddressIndex)
         external
         ensureExchangeRateIncrease
     {
+        bool token0ForToken1 = sideSeed % 2 == 0;
         (IERC20 tokenIn, IERC20 tokenOut) = token0ForToken1
             ? (IERC20(address(usde)), IERC20(address(susde)))
             : (IERC20(address(susde)), IERC20(address(usde)));
@@ -480,7 +485,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         // Ensure there is liquidity available in ARM
         if (assume(maxAmountOut > 1)) return;
 
-        amountOut = uint88(_bound(amountOut, 1, maxAmountOut));
+        amountOut = _bound(amountOut, 1, Math.min(maxAmountOut, type(uint88).max));
 
         // What's the maximum amountIn we can provide to not exceed maxAmountOut?
         uint256 convertedAmountOut;
@@ -576,10 +581,10 @@ abstract contract TargetFunctions is Setup, StdUtils {
         sumUSDeFeesCollected += feesAccrued;
     }
 
-    function targetARMRequestBaseWithdrawal(uint88 amount) external ensureExchangeRateIncrease {
+    function targetARMRequestBaseWithdrawal(uint256 amount) external ensureExchangeRateIncrease {
         uint256 balance = susde.balanceOf(address(arm));
         if (assume(balance > 1)) return;
-        amount = uint88(_bound(amount, 1, balance));
+        amount = _bound(amount, 1, Math.min(balance, type(uint88).max));
 
         // Ensure there is an unstaker available
         uint256 nextIndex = ethenaAssetAdapter.nextUnstakerIndex();
@@ -683,13 +688,13 @@ abstract contract TargetFunctions is Setup, StdUtils {
     // ╔══════════════════════════════════════════════════════════════════════════════╗
     // ║                                ✦✦✦ SUSDE ✦✦✦                                 ║
     // ╚══════════════════════════════════════════════════════════════════════════════╝
-    function targetSUSDeDeposit(uint88 amount) external ensureExchangeRateIncrease {
+    function targetSUSDeDeposit(uint256 amount) external ensureExchangeRateIncrease {
         // Ensure we don't mint 0 shares.
         uint256 totalAssets = susde.totalAssets();
         uint256 totalSupply = susde.totalSupply();
         uint256 minAmount = totalAssets / totalSupply + 1;
         // Prevent zero deposits
-        amount = uint88(_bound(amount, minAmount, type(uint88).max));
+        amount = _bound(amount, minAmount, type(uint88).max);
 
         // Mint amount to grace
         MockERC20(address(usde)).mint(grace, amount);
@@ -705,7 +710,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         }
     }
 
-    function targetSUSDeCooldownShares(uint88 shareAmount) external ensureExchangeRateIncrease {
+    function targetSUSDeCooldownShares(uint256 shareAmount) external ensureExchangeRateIncrease {
         // Cache balance
         uint256 balance = susde.balanceOf(grace);
 
@@ -713,7 +718,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         if (assume(balance > 1)) return;
 
         // Bound shareAmount to [1, balance]
-        shareAmount = uint88(_bound(shareAmount, 1, balance));
+        shareAmount = _bound(shareAmount, 1, balance);
 
         // Cooldown shares as grace
         vm.prank(grace);
@@ -766,7 +771,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         MockERC20(address(usde)).burn(grace, cooldown.underlyingAmount);
     }
 
-    function targetSUSDeTransferInRewards(uint8 bps) external ensureExchangeRateIncrease ensureTimeIncrease {
+    function targetSUSDeTransferInRewards(uint256 bps) external ensureExchangeRateIncrease ensureTimeIncrease {
         // Ensure enough time has passed since last distribution
         uint256 lastDistribution = susde.lastDistributionTimestamp();
         if (block.timestamp < 8 hours + lastDistribution) {
@@ -791,7 +796,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
 
         uint256 balance = usde.balanceOf(address(susde));
         // Rewards can be distributed 3/days max. 1bps at every distribution -> 10 APR.
-        bps = uint8(_bound(bps, 1, 10));
+        bps = _bound(bps, 1, 10);
         uint256 rewards = (balance * bps) / 10_000;
         MockERC20(address(usde)).mint(governor, rewards);
         vm.prank(governor);
@@ -805,13 +810,13 @@ abstract contract TargetFunctions is Setup, StdUtils {
     // ╔══════════════════════════════════════════════════════════════════════════════╗
     // ║                                ✦✦✦ MORPHO ✦✦✦                                ║
     // ╚══════════════════════════════════════════════════════════════════════════════╝
-    function targetMorphoDeposit(uint88 amount) external ensureExchangeRateIncrease {
+    function targetMorphoDeposit(uint256 amount) external ensureExchangeRateIncrease {
         // Ensure we don't mint 0 shares.
         uint256 totalAssets = morpho.totalAssets();
         uint256 totalSupply = morpho.totalSupply();
         uint256 minAmount = totalAssets / totalSupply + 1;
         // Prevent zero deposits
-        amount = uint88(_bound(amount, minAmount, type(uint88).max));
+        amount = _bound(amount, minAmount, type(uint88).max);
 
         // Mint amount to harry
         MockERC20(address(usde)).mint(harry, amount);
@@ -827,7 +832,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         }
     }
 
-    function targetMorphoWithdraw(uint88 amount) external ensureExchangeRateIncrease {
+    function targetMorphoWithdraw(uint256 amount) external ensureExchangeRateIncrease {
         // Check harry's balance
         uint256 balance = morpho.balanceOf(harry);
 
@@ -835,7 +840,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         if (assume(balance > 1)) return;
 
         // Bound shareAmount to [1, balance]
-        amount = uint88(_bound(amount, 1, balance));
+        amount = _bound(amount, 1, balance);
 
         // Ensure there is enough liquidity to withdraw the amount
         uint256 maxWithdrawable = morpho.maxWithdraw(harry);
@@ -853,9 +858,9 @@ abstract contract TargetFunctions is Setup, StdUtils {
         MockERC20(address(usde)).burn(harry, amount);
     }
 
-    function targetMorphoTransferInRewards(uint8 bps) external ensureExchangeRateIncrease {
+    function targetMorphoTransferInRewards(uint256 bps) external ensureExchangeRateIncrease {
         uint256 balance = usde.balanceOf(address(morpho));
-        bps = uint8(_bound(bps, 1, 10));
+        bps = _bound(bps, 1, 10);
         uint256 rewards = (balance * bps) / 10_000;
         MockERC20(address(usde)).mint(address(morpho), rewards);
 

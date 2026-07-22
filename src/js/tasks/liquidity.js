@@ -175,7 +175,7 @@ const logSnapForBase = async ({
         ? `${baseContext.baseSymbol}/WETH`
         : arm === "Ethena"
           ? `${baseContext.baseSymbol}/USDe`
-          : arm === "USD"
+          : arm === "USDC"
             ? `${baseContext.baseSymbol}/USDC`
             : arm == "Origin" && chainId === 146
               ? `${baseContext.baseSymbol}/wS`

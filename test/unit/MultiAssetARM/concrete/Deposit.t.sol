@@ -89,8 +89,8 @@ abstract contract Deposit_Test is Unit_MultiAssetARM_Shared_Test {
         uint256 fees = _generateFees();
         assertEq(arm.reservedWithdrawLiquidity(), 0, "no reserved withdrawals");
 
-        // Simulate a loss that leaves accrued fees undercollateralized at the asset floor.
-        _setArmBalances(fees + MIN_LIQUIDITY(), 0);
+        // Simulate a loss that leaves accrued fees undercollateralized below the asset floor.
+        _setArmBalances(fees + MIN_LIQUIDITY() - 1, 0);
 
         vm.expectRevert(AbstractARM.Insolvent.selector);
         vm.prank(alice);

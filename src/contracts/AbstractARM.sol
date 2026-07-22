@@ -243,7 +243,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
         liquidityAssetDecimals = decimals_;
         // Native-liquidity floor. 1e12 for an 18-decimal asset keeps existing deployments unchanged;
         // 1 for a 6-decimal asset is the same 1e-6-token magnitude.
-        MIN_LIQUIDITY = decimals_ == 18 ? 1e12 : 1;
+        MIN_LIQUIDITY = 10 ** (decimals_ - 6);
         claimDelay = _claimDelay;
         minSharesToRedeem = _minSharesToRedeem;
         allocateThreshold = _allocateThreshold;
@@ -428,7 +428,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
             amountOut = convertedAmountIn * config.buyPrice / PRICE_SCALE;
         }
 
-        _validateAndConsumeSwapLiquidity(config, isBuySide, outToken, amountOut);
+        _validateAndConsumeSwapLiquidity(config, isBuySide, outToken, amountIn, amountOut);
 
         // Transfer the input tokens from the caller to this ARM contract
         inToken.transferFrom(msg.sender, address(this), amountIn);
@@ -468,7 +468,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
             amountIn = convertedAmountOut * PRICE_SCALE / config.buyPrice + 3;
         }
 
-        _validateAndConsumeSwapLiquidity(config, isBuySide, outToken, amountOut);
+        _validateAndConsumeSwapLiquidity(config, isBuySide, outToken, amountIn, amountOut);
 
         // Transfer the input tokens from the caller to this ARM contract
         inToken.transferFrom(msg.sender, address(this), amountIn);
@@ -518,16 +518,18 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
     /// @dev Validate swap reserves and consume the per-base liquidity limit.
     /// @param isBuySide True when the ARM buys base asset and pays out liquidity asset.
     /// @param outToken Swap output token address.
+    /// @param amountIn Swap input token amount.
     /// @param amountOut Swap output token amount.
     function _validateAndConsumeSwapLiquidity(
         BaseAssetConfig storage config,
         bool isBuySide,
         IERC20 outToken,
+        uint256 amountIn,
         uint256 amountOut
     ) private {
         uint256 remaining;
         if (isBuySide) {
-            _accrueSwapFee(config.buyPrice, config.crossPrice, amountOut);
+            _accrueSwapFee(config, amountIn, amountOut);
             remaining = config.buyLiquidityRemaining;
             if (amountOut > remaining) revert InsufficientLiquidity();
             unchecked {
@@ -581,13 +583,14 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
         return baseDecimals > liquidityAssetDecimals ? amount * 1e12 : amount / 1e12;
     }
 
-    /// @dev Accrue fees on discounted buy-side swaps using the recognized NAV gain.
-    /// @param buyPrice Price the ARM paid for the base asset.
-    /// @param crossPrice Price used to value the base asset in totalAssets().
+    /// @dev Accrue fees on buy-side swaps using the gain realized from the settled input and output amounts.
+    /// @param config Base asset configuration used to value the input received by the ARM.
+    /// @param amountIn Base asset amount received by the ARM.
     /// @param amountOut Liquidity asset amount paid out by the ARM.
-    function _accrueSwapFee(uint256 buyPrice, uint256 crossPrice, uint256 amountOut) internal {
-        uint256 feeMultiplier = (crossPrice - buyPrice) * uint256(fee) * PRICE_SCALE / (buyPrice * FEE_SCALE);
-        feesAccrued = SafeCast.toUint128(feesAccrued + amountOut * feeMultiplier / PRICE_SCALE);
+    function _accrueSwapFee(BaseAssetConfig storage config, uint256 amountIn, uint256 amountOut) internal {
+        uint256 realizedAssets = _convertToAssets(config, amountIn) * config.crossPrice / PRICE_SCALE;
+        uint256 gain = realizedAssets > amountOut ? realizedAssets - amountOut : 0;
+        feesAccrued = SafeCast.toUint128(feesAccrued + gain * uint256(fee) / FEE_SCALE);
     }
 
     ////////////////////////////////////////////////////
