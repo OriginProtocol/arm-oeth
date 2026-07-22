@@ -121,7 +121,7 @@ action({
   run: async ({ signer, log, args }) => {
     const arm = new ethers.Contract(mainnet.usdARM, multiAssetARMAbi, signer);
 
-    log.info("Setting prices for USD ARM");
+    log.info("Setting prices for USDC ARM");
     const exactPrices =
       args.buyPrice !== undefined && args.sellPrice !== undefined;
     let amount = args.amount;
@@ -139,7 +139,7 @@ action({
       options: {
         signer,
         arm,
-        armName: "USD",
+        armName: "USDC",
         buyPrice: args.buyPrice,
         sellPrice: args.sellPrice,
         buyAmount: args.buyAmount,
