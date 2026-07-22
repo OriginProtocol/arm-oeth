@@ -83,7 +83,7 @@ abstract contract TargetFunctions is Setup, StdUtils {
         crossPrice = crossPriceMem;
     }
 
-    function targetARMDeposit(uint88 amount, uint256 randomAddressIndex) external ensureExchangeRateIncrease {
+    function targetARMDeposit(uint256 amount, uint256 randomAddressIndex) external ensureExchangeRateIncrease {
         // Mirror AbstractARM._deposit's Insolvent() guard: at the asset floor, deposits are allowed
         // only before any live LP shares exist and when there are no senior liabilities.
         bool initialDeposit = arm.totalSupply() == DEFAULT_MIN_TOTAL_SUPPLY;
