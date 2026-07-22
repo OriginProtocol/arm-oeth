@@ -101,6 +101,25 @@ contract FuzzerFoundry_LidoARM is Properties {
         require(property_bal_wsteth(), "BAL_WSTETH: wstETH balance mismatch");
     }
 
+    function test_marketRotationRoundingLossIsAccountedFor() public {
+        targetDeposit(23_061, 1);
+        targetRequestRedeem(14_558, 1);
+
+        for (uint256 i; i < 36; ++i) {
+            targetSetActiveMarket(1);
+        }
+
+        targetRequestRedeem(558, 1);
+
+        for (uint256 i; i < 40; ++i) {
+            targetSetActiveMarket(1);
+        }
+
+        assertEq(sum_weth_marketRoundingLoss, 101, "tracked market rounding loss");
+        assertTrue(property_bal_weth(), "WETH balance conservation");
+        assertEq(maxWethBalanceDrift(), 0, "unaccounted WETH drift");
+    }
+
     /// @notice Optimization: fuzzer maximizes the worst-case LP rounding loss.
     function invariant_optimize_maxLpLoss() public view returns (int256) {
         return maxLpLoss();

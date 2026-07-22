@@ -3,6 +3,7 @@ pragma solidity 0.8.23;
 
 import {Vm} from "forge-std/Vm.sol";
 import {Base_Test_} from "../base/Base.t.sol";
+import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 
 // Mocks
 import {MockERC20} from "@solmate/test/utils/mocks/MockERC20.sol";
@@ -28,6 +29,49 @@ abstract contract Helpers is Base_Test_ {
         _;
         ghost_lastSharePrice = lidoARM.totalAssets() * 1e18 / lidoARM.totalSupply();
         ghost_crossPriceChanged = true;
+    }
+
+    /// @dev Tracks WETH value lost to ERC4626 rounding and rejects losses larger than one market share.
+    modifier trackWethMarketRounding() {
+        int256 valueBefore = _netTrackedWethValue();
+        uint256 maxLossBefore = _maxMarketShareValue();
+        _;
+        int256 valueAfter = _netTrackedWethValue();
+
+        if (valueAfter < valueBefore) {
+            uint256 loss = uint256(valueBefore - valueAfter);
+            uint256 maxLossAfter = _maxMarketShareValue();
+            uint256 maxExpectedLoss = maxLossBefore > maxLossAfter ? maxLossBefore : maxLossAfter;
+            require(loss <= maxExpectedLoss, "MARKET_ROUNDING_EXCEEDED");
+            sum_weth_marketRoundingLoss += loss;
+        }
+    }
+
+    /// @dev WETH held by the ARM and its markets, adjusted for tracked external flows.
+    function _netTrackedWethValue() internal view returns (int256) {
+        uint256 armAndMarketValue = weth.balanceOf(address(lidoARM))
+            + IERC4626(address(mockERC4626Market_A))
+                .convertToAssets(IERC4626(address(mockERC4626Market_A)).balanceOf(address(lidoARM)))
+            + IERC4626(address(mockERC4626Market_B))
+                .convertToAssets(IERC4626(address(mockERC4626Market_B)).balanceOf(address(lidoARM)));
+        uint256 inflows = sum_weth_deposit + sum_weth_swapIn + sum_weth_baseRedeemClaimed + sum_weth_donated;
+        uint256 outflows = sum_weth_swapOut + sum_weth_userClaimed + sum_weth_feesCollected;
+
+        return int256(armAndMarketValue + outflows) - int256(inflows);
+    }
+
+    /// @dev Maximum value of one market share, rounded up to WETH wei.
+    function _maxMarketShareValue() internal view returns (uint256) {
+        uint256 valueA = _marketShareValue(IERC4626(address(mockERC4626Market_A)));
+        uint256 valueB = _marketShareValue(IERC4626(address(mockERC4626Market_B)));
+        return valueA > valueB ? valueA : valueB;
+    }
+
+    function _marketShareValue(IERC4626 market) private view returns (uint256) {
+        uint256 supply = market.totalSupply();
+        uint256 assets = market.totalAssets();
+        if (supply == 0 || assets == 0) return 1;
+        return (assets - 1) / supply + 1;
     }
 
     ////////////////////////////////////////////////////
