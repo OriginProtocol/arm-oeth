@@ -18,6 +18,18 @@ action({
   params: (t) =>
     t
       .addOptionalParam(
+        "buyPrice",
+        "Exact buy price; when set, sellPrice must also be set (ETH per base asset).",
+        undefined,
+        types.float,
+      )
+      .addOptionalParam(
+        "sellPrice",
+        "Exact sell price; when set, buyPrice must also be set (base asset per ETH).",
+        undefined,
+        types.float,
+      )
+      .addOptionalParam(
         "maxBuyPrice",
         "Upper bound for buy-side price (ETH per eETH).",
         0.9998,
@@ -43,7 +55,7 @@ action({
       )
       .addOptionalParam(
         "amount",
-        "Reference swap amount used when fetching aggregator quotes.",
+        "DEX swap amount used to fetch the reference price quote.",
         20,
         types.float,
       )
@@ -100,6 +112,8 @@ action({
         signer,
         arm,
         armName: "EtherFi",
+        buyPrice: args.buyPrice,
+        sellPrice: args.sellPrice,
         maxSellPrice: args.maxSellPrice,
         minSellPrice: args.minSellPrice,
         maxBuyPrice: args.maxBuyPrice,

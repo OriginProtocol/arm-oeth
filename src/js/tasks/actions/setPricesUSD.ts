@@ -23,6 +23,30 @@ action({
         types.string,
       )
       .addOptionalParam(
+        "buyPrice",
+        "Exact buy price; when set, sellPrice must also be set (USDC per base asset).",
+        undefined,
+        types.float,
+      )
+      .addOptionalParam(
+        "sellPrice",
+        "Exact sell price; when set, buyPrice must also be set (base asset per USDC).",
+        undefined,
+        types.float,
+      )
+      .addOptionalParam(
+        "buyAmount",
+        "Liquidity asset amount remaining at the buy price for multi-base ARMs, as an integer in native token units.",
+        undefined,
+        types.string,
+      )
+      .addOptionalParam(
+        "sellAmount",
+        "Base asset amount remaining at the sell price for multi-base ARMs, as an integer in native token units.",
+        undefined,
+        types.string,
+      )
+      .addOptionalParam(
         "maxBuyPrice",
         "Upper bound for buy-side price (USDC per base asset).",
         0.99995,
@@ -48,7 +72,7 @@ action({
       )
       .addOptionalParam(
         "amount",
-        "Override for the reference swap amount used when fetching aggregator quotes.",
+        "Override for the DEX swap amount used to fetch the reference price quote.",
         undefined,
         types.float,
       )
@@ -98,13 +122,16 @@ action({
     const arm = new ethers.Contract(mainnet.usdARM, multiAssetARMAbi, signer);
 
     log.info("Setting prices for USDC ARM");
-    const amount = await resolveUsdAggregatorAmount({
-      arm,
-      amount: args.amount,
-      log,
-      blockTag: "latest",
-    });
-    if (amount === undefined) return;
+    const exactPrices =
+      args.buyPrice !== undefined && args.sellPrice !== undefined;
+    let amount = args.amount;
+    if (!exactPrices && amount === undefined) {
+      amount = await resolveUsdAggregatorAmount({
+        arm,
+        log,
+        blockTag: "latest",
+      });
+    }
 
     await setPricesForBases({
       setPrices,
@@ -113,6 +140,10 @@ action({
         signer,
         arm,
         armName: "USDC",
+        buyPrice: args.buyPrice,
+        sellPrice: args.sellPrice,
+        buyAmount: args.buyAmount,
+        sellAmount: args.sellAmount,
         maxSellPrice: args.maxSellPrice,
         minSellPrice: args.minSellPrice,
         maxBuyPrice: args.maxBuyPrice,
