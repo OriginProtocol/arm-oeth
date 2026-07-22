@@ -1,8 +1,8 @@
-const { formatUnits } = require("ethers");
+const { formatUnits, parseUnits } = require("ethers");
 
 const { resolveArmBase } = require("./arm");
 
-const DEFAULT_ETHENA_AGGREGATOR_AMOUNT = 2000;
+const MIN_ETHENA_AGGREGATOR_AMOUNT = parseUnits("1000", 18); // 1,000 USDe
 
 const hasAmountOverride = (amount) => amount !== undefined && amount !== null;
 
@@ -15,7 +15,7 @@ const resolveEthenaAggregatorAmount = async ({
   log,
   blockTag = "latest",
   resolveArmBaseFn = resolveArmBase,
-  defaultAmount = DEFAULT_ETHENA_AGGREGATOR_AMOUNT,
+  minAmount = MIN_ETHENA_AGGREGATOR_AMOUNT,
 }) => {
   if (hasAmountOverride(amount)) {
     log?.info?.(`Using configured aggregator quote amount: ${amount} USDe`);
@@ -30,10 +30,11 @@ const resolveEthenaAggregatorAmount = async ({
   });
 
   if (baseContext.version !== "multiBase") {
+    const formattedMinAmount = formatUnits(minAmount, 18);
     log?.info?.(
-      `Using default aggregator quote amount for legacy Ethena ARM: ${defaultAmount} USDe`,
+      `Using minimum aggregator quote amount for legacy Ethena ARM: ${formattedMinAmount} USDe`,
     );
-    return defaultAmount;
+    return formattedMinAmount;
   }
 
   const reserves = await arm.getReserves(baseContext.baseAddress, {
@@ -41,11 +42,11 @@ const resolveEthenaAggregatorAmount = async ({
   });
   const liquidityAssets = readReserveLiquidity(reserves);
 
-  if (liquidityAssets === 0n) {
+  if (liquidityAssets < minAmount) {
     log?.info?.(
-      "Skipping Ethena price update: no withdrawable USDe available in ARM or lending market",
+      `Using minimum aggregator quote amount of ${formatUnits(minAmount, 18)} USDe; only ${formatUnits(liquidityAssets, 18)} USDe is withdrawable in ARM and lending market`,
     );
-    return undefined;
+    return formatUnits(minAmount, 18);
   }
 
   const resolvedAmount = formatUnits(liquidityAssets, 18);
@@ -56,6 +57,6 @@ const resolveEthenaAggregatorAmount = async ({
 };
 
 module.exports = {
-  DEFAULT_ETHENA_AGGREGATOR_AMOUNT,
+  MIN_ETHENA_AGGREGATOR_AMOUNT,
   resolveEthenaAggregatorAmount,
 };

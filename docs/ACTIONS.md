@@ -13,6 +13,19 @@ runner works.
 
 Cron times are UTC. Enable state is managed in the database, not here.
 
+The mainnet `setPrices*` actions use `--amount` as the DEX swap amount when
+fetching the reference price quote. This is separate from `--buy-amount` and
+`--sell-amount`, which set the buy-side liquidity-asset and sell-side base-asset
+liquidity remaining on the Ethena and USD ARMs. If omitted, each limit is set to
+the maximum `uint128` value. Liquidity amounts are integer native token units
+(for example, `100000000` is 100 tokens for an asset with 6 decimals).
+
+`--buy-price` and `--sell-price` bypass DEX-derived pricing and set an exact
+pair. Both must be supplied together; `--amount` is not used in this mode.
+When the Ethena or USD action derives `--amount` from withdrawable liquidity,
+it rounds the available amount up to the minimum DEX quote size of 1,000 USDe
+or 1,000 USDC respectively; an explicit `--amount` override is used as supplied.
+
 ## Lido ARM — mainnet
 
 | Action                    | Cron                    | Description                            |

@@ -3,7 +3,7 @@ const assert = require("assert");
 const { parseUnits } = require("ethers");
 
 const {
-  DEFAULT_ETHENA_AGGREGATOR_AMOUNT,
+  MIN_ETHENA_AGGREGATOR_AMOUNT,
   resolveEthenaAggregatorAmount,
 } = require("../../src/js/utils/ethenaPricing");
 
@@ -56,43 +56,43 @@ const run = async () => {
       arm: {
         getReserves: async (baseAddress) => {
           requestedBaseAddress = baseAddress;
-          return [parseUnits("789.123", 18), 0n];
+          return [parseUnits("2789.123", 18), 0n];
         },
       },
       resolveArmBaseFn: multiBaseResolver,
     });
 
     assert.strictEqual(requestedBaseAddress, sUSDe);
-    assert.strictEqual(amount, "789.123");
+    assert.strictEqual(amount, "2789.123");
   }
 
   {
     const amount = await resolveEthenaAggregatorAmount({
       arm: {
         getReserves: async () => ({
-          liquidityAssets: parseUnits("321", 18),
+          liquidityAssets: MIN_ETHENA_AGGREGATOR_AMOUNT,
           baseAssetReserve: 0n,
         }),
       },
       resolveArmBaseFn: multiBaseResolver,
     });
 
-    assert.strictEqual(amount, "321.0");
+    assert.strictEqual(amount, "1000.0");
   }
 
   {
     const log = logger();
     const amount = await resolveEthenaAggregatorAmount({
       arm: {
-        getReserves: async () => [0n, 0n],
+        getReserves: async () => [parseUnits("999.999", 18), 0n],
       },
       log,
       resolveArmBaseFn: multiBaseResolver,
     });
 
-    assert.strictEqual(amount, undefined);
+    assert.strictEqual(amount, "1000.0");
     assert.deepStrictEqual(log.messages, [
-      "Skipping Ethena price update: no withdrawable USDe available in ARM or lending market",
+      "Using minimum aggregator quote amount of 1000.0 USDe; only 999.999 USDe is withdrawable in ARM and lending market",
     ]);
   }
 
@@ -108,7 +108,7 @@ const run = async () => {
       resolveArmBaseFn: legacyResolver,
     });
 
-    assert.strictEqual(amount, DEFAULT_ETHENA_AGGREGATOR_AMOUNT);
+    assert.strictEqual(amount, "1000.0");
     assert.strictEqual(getReservesCalled, false);
   }
 
@@ -116,7 +116,7 @@ const run = async () => {
     let commonPricingAmount;
     const resolvedAmount = await resolveEthenaAggregatorAmount({
       arm: {
-        getReserves: async () => [parseUnits("654", 18), 0n],
+        getReserves: async () => [parseUnits("2654", 18), 0n],
       },
       resolveArmBaseFn: multiBaseResolver,
     });
@@ -132,7 +132,7 @@ const run = async () => {
       },
     });
 
-    assert.strictEqual(commonPricingAmount, "654.0");
+    assert.strictEqual(commonPricingAmount, "2654.0");
   }
 };
 
