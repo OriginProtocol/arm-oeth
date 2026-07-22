@@ -311,13 +311,26 @@ yarn hardhat tenderlyUpload --network sonic --name ORIGIN_ARM
 
 ## Automated Actions (Talos)
 
-The `src/js/tasks/actions/*.ts` files are hardhat tasks that handle operational jobs (allocations, fee collection, withdrawal requests, etc.). In production they're driven by a container that imports [`@talos/client`](https://github.com/oplabs/talos):
+The `src/js/tasks/actions/*.ts` files are hardhat tasks that handle operational jobs (allocations, fee collection, withdrawal requests, etc.). In production they're driven by a container that imports [`@oplabs/talos-client`](https://github.com/oplabs/talos):
 
 - **`runner.ts`** at repo root calls `runContainer({ product: "arm-oeth", workdir: "/app" })`. The library reads enabled schedules from the shared Talos Postgres, fires them via croner, and spawns each schedule's command as `pnpm hardhat <name> --network <chain>`.
 - **`migrations/seed_schedules.sql`** is a one-time seed of the `schedules` table mirroring the old `cron/cron-jobs.ts`.
 - **`src/js/tasks/lib/action.ts`** wraps the hardhat signer with `wrapSignerWithNonceQueueV6` from the library when `DATABASE_URL` is set. That routes `signer.sendTransaction` through Postgres row-locked nonce coordination.
 
 Every scheduled action — its cadence and one-line purpose — is catalogued in [`docs/ACTIONS.md`](docs/ACTIONS.md).
+
+`@oplabs/talos-client` is an optional peer dependency and is therefore not
+installed by the normal `pnpm install`. The runner image installs it explicitly
+from GitHub Packages. For a local image build, expose a token only through the
+BuildKit secret used by Compose:
+
+```bash
+TALOS_PACKAGE_TOKEN="<PAT>" docker compose build actions
+```
+
+Use a classic PAT with `read:packages` access to the oplabs package (and SSO
+authorization where required). The AWS image workflow reads it from the
+`TALOS_PACKAGE_TOKEN` repository secret.
 
 ### Running actions locally
 
