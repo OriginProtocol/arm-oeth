@@ -45,7 +45,7 @@ abstract contract Properties is TargetFunction {
     // [x] Invariant N: WETH balance + market value >= MIN_TOTAL_SUPPLY
     //                   + ∑deposit + ∑swapIn + ∑baseRedeemClaimed + ∑donated
     //                   - ∑swapOut - ∑userClaimed - ∑feesCollected
-    //                   (100 wei tolerance — optimization found worst-case 27 wei / 250k txs)
+    //                   - bounded ERC4626 market rounding losses tracked by the handlers
     // [x] Invariant O: stETH balance == ∑swapIn + ∑donated + ∑rebased
     //                                    - ∑swapOut - ∑baseRedeemRequested
     // [x] Invariant P: wstETH balance == ∑swapIn + ∑donated
@@ -206,11 +206,9 @@ abstract contract Properties is TargetFunction {
             MIN_TOTAL_SUPPLY + sum_weth_deposit + sum_weth_swapIn + sum_weth_baseRedeemClaimed + sum_weth_donated;
         uint256 outflows = sum_weth_swapOut + sum_weth_userClaimed + sum_weth_feesCollected;
 
-        // Rewrite as: lhs + outflows + tolerance >= inflows (avoids underflow)
+        // Rewrite as: lhs + outflows + tracked rounding losses >= inflows (avoids underflow)
         // Market yield can make lhs > inflows - outflows (ARM gained value from yield).
-        // ERC4626 rounding can lose a few wei per cycle.
-        // Optimization mode found worst-case of 27 wei over ~250k txs.
-        return armWeth + wethInMarkets + outflows + 100 >= inflows;
+        return armWeth + wethInMarkets + outflows + sum_weth_marketRoundingLoss >= inflows;
     }
 
     // 15. stETH balance == inflows - outflows
@@ -239,7 +237,7 @@ abstract contract Properties is TargetFunction {
     /// --- OPTIMIZATION METRICS
     ////////////////////////////////////////////////////
 
-    /// @notice Max WETH rounding loss from market deposit/withdraw cycles.
+    /// @notice Max unaccounted WETH loss after bounded market rounding is removed.
     function maxWethBalanceDrift() public view returns (int256) {
         uint256 armWeth = weth.balanceOf(address(lidoARM));
         uint256 wethInMarkets = IERC4626(address(mockERC4626Market_A))
@@ -251,8 +249,8 @@ abstract contract Properties is TargetFunction {
             MIN_TOTAL_SUPPLY + sum_weth_deposit + sum_weth_swapIn + sum_weth_baseRedeemClaimed + sum_weth_donated;
         uint256 outflows = sum_weth_swapOut + sum_weth_userClaimed + sum_weth_feesCollected;
 
-        uint256 lhs = armWeth + wethInMarkets + outflows;
-        // Return how much inflows exceeds lhs (positive = loss)
+        uint256 lhs = armWeth + wethInMarkets + outflows + sum_weth_marketRoundingLoss;
+        // Return how much inflows exceeds the rounding-adjusted lhs (positive = unexplained loss)
         if (inflows > lhs) return int256(inflows - lhs);
         return 0;
     }

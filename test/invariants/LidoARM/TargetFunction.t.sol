@@ -60,7 +60,12 @@ abstract contract TargetFunction is Invariant_LidoARM_Setup_Test {
     function targetSwapExactTokensForTokens(uint256 amount, uint256 baseAssetSeed, uint256 sideSeed)
         public
         ensureSharePriceNotDecreased
+        trackWethMarketRounding
     {
+        _targetSwapExactTokensForTokens(amount, baseAssetSeed, sideSeed);
+    }
+
+    function _targetSwapExactTokensForTokens(uint256 amount, uint256 baseAssetSeed, uint256 sideSeed) internal {
         bool stETHOrWstETH = baseAssetSeed % 2 == 0;
         bool buyOrSell = sideSeed % 2 == 0;
         address baseAsset = stETHOrWstETH ? address(steth) : address(wsteth);
@@ -137,7 +142,12 @@ abstract contract TargetFunction is Invariant_LidoARM_Setup_Test {
     function targetSwapTokensForExactTokens(uint256 amount, uint256 baseAssetSeed, uint256 sideSeed)
         public
         ensureSharePriceNotDecreased
+        trackWethMarketRounding
     {
+        _targetSwapTokensForExactTokens(amount, baseAssetSeed, sideSeed);
+    }
+
+    function _targetSwapTokensForExactTokens(uint256 amount, uint256 baseAssetSeed, uint256 sideSeed) internal {
         bool stETHOrWstETH = baseAssetSeed % 2 == 0;
         bool buyOrSell = sideSeed % 2 == 0;
         address baseAsset = stETHOrWstETH ? address(steth) : address(wsteth);
@@ -251,7 +261,7 @@ abstract contract TargetFunction is Invariant_LidoARM_Setup_Test {
         shuffle(_pendingRequestIds, from); // Shuffle pending request IDs to ensure randomness in claim
     }
 
-    function targetClaimRedeem(uint256 seed) public ensureSharePriceNotDecreased {
+    function targetClaimRedeem(uint256 seed) public ensureSharePriceNotDecreased trackWethMarketRounding {
         (address user, uint256 requestId, uint256 positionInList) = selectUserWithPendingRequest();
         vm.assume(user != address(0));
 
@@ -397,7 +407,7 @@ abstract contract TargetFunction is Invariant_LidoARM_Setup_Test {
     ////////////////////////////////////////////////////
     /// --- LIQUIDITY MANAGMENT
     ////////////////////////////////////////////////////
-    function targetSetActiveMarket(uint256 seed) public ensureSharePriceNotDecreased {
+    function targetSetActiveMarket(uint256 seed) public ensureSharePriceNotDecreased trackWethMarketRounding {
         address current = lidoARM.activeMarket();
         address[3] memory candidates = [address(0), address(mockERC4626Market_A), address(mockERC4626Market_B)];
 
@@ -427,7 +437,7 @@ abstract contract TargetFunction is Invariant_LidoARM_Setup_Test {
         }
     }
 
-    function targetAllocate() public ensureSharePriceNotDecreased {
+    function targetAllocate() public ensureSharePriceNotDecreased trackWethMarketRounding {
         vm.assume(lidoARM.activeMarket() != address(0));
 
         (int256 target, int256 actual) = lidoARM.allocate();
@@ -492,7 +502,11 @@ abstract contract TargetFunction is Invariant_LidoARM_Setup_Test {
         }
     }
 
-    function targetMarketDeposit(uint256 amount, uint256 marketSeed) public ensureSharePriceNotDecreased {
+    function targetMarketDeposit(uint256 amount, uint256 marketSeed)
+        public
+        ensureSharePriceNotDecreased
+        trackWethMarketRounding
+    {
         bool marketA = marketSeed % 2 == 0;
         MockMorpho market = marketA ? mockERC4626Market_A : mockERC4626Market_B;
         uint256 bal = weth.balanceOf(hanna);
@@ -511,7 +525,11 @@ abstract contract TargetFunction is Invariant_LidoARM_Setup_Test {
         }
     }
 
-    function targetMarketWithdraw(uint256 amount, uint256 marketSeed) public ensureSharePriceNotDecreased {
+    function targetMarketWithdraw(uint256 amount, uint256 marketSeed)
+        public
+        ensureSharePriceNotDecreased
+        trackWethMarketRounding
+    {
         bool marketA = marketSeed % 2 == 0;
         MockMorpho market = marketA ? mockERC4626Market_A : mockERC4626Market_B;
         uint256 maxW = market.maxWithdraw(hanna);
