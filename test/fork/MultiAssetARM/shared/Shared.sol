@@ -313,9 +313,10 @@ abstract contract Fork_Shared_Test is Base_Test_ {
         return _adapter(token).convertToShares(assets);
     }
 
-    function _swapFeeMultiplier(uint256 buyPrice, uint256 crossPrice, uint256 fee) internal pure returns (uint256) {
-        if (buyPrice == 0 || fee == 0) return 0;
-        return (crossPrice - buyPrice) * fee * PRICE_SCALE / (buyPrice * FEE_SCALE);
+    function _expectedBuySideFee(IERC20 token, uint256 amountIn, uint256 amountOut) internal view returns (uint256) {
+        uint256 realizedAssets = _convertToAssets(token, amountIn) * _crossPrice(token) / PRICE_SCALE;
+        uint256 gain = realizedAssets > amountOut ? realizedAssets - amountOut : 0;
+        return gain * arm.fee() / FEE_SCALE;
     }
 
     //////////////////////////////////////////////////////

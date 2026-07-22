@@ -22,7 +22,7 @@ contract Fork_Concrete_PaxosARM_swapTokensForExactTokens_Test_ is Fork_Shared_Te
     function test_swapTokensForExactTokens_Pyusd_To_Usdc() public {
         uint256 buyPrice = _buyPrice(pyusd);
         uint256 expectedAmountIn = AMOUNT_OUT * PRICE_SCALE / buyPrice + 3;
-        uint256 expectedFee = AMOUNT_OUT * _swapFeeMultiplier(buyPrice, _crossPrice(pyusd), arm.fee()) / PRICE_SCALE;
+        uint256 expectedFee = _expectedBuySideFee(pyusd, expectedAmountIn, AMOUNT_OUT);
 
         uint256 usdcBefore = usdc.balanceOf(address(this));
         uint256 baseBefore = pyusd.balanceOf(address(this));

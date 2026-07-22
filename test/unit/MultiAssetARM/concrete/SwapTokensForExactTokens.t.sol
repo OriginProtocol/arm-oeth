@@ -84,6 +84,26 @@ contract SwapTokensForExactTokens_18dec_Test is SwapTokensForExactTokens_Test {
     function liquidityDecimals() internal pure override returns (uint8) {
         return 18;
     }
+
+    function test_BuyExactOut_Peg6_SubBaseUnit_AccruesFeeOnRealizedGain() public {
+        uint256 deepBuyPrice = MAX_CROSS_PRICE_DEVIATION; // 0.002e36 = 0.2% of the cross price.
+        vm.prank(governor);
+        arm.setPrices(address(peg6), deepBuyPrice, SELL_PRICE, type(uint128).max, type(uint128).max);
+
+        uint256 amountOut = 1e12 - 1; // Just below one 6-decimal base unit after scaling by 1e12.
+        dealLiquidityToARM(1 ether);
+        dealBaseToUser(peg6, alice, 1e6);
+
+        vm.prank(alice);
+        uint256[] memory amounts = arm.swapTokensForExactTokens(peg6, liquidity, amountOut, type(uint256).max, alice);
+
+        uint256 realizedAssets = _scaleBaseToLiquidity(peg6, amounts[0]) * CROSS_PRICE / PRICE_SCALE;
+        uint256 expectedGain = realizedAssets - amountOut;
+        uint256 expectedFee = expectedGain * DEFAULT_FEE / FEE_SCALE;
+
+        assertEq(amounts[0], 3, "input is only the rounding buffer");
+        assertEq(arm.feesAccrued(), expectedFee, "fee uses the realized gain");
+    }
 }
 
 contract SwapTokensForExactTokens_6dec_Test is SwapTokensForExactTokens_Test {
