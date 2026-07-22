@@ -191,6 +191,54 @@
         {
             "implementation": "0xf9cEDb3154c6502328C7B09c773a43a0b9C801eb",
             "name": "ETH_ARM_WEETH_ADAPTER"
+        },
+        {
+            "implementation": "0x68025A4615407993A680102b08a23A61D11C657C",
+            "name": "WETH_ARM"
+        },
+        {
+            "implementation": "0x19D2977a1cc5A73bF5d827aCE07a3BE3e56BdfEa",
+            "name": "WETH_ARM_CAP_MAN"
+        },
+        {
+            "implementation": "0x7488F5352207Ba9fA91FF09F6964c51Db2d662d1",
+            "name": "WETH_ARM_CAP_IMPL"
+        },
+        {
+            "implementation": "0xe0Dba0eF9A1C7dF2a94386A3187e9360e1B2c1fb",
+            "name": "WETH_ARM_IMPL"
+        },
+        {
+            "implementation": "0x2b8b088B29349f4a9Af1719f0fb3115587E84c26",
+            "name": "WETH_ARM_STETH_ADAPTER_IMPL"
+        },
+        {
+            "implementation": "0x7b0a90552D2dc01936301A45bFC813717Af7E8a9",
+            "name": "WETH_ARM_STETH_ADAPTER"
+        },
+        {
+            "implementation": "0x4ab7E8c06d651F7462df728419D4293126764Ed4",
+            "name": "WETH_ARM_WSTETH_ADAPTER_IMPL"
+        },
+        {
+            "implementation": "0xE28ca056A12134b6B872D1CbE04cd1A82fDfeA95",
+            "name": "WETH_ARM_WSTETH_ADAPTER"
+        },
+        {
+            "implementation": "0xb1104B6bD6f07D19E6D679e88AD4035CFD1F2A48",
+            "name": "WETH_ARM_EETH_ADAPTER_IMPL"
+        },
+        {
+            "implementation": "0xFa205c9a110a3e82Bd8d223CccCB15C5b9E6434e",
+            "name": "WETH_ARM_EETH_ADAPTER"
+        },
+        {
+            "implementation": "0x20c66066f30fa935B31878A439c53aC76d4C53cB",
+            "name": "WETH_ARM_WEETH_ADAPTER_IMPL"
+        },
+        {
+            "implementation": "0xD5F61bFd890169c28858039f6b6c9b517407C852",
+            "name": "WETH_ARM_WEETH_ADAPTER"
         }
     ],
     "executions": [
@@ -390,6 +438,12 @@
             "name": "036_DeployMultiAssetARMScript",
             "proposalId": 1,
             "tsDeployment": 1783504775,
+            "tsGovernance": 1
+        },
+        {
+            "name": "038_DeployWETHARMScript",
+            "proposalId": 1,
+            "tsDeployment": 1784724659,
             "tsGovernance": 1
         }
     ]
