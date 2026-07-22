@@ -42,7 +42,8 @@ const ARM_BASES = {
   Ethena: { defaultBase: "SUSDE", liquidity: "USDE" },
   Oeth: { defaultBase: "OETH", liquidity: "WETH" },
   Origin: { defaultBase: "OS", liquidity: "WS" },
-  USD: { defaultBase: "PYUSD", liquidity: "USDC" },
+  USDC: { defaultBase: "PYUSD", liquidity: "USDC" },
+  WETH: { defaultBase: "STETH", liquidity: "WETH" },
 };
 
 const BASE_ALIASES = {

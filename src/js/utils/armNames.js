@@ -6,18 +6,23 @@ const ARM_NAME_ALIASES = {
   ethena: "Ethena",
   oeth: "Oeth",
   origin: "Origin",
-  usd: "USD",
+  eth: "WETH",
+  weth: "WETH",
+  usd: "USDC",
+  usdc: "USDC",
 };
 
 const ARM_DEPLOY_NAMES = {
   EtherFi: "ETHER_FI_ARM",
   Oeth: "OETH_ARM",
-  USD: "USD_ARM",
+  USDC: "USDC_ARM",
+  WETH: "WETH_ARM",
 };
 
 const ARM_CONTRACT_NAMES = {
   Oeth: "OriginARM",
-  USD: "MultiAssetARM",
+  USDC: "MultiAssetARM",
+  WETH: "MultiAssetARM",
 };
 
 const normalizeArmName = (arm) => {

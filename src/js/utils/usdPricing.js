@@ -27,7 +27,7 @@ const resolveUsdAggregatorAmount = async ({
   // configured base can be used to resolve them
   const baseContext = await resolveArmBaseFn({
     arm,
-    armName: "USD",
+    armName: "USDC",
     base: "PYUSD",
     blockTag,
   });
@@ -39,7 +39,7 @@ const resolveUsdAggregatorAmount = async ({
 
   if (liquidityAssets < MIN_USD_AGGREGATOR_AMOUNT) {
     log?.info?.(
-      `Skipping USD price update: only ${formatUnits(liquidityAssets, 6)} USDC withdrawable in ARM and lending market, below the ${formatUnits(MIN_USD_AGGREGATOR_AMOUNT, 6)} USDC minimum aggregator quote amount`,
+      `Skipping USDC ARM price update: only ${formatUnits(liquidityAssets, 6)} USDC withdrawable in ARM and lending market, below the ${formatUnits(MIN_USD_AGGREGATOR_AMOUNT, 6)} USDC minimum aggregator quote amount`,
     );
     return undefined;
   }
