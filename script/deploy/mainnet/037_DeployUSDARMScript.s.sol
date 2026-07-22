@@ -51,6 +51,9 @@ contract $037_DeployUSDARMScript is AbstractDeployScript("037_DeployUSDARMScript
     ///      of USDC (0.000001 USDC) that initialize() pulls.
     uint256 internal constant USDC_SEED = 1000;
 
+    // Legacy deploy code. Replaced by 039_DeployUSDCARMScript.s.sol.
+    bool public constant override skip = true;
+
     function _execute() internal override {
         // 1. Deploy the ARM proxy.
         Proxy armProxy = new Proxy();
