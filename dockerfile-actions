@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.7
+# syntax=docker/dockerfile:1.10
 
 # Foundry binaries (forge/cast/anvil) — pulled from the official image
 # at a digest pin instead of curl-pipe-bash from foundry.paradigm.xyz.
@@ -40,17 +40,17 @@ COPY --from=foundry /usr/local/bin/forge /usr/local/bin/cast /usr/local/bin/anvi
 WORKDIR /app
 
 # Install the public dependencies first for better caching. The Talos client is
-# an optional peer dependency, so install it explicitly using a GitHub Packages
-# PAT supplied as a BuildKit secret. The PAT needs read:packages access to the
-# oplabs package.
+# an optional peer dependency, so install the version declared in package.json
+# using the TALOS_PACKAGE_TOKEN environment variable. The token needs
+# read:packages access to the oplabs package.
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN --mount=type=cache,id=arm-oeth-pnpm-store,target=/root/.local/share/pnpm/store \
     npm install -g pnpm@10.33.2 && pnpm install --frozen-lockfile
-RUN --mount=type=secret,id=talos_package_token,required=true \
+RUN --mount=type=secret,id=talos_package_token,env=TALOS_PACKAGE_TOKEN,required=true \
     --mount=type=cache,id=arm-oeth-pnpm-store,target=/root/.local/share/pnpm/store \
-    TOKEN="$(cat /run/secrets/talos_package_token)" \
-    && printf '@oplabs:registry=https://npm.pkg.github.com\n//npm.pkg.github.com/:_authToken=%s\n' "$TOKEN" > /tmp/talos.npmrc \
-    && npm_config_userconfig=/tmp/talos.npmrc pnpm add --save-prod @oplabs/talos-client@0.0.1 \
+    TALOS_CLIENT_VERSION="$(node -p "require('./package.json').peerDependencies['@oplabs/talos-client']")" \
+    && printf '@oplabs:registry=https://npm.pkg.github.com\n//npm.pkg.github.com/:_authToken=%s\n' "$TALOS_PACKAGE_TOKEN" > /tmp/talos.npmrc \
+    && npm_config_userconfig=/tmp/talos.npmrc pnpm add --save-prod "@oplabs/talos-client@$TALOS_CLIENT_VERSION" \
     && rm -f /tmp/talos.npmrc
 
 # Copy the rest of the workspace.
