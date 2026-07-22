@@ -10,7 +10,7 @@ const multiAssetARMAbi = require("../../../abis/MultiAssetARM.json");
 
 action({
   name: "setPricesUSD",
-  description: "Set prices for USD ARM",
+  description: "Set prices for USDC ARM",
   chains: [1],
   // Price points are operator-overridable from the scheduled command in
   // talos (talos UI → schedules → command field).

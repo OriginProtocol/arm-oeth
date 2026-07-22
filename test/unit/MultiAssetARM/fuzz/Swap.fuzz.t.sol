@@ -139,12 +139,10 @@ contract Unit_Fuzz_MultiAssetARM_Swap_Test is Unit_MultiAssetARM_Shared_Test {
         // Valid buyPrice range from AbstractARM._validatePrices:
         // buyPrice >= MAX_CROSS_PRICE_DEVIATION (20e32) and buyPrice < crossPrice (1e36 here).
         // Reuse the existing sellPrice from setUp() — _validatePrices also requires sellPrice >= crossPrice.
-        uint256 spread;
         uint256 buyPriceFuzzed;
         {
             uint256 crossPriceCurrent = crossPrice(peg18);
             buyPriceFuzzed = _bound(uint256(fuzzedBuyPrice), MAX_CROSS_PRICE_DEVIATION, crossPriceCurrent - 1);
-            spread = crossPriceCurrent - buyPriceFuzzed;
 
             // Resolve every setPrices arg before the prank so no view-call between them consumes it.
             uint128 sellPriceArg = uint128(sellPrice(peg18));
@@ -153,17 +151,10 @@ contract Unit_Fuzz_MultiAssetARM_Swap_Test is Unit_MultiAssetARM_Shared_Test {
         }
 
         // Expected output uses the same scaling as the contract because there is no algebraic
-        // shortcut once buyPrice is arbitrary. The value of the test sits in the fee formula below.
+        // shortcut once buyPrice is arbitrary.
         uint256 expectedAmountOut = amountIn * buyPriceFuzzed / PRICE_SCALE;
         uint256 expectedTotalAssetsIncrease = amountIn - expectedAmountOut;
-
-        // Fee derivation takes a different multiply/divide order than the contract:
-        //   contract:  fee = amountOut * floor((cross - buy) * feeRate * PRICE_SCALE / (buy * FEE_SCALE)) / PRICE_SCALE
-        //   test:      fee = floor(amountOut * (cross - buy) / buy) * feeRate / FEE_SCALE
-        // Both converge on the same mathematical value, so a bug that mangles the multiplier
-        // scaling, swaps numerator/denominator, or applies the fee on the wrong side of the spread
-        // will diverge here.
-        uint256 expectedFee = expectedAmountOut.mulDiv(spread, buyPriceFuzzed) * DEFAULT_FEE / FEE_SCALE;
+        uint256 expectedFee = expectedTotalAssetsIncrease * DEFAULT_FEE / FEE_SCALE;
 
         // Property guard: buyPrice < crossPrice guarantees amountOut < amountIn (trader pays the spread).
         assertLt(expectedAmountOut, amountIn);
@@ -183,10 +174,7 @@ contract Unit_Fuzz_MultiAssetARM_Swap_Test is Unit_MultiAssetARM_Shared_Test {
         uint256[] memory amounts = arm.swapExactTokensForTokens(peg18, liquidity, amountIn, expectedAmountOut, alice);
 
         // Then
-        // Tolerance of 2 wei: the two formulas above each truncate at one step, so they can disagree
-        // by up to 1 wei from rounding, plus the contract's PRICE_SCALE intermediate truncation can
-        // shift the result by another wei at extreme prices.
-        assertApproxEqAbs(arm.feesAccrued(), expectedFee, 2);
+        assertEq(arm.feesAccrued(), expectedFee);
         assertEq(buyLiquidityRemaining(peg18), buyLiquidityBefore - expectedAmountOut);
         assertEq(sellLiquidityRemaining(peg18), sellLiquidityBefore);
         assertEq(liquidity.balanceOf(alice), expectedAmountOut);
@@ -201,7 +189,7 @@ contract Unit_Fuzz_MultiAssetARM_Swap_Test is Unit_MultiAssetARM_Shared_Test {
         // fee = gain * feeRate / FEE_SCALE algebraically, so with feeRate = 20% < 100% the gain
         // always exceeds the fee and totalAssets must strictly increase.
         assertGt(arm.totalAssets(), totalAssetsBefore);
-        assertApproxEqAbs(arm.totalAssets(), totalAssetsBefore + expectedTotalAssetsIncrease - expectedFee, 2);
+        assertEq(arm.totalAssets(), totalAssetsBefore + expectedTotalAssetsIncrease - expectedFee);
     }
 
     function testFuzz_SwapExactTokensForTokens_Weth_To_Steth_Amount(uint128 liquidityAmount) public {
@@ -401,12 +389,10 @@ contract Unit_Fuzz_MultiAssetARM_Swap_Test is Unit_MultiAssetARM_Shared_Test {
 
         // Valid buyPrice range from AbstractARM._validatePrices:
         // buyPrice >= MAX_CROSS_PRICE_DEVIATION (20e32) and buyPrice < crossPrice (1e36 here).
-        uint256 spread;
         uint256 buyPriceFuzzed;
         {
             uint256 crossPriceCurrent = crossPrice(peg18);
             buyPriceFuzzed = _bound(uint256(fuzzedBuyPrice), MAX_CROSS_PRICE_DEVIATION, crossPriceCurrent - 1);
-            spread = crossPriceCurrent - buyPriceFuzzed;
 
             // Resolve every setPrices arg before the prank so no view-call between them consumes it.
             uint128 sellPriceArg = uint128(sellPrice(peg18));
@@ -415,17 +401,10 @@ contract Unit_Fuzz_MultiAssetARM_Swap_Test is Unit_MultiAssetARM_Shared_Test {
         }
 
         // expectedAmountIn uses the same scaling as the contract because there is no algebraic
-        // shortcut once buyPrice is arbitrary. The value of the test sits in the fee formula below.
+        // shortcut once buyPrice is arbitrary.
         uint256 expectedAmountIn = amountOut.mulDiv(PRICE_SCALE, buyPriceFuzzed) + ROUNDING_BUFFER;
         uint256 expectedTotalAssetsIncrease = expectedAmountIn - amountOut;
-
-        // Fee derivation takes a different multiply/divide order than the contract:
-        //   contract:  fee = amountOut * floor((cross - buy) * feeRate * PRICE_SCALE / (buy * FEE_SCALE)) / PRICE_SCALE
-        //   test:      fee = floor(amountOut * (cross - buy) / buy) * feeRate / FEE_SCALE
-        // Both converge on the same mathematical value, so a bug that mangles the multiplier
-        // scaling, swaps numerator/denominator, or applies the fee on the wrong side of the spread
-        // will diverge here.
-        uint256 expectedFee = amountOut.mulDiv(spread, buyPriceFuzzed) * DEFAULT_FEE / FEE_SCALE;
+        uint256 expectedFee = expectedTotalAssetsIncrease * DEFAULT_FEE / FEE_SCALE;
 
         // Property guard: buyPrice < crossPrice guarantees amountIn > amountOut (trader pays the spread).
         assertGt(expectedAmountIn, amountOut);
@@ -447,10 +426,7 @@ contract Unit_Fuzz_MultiAssetARM_Swap_Test is Unit_MultiAssetARM_Shared_Test {
         uint256[] memory amounts = arm.swapTokensForExactTokens(peg18, liquidity, amountOut, expectedAmountIn, alice);
 
         // Then
-        // Tolerance of 2 wei: each formula truncates at a different step, so they can disagree by
-        // up to 1 wei from rounding, plus the contract's PRICE_SCALE intermediate truncation can
-        // shift the result by another wei at extreme prices.
-        assertApproxEqAbs(arm.feesAccrued(), expectedFee, 2);
+        assertEq(arm.feesAccrued(), expectedFee);
         assertEq(buyLiquidityRemaining(peg18), buyLiquidityBefore - amountOut);
         assertEq(sellLiquidityRemaining(peg18), sellLiquidityBefore);
         assertEq(liquidity.balanceOf(alice), amountOut);
@@ -465,7 +441,7 @@ contract Unit_Fuzz_MultiAssetARM_Swap_Test is Unit_MultiAssetARM_Shared_Test {
         // fee = gain * feeRate / FEE_SCALE algebraically, so with feeRate = 20% < 100% the gain
         // always exceeds the fee and totalAssets must strictly increase.
         assertGt(arm.totalAssets(), totalAssetsBefore);
-        assertApproxEqAbs(arm.totalAssets(), totalAssetsBefore + expectedTotalAssetsIncrease - expectedFee, 2);
+        assertEq(arm.totalAssets(), totalAssetsBefore + expectedTotalAssetsIncrease - expectedFee);
     }
 
     function testFuzz_SwapTokensForExactTokens_Weth_To_Steth_Amount(uint128 peg18Amount) public {

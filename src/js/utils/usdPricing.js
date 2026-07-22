@@ -27,7 +27,7 @@ const resolveUsdAggregatorAmount = async ({
   // configured base can be used to resolve them
   const baseContext = await resolveArmBaseFn({
     arm,
-    armName: "USD",
+    armName: "USDC",
     base: "PYUSD",
     blockTag,
   });

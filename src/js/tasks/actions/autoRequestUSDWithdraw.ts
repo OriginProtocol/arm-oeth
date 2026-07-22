@@ -10,7 +10,7 @@ const multiAssetARMAbi = require("../../../abis/MultiAssetARM.json");
 action({
   name: "autoRequestUSDWithdraw",
   description:
-    "Request and submit Paxos redemptions of PYUSD/USDG from the USD ARM",
+    "Request and submit Paxos redemptions of PYUSD/USDG from the USDC ARM",
   chains: [1],
   params: (t) =>
     t
@@ -35,7 +35,7 @@ action({
   run: async ({ signer, log, args }) => {
     const arm = new ethers.Contract(mainnet.usdARM, multiAssetARMAbi, signer);
 
-    log.info("Requesting USD ARM withdrawals via Paxos");
+    log.info("Requesting USDC ARM withdrawals via Paxos");
     await runForBases({
       bases: String(args.bases).split(","),
       actionName: "Requesting withdrawals",
@@ -43,7 +43,7 @@ action({
       options: {
         signer,
         arm,
-        armName: "USD",
+        armName: "USDC",
         minAmount: args.minAmount,
         thresholdAmount: args.thresholdAmount,
       },

@@ -32,7 +32,9 @@ contract Unit_PaxosAssetAdapter_Test is Test {
     uint256 internal constant ARM_PYUSD_BALANCE = 5_000e6;
 
     event PaxosRecipientUpdated(address indexed paxosRecipient);
+    event PaxosRedeemRequested(uint256 shares, uint256 assetsExpected);
     event PaxosRedeemSubmitted(bytes32 indexed paxosRedemptionId, uint256 shares, address indexed paxosRecipient);
+    event PaxosRedeemClaimed(uint256 shares, uint256 assetsExpected, uint256 assetsReceived);
     event ExcessLiquidityRecovered(address indexed to, uint256 amount);
 
     function setUp() public {
@@ -217,6 +219,8 @@ contract Unit_PaxosAssetAdapter_Test is Test {
     function test_RequestRedeem_PullsBaseAssetAndTracksPending() public {
         uint256 shares = 500e6;
 
+        vm.expectEmit(false, false, false, true, address(adapter));
+        emit PaxosRedeemRequested(shares, shares);
         vm.prank(arm);
         (uint256 sharesRequested, uint256 assetsExpected) = adapter.requestRedeem(shares);
 
@@ -329,6 +333,8 @@ contract Unit_PaxosAssetAdapter_Test is Test {
         // Simulate Paxos settling USDC 1:1 to the adapter.
         usdc.mint(address(adapter), shares);
 
+        vm.expectEmit(false, false, false, true, address(adapter));
+        emit PaxosRedeemClaimed(shares, shares, shares);
         vm.prank(arm);
         (uint256 sharesClaimed, uint256 assetsExpected, uint256 assetsReceived) = adapter.redeem(shares);
 

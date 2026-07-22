@@ -56,15 +56,15 @@ or 1,000 USDC respectively; an explicit `--amount` override is used as supplied.
 | `allocateEthena`            | `28 * * * *`  | Allocate liquidity for Ethena ARM          |
 | `setPricesEthena`           | `4 * * * *`   | Set prices for Ethena ARM                  |
 
-## USD ARM — mainnet
+## USDC ARM — mainnet
 
-| Action                   | Cron          | Description                                                         |
-| ------------------------ | ------------- | ------------------------------------------------------------------- |
-| `autoRequestUSDWithdraw` | `14 * * * *`  | Request and submit Paxos redemptions of PYUSD/USDG from the USD ARM |
-| `autoClaimUSDWithdraw`   | `44 * * * *`  | Claim USDC settled by Paxos redemptions for the USD ARM             |
-| `collectUSDFees`         | `50 23 * * *` | Collect fees from USD ARM                                           |
-| `allocateUSD`            | `26 * * * *`  | Allocate liquidity for USD ARM                                      |
-| `setPricesUSD`           | `6 * * * *`   | Set prices for USD ARM                                              |
+| Action                   | Cron          | Description                                                          |
+| ------------------------ | ------------- | -------------------------------------------------------------------- |
+| `autoRequestUSDWithdraw` | `14 * * * *`  | Request and submit Paxos redemptions of PYUSD/USDG from the USDC ARM |
+| `autoClaimUSDWithdraw`   | `44 * * * *`  | Claim USDC settled by Paxos redemptions for the USDC ARM             |
+| `collectUSDFees`         | `50 23 * * *` | Collect fees from USDC ARM                                           |
+| `allocateUSD`            | `26 * * * *`  | Allocate liquidity for USDC ARM                                      |
+| `setPricesUSD`           | `6 * * * *`   | Set prices for USDC ARM                                              |
 
 ## Origin ARM — Sonic
 
@@ -93,7 +93,7 @@ command before each run (see notes in `seed_schedules.sql`).
 | `pauseLido`                      | Pause the Lido ARM                                                     |
 | `pauseEtherFi`                   | Pause the EtherFi ARM                                                  |
 | `pauseEthena`                    | Pause the Ethena ARM                                                   |
-| `pauseUSD`                       | Pause the USD ARM                                                      |
+| `pauseUSD`                       | Pause the USDC ARM                                                     |
 | `claimRedeem`                    | Claim matured LP redeem requests on behalf of users (`--arm`, `--ids`) |
 | `setARMBufferAction`             | Set the ARM buffer (`--arm`, `--buffer`)                               |
 | `setLiquidityProviderCapsAction` | Set liquidity-provider caps (`--arm`, `--accounts`, `--cap`)           |

@@ -271,16 +271,6 @@ abstract contract Unit_Lido_Shared_Test is Base_Lido_Test {
         return _pendingRedeemAssets;
     }
 
-    function expectedBuySideFee(IERC20 token, uint256 amountOut) internal view returns (uint256) {
-        uint256 assetBuyPrice = buyPrice(token);
-        uint256 assetCrossPrice = crossPrice(token);
-        uint256 feeMultiplier = assetBuyPrice == 0
-            ? 0
-            : (assetCrossPrice - assetBuyPrice) * uint256(arm.fee()) * PRICE_SCALE / (assetBuyPrice * FEE_SCALE);
-
-        return amountOut * feeMultiplier / PRICE_SCALE;
-    }
-
     function seedWstETHWithTargetExchangeRate() internal {
         uint256 initialStETH = 100 ether;
         uint256 accruedStETHRewards = 23.7 ether;

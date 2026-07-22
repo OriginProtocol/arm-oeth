@@ -5,7 +5,7 @@ There are currently five ARM contracts:
 1. [Lido ARM](https://docs.originprotocol.com/automated-redemption-manager-arm/steth-arm) on Ethereum with stETH as the base asset and WETH as the liquidity asset.
 2. [EtherFi ARM](https://docs.originprotocol.com/automated-redemption-manager-arm/eeth-arm) on Ethereum with eETH as the base asset and WETH as the liquidity asset.
 3. [Ethena ARM](https://docs.originprotocol.com/automated-redemption-manager-arm/susde-arm) on Ethereum with sUSDe as the base asset and USDe as the liquidity asset.
-4. USD ARM on Ethereum with PYUSD and USDG as base assets and USDC as the liquidity asset.
+4. USDC ARM on Ethereum with PYUSD and USDG as base assets and USDC as the liquidity asset.
 5. [OS ARM](https://docs.originprotocol.com/os-arm) on Sonic with OS as the base asset and wS as the liquidity asset.
 
 ## Deployed Contracts
@@ -109,9 +109,9 @@ function getReserves() external view returns (uint256 reserve0, uint256 reserve1
 
 /**
  * @notice Get available liquidity and base asset reserves for a supported base asset.
- * @dev Applies to the Ethena and USD ARMs.
+ * @dev Applies to the Ethena and USDC ARMs.
  * For the Ethena ARM, reserveBaseAsset is sUSDe and liquidityAssets are USDe.
- * For the USD ARM, reserveBaseAsset is PYUSD or USDG and liquidityAssets are USDC.
+ * For the USDC ARM, reserveBaseAsset is PYUSD or USDG and liquidityAssets are USDC.
  * Liquidity assets are net of outstanding LP withdrawal claims.
  * @param reserveBaseAsset Supported base asset whose reserve should be returned.
  * @return liquidityAssets Available liquidity assets.

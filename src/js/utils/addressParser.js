@@ -13,10 +13,9 @@ const log = require("./logger")("utils:addressParser");
 const resolveArmContract = async (arm) => {
   const deployName = deployNameForArm(arm);
   const armAddress = await parseDeployedAddress(deployName);
-  const contractNameOrAbi =
-    normalizeArmName(arm) === "USD"
-      ? multiAssetARMAbi
-      : contractNameForArm(arm);
+  const contractNameOrAbi = ["USDC", "WETH"].includes(normalizeArmName(arm))
+    ? multiAssetARMAbi
+    : contractNameForArm(arm);
   const armContract = await ethers.getContractAt(contractNameOrAbi, armAddress);
 
   return armContract;

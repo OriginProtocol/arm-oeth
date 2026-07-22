@@ -153,7 +153,7 @@ contract Fork_Concrete_MultiAssetARM_swapTokensForExactTokens_Test_ is Fork_Shar
     function _swapBuyExact(IERC20 token) internal {
         uint256 buyPrice = _buyPrice(token);
         uint256 expectedAmountIn = _convertToShares(token, AMOUNT_OUT) * PRICE_SCALE / buyPrice + 3;
-        uint256 expectedFee = AMOUNT_OUT * _swapFeeMultiplier(buyPrice, _crossPrice(token), arm.fee()) / PRICE_SCALE;
+        uint256 expectedFee = _expectedBuySideFee(token, expectedAmountIn, AMOUNT_OUT);
 
         uint256 wethBefore = weth.balanceOf(address(this));
         uint256 baseBefore = token.balanceOf(address(this));

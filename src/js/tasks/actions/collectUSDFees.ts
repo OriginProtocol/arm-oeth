@@ -7,12 +7,12 @@ const multiAssetARMAbi = require("../../../abis/MultiAssetARM.json");
 
 action({
   name: "collectUSDFees",
-  description: "Collect fees from USD ARM",
+  description: "Collect fees from USDC ARM",
   chains: [1],
   run: async ({ signer, log }) => {
     const arm = new ethers.Contract(mainnet.usdARM, multiAssetARMAbi, signer);
 
-    log.info("Collecting fees from USD ARM");
+    log.info("Collecting fees from USDC ARM");
     await collectFees({ signer, arm, decimals: 6 });
   },
 });
