@@ -4,6 +4,7 @@ pragma solidity 0.8.23;
 import {Vm} from "forge-std/Vm.sol";
 import {Base_Test_} from "../base/Base.t.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 // Mocks
 import {MockERC20} from "@solmate/test/utils/mocks/MockERC20.sol";
@@ -17,11 +18,19 @@ abstract contract Helpers is Base_Test_ {
     ////////////////////////////////////////////////////
 
     modifier ensureSharePriceNotDecreased() {
+        uint256 marketRoundingLossBefore = sum_weth_marketRoundingLoss;
         uint256 priceBefore = lidoARM.totalAssets() * 1e18 / lidoARM.totalSupply();
         _;
-        uint256 priceAfter = lidoARM.totalAssets() * 1e18 / lidoARM.totalSupply();
+        uint256 totalSupplyAfter = lidoARM.totalSupply();
+        uint256 priceAfter = lidoARM.totalAssets() * 1e18 / totalSupplyAfter;
         // Allow 2 wei tolerance for ERC4626 convertToAssets rounding on split operations
-        require(priceAfter + 2 >= priceBefore, "SHARE_PRICE_DECREASED");
+        // plus the share-price impact of any market rounding loss tracked by the inner modifier.
+        if (priceAfter < priceBefore) {
+            uint256 marketRoundingLoss = sum_weth_marketRoundingLoss - marketRoundingLossBefore;
+            uint256 marketRoundingPriceTolerance =
+                Math.mulDiv(marketRoundingLoss, 1e18, totalSupplyAfter, Math.Rounding.Ceil);
+            require(priceBefore - priceAfter <= 2 + marketRoundingPriceTolerance, "SHARE_PRICE_DECREASED");
+        }
         ghost_lastSharePrice = priceAfter;
     }
 
