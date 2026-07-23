@@ -9,7 +9,7 @@ import { mainnet } from "../../utils/addresses";
 const multiAssetARMAbi = require("../../../abis/MultiAssetARM.json");
 
 action({
-  name: "setPricesUSD",
+  name: "setPricesUSDC",
   description: "Set prices for USDC ARM",
   chains: [1],
   // Price points are operator-overridable from the scheduled command in

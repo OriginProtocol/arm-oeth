@@ -8,7 +8,7 @@ import { mainnet } from "../../utils/addresses";
 const multiAssetARMAbi = require("../../../abis/MultiAssetARM.json");
 
 action({
-  name: "autoRequestUSDWithdraw",
+  name: "autoRequestUSDCWithdraw",
   description:
     "Request and submit Paxos redemptions of PYUSD/USDG from the USDC ARM",
   chains: [1],

@@ -6,7 +6,7 @@ import { mainnet } from "../../utils/addresses";
 const multiAssetARMAbi = require("../../../abis/MultiAssetARM.json");
 
 action({
-  name: "allocateUSD",
+  name: "allocateUSDC",
   description: "Allocate liquidity for USDC ARM",
   chains: [1],
   run: async ({ signer, log }) => {

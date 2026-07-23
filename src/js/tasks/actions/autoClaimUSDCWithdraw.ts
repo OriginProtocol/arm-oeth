@@ -8,7 +8,7 @@ import { mainnet } from "../../utils/addresses";
 const multiAssetARMAbi = require("../../../abis/MultiAssetARM.json");
 
 action({
-  name: "autoClaimUSDWithdraw",
+  name: "autoClaimUSDCWithdraw",
   description: "Claim USDC settled by Paxos redemptions for the USDC ARM",
   chains: [1],
   params: (t) =>
