@@ -16,15 +16,20 @@ Cron times are UTC. Enable state is managed in the database, not here.
 The mainnet `setPrices*` actions use `--amount` as the DEX swap amount when
 fetching the reference price quote. This is separate from `--buy-amount` and
 `--sell-amount`, which set the buy-side liquidity-asset and sell-side base-asset
-liquidity remaining on the Ethena and USDC ARMs. If omitted, each limit is set to
-the maximum `uint128` value. Liquidity amounts are integer native token units
-(for example, `100000000` is 100 tokens for an asset with 6 decimals).
+liquidity remaining on the Ethena, USDC, and WETH ARMs. If omitted, each limit is
+set to the maximum `uint128` value. Liquidity amounts are integer native token
+units (for example, `100000000` is 100 tokens for an asset with 6 decimals).
 
 `--buy-price` and `--sell-price` bypass DEX-derived pricing and set an exact
 pair. Both must be supplied together; `--amount` is not used in this mode.
 When the Ethena or USDC action derives `--amount` from withdrawable liquidity,
 it rounds the available amount up to the minimum DEX quote size of 1,000 USDe
 or 1,000 USDC respectively; an explicit `--amount` override is used as supplied.
+
+`setPricesWETH` uses the Lido pricing profile and 1Inch for `STETH,WSTETH`, and
+the EtherFi pricing profile and Kyber for `EETH,WEETH`. It processes all four
+bases unless `--bases` is supplied. Explicit price, liquidity, aggregator,
+range, tolerance, and quote-amount flags apply to every selected base.
 
 ## Lido ARM — mainnet
 
@@ -58,13 +63,25 @@ or 1,000 USDC respectively; an explicit `--amount` override is used as supplied.
 
 ## USDC ARM — mainnet
 
-| Action                   | Cron          | Description                                                          |
-| ------------------------ | ------------- | -------------------------------------------------------------------- |
+| Action                    | Cron          | Description                                                          |
+| ------------------------- | ------------- | -------------------------------------------------------------------- |
 | `autoRequestUSDCWithdraw` | `14 * * * *`  | Request and submit Paxos redemptions of PYUSD/USDG from the USDC ARM |
 | `autoClaimUSDCWithdraw`   | `44 * * * *`  | Claim USDC settled by Paxos redemptions for the USDC ARM             |
 | `collectUSDCFees`         | `50 23 * * *` | Collect fees from USDC ARM                                           |
 | `allocateUSDC`            | `26 * * * *`  | Allocate liquidity for USDC ARM                                      |
 | `setPricesUSDC`           | `6 * * * *`   | Set prices for USDC ARM                                              |
+
+## WETH ARM — mainnet
+
+| Action                           | Cron                    | Description                                    |
+| -------------------------------- | ----------------------- | ---------------------------------------------- |
+| `autoRequestWETHLidoWithdraw`    | `29,58 12-23,0-8 * * *` | Request stETH/wstETH withdrawals from WETH ARM |
+| `autoClaimWETHLidoWithdraw`      | `32 0,12 * * *`         | Claim stETH/wstETH withdrawals for WETH ARM    |
+| `autoRequestWETHEtherFiWithdraw` | `10,40 * * * *`         | Request eETH/weETH withdrawals from WETH ARM   |
+| `autoClaimWETHEtherFiWithdraw`   | `40 * * * *`            | Claim eETH/weETH withdrawals for WETH ARM      |
+| `collectWETHFees`                | `30 12 * * *`           | Collect fees from WETH ARM                     |
+| `allocateWETH`                   | `38,08 * * * *`         | Allocate liquidity for WETH ARM                |
+| `setPricesWETH`                  | `*/30 * * * *`          | Set prices for all four WETH ARM base assets   |
 
 ## Origin ARM — Sonic
 
@@ -88,10 +105,10 @@ or 1,000 USDC respectively; an explicit `--amount` override is used as supplied.
 Dispatched via "Run now"; the required flags are edited into the schedule's
 command before each run (see notes in `seed_schedules.sql`).
 
-| Action                           | Description                                                            |
-| -------------------------------- | ---------------------------------------------------------------------- |
-| `pause`                          | Pause an Ethereum ARM (`--arm lido`, `etherfi`, `ethena`, `oeth`, or `usdc`) |
-| `claimRedeem`                    | Claim matured LP redeem requests on behalf of users (`--arm`, `--ids`) |
-| `setARMBufferAction`             | Set the ARM buffer (`--arm`, `--buffer`)                               |
-| `setLiquidityProviderCapsAction` | Set liquidity-provider caps (`--arm`, `--accounts`, `--cap`)           |
-| `setTotalAssetsCapAction`        | Set the total-assets cap (`--arm`, `--cap`)                            |
+| Action                           | Description                                                                          |
+| -------------------------------- | ------------------------------------------------------------------------------------ |
+| `pause`                          | Pause an Ethereum ARM (`--arm lido`, `etherfi`, `ethena`, `oeth`, `usdc`, or `weth`) |
+| `claimRedeem`                    | Claim matured LP redeem requests on behalf of users (`--arm`, `--ids`)               |
+| `setARMBufferAction`             | Set the ARM buffer (`--arm`, `--buffer`)                                             |
+| `setLiquidityProviderCapsAction` | Set liquidity-provider caps (`--arm`, `--accounts`, `--cap`)                         |
+| `setTotalAssetsCapAction`        | Set the total-assets cap (`--arm`, `--cap`)                                          |

@@ -13,7 +13,7 @@ action({
     t
       .addParam(
         "arm",
-        "ARM to claim from: lido, etherfi, ethena, or usdc",
+        "ARM to claim from: lido, etherfi, ethena, usdc, or weth",
         undefined,
         types.string,
       )
@@ -27,7 +27,7 @@ action({
     const arm = resolveMainnetARM({
       arm: String(args.arm),
       signer,
-      supportedArms: ["lido", "etherfi", "ethena", "usdc"],
+      supportedArms: ["lido", "etherfi", "ethena", "usdc", "weth"],
     });
     await claimArmRedeems({
       arm: arm.contract,

@@ -11,7 +11,7 @@ action({
   params: (t) =>
     t.addParam(
       "arm",
-      "ARM to pause: lido, etherfi, ethena, oeth, or usdc",
+      "ARM to pause: lido, etherfi, ethena, oeth, usdc, or weth",
       undefined,
       types.string,
     ),
