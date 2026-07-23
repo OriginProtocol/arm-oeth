@@ -14,6 +14,16 @@ const {
 
 const log = require("../utils/logger")("task:admin");
 
+async function liquidityAssetDecimals(arm, signer) {
+  const liquidityAssetAddress = await arm.liquidityAsset();
+  const liquidityAsset = new ethers.Contract(
+    liquidityAssetAddress,
+    ["function decimals() view returns (uint8)"],
+    signer,
+  );
+  return Number(await liquidityAsset.decimals());
+}
+
 async function limitGasPrice(signer, maxGasPriceGwei) {
   const { gasPrice } = await signer.provider.getFeeData();
   const maxGasPrice = parseUnits(maxGasPriceGwei.toString(), "gwei");
@@ -38,8 +48,6 @@ async function allocate({
   threshold,
   execute = true,
   maxGasPrice: maxGasPriceGwei = 10,
-  // Decimals of the ARM's liquidity asset. eg 18 for WETH, 6 for USDC.
-  decimals = 18,
   // Omitted (undefined) means auto-detect the ARM contract version.
   armContractVersion = /** @type {string | undefined} */ (undefined),
 }) {
@@ -53,6 +61,8 @@ async function allocate({
     log("Skipping allocation due to high gas price");
     return;
   }
+
+  const decimals = await liquidityAssetDecimals(arm, signer);
 
   let liquidityDelta;
   if (armContractVersion === "v1") {
@@ -126,7 +136,9 @@ async function allocate({
   }
 }
 
-async function collectFees({ arm, signer, decimals = 18 }) {
+async function collectFees({ arm, signer }) {
+  const decimals = await liquidityAssetDecimals(arm, signer);
+
   // Get the amount of fees to be collected
   const fees = await arm.feesAccrued();
   const outstanding = await getOutstandingWithdrawals(arm);

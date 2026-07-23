@@ -6,13 +6,13 @@ import { mainnet } from "../../utils/addresses";
 const multiAssetARMAbi = require("../../../abis/MultiAssetARM.json");
 
 action({
-  name: "collectUSDFees",
+  name: "collectUSDCFees",
   description: "Collect fees from USDC ARM",
   chains: [1],
   run: async ({ signer, log }) => {
-    const arm = new ethers.Contract(mainnet.usdARM, multiAssetARMAbi, signer);
+    const arm = new ethers.Contract(mainnet.usdcARM, multiAssetARMAbi, signer);
 
     log.info("Collecting fees from USDC ARM");
-    await collectFees({ signer, arm, decimals: 6 });
+    await collectFees({ signer, arm });
   },
 });

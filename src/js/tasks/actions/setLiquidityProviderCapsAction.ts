@@ -12,7 +12,7 @@ action({
     t
       .addParam(
         "arm",
-        "ARM to set liquidity provider caps for: lido, etherfi, ethena, oeth, or usd",
+        "ARM to set liquidity provider caps for: lido, etherfi, ethena, oeth, or usdc",
         undefined,
         types.string,
       )
@@ -33,9 +33,7 @@ action({
       arm: String(args.arm),
       signer,
     });
-    log.info(
-      `Setting ${arm.name} ARM liquidity provider caps to ${args.cap}`,
-    );
+    log.info(`Setting ${arm.name} ARM liquidity provider caps to ${args.cap}`);
     await setLiquidityProviderCaps({
       signer,
       arm: arm.contract,

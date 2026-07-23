@@ -8,7 +8,6 @@ const ARM_NAME_ALIASES = {
   origin: "Origin",
   eth: "WETH",
   weth: "WETH",
-  usd: "USDC",
   usdc: "USDC",
 };
 
@@ -29,6 +28,9 @@ const normalizeArmName = (arm) => {
   if (!arm) return arm;
   const armName = arm.toString();
   const normalized = armName.replace(/\s+/g, "").toLowerCase();
+  if (normalized === "usd") {
+    throw new Error('Unsupported ARM "usd" (use usdc)');
+  }
   return ARM_NAME_ALIASES[normalized] ?? armName;
 };
 

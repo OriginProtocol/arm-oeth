@@ -1,4 +1,4 @@
-const { parseUnits, MaxInt256 } = require("ethers");
+const { Contract, parseUnits, MaxInt256 } = require("ethers");
 
 const { resolveAddress } = require("../utils/assets");
 const {
@@ -11,6 +11,15 @@ const { logTxDetails } = require("../utils/txLogger");
 const { resolveArmContract } = require("../utils/addressParser");
 
 const log = require("../utils/logger")("task:swap");
+
+const tokenDecimals = async (tokenAddress, signer) =>
+  Number(
+    await new Contract(
+      tokenAddress,
+      ["function decimals() view returns (uint8)"],
+      signer,
+    ).decimals(),
+  );
 
 const swap = async ({ arm, from, to, amount, base }) => {
   if (from && to) {
@@ -29,7 +38,8 @@ const swap = async ({ arm, from, to, amount, base }) => {
     const to = otherSymbol(arm, from, base);
     const toAddress = await resolveAddress(to);
 
-    const fromAmount = parseUnits(amount.toString(), 18);
+    const fromDecimals = await tokenDecimals(fromAddress, signer);
+    const fromAmount = parseUnits(amount.toString(), fromDecimals);
 
     log(`About to swap ${amount} ${from} to ${to} for ${signerAddress}`);
 
@@ -46,7 +56,8 @@ const swap = async ({ arm, from, to, amount, base }) => {
 
     const toAddress = await resolveAddress(to);
 
-    const toAmount = parseUnits(amount.toString(), 18);
+    const toDecimals = await tokenDecimals(toAddress, signer);
+    const toAmount = parseUnits(amount.toString(), toDecimals);
 
     log(`About to swap ${from} to ${amount} ${to} for ${signerAddress}`);
 
