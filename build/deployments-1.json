@@ -113,38 +113,6 @@
             "name": "ETHENA_ARM_SUSDE_ADAPTER"
         },
         {
-            "implementation": "0x5c68a604d39A639C0b8CC115f0823C50272CF13a",
-            "name": "USD_ARM"
-        },
-        {
-            "implementation": "0xAAB4F9e842e5D34ec61B1DBAAE8EBa4559F0eEF6",
-            "name": "USD_ARM_CAP_MAN"
-        },
-        {
-            "implementation": "0x70A7Af16c180141839656d571ff4ef3be155c48e",
-            "name": "USD_ARM_CAP_IMPL"
-        },
-        {
-            "implementation": "0x1405CDB24f93A60d023400cb03787bB8576EE490",
-            "name": "USD_ARM_IMPL"
-        },
-        {
-            "implementation": "0x50223D4f7c027DF74939555E92584C6332c613B2",
-            "name": "USD_ARM_PYUSD_ADAPTER_IMPL"
-        },
-        {
-            "implementation": "0x0C9ac6D63B2b2A1b502E29eC47a53d0966Ea9465",
-            "name": "USD_ARM_PYUSD_ADAPTER"
-        },
-        {
-            "implementation": "0x7c4c0B599E17C3Ad4ae37Ba61Eef50980e13203B",
-            "name": "USD_ARM_USDG_ADAPTER_IMPL"
-        },
-        {
-            "implementation": "0xAb98aC901B8A26636d9cf3Cf38d9aCdcD045788f",
-            "name": "USD_ARM_USDG_ADAPTER"
-        },
-        {
             "implementation": "0xB9B85dFEe7E53654180C28427a4B3dF46d4b988A",
             "name": "ETH_ARM"
         },
@@ -239,6 +207,38 @@
         {
             "implementation": "0xD5F61bFd890169c28858039f6b6c9b517407C852",
             "name": "WETH_ARM_WEETH_ADAPTER"
+        },
+        {
+            "implementation": "0x9E3A7026E5767F2d7Ff5e83b0ed011005f45a170",
+            "name": "USDC_ARM"
+        },
+        {
+            "implementation": "0x19B1Edb2caD902F103a20A30011f125DCe44F954",
+            "name": "USDC_ARM_CAP_MAN"
+        },
+        {
+            "implementation": "0xDdF1954db1Ace4a58E07a4D25C0818aC977cb8bd",
+            "name": "USDC_ARM_CAP_IMPL"
+        },
+        {
+            "implementation": "0xef40f3548ec3277ade0eb88DbB80ebF63Ea59a96",
+            "name": "USDC_ARM_IMPL"
+        },
+        {
+            "implementation": "0x0bD1bE3B983DE582291dc16DFB123C74dcd65ae8",
+            "name": "USDC_ARM_PYUSD_ADAPTER_IMPL"
+        },
+        {
+            "implementation": "0x0C9ac6D63B2b2A1b502E29eC47a53d0966Ea9465",
+            "name": "USDC_ARM_PYUSD_ADAPTER"
+        },
+        {
+            "implementation": "0xB4723D7a5724D6Ce35AACf6c3A6E6E2BeE0c2E05",
+            "name": "USDC_ARM_USDG_ADAPTER_IMPL"
+        },
+        {
+            "implementation": "0xAb98aC901B8A26636d9cf3Cf38d9aCdcD045788f",
+            "name": "USDC_ARM_USDG_ADAPTER"
         }
     ],
     "executions": [
@@ -442,6 +442,12 @@
         },
         {
             "name": "038_DeployWETHARMScript",
+            "proposalId": 1,
+            "tsDeployment": 1784724659,
+            "tsGovernance": 1
+        },
+        {
+            "name": "039_DeployUSDCARMScript",
             "proposalId": 1,
             "tsDeployment": 1784724659,
             "tsGovernance": 1

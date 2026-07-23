@@ -127,6 +127,8 @@ abstract contract Base_Test_ is Test {
 
     // Market yield accrued to ARM
     uint256 internal sum_weth_marketYield;
+    // WETH value lost to bounded ERC4626 rounding while interacting with lending markets
+    uint256 internal sum_weth_marketRoundingLoss;
 
     // Share price tracking
     uint256 internal ghost_lastSharePrice;

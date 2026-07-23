@@ -8,7 +8,7 @@ import { mainnet } from "../../utils/addresses";
 const multiAssetARMAbi = require("../../../abis/MultiAssetARM.json");
 
 action({
-  name: "autoClaimUSDWithdraw",
+  name: "autoClaimUSDCWithdraw",
   description: "Claim USDC settled by Paxos redemptions for the USDC ARM",
   chains: [1],
   params: (t) =>
@@ -26,7 +26,7 @@ action({
         types.float,
       ),
   run: async ({ signer, log, args }) => {
-    const arm = new ethers.Contract(mainnet.usdARM, multiAssetARMAbi, signer);
+    const arm = new ethers.Contract(mainnet.usdcARM, multiAssetARMAbi, signer);
 
     log.info("Claiming USDC ARM withdrawals settled by Paxos");
     await runForBases({

@@ -118,7 +118,7 @@ contract $039_DeployUSDCARMScript is AbstractDeployScript("039_DeployUSDCARMScri
         {
             PaxosAssetAdapter adapterImpl = new PaxosAssetAdapter(address(armProxy), Mainnet.PYUSD, Mainnet.USDC);
             _recordDeployment("USDC_ARM_PYUSD_ADAPTER_IMPL", address(adapterImpl));
-            Proxy adapterProxy = Proxy(payable(resolver.resolve("USD_ARM_PYUSD_ADAPTER")));
+            Proxy adapterProxy = Proxy(payable(resolver.resolve("USDC_ARM_PYUSD_ADAPTER")));
             _recordDeployment("USDC_ARM_PYUSD_ADAPTER", address(adapterProxy));
             arm.addBaseAsset(
                 Mainnet.PYUSD,
@@ -137,7 +137,7 @@ contract $039_DeployUSDCARMScript is AbstractDeployScript("039_DeployUSDCARMScri
         {
             PaxosAssetAdapter adapterImpl = new PaxosAssetAdapter(address(armProxy), Mainnet.USDG, Mainnet.USDC);
             _recordDeployment("USDC_ARM_USDG_ADAPTER_IMPL", address(adapterImpl));
-            Proxy adapterProxy = Proxy(payable(resolver.resolve("USD_ARM_USDG_ADAPTER")));
+            Proxy adapterProxy = Proxy(payable(resolver.resolve("USDC_ARM_USDG_ADAPTER")));
             _recordDeployment("USDC_ARM_USDG_ADAPTER", address(adapterProxy));
             arm.addBaseAsset(
                 Mainnet.USDG,

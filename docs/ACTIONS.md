@@ -1,6 +1,6 @@
 # Talos scheduled actions
 
-Hardhat tasks the Talos runner (`runner.ts` → `@talos/client`) runs on a cron
+Hardhat tasks the Talos runner (`runner.ts` → `@oplabs/talos-client`) runs on a cron
 schedule, or on demand via the "Run now" button in the Talos admin UI. Each
 action is defined in [`src/js/tasks/actions/<name>.ts`](../src/js/tasks/actions);
 the canonical schedule — cron, enabled state, and per-row operational notes —
@@ -60,11 +60,11 @@ or 1,000 USDC respectively; an explicit `--amount` override is used as supplied.
 
 | Action                   | Cron          | Description                                                          |
 | ------------------------ | ------------- | -------------------------------------------------------------------- |
-| `autoRequestUSDWithdraw` | `14 * * * *`  | Request and submit Paxos redemptions of PYUSD/USDG from the USDC ARM |
-| `autoClaimUSDWithdraw`   | `44 * * * *`  | Claim USDC settled by Paxos redemptions for the USDC ARM             |
-| `collectUSDFees`         | `50 23 * * *` | Collect fees from USDC ARM                                           |
-| `allocateUSD`            | `26 * * * *`  | Allocate liquidity for USDC ARM                                      |
-| `setPricesUSD`           | `6 * * * *`   | Set prices for USDC ARM                                              |
+| `autoRequestUSDCWithdraw` | `14 * * * *`  | Request and submit Paxos redemptions of PYUSD/USDG from the USDC ARM |
+| `autoClaimUSDCWithdraw`   | `44 * * * *`  | Claim USDC settled by Paxos redemptions for the USDC ARM             |
+| `collectUSDCFees`         | `50 23 * * *` | Collect fees from USDC ARM                                           |
+| `allocateUSDC`            | `26 * * * *`  | Allocate liquidity for USDC ARM                                      |
+| `setPricesUSDC`           | `6 * * * *`   | Set prices for USDC ARM                                              |
 
 ## Origin ARM — Sonic
 
@@ -90,10 +90,7 @@ command before each run (see notes in `seed_schedules.sql`).
 
 | Action                           | Description                                                            |
 | -------------------------------- | ---------------------------------------------------------------------- |
-| `pauseLido`                      | Pause the Lido ARM                                                     |
-| `pauseEtherFi`                   | Pause the EtherFi ARM                                                  |
-| `pauseEthena`                    | Pause the Ethena ARM                                                   |
-| `pauseUSD`                       | Pause the USDC ARM                                                     |
+| `pause`                          | Pause an Ethereum ARM (`--arm lido`, `etherfi`, `ethena`, `oeth`, or `usdc`) |
 | `claimRedeem`                    | Claim matured LP redeem requests on behalf of users (`--arm`, `--ids`) |
 | `setARMBufferAction`             | Set the ARM buffer (`--arm`, `--buffer`)                               |
 | `setLiquidityProviderCapsAction` | Set liquidity-provider caps (`--arm`, `--accounts`, `--cap`)           |

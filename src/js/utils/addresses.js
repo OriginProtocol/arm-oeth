@@ -33,7 +33,7 @@ addresses.mainnet.OethARM = "0x6bac785889A4127dB0e0CeFEE88E0a9F1Aaf3cC7";
 addresses.mainnet.lidoARM = "0x85B78AcA6Deae198fBF201c82DAF6Ca21942acc6";
 addresses.mainnet.etherfiARM = "0xfB0A3CF9B019BFd8827443d131b235B3E0FC58d2";
 addresses.mainnet.ethenaARM = "0xCEDa2d856238aA0D12f6329de20B9115f07C366d";
-addresses.mainnet.usdARM = "0x5c68a604d39A639C0b8CC115f0823C50272CF13a";
+addresses.mainnet.usdcARM = "0x9E3A7026E5767F2d7Ff5e83b0ed011005f45a170";
 
 // Lido
 addresses.mainnet.lidoWithdrawalQueue =

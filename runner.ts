@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 
-import { type ActionsCatalog, runContainer } from "@talos/client";
+import { type ActionsCatalog, runContainer } from "@oplabs/talos-client";
 
 // The catalog is dumped at image build time by docker/dump-actions-catalog.cjs
 // (Node, where hardhat works). Reading it here keeps the runner's bun parent
