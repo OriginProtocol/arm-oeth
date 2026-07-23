@@ -33,7 +33,7 @@ action({
         types.float,
       ),
   run: async ({ signer, log, args }) => {
-    const arm = new ethers.Contract(mainnet.usdARM, multiAssetARMAbi, signer);
+    const arm = new ethers.Contract(mainnet.usdcARM, multiAssetARMAbi, signer);
 
     log.info("Requesting USDC ARM withdrawals via Paxos");
     await runForBases({
