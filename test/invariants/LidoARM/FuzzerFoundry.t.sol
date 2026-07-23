@@ -120,6 +120,25 @@ contract FuzzerFoundry_LidoARM is Properties {
         assertEq(maxWethBalanceDrift(), 0, "unaccounted WETH drift");
     }
 
+    function test_setActiveMarketAllowsTrackedThreeWeiRoundingLoss() public {
+        uint256 targetArmWeth = 1_725_354_192_264_043_820;
+        targetDonate(targetArmWeth - weth.balanceOf(address(lidoARM)), 0);
+
+        // At this market share price, depositing all ARM liquidity loses 3 wei when the minted
+        // market shares are converted back to assets. This is within one market share of rounding.
+        deal(address(weth), address(mockERC4626Market_A), 21_842_260_027_410_998_593_879);
+
+        uint256 assetsBefore = lidoARM.totalAssets();
+        uint256 priceBefore = assetsBefore * 1e18 / lidoARM.totalSupply();
+        targetSetActiveMarket(0);
+        uint256 assetsAfter = lidoARM.totalAssets();
+        uint256 priceAfter = assetsAfter * 1e18 / lidoARM.totalSupply();
+
+        assertEq(assetsBefore - assetsAfter, 3, "market rounding loss");
+        assertEq(priceBefore - priceAfter, 3, "share price rounding loss");
+        assertEq(sum_weth_marketRoundingLoss, 3, "tracked market rounding loss");
+    }
+
     /// @notice Optimization: fuzzer maximizes the worst-case LP rounding loss.
     function invariant_optimize_maxLpLoss() public view returns (int256) {
         return maxLpLoss();
