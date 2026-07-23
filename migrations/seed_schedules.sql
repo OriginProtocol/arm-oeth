@@ -3,8 +3,8 @@
 -- Commands match the original cron/cron-jobs.ts; the container's runContainer
 -- spawns them via sh -c in workdir /app.
 
--- Remove schedules for the superseded USD ARM. Their USDC ARM replacements
--- are inserted below.
+-- Remove schedules for the superseded USD ARM and the per-ARM pause actions.
+-- Their USDC and shared-action replacements are inserted below.
 DELETE FROM schedules
 WHERE product = 'arm-oeth'
   AND name IN (
@@ -13,7 +13,11 @@ WHERE product = 'arm-oeth'
     'mainnet_collect_usd_fees',
     'mainnet_allocate_usd',
     'mainnet_set_prices_usd',
-    'mainnet_pause_usd'
+    'mainnet_pause_usd',
+    'mainnet_pause_lido',
+    'mainnet_pause_etherfi',
+    'mainnet_pause_ethena',
+    'mainnet_pause_usdc'
   );
 
 INSERT INTO schedules (product, name, command, cron_expr, timezone, enabled, note) VALUES
@@ -38,12 +42,10 @@ INSERT INTO schedules (product, name, command, cron_expr, timezone, enabled, not
 ('arm-oeth', 'mainnet_set_prices_etherfi',           'cd /app && pnpm hardhat setPricesEtherFi --network mainnet',                '2,32 * * * *',          'UTC', false, NULL),
 ('arm-oeth', 'mainnet_set_prices_ethena',            'cd /app && pnpm hardhat setPricesEthena --network mainnet',                 '4 * * * *',             'UTC', false, NULL),
 ('arm-oeth', 'mainnet_set_prices_usdc',              'cd /app && pnpm hardhat setPricesUSDC --network mainnet',                   '6 * * * *',             'UTC', false, NULL),
--- Emergency pause actions: manual-only (enabled=false). Triggered via the UI
--- "Run now" button; cron_expr is a placeholder and never fires while disabled.
-('arm-oeth', 'mainnet_pause_lido',                   'cd /app && pnpm hardhat pauseLido --network mainnet',                       '0 0 * * *',             'UTC', false, NULL),
-('arm-oeth', 'mainnet_pause_etherfi',                'cd /app && pnpm hardhat pauseEtherFi --network mainnet',                    '0 0 * * *',             'UTC', false, NULL),
-('arm-oeth', 'mainnet_pause_ethena',                 'cd /app && pnpm hardhat pauseEthena --network mainnet',                     '0 0 * * *',             'UTC', false, NULL),
-('arm-oeth', 'mainnet_pause_usdc',                   'cd /app && pnpm hardhat pause --arm usdc --network mainnet',                 '0 0 * * *',             'UTC', false, NULL),
+-- Emergency pause action: manual-only (enabled=false). Edit `--arm` before
+-- using "Run now". The supported Ethereum ARMs are lido, etherfi, ethena,
+-- oeth, and usdc. cron_expr is a placeholder and never fires while disabled.
+('arm-oeth', 'Pause ARM - Mainnet',                  'cd /app && pnpm hardhat pause --arm lido --network mainnet',                 '0 0 * * *',             'UTC', false, NULL),
 -- LP redeem claims on behalf of users: manual-only (enabled=false). The runner
 -- dispatches `command` verbatim, so the required `--arm` and `--ids` flags must
 -- be set before running, by editing this row's command. `lido` and `0` below are

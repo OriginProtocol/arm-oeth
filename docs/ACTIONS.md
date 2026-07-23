@@ -90,10 +90,7 @@ command before each run (see notes in `seed_schedules.sql`).
 
 | Action                           | Description                                                            |
 | -------------------------------- | ---------------------------------------------------------------------- |
-| `pauseLido`                      | Pause the Lido ARM                                                     |
-| `pauseEtherFi`                   | Pause the EtherFi ARM                                                  |
-| `pauseEthena`                    | Pause the Ethena ARM                                                   |
-| `pause --arm usdc`              | Pause the USDC ARM                                                     |
+| `pause`                          | Pause an Ethereum ARM (`--arm lido`, `etherfi`, `ethena`, `oeth`, or `usdc`) |
 | `claimRedeem`                    | Claim matured LP redeem requests on behalf of users (`--arm`, `--ids`) |
 | `setARMBufferAction`             | Set the ARM buffer (`--arm`, `--buffer`)                               |
 | `setLiquidityProviderCapsAction` | Set liquidity-provider caps (`--arm`, `--accounts`, `--cap`)           |
