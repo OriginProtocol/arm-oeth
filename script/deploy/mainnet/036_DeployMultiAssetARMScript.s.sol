@@ -34,6 +34,9 @@ contract $036_DeployMultiAssetARMScript is AbstractDeployScript("036_DeployMulti
     /// 1e36 = ARM charges 1 WETH per base asset sold to traders (must stay at/above cross)
     uint256 internal constant SELL_PRICE = 1e36;
 
+    // Legacy deploy code. Replaced by 038_DeployWETHARMScript.s.sol.
+    bool public constant override skip = true;
+
     function _execute() internal override {
         // 1. Deploy the ARM proxy.
         Proxy armProxy = new Proxy();

@@ -40,6 +40,16 @@ interface IEtherFiLiquidityPool {
     function deposit() external payable returns (uint256);
 }
 
+/// @notice Minimal eETH view used to locate EtherFi's global mint/burn rate limiter.
+interface IEtherFiRateLimitedToken {
+    function rateLimiter() external view returns (address);
+}
+
+/// @notice Minimal EtherFi rate-limiter interface used while acquiring backed eETH for tests.
+interface IEtherFiRateLimiter {
+    function consumeToken(bytes32 id, uint64 amount) external;
+}
+
 /// @notice Shared fork setup for the MultiAssetARM suite. Deploys a single MultiAssetARM (WETH
 ///         liquidity) with the four Lido/EtherFi base assets and their adapters wired to the real
 ///         mainnet protocol contracts. Mirrors the structure of test/fork/EthenaARM/shared/Shared.sol.
@@ -263,7 +273,15 @@ abstract contract Fork_Shared_Test is Base_Test_ {
         } else if (token == address(eeth)) {
             uint256 depositAmount = amount + 1 ether;
             vm.deal(address(this), address(this).balance + depositAmount);
+
+            // eETH mints now consume a live, protocol-wide rate-limit bucket. Fork tests must not
+            // depend on capacity left by unrelated mainnet deposits, nor consume that capacity just
+            // to seed test balances. Mock only the limiter call during this backed EtherFi deposit,
+            // then restore all calls before exercising the ARM and withdrawal paths.
+            address rateLimiter = IEtherFiRateLimitedToken(address(eeth)).rateLimiter();
+            vm.mockCall(rateLimiter, abi.encodeWithSelector(IEtherFiRateLimiter.consumeToken.selector), abi.encode());
             IEtherFiLiquidityPool(Mainnet.ETHERFI_LIQUIDITY_POOL).deposit{value: depositAmount}();
+            vm.clearMockedCalls();
             eeth.transfer(to, amount);
         } else {
             super.deal(token, to, amount);
