@@ -191,6 +191,38 @@
         {
             "implementation": "0xf9cEDb3154c6502328C7B09c773a43a0b9C801eb",
             "name": "ETH_ARM_WEETH_ADAPTER"
+        },
+        {
+            "implementation": "0x9E3A7026E5767F2d7Ff5e83b0ed011005f45a170",
+            "name": "USDC_ARM"
+        },
+        {
+            "implementation": "0x19B1Edb2caD902F103a20A30011f125DCe44F954",
+            "name": "USDC_ARM_CAP_MAN"
+        },
+        {
+            "implementation": "0xDdF1954db1Ace4a58E07a4D25C0818aC977cb8bd",
+            "name": "USDC_ARM_CAP_IMPL"
+        },
+        {
+            "implementation": "0xef40f3548ec3277ade0eb88DbB80ebF63Ea59a96",
+            "name": "USDC_ARM_IMPL"
+        },
+        {
+            "implementation": "0x0bD1bE3B983DE582291dc16DFB123C74dcd65ae8",
+            "name": "USDC_ARM_PYUSD_ADAPTER_IMPL"
+        },
+        {
+            "implementation": "0x0C9ac6D63B2b2A1b502E29eC47a53d0966Ea9465",
+            "name": "USDC_ARM_PYUSD_ADAPTER"
+        },
+        {
+            "implementation": "0xB4723D7a5724D6Ce35AACf6c3A6E6E2BeE0c2E05",
+            "name": "USDC_ARM_USDG_ADAPTER_IMPL"
+        },
+        {
+            "implementation": "0xAb98aC901B8A26636d9cf3Cf38d9aCdcD045788f",
+            "name": "USDC_ARM_USDG_ADAPTER"
         }
     ],
     "executions": [
@@ -390,6 +422,12 @@
             "name": "036_DeployMultiAssetARMScript",
             "proposalId": 1,
             "tsDeployment": 1783504775,
+            "tsGovernance": 1
+        },
+        {
+            "name": "039_DeployUSDCARMScript",
+            "proposalId": 1,
+            "tsDeployment": 1784724659,
             "tsGovernance": 1
         }
     ]
