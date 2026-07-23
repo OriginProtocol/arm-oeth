@@ -42,9 +42,16 @@ INSERT INTO schedules (product, name, command, cron_expr, timezone, enabled, not
 ('arm-oeth', 'mainnet_set_prices_etherfi',           'cd /app && pnpm hardhat setPricesEtherFi --network mainnet',                '2,32 * * * *',          'UTC', false, NULL),
 ('arm-oeth', 'mainnet_set_prices_ethena',            'cd /app && pnpm hardhat setPricesEthena --network mainnet',                 '4 * * * *',             'UTC', false, NULL),
 ('arm-oeth', 'mainnet_set_prices_usdc',              'cd /app && pnpm hardhat setPricesUSDC --network mainnet',                   '6 * * * *',             'UTC', false, NULL),
+('arm-oeth', 'mainnet_auto_request_weth_lido_withdraw',   'cd /app && pnpm hardhat autoRequestWETHLidoWithdraw --network mainnet',    '29,58 12-23,0-8 * * *', 'UTC', false, NULL),
+('arm-oeth', 'mainnet_auto_claim_weth_lido_withdraw',     'cd /app && pnpm hardhat autoClaimWETHLidoWithdraw --network mainnet',      '32 0,12 * * *',         'UTC', false, NULL),
+('arm-oeth', 'mainnet_auto_request_weth_etherfi_withdraw','cd /app && pnpm hardhat autoRequestWETHEtherFiWithdraw --network mainnet', '10,40 * * * *',         'UTC', false, NULL),
+('arm-oeth', 'mainnet_auto_claim_weth_etherfi_withdraw',  'cd /app && pnpm hardhat autoClaimWETHEtherFiWithdraw --network mainnet',   '40 * * * *',            'UTC', false, NULL),
+('arm-oeth', 'mainnet_collect_weth_fees',                 'cd /app && pnpm hardhat collectWETHFees --network mainnet',                '30 12 * * *',           'UTC', false, NULL),
+('arm-oeth', 'mainnet_allocate_weth',                     'cd /app && pnpm hardhat allocateWETH --network mainnet',                   '38,08 * * * *',         'UTC', false, NULL),
+('arm-oeth', 'mainnet_set_prices_weth',                   'cd /app && pnpm hardhat setPricesWETH --network mainnet',                  '*/30 * * * *',          'UTC', false, NULL),
 -- Emergency pause action: manual-only (enabled=false). Edit `--arm` before
 -- using "Run now". The supported Ethereum ARMs are lido, etherfi, ethena,
--- oeth, and usdc. cron_expr is a placeholder and never fires while disabled.
+-- oeth, usdc, and weth. cron_expr is a placeholder and never fires while disabled.
 ('arm-oeth', 'Pause ARM - Mainnet',                  'cd /app && pnpm hardhat pause --arm lido --network mainnet',                 '0 0 * * *',             'UTC', false, NULL),
 -- LP redeem claims on behalf of users: manual-only (enabled=false). The runner
 -- dispatches `command` verbatim, so the required `--arm` and `--ids` flags must

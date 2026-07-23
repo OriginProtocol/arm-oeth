@@ -80,7 +80,7 @@ subtask(
 )
   .addParam(
     "arm",
-    "Name of the ARM. eg Lido, Origin, EtherFi, Ethena or USDC",
+    "Name of the ARM. eg Lido, Origin, EtherFi, Ethena, USDC or WETH",
     "Lido",
     types.string,
   )
@@ -492,7 +492,7 @@ task("redeemAll").setAction(async (_, __, runSuper) => {
 subtask("depositARM", "Deposit to an ARM and receive ARM LP tokens")
   .addParam(
     "arm",
-    "Name of the ARM. eg Lido, Origin, EtherFi, Ethena or USDC",
+    "Name of the ARM. eg Lido, Origin, EtherFi, Ethena, USDC or WETH",
     "Lido",
     types.string,
   )
@@ -517,7 +517,7 @@ task("depositARM").setAction(async (_, __, runSuper) => {
 subtask("requestRedeemARM", "Request redeem from an ARM")
   .addParam(
     "arm",
-    "Name of the ARM. eg Lido, Origin, EtherFi, Ethena or USDC",
+    "Name of the ARM. eg Lido, Origin, EtherFi, Ethena, USDC or WETH",
     "Lido",
     types.string,
   )
@@ -536,7 +536,7 @@ task("requestRedeemARM").setAction(async (_, __, runSuper) => {
 subtask("claimRedeemARM", "Claim from a previously requested ARM redeem")
   .addParam(
     "arm",
-    "Name of the ARM. eg Lido, Origin, EtherFi, Ethena or USDC",
+    "Name of the ARM. eg Lido, Origin, EtherFi, Ethena, USDC or WETH",
     "Lido",
     types.string,
   )
@@ -552,7 +552,7 @@ task("claimRedeemARM").setAction(async (_, __, runSuper) => {
 subtask("setLiquidityProviderCaps", "Set deposit cap for liquidity providers")
   .addParam(
     "arm",
-    "Name of the ARM. eg Lido, EtherFi, Ethena or USDC",
+    "Name of the ARM. eg Lido, EtherFi, Ethena, USDC or WETH",
     undefined,
     types.string,
   )
@@ -576,7 +576,7 @@ task("setLiquidityProviderCaps").setAction(async (_, __, runSuper) => {
 subtask("setTotalAssetsCap", "Set total assets cap")
   .addParam(
     "arm",
-    "Name of the ARM. eg Lido, EtherFi, Ethena or USDC",
+    "Name of the ARM. eg Lido, EtherFi, Ethena, USDC or WETH",
     undefined,
     types.string,
   )
@@ -593,10 +593,10 @@ task("setTotalAssetsCap").setAction(async (_, __, runSuper) => {
 
 // Lido
 
-subtask("setPrices", "Update Lido ARM's swap prices")
+subtask("setPrices", "Update an ARM's swap prices")
   .addOptionalParam(
     "arm",
-    "The name of the ARM. eg Lido, Origin, EtherFi or Ethena",
+    "The name of the ARM. eg Lido, Origin, EtherFi, Ethena, USDC or WETH",
     "Lido",
     types.string,
   )
@@ -856,7 +856,7 @@ task("lidoWithdrawStatus").setAction(async (_, __, runSuper) => {
 subtask("collectFees", "Collect the performance fees from an ARM")
   .addOptionalParam(
     "arm",
-    "The name of the ARM. eg Lido, Origin, EtherFi or Ethena",
+    "The name of the ARM. eg Lido, Origin, EtherFi, Ethena, USDC or WETH",
     "Lido",
     types.string,
   )
@@ -969,7 +969,7 @@ task("setHarvester").setAction(async (_, __, runSuper) => {
 subtask("allocate", "Allocate to/from the active lending market")
   .addOptionalParam(
     "arm",
-    "The name of the ARM. eg Lido, Origin, EtherFi or Ethena",
+    "The name of the ARM. eg Lido, Origin, EtherFi, Ethena, USDC or WETH",
     "Origin",
     types.string,
   )
@@ -1006,7 +1006,7 @@ task("allocate").setAction(async (_, __, runSuper) => {
 subtask("setARMBuffer", "Set the ARM buffer percentage")
   .addParam(
     "arm",
-    "The name of the ARM. eg Lido, Origin, EtherFi, Ethena or USDC",
+    "The name of the ARM. eg Lido, Origin, EtherFi, Ethena, USDC or WETH",
     undefined,
     types.string,
   )
@@ -1237,7 +1237,7 @@ task("snapMarket").setAction(async (_, __, runSuper) => {
 subtask("snap", "Take a snapshot of the an ARM")
   .addOptionalParam(
     "arm",
-    "The name of the ARM. eg Lido, Origin, EtherFi, Ethena or USDC",
+    "The name of the ARM. eg Lido, Origin, EtherFi, Ethena, USDC or WETH",
     "Lido",
     types.string,
   )
@@ -1521,7 +1521,7 @@ task("setOSSiloPrice").setAction(async (_, __, runSuper) => {
 subtask("claimMerklRewards", "Claim Merkl rewards for Morpho markets")
   .addOptionalParam(
     "arm",
-    "Name of the ARM. eg Lido, Ether.fi or Origin",
+    "Name of the ARM. eg Lido, EtherFi, Origin or WETH",
     "Lido",
     types.string,
   )
