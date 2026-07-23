@@ -114,12 +114,14 @@ async function claimRedeemARM({ arm, id, execute = true }) {
 async function setLiquidityProviderCaps({ accounts, arm, cap }) {
   const signer = await getSigner();
   const armContract = await resolveArmContract(arm);
+  const liquidityAsset = await resolveLiquidityAssetContext(armContract);
 
   await setLiquidityProviderCapsCore({
     accounts,
     arm: armContract,
     armName: arm,
     cap,
+    decimals: liquidityAsset.decimals,
     signer,
   });
 }
@@ -127,11 +129,13 @@ async function setLiquidityProviderCaps({ accounts, arm, cap }) {
 async function setTotalAssetsCap({ arm, cap }) {
   const signer = await getSigner();
   const armContract = await resolveArmContract(arm);
+  const liquidityAsset = await resolveLiquidityAssetContext(armContract);
 
   await setTotalAssetsCapCore({
     arm: armContract,
     armName: arm,
     cap,
+    decimals: liquidityAsset.decimals,
     signer,
   });
 }

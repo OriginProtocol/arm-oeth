@@ -12,7 +12,7 @@ action({
     t
       .addParam(
         "arm",
-        "ARM to set buffer for: lido, etherfi, ethena, oeth, or usd",
+        "ARM to set buffer for: lido, etherfi, ethena, oeth, or usdc",
         undefined,
         types.string,
       )

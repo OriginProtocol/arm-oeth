@@ -18,7 +18,6 @@ action({
       arm,
       threshold: 500,
       maxGasPrice: 5,
-      decimals: 6,
     });
   },
 });

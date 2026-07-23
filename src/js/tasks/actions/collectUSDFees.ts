@@ -13,6 +13,6 @@ action({
     const arm = new ethers.Contract(mainnet.usdcARM, multiAssetARMAbi, signer);
 
     log.info("Collecting fees from USDC ARM");
-    await collectFees({ signer, arm, decimals: 6 });
+    await collectFees({ signer, arm });
   },
 });

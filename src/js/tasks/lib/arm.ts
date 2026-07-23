@@ -34,7 +34,7 @@ const MAINNET_ARMS = {
     name: "OETH",
     decimals: 18,
   },
-  usd: {
+  usdc: {
     abi: multiAssetARMAbi,
     address: mainnet.usdcARM,
     name: "USDC",
@@ -48,7 +48,7 @@ const MAINNET_ARM_KEYS: MainnetArmKey[] = [
   "etherfi",
   "ethena",
   "oeth",
-  "usd",
+  "usdc",
 ];
 
 function formatSupportedArms(supportedArms: MainnetArmKey[]) {
