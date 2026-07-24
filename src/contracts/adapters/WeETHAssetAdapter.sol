@@ -33,6 +33,12 @@ contract WeETHAssetAdapter is Initializable, IAssetAdapter, IERC721Receiver {
     uint256[] internal pendingRequestIds;
     uint256 internal nextPendingIndex;
 
+    /// @dev True only while the adapter is actively claiming Ether.fi withdrawal NFTs.
+    bool internal claimingEtherFi;
+
+    /// @notice Thrown when Ether.fi claim proceeds arrive without an adapter-initiated claim.
+    error UnauthorizedEtherFiClaim(); // 0x7b2b45a4
+
     modifier onlyARM() {
         require(msg.sender == arm, "Adapter: only ARM");
         _;
@@ -148,7 +154,9 @@ contract WeETHAssetAdapter is Initializable, IAssetAdapter, IERC721Receiver {
         }
         nextPendingIndex = cursor + claimCount;
 
+        claimingEtherFi = true;
         etherfiWithdrawalNFT.batchClaimWithdraw(requestIds);
+        claimingEtherFi = false;
 
         uint256 ethBalance = address(this).balance;
         if (ethBalance > 0) weth.deposit{value: ethBalance}();
@@ -168,7 +176,14 @@ contract WeETHAssetAdapter is Initializable, IAssetAdapter, IERC721Receiver {
         return pendingRequestIds[index];
     }
 
-    receive() external payable {}
+    /// @notice Accepts ETH only while this adapter is claiming Ether.fi withdrawals.
+    /// @dev ETH arriving outside an adapter-initiated claim (e.g. a permissionless Ether.fi claim) is
+    /// rejected. Ether.fi reverts the entire claim, including the NFT burn, when this transfer fails.
+    receive() external payable {
+        if (!claimingEtherFi) {
+            revert UnauthorizedEtherFiClaim();
+        }
+    }
 
     /// @notice Accepts Ether.fi withdrawal NFTs minted to this adapter.
     function onERC721Received(address, address, uint256, bytes calldata) external pure returns (bytes4) {
