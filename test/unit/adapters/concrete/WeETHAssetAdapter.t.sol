@@ -264,11 +264,14 @@ contract Unit_WeETHAssetAdapter_Test is Test {
         );
     }
 
-    function test_Receive_AcceptsEth() public {
+    function test_Receive_RevertWhen_EthArrivesOutsideClaim() public {
+        // Any ETH — not just NFT-forwarded claim proceeds — is refused outside an adapter-initiated claim.
         vm.deal(address(this), 1 ether);
-        (bool ok,) = address(adapter).call{value: 1 ether}("");
-        assertTrue(ok, "adapter accepts ETH");
-        assertEq(address(adapter).balance, 1 ether, "adapter eth balance");
+        (bool ok, bytes memory ret) = address(adapter).call{value: 1 ether}("");
+
+        assertFalse(ok, "adapter rejects ETH outside a claim");
+        assertEq(bytes4(ret), WeETHAssetAdapter.UnauthorizedEtherFiClaim.selector, "revert selector");
+        assertEq(address(adapter).balance, 0, "no ETH retained");
     }
 
     //////////////////////////////////////////////////////

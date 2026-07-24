@@ -166,11 +166,11 @@ contract EtherFiAssetAdapter is Initializable, IAssetAdapter, IERC721Receiver {
         return pendingRequestIds[index];
     }
 
-    /// @notice Accepts ETH donations and authorized Ether.fi claim proceeds.
-    /// @dev A permissionless Ether.fi claim is rejected unless it was initiated by this adapter.
-    /// Ether.fi reverts the entire claim, including the NFT burn, when this transfer fails.
+    /// @notice Accepts ETH only while this adapter is claiming Ether.fi withdrawals.
+    /// @dev ETH arriving outside an adapter-initiated claim (e.g. a permissionless Ether.fi claim) is
+    /// rejected. Ether.fi reverts the entire claim, including the NFT burn, when this transfer fails.
     receive() external payable {
-        if (msg.sender == address(etherfiWithdrawalNFT) && !claimingEtherFi) {
+        if (!claimingEtherFi) {
             revert UnauthorizedEtherFiClaim();
         }
     }
