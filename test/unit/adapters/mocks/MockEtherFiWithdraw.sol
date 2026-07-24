@@ -68,8 +68,14 @@ contract MockEtherFiWithdraw {
         request.claimed = true;
 
         // EtherFi pays the NFT owner (the recorded recipient), not the caller, and reverts the whole
-        // claim — including the NFT burn — if that transfer fails (its `if (!ok) revert EthTransferFailed()`).
-        (bool ok,) = request.recipient.call{value: request.amount}("");
-        require(ok, "Mock EF: eth transfer failed");
+        // claim — including the NFT burn — if that transfer fails. Real EtherFi masks the failure as
+        // `EthTransferFailed()`; the mock bubbles the recipient's revert reason instead so tests can
+        // assert the adapter's gate (`UnauthorizedEtherFiClaim`) is what blocks an out-of-band claim.
+        (bool ok, bytes memory ret) = request.recipient.call{value: request.amount}("");
+        if (!ok) {
+            assembly {
+                revert(add(ret, 0x20), mload(ret))
+            }
+        }
     }
 }

@@ -319,9 +319,10 @@ contract Unit_EtherFiAssetAdapter_Test is Test {
         uint256 id = adapter.pendingRequestId(0);
 
         // Permissionless third-party claim: the mock (standing in for EtherFi's WithdrawRequestNFT)
-        // forwards ETH to the owner and require()s the transfer, which the adapter's gate rejects.
+        // forwards ETH to the owner, whose receive() rejects it; the mock bubbles that reason (EtherFi
+        // would surface its own EthTransferFailed), so the whole claim reverts on the adapter's gate.
         vm.prank(alice);
-        vm.expectRevert("Mock EF: eth transfer failed");
+        vm.expectRevert(EtherFiAssetAdapter.UnauthorizedEtherFiClaim.selector);
         etherfi.claimWithdraw(id);
 
         // Request survives untouched: nothing claimed, share accounting intact, no stray ETH.
