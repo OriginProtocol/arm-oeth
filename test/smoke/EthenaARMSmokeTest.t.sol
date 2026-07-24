@@ -66,7 +66,7 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
             address(ethenaARM).staticcall(abi.encodeWithSignature("baseAssetConfigs(address)", Mainnet.SUSDE));
         require(ok, "baseAssetConfigs call failed");
         (,,,, uint128 crossPrice) = abi.decode(configData, (uint128, uint128, uint128, uint128, uint128));
-        assertEq(crossPrice, 0.99996e36, "cross price");
+        assertEq(crossPrice, 0.9999e36, "cross price");
 
         _assertBaseAssetListed(ethenaARM.getBaseAssets(), Mainnet.SUSDE, "sUSDe listed as base asset");
 
