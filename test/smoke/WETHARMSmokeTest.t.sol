@@ -5,6 +5,7 @@ import {AbstractSmokeTest} from "./AbstractSmokeTest.sol";
 
 import {MultiAssetARM} from "contracts/MultiAssetARM.sol";
 import {CapManager} from "contracts/CapManager.sol";
+import {Proxy} from "contracts/Proxy.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
 
 contract Fork_WETHARM_Smoke_Test is AbstractSmokeTest {
@@ -48,6 +49,22 @@ contract Fork_WETHARM_Smoke_Test is AbstractSmokeTest {
         _assertBaseAssetConfig(Mainnet.WSTETH, "WETH_ARM_WSTETH_ADAPTER", false);
         _assertBaseAssetConfig(Mainnet.EETH, "WETH_ARM_EETH_ADAPTER", true);
         _assertBaseAssetConfig(Mainnet.WEETH, "WETH_ARM_WEETH_ADAPTER", false);
+    }
+
+    function test_EtherFiAdapterUpgrades() external view {
+        Proxy eethAdapter = Proxy(payable(resolver.resolve("WETH_ARM_EETH_ADAPTER")));
+        Proxy weethAdapter = Proxy(payable(resolver.resolve("WETH_ARM_WEETH_ADAPTER")));
+
+        assertEq(eethAdapter.owner(), Mainnet.MULTISIG_2_OF_8, "eETH adapter owner");
+        assertEq(weethAdapter.owner(), Mainnet.MULTISIG_2_OF_8, "weETH adapter owner");
+        assertEq(
+            eethAdapter.implementation(), resolver.resolve("WETH_ARM_EETH_ADAPTER_IMPL"), "eETH adapter implementation"
+        );
+        assertEq(
+            weethAdapter.implementation(),
+            resolver.resolve("WETH_ARM_WEETH_ADAPTER_IMPL"),
+            "weETH adapter implementation"
+        );
     }
 
     function _assertBaseAssetConfig(address baseAsset, string memory adapterName, bool pegged) internal view {
