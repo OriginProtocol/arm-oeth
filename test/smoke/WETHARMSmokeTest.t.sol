@@ -7,6 +7,7 @@ import {MultiAssetARM} from "contracts/MultiAssetARM.sol";
 import {CapManager} from "contracts/CapManager.sol";
 import {Proxy} from "contracts/Proxy.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
+import {Abstract4626MarketWrapper} from "contracts/markets/Abstract4626MarketWrapper.sol";
 
 contract Fork_WETHARM_Smoke_Test is AbstractSmokeTest {
     MultiAssetARM internal wethARM;
@@ -65,6 +66,24 @@ contract Fork_WETHARM_Smoke_Test is AbstractSmokeTest {
             resolver.resolve("WETH_ARM_WEETH_ADAPTER_IMPL"),
             "weETH adapter implementation"
         );
+    }
+
+    function test_MorphoMarketConfig() external view {
+        Abstract4626MarketWrapper morphoMarket = Abstract4626MarketWrapper(resolver.resolve("MORPHO_MARKET_WETH_ARM"));
+        Abstract4626MarketWrapper lidoMarket = Abstract4626MarketWrapper(resolver.resolve("MORPHO_MARKET_LIDO"));
+        address etherFiActiveMarket = MultiAssetARM(payable(resolver.resolve("ETHER_FI_ARM"))).activeMarket();
+        Abstract4626MarketWrapper etherFiMarket = Abstract4626MarketWrapper(etherFiActiveMarket);
+
+        assertEq(morphoMarket.arm(), address(wethARM), "market arm");
+        assertEq(morphoMarket.asset(), Mainnet.WETH, "market asset");
+        assertEq(morphoMarket.market(), Mainnet.MORPHO_WETH_VAULT, "configured Morpho vault");
+        assertEq(morphoMarket.market(), lidoMarket.market(), "Lido Morpho vault");
+        assertEq(morphoMarket.market(), etherFiMarket.market(), "EtherFi Morpho vault");
+        assertEq(morphoMarket.owner(), Mainnet.MULTISIG_2_OF_8, "market owner");
+        assertEq(morphoMarket.harvester(), Mainnet.MULTISIG_2_OF_8, "market harvester");
+        assertEq(address(morphoMarket.merkleDistributor()), Mainnet.MERKLE_DISTRIBUTOR, "Merkle distributor");
+        assertTrue(wethARM.supportedMarkets(address(morphoMarket)), "market supported");
+        assertEq(wethARM.activeMarket(), address(morphoMarket), "active market");
     }
 
     function _assertBaseAssetConfig(address baseAsset, string memory adapterName, bool pegged) internal view {

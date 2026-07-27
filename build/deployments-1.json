@@ -239,6 +239,14 @@
         {
             "implementation": "0xAb98aC901B8A26636d9cf3Cf38d9aCdcD045788f",
             "name": "USDC_ARM_USDG_ADAPTER"
+        },
+        {
+            "implementation": "0xe192824f42ae3D643ac867774b45E8d233d86c72",
+            "name": "MORPHO_MARKET_WETH_ARM"
+        },
+        {
+            "implementation": "0x4E715556Cd84926FD5EAc206a016711E38273aD4",
+            "name": "MORPHO_MARKET_WETH_ARM_IMPL"
         }
     ],
     "executions": [
@@ -462,6 +470,12 @@
             "name": "041_RedeployEtherFiAdaptersScript",
             "proposalId": 1,
             "tsDeployment": 1785134531,
+            "tsGovernance": 1
+        },
+        {
+            "name": "042_DeployWETHMorphoMarketScript",
+            "proposalId": 1,
+            "tsDeployment": 1785160163,
             "tsGovernance": 0
         }
     ]
