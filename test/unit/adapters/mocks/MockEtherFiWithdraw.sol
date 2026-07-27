@@ -7,7 +7,8 @@ import {ERC20} from "@solmate/tokens/ERC20.sol";
 /// @notice Test double for Ether.fi's withdrawal queue and withdrawal NFT, combined into one contract.
 ///         Implements the subset used by `EtherFiAssetAdapter` / `WeETHAssetAdapter`:
 ///         `requestWithdraw` (pulls eETH from the caller and opens a request) and
-///         `batchClaimWithdraw` / `claimWithdraw` (sends ETH to the claimer). Requests are finalized
+///         `batchClaimWithdraw` / `claimWithdraw` (sends ETH to the request recipient, i.e. the NFT
+///         owner, as EtherFi does — the claim is permissionless but proceeds go to the owner). Requests are finalized
 ///         on creation; `mock_*` setters drive the adapter's un-finalized / claimed edge-case branches.
 ///         The mock must be pre-funded with ETH so claims can pay out.
 contract MockEtherFiWithdraw {
@@ -37,7 +38,7 @@ contract MockEtherFiWithdraw {
         requests[requestId] = Request({recipient: recipient, amount: amount, finalized: true, claimed: false});
     }
 
-    /// @dev Claims finalized requests in batch, sending 1:1 ETH to the caller (the adapter / NFT holder).
+    /// @dev Claims finalized requests in batch, sending 1:1 ETH to each request's recipient (the NFT owner).
     function batchClaimWithdraw(uint256[] calldata requestIds) external {
         for (uint256 i = 0; i < requestIds.length; ++i) {
             _claim(requestIds[i]);
@@ -66,7 +67,15 @@ contract MockEtherFiWithdraw {
         require(!request.claimed, "Mock EF: already claimed");
         request.claimed = true;
 
-        (bool ok,) = msg.sender.call{value: request.amount}("");
-        require(ok, "Mock EF: eth transfer failed");
+        // EtherFi pays the NFT owner (the recorded recipient), not the caller, and reverts the whole
+        // claim — including the NFT burn — if that transfer fails. Real EtherFi masks the failure as
+        // `EthTransferFailed()`; the mock bubbles the recipient's revert reason instead so tests can
+        // assert the adapter's gate (`UnauthorizedEtherFiClaim`) is what blocks an out-of-band claim.
+        (bool ok, bytes memory ret) = request.recipient.call{value: request.amount}("");
+        if (!ok) {
+            assembly {
+                revert(add(ret, 0x20), mload(ret))
+            }
+        }
     }
 }

@@ -44,3 +44,6 @@ build/deployments-fork*.json
 
 # Other
 .DS_Store
+
+# Cursor solidity plugin
+remappings.txt

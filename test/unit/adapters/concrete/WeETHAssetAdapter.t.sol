@@ -264,10 +264,65 @@ contract Unit_WeETHAssetAdapter_Test is Test {
         );
     }
 
-    function test_Receive_AcceptsEth() public {
+    function test_Receive_RevertWhen_EthArrivesOutsideClaim() public {
+        // Any ETH — not just NFT-forwarded claim proceeds — is refused outside an adapter-initiated claim.
         vm.deal(address(this), 1 ether);
-        (bool ok,) = address(adapter).call{value: 1 ether}("");
-        assertTrue(ok, "adapter accepts ETH");
-        assertEq(address(adapter).balance, 1 ether, "adapter eth balance");
+        (bool ok, bytes memory ret) = address(adapter).call{value: 1 ether}("");
+
+        assertFalse(ok, "adapter rejects ETH outside a claim");
+        assertEq(bytes4(ret), WeETHAssetAdapter.UnauthorizedEtherFiClaim.selector, "revert selector");
+        assertEq(address(adapter).balance, 0, "no ETH retained");
+    }
+
+    //////////////////////////////////////////////////////
+    /// --- permissionless Ether.fi claim gate (Immunefi: NAV double-count)
+    //////////////////////////////////////////////////////
+
+    /// @notice ETH forwarded by the Ether.fi NFT contract outside an adapter-initiated claim is rejected
+    ///         with `UnauthorizedEtherFiClaim`. This is the exact transfer EtherFi makes to the NFT owner
+    ///         during a permissionless `claimWithdraw`; rejecting it (and thus reverting the claim) keeps the
+    ///         withdrawal request — and the ARM's pending-redeem accounting — in sync.
+    function test_Receive_RejectsNftForwardedEthOutsideClaim() public {
+        vm.deal(address(etherfi), 1 ether);
+        vm.prank(address(etherfi));
+        (bool ok, bytes memory ret) = address(adapter).call{value: 1 ether}("");
+
+        assertFalse(ok, "NFT-forwarded ETH must be rejected outside a claim");
+        assertEq(bytes4(ret), WeETHAssetAdapter.UnauthorizedEtherFiClaim.selector, "revert selector");
+        assertEq(address(adapter).balance, 0, "no ETH retained");
+    }
+
+    /// @notice A third party cannot claim an adapter-owned Ether.fi withdrawal NFT out-of-band. EtherFi
+    ///         forwards proceeds to the NFT owner (the adapter) and reverts the whole claim (incl. the NFT burn)
+    ///         if that transfer fails. The adapter rejects proceeds it did not initiate, so the permissionless
+    ///         claim reverts and the request stays pending — the adapter's own claim still works afterward.
+    ///         Without the gate this path would drop ETH into the adapter while the pending request survived,
+    ///         double-counting it in the ARM's NAV (the reported vulnerability).
+    function test_ExternalClaim_RevertWhen_NotAdapterInitiated() public {
+        uint256 shares = 500 ether;
+
+        vm.prank(arm);
+        adapter.requestRedeem(shares);
+        uint256 id = adapter.pendingRequestId(0);
+
+        // Permissionless third-party claim: the mock (standing in for EtherFi's WithdrawRequestNFT)
+        // forwards ETH to the owner, whose receive() rejects it; the mock bubbles that reason (EtherFi
+        // would surface its own EthTransferFailed), so the whole claim reverts on the adapter's gate.
+        vm.prank(alice);
+        vm.expectRevert(WeETHAssetAdapter.UnauthorizedEtherFiClaim.selector);
+        etherfi.claimWithdraw(id);
+
+        // Request survives untouched: nothing claimed, share accounting intact, no stray ETH.
+        (,,, bool claimed) = etherfi.requests(id);
+        assertFalse(claimed, "request must stay unclaimed");
+        assertEq(adapter.requestShares(id), shares, "requestShares intact");
+        assertEq(address(adapter).balance, 0, "adapter holds no ETH");
+
+        // The adapter's own claim path still works and delivers WETH to the ARM.
+        uint256 armWethBefore = weth.balanceOf(arm);
+        vm.prank(arm);
+        (uint256 sharesClaimed,, uint256 assetsReceived) = adapter.redeem(shares);
+        assertEq(sharesClaimed, shares, "adapter redeem claims the request");
+        assertEq(weth.balanceOf(arm), armWethBefore + assetsReceived, "ARM received WETH");
     }
 }
