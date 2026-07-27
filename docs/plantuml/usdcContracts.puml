@@ -1,0 +1,51 @@
+@startuml
+
+!$originColor = DeepSkyBlue
+' !$originColor = WhiteSmoke
+!$newColor = LightGreen
+!$changedColor = Orange
+!$thirdPartyColor = WhiteSmoke
+
+' legend
+' blue - Origin
+' white - 3rd Party
+' end legend
+
+title "USDC\nAutomated Redemption Manager (ARM)\nContract Dependencies"
+
+object "MultiAssetARM\n(USDC ARM)" as arm <<Origin>><<Proxy>> #$originColor {
+    shares: ARM-USDC
+    liquidity asset: USDC
+    base assets: PYUSD, USDG
+}
+
+object "CapManager" as capMan <<Origin>><<Proxy>> #$originColor {
+    total-assets cap
+    liquidity-provider caps
+}
+
+object "PaxosAssetAdapter\n(PYUSD)" as pyusdAdapter <<Origin>><<Proxy>> #$originColor {
+    base asset: PYUSD
+}
+
+object "PaxosAssetAdapter\n(USDG)" as usdgAdapter <<Origin>><<Proxy>> #$originColor {
+    base asset: USDG
+}
+
+object "PYUSD" as pyusd <<Paxos>> #$thirdPartyColor {
+    base asset
+}
+
+object "USDG" as usdg <<Paxos>> #$thirdPartyColor {
+    base asset
+}
+
+arm <.> capMan : deposit caps
+arm ..> pyusdAdapter : request / claim
+arm ..> usdgAdapter : request / claim
+
+pyusdAdapter ..> pyusd : queues and submits
+
+usdgAdapter ..> usdg : queues and submits
+
+@enduml
