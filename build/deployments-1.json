@@ -193,7 +193,7 @@
             "name": "WETH_ARM_WSTETH_ADAPTER"
         },
         {
-            "implementation": "0xb1104B6bD6f07D19E6D679e88AD4035CFD1F2A48",
+            "implementation": "0x0dA9cA22A10252eD87D880F3E45b736Bb10efc44",
             "name": "WETH_ARM_EETH_ADAPTER_IMPL"
         },
         {
@@ -201,7 +201,7 @@
             "name": "WETH_ARM_EETH_ADAPTER"
         },
         {
-            "implementation": "0x20c66066f30fa935B31878A439c53aC76d4C53cB",
+            "implementation": "0x367B54A531b8D1e611326957A5e7c1f67DB3dCe1",
             "name": "WETH_ARM_WEETH_ADAPTER_IMPL"
         },
         {
@@ -451,6 +451,18 @@
             "proposalId": 1,
             "tsDeployment": 1784724659,
             "tsGovernance": 1
+        },
+        {
+            "name": "040_UnpauseEtherFi",
+            "proposalId": 1,
+            "tsDeployment": 1784724659,
+            "tsGovernance": 1
+        },
+        {
+            "name": "041_RedeployEtherFiAdaptersScript",
+            "proposalId": 1,
+            "tsDeployment": 1785134531,
+            "tsGovernance": 0
         }
     ]
 }
