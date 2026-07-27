@@ -42,7 +42,7 @@ Carry the requested changes through branch creation, commit, push, and PR creati
 ## 5. Create the PR
 
 - Target the repository's default branch unless the user specifies another base.
-- Derive the title from the change and repository conventions; do not blindly copy a low-quality commit subject.
+- Name the PR using the rules below; do not blindly reuse the commit subject.
 - Keep ordinary PR descriptions short and factual, normally using only:
   - `## Summary` with two to four bullets describing the outcome.
   - `## Verification` with commands actually run and their result.
@@ -50,11 +50,25 @@ Carry the requested changes through branch creation, commit, push, and PR creati
 - Assign the PR to the authenticated GitHub user with `--assignee @me` or the equivalent API call.
 - Create a normal ready-for-review PR unless the user explicitly requests a draft.
 
+### Name the PR
+
+- Inspect 20 to 50 recent merged PR titles, then narrow to PRs for the same component or change type. Follow the dominant specific pattern over a generic convention.
+- Treat the PR title and commit subject as distinct. A conventional commit such as `docs(skill): add pull request workflow` normally becomes `Add pull request workflow` as the PR title.
+- For an ordinary PR, use sentence case in the form `<Imperative verb> <specific outcome>`, for example `Add pull request creation skill`, `Fix live-state fork tests`, or `Document Talos scheduled actions`.
+- Do not add a Conventional Commit prefix such as `feat:`, `fix(scope):`, or `docs:` unless recent PRs for that exact area consistently use it.
+- Use a bracketed prefix only when repository history gives it domain meaning:
+  - `[ARM]` for ARM deployments and release-like protocol or governance operations.
+  - `[yAudit-NN]` for a change tied to that exact audit finding.
+  - Never invent a bracketed category when a GitHub label already expresses it.
+- Preserve established project names and capitalization such as `ARM`, `EtherFi`, `EthenaARM`, `LidoARM`, `USDC`, and `WETH`.
+- Keep the title concise, specific, and free of trailing punctuation. Avoid vague titles such as `Updates`, `Various fixes`, or `Changes`.
+
 ## Smart-contract deployment PRs
 
 For a post-execution smart-contract deployment PR in `OriginProtocol/arm-oeth`, use [PR #315](https://github.com/OriginProtocol/arm-oeth/pull/315) as the reference. Fetch its current title, body, labels, and assignee with `gh pr view 315` when available.
 
-- Follow its deployment-title convention when applicable, for example `[ARM] Deploy 039 USDC ARM on mainnet`.
+- For a numbered deployment, title the PR `[ARM] Deploy <NNN> <target> on <network>`, where `<NNN>` is the zero-padded deployment-script number. For example: `[ARM] Deploy 039 USDC ARM on mainnet`.
+- For a numbered governance or operational action that is not a deployment, retain the imperative action and follow the closest recent `[ARM]` title, for example `[ARM] Unpause Ethena ARM via governance (035)`.
 - Apply the existing `Deployment` label. Add `Deployment script` only when the PR actually changes a deployment script.
 - Start with `# Description`, then include only applicable sections from the reference PR:
   - included or companion PRs;
