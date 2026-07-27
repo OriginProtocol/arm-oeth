@@ -26,6 +26,9 @@ const requestLidoWithdrawals = async (options) => {
       options.maxAmount === undefined
         ? withdrawAmount
         : parseUnits(options.maxAmount.toString());
+    if (maxAmountBI <= 0n) {
+      throw new Error("maxAmount must be greater than zero");
+    }
     let remainingAmount = withdrawAmount;
     while (remainingAmount > 0n) {
       const requestAmount =
@@ -37,6 +40,32 @@ const requestLidoWithdrawals = async (options) => {
       );
       remainingAmount -= requestAmount;
     }
+  } else {
+    const maxAmountBI =
+      options.maxAmount === undefined
+        ? withdrawAmount
+        : parseUnits(options.maxAmount.toString());
+    if (maxAmountBI <= 0n) {
+      throw new Error("maxAmount must be greater than zero");
+    }
+    let remainingAmount = withdrawAmount;
+    while (remainingAmount > 0n) {
+      const requestAmount =
+        remainingAmount > maxAmountBI ? maxAmountBI : remainingAmount;
+      log(
+        `About to request ${formatUnits(
+          requestAmount,
+        )} ${baseSymbol} withdrawal from Lido`,
+      );
+      const tx = await requestBaseAssetWithdrawal({
+        baseContext,
+        signer,
+        amount: requestAmount,
+      });
+      await logTxDetails(tx, "requestRedeem");
+      remainingAmount -= requestAmount;
+    }
+    return;
   }
 
   log(

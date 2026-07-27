@@ -1,0 +1,79 @@
+@startuml
+
+!$originColor = DeepSkyBlue
+' !$originColor = WhiteSmoke
+!$newColor = LightGreen
+!$changedColor = Orange
+!$thirdPartyColor = WhiteSmoke
+
+' legend
+' blue - Origin
+' white - 3rd Party
+' end legend
+
+title "WETH\nAutomated Redemption Manager (ARM)\nContract Dependencies"
+
+object "ZapperARM" as zapper <<Origin>> #$originColor {
+    wraps ETH
+    deposits WETH
+}
+
+object "MultiAssetARM\n(WETH ARM)" as arm <<Origin>><<Proxy>> #$originColor {
+    shares: ARM-WETH
+    liquidity asset: WETH
+    base assets: stETH, wstETH, eETH, weETH
+}
+
+object "CapManager" as capMan <<Origin>><<Proxy>> #$originColor {
+    total-assets cap
+    liquidity-provider caps
+}
+
+object "StETHAssetAdapter" as stethAdapter <<Origin>><<Proxy>> #$originColor {
+    base asset: stETH
+    pegged: true
+}
+
+object "WstETHAssetAdapter" as wstethAdapter <<Origin>><<Proxy>> #$originColor {
+    base asset: wstETH
+    unwraps to: stETH
+}
+
+object "EtherFiAssetAdapter" as eethAdapter <<Origin>><<Proxy>> #$originColor {
+    base asset: eETH
+    pegged: true
+}
+
+object "WeETHAssetAdapter" as weethAdapter <<Origin>><<Proxy>> #$originColor {
+    base asset: weETH
+    unwraps to: eETH
+}
+
+object "Lido\nWithdrawalQueueERC721" as lidoQueue <<Lido>><<Proxy>> #$thirdPartyColor {
+}
+
+object "Ether.fi\nWithdrawal Queue" as etherfiQueue <<EtherFi>><<Proxy>> #$thirdPartyColor {
+}
+
+object "Ether.fi\nWithdrawal NFT" as etherfiNft <<EtherFi>><<Proxy>> #$thirdPartyColor {
+}
+
+zapper ..> arm : deposits for receiver
+
+arm <.> capMan : deposit caps
+arm ..> stethAdapter : request / claim
+arm ..> wstethAdapter : request / claim
+arm ..> eethAdapter : request / claim
+arm ..> weethAdapter : request / claim
+
+stethAdapter ..> lidoQueue : request / claim
+
+wstethAdapter ..> lidoQueue : request / claim
+
+eethAdapter ..> etherfiQueue : requests
+eethAdapter ..> etherfiNft : claims
+
+weethAdapter ..> etherfiQueue : requests
+weethAdapter ..> etherfiNft : claims
+
+@enduml

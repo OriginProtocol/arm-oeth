@@ -40,6 +40,12 @@ const MAINNET_ARMS = {
     name: "USDC",
     decimals: 6,
   },
+  weth: {
+    abi: multiAssetARMAbi,
+    address: mainnet.wethARM,
+    name: "WETH",
+    decimals: 18,
+  },
 };
 
 type MainnetArmKey = keyof typeof MAINNET_ARMS;
@@ -49,6 +55,7 @@ const MAINNET_ARM_KEYS: MainnetArmKey[] = [
   "ethena",
   "oeth",
   "usdc",
+  "weth",
 ];
 
 function formatSupportedArms(supportedArms: MainnetArmKey[]) {
