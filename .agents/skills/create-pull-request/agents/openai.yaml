@@ -1,0 +1,4 @@
+interface:
+  display_name: "Create Pull Request"
+  short_description: "Create consistent, concise GitHub pull requests"
+  default_prompt: "Use $create-pull-request to create a branch, commit my changes, push them, and open a concise GitHub PR."
