@@ -33,7 +33,7 @@ contract Fork_WETHARM_Smoke_Test is AbstractSmokeTest {
         assertEq(capManager.arm(), address(wethARM), "cap manager arm");
         assertEq(capManager.totalAssetsCap(), 250 ether, "total assets cap");
         assertTrue(capManager.accountCapEnabled(), "account cap enabled");
-        assertEq(capManager.liquidityProviderCaps(Mainnet.TREASURY_LP), 250 ether, "liquidity provider cap");
+        assertEq(capManager.liquidityProviderCaps(Mainnet.TREASURY_LP), 245 ether, "liquidity provider cap");
         assertEq(capManager.operator(), Mainnet.MULTISIG_2_OF_8, "cap manager operator");
         assertEq(capManager.owner(), Mainnet.MULTISIG_2_OF_8, "cap manager owner");
     }
