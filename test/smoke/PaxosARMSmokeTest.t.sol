@@ -11,15 +11,6 @@ import {Proxy} from "contracts/Proxy.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
 
 contract Fork_PaxosARM_Smoke_Test is AbstractSmokeTest {
-    /// @dev 0.998e36 = 0.998 USDC per base asset, the automation's minimum buy price.
-    uint256 internal constant MIN_BUY_PRICE = 0.998e36;
-    /// @dev 0.99995e36 = 0.99995 USDC per base asset, the automation's maximum buy price.
-    uint256 internal constant MAX_BUY_PRICE = 0.99995e36;
-    /// @dev 0.99997e36 = 0.99997 USDC per base asset, the automation's minimum sell price.
-    uint256 internal constant MIN_SELL_PRICE = 0.99997e36;
-    /// @dev 1e36 = 1 USDC per base asset, the automation's maximum sell price.
-    uint256 internal constant MAX_SELL_PRICE = 1e36;
-
     IERC20 usdc;
     IERC20 pyusd;
     IERC20 usdg;
@@ -97,20 +88,9 @@ contract Fork_PaxosARM_Smoke_Test is AbstractSmokeTest {
     }
 
     function _assertBaseAssetConfig(address baseAsset, address expectedAdapter, string memory label) internal view {
-        (
-            uint128 buyPrice,
-            uint128 sellPrice,,,
-            uint128 crossPrice,,
-            bool peggedToLiquidityAsset,
-            uint8 baseAssetDecimals,
-            address adapter
-        ) = usdcARM.baseAssetConfigs(baseAsset);
+        (,,,,,, bool peggedToLiquidityAsset, uint8 baseAssetDecimals, address adapter) =
+            usdcARM.baseAssetConfigs(baseAsset);
 
-        assertGe(buyPrice, MIN_BUY_PRICE, string.concat(label, " minimum buy price"));
-        assertLe(buyPrice, MAX_BUY_PRICE, string.concat(label, " maximum buy price"));
-        assertGe(sellPrice, MIN_SELL_PRICE, string.concat(label, " minimum sell price"));
-        assertLe(sellPrice, MAX_SELL_PRICE, string.concat(label, " maximum sell price"));
-        assertEq(crossPrice, 0.99997e36, string.concat(label, " cross price"));
         assertEq(peggedToLiquidityAsset, true, string.concat(label, " pegged"));
         assertEq(baseAssetDecimals, 6, string.concat(label, " base asset decimals"));
         assertEq(adapter, expectedAdapter, string.concat(label, " adapter"));

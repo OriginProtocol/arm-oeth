@@ -36,6 +36,9 @@ library Mainnet {
     // Tokens
     address public constant MORPHO = 0x58D97B57BB95320F9a05dC918Aef65434969c2B2;
 
+    // Morpho Vaults
+    address public constant MORPHO_WETH_VAULT = 0x3Dfe70B05657949A5dB340754aD664810ac63b21;
+
     // Origin
     address public constant OETH_VAULT = 0x39254033945AA2E4809Cc2977E7087BEE48bd7Ab;
 

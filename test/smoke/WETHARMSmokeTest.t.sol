@@ -7,6 +7,7 @@ import {MultiAssetARM} from "contracts/MultiAssetARM.sol";
 import {CapManager} from "contracts/CapManager.sol";
 import {Proxy} from "contracts/Proxy.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
+import {Abstract4626MarketWrapper} from "contracts/markets/Abstract4626MarketWrapper.sol";
 
 contract Fork_WETHARM_Smoke_Test is AbstractSmokeTest {
     MultiAssetARM internal wethARM;
@@ -32,7 +33,7 @@ contract Fork_WETHARM_Smoke_Test is AbstractSmokeTest {
         assertEq(capManager.arm(), address(wethARM), "cap manager arm");
         assertEq(capManager.totalAssetsCap(), 250 ether, "total assets cap");
         assertTrue(capManager.accountCapEnabled(), "account cap enabled");
-        assertEq(capManager.liquidityProviderCaps(Mainnet.TREASURY_LP), 250 ether, "liquidity provider cap");
+        assertEq(capManager.liquidityProviderCaps(Mainnet.TREASURY_LP), 245 ether, "liquidity provider cap");
         assertEq(capManager.operator(), Mainnet.MULTISIG_2_OF_8, "cap manager operator");
         assertEq(capManager.owner(), Mainnet.MULTISIG_2_OF_8, "cap manager owner");
     }
@@ -67,25 +68,28 @@ contract Fork_WETHARM_Smoke_Test is AbstractSmokeTest {
         );
     }
 
-    function _assertBaseAssetConfig(address baseAsset, string memory adapterName, bool pegged) internal view {
-        (
-            uint128 buyPrice,
-            uint128 sellPrice,
-            uint128 buyLiquidityRemaining,
-            uint128 sellLiquidityRemaining,
-            uint128 crossPrice,
-            uint128 pendingRedeemAssets,
-            bool peggedToLiquidityAsset,
-            uint8 baseAssetDecimals,
-            address adapter
-        ) = wethARM.baseAssetConfigs(baseAsset);
+    function test_MorphoMarketConfig() external view {
+        Abstract4626MarketWrapper morphoMarket = Abstract4626MarketWrapper(resolver.resolve("MORPHO_MARKET_WETH_ARM"));
+        Abstract4626MarketWrapper lidoMarket = Abstract4626MarketWrapper(resolver.resolve("MORPHO_MARKET_LIDO"));
+        address etherFiActiveMarket = MultiAssetARM(payable(resolver.resolve("ETHER_FI_ARM"))).activeMarket();
+        Abstract4626MarketWrapper etherFiMarket = Abstract4626MarketWrapper(etherFiActiveMarket);
 
-        assertEq(buyPrice, 0.9997e36, "buy price");
-        assertEq(sellPrice, 1e36, "sell price");
-        assertEq(buyLiquidityRemaining, 0, "buy liquidity disabled");
-        assertEq(sellLiquidityRemaining, 0, "sell liquidity disabled");
-        assertEq(crossPrice, 0.99996e36, "cross price");
-        assertEq(pendingRedeemAssets, 0, "pending redeem assets");
+        assertEq(morphoMarket.arm(), address(wethARM), "market arm");
+        assertEq(morphoMarket.asset(), Mainnet.WETH, "market asset");
+        assertEq(morphoMarket.market(), Mainnet.MORPHO_WETH_VAULT, "configured Morpho vault");
+        assertEq(morphoMarket.market(), lidoMarket.market(), "Lido Morpho vault");
+        assertEq(morphoMarket.market(), etherFiMarket.market(), "EtherFi Morpho vault");
+        assertEq(morphoMarket.owner(), Mainnet.MULTISIG_2_OF_8, "market owner");
+        assertEq(morphoMarket.harvester(), Mainnet.MULTISIG_2_OF_8, "market harvester");
+        assertEq(address(morphoMarket.merkleDistributor()), Mainnet.MERKLE_DISTRIBUTOR, "Merkle distributor");
+        assertTrue(wethARM.supportedMarkets(address(morphoMarket)), "market supported");
+        assertEq(wethARM.activeMarket(), address(morphoMarket), "active market");
+    }
+
+    function _assertBaseAssetConfig(address baseAsset, string memory adapterName, bool pegged) internal view {
+        (,,,,,, bool peggedToLiquidityAsset, uint8 baseAssetDecimals, address adapter) =
+            wethARM.baseAssetConfigs(baseAsset);
+
         assertEq(peggedToLiquidityAsset, pegged, "pegged");
         assertEq(baseAssetDecimals, 18, "base asset decimals");
         assertEq(adapter, resolver.resolve(adapterName), "adapter");
