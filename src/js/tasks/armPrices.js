@@ -18,6 +18,7 @@ const {
   rangeSellPrice,
   rangeBuyPrice,
 } = require("../utils/pricing");
+const { haveSwapCapsChanged } = require("../utils/priceUpdate");
 
 const log = require("../utils/logger")("task:prices");
 
@@ -360,11 +361,32 @@ const setPrices = async (options) => {
   const toleranceScaled = parseUnits(tolerance.toString(), 36 - 4);
   log(`tolerance          : ${formatUnits(toleranceScaled, 32)} basis points`);
 
+  const targetBuyAmount = parseSwapCap(buyAmount);
+  const targetSellAmount = parseSwapCap(sellAmount);
+  const swapCapsChanged = haveSwapCapsChanged(
+    baseContext,
+    targetBuyAmount,
+    targetSellAmount,
+  );
+  if (baseContext.version === "multiBase") {
+    log(`current buy amount : ${config.buyLiquidityRemaining}`);
+    log(`target buy amount  : ${targetBuyAmount}`);
+    log(`current sell amount: ${config.sellLiquidityRemaining}`);
+    log(`target sell amount : ${targetSellAmount}`);
+  }
+
   // decide if rates need to be updated
-  if (diffSellPrice > toleranceScaled || diffBuyPrice > toleranceScaled) {
+  if (
+    diffSellPrice > toleranceScaled ||
+    diffBuyPrice > toleranceScaled ||
+    swapCapsChanged
+  ) {
     console.log(`About to update ARM prices`);
     console.log(`sell: ${formatUnits(targetSellPrice, 36)}`);
     console.log(`buy : ${formatUnits(targetBuyPrice, 36)}`);
+    if (swapCapsChanged) {
+      console.log(`Buy or sell amount has changed`);
+    }
 
     if (dryrun) {
       console.log(`Dry run mode - not calling setPrices`);
@@ -376,8 +398,8 @@ const setPrices = async (options) => {
       signer,
       buyPrice: targetBuyPrice,
       sellPrice: targetSellPrice,
-      buyAmount: parseSwapCap(buyAmount),
-      sellAmount: parseSwapCap(sellAmount),
+      buyAmount: targetBuyAmount,
+      sellAmount: targetSellAmount,
     });
 
     await logTxDetails(tx, "setPrices", options.confirm);
