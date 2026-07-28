@@ -8,7 +8,15 @@ import { mainnet } from "../../utils/addresses";
 const multiAssetARMAbi = require("../../../abis/MultiAssetARM.json");
 
 const LIDO_BASES = new Set(["STETH", "WSTETH"]);
-const SUPPORTED_BASES = new Set(["STETH", "WSTETH", "EETH", "WEETH"]);
+const ORIGIN_BASES = new Set(["OETH", "WOETH"]);
+const SUPPORTED_BASES = new Set([
+  "STETH",
+  "WSTETH",
+  "EETH",
+  "WEETH",
+  "OETH",
+  "WOETH",
+]);
 
 const lidoDefaults = {
   maxBuyPrice: 0.9999,
@@ -30,6 +38,16 @@ const etherFiDefaults = {
   kyber: true,
 };
 
+const originDefaults = {
+  maxBuyPrice: 0.9995,
+  minBuyPrice: 0.996,
+  maxSellPrice: 0.9999,
+  minSellPrice: 0.9995,
+  tolerance: 0.3,
+  inch: false,
+  kyber: true,
+};
+
 action({
   name: "setPricesWETH",
   description: "Set prices for WETH ARM",
@@ -39,7 +57,7 @@ action({
       .addOptionalParam(
         "bases",
         "Comma-separated list of base assets to set prices for.",
-        "STETH,WSTETH,EETH,WEETH",
+        "STETH,WSTETH,EETH,WEETH,OETH,WOETH",
         types.string,
       )
       .addOptionalParam(
@@ -160,7 +178,11 @@ action({
 
     log.info("Setting prices for WETH ARM");
     for (const base of bases) {
-      const defaults = LIDO_BASES.has(base) ? lidoDefaults : etherFiDefaults;
+      const defaults = LIDO_BASES.has(base)
+        ? lidoDefaults
+        : ORIGIN_BASES.has(base)
+          ? originDefaults
+          : etherFiDefaults;
       await setPricesForBases({
         setPrices,
         bases: [base],
