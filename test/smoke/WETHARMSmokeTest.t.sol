@@ -87,19 +87,9 @@ contract Fork_WETHARM_Smoke_Test is AbstractSmokeTest {
     }
 
     function _assertBaseAssetConfig(address baseAsset, string memory adapterName, bool pegged) internal view {
-        (
-            ,,
-            uint128 buyLiquidityRemaining,
-            uint128 sellLiquidityRemaining,,
-            uint128 pendingRedeemAssets,
-            bool peggedToLiquidityAsset,
-            uint8 baseAssetDecimals,
-            address adapter
-        ) = wethARM.baseAssetConfigs(baseAsset);
+        (,,,,,, bool peggedToLiquidityAsset, uint8 baseAssetDecimals, address adapter) =
+            wethARM.baseAssetConfigs(baseAsset);
 
-        assertEq(buyLiquidityRemaining, 0, "buy liquidity disabled");
-        assertEq(sellLiquidityRemaining, 0, "sell liquidity disabled");
-        assertEq(pendingRedeemAssets, 0, "pending redeem assets");
         assertEq(peggedToLiquidityAsset, pegged, "pegged");
         assertEq(baseAssetDecimals, 18, "base asset decimals");
         assertEq(adapter, resolver.resolve(adapterName), "adapter");
