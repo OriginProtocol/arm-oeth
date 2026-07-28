@@ -13,6 +13,7 @@ WHERE product = 'arm-oeth'
     'mainnet_collect_usd_fees',
     'mainnet_allocate_usd',
     'mainnet_set_prices_usd',
+    'mainnet_set_prices_weth',
     'mainnet_pause_usd',
     'mainnet_pause_lido',
     'mainnet_pause_etherfi',
@@ -48,7 +49,8 @@ INSERT INTO schedules (product, name, command, cron_expr, timezone, enabled, not
 ('arm-oeth', 'mainnet_auto_claim_weth_etherfi_withdraw',  'cd /app && pnpm hardhat autoClaimWETHEtherFiWithdraw --network mainnet',   '40 * * * *',            'UTC', false, NULL),
 ('arm-oeth', 'mainnet_collect_weth_fees',                 'cd /app && pnpm hardhat collectWETHFees --network mainnet',                '30 12 * * *',           'UTC', false, NULL),
 ('arm-oeth', 'mainnet_allocate_weth',                     'cd /app && pnpm hardhat allocateWETH --network mainnet',                   '38,08 * * * *',         'UTC', false, NULL),
-('arm-oeth', 'mainnet_set_prices_weth',                   'cd /app && pnpm hardhat setPricesWETH --network mainnet',                  '*/30 * * * *',          'UTC', false, NULL),
+('arm-oeth', 'mainnet_set_prices_weth_lido',              'cd /app && pnpm hardhat setPricesWETH --bases STETH,WSTETH --network mainnet --fee 0.6 --inch false --kyber true --tolerance 0.1 --amount 30 --offset 0.3 --max-buy-price 0.99996 --min-sell-price 0.99998', '*/10 * * * *', 'UTC', false, NULL),
+('arm-oeth', 'mainnet_set_prices_weth_etherfi',           'cd /app && pnpm hardhat setPricesWETH --bases EETH,WEETH --network mainnet --fee 0.6 --inch false --kyber true --tolerance 0.1 --amount 30 --offset 0.3 --max-buy-price 0.99996 --min-sell-price 0.99998', '2-59/10 * * * *', 'UTC', false, NULL),
 -- Emergency pause action: manual-only (enabled=false). Edit `--arm` before
 -- using "Run now". The supported Ethereum ARMs are lido, etherfi, ethena,
 -- oeth, usdc, and weth. cron_expr is a placeholder and never fires while disabled.

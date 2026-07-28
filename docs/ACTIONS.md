@@ -73,15 +73,16 @@ range, tolerance, and quote-amount flags apply to every selected base.
 
 ## WETH ARM — mainnet
 
-| Action                           | Cron                    | Description                                    |
-| -------------------------------- | ----------------------- | ---------------------------------------------- |
-| `autoRequestWETHLidoWithdraw`    | `29,58 12-23,0-8 * * *` | Request stETH/wstETH withdrawals from WETH ARM |
-| `autoClaimWETHLidoWithdraw`      | `32 0,12 * * *`         | Claim stETH/wstETH withdrawals for WETH ARM    |
-| `autoRequestWETHEtherFiWithdraw` | `10,40 * * * *`         | Request eETH/weETH withdrawals from WETH ARM   |
-| `autoClaimWETHEtherFiWithdraw`   | `40 * * * *`            | Claim eETH/weETH withdrawals for WETH ARM      |
-| `collectWETHFees`                | `30 12 * * *`           | Collect fees from WETH ARM                     |
-| `allocateWETH`                   | `38,08 * * * *`         | Allocate liquidity for WETH ARM                |
-| `setPricesWETH`                  | `*/30 * * * *`          | Set prices for all four WETH ARM base assets   |
+| Action                                                                                                                                                             | Cron                    | Description                                    |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------- | ---------------------------------------------- |
+| `autoRequestWETHLidoWithdraw`                                                                                                                                      | `29,58 12-23,0-8 * * *` | Request stETH/wstETH withdrawals from WETH ARM |
+| `autoClaimWETHLidoWithdraw`                                                                                                                                        | `32 0,12 * * *`         | Claim stETH/wstETH withdrawals for WETH ARM    |
+| `autoRequestWETHEtherFiWithdraw`                                                                                                                                   | `10,40 * * * *`         | Request eETH/weETH withdrawals from WETH ARM   |
+| `autoClaimWETHEtherFiWithdraw`                                                                                                                                     | `40 * * * *`            | Claim eETH/weETH withdrawals for WETH ARM      |
+| `collectWETHFees`                                                                                                                                                  | `30 12 * * *`           | Collect fees from WETH ARM                     |
+| `allocateWETH`                                                                                                                                                     | `38,08 * * * *`         | Allocate liquidity for WETH ARM                |
+| `setPricesWETH --bases STETH,WSTETH --fee 0.6 --inch false --kyber true --tolerance 0.1 --amount 30 --offset 0.3 --max-buy-price 0.99996 --min-sell-price 0.99998` | `*/10 * * * *`          | Set WETH ARM prices for Lido base assets       |
+| `setPricesWETH --bases EETH,WEETH --fee 0.6 --inch false --kyber true --tolerance 0.1 --amount 30 --offset 0.3 --max-buy-price 0.99996 --min-sell-price 0.99998`   | `2-59/10 * * * *`       | Set WETH ARM prices for Ether.fi base assets   |
 
 ## Origin ARM — Sonic
 
