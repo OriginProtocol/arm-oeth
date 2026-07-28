@@ -43,13 +43,12 @@ range, tolerance, and quote-amount flags apply to every selected base.
 
 ## EtherFi ARM — mainnet
 
-| Action                       | Cron            | Description                                  |
-| ---------------------------- | --------------- | -------------------------------------------- |
-| `autoRequestEtherFiWithdraw` | `10,40 * * * *` | Request EtherFi withdrawals from EtherFi ARM |
-| `autoClaimEtherFiWithdraw`   | `40 * * * *`    | Claim EtherFi withdrawals from EtherFi ARM   |
-| `collectEtherFiFees`         | `45 23 * * *`   | Collect fees from EtherFi ARM                |
-| `allocateEtherFi`            | `52 * * * *`    | Allocate liquidity for EtherFi ARM           |
-| `setPricesEtherFi`           | `2,32 * * * *`  | Set prices for EtherFi ARM                   |
+| Action                     | Cron           | Description                                |
+| -------------------------- | -------------- | ------------------------------------------ |
+| `autoClaimEtherFiWithdraw` | `40 * * * *`   | Claim EtherFi withdrawals from EtherFi ARM |
+| `collectEtherFiFees`       | `45 23 * * *`  | Collect fees from EtherFi ARM              |
+| `allocateEtherFi`          | `52 * * * *`   | Allocate liquidity for EtherFi ARM         |
+| `setPricesEtherFi`         | `2,32 * * * *` | Set prices for EtherFi ARM                 |
 
 ## Ethena ARM — mainnet
 
