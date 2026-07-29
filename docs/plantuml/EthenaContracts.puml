@@ -36,10 +36,6 @@ object "StakedUSDe" as susde <<Ethena>><<Proxy>> #$thirdPartyColor {
     asset: USDe
 }
 
-' object "Aave Market" as aMarket <<Origin>><<Proxy>> #$originColor {
-'     asset: USDe
-' }
-
 object "Aave Vault" as aVault <<Aave>><<Proxy>> #$thirdPartyColor {
     asset: USDe
 }
@@ -48,15 +44,11 @@ object "aUSDe" as aUSDe <<Aave>> #$thirdPartyColor {
     asset: USDe
 }
 
-arm <.> capMan
+capMan <.> arm
 arm ..> adapter
-adapter ..> unstaker
+adapter .> unstaker
 adapter ..> susde
 unstaker ..> susde
-' arm ..> aMarket
-' aMarket ..> aVault
-' aVault ..> aUSDe
-' aMarket ...> aUSDe
 arm ..> aVault
 aVault ..> aUSDe
 

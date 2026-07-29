@@ -24,6 +24,14 @@ object "MultiAssetARM\n(WETH ARM)" as arm <<Origin>><<Proxy>> #$originColor {
     base assets: stETH, wstETH, eETH, weETH
 }
 
+object "Morpho Market" as morphoMarket <<Origin>><<Proxy>> #$originColor {
+    asset: WETH
+}
+
+object "Yearn WETH ARM Vault" as morphoVault <<Morpho>> #$thirdPartyColor {
+    asset: WETH
+}
+
 object "CapManager" as capMan <<Origin>><<Proxy>> #$originColor {
     total-assets cap
     liquidity-provider caps
@@ -59,8 +67,10 @@ object "Ether.fi\nWithdrawal NFT" as etherfiNft <<EtherFi>><<Proxy>> #$thirdPart
 }
 
 zapper ..> arm : deposits for receiver
+arm .right.> morphoMarket : deposit /\nredeem
+morphoMarket ...> morphoVault : deposit /\nredeem
 
-arm <.> capMan : deposit caps
+capMan <.> arm : deposit caps
 arm ..> stethAdapter : request / claim
 arm ..> wstethAdapter : request / claim
 arm ..> eethAdapter : request / claim
