@@ -75,11 +75,15 @@ contract Fork_PaxosARM_Smoke_Test is AbstractSmokeTest {
         _assertBaseAssetListed(baseAssets, Mainnet.USDG, "USDG listed as base asset");
 
         assertEq(capManager.arm(), address(usdcARM), "cap manager arm");
-        assertEq(capManager.totalAssetsCap(), 100_000e6, "total assets cap");
+        assertEq(capManager.totalAssetsCap(), 1_000_000e18, "total assets cap");
         assertEq(capManager.accountCapEnabled(), true, "account cap enabled");
-        assertEq(capManager.liquidityProviderCaps(Mainnet.TREASURY_LP), 100_000e6, "liquidity provider cap");
+        assertEq(
+            capManager.liquidityProviderCaps(Mainnet.TREASURY_LP),
+            1_000_000e18 - 100_000e6,
+            "liquidity provider cap"
+        );
         assertEq(capManager.operator(), operator, "cap manager operator");
-        assertEq(capManager.owner(), Mainnet.MULTISIG_5_OF_8, "cap manager owner");
+        assertEq(capManager.owner(), Mainnet.MULTISIG_2_OF_8, "cap manager owner");
     }
 
     function test_baseAssetConfigs() external view {
@@ -181,7 +185,7 @@ contract Fork_PaxosARM_Smoke_Test is AbstractSmokeTest {
 
         // 2. Owner configures the Paxos deposit address (mocked as a test address).
         address paxosRecipient = makeAddr("paxosRecipient");
-        vm.prank(Mainnet.MULTISIG_2_OF_8);
+        vm.prank(Mainnet.MULTISIG_5_OF_8);
         adapter.setPaxosRecipient(paxosRecipient);
 
         // 3. Operator submits the queued base assets to Paxos.
