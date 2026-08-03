@@ -12,12 +12,19 @@ action({
   description: "Claim EtherFi withdrawals from WETH ARM",
   chains: [1],
   params: (t) =>
-    t.addOptionalParam(
-      "id",
-      "Specific EtherFi withdrawal request identifier to claim. (default: all)",
-      undefined,
-      types.string,
-    ),
+    t
+      .addOptionalParam(
+        "id",
+        "Specific EtherFi withdrawal request identifier to claim. (deprecated: use ids)",
+        undefined,
+        types.string,
+      )
+      .addOptionalParam(
+        "ids",
+        "Comma-separated EtherFi withdrawal request identifiers to claim. (default: all)",
+        undefined,
+        types.string,
+      ),
   run: async ({ signer, log, args }) => {
     const arm = new ethers.Contract(mainnet.wethARM, multiAssetARMAbi, signer);
 
@@ -31,6 +38,7 @@ action({
         arm,
         armName: "WETH",
         id: args.id,
+        ids: args.ids,
       },
     });
   },

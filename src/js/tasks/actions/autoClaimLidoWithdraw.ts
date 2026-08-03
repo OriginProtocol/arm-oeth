@@ -13,12 +13,19 @@ action({
   description: "Claim Lido withdrawals from Lido ARM",
   chains: [1],
   params: (t) =>
-    t.addOptionalParam(
-      "id",
-      "Specific Lido withdrawal request identifier to claim. (default: all)",
-      undefined,
-      types.string,
-    ),
+    t
+      .addOptionalParam(
+        "id",
+        "Specific Lido withdrawal request identifier to claim. (deprecated: use ids)",
+        undefined,
+        types.string,
+      )
+      .addOptionalParam(
+        "ids",
+        "Comma-separated Lido withdrawal request identifiers to claim. (default: all)",
+        undefined,
+        types.string,
+      ),
   run: async ({ signer, log, args }) => {
     const arm = new ethers.Contract(mainnet.lidoARM, lidoARMAbi, signer);
     const withdrawalQueue = new ethers.Contract(
@@ -38,6 +45,7 @@ action({
         armName: "Lido",
         withdrawalQueue,
         id: args.id,
+        ids: args.ids,
       },
     });
   },
