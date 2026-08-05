@@ -36,15 +36,15 @@ action({
       )
       .addOptionalParam(
         "buyAmount",
-        "Liquidity asset amount remaining at the buy price for multi-base ARMs, as an integer in native token units.",
+        "USDC remaining at the buy price, in token units (1 = 1 USDC).",
         undefined,
-        types.string,
+        types.float,
       )
       .addOptionalParam(
         "sellAmount",
-        "Base asset amount remaining at the sell price for multi-base ARMs, as an integer in native token units.",
+        "Base asset remaining at the sell price, in token units (1 = 1 token).",
         undefined,
-        types.string,
+        types.float,
       )
       .addOptionalParam(
         "maxBuyPrice",
