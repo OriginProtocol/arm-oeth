@@ -30,7 +30,7 @@ contract EtherFiAssetAdapter is Initializable, IAssetAdapter, IERC721Receiver {
     uint256 internal nextPendingIndex;
 
     /// @dev True only while the adapter is actively claiming Ether.fi withdrawal NFTs.
-    bool internal claimingEtherFi;
+    bool internal transient claimingEtherFi;
 
     /// @notice Thrown when Ether.fi claim proceeds arrive without an adapter-initiated claim.
     error UnauthorizedEtherFiClaim(); // 0x7b2b45a4
