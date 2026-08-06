@@ -4,6 +4,7 @@ pragma solidity ^0.8.23;
 import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 import {OwnableOperable} from "./OwnableOperable.sol";
@@ -50,6 +51,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
     uint256 public immutable claimDelay;
     /// @notice Decimals of the liquidity asset. Must be 6 or 18. LP shares stay at 18 decimals.
     uint8 public immutable liquidityAssetDecimals;
+    /// @notice One whole liquidity asset in its native decimals. 1e18 for an 18-decimal asset and 1e6 for a
+    /// 6-decimal asset.
+    uint256 internal immutable ASSET_SCALE;
     /// @notice Native-liquidity floor used by totalAssets()/insolvency/cross-price checks and pulled at init.
     /// @dev Set in the constructor: 1e12 (1e-6 token) for an 18-decimal liquidity asset, 1 (1e-6 token)
     /// for a 6-decimal one. The 18-decimal value is unchanged from the original MIN_TOTAL_SUPPLY usage.
@@ -241,6 +245,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
 
         liquidityAsset = _liquidityAsset;
         liquidityAssetDecimals = decimals_;
+        ASSET_SCALE = 10 ** decimals_;
         // Native-liquidity floor. 1e12 for an 18-decimal asset keeps existing deployments unchanged;
         // 1 for a 6-decimal asset is the same 1e-6-token magnitude.
         MIN_LIQUIDITY = 10 ** (decimals_ - 6);
@@ -786,15 +791,26 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
         uint256 grossAssets = _availableAssets();
         uint256 feesAccruedMem = feesAccrued;
 
-        // At the native-liquidity floor, a new deposit would either backfill senior liabilities
-        // or dilute live LPs after a real asset loss. Allow only the initial deposit, when the dead
-        // shares are the entire supply and no fees or withdrawals are outstanding.
-        bool atAssetFloor = feesAccruedMem + MIN_LIQUIDITY >= grossAssets;
-        bool hasLiveLps = totalSupply() > MIN_TOTAL_SUPPLY;
-        if (atAssetFloor && (hasLiveLps || feesAccruedMem != 0 || reservedWithdrawLiquidity != 0)) revert Insolvent();
+        // Accrued fees are senior to LP shares and cannot be used as backing for a new deposit.
+        if (grossAssets < feesAccruedMem) revert Insolvent();
+        uint256 netAssets = grossAssets - feesAccruedMem;
 
-        uint256 netAssets = atAssetFloor ? MIN_LIQUIDITY : grossAssets - feesAccruedMem;
-        shares = assets * totalSupply() / netAssets;
+        uint256 supply = totalSupply();
+        bool hasLiveLps = supply > MIN_TOTAL_SUPPLY;
+        if (hasLiveLps) {
+            // Block deposits after a loss has pushed assets per share below the initial exchange rate.
+            // Outstanding withdrawal shares remain in totalSupply(), so their backing is included here.
+            // LP shares always have 18 decimals. For 18-decimal liquidity, 100e18 shares require
+            // 100e18 assets. For 6-decimal liquidity, 100e18 shares require 100e6 assets. Round up
+            // so a fractional asset unit cannot leave the live share supply underbacked.
+            uint256 requiredAssets = Math.mulDiv(supply, ASSET_SCALE, 1e18, Math.Rounding.Ceil);
+            if (netAssets < requiredAssets) revert Insolvent();
+        } else if (feesAccruedMem != 0 || reservedWithdrawLiquidity != 0) {
+            // Only the dead shares exist, so deposits are valid only in the clean initial state.
+            revert Insolvent();
+        }
+
+        shares = assets * supply / netAssets;
 
         // Transfer liquidity from the depositor before minting LP shares.
         IERC20(liquidityAsset).transferFrom(msg.sender, address(this), assets);

@@ -218,10 +218,10 @@ abstract contract TargetFunction is Invariant_LidoARM_Setup_Test {
         (address user, uint256 balance) = selectUserWithLiqudity(from);
         vm.assume(user != address(0)); // Ensure we found a user with liquidity
 
-        // Mirror AbstractARM._deposit's Insolvent() guard: at the asset floor, deposits are allowed
-        // only before any live LP shares exist and when there are no senior liabilities.
+        // Mirror AbstractARM._deposit's Insolvent() guard: live LP shares must retain at least the
+        // initial assets-per-share rate. The Lido ARM uses 18-decimal liquidity and LP shares.
         vm.assume(
-            lidoARM.totalAssets() > 1e12
+            (lidoARM.totalSupply() > MIN_TOTAL_SUPPLY && lidoARM.totalAssets() >= lidoARM.totalSupply())
                 || (lidoARM.totalSupply() == MIN_TOTAL_SUPPLY
                     && lidoARM.feesAccrued() == 0
                     && lidoARM.reservedWithdrawLiquidity() == 0)

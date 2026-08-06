@@ -14,16 +14,15 @@ import {IERC20} from "contracts/Interfaces.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 /// @author Origin Protocol Inc
-/// @notice Fuzzes LP deposits at three share-price regimes (1:1, post-yield, post-loss) to confirm the
-///         ERC-4626-style mint formula, balances, and totalAssets/totalSupply accounting stay consistent
-///         across the full amount range.
-contract Unit_Fuzz_MultiAssetARM_Deposit_Test is Unit_MultiAssetARM_Shared_Test {
+/// @notice Fuzzes LP deposits with both 6- and 18-decimal liquidity at the initial, post-yield, and
+///         post-loss share-price regimes.
+abstract contract Deposit_Fuzz_Test is Unit_MultiAssetARM_Shared_Test {
     using Math for uint256;
 
     //////////////////////////////////////////////////////
     /// ---                  SETUP                     ---
     //////////////////////////////////////////////////////
-    function setUp() public override {
+    function setUp() public virtual override {
         super.setUp();
         desactiveCapManager();
     }
@@ -32,7 +31,8 @@ contract Unit_Fuzz_MultiAssetARM_Deposit_Test is Unit_MultiAssetARM_Shared_Test 
     /// ---             Share price = 1                ---
     //////////////////////////////////////////////////////
     function testFuzz_Deposit_Amount(uint128 amount) public {
-        // 1:1 regime: only the MIN_TOTAL_SUPPLY dead-shares exist, so shares == assets exactly.
+        // Initial regime: only the MIN_TOTAL_SUPPLY dead shares exist, so one whole liquidity token
+        // mints one 18-decimal LP share regardless of the liquidity asset's decimals.
         // Upper bound is uint128.max because there is no SafeCast on deposit; the only revert path is
         // `ARM: insolvent`, which cannot fire here (reservedWithdrawLiquidity == 0).
         uint256 amountIn = _bound(uint256(amount), 1, type(uint128).max);
@@ -42,8 +42,8 @@ contract Unit_Fuzz_MultiAssetARM_Deposit_Test is Unit_MultiAssetARM_Shared_Test 
         // Expected shares computed via the same mulDiv as the contract; written explicitly so any future
         // change to convertToShares (e.g. rounding direction) shows up here.
         uint256 expectedShares = amountIn.mulDiv(supplyBefore, assetsBefore, Math.Rounding.Floor);
-        // Sanity: in the 1:1 setup state shares must equal assets.
-        assertEq(expectedShares, amountIn, "expectedShares == amountIn at 1:1");
+        uint256 expectedAtInitialRate = amountIn.mulDiv(1e18, LIQUIDITY_UNIT(), Math.Rounding.Floor);
+        assertEq(expectedShares, expectedAtInitialRate, "shares at initial rate");
 
         deal(address(liquidity), alice, amountIn);
 
@@ -72,12 +72,12 @@ contract Unit_Fuzz_MultiAssetARM_Deposit_Test is Unit_MultiAssetARM_Shared_Test 
     /// ---             Share price > 1                ---
     //////////////////////////////////////////////////////
     function testFuzz_Deposit_AfterYield(uint128 fuzzedYield, uint128 amount) public {
-        aliceFirstDeposit(100 ether);
+        aliceFirstDeposit(DEFAULT_AMOUNT());
 
-        // Lower yield bound at 1 ether so the share price is meaningfully above 1; below this, integer
+        // Lower yield bound at one token so the share price is meaningfully above par; below this, integer
         // truncation can collapse expectedShares back to amountIn on small deposits.
         // Upper bound at uint96.max keeps (supply + yield) safely inside uint128 downstream.
-        uint256 yield = _bound(uint256(fuzzedYield), 1 ether, type(uint96).max);
+        uint256 yield = _bound(uint256(fuzzedYield), LIQUIDITY_UNIT(), type(uint96).max);
         deal(address(liquidity), address(arm), liquidity.balanceOf(address(arm)) + yield);
 
         uint256 amountIn = _bound(uint256(amount), 1, type(uint128).max);
@@ -88,9 +88,8 @@ contract Unit_Fuzz_MultiAssetARM_Deposit_Test is Unit_MultiAssetARM_Shared_Test 
         uint256 aliceSharesBefore = arm.balanceOf(alice);
         uint256 expectedShares = amountIn.mulDiv(supplyBefore, assetsBefore, Math.Rounding.Floor);
 
-        // Property: yield > 0 ⇒ totalSupply < totalAssets ⇒ floor(amountIn * S / A) < amountIn strictly,
-        // since amountIn * S < amountIn * A and integer division can only floor. Holds for amountIn >= 1.
-        assertLt(expectedShares, amountIn, "shares < amountIn after yield");
+        uint256 sharesAtInitialRate = amountIn.mulDiv(1e18, LIQUIDITY_UNIT(), Math.Rounding.Floor);
+        assertLt(expectedShares, sharesAtInitialRate, "shares below initial-rate amount after yield");
 
         // Expect events
         vm.expectEmit({emitter: address(liquidity)});
@@ -116,44 +115,47 @@ contract Unit_Fuzz_MultiAssetARM_Deposit_Test is Unit_MultiAssetARM_Shared_Test 
     /// ---             Share price < 1                ---
     //////////////////////////////////////////////////////
     function testFuzz_Deposit_AfterLoss(uint128 fuzzedLoss, uint128 amount) public {
-        aliceFirstDeposit(100 ether);
+        aliceFirstDeposit(DEFAULT_AMOUNT());
 
-        // Bound loss strictly below the LP liquid asset to keep totalAssets > MIN_TOTAL_SUPPLY, otherwise
-        // the totalAssets() clamp at AbstractARM.sol:901 kicks in and the simple mulDiv expectation no
-        // longer matches the contract's view. The insolvency require passes because reservedWithdrawLiquidity == 0.
-        uint256 loss = _bound(uint256(fuzzedLoss), 1, 100 ether - 1);
+        // Any loss below the initial share price makes the ARM loss-impaired for new deposits.
+        uint256 loss = _bound(uint256(fuzzedLoss), 1, DEFAULT_AMOUNT() - 1);
         vm.prank(address(arm));
         liquidity.transfer(address(0), loss);
 
         uint256 amountIn = _bound(uint256(amount), 1, type(uint128).max);
         deal(address(liquidity), alice, amountIn);
 
-        uint256 supplyBefore = arm.totalSupply();
-        uint256 assetsBefore = arm.totalAssets();
-        uint256 aliceSharesBefore = arm.balanceOf(alice);
-        uint256 expectedShares = amountIn.mulDiv(supplyBefore, assetsBefore, Math.Rounding.Floor);
+        vm.expectRevert(AbstractARM.Insolvent.selector);
+        vm.prank(alice);
+        arm.deposit(amountIn);
+    }
 
-        // Property: loss > 0 ⇒ share price < 1 ⇒ shares >= amountIn. Equality only on inputs small enough
-        // for the spread to truncate; for any non-trivial amountIn the inequality is strict.
-        assertGe(expectedShares, amountIn, "shares >= amountIn after loss");
+    function testFuzz_Deposit_AtOrAboveRequiredBacking(uint128 fuzzedSurplus, uint128 amount) public {
+        aliceFirstDeposit(DEFAULT_AMOUNT());
 
-        // Expect events
-        vm.expectEmit({emitter: address(liquidity)});
-        emit IERC20.Transfer(alice, address(arm), amountIn);
-        vm.expectEmit({emitter: address(arm)});
-        emit IERC20.Transfer(address(0), alice, expectedShares);
-        vm.expectEmit({emitter: address(arm)});
-        emit AbstractARM.Deposit(alice, amountIn, expectedShares);
+        uint256 requiredAssets = arm.totalSupply().mulDiv(LIQUIDITY_UNIT(), 1e18, Math.Rounding.Ceil);
+        uint256 surplus = _bound(uint256(fuzzedSurplus), 0, DEFAULT_AMOUNT() * 100);
+        deal(address(liquidity), address(arm), requiredAssets + surplus);
 
-        // When
+        uint256 amountIn = _bound(uint256(amount), 1, type(uint128).max);
+        deal(address(liquidity), alice, amountIn);
+
+        uint256 expectedShares = amountIn.mulDiv(arm.totalSupply(), arm.totalAssets(), Math.Rounding.Floor);
         vm.prank(alice);
         uint256 shares = arm.deposit(amountIn);
 
-        // Then
-        assertEq(shares, expectedShares, "shares returned");
-        assertEq(arm.balanceOf(alice), aliceSharesBefore + expectedShares, "alice shares");
-        assertEq(liquidity.balanceOf(alice), 0, "alice liquidity");
-        assertEq(arm.totalAssets(), assetsBefore + amountIn, "totalAssets");
-        assertEq(arm.totalSupply(), supplyBefore + expectedShares, "totalSupply");
+        assertEq(shares, expectedShares, "shares at or above required backing");
+    }
+}
+
+contract Deposit_Fuzz_18dec_Test is Deposit_Fuzz_Test {
+    function liquidityDecimals() internal pure override returns (uint8) {
+        return 18;
+    }
+}
+
+contract Deposit_Fuzz_6dec_Test is Deposit_Fuzz_Test {
+    function liquidityDecimals() internal pure override returns (uint8) {
+        return 6;
     }
 }

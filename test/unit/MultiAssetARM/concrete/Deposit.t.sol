@@ -71,8 +71,9 @@ abstract contract Deposit_Test is Unit_MultiAssetARM_Shared_Test {
     function test_Deposit_WithBackedAccruedFees() public {
         uint256 fees = _generateFees();
 
-        // Keep gross assets above the accrued-fee floor so deposits remain open.
-        _setArmBalances(fees + MIN_LIQUIDITY() + LIQUIDITY_UNIT(), 0);
+        // Keep net assets at the initial exchange rate after excluding accrued fees.
+        uint256 requiredAssets = arm.totalSupply() * LIQUIDITY_UNIT() / 1e18;
+        _setArmBalances(fees + requiredAssets, 0);
 
         uint256 amount = LIQUIDITY_UNIT();
         uint256 expectedShares = arm.convertToShares(amount);
@@ -106,6 +107,71 @@ abstract contract Deposit_Test is Unit_MultiAssetARM_Shared_Test {
         // Simulate a real loss that leaves only the native-liquidity floor backing live LP shares.
         _setArmBalances(MIN_LIQUIDITY(), 0);
         assertEq(arm.totalAssets(), MIN_LIQUIDITY(), "at asset floor");
+
+        _mint(liquidity, bobby, LIQUIDITY_UNIT());
+        vm.expectRevert(AbstractARM.Insolvent.selector);
+        vm.prank(bobby);
+        arm.deposit(LIQUIDITY_UNIT());
+    }
+
+    function test_Deposit_RevertWhen_AssetFloorBypassedByOneUnitDonation() public {
+        firstDeposit(alice, DEFAULT_AMOUNT());
+
+        _setArmBalances(MIN_LIQUIDITY() + 1, 0);
+        assertGt(arm.totalAssets(), MIN_LIQUIDITY(), "above asset floor");
+
+        _mint(liquidity, bobby, DEFAULT_AMOUNT());
+        vm.expectRevert(AbstractARM.Insolvent.selector);
+        vm.prank(bobby);
+        arm.deposit(DEFAULT_AMOUNT());
+    }
+
+    function test_Deposit_RevertWhen_OneUnitBelowRequiredBacking() public {
+        firstDeposit(alice, DEFAULT_AMOUNT());
+        uint256 requiredAssets = arm.totalSupply() * LIQUIDITY_UNIT() / 1e18;
+        _setArmBalances(requiredAssets - 1, 0);
+
+        _mint(liquidity, bobby, LIQUIDITY_UNIT());
+        vm.expectRevert(AbstractARM.Insolvent.selector);
+        vm.prank(bobby);
+        arm.deposit(LIQUIDITY_UNIT());
+    }
+
+    function test_Deposit_WhenExactlyAtRequiredBacking() public {
+        firstDeposit(alice, DEFAULT_AMOUNT());
+        uint256 requiredAssets = arm.totalSupply() * LIQUIDITY_UNIT() / 1e18;
+        _setArmBalances(requiredAssets, 0);
+
+        _mint(liquidity, bobby, LIQUIDITY_UNIT());
+        vm.prank(bobby);
+        uint256 shares = arm.deposit(LIQUIDITY_UNIT());
+
+        assertEq(shares, 1e18, "shares at initial rate");
+    }
+
+    function test_Deposit_WithFullyBackedOutstandingWithdrawal() public {
+        firstDeposit(alice, DEFAULT_AMOUNT());
+        uint256 aliceShares = arm.balanceOf(alice);
+        vm.prank(alice);
+        arm.requestRedeem(aliceShares / 2);
+        assertGt(arm.reservedWithdrawLiquidity(), 0, "withdrawal reserved");
+
+        _mint(liquidity, bobby, LIQUIDITY_UNIT());
+        vm.prank(bobby);
+        uint256 shares = arm.deposit(LIQUIDITY_UNIT());
+
+        // Withdrawal shares remain in totalSupply(), so the reservation must not be subtracted again.
+        assertEq(shares, 1e18, "shares at initial rate");
+    }
+
+    function test_Deposit_RevertWhen_OutstandingWithdrawalIsLossImpaired() public {
+        firstDeposit(alice, DEFAULT_AMOUNT());
+        uint256 aliceShares = arm.balanceOf(alice);
+        vm.prank(alice);
+        arm.requestRedeem(aliceShares / 2);
+
+        uint256 requiredAssets = arm.totalSupply() * LIQUIDITY_UNIT() / 1e18;
+        _setArmBalances(requiredAssets - 1, 0);
 
         _mint(liquidity, bobby, LIQUIDITY_UNIT());
         vm.expectRevert(AbstractARM.Insolvent.selector);

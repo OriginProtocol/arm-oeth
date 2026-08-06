@@ -84,11 +84,11 @@ abstract contract TargetFunctions is Setup, StdUtils {
     }
 
     function targetARMDeposit(uint256 amount, uint256 randomAddressIndex) external ensureExchangeRateIncrease {
-        // Mirror AbstractARM._deposit's Insolvent() guard: at the asset floor, deposits are allowed
-        // only before any live LP shares exist and when there are no senior liabilities.
+        // Mirror AbstractARM._deposit's Insolvent() guard: live LP shares must retain at least the
+        // initial assets-per-share rate. The Ethena ARM uses 18-decimal liquidity and LP shares.
         bool initialDeposit = arm.totalSupply() == DEFAULT_MIN_TOTAL_SUPPLY;
         if (assume(
-                arm.totalAssets() > 1e12
+                (!initialDeposit && arm.totalAssets() >= arm.totalSupply())
                     || (initialDeposit && arm.feesAccrued() == 0 && arm.reservedWithdrawLiquidity() == 0)
             )) {
             return;
