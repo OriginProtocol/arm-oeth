@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.8.23;
+pragma solidity ^0.8.36;
 
 /// @title DeploymentTypes
 /// @notice Core data structures and enums used throughout the deployment framework.
