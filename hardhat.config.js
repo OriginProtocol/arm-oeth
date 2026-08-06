@@ -109,10 +109,13 @@ module.exports = {
       chainId: 1,
     },
   },
-  solidity: "0.8.23",
-  settings: {
-    optimizer: {
-      enabled: true,
+  solidity: {
+    version: "0.8.36",
+    settings: {
+      evmVersion: "cancun",
+      optimizer: {
+        enabled: true,
+      },
     },
   },
   tracer: {

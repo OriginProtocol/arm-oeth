@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.23;
+pragma solidity ^0.8.36;
 
 // Deployment
 import {AbstractDeployScript} from "script/deploy/helpers/AbstractDeployScript.s.sol";

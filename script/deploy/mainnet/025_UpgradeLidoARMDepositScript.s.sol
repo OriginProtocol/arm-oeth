@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.23;
+pragma solidity ^0.8.36;
 
 // Contract
 import {LidoARM} from "contracts/LidoARM.sol";
