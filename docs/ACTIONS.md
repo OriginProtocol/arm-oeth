@@ -17,8 +17,9 @@ The mainnet `setPrices*` actions use `--amount` as the DEX swap amount when
 fetching the reference price quote. This is separate from `--buy-amount` and
 `--sell-amount`, which set the buy-side liquidity-asset and sell-side base-asset
 liquidity remaining on the Ethena, USDC, and WETH ARMs. If omitted, each limit is
-set to the maximum `uint128` value. Liquidity amounts are integer native token
-units (for example, `100000000` is 100 tokens for an asset with 6 decimals).
+set to the maximum `uint128` value. Liquidity amounts are token-denominated:
+`1` is one liquidity or base token, with the appropriate token decimals applied
+by the action.
 
 `--buy-price` and `--sell-price` bypass DEX-derived pricing and set an exact
 pair. Both must be supplied together; `--amount` is not used in this mode.

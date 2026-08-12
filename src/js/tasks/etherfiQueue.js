@@ -10,6 +10,7 @@ const {
 } = require("../utils/arm");
 const addresses = require("../utils/addresses");
 const { createApolloClient } = require("../utils/apollo");
+const { parseRequestIds } = require("../utils/requestIds");
 const { logTxDetails } = require("../utils/txLogger");
 
 const log = require("../utils/logger")("task:etherfiQueue");
@@ -42,12 +43,13 @@ const requestEtherFiWithdrawals = async (options) => {
 };
 
 const claimEtherFiWithdrawals = async (options) => {
-  const { signer, id } = options;
+  const { signer } = options;
   const baseContext = await resolveArmBase(options);
 
-  const requestIds = id
-    ? // If an id is provided, just claim that one
-      [id]
+  const selectedRequestIds = parseRequestIds(options);
+  const requestIds = selectedRequestIds
+    ? // If ids are provided, claim exactly those requests.
+      selectedRequestIds
     : // Get the outstanding EtherFi withdrawal requests for the ARM
       await claimableEtherFiRequests(signer);
 
