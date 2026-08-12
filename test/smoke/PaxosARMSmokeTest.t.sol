@@ -9,6 +9,7 @@ import {PaxosAssetAdapter} from "contracts/adapters/PaxosAssetAdapter.sol";
 import {CapManager} from "contracts/CapManager.sol";
 import {Proxy} from "contracts/Proxy.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
+import {MorphoVaultV2Market} from "contracts/markets/MorphoVaultV2Market.sol";
 
 contract Fork_PaxosARM_Smoke_Test is AbstractSmokeTest {
     IERC20 usdc;
@@ -87,6 +88,45 @@ contract Fork_PaxosARM_Smoke_Test is AbstractSmokeTest {
     function test_baseAssetConfigs() external view {
         _assertBaseAssetConfig(Mainnet.PYUSD, address(pyusdAdapter), "PYUSD");
         _assertBaseAssetConfig(Mainnet.USDG, address(usdgAdapter), "USDG");
+    }
+
+    function test_morphoMarketConfig() external view {
+        MorphoVaultV2Market morphoMarket = MorphoVaultV2Market(resolver.resolve("MORPHO_MARKET_USDC_ARM"));
+
+        assertEq(morphoMarket.arm(), address(usdcARM), "market arm");
+        assertEq(morphoMarket.asset(), Mainnet.USDC, "market asset");
+        assertEq(morphoMarket.market(), Mainnet.MORPHO_WINTERMUTE_USDC_PRIME_VAULT, "configured Morpho Vault V2");
+        assertEq(morphoMarket.owner(), Mainnet.MULTISIG_5_OF_8, "market owner");
+        assertEq(morphoMarket.harvester(), Mainnet.MULTISIG_2_OF_8, "market harvester");
+        assertEq(address(morphoMarket.merkleDistributor()), Mainnet.MERKLE_DISTRIBUTOR, "Merkle distributor");
+        assertTrue(usdcARM.supportedMarkets(address(morphoMarket)), "market supported");
+        assertEq(usdcARM.activeMarket(), address(0), "market not activated");
+    }
+
+    function test_morphoMarketDepositWithdraw() external {
+        MorphoVaultV2Market morphoMarket = MorphoVaultV2Market(resolver.resolve("MORPHO_MARKET_USDC_ARM"));
+        // This amount fits the Vault V2 cap headroom and downstream liquidity at the smoke-test fork.
+        // A successful round trip does not make maxWithdraw a general liquidity guarantee.
+        uint256 depositAmount = 10_000e6;
+
+        deal(address(usdc), address(usdcARM), depositAmount);
+        vm.startPrank(address(usdcARM));
+        usdc.approve(address(morphoMarket), depositAmount);
+        uint256 shares = morphoMarket.deposit(depositAmount, address(usdcARM));
+        vm.stopPrank();
+
+        assertGt(shares, 0, "vault shares minted");
+        assertEq(morphoMarket.balanceOf(address(usdcARM)), shares, "wrapper share balance");
+        assertEq(morphoMarket.maxRedeem(address(usdcARM)), shares, "max redeem exposes position");
+        uint256 maxAssets = morphoMarket.maxWithdraw(address(usdcARM));
+        assertApproxEqAbs(maxAssets, depositAmount, 1, "max withdraw exposes position");
+
+        uint256 balanceBefore = usdc.balanceOf(address(usdcARM));
+        vm.prank(address(usdcARM));
+        uint256 burnedShares = morphoMarket.withdraw(maxAssets, address(usdcARM), address(usdcARM));
+
+        assertGt(burnedShares, 0, "vault shares burned");
+        assertEq(usdc.balanceOf(address(usdcARM)), balanceBefore + maxAssets, "USDC returned to ARM");
     }
 
     function _assertBaseAssetConfig(address baseAsset, address expectedAdapter, string memory label) internal view {

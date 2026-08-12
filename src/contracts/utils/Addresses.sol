@@ -38,6 +38,7 @@ library Mainnet {
 
     // Morpho Vaults
     address public constant MORPHO_WETH_VAULT = 0x3Dfe70B05657949A5dB340754aD664810ac63b21;
+    address public constant MORPHO_WINTERMUTE_USDC_PRIME_VAULT = 0x5dc53a23AdC9f2Bed98de6F59F7F309a7c71FF2B;
 
     // Origin
     address public constant OETH_VAULT = 0x39254033945AA2E4809Cc2977E7087BEE48bd7Ab;
