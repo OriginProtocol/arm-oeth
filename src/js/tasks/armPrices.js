@@ -91,6 +91,13 @@ const setPrices = async (options) => {
   // Base asset decimals used to scale aggregator quote amounts. Legacy ARM
   // configs don't expose baseAssetDecimals as all their assets are 18 decimals.
   const baseDecimals = Number(config.baseAssetDecimals ?? 18);
+  const liquidityDecimals = Number(
+    await new Contract(
+      liquidityAddress,
+      ["function decimals() view returns (uint8)"],
+      signer,
+    ).decimals(),
+  );
 
   log(`Getting current ARM prices:`);
   log(`base asset         : ${baseSymbol}`);
@@ -113,17 +120,6 @@ const setPrices = async (options) => {
       assets.base.toLowerCase() === addresses.mainnet.wstETH.toLowerCase()
         ? 10n
         : 30n;
-
-    // The liquidity asset decimals are not in the base asset config so read
-    // them on-chain. Can differ from the base asset decimals, eg an 18
-    // decimals base asset over a 6 decimals USDC liquidity asset.
-    const liquidityDecimals = Number(
-      await new Contract(
-        liquidityAddress,
-        ["function decimals() view returns (uint8)"],
-        signer,
-      ).decimals(),
-    );
 
     // 2.1 Get reference prices
     let referencePrices;
@@ -152,8 +148,8 @@ const setPrices = async (options) => {
         amount: options.amount,
         liquidityAssets: reserves?.liquidityAssets ?? reserves?.[0],
         baseAssetReserve: reserves?.baseAssetReserve ?? reserves?.[1],
-        buyLiquidity: parseSwapCap(buyAmount),
-        sellLiquidity: parseSwapCap(sellAmount),
+        buyLiquidity: parseSwapCap(buyAmount, liquidityDecimals),
+        sellLiquidity: parseSwapCap(sellAmount, baseDecimals),
         liquidityDecimals,
         baseDecimals,
       });
@@ -392,8 +388,8 @@ const setPrices = async (options) => {
   const toleranceScaled = parseUnits(tolerance.toString(), 36 - 4);
   log(`tolerance          : ${formatUnits(toleranceScaled, 32)} basis points`);
 
-  const targetBuyAmount = parseSwapCap(buyAmount);
-  const targetSellAmount = parseSwapCap(sellAmount);
+  const targetBuyAmount = parseSwapCap(buyAmount, liquidityDecimals);
+  const targetSellAmount = parseSwapCap(sellAmount, baseDecimals);
   const swapCapsChanged = haveSwapCapsChanged(
     baseContext,
     targetBuyAmount,

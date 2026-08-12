@@ -136,12 +136,10 @@ const getArmBaseSymbols = async ({ arm, armName, base, blockTag }) => {
   return [defaultBaseSymbol(armName)];
 };
 
-const parseSwapCap = (amount) => {
+const parseSwapCap = (amount, decimals = 18) => {
   if (amount === undefined || amount === null) return MAX_SWAP_LIQUIDITY;
   if (typeof amount === "bigint") return amount;
-  if (typeof amount === "number") return parseUnits(amount.toString(), 18);
-  const value = amount.toString();
-  return value.includes(".") ? parseUnits(value, 18) : BigInt(value);
+  return parseUnits(amount.toString(), decimals);
 };
 
 const toConfigObject = (config) => ({

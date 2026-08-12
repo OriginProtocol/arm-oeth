@@ -5,6 +5,25 @@ const {
   haveSwapCapsChanged,
   resolveDexQuoteAmount,
 } = require("../../src/js/utils/priceUpdate");
+const { parseSwapCap } = require("../../src/js/utils/arm");
+
+assert.strictEqual(
+  parseSwapCap("1", 18),
+  10n ** 18n,
+  "one 18-decimal token should not be parsed as one wei",
+);
+
+assert.strictEqual(
+  parseSwapCap("1", 6),
+  10n ** 6n,
+  "one 6-decimal token should use the token's native decimals",
+);
+
+assert.strictEqual(
+  parseSwapCap("1.5", 6),
+  1_500_000n,
+  "fractional token amounts should be supported",
+);
 
 const multiBaseContext = (buyLiquidityRemaining, sellLiquidityRemaining) => ({
   version: "multiBase",
