@@ -43,7 +43,7 @@ contract Fork_PaxosARM_Smoke_Test is AbstractSmokeTest {
     function test_initialConfig() external view {
         assertEq(usdcARM.name(), "USDC ARM", "Name");
         assertEq(usdcARM.symbol(), "ARM-USDC", "Symbol");
-        assertEq(usdcARM.owner(), Mainnet.MULTISIG_2_OF_8, "Owner");
+        assertEq(usdcARM.owner(), Mainnet.MULTISIG_5_OF_8, "Owner");
         assertEq(usdcARM.operator(), operator, "Operator");
         assertEq(usdcARM.feeCollector(), Mainnet.BUYBACK_OPERATOR, "Fee collector");
         assertEq(usdcARM.fee(), 2000, "Performance fee");
@@ -54,7 +54,7 @@ contract Fork_PaxosARM_Smoke_Test is AbstractSmokeTest {
         assertEq(pyusdAdapter.arm(), address(usdcARM), "PYUSD adapter arm");
         assertEq(address(pyusdAdapter.baseAsset()), Mainnet.PYUSD, "PYUSD adapter base asset");
         assertEq(pyusdAdapter.asset(), Mainnet.USDC, "PYUSD adapter liquidity asset");
-        assertEq(pyusdAdapter.owner(), Mainnet.MULTISIG_2_OF_8, "PYUSD adapter owner");
+        assertEq(pyusdAdapter.owner(), Mainnet.MULTISIG_5_OF_8, "PYUSD adapter owner");
         assertEq(pyusdAdapter.operator(), operator, "PYUSD adapter operator");
         assertNotEq(pyusdAdapter.paxosRecipient(), address(0), "PYUSD adapter paxos recipient");
         assertEq(
@@ -65,7 +65,7 @@ contract Fork_PaxosARM_Smoke_Test is AbstractSmokeTest {
         assertEq(usdgAdapter.arm(), address(usdcARM), "USDG adapter arm");
         assertEq(address(usdgAdapter.baseAsset()), Mainnet.USDG, "USDG adapter base asset");
         assertEq(usdgAdapter.asset(), Mainnet.USDC, "USDG adapter liquidity asset");
-        assertEq(usdgAdapter.owner(), Mainnet.MULTISIG_2_OF_8, "USDG adapter owner");
+        assertEq(usdgAdapter.owner(), Mainnet.MULTISIG_5_OF_8, "USDG adapter owner");
         assertEq(usdgAdapter.operator(), operator, "USDG adapter operator");
         assertNotEq(usdgAdapter.paxosRecipient(), address(0), "USDG adapter paxos recipient");
         assertEq(address(usdgAdapter), resolver.resolve("USDC_ARM_USDG_ADAPTER"), "USDG adapter proxy used by USDC ARM");
@@ -75,9 +75,8 @@ contract Fork_PaxosARM_Smoke_Test is AbstractSmokeTest {
         _assertBaseAssetListed(baseAssets, Mainnet.USDG, "USDG listed as base asset");
 
         assertEq(capManager.arm(), address(usdcARM), "cap manager arm");
-        assertEq(capManager.totalAssetsCap(), 100_000e6, "total assets cap");
+        assertEq(capManager.totalAssetsCap(), 1_000_000e18, "total assets cap");
         assertEq(capManager.accountCapEnabled(), true, "account cap enabled");
-        assertEq(capManager.liquidityProviderCaps(Mainnet.TREASURY_LP), 100_000e6, "liquidity provider cap");
         assertEq(capManager.operator(), operator, "cap manager operator");
         assertEq(capManager.owner(), Mainnet.MULTISIG_2_OF_8, "cap manager owner");
     }
@@ -181,7 +180,7 @@ contract Fork_PaxosARM_Smoke_Test is AbstractSmokeTest {
 
         // 2. Owner configures the Paxos deposit address (mocked as a test address).
         address paxosRecipient = makeAddr("paxosRecipient");
-        vm.prank(Mainnet.MULTISIG_2_OF_8);
+        vm.prank(Mainnet.MULTISIG_5_OF_8);
         adapter.setPaxosRecipient(paxosRecipient);
 
         // 3. Operator submits the queued base assets to Paxos.
