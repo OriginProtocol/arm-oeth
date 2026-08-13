@@ -18,7 +18,10 @@ const {
   rangeSellPrice,
   rangeBuyPrice,
 } = require("../utils/pricing");
-const { haveSwapCapsChanged } = require("../utils/priceUpdate");
+const {
+  haveSwapCapsChanged,
+  resolveDexQuoteAmount,
+} = require("../utils/priceUpdate");
 
 const log = require("../utils/logger")("task:prices");
 
@@ -129,11 +132,38 @@ const setPrices = async (options) => {
       if (curve && options.armName !== "Lido")
         throw new Error(`Curve prices only available for Lido`);
 
+      let reserves;
+      if (options.amount === undefined || options.amount === null) {
+        if (baseContext.version !== "multiBase") {
+          throw new Error(
+            `--amount is required when pricing a legacy ${options.armName} ARM`,
+          );
+        }
+        reserves = await baseContext.arm.getReserves(baseAddress, {
+          blockTag: options.blockTag ?? "latest",
+        });
+      }
+
+      const dexAmount = resolveDexQuoteAmount({
+        amount: options.amount,
+        liquidityAssets: reserves?.liquidityAssets ?? reserves?.[0],
+        baseAssetReserve: reserves?.baseAssetReserve ?? reserves?.[1],
+        buyLiquidity: parseSwapCap(buyAmount, liquidityDecimals),
+        sellLiquidity: parseSwapCap(sellAmount, baseDecimals),
+        liquidityDecimals,
+        baseDecimals,
+      });
+      if (options.amount === undefined || options.amount === null) {
+        log(
+          `Using ${dexAmount} as the DEX quote amount based on available reserves and price liquidity`,
+        );
+      }
+
       // 2.1 Get latest market prices if no midPrice is provided
       referencePrices = inch
         ? // 2.1.b Otherwise, get prices from 1Inch
           await get1InchPrices(
-            options.amount,
+            dexAmount,
             assets,
             inchFee,
             1,
@@ -143,7 +173,7 @@ const setPrices = async (options) => {
         : kyber
           ? // 2.1.c Or from Kyber if specified
             await getKyberPrices(
-              options.amount,
+              dexAmount,
               assets,
               baseDecimals,
               liquidityDecimals,
@@ -151,17 +181,18 @@ const setPrices = async (options) => {
           : // 2.1.d Or from Curve if specified
             await getCurvePrices({
               ...options,
+              amount: dexAmount,
               poolAddress: addresses.mainnet.CurveNgStEthPool,
             });
 
       // Adjust price down if a wrapped asset like sUSDe or wstETH
       if (shouldAdjustWrapped) {
-        const amountIn = parseUnits(options.amount.toString(), baseDecimals);
+        const amountIn = parseUnits(dexAmount, baseDecimals);
         // The legacy convertToAsset path returns 18 decimals while the adapter
         // converts a base decimals input to liquidity decimals
         const convertedAssets =
           config.adapter === ZeroAddress
-            ? await convertToAsset(baseAddress, options.amount, signer)
+            ? await convertToAsset(baseAddress, dexAmount, signer)
             : await (
                 await adapterContract(config.adapter, signer)
               ).convertToAssets(amountIn);

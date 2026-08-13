@@ -4,7 +4,6 @@ import { types } from "hardhat/config";
 import { action } from "../lib/action";
 import { setPrices } from "../armPrices";
 import { setPricesForBases } from "../../utils/priceActionUtils";
-import { resolveUsdAggregatorAmount } from "../../utils/usdPricing";
 import { mainnet } from "../../utils/addresses";
 const multiAssetARMAbi = require("../../../abis/MultiAssetARM.json");
 
@@ -122,17 +121,6 @@ action({
     const arm = new ethers.Contract(mainnet.usdcARM, multiAssetARMAbi, signer);
 
     log.info("Setting prices for USDC ARM");
-    const exactPrices =
-      args.buyPrice !== undefined && args.sellPrice !== undefined;
-    let amount = args.amount;
-    if (!exactPrices && amount === undefined) {
-      amount = await resolveUsdAggregatorAmount({
-        arm,
-        log,
-        blockTag: "latest",
-      });
-    }
-
     await setPricesForBases({
       setPrices,
       bases: String(args.bases).split(","),
@@ -150,7 +138,7 @@ action({
         minBuyPrice: args.minBuyPrice,
         kyber: args.kyber,
         inch: args.inch,
-        amount,
+        amount: args.amount,
         tolerance: args.tolerance,
         fee: args.fee,
         offset: args.offset,

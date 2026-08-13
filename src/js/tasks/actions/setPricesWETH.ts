@@ -178,7 +178,7 @@ action({
           minBuyPrice: args.minBuyPrice ?? defaults.minBuyPrice,
           kyber: aggregatorOverridden ? Boolean(args.kyber) : defaults.kyber,
           inch: aggregatorOverridden ? Boolean(args.inch) : defaults.inch,
-          amount: args.amount ?? 20,
+          amount: args.amount,
           tolerance: args.tolerance ?? defaults.tolerance,
           fee: args.fee,
           offset: args.offset,
