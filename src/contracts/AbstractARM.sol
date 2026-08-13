@@ -135,7 +135,16 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
     /// @notice Maximum liquidity assets reserved for outstanding LP withdrawal requests.
     uint128 public reservedWithdrawLiquidity;
 
-    uint256[50] private _gap;
+    /// @notice Account that can pause but never unpause. Held by the 2/8 Guardian multisig,
+    /// which hosts the threat-detection module that trips the pause automatically.
+    address public guardian;
+    /// @notice Account that can pause and unpause. Held by the 5/8 Admin multisig.
+    /// @dev Named `adminMultisig` rather than `admin` on purpose. `Proxy` inherits `Ownable` and
+    /// declares its own `admin()` returning the proxy owner, so a variable named `admin` would
+    /// generate a getter the proxy permanently shadows and it could never be read through the proxy.
+    address public adminMultisig;
+
+    uint256[48] private _gap;
 
     ////////////////////////////////////////////////////
     ///                 Errors
@@ -162,6 +171,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
     error MarketActive(); // 0xaeb31949
     error InvalidARMBuffer(); // 0x06f77af9
     error ContractPaused(); // 0xab35696f
+    error OnlyPauser(); // 0x75df51dc
+    error OnlyUnpauser(); // 0x794821ff
     error Insolvent(); // 0xfc220038
     error ZeroShares(); // 0x9811e0c7
     error ClaimDelayNotMet(); // 0x4a1eec28
@@ -214,6 +225,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
     event Allocated(address indexed market, int256 targetLiquidityDelta, int256 actualLiquidityDelta);
     event Paused(address indexed account);
     event Unpaused(address indexed account);
+    event GuardianChanged(address newGuardian);
+    event AdminMultisigChanged(address newAdminMultisig);
 
     ////////////////////////////////////////////////////
     ///                 Modifiers
@@ -221,6 +234,23 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
 
     modifier whenNotPaused() {
         if (paused) revert ContractPaused();
+        _;
+    }
+
+    /// @dev Restricts to the owner, operator, guardian or adminMultisig. Pausing is the safe
+    /// direction, so the caller list is deliberately wide: any of them can trip the circuit breaker.
+    modifier onlyPauser() {
+        if (msg.sender != _owner() && msg.sender != operator && msg.sender != guardian && msg.sender != adminMultisig) {
+            revert OnlyPauser();
+        }
+        _;
+    }
+
+    /// @dev Restricts to the owner or adminMultisig. The operator and guardian can pause but must
+    /// never unpause, so that no single hot key or 2/8 key can both re-open a paused ARM and, where
+    /// it is also the owner, change its code.
+    modifier onlyUnpauser() {
+        if (msg.sender != _owner() && msg.sender != adminMultisig) revert OnlyUnpauser();
         _;
     }
 
@@ -1223,16 +1253,32 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
     ///                 Admin Functions
     ////////////////////////////////////////////////////
 
-    /// @notice Pause user-facing ARM actions.
-    function pause() external onlyOperatorOrOwner {
+    /// @notice Pause user-facing ARM actions. Callable by the owner, operator, guardian or
+    /// adminMultisig.
+    function pause() external onlyPauser {
         paused = true;
         emit Paused(msg.sender);
     }
 
-    /// @notice Unpause user-facing ARM actions.
-    function unpause() external onlyOwner {
+    /// @notice Unpause user-facing ARM actions. Callable by the owner or adminMultisig only.
+    function unpause() external onlyUnpauser {
         paused = false;
         emit Unpaused(msg.sender);
+    }
+
+    /// @notice Set the accounts that can pause and unpause.
+    /// @dev Both roles are set in one call so that an upgrade and its role configuration fit in a
+    /// single governance action. Setting them separately would leave a window where the slots are
+    /// still address(0) and unpause has silently narrowed to owner-only.
+    /// @param _guardian The 2/8 Guardian multisig, which can pause but not unpause.
+    /// address(0) disables the role.
+    /// @param _adminMultisig The 5/8 Admin multisig, which can pause and unpause.
+    /// address(0) disables the role.
+    function setPauseRoles(address _guardian, address _adminMultisig) external onlyOwner {
+        guardian = _guardian;
+        adminMultisig = _adminMultisig;
+        emit GuardianChanged(_guardian);
+        emit AdminMultisigChanged(_adminMultisig);
     }
 
     /// @notice Set the CapManager contract.

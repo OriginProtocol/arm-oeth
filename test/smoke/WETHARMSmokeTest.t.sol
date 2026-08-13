@@ -3,6 +3,7 @@ pragma solidity ^0.8.23;
 
 import {AbstractSmokeTest} from "./AbstractSmokeTest.sol";
 
+import {AbstractARM} from "contracts/AbstractARM.sol";
 import {MultiAssetARM} from "contracts/MultiAssetARM.sol";
 import {CapManager} from "contracts/CapManager.sol";
 import {Proxy} from "contracts/Proxy.sol";
@@ -84,6 +85,80 @@ contract Fork_WETHARM_Smoke_Test is AbstractSmokeTest {
         assertEq(address(morphoMarket.merkleDistributor()), Mainnet.MERKLE_DISTRIBUTOR, "Merkle distributor");
         assertTrue(wethARM.supportedMarkets(address(morphoMarket)), "market supported");
         assertEq(wethARM.activeMarket(), address(morphoMarket), "active market");
+    }
+
+    //////////////////////////////////////////////////////
+    /// --- pause roles
+    //////////////////////////////////////////////////////
+
+    /// @notice The 043 upgrade wires the 2/8 as guardian and the 5/8 as adminMultisig.
+    function test_PauseRolesConfigured() external view {
+        assertEq(wethARM.guardian(), Mainnet.MULTISIG_2_OF_8, "guardian is the 2/8");
+        assertEq(wethARM.adminMultisig(), Mainnet.MULTISIG_5_OF_8, "adminMultisig is the 5/8");
+    }
+
+    /// @notice The 2/8 gets a no-delay pause, but must not be able to re-open the ARM. Together with
+    ///         owner staying the upgrade admin, that stops any single 2/8 key from both unpausing and
+    ///         changing the code.
+    function test_GuardianCanPauseButNotUnpause() external {
+        vm.prank(Mainnet.MULTISIG_2_OF_8);
+        wethARM.pause();
+        assertTrue(wethARM.paused(), "guardian paused");
+
+        vm.prank(Mainnet.MULTISIG_2_OF_8);
+        vm.expectRevert(AbstractARM.OnlyUnpauser.selector);
+        wethARM.unpause();
+        assertTrue(wethARM.paused(), "still paused after guardian tried to unpause");
+
+        // The 5/8 recovers with no delay and no governance vote.
+        vm.prank(Mainnet.MULTISIG_5_OF_8);
+        wethARM.unpause();
+        assertFalse(wethARM.paused(), "adminMultisig unpaused");
+    }
+
+    /// @notice The Talos relayer is a hot key: it keeps its pause, but never gains unpause.
+    function test_OperatorCannotUnpause() external {
+        vm.prank(Mainnet.ARM_TALOS_RELAYER);
+        wethARM.pause();
+        assertTrue(wethARM.paused(), "operator paused");
+
+        vm.prank(Mainnet.ARM_TALOS_RELAYER);
+        vm.expectRevert(AbstractARM.OnlyUnpauser.selector);
+        wethARM.unpause();
+
+        vm.prank(Mainnet.MULTISIG_5_OF_8);
+        wethARM.unpause();
+    }
+
+    /// @notice Storage-layout proof. `guardian`/`adminMultisig` were taken from the AbstractARM gap
+    ///         at slots 62 and 63. Read the live variables that bracket them and confirm they still
+    ///         hold sane values: a layout shift shows up here first.
+    function test_StorageLayoutPreservedAcrossUpgrade() external view {
+        // Slots 59-61, immediately before the new roles.
+        assertEq(wethARM.feeCollector(), Mainnet.BUYBACK_OPERATOR, "feeCollector (slot 59) intact");
+        assertEq(
+            uint256(vm.load(address(wethARM), bytes32(uint256(59)))),
+            uint256(uint160(Mainnet.BUYBACK_OPERATOR)),
+            "slot 59 raw"
+        );
+        assertGe(wethARM.withdrawsQueuedShares(), wethARM.withdrawsClaimedShares(), "slot 60 queue invariant");
+
+        // The new roles themselves, at slots 62 and 63.
+        assertEq(
+            uint256(vm.load(address(wethARM), bytes32(uint256(62)))),
+            uint256(uint160(Mainnet.MULTISIG_2_OF_8)),
+            "guardian at slot 62"
+        );
+        assertEq(
+            uint256(vm.load(address(wethARM), bytes32(uint256(63)))),
+            uint256(uint160(Mainnet.MULTISIG_5_OF_8)),
+            "adminMultisig at slot 63"
+        );
+
+        // Live accounting still reads back sane, so nothing downstream shifted either.
+        assertGt(wethARM.totalAssets(), 0, "totalAssets intact");
+        assertEq(wethARM.liquidityAsset(), Mainnet.WETH, "liquidityAsset intact");
+        assertEq(wethARM.getBaseAssets().length, 4, "base assets intact");
     }
 
     function _assertBaseAssetConfig(address baseAsset, string memory adapterName, bool pegged) internal view {
