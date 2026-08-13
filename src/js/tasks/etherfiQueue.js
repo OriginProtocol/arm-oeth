@@ -16,11 +16,38 @@ const { logTxDetails } = require("../utils/txLogger");
 const log = require("../utils/logger")("task:etherfiQueue");
 
 const uri = "https://origin.squids.live/ops-squid/graphql";
+const MAX_EETH_WITHDRAW_AMOUNT = parseUnits("1000");
 
 const ETHERFI_WITHDRAWAL_NFT_ABI = [
   "function isFinalized(uint256 requestId) view returns (bool)",
   "function getRequest(uint256 requestId) view returns (tuple(uint96 amountOfEEth, uint96 shareOfEEth, bool isValid, uint32 feeGwei))",
 ];
+
+const splitEtherFiWithdrawAmount = (
+  withdrawAmount,
+  maxAmount = MAX_EETH_WITHDRAW_AMOUNT,
+) => {
+  if (maxAmount <= 0n) throw new Error("maxAmount must be greater than zero");
+
+  const requestAmounts = [];
+  let remainingAmount = withdrawAmount;
+  while (remainingAmount > 0n) {
+    const requestAmount =
+      remainingAmount > maxAmount ? maxAmount : remainingAmount;
+    requestAmounts.push(requestAmount);
+    remainingAmount -= requestAmount;
+  }
+  return requestAmounts;
+};
+
+const maxEtherFiWithdrawShares = async (baseContext, signer) => {
+  if (baseContext.version === "legacy" || baseContext.baseSymbol !== "WEETH") {
+    return MAX_EETH_WITHDRAW_AMOUNT;
+  }
+
+  const adapter = await adapterContract(baseContext.config.adapter, signer);
+  return adapter.convertToShares(MAX_EETH_WITHDRAW_AMOUNT);
+};
 
 const requestEtherFiWithdrawals = async (options) => {
   const { signer, amount } = options;
@@ -32,14 +59,21 @@ const requestEtherFiWithdrawals = async (options) => {
     : await baseWithdrawAmount(options);
   if (!withdrawAmount || withdrawAmount === 0n) return;
 
-  log(`Requesting withdrawal for ${withdrawAmount} ${baseSymbol}...`);
-  const tx = await requestBaseAssetWithdrawal({
-    baseContext,
-    signer,
-    amount: withdrawAmount,
-  });
+  const maxWithdrawShares = await maxEtherFiWithdrawShares(baseContext, signer);
+  const requestAmounts = splitEtherFiWithdrawAmount(
+    withdrawAmount,
+    maxWithdrawShares,
+  );
+  for (const requestAmount of requestAmounts) {
+    log(`Requesting withdrawal for ${requestAmount} ${baseSymbol}...`);
+    const tx = await requestBaseAssetWithdrawal({
+      baseContext,
+      signer,
+      amount: requestAmount,
+    });
 
-  await logTxDetails(tx, "requestEtherFiWithdrawal");
+    await logTxDetails(tx, "requestEtherFiWithdrawal");
+  }
 };
 
 const claimEtherFiWithdrawals = async (options) => {
@@ -176,4 +210,5 @@ module.exports = {
   claimEtherFiWithdrawals,
   etherFiRequestStatuses,
   selectClaimableEtherFiRequests,
+  splitEtherFiWithdrawAmount,
 };
