@@ -76,22 +76,27 @@ const legacyEthenaUnstakers = async (legacyArm) => {
 // Fetches data for a list of addresses in PARALLEL (much faster)
 const fetchUnstakerStates = async (signer, adapter, addresses) => {
   const contract = new ethers.Contract(SUSDE_ADDRESS, SUSDE_ABI, signer);
+  // Pin all queue reads to one block. Reading each value at `latest` can mix
+  // state from a concurrent request or claim and produce an impossible FIFO
+  // snapshot.
+  const blockNumber = await signer.provider.getBlockNumber();
+  const blockTag = { blockTag: blockNumber };
   const { timestamp: currentTimestamp } =
-    await signer.provider.getBlock("latest");
+    await signer.provider.getBlock(blockNumber);
   let requestCount;
   let maxUnstakers;
 
   if (!addresses) {
     [requestCount, maxUnstakers] = await Promise.all([
-      adapter.totalRequests(),
-      adapter.MAX_UNSTAKERS(),
+      adapter.totalRequests(blockTag),
+      adapter.MAX_UNSTAKERS(blockTag),
     ]);
     const unstakerCount = Number(
       requestCount < maxUnstakers ? requestCount : maxUnstakers,
     );
     addresses = await Promise.all(
       Array.from({ length: unstakerCount }, async (_, index) => {
-        const address = await adapter.unstakers(index);
+        const address = await adapter.unstakers(index, blockTag);
         return { address, index };
       }),
     );
@@ -109,12 +114,15 @@ const fetchUnstakerStates = async (signer, adapter, addresses) => {
   // Promise.all executes all RPC calls simultaneously
   const states = await Promise.all(
     addresses.map(async ({ address, index }) => {
-      const [cooldownEnd, underlyingAmount] = await contract.cooldowns(address);
+      const [cooldownEnd, underlyingAmount] = await contract.cooldowns(
+        address,
+        blockTag,
+      );
       const shares = adapter
-        ? await adapter["requestShares(address)"](address)
+        ? await adapter["requestShares(address)"](address, blockTag)
         : underlyingAmount;
       const expectedAssets = adapter
-        ? await adapter["requestAssets(address)"](address)
+        ? await adapter["requestAssets(address)"](address, blockTag)
         : underlyingAmount;
       const amountStr = formatUnits(underlyingAmount, 18);
       const isBalancePositive = underlyingAmount > 0 || shares > 0;
@@ -149,7 +157,12 @@ const fetchUnstakerStates = async (signer, adapter, addresses) => {
 
   if (!adapter) return states;
 
-  return orderPendingUnstakerStates(states, requestCount, maxUnstakers);
+  return orderPendingUnstakerStates(
+    states,
+    requestCount,
+    maxUnstakers,
+    blockNumber,
+  );
 };
 
 // --- MAIN FUNCTIONS ---

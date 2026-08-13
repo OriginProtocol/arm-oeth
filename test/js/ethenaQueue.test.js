@@ -60,8 +60,8 @@ const run = async () => {
 
   {
     assert.throws(
-      () => orderPendingUnstakerStates([state(0)], 45n, 42n),
-      /Missing Ethena unstaker 2 for pending request 44/,
+      () => orderPendingUnstakerStates([state(0)], 45n, 42n, 123456),
+      /Missing Ethena unstaker 2 for pending request 44 at block 123456/,
     );
   }
 };
