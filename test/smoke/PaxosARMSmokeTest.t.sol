@@ -3,13 +3,13 @@ pragma solidity ^0.8.23;
 
 import {AbstractSmokeTest} from "./AbstractSmokeTest.sol";
 
-import {IERC20} from "contracts/Interfaces.sol";
+import {IERC20, IERC4626} from "contracts/Interfaces.sol";
 import {MultiAssetARM} from "contracts/MultiAssetARM.sol";
 import {PaxosAssetAdapter} from "contracts/adapters/PaxosAssetAdapter.sol";
 import {CapManager} from "contracts/CapManager.sol";
 import {Proxy} from "contracts/Proxy.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
-import {MorphoVaultV2Market} from "contracts/markets/MorphoVaultV2Market.sol";
+import {MorphoMarket} from "contracts/markets/MorphoMarket.sol";
 
 contract Fork_PaxosARM_Smoke_Test is AbstractSmokeTest {
     IERC20 usdc;
@@ -88,7 +88,7 @@ contract Fork_PaxosARM_Smoke_Test is AbstractSmokeTest {
     }
 
     function test_morphoMarketConfig() external view {
-        MorphoVaultV2Market morphoMarket = MorphoVaultV2Market(resolver.resolve("MORPHO_MARKET_USDC_ARM"));
+        MorphoMarket morphoMarket = MorphoMarket(resolver.resolve("MORPHO_MARKET_USDC_ARM"));
 
         assertEq(morphoMarket.arm(), address(usdcARM), "market arm");
         assertEq(morphoMarket.asset(), Mainnet.USDC, "market asset");
@@ -101,9 +101,9 @@ contract Fork_PaxosARM_Smoke_Test is AbstractSmokeTest {
     }
 
     function test_morphoMarketDepositWithdraw() external {
-        MorphoVaultV2Market morphoMarket = MorphoVaultV2Market(resolver.resolve("MORPHO_MARKET_USDC_ARM"));
+        MorphoMarket morphoMarket = MorphoMarket(resolver.resolve("MORPHO_MARKET_USDC_ARM"));
         // This amount fits the Vault V2 cap headroom and downstream liquidity at the smoke-test fork.
-        // A successful round trip does not make maxWithdraw a general liquidity guarantee.
+        // A direct withdrawal can succeed even when the max functions report less than the economic position.
         uint256 depositAmount = 10_000e6;
 
         deal(address(usdc), address(usdcARM), depositAmount);
@@ -114,16 +114,24 @@ contract Fork_PaxosARM_Smoke_Test is AbstractSmokeTest {
 
         assertGt(shares, 0, "vault shares minted");
         assertEq(morphoMarket.balanceOf(address(usdcARM)), shares, "wrapper share balance");
-        assertEq(morphoMarket.maxRedeem(address(usdcARM)), shares, "max redeem exposes position");
-        uint256 maxAssets = morphoMarket.maxWithdraw(address(usdcARM));
-        assertApproxEqAbs(maxAssets, depositAmount, 1, "max withdraw exposes position");
+
+        IERC4626 vault = IERC4626(morphoMarket.market());
+        uint256 economicAssets = morphoMarket.convertToAssets(shares);
+        uint256 redeemableShares = morphoMarket.maxRedeem(address(usdcARM));
+        uint256 redeemableAssets = morphoMarket.maxWithdraw(address(usdcARM));
+
+        assertApproxEqAbs(economicAssets, depositAmount, 1, "economic position value");
+        assertEq(redeemableShares, vault.maxRedeem(address(morphoMarket)), "max redeem delegated to vault");
+        assertEq(redeemableAssets, vault.maxWithdraw(address(morphoMarket)), "max withdraw delegated to vault");
+        assertLt(redeemableShares, shares, "redeemable shares below economic position");
+        assertLt(redeemableAssets, economicAssets, "redeemable assets below economic position");
 
         uint256 balanceBefore = usdc.balanceOf(address(usdcARM));
         vm.prank(address(usdcARM));
-        uint256 burnedShares = morphoMarket.withdraw(maxAssets, address(usdcARM), address(usdcARM));
+        uint256 burnedShares = morphoMarket.withdraw(economicAssets, address(usdcARM), address(usdcARM));
 
         assertGt(burnedShares, 0, "vault shares burned");
-        assertEq(usdc.balanceOf(address(usdcARM)), balanceBefore + maxAssets, "USDC returned to ARM");
+        assertEq(usdc.balanceOf(address(usdcARM)), balanceBefore + economicAssets, "USDC returned to ARM");
     }
 
     function _assertBaseAssetConfig(address baseAsset, address expectedAdapter, string memory label) internal view {

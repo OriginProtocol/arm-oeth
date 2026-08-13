@@ -5,7 +5,7 @@ pragma solidity 0.8.23;
 import {Proxy} from "contracts/Proxy.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
 import {MultiAssetARM} from "contracts/MultiAssetARM.sol";
-import {MorphoVaultV2Market} from "contracts/markets/MorphoVaultV2Market.sol";
+import {MorphoMarket} from "contracts/markets/MorphoMarket.sol";
 import {Abstract4626MarketWrapper} from "contracts/markets/Abstract4626MarketWrapper.sol";
 
 // Deployment
@@ -31,9 +31,11 @@ import {AbstractDeployScript} from "script/deploy/helpers/AbstractDeployScript.s
 ///      any MorphoVaultV1Adapter over MetaMorpho V1.1 becomes effective, because its lostAssets
 ///      accounting can keep bad debt in the reported Vault V2 share price.
 ///
-///      Operators must also verify downstream liquidity. MorphoVaultV2Market reports its full
-///      economic position from maxWithdraw/maxRedeem because Vault V2 returns zero, but those
-///      wrapper values do not guarantee that an immediate withdrawal will succeed.
+///      Operators must also verify downstream liquidity. MorphoMarket preserves Vault V2's
+///      maxWithdraw/maxRedeem values as redeemability signals, which can be lower than the full
+///      economic position. The ARM values that position separately through convertToAssets. Vault V2
+///      snapshots its exchange rate on the first accrual in each transaction, so a downstream loss
+///      occurring later in the transaction is reflected starting from the next transaction.
 contract $044_DeployUSDCMorphoMarketScript is AbstractDeployScript("044_DeployUSDCMorphoMarketScript") {
     function _execute() internal override {
         address usdcARM = resolver.resolve("USDC_ARM");
@@ -43,8 +45,7 @@ contract $044_DeployUSDCMorphoMarketScript is AbstractDeployScript("044_DeployUS
         _recordDeployment("MORPHO_MARKET_USDC_ARM", address(morphoMarketProxy));
 
         // 2. Deploy the implementation for the USDC ARM and Wintermute USDC Prime vault.
-        MorphoVaultV2Market morphoMarketImpl =
-            new MorphoVaultV2Market(usdcARM, Mainnet.MORPHO_WINTERMUTE_USDC_PRIME_VAULT);
+        MorphoMarket morphoMarketImpl = new MorphoMarket(usdcARM, Mainnet.MORPHO_WINTERMUTE_USDC_PRIME_VAULT);
         _recordDeployment("MORPHO_MARKET_USDC_ARM_IMPL", address(morphoMarketImpl));
 
         // 3. Initialize the wrapper and hand ownership to the USDC ARM's 5/8 multisig.

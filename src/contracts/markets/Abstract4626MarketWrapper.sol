@@ -76,11 +76,9 @@ contract Abstract4626MarketWrapper is Initializable, Ownable {
 
     /// @notice Get the max amount of asset tokens that can be withdrawn from the lending market
     /// from the lending market shares owned by this contract.
-    /// @dev Virtual because some ERC-4626 markets expose non-standard max functions and require an
-    /// integration-specific interpretation; overrides must document any loss of revert-free guarantees.
     /// @param owner The owner account has to be the address of the ARM contract.
     /// @return maxAssets The max amount of asset tokens that can be withdrawn.
-    function maxWithdraw(address owner) external view virtual returns (uint256 maxAssets) {
+    function maxWithdraw(address owner) external view returns (uint256 maxAssets) {
         if (owner != arm) return 0;
 
         maxAssets = IERC4626(market).maxWithdraw(address(this));
@@ -114,10 +112,9 @@ contract Abstract4626MarketWrapper is Initializable, Ownable {
     /// from the lending market shares owned by this contract.
     /// @dev This can return a smaller amount than balanceOf() if there is not enough liquidity
     /// in the lending market.
-    /// Implementations overriding non-standard max behavior must document any loss of revert-free guarantees.
     /// @param owner The owner account has to be the address of the ARM contract.
     /// @return maxShares The max amount of lending market shares in this contract that can be burnt.
-    function maxRedeem(address owner) external view virtual returns (uint256 maxShares) {
+    function maxRedeem(address owner) external view returns (uint256 maxShares) {
         if (owner != arm) return 0;
 
         maxShares = IERC4626(market).maxRedeem(address(this));
