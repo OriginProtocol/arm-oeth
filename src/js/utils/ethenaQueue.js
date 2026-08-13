@@ -1,4 +1,9 @@
-const orderPendingUnstakerStates = (states, totalRequests, maxUnstakers) => {
+const orderPendingUnstakerStates = (
+  states,
+  totalRequests,
+  maxUnstakers,
+  blockNumber,
+) => {
   const activeStates = states.filter((state) => state.shares > 0n);
   if (activeStates.length === 0) return [];
 
@@ -19,8 +24,10 @@ const orderPendingUnstakerStates = (states, totalRequests, maxUnstakers) => {
     const unstakerIndex = Number(requestIndex % maxUnstakers);
     const state = statesByIndex.get(unstakerIndex);
     if (!state) {
+      const blockContext =
+        blockNumber === undefined ? "" : ` at block ${blockNumber}`;
       throw new Error(
-        `Missing Ethena unstaker ${unstakerIndex} for pending request ${requestIndex}`,
+        `Missing Ethena unstaker ${unstakerIndex} for pending request ${requestIndex}${blockContext}`,
       );
     }
     return state;
