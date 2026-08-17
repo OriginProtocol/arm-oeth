@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.23;
+pragma solidity ^0.8.36;
 
 /// @notice Medusa StdCheats interface
 interface Vm {
