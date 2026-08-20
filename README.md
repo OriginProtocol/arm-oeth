@@ -12,6 +12,32 @@ There are currently five ARM contracts:
 
 See the [ARM Registry](https://docs.originprotocol.com/registry/contracts/arm-registry) for the deployed contracts.
 
+## Asset Adapter Interface
+
+The generic ARM integrates protocol-specific asynchronous redemption flows through `IAssetAdapter`. An adapter converts between a base asset's shares and the ARM's liquidity asset, queues redemptions, and transfers claimed liquidity back to the ARM.
+
+The mint functions are part of the same generic interface. Redemption-only adapters revert with `MintNotSupported` when either mint function is called.
+
+```Solidity
+interface IAssetAdapter {
+    function asset() external view returns (address);
+    function convertToAssets(uint256 shares) external view returns (uint256 assets);
+    function convertToShares(uint256 assets) external view returns (uint256 shares);
+    function requestRedeem(uint256 shares)
+        external
+        returns (uint256 sharesRequested, uint256 assetsExpected);
+    function redeem(uint256 shares)
+        external
+        returns (uint256 sharesClaimed, uint256 assetsExpected, uint256 assetsReceived);
+    function requestMint(uint256 assets)
+        external
+        returns (uint256 assetsRequested, uint256 sharesExpected);
+    function claimMint(uint256 shares)
+        external
+        returns (uint256 sharesClaimed, uint256 assetsExpected, uint256 sharesReceived);
+}
+```
+
 ## Swap Interface
 
 [Uniswap V2 Router](https://docs.uniswap.org/contracts/v2/reference/smart-contracts/router-02) compatible interface for swapping ERC20 tokens.

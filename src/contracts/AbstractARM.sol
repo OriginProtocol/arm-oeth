@@ -144,7 +144,10 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
     /// generate a getter the proxy permanently shadows and it could never be read through the proxy.
     address public adminMultisig;
 
-    uint256[48] private _gap;
+    /// @notice Base-asset shares expected from asynchronous liquidity-to-base mint queues.
+    mapping(address asset => uint256 shares) public pendingMintShares;
+
+    uint256[47] private _gap;
 
     ////////////////////////////////////////////////////
     ///                 Errors
@@ -728,8 +731,9 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
         if (config.buyPrice >= newCrossPrice) revert InvalidBuyPrice();
 
         if (newCrossPrice < config.crossPrice) {
-            uint256 baseAssetExposure =
-                _convertToAssets(config, IERC20(priceBaseAsset).balanceOf(address(this))) + config.pendingRedeemAssets;
+            uint256 baseAssetExposure = _convertToAssets(
+                config, IERC20(priceBaseAsset).balanceOf(address(this)) + pendingMintShares[priceBaseAsset]
+            ) + config.pendingRedeemAssets;
             if (baseAssetExposure >= MIN_LIQUIDITY) revert TooManyBaseAssets();
         }
 
@@ -779,6 +783,56 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
         (sharesClaimed, assetsExpected, assetsReceived) = IAssetAdapter(config.adapter).redeem(shares);
         // Remove expected queue value. Any received shortfall remains reflected in totalAssets().
         config.pendingRedeemAssets = SafeCast.toUint128(uint256(config.pendingRedeemAssets) - assetsExpected);
+    }
+
+    ////////////////////////////////////////////////////
+    ///                 Adapter Mints
+    ////////////////////////////////////////////////////
+
+    /// @notice Commit liquidity assets to an asynchronous base-asset mint through an adapter.
+    /// @dev Keeps liquidity reserved for outstanding LP withdrawals in the ARM and records expected base shares so
+    ///      totalAssets() continues to value the in-flight mint at the configured cross price.
+    /// @param mintBaseAsset Base asset expected from the adapter.
+    /// @param assets Liquidity assets to commit, in native liquidity-asset decimals.
+    /// eg 100e6 commits 100 USDC when the liquidity asset has 6 decimals.
+    /// @return assetsRequested Liquidity assets accepted by the adapter.
+    /// @return sharesExpected Base-asset shares expected from settlement.
+    function requestBaseAssetMint(address mintBaseAsset, uint256 assets)
+        external
+        onlyOperatorOrOwner
+        returns (uint256 assetsRequested, uint256 sharesExpected)
+    {
+        BaseAssetConfig storage config = baseAssetConfigs[mintBaseAsset];
+        address adapter = config.adapter;
+        if (adapter == address(0)) revert UnsupportedAsset();
+
+        _ensureLiquidityAvailableForSwap(assets);
+
+        IERC20 liquidityToken = IERC20(liquidityAsset);
+        if (liquidityToken.allowance(address(this), adapter) < assets) {
+            liquidityToken.approve(adapter, type(uint256).max);
+        }
+
+        (assetsRequested, sharesExpected) = IAssetAdapter(adapter).requestMint(assets);
+        pendingMintShares[mintBaseAsset] += sharesExpected;
+    }
+
+    /// @notice Claim asynchronously minted base shares from an adapter into the ARM.
+    /// @param mintBaseAsset Base asset being claimed.
+    /// @param shares Base-asset shares represented by pending mint requests.
+    /// @return sharesClaimed Base shares removed from the adapter queue.
+    /// @return assetsExpected Liquidity assets committed for the claimed shares.
+    /// @return sharesReceived Base shares transferred into the ARM.
+    function claimBaseAssetMint(address mintBaseAsset, uint256 shares)
+        external
+        onlyOperatorOrOwner
+        returns (uint256 sharesClaimed, uint256 assetsExpected, uint256 sharesReceived)
+    {
+        BaseAssetConfig storage config = baseAssetConfigs[mintBaseAsset];
+        if (config.adapter == address(0)) revert UnsupportedAsset();
+
+        (sharesClaimed, assetsExpected, sharesReceived) = IAssetAdapter(config.adapter).claimMint(shares);
+        pendingMintShares[mintBaseAsset] -= sharesClaimed;
     }
 
     ////////////////////////////////////////////////////
@@ -1046,6 +1100,13 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
             // expected back from protocol withdrawal queues. Value them at the live cross price so moving
             // base assets into a withdrawal queue does not create an immediate assets-per-share increase.
             availableAssets += uint256(config.pendingRedeemAssets) * config.crossPrice / PRICE_SCALE;
+            // Liquidity committed to an asynchronous mint is no longer held by the ARM, but the expected base shares
+            // remain an ARM asset. Value the in-flight shares exactly like settled base inventory.
+            uint256 mintShares = pendingMintShares[supportedBaseAsset];
+            if (mintShares > 0) {
+                uint256 mintConvertedToLiquid = _convertToAssets(config, mintShares);
+                availableAssets += mintConvertedToLiquid * config.crossPrice / PRICE_SCALE;
+            }
         }
 
         address activeMarketMem = activeMarket;
