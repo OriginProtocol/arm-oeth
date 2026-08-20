@@ -145,7 +145,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
     address public adminMultisig;
 
     /// @notice Base-asset shares expected from asynchronous liquidity-to-base mint queues.
-    mapping(address asset => uint256 shares) public pendingMintShares;
+    mapping(address asset => uint256 shares) internal pendingMintShares;
 
     uint256[47] private _gap;
 
