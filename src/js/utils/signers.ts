@@ -132,7 +132,9 @@ export async function getSigner(address?: string): Promise<Signer> {
     log(
       `Impersonating account ${impersonateAddr} from IMPERSONATE environment variable`,
     );
-    return await impersonateAndFund(impersonateAddr);
+    // Wrapped like every other branch: without it the transaction bypasses the
+    // nonce queue, so Talos never records it and the run shows no transactions.
+    return maybeWrap(await impersonateAndFund(impersonateAddr));
   }
 
   const signers = await hre.ethers.getSigners();

@@ -13,19 +13,19 @@ runner works.
 
 Cron times are UTC. Enable state is managed in the database, not here.
 
-The mainnet `setPrices*` actions use `--amount` as the DEX swap amount when
-fetching the reference price quote. This is separate from `--buy-amount` and
+The mainnet `setPrices*` actions use `--amount` as an explicit override for the
+DEX swap amount when fetching the reference price quote. This is separate from `--buy-amount` and
 `--sell-amount`, which set the buy-side liquidity-asset and sell-side base-asset
 liquidity remaining on the Ethena, USDC, and WETH ARMs. If omitted, each limit is
 set to the maximum `uint128` value. Liquidity amounts are token-denominated:
 `1` is one liquidity or base token, with the appropriate token decimals applied
 by the action.
+When `--amount` is omitted, the DEX quote amount is the smaller of the
+withdrawable ARM/market reserves and the corresponding price liquidity limit.
+An explicit `--amount` is used unchanged.
 
 `--buy-price` and `--sell-price` bypass DEX-derived pricing and set an exact
 pair. Both must be supplied together; `--amount` is not used in this mode.
-When the Ethena or USDC action derives `--amount` from withdrawable liquidity,
-it rounds the available amount up to the minimum DEX quote size of 1,000 USDe
-or 1,000 USDC respectively; an explicit `--amount` override is used as supplied.
 
 `setPricesWETH` uses the Lido pricing profile and 1Inch for `STETH,WSTETH`, and
 the EtherFi pricing profile and Kyber for `EETH,WEETH`. It processes all four

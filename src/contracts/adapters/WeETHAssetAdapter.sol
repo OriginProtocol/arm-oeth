@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.36;
 
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
@@ -34,7 +34,7 @@ contract WeETHAssetAdapter is Initializable, IAssetAdapter, IERC721Receiver {
     uint256 internal nextPendingIndex;
 
     /// @dev True only while the adapter is actively claiming Ether.fi withdrawal NFTs.
-    bool internal claimingEtherFi;
+    bool internal transient claimingEtherFi;
 
     /// @notice Thrown when Ether.fi claim proceeds arrive without an adapter-initiated claim.
     error UnauthorizedEtherFiClaim(); // 0x7b2b45a4
