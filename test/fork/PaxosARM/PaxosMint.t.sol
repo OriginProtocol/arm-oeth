@@ -44,6 +44,7 @@ contract Fork_Concrete_PaxosARM_PaxosMint_Test_ is Fork_Shared_Test {
         assertEq(usdc.balanceOf(address(arm)), armUsdcBefore - AMOUNT, "ARM USDC committed");
         assertEq(usdc.balanceOf(address(pyusdAdapter)), AMOUNT, "adapter USDC queued");
         assertEq(pyusdAdapter.pendingMintAssets(), AMOUNT, "adapter pending mint");
+        assertEq(arm.pendingMintShares(address(pyusd)), AMOUNT, "ARM expected mint shares");
 
         // Committing USDC to inventory recognizes the configured cross-price discount immediately.
         uint256 expectedDiscount = AMOUNT - (AMOUNT * CROSS_PRICE / PRICE_SCALE);
@@ -69,6 +70,7 @@ contract Fork_Concrete_PaxosARM_PaxosMint_Test_ is Fork_Shared_Test {
         assertEq(assetsExpected, AMOUNT, "assetsExpected");
         assertEq(sharesReceived, AMOUNT, "sharesReceived");
         assertEq(pyusd.balanceOf(address(arm)), armBaseBefore + AMOUNT, "minted PYUSD in ARM");
+        assertEq(arm.pendingMintShares(address(pyusd)), 0, "ARM expected mint shares cleared");
         assertEq(pyusdAdapter.settlingMintAssets(), 0, "adapter mint settlement cleared");
         assertApproxEqAbs(arm.totalAssets(), totalAssetsBefore, 1, "claim is NAV neutral");
     }
@@ -84,10 +86,12 @@ contract Fork_Concrete_PaxosARM_PaxosMint_Test_ is Fork_Shared_Test {
         vm.expectRevert(PaxosAssetAdapter.MintAmountTooHigh.selector);
         arm.claimBaseAssetMint(address(pyusd), AMOUNT + 1);
 
+        assertEq(arm.pendingMintShares(address(pyusd)), AMOUNT, "ARM pending shares unchanged");
         assertEq(pyusdAdapter.settlingMintAssets(), AMOUNT, "settling shares unchanged");
 
         vm.prank(operator);
         arm.claimBaseAssetMint(address(pyusd), AMOUNT);
+        assertEq(arm.pendingMintShares(address(pyusd)), 0, "ARM pending shares cleared");
         assertEq(pyusdAdapter.settlingMintAssets(), 0, "full pending amount remains claimable");
     }
 
@@ -128,6 +132,7 @@ contract Fork_Concrete_PaxosARM_PaxosMint_Test_ is Fork_Shared_Test {
         vm.prank(operator);
         arm.claimBaseAssetMint(address(pyusd), AMOUNT);
 
+        assertEq(arm.pendingMintShares(address(pyusd)), 0, "ARM mint queue cleared");
         assertEq(pyusdAdapter.settlingMintAssets(), 0, "mint queue cleared");
         assertEq(_pendingRedeemAssets(pyusd), 0, "redeem queue cleared");
     }

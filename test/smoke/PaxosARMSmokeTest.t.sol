@@ -58,6 +58,7 @@ contract Fork_PaxosARM_Smoke_Test is AbstractSmokeTest {
         assertEq(pyusdAdapter.owner(), Mainnet.MULTISIG_5_OF_8, "PYUSD adapter owner");
         assertEq(pyusdAdapter.operator(), operator, "PYUSD adapter operator");
         assertNotEq(pyusdAdapter.paxosRecipient(), address(0), "PYUSD adapter paxos recipient");
+        assertEq(pyusdAdapter.paxosMintRecipient(), pyusdAdapter.paxosRecipient(), "PYUSD adapter paxos mint recipient");
         assertEq(
             address(pyusdAdapter), resolver.resolve("USDC_ARM_PYUSD_ADAPTER"), "PYUSD adapter proxy used by USDC ARM"
         );
@@ -69,6 +70,7 @@ contract Fork_PaxosARM_Smoke_Test is AbstractSmokeTest {
         assertEq(usdgAdapter.owner(), Mainnet.MULTISIG_5_OF_8, "USDG adapter owner");
         assertEq(usdgAdapter.operator(), operator, "USDG adapter operator");
         assertNotEq(usdgAdapter.paxosRecipient(), address(0), "USDG adapter paxos recipient");
+        assertEq(usdgAdapter.paxosMintRecipient(), usdgAdapter.paxosRecipient(), "USDG adapter paxos mint recipient");
         assertEq(address(usdgAdapter), resolver.resolve("USDC_ARM_USDG_ADAPTER"), "USDG adapter proxy used by USDC ARM");
 
         address[] memory baseAssets = usdcARM.getBaseAssets();

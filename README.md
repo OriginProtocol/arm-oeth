@@ -18,6 +18,8 @@ The generic ARM integrates protocol-specific asynchronous redemption flows throu
 
 The mint functions are part of the same generic interface. Redemption-only adapters revert with `MintNotSupported` when either mint function is called.
 
+The ARM's adapter request and claim operations are implemented in the externally linked `ARMAdapterLib`. The ARM retains its public interface and authorization checks while the linked library performs adapter calls and updates the ARM's explicitly passed storage references.
+
 ```Solidity
 interface IAssetAdapter {
     function asset() external view returns (address);

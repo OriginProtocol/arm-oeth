@@ -8,6 +8,31 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 import {OwnableOperable} from "./OwnableOperable.sol";
 import {IAssetAdapter, IERC20, ICapManager} from "./Interfaces.sol";
+import {ARMAdapterLib} from "./libraries/ARMAdapterLib.sol";
+
+/// @notice Per-base-asset swap, valuation, and adapter configuration.
+/// @dev Packed into four storage slots. `adapter != address(0)` is the supported-asset flag.
+struct BaseAssetConfig {
+    /// @notice Price the ARM pays in liquidity-asset terms when buying this base asset from traders.
+    uint128 buyPrice;
+    /// @notice Price the ARM charges in liquidity-asset terms when selling this base asset to traders.
+    uint128 sellPrice;
+    /// @notice Remaining liquidity asset the ARM can pay out at the current buy price.
+    uint128 buyLiquidityRemaining;
+    /// @notice Remaining base asset the ARM can sell at the current sell price.
+    uint128 sellLiquidityRemaining;
+    /// @notice Valuation price used by totalAssets(), scaled to 36 decimals.
+    uint128 crossPrice;
+    /// @notice Liquidity-denominated value expected from adapter redemption queues.
+    uint128 pendingRedeemAssets;
+    /// @notice If true, conversions bypass the adapter and use a 1:1 value (decimal-scaled) amount.
+    /// Packed with `baseAssetDecimals` and `adapter` in the same slot as all three are read on conversions.
+    bool peggedToLiquidityAsset;
+    /// @notice Decimals of this base asset. Must be 6 or 18.
+    uint8 baseAssetDecimals;
+    /// @notice Adapter that owns protocol-specific redemption logic for this base asset.
+    address adapter;
+}
 
 /**
  * @title Generic Automated Redemption Manager (ARM)
@@ -70,30 +95,6 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
         uint128 queued;
     }
 
-    /// @notice Per-base-asset swap, valuation, and adapter configuration.
-    /// @dev Packed into four storage slots. `adapter != address(0)` is the supported-asset flag.
-    struct BaseAssetConfig {
-        /// @notice Price the ARM pays in liquidity-asset terms when buying this base asset from traders.
-        uint128 buyPrice;
-        /// @notice Price the ARM charges in liquidity-asset terms when selling this base asset to traders.
-        uint128 sellPrice;
-        /// @notice Remaining liquidity asset the ARM can pay out at the current buy price.
-        uint128 buyLiquidityRemaining;
-        /// @notice Remaining base asset the ARM can sell at the current sell price.
-        uint128 sellLiquidityRemaining;
-        /// @notice Valuation price used by totalAssets(), scaled to 36 decimals.
-        uint128 crossPrice;
-        /// @notice Liquidity-denominated value expected from adapter redemption queues.
-        uint128 pendingRedeemAssets;
-        /// @notice If true, conversions bypass the adapter and use a 1:1 value (decimal-scaled) amount.
-        /// Packed with `baseAssetDecimals` and `adapter` in the same slot as all three are read on conversions.
-        bool peggedToLiquidityAsset;
-        /// @notice Decimals of this base asset. Must be 6 or 18.
-        uint8 baseAssetDecimals;
-        /// @notice Adapter that owns protocol-specific redemption logic for this base asset.
-        address adapter;
-    }
-
     ////////////////////////////////////////////////////
     ///                 Storage
     ////////////////////////////////////////////////////
@@ -145,7 +146,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
     address public adminMultisig;
 
     /// @notice Base-asset shares expected from asynchronous liquidity-to-base mint queues.
-    mapping(address asset => uint256 shares) internal pendingMintShares;
+    mapping(address asset => uint256 shares) public pendingMintShares;
 
     uint256[47] private _gap;
 
@@ -756,12 +757,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
         onlyOperatorOrOwner
         returns (uint256 sharesRequested, uint256 assetsExpected)
     {
-        BaseAssetConfig storage config = baseAssetConfigs[redeemBaseAsset];
-        if (config.adapter == address(0)) revert UnsupportedAsset();
-
-        (sharesRequested, assetsExpected) = IAssetAdapter(config.adapter).requestRedeem(shares);
-        // Track the liquidity-denominated value expected back from the adapter queue.
-        config.pendingRedeemAssets = SafeCast.toUint128(uint256(config.pendingRedeemAssets) + assetsExpected);
+        return ARMAdapterLib.requestRedeem(baseAssetConfigs, redeemBaseAsset, shares);
     }
 
     /// @notice Claim protocol redemptions through a base asset adapter.
@@ -777,12 +773,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
         onlyOperatorOrOwner
         returns (uint256 sharesClaimed, uint256 assetsExpected, uint256 assetsReceived)
     {
-        BaseAssetConfig storage config = baseAssetConfigs[redeemBaseAsset];
-        if (config.adapter == address(0)) revert UnsupportedAsset();
-
-        (sharesClaimed, assetsExpected, assetsReceived) = IAssetAdapter(config.adapter).redeem(shares);
-        // Remove expected queue value. Any received shortfall remains reflected in totalAssets().
-        config.pendingRedeemAssets = SafeCast.toUint128(uint256(config.pendingRedeemAssets) - assetsExpected);
+        return ARMAdapterLib.claimRedeem(baseAssetConfigs, redeemBaseAsset, shares);
     }
 
     ////////////////////////////////////////////////////
@@ -802,19 +793,15 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
         onlyOperatorOrOwner
         returns (uint256 assetsRequested, uint256 sharesExpected)
     {
-        BaseAssetConfig storage config = baseAssetConfigs[mintBaseAsset];
-        address adapter = config.adapter;
-        if (adapter == address(0)) revert UnsupportedAsset();
-
-        _ensureLiquidityAvailableForSwap(assets);
-
-        IERC20 liquidityToken = IERC20(liquidityAsset);
-        if (liquidityToken.allowance(address(this), adapter) < assets) {
-            liquidityToken.approve(adapter, type(uint256).max);
-        }
-
-        (assetsRequested, sharesExpected) = IAssetAdapter(adapter).requestMint(assets);
-        pendingMintShares[mintBaseAsset] += sharesExpected;
+        return ARMAdapterLib.requestMint(
+            baseAssetConfigs,
+            pendingMintShares,
+            liquidityAsset,
+            activeMarket,
+            reservedWithdrawLiquidity,
+            mintBaseAsset,
+            assets
+        );
     }
 
     /// @notice Claim asynchronously minted base shares from an adapter into the ARM.
@@ -828,11 +815,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
         onlyOperatorOrOwner
         returns (uint256 sharesClaimed, uint256 assetsExpected, uint256 sharesReceived)
     {
-        BaseAssetConfig storage config = baseAssetConfigs[mintBaseAsset];
-        if (config.adapter == address(0)) revert UnsupportedAsset();
-
-        (sharesClaimed, assetsExpected, sharesReceived) = IAssetAdapter(config.adapter).claimMint(shares);
-        pendingMintShares[mintBaseAsset] -= sharesClaimed;
+        return ARMAdapterLib.claimMint(baseAssetConfigs, pendingMintShares, mintBaseAsset, shares);
     }
 
     ////////////////////////////////////////////////////
