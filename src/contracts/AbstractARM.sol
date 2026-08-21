@@ -655,32 +655,19 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
         uint256 newCrossPrice,
         bool peggedToLiquidityAsset
     ) external onlyOwner {
-        if (newBaseAsset == address(0)) revert InvalidAsset();
-        if (adapter == address(0)) revert InvalidAdapter();
-        if (baseAssetConfigs[newBaseAsset].adapter != address(0)) revert AssetAlreadySupported();
-        uint8 baseDecimals = IERC20(newBaseAsset).decimals();
-        if (baseDecimals != 6 && baseDecimals != 18) revert InvalidAssetDecimals();
-        if (IAssetAdapter(adapter).asset() != liquidityAsset) revert InvalidAdapterAsset();
-        if (newCrossPrice < PRICE_SCALE - MAX_CROSS_PRICE_DEVIATION) revert CrossPriceTooLow();
-        if (newCrossPrice > PRICE_SCALE) revert CrossPriceTooHigh();
-        _validatePrices(buyPrice, sellPrice, newCrossPrice);
-
-        baseAssets.push(newBaseAsset);
-        // Allow the adapter to pull base assets when requesting protocol redemptions.
-        IERC20(newBaseAsset).approve(adapter, type(uint256).max);
-        baseAssetConfigs[newBaseAsset] = BaseAssetConfig({
-            buyPrice: SafeCast.toUint128(buyPrice),
-            sellPrice: SafeCast.toUint128(sellPrice),
-            buyLiquidityRemaining: SafeCast.toUint128(buyAmount),
-            sellLiquidityRemaining: SafeCast.toUint128(sellAmount),
-            crossPrice: SafeCast.toUint128(newCrossPrice),
-            pendingRedeemAssets: 0,
-            peggedToLiquidityAsset: peggedToLiquidityAsset,
-            baseAssetDecimals: baseDecimals,
-            adapter: adapter
-        });
-
-        emit BaseAssetAdded(newBaseAsset, adapter, buyPrice, sellPrice, newCrossPrice, peggedToLiquidityAsset);
+        ARMAdapterLib.addBaseAsset(
+            baseAssets,
+            baseAssetConfigs,
+            liquidityAsset,
+            newBaseAsset,
+            adapter,
+            buyPrice,
+            sellPrice,
+            buyAmount,
+            sellAmount,
+            newCrossPrice,
+            peggedToLiquidityAsset
+        );
     }
 
     /// @notice Set buy/sell prices and per-price liquidity limits for a supported base asset.
@@ -1072,24 +1059,17 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
         for (uint256 i = 0; i < length; ++i) {
             address supportedBaseAsset = baseAssets[i];
             BaseAssetConfig memory config = baseAssetConfigs[supportedBaseAsset];
-            // Base assets in the ARM are converted to liquidity assets and then the cross price is applied.
-            // The cross price is the discounted price for the redemption time delay. This ensures the ARM's
-            // assets per share does not decrease if the ARM sells base assets at a discount, because the base
-            // sell price is greater than or equal to the cross price.
-            uint256 baseConvertedToLiquid =
-                _convertToAssets(config, IERC20(supportedBaseAsset).balanceOf(address(this)));
-            availableAssets += baseConvertedToLiquid * config.crossPrice / PRICE_SCALE;
+            // Convert settled and pending-mint base shares to liquidity assets together, then value them at
+            // the cross price. This ensures assets per share does not decrease if the ARM sells base assets
+            // at a discount, because the base sell price is greater than or equal to the cross price.
+            uint256 baseConvertedToLiquid = _convertToAssets(
+                config, IERC20(supportedBaseAsset).balanceOf(address(this)) + pendingMintShares[supportedBaseAsset]
+            );
             // Pending adapter redemptions are already tracked in liquidity terms and represent assets
             // expected back from protocol withdrawal queues. Value them at the live cross price so moving
             // base assets into a withdrawal queue does not create an immediate assets-per-share increase.
-            availableAssets += uint256(config.pendingRedeemAssets) * config.crossPrice / PRICE_SCALE;
-            // Liquidity committed to an asynchronous mint is no longer held by the ARM, but the expected base shares
-            // remain an ARM asset. Value the in-flight shares exactly like settled base inventory.
-            uint256 mintShares = pendingMintShares[supportedBaseAsset];
-            if (mintShares > 0) {
-                uint256 mintConvertedToLiquid = _convertToAssets(config, mintShares);
-                availableAssets += mintConvertedToLiquid * config.crossPrice / PRICE_SCALE;
-            }
+            availableAssets += (baseConvertedToLiquid + uint256(config.pendingRedeemAssets)) * config.crossPrice
+                / PRICE_SCALE;
         }
 
         address activeMarketMem = activeMarket;

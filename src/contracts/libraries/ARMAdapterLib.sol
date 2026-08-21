@@ -11,8 +11,71 @@ import {IAssetAdapter, IERC20} from "../Interfaces.sol";
 /// @notice Linked library for protocol adapter redemption and mint lifecycle operations.
 /// @dev External calls execute by delegatecall and mutate only the explicitly passed ARM storage references.
 library ARMAdapterLib {
+    uint256 private constant MAX_CROSS_PRICE_DEVIATION = 20e32;
+    uint256 private constant PRICE_SCALE = 1e36;
+
     error UnsupportedAsset(); // 0x24a01144
     error InsufficientLiquidity(); // 0xbb55fd27
+    error InvalidAsset(); // 0xc891add2
+    error InvalidAdapter(); // 0xfbf66df1
+    error AssetAlreadySupported(); // 0xb1093e5b
+    error InvalidAssetDecimals(); // 0xe2364765
+    error InvalidAdapterAsset(); // 0x030f0830
+    error InvalidBuyPrice(); // 0x36c64b27
+    error SellPriceTooLow(); // 0x2394065c
+    error CrossPriceTooLow(); // 0xea59e662
+    error CrossPriceTooHigh(); // 0x682101d7
+
+    event BaseAssetAdded(
+        address indexed asset,
+        address indexed adapter,
+        uint256 buyPrice,
+        uint256 sellPrice,
+        uint256 crossPrice,
+        bool peggedToLiquidityAsset
+    );
+
+    function addBaseAsset(
+        address[] storage baseAssets,
+        mapping(address asset => BaseAssetConfig) storage configs,
+        address liquidityAsset,
+        address newBaseAsset,
+        address adapter,
+        uint256 buyPrice,
+        uint256 sellPrice,
+        uint256 buyAmount,
+        uint256 sellAmount,
+        uint256 newCrossPrice,
+        bool peggedToLiquidityAsset
+    ) external {
+        if (newBaseAsset == address(0)) revert InvalidAsset();
+        if (adapter == address(0)) revert InvalidAdapter();
+        if (configs[newBaseAsset].adapter != address(0)) revert AssetAlreadySupported();
+
+        uint8 baseDecimals = IERC20(newBaseAsset).decimals();
+        if (baseDecimals != 6 && baseDecimals != 18) revert InvalidAssetDecimals();
+        if (IAssetAdapter(adapter).asset() != liquidityAsset) revert InvalidAdapterAsset();
+        if (newCrossPrice < PRICE_SCALE - MAX_CROSS_PRICE_DEVIATION) revert CrossPriceTooLow();
+        if (newCrossPrice > PRICE_SCALE) revert CrossPriceTooHigh();
+        if (sellPrice < newCrossPrice) revert SellPriceTooLow();
+        if (buyPrice < MAX_CROSS_PRICE_DEVIATION || buyPrice >= newCrossPrice) revert InvalidBuyPrice();
+
+        baseAssets.push(newBaseAsset);
+        IERC20(newBaseAsset).approve(adapter, type(uint256).max);
+        configs[newBaseAsset] = BaseAssetConfig({
+            buyPrice: SafeCast.toUint128(buyPrice),
+            sellPrice: SafeCast.toUint128(sellPrice),
+            buyLiquidityRemaining: SafeCast.toUint128(buyAmount),
+            sellLiquidityRemaining: SafeCast.toUint128(sellAmount),
+            crossPrice: SafeCast.toUint128(newCrossPrice),
+            pendingRedeemAssets: 0,
+            peggedToLiquidityAsset: peggedToLiquidityAsset,
+            baseAssetDecimals: baseDecimals,
+            adapter: adapter
+        });
+
+        emit BaseAssetAdded(newBaseAsset, adapter, buyPrice, sellPrice, newCrossPrice, peggedToLiquidityAsset);
+    }
 
     function requestRedeem(
         mapping(address asset => BaseAssetConfig) storage configs,
