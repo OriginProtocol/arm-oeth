@@ -195,6 +195,11 @@ abstract contract Fork_Shared_Test is Base_Test_ {
         deal(address(usdc), address(adapter), usdc.balanceOf(address(adapter)) + amount);
     }
 
+    /// @notice Simulates Paxos mint settlement by increasing the adapter's base-asset balance.
+    function _settleMint(IERC20 baseAsset, PaxosAssetAdapter adapter, uint256 amount) internal {
+        deal(address(baseAsset), address(adapter), baseAsset.balanceOf(address(adapter)) + amount);
+    }
+
     //////////////////////////////////////////////////////
     /// --- PRICE / CONFIG HELPERS
     //////////////////////////////////////////////////////
