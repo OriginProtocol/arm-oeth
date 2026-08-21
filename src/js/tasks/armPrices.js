@@ -108,6 +108,7 @@ const setPrices = async (options) => {
 
   let targetBuyPrice;
   let targetSellPrice;
+  let offsetSellSpread;
   // 2. If no buy/sell prices are provided, calculate them using midPrice/1Inch/Curve
   if (!buyPrice && !sellPrice && (midPrice || curve || inch || kyber)) {
     // Set asset options
@@ -260,8 +261,8 @@ const setPrices = async (options) => {
       // Target buy price is the reference sell price plus the offset
       targetBuyPrice = (referencePrices.sellPrice + offsetBN) * BigInt(1e18);
       // Target sell price is the target buy price plus 2x fee offset
-      targetSellPrice =
-        targetBuyPrice + parseUnits(fee.toString(), 32) * BigInt(2);
+      offsetSellSpread = parseUnits(fee.toString(), 32) * BigInt(2);
+      targetSellPrice = targetBuyPrice + offsetSellSpread;
       log(`offset             : ${formatUnits(offsetBN, 14)} basis points`);
       if (dynamicOffset) {
         log(
@@ -331,30 +332,13 @@ const setPrices = async (options) => {
       }
     }
 
-    // 2.4 Adjust target prices based on min/max limits
-    targetSellPrice = rangeSellPrice(
-      targetSellPrice,
-      minSellPrice,
-      maxSellPrice,
-    );
+    // 2.4 Adjust target buy price based on min/max limits
     targetBuyPrice = rangeBuyPrice(targetBuyPrice, minBuyPrice, maxBuyPrice);
 
-    // 2.5 Adjust target prices based on cross price
+    // 2.5 Adjust target buy price based on cross price
     const crossPrice = config.crossPrice;
     log(`\nAdjusting target prices based on cross price:`);
     log(`cross price        : ${formatUnits(crossPrice, 36)}`);
-    if (targetSellPrice < crossPrice) {
-      log(
-        `target sell price ${formatUnits(
-          targetSellPrice,
-          36,
-        )} is below cross price ${formatUnits(
-          crossPrice,
-          36,
-        )} so will use cross price`,
-      );
-      targetSellPrice = crossPrice;
-    }
     if (targetBuyPrice >= crossPrice) {
       log(
         `target buy price  ${formatUnits(
@@ -366,6 +350,39 @@ const setPrices = async (options) => {
         )} so will use cross price`,
       );
       targetBuyPrice = crossPrice - 1n;
+    }
+
+    // 2.6 For offset pricing, preserve the configured spread from the final
+    // adjusted buy price rather than from the original unconstrained price.
+    if (offsetSellSpread !== undefined) {
+      targetSellPrice = targetBuyPrice + offsetSellSpread;
+      log(
+        `target sell price based on adjusted buy price: ${formatUnits(
+          targetSellPrice,
+          36,
+        )}`,
+      );
+    }
+
+    // 2.7 Adjust target sell price based on min/max limits
+    targetSellPrice = rangeSellPrice(
+      targetSellPrice,
+      minSellPrice,
+      maxSellPrice,
+    );
+
+    // 2.8 Adjust target sell price based on cross price
+    if (targetSellPrice < crossPrice) {
+      log(
+        `target sell price ${formatUnits(
+          targetSellPrice,
+          36,
+        )} is below cross price ${formatUnits(
+          crossPrice,
+          36,
+        )} so will use cross price`,
+      );
+      targetSellPrice = crossPrice;
     }
   } else if (buyPrice && sellPrice) {
     targetSellPrice = parseUnits(sellPrice.toString(), 18) * BigInt(1e18);
