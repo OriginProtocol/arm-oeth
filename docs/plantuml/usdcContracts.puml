@@ -25,27 +25,27 @@ object "CapManager" as capMan <<Origin>><<Proxy>> #$originColor {
 }
 
 object "PaxosAssetAdapter\n(PYUSD)" as pyusdAdapter <<Origin>><<Proxy>> #$originColor {
-    base asset: PYUSD
+    asset: PYUSD
 }
 
 object "PaxosAssetAdapter\n(USDG)" as usdgAdapter <<Origin>><<Proxy>> #$originColor {
-    base asset: USDG
+    asset: USDG
 }
 
-object "PYUSD" as pyusd <<Paxos>> #$thirdPartyColor {
-    base asset
+object "PYUSD Deposit" as pyusd <<Paxos>> #$thirdPartyColor {
+    asset: PYUSD
 }
 
-object "USDG" as usdg <<Paxos>> #$thirdPartyColor {
-    base asset
+object "USDG Deposit" as usdg <<Paxos>> #$thirdPartyColor {
+    asset: USDG
 }
 
-arm <.> capMan : deposit caps
-arm ..> pyusdAdapter : request / claim
-arm ..> usdgAdapter : request / claim
+capMan <.> arm : deposit caps
+arm ..> pyusdAdapter : transfer
+arm ..> usdgAdapter : transfer
 
-pyusdAdapter ..> pyusd : queues and submits
+pyusdAdapter ..> pyusd : transfer
 
-usdgAdapter ..> usdg : queues and submits
+usdgAdapter ..> usdg : transfer
 
 @enduml
