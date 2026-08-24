@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.23;
+pragma solidity ^0.8.36;
 
 import {Test} from "forge-std/Test.sol";
 import {MockERC20} from "@solmate/test/utils/mocks/MockERC20.sol";
