@@ -18,7 +18,10 @@ const {
   rangeSellPrice,
   rangeBuyPrice,
 } = require("../utils/pricing");
-const { haveSwapCapsChanged } = require("../utils/priceUpdate");
+const {
+  haveSwapCapsChanged,
+  resolveDexQuoteAmount,
+} = require("../utils/priceUpdate");
 
 const log = require("../utils/logger")("task:prices");
 
@@ -88,6 +91,13 @@ const setPrices = async (options) => {
   // Base asset decimals used to scale aggregator quote amounts. Legacy ARM
   // configs don't expose baseAssetDecimals as all their assets are 18 decimals.
   const baseDecimals = Number(config.baseAssetDecimals ?? 18);
+  const liquidityDecimals = Number(
+    await new Contract(
+      liquidityAddress,
+      ["function decimals() view returns (uint8)"],
+      signer,
+    ).decimals(),
+  );
 
   log(`Getting current ARM prices:`);
   log(`base asset         : ${baseSymbol}`);
@@ -98,6 +108,7 @@ const setPrices = async (options) => {
 
   let targetBuyPrice;
   let targetSellPrice;
+  let offsetSellSpread;
   // 2. If no buy/sell prices are provided, calculate them using midPrice/1Inch/Curve
   if (!buyPrice && !sellPrice && (midPrice || curve || inch || kyber)) {
     // Set asset options
@@ -111,17 +122,6 @@ const setPrices = async (options) => {
         ? 10n
         : 30n;
 
-    // The liquidity asset decimals are not in the base asset config so read
-    // them on-chain. Can differ from the base asset decimals, eg an 18
-    // decimals base asset over a 6 decimals USDC liquidity asset.
-    const liquidityDecimals = Number(
-      await new Contract(
-        liquidityAddress,
-        ["function decimals() view returns (uint8)"],
-        signer,
-      ).decimals(),
-    );
-
     // 2.1 Get reference prices
     let referencePrices;
     if (midPrice) {
@@ -133,11 +133,38 @@ const setPrices = async (options) => {
       if (curve && options.armName !== "Lido")
         throw new Error(`Curve prices only available for Lido`);
 
+      let reserves;
+      if (options.amount === undefined || options.amount === null) {
+        if (baseContext.version !== "multiBase") {
+          throw new Error(
+            `--amount is required when pricing a legacy ${options.armName} ARM`,
+          );
+        }
+        reserves = await baseContext.arm.getReserves(baseAddress, {
+          blockTag: options.blockTag ?? "latest",
+        });
+      }
+
+      const dexAmount = resolveDexQuoteAmount({
+        amount: options.amount,
+        liquidityAssets: reserves?.liquidityAssets ?? reserves?.[0],
+        baseAssetReserve: reserves?.baseAssetReserve ?? reserves?.[1],
+        buyLiquidity: parseSwapCap(buyAmount, liquidityDecimals),
+        sellLiquidity: parseSwapCap(sellAmount, baseDecimals),
+        liquidityDecimals,
+        baseDecimals,
+      });
+      if (options.amount === undefined || options.amount === null) {
+        log(
+          `Using ${dexAmount} as the DEX quote amount based on available reserves and price liquidity`,
+        );
+      }
+
       // 2.1 Get latest market prices if no midPrice is provided
       referencePrices = inch
         ? // 2.1.b Otherwise, get prices from 1Inch
           await get1InchPrices(
-            options.amount,
+            dexAmount,
             assets,
             inchFee,
             1,
@@ -147,7 +174,7 @@ const setPrices = async (options) => {
         : kyber
           ? // 2.1.c Or from Kyber if specified
             await getKyberPrices(
-              options.amount,
+              dexAmount,
               assets,
               baseDecimals,
               liquidityDecimals,
@@ -155,17 +182,18 @@ const setPrices = async (options) => {
           : // 2.1.d Or from Curve if specified
             await getCurvePrices({
               ...options,
+              amount: dexAmount,
               poolAddress: addresses.mainnet.CurveNgStEthPool,
             });
 
       // Adjust price down if a wrapped asset like sUSDe or wstETH
       if (shouldAdjustWrapped) {
-        const amountIn = parseUnits(options.amount.toString(), baseDecimals);
+        const amountIn = parseUnits(dexAmount, baseDecimals);
         // The legacy convertToAsset path returns 18 decimals while the adapter
         // converts a base decimals input to liquidity decimals
         const convertedAssets =
           config.adapter === ZeroAddress
-            ? await convertToAsset(baseAddress, options.amount, signer)
+            ? await convertToAsset(baseAddress, dexAmount, signer)
             : await (
                 await adapterContract(config.adapter, signer)
               ).convertToAssets(amountIn);
@@ -233,8 +261,8 @@ const setPrices = async (options) => {
       // Target buy price is the reference sell price plus the offset
       targetBuyPrice = (referencePrices.sellPrice + offsetBN) * BigInt(1e18);
       // Target sell price is the target buy price plus 2x fee offset
-      targetSellPrice =
-        targetBuyPrice + parseUnits(fee.toString(), 32) * BigInt(2);
+      offsetSellSpread = parseUnits(fee.toString(), 32) * BigInt(2);
+      targetSellPrice = targetBuyPrice + offsetSellSpread;
       log(`offset             : ${formatUnits(offsetBN, 14)} basis points`);
       if (dynamicOffset) {
         log(
@@ -304,30 +332,13 @@ const setPrices = async (options) => {
       }
     }
 
-    // 2.4 Adjust target prices based on min/max limits
-    targetSellPrice = rangeSellPrice(
-      targetSellPrice,
-      minSellPrice,
-      maxSellPrice,
-    );
+    // 2.4 Adjust target buy price based on min/max limits
     targetBuyPrice = rangeBuyPrice(targetBuyPrice, minBuyPrice, maxBuyPrice);
 
-    // 2.5 Adjust target prices based on cross price
+    // 2.5 Adjust target buy price based on cross price
     const crossPrice = config.crossPrice;
     log(`\nAdjusting target prices based on cross price:`);
     log(`cross price        : ${formatUnits(crossPrice, 36)}`);
-    if (targetSellPrice < crossPrice) {
-      log(
-        `target sell price ${formatUnits(
-          targetSellPrice,
-          36,
-        )} is below cross price ${formatUnits(
-          crossPrice,
-          36,
-        )} so will use cross price`,
-      );
-      targetSellPrice = crossPrice;
-    }
     if (targetBuyPrice >= crossPrice) {
       log(
         `target buy price  ${formatUnits(
@@ -339,6 +350,39 @@ const setPrices = async (options) => {
         )} so will use cross price`,
       );
       targetBuyPrice = crossPrice - 1n;
+    }
+
+    // 2.6 For offset pricing, preserve the configured spread from the final
+    // adjusted buy price rather than from the original unconstrained price.
+    if (offsetSellSpread !== undefined) {
+      targetSellPrice = targetBuyPrice + offsetSellSpread;
+      log(
+        `target sell price based on adjusted buy price: ${formatUnits(
+          targetSellPrice,
+          36,
+        )}`,
+      );
+    }
+
+    // 2.7 Adjust target sell price based on min/max limits
+    targetSellPrice = rangeSellPrice(
+      targetSellPrice,
+      minSellPrice,
+      maxSellPrice,
+    );
+
+    // 2.8 Adjust target sell price based on cross price
+    if (targetSellPrice < crossPrice) {
+      log(
+        `target sell price ${formatUnits(
+          targetSellPrice,
+          36,
+        )} is below cross price ${formatUnits(
+          crossPrice,
+          36,
+        )} so will use cross price`,
+      );
+      targetSellPrice = crossPrice;
     }
   } else if (buyPrice && sellPrice) {
     targetSellPrice = parseUnits(sellPrice.toString(), 18) * BigInt(1e18);
@@ -361,8 +405,8 @@ const setPrices = async (options) => {
   const toleranceScaled = parseUnits(tolerance.toString(), 36 - 4);
   log(`tolerance          : ${formatUnits(toleranceScaled, 32)} basis points`);
 
-  const targetBuyAmount = parseSwapCap(buyAmount);
-  const targetSellAmount = parseSwapCap(sellAmount);
+  const targetBuyAmount = parseSwapCap(buyAmount, liquidityDecimals);
+  const targetSellAmount = parseSwapCap(sellAmount, baseDecimals);
   const swapCapsChanged = haveSwapCapsChanged(
     baseContext,
     targetBuyAmount,

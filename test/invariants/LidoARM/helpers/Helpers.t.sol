@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.23;
+pragma solidity ^0.8.36;
 
 import {Vm} from "forge-std/Vm.sol";
 import {Base_Test_} from "../base/Base.t.sol";

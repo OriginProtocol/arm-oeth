@@ -56,15 +56,15 @@ action({
       )
       .addOptionalParam(
         "buyAmount",
-        "WETH remaining at the buy price, as an integer in native token units.",
+        "WETH remaining at the buy price, in token units (1 = 1 WETH).",
         undefined,
-        types.string,
+        types.float,
       )
       .addOptionalParam(
         "sellAmount",
-        "Base asset remaining at the sell price, as an integer in native token units.",
+        "Base asset remaining at the sell price, in token units (1 = 1 token).",
         undefined,
-        types.string,
+        types.float,
       )
       .addOptionalParam(
         "maxBuyPrice",
@@ -178,7 +178,7 @@ action({
           minBuyPrice: args.minBuyPrice ?? defaults.minBuyPrice,
           kyber: aggregatorOverridden ? Boolean(args.kyber) : defaults.kyber,
           inch: aggregatorOverridden ? Boolean(args.inch) : defaults.inch,
-          amount: args.amount ?? 20,
+          amount: args.amount,
           tolerance: args.tolerance ?? defaults.tolerance,
           fee: args.fee,
           offset: args.offset,

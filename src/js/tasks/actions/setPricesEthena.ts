@@ -4,7 +4,6 @@ import { types } from "hardhat/config";
 import { action } from "../lib/action";
 import { setPrices } from "../armPrices";
 import { setPricesForBases } from "../../utils/priceActionUtils";
-import { resolveEthenaAggregatorAmount } from "../../utils/ethenaPricing";
 import { mainnet } from "../../utils/addresses";
 const ethenaARMAbi = require("../../../abis/EthenaARM.json");
 
@@ -32,15 +31,15 @@ action({
       )
       .addOptionalParam(
         "buyAmount",
-        "Liquidity asset amount remaining at the buy price for multi-base ARMs, as an integer in native token units.",
+        "USDe remaining at the buy price, in token units (1 = 1 USDe).",
         undefined,
-        types.string,
+        types.float,
       )
       .addOptionalParam(
         "sellAmount",
-        "Base asset amount remaining at the sell price for multi-base ARMs, as an integer in native token units.",
+        "sUSDe remaining at the sell price, in token units (1 = 1 sUSDe).",
         undefined,
-        types.string,
+        types.float,
       )
       .addOptionalParam(
         "maxBuyPrice",
@@ -118,17 +117,6 @@ action({
     const arm = new ethers.Contract(mainnet.ethenaARM, ethenaARMAbi, signer);
 
     log.info("Setting prices for Ethena ARM");
-    const exactPrices =
-      args.buyPrice !== undefined && args.sellPrice !== undefined;
-    let amount = args.amount;
-    if (!exactPrices && amount === undefined) {
-      amount = await resolveEthenaAggregatorAmount({
-        arm,
-        log,
-        blockTag: "latest",
-      });
-    }
-
     await setPricesForBases({
       setPrices,
       bases: ["SUSDE"],
@@ -146,7 +134,7 @@ action({
         minBuyPrice: args.minBuyPrice,
         kyber: args.kyber,
         inch: args.inch,
-        amount,
+        amount: args.amount,
         tolerance: args.tolerance,
         fee: args.fee,
         offset: args.offset,

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.36;
 
 import {AbstractSmokeTest} from "./AbstractSmokeTest.sol";
 
@@ -23,7 +23,7 @@ contract Fork_WETHARM_Smoke_Test is AbstractSmokeTest {
     function test_InitialConfig() external view {
         assertEq(wethARM.name(), "WETH ARM", "name");
         assertEq(wethARM.symbol(), "ARM-WETH", "symbol");
-        assertEq(wethARM.owner(), Mainnet.MULTISIG_2_OF_8, "owner");
+        assertEq(wethARM.owner(), Mainnet.MULTISIG_5_OF_8, "owner");
         assertEq(wethARM.operator(), Mainnet.ARM_TALOS_RELAYER, "operator");
         assertEq(wethARM.feeCollector(), Mainnet.BUYBACK_OPERATOR, "fee collector");
         assertEq(wethARM.fee(), 2000, "performance fee");
@@ -56,8 +56,8 @@ contract Fork_WETHARM_Smoke_Test is AbstractSmokeTest {
         Proxy eethAdapter = Proxy(payable(resolver.resolve("WETH_ARM_EETH_ADAPTER")));
         Proxy weethAdapter = Proxy(payable(resolver.resolve("WETH_ARM_WEETH_ADAPTER")));
 
-        assertEq(eethAdapter.owner(), Mainnet.MULTISIG_2_OF_8, "eETH adapter owner");
-        assertEq(weethAdapter.owner(), Mainnet.MULTISIG_2_OF_8, "weETH adapter owner");
+        assertEq(eethAdapter.owner(), Mainnet.MULTISIG_5_OF_8, "eETH adapter owner");
+        assertEq(weethAdapter.owner(), Mainnet.MULTISIG_5_OF_8, "weETH adapter owner");
         assertEq(
             eethAdapter.implementation(), resolver.resolve("WETH_ARM_EETH_ADAPTER_IMPL"), "eETH adapter implementation"
         );
@@ -79,7 +79,7 @@ contract Fork_WETHARM_Smoke_Test is AbstractSmokeTest {
         assertEq(morphoMarket.market(), Mainnet.MORPHO_WETH_VAULT, "configured Morpho vault");
         assertEq(morphoMarket.market(), lidoMarket.market(), "Lido Morpho vault");
         assertEq(morphoMarket.market(), etherFiMarket.market(), "EtherFi Morpho vault");
-        assertEq(morphoMarket.owner(), Mainnet.MULTISIG_2_OF_8, "market owner");
+        assertEq(morphoMarket.owner(), Mainnet.MULTISIG_5_OF_8, "market owner");
         assertEq(morphoMarket.harvester(), Mainnet.MULTISIG_2_OF_8, "market harvester");
         assertEq(address(morphoMarket.merkleDistributor()), Mainnet.MERKLE_DISTRIBUTOR, "Merkle distributor");
         assertTrue(wethARM.supportedMarkets(address(morphoMarket)), "market supported");

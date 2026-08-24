@@ -4,7 +4,6 @@ import { types } from "hardhat/config";
 import { action } from "../lib/action";
 import { setPrices } from "../armPrices";
 import { setPricesForBases } from "../../utils/priceActionUtils";
-import { resolveUsdAggregatorAmount } from "../../utils/usdPricing";
 import { mainnet } from "../../utils/addresses";
 const multiAssetARMAbi = require("../../../abis/MultiAssetARM.json");
 
@@ -36,15 +35,15 @@ action({
       )
       .addOptionalParam(
         "buyAmount",
-        "Liquidity asset amount remaining at the buy price for multi-base ARMs, as an integer in native token units.",
+        "USDC remaining at the buy price, in token units (1 = 1 USDC).",
         undefined,
-        types.string,
+        types.float,
       )
       .addOptionalParam(
         "sellAmount",
-        "Base asset amount remaining at the sell price for multi-base ARMs, as an integer in native token units.",
+        "Base asset remaining at the sell price, in token units (1 = 1 token).",
         undefined,
-        types.string,
+        types.float,
       )
       .addOptionalParam(
         "maxBuyPrice",
@@ -122,17 +121,6 @@ action({
     const arm = new ethers.Contract(mainnet.usdcARM, multiAssetARMAbi, signer);
 
     log.info("Setting prices for USDC ARM");
-    const exactPrices =
-      args.buyPrice !== undefined && args.sellPrice !== undefined;
-    let amount = args.amount;
-    if (!exactPrices && amount === undefined) {
-      amount = await resolveUsdAggregatorAmount({
-        arm,
-        log,
-        blockTag: "latest",
-      });
-    }
-
     await setPricesForBases({
       setPrices,
       bases: String(args.bases).split(","),
@@ -150,7 +138,7 @@ action({
         minBuyPrice: args.minBuyPrice,
         kyber: args.kyber,
         inch: args.inch,
-        amount,
+        amount: args.amount,
         tolerance: args.tolerance,
         fee: args.fee,
         offset: args.offset,

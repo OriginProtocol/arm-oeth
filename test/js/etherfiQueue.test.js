@@ -1,10 +1,11 @@
 const assert = require("assert");
 
-const { AbiCoder, Contract, id } = require("ethers");
+const { AbiCoder, Contract, id, parseUnits } = require("ethers");
 
 const {
   etherFiRequestStatuses,
   selectClaimableEtherFiRequests,
+  splitEtherFiWithdrawAmount,
 } = require("../../src/js/tasks/etherfiQueue");
 
 const coder = AbiCoder.defaultAbiCoder();
@@ -12,6 +13,24 @@ const coder = AbiCoder.defaultAbiCoder();
 const selector = (signature) => id(signature).slice(0, 10);
 
 const run = async () => {
+  // Ether.fi rejects individual withdrawal requests above 1,000 eETH.
+  assert.deepStrictEqual(splitEtherFiWithdrawAmount(parseUnits("1000")), [
+    parseUnits("1000"),
+  ]);
+  assert.deepStrictEqual(splitEtherFiWithdrawAmount(parseUnits("1971.5")), [
+    parseUnits("1000"),
+    parseUnits("971.5"),
+  ]);
+  assert.deepStrictEqual(splitEtherFiWithdrawAmount(parseUnits("2000")), [
+    parseUnits("1000"),
+    parseUnits("1000"),
+  ]);
+  // weETH uses the adapter-provided share amount equivalent to 1,000 eETH.
+  assert.deepStrictEqual(
+    splitEtherFiWithdrawAmount(parseUnits("1800"), parseUnits("950")),
+    [parseUnits("950"), parseUnits("850")],
+  );
+
   // Pure filter: finalized AND still valid on-chain is the only claimable state.
   {
     const statuses = [

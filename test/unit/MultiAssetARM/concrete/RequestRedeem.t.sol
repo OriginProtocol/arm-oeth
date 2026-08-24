@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.23;
+pragma solidity ^0.8.36;
 
 import {Unit_MultiAssetARM_Shared_Test} from "../Shared.t.sol";
 import {AbstractARM} from "contracts/AbstractARM.sol";
