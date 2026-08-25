@@ -69,7 +69,8 @@ range, tolerance, and quote-amount flags apply to every selected base.
 | `autoClaimUSDCWithdraw`   | `44 * * * *`  | Claim USDC settled by Paxos redemptions for the USDC ARM             |
 | `collectUSDCFees`         | `50 23 * * *` | Collect fees from USDC ARM                                           |
 | `allocateUSDC`            | `26 * * * *`  | Allocate liquidity for USDC ARM                                      |
-| `setPricesUSDC`           | `6 * * * *`   | Set prices for USDC ARM                                              |
+| `setPricesUSDCPYUSD`      | `6 * * * *`   | Set PYUSD prices for USDC ARM                                        |
+| `setPricesUSDCUSDG`       | `6 * * * *`   | Set USDG prices for USDC ARM                                         |
 
 ## WETH ARM — mainnet
 
