@@ -237,21 +237,27 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
         _;
     }
 
-    /// @dev Restricts to the owner, operator, guardian or adminMultisig. Pausing is the safe
-    /// direction, so the caller list is deliberately wide: any of them can trip the circuit breaker.
-    modifier onlyPauser() {
-        if (msg.sender != _owner() && msg.sender != operator && msg.sender != guardian && msg.sender != adminMultisig) {
-            revert OnlyPauser();
-        }
+    /// @dev Single authorization check for both `pause()` and `unpause()`, dispatching on the
+    /// selector of the call it guards. Pausing is the safe direction, so its caller list is
+    /// deliberately wide: the owner, operator, guardian or adminMultisig can all trip the circuit
+    /// breaker. Unpausing narrows to the owner or adminMultisig, so that no single hot key or 2/8
+    /// key can both re-open a paused ARM and, where it is also the owner, change its code.
+    /// @dev Only ever apply this to the external `pause()` and `unpause()` entry points. It reads
+    /// `msg.sig`, so on any other function it would silently fall through to the unpause rules.
+    modifier onlyPauserOrUnpauser() {
+        _checkPauserOrUnpauser();
         _;
     }
 
-    /// @dev Restricts to the owner or adminMultisig. The operator and guardian can pause but must
-    /// never unpause, so that no single hot key or 2/8 key can both re-open a paused ARM and, where
-    /// it is also the owner, change its code.
-    modifier onlyUnpauser() {
-        if (msg.sender != _owner() && msg.sender != adminMultisig) revert OnlyUnpauser();
-        _;
+    function _checkPauserOrUnpauser() internal view {
+        bool isPause = msg.sig == this.pause.selector;
+        if (
+            msg.sender != _owner() && msg.sender != adminMultisig
+                && (!isPause || (msg.sender != operator && msg.sender != guardian))
+        ) {
+            if (isPause) revert OnlyPauser();
+            revert OnlyUnpauser();
+        }
     }
 
     ////////////////////////////////////////////////////
@@ -1255,13 +1261,13 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
 
     /// @notice Pause user-facing ARM actions. Callable by the owner, operator, guardian or
     /// adminMultisig.
-    function pause() external onlyPauser {
+    function pause() external onlyPauserOrUnpauser {
         paused = true;
         emit Paused(msg.sender);
     }
 
     /// @notice Unpause user-facing ARM actions. Callable by the owner or adminMultisig only.
-    function unpause() external onlyUnpauser {
+    function unpause() external onlyPauserOrUnpauser {
         paused = false;
         emit Unpaused(msg.sender);
     }
