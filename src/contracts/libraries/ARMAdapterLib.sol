@@ -10,6 +10,7 @@ import {IAssetAdapter, IERC20} from "../Interfaces.sol";
 /// @title ARM adapter operations
 /// @notice Linked library for protocol adapter redemption and mint lifecycle operations.
 /// @dev External calls execute by delegatecall and mutate only the explicitly passed ARM storage references.
+/// @author Origin Protocol Inc
 library ARMAdapterLib {
     uint256 private constant MAX_CROSS_PRICE_DEVIATION = 20e32;
     uint256 private constant PRICE_SCALE = 1e36;
@@ -35,6 +36,24 @@ library ARMAdapterLib {
         bool peggedToLiquidityAsset
     );
 
+    /// @notice Register a base asset and its adapter, prices, and available swap liquidity.
+    /// @dev Approves the adapter to transfer the base asset and appends the asset to `baseAssets`.
+    /// @param baseAssets ARM storage array of registered base-asset addresses.
+    /// @param configs ARM storage mapping from base assets to their configuration.
+    /// @param liquidityAsset Asset used for LP deposits and base-asset quote pricing.
+    /// @param newBaseAsset Base asset to register. Its token decimals must be either 6 or 18.
+    /// @param adapter Adapter that converts and handles protocol minting or redemption for the base asset.
+    /// @param buyPrice Price paid by the ARM when buying the base asset, scaled to 36 decimals.
+    /// For example, 0.998e36 is 0.998 liquidity asset per base asset.
+    /// @param sellPrice Price charged by the ARM when selling the base asset, scaled to 36 decimals.
+    /// For example, 1.001e36 is 1.001 liquidity asset per base asset.
+    /// @param buyAmount Liquidity asset available at `buyPrice`, in native liquidity-asset decimals.
+    /// For example, 100e6 is 100 USDC when the liquidity asset has 6 decimals.
+    /// @param sellAmount Base asset available at `sellPrice`, in native base-asset decimals.
+    /// For example, 100e18 is 100 base assets when the base asset has 18 decimals.
+    /// @param newCrossPrice Valuation price used by totalAssets(), scaled to 36 decimals.
+    /// For example, 1e36 values one base asset at one liquidity asset.
+    /// @param peggedToLiquidityAsset Whether conversions bypass the adapter and use decimal-scaled 1:1 amounts.
     function addBaseAsset(
         address[] storage baseAssets,
         mapping(address asset => BaseAssetConfig) storage configs,
@@ -77,6 +96,14 @@ library ARMAdapterLib {
         emit BaseAssetAdded(newBaseAsset, adapter, buyPrice, sellPrice, newCrossPrice, peggedToLiquidityAsset);
     }
 
+    /// @notice Request protocol redemption of base-asset shares through their configured adapter.
+    /// @dev Adds the liquidity-denominated amount expected from the adapter to `pendingRedeemAssets`.
+    /// @param configs ARM storage mapping from base assets to their configuration.
+    /// @param redeemBaseAsset Base asset whose shares are submitted for redemption.
+    /// @param shares Base-asset shares to redeem, in native base-asset decimals.
+    /// For example, 100e18 is 100 shares when the base asset has 18 decimals.
+    /// @return sharesRequested Base-asset shares accepted by the adapter.
+    /// @return assetsExpected Liquidity assets expected from settlement, in native liquidity-asset decimals.
     function requestRedeem(
         mapping(address asset => BaseAssetConfig) storage configs,
         address redeemBaseAsset,
@@ -89,6 +116,16 @@ library ARMAdapterLib {
         config.pendingRedeemAssets = SafeCast.toUint128(uint256(config.pendingRedeemAssets) + assetsExpected);
     }
 
+    /// @notice Claim completed base-asset redemptions through their configured adapter.
+    /// @dev Removes the adapter's expected liquidity amount from `pendingRedeemAssets`; any settlement shortfall
+    ///      is reflected in totalAssets() after the expected amount is removed.
+    /// @param configs ARM storage mapping from base assets to their configuration.
+    /// @param redeemBaseAsset Base asset whose completed redemptions are claimed.
+    /// @param shares Base-asset shares to claim, in native base-asset decimals.
+    /// For example, 100e18 is 100 shares when the base asset has 18 decimals.
+    /// @return sharesClaimed Base-asset shares removed from the adapter's redemption queue.
+    /// @return assetsExpected Liquidity assets expected for the claimed shares.
+    /// @return assetsReceived Liquidity assets actually transferred to the ARM.
     function claimRedeem(
         mapping(address asset => BaseAssetConfig) storage configs,
         address redeemBaseAsset,
@@ -101,6 +138,20 @@ library ARMAdapterLib {
         config.pendingRedeemAssets = SafeCast.toUint128(uint256(config.pendingRedeemAssets) - assetsExpected);
     }
 
+    /// @notice Commit liquidity assets to an asynchronous base-asset mint through an adapter.
+    /// @dev Withdraws a shortfall from `activeMarket` when necessary, preserves liquidity reserved for LP
+    ///      withdrawals, and tracks expected base shares in `pendingMintShares` for totalAssets() valuation.
+    /// @param configs ARM storage mapping from base assets to their configuration.
+    /// @param pendingMintShares ARM storage mapping of base-asset shares expected from outstanding mints.
+    /// @param liquidityAsset Asset committed to the mint.
+    /// @param activeMarket ERC-4626 market used to source a liquidity shortfall, or address(0) when none is active.
+    /// @param reservedWithdrawLiquidity Liquidity reserved for outstanding LP withdrawals, in native decimals.
+    /// For example, 100e6 reserves 100 USDC when the liquidity asset has 6 decimals.
+    /// @param mintBaseAsset Base asset expected from mint settlement.
+    /// @param assets Liquidity assets offered to the adapter, in native liquidity-asset decimals.
+    /// For example, 100e6 offers 100 USDC when the liquidity asset has 6 decimals.
+    /// @return assetsRequested Liquidity assets accepted by the adapter.
+    /// @return sharesExpected Base-asset shares expected from settlement.
     function requestMint(
         mapping(address asset => BaseAssetConfig) storage configs,
         mapping(address asset => uint256 shares) storage pendingMintShares,
@@ -125,6 +176,16 @@ library ARMAdapterLib {
         pendingMintShares[mintBaseAsset] += sharesExpected;
     }
 
+    /// @notice Claim asynchronously minted base-asset shares from their configured adapter.
+    /// @dev Removes the claimed shares from `pendingMintShares` after the adapter transfers settled inventory.
+    /// @param configs ARM storage mapping from base assets to their configuration.
+    /// @param pendingMintShares ARM storage mapping of base-asset shares expected from outstanding mints.
+    /// @param mintBaseAsset Base asset being claimed from the adapter.
+    /// @param shares Pending base-asset shares to claim, in native base-asset decimals.
+    /// For example, 100e18 is 100 shares when the base asset has 18 decimals.
+    /// @return sharesClaimed Base-asset shares removed from the adapter's mint queue.
+    /// @return assetsExpected Liquidity assets committed for the claimed shares.
+    /// @return sharesReceived Base-asset shares actually transferred to the ARM.
     function claimMint(
         mapping(address asset => BaseAssetConfig) storage configs,
         mapping(address asset => uint256 shares) storage pendingMintShares,
