@@ -20,7 +20,7 @@ import {ARMDeploymentHelper} from "script/deploy/helpers/ARMDeploymentHelper.sol
 ///      address at runtime. This avoids leaving an unlinked library placeholder in the dynamically
 ///      loaded deployment script. This is a logic-only proxy upgrade: proxy storage is preserved and
 ///      no proxy reinitializer is required. Fork actions are idempotent so they can be replayed safely.
-contract $043_UpgradeUSDCARMMintScript is AbstractDeployScript("043_UpgradeUSDCARMMintScript") {
+contract $044_UpgradeUSDCARMMintScript is AbstractDeployScript("044_UpgradeUSDCARMMintScript") {
     function _execute() internal override {
         address usdcARM = resolver.resolve("USDC_ARM");
 

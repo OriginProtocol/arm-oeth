@@ -9,6 +9,7 @@ import {MultiAssetARM} from "contracts/MultiAssetARM.sol";
 
 // Deployment
 import {AbstractDeployScript} from "script/deploy/helpers/AbstractDeployScript.s.sol";
+import {ARMDeploymentHelper} from "script/deploy/helpers/ARMDeploymentHelper.sol";
 
 /// @title Split the ARM pause and unpause roles
 /// @notice Upgrades the WETH and USDC ARMs to the AbstractARM implementation that separates pausing
@@ -38,18 +39,30 @@ contract $043_UpgradeARMsPauseRolesScript is AbstractDeployScript("043_UpgradeAR
 
     function _execute() internal override {
         uint256 claimDelay = 10 minutes;
+        address adapterLib = ARMDeploymentHelper.deployARMAdapterLib();
+        _recordDeployment("ARM_ADAPTER_LIB", adapterLib);
 
         // Constructor args are unchanged from the scripts that deployed the current implementations
         // (038 for WETH, 039 for USDC) so the pause roles are the only behavioural change.
 
-        wethARMImpl = new MultiAssetARM({
-            _liquidityAsset: Mainnet.WETH, _claimDelay: claimDelay, _minSharesToRedeem: 1e7, _allocateThreshold: 1 ether
-        });
+        wethARMImpl = ARMDeploymentHelper.deployMultiAssetARM(
+            vm,
+            projectRoot,
+            adapterLib,
+            ARMDeploymentHelper.MultiAssetARMConfig({
+                liquidityAsset: Mainnet.WETH, claimDelay: claimDelay, minSharesToRedeem: 1e7, allocateThreshold: 1 ether
+            })
+        );
         _recordDeployment("WETH_ARM_IMPL", address(wethARMImpl));
 
-        usdcARMImpl = new MultiAssetARM({
-            _liquidityAsset: Mainnet.USDC, _claimDelay: claimDelay, _minSharesToRedeem: 1e6, _allocateThreshold: 100e6
-        });
+        usdcARMImpl = ARMDeploymentHelper.deployMultiAssetARM(
+            vm,
+            projectRoot,
+            adapterLib,
+            ARMDeploymentHelper.MultiAssetARMConfig({
+                liquidityAsset: Mainnet.USDC, claimDelay: claimDelay, minSharesToRedeem: 1e6, allocateThreshold: 100e6
+            })
+        );
         _recordDeployment("USDC_ARM_IMPL", address(usdcARMImpl));
     }
 
