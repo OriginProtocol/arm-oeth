@@ -714,7 +714,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
         BaseAssetConfig storage config = baseAssetConfigs[priceBaseAsset];
         if (config.adapter == address(0)) revert UnsupportedAsset();
         if (newCrossPrice < PRICE_SCALE - MAX_CROSS_PRICE_DEVIATION) revert CrossPriceTooLow();
-        if (newCrossPrice > PRICE_SCALE) revert CrossPriceTooHigh();
+        if (newCrossPrice > PRICE_SCALE + MAX_CROSS_PRICE_DEVIATION) revert CrossPriceTooHigh();
         if (config.sellPrice < newCrossPrice) revert SellPriceTooLow();
         if (config.buyPrice >= newCrossPrice) revert InvalidBuyPrice();
 

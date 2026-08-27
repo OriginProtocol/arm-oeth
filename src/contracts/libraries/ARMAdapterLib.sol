@@ -56,7 +56,7 @@ library ARMAdapterLib {
         if (baseDecimals != 6 && baseDecimals != 18) revert InvalidAssetDecimals();
         if (IAssetAdapter(adapter).asset() != liquidityAsset) revert InvalidAdapterAsset();
         if (newCrossPrice < PRICE_SCALE - MAX_CROSS_PRICE_DEVIATION) revert CrossPriceTooLow();
-        if (newCrossPrice > PRICE_SCALE) revert CrossPriceTooHigh();
+        if (newCrossPrice > PRICE_SCALE + MAX_CROSS_PRICE_DEVIATION) revert CrossPriceTooHigh();
         if (sellPrice < newCrossPrice) revert SellPriceTooLow();
         if (buyPrice < MAX_CROSS_PRICE_DEVIATION || buyPrice >= newCrossPrice) revert InvalidBuyPrice();
 
