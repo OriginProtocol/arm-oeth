@@ -88,7 +88,7 @@ contract MorphoBlueMarket is Initializable, Ownable {
     address public harvester;
     IDistributor public merkleDistributor;
 
-    uint256[48] private _gap;
+    uint256[50] private _gap;
 
     event Deposit(address indexed sender, address indexed owner, uint256 assets, uint256 shares);
     event Withdraw(
