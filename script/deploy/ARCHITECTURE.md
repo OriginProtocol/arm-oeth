@@ -643,7 +643,7 @@ Copy `.env.example` to `.env` and fill in the required values.
 
 `.github/actions/setup/action.yml` provides a reusable environment setup:
 1. Checkout with submodules
-2. Install Foundry (stable, with cache)
+2. Install Foundry (v1.8.1, with cache)
 3. Install Soldeer dependencies (with cache)
 4. Optionally install Yarn dependencies (with cache)
 
