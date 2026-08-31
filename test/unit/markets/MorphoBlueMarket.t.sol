@@ -141,7 +141,6 @@ contract Unit_MorphoBlueMarket_Test is Test {
     MockERC20 internal usdc;
     MockMorphoIrm internal irm;
     MockMorphoBlue internal morpho;
-    MorphoBlueMarket internal implementation;
     MorphoBlueMarket internal wrapper;
     MorphoMarketParams internal params;
 
@@ -164,7 +163,6 @@ contract Unit_MorphoBlueMarket_Test is Test {
         });
         morpho.createMarket(params);
 
-        implementation = new MorphoBlueMarket(address(morpho));
         wrapper = _deployWrapper(params);
         usdc.approve(address(wrapper), type(uint256).max);
     }
@@ -173,19 +171,29 @@ contract Unit_MorphoBlueMarket_Test is Test {
         assertEq(wrapper.arm(), address(this));
         assertEq(wrapper.asset(), address(usdc));
         assertEq(MorphoMarketId.unwrap(wrapper.marketId()), keccak256(abi.encode(params)));
+        (address loanToken, address collateralToken, address oracle, address marketIrm, uint256 lltv) =
+            wrapper.marketParams();
+        assertEq(loanToken, params.loanToken);
+        assertEq(collateralToken, params.collateralToken);
+        assertEq(oracle, params.oracle);
+        assertEq(marketIrm, params.irm);
+        assertEq(lltv, params.lltv);
         assertEq(address(wrapper.morpho()), address(morpho));
         assertEq(wrapper.harvester(), harvester);
         assertEq(address(wrapper.merkleDistributor()), distributor);
     }
 
-    function test_SameImplementationSupportsSeparateMarketProxies() external {
+    function test_SeparateImplementationsSupportImmutableMarketConfigurations() external {
         MorphoMarketParams memory secondParams = params;
         secondParams.collateralToken = makeAddr("second collateral");
         morpho.createMarket(secondParams);
 
         MorphoBlueMarket secondWrapper = _deployWrapper(secondParams);
-        assertEq(Proxy(payable(address(wrapper))).implementation(), address(implementation));
-        assertEq(Proxy(payable(address(secondWrapper))).implementation(), address(implementation));
+        assertNotEq(
+            Proxy(payable(address(wrapper))).implementation(),
+            Proxy(payable(address(secondWrapper))).implementation(),
+            "implementations"
+        );
         assertNotEq(
             MorphoMarketId.unwrap(wrapper.marketId()), MorphoMarketId.unwrap(secondWrapper.marketId()), "market ids"
         );
@@ -271,22 +279,16 @@ contract Unit_MorphoBlueMarket_Test is Test {
     function test_RevertWhen_InitializingUnknownMarket() external {
         MorphoMarketParams memory unknownParams = params;
         unknownParams.collateralToken = makeAddr("unknown collateral");
-        Proxy proxy = new Proxy();
 
-        vm.expectRevert();
-        proxy.initialize(
-            address(implementation),
-            governor,
-            abi.encodeCall(MorphoBlueMarket.initialize, (address(this), unknownParams, harvester, distributor))
-        );
+        vm.expectRevert(MorphoBlueMarket.InvalidMarket.selector);
+        new MorphoBlueMarket(address(morpho), address(this), unknownParams);
     }
 
     function _deployWrapper(MorphoMarketParams memory marketParams) internal returns (MorphoBlueMarket deployed) {
+        MorphoBlueMarket implementation = new MorphoBlueMarket(address(morpho), address(this), marketParams);
         Proxy proxy = new Proxy();
         proxy.initialize(
-            address(implementation),
-            governor,
-            abi.encodeCall(MorphoBlueMarket.initialize, (address(this), marketParams, harvester, distributor))
+            address(implementation), governor, abi.encodeCall(MorphoBlueMarket.initialize, (harvester, distributor))
         );
         return MorphoBlueMarket(address(proxy));
     }

@@ -63,7 +63,7 @@ interface IMorphoIrm {
 
 /**
  * @title ERC-4626-compatible wrapper for one Morpho Blue market.
- * @notice Each proxy is initialized with one immutable-in-practice Morpho market configuration.
+ * @notice Each implementation is constructed with one immutable Morpho market configuration.
  * @dev The wrapper deliberately has no ERC-20 share token. Its ERC-4626-style balance is the
  *      Morpho supply-share position owned by this contract and exposed only to the linked ARM.
  * @author Origin Protocol Inc
@@ -76,16 +76,19 @@ contract MorphoBlueMarket is Initializable, Ownable {
     uint256 internal constant VIRTUAL_ASSETS = 1;
 
     IMorphoBlue public immutable morpho;
+    address public immutable arm;
+    address public immutable asset;
+    MorphoMarketId public immutable marketId;
 
-    address public arm;
-    address public asset;
-    MorphoMarketId public marketId;
-    MorphoMarketParams public marketParams;
+    address private immutable _collateralToken;
+    address private immutable _oracle;
+    address private immutable _irm;
+    uint256 private immutable _lltv;
 
     address public harvester;
     IDistributor public merkleDistributor;
 
-    uint256[42] private _gap;
+    uint256[48] private _gap;
 
     event Deposit(address indexed sender, address indexed owner, uint256 assets, uint256 shares);
     event Withdraw(
@@ -101,39 +104,51 @@ contract MorphoBlueMarket is Initializable, Ownable {
     error InvalidHarvester(); // 0xee486cb6
     error InvalidMerkleDistributor(); // 0xfff74fbb
 
-    /// @notice Construct the shared implementation for a Morpho Blue deployment.
-    /// @dev Proxy-specific ARM and market configuration is supplied to `initialize`.
+    /// @notice Construct the implementation for one Morpho Blue market.
     /// @param _morpho The Morpho Blue singleton contract.
-    constructor(address _morpho) {
-        if (_morpho == address(0)) revert InvalidMarket();
-        morpho = IMorphoBlue(_morpho);
-        _setOwner(address(0));
-    }
-
-    /// @notice Initialize a proxy for exactly one Morpho Blue lending market.
     /// @param _arm The USDC ARM allowed to own and move this wrapper's position.
     /// @param _marketParams The complete Morpho market parameters; the loan token must be USDC for the USDC ARM.
-    /// @param _harvester The reward harvester.
-    /// @param _merkleDistributor The distributor used for market incentive claims.
-    function initialize(
-        address _arm,
-        MorphoMarketParams calldata _marketParams,
-        address _harvester,
-        address _merkleDistributor
-    ) external initializer onlyOwner {
+    constructor(address _morpho, address _arm, MorphoMarketParams memory _marketParams) {
+        if (_morpho == address(0)) revert InvalidMarket();
         if (_arm == address(0)) revert InvalidARM();
         if (_marketParams.loanToken == address(0) || _marketParams.irm == address(0)) revert InvalidMarket();
 
-        MorphoMarketId id = MorphoMarketId.wrap(keccak256(abi.encode(_marketParams)));
-        MorphoMarketState memory state = morpho.market(id);
-        if (state.lastUpdate == 0) revert InvalidMarket();
-
+        morpho = IMorphoBlue(_morpho);
         arm = _arm;
         asset = _marketParams.loanToken;
-        marketId = id;
-        marketParams = _marketParams;
+        marketId = MorphoMarketId.wrap(keccak256(abi.encode(_marketParams)));
+        _collateralToken = _marketParams.collateralToken;
+        _oracle = _marketParams.oracle;
+        _irm = _marketParams.irm;
+        _lltv = _marketParams.lltv;
+
+        MorphoMarketState memory state = morpho.market(marketId);
+        if (state.lastUpdate == 0) revert InvalidMarket();
+
+        _setOwner(address(0));
+    }
+
+    /// @notice Initialize a proxy's mutable reward configuration.
+    /// @param _harvester The reward harvester.
+    /// @param _merkleDistributor The distributor used for market incentive claims.
+    function initialize(address _harvester, address _merkleDistributor) external initializer onlyOwner {
         _setHarvester(_harvester);
         _setMerkleDistributor(_merkleDistributor);
+    }
+
+    /// @notice Return the immutable configuration of this Morpho Blue market.
+    function marketParams()
+        external
+        view
+        returns (address loanToken, address collateralToken, address oracle, address irm, uint256 lltv)
+    {
+        return (asset, _collateralToken, _oracle, _irm, _lltv);
+    }
+
+    function _marketParams() internal view returns (MorphoMarketParams memory) {
+        return MorphoMarketParams({
+            loanToken: asset, collateralToken: _collateralToken, oracle: _oracle, irm: _irm, lltv: _lltv
+        });
     }
 
     /// @notice Supply an exact amount of loan assets to this wrapper's Morpho market.
@@ -147,7 +162,7 @@ contract MorphoBlueMarket is Initializable, Ownable {
 
         IERC20(asset).transferFrom(arm, address(this), assets);
         IERC20(asset).approve(address(morpho), assets);
-        (, shares) = morpho.supply(marketParams, assets, 0, address(this), "");
+        (, shares) = morpho.supply(_marketParams(), assets, 0, address(this), "");
 
         emit Deposit(arm, arm, assets, shares);
     }
@@ -162,7 +177,7 @@ contract MorphoBlueMarket is Initializable, Ownable {
     function withdraw(uint256 assets, address receiver, address owner) external returns (uint256 shares) {
         if (msg.sender != arm || receiver != arm || owner != arm) revert OnlyARM();
 
-        (, shares) = morpho.withdraw(marketParams, assets, 0, address(this), arm);
+        (, shares) = morpho.withdraw(_marketParams(), assets, 0, address(this), arm);
         emit Withdraw(arm, arm, arm, assets, shares);
     }
 
@@ -176,7 +191,7 @@ contract MorphoBlueMarket is Initializable, Ownable {
     function redeem(uint256 shares, address receiver, address owner) external returns (uint256 assets) {
         if (msg.sender != arm || receiver != arm || owner != arm) revert OnlyARM();
 
-        (assets,) = morpho.withdraw(marketParams, 0, shares, address(this), arm);
+        (assets,) = morpho.withdraw(_marketParams(), 0, shares, address(this), arm);
         emit Withdraw(arm, arm, arm, assets, shares);
     }
 
@@ -257,7 +272,7 @@ contract MorphoBlueMarket is Initializable, Ownable {
     /// @notice Materialize pending Morpho interest without moving the ARM position.
     /// @dev Permissionless because Morpho interest accrual only updates market accounting.
     function accrueInterest() external {
-        morpho.accrueInterest(marketParams);
+        morpho.accrueInterest(_marketParams());
     }
 
     /// @notice Claim Merkle-distributed incentives allocated to this wrapper.
@@ -337,7 +352,8 @@ contract MorphoBlueMarket is Initializable, Ownable {
         uint256 elapsed = block.timestamp - uint256(state.lastUpdate);
         if (elapsed == 0 || state.totalBorrowAssets == 0) return state;
 
-        uint256 borrowRate = IMorphoIrm(marketParams.irm).borrowRateView(marketParams, state);
+        MorphoMarketParams memory params = _marketParams();
+        uint256 borrowRate = IMorphoIrm(_irm).borrowRateView(params, state);
         uint256 compoundedRate = _wTaylorCompounded(borrowRate, elapsed);
         uint256 interest = uint256(state.totalBorrowAssets).mulDiv(compoundedRate, WAD);
 

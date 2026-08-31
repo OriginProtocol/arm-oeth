@@ -11,9 +11,9 @@ import {MorphoBlueMarket, MorphoMarketId, MorphoMarketParams} from "contracts/ma
 import {AbstractDeployScript} from "script/deploy/helpers/AbstractDeployScript.s.sol";
 
 /// @title Deploy direct Morpho Blue markets for the USDC ARM
-/// @notice Deploys one shared MorphoBlueMarket implementation and four independently configured
-///         proxies for OETH/USDC, WBTC/USDC, and two cbBTC/USDC markets. The proxies are registered
-///         as supported USDC ARM markets but no market is activated automatically.
+/// @notice Deploys four immutable MorphoBlueMarket implementations and their proxies for OETH/USDC,
+///         WBTC/USDC, and two cbBTC/USDC markets. The proxies are registered as supported USDC ARM
+///         markets but no market is activated automatically.
 /// @dev The two cbBTC markets use the same collateral, loan token, IRM, and LLTV but distinct
 ///      oracle addresses. Expected market IDs are asserted before deployment.
 contract $043_DeployUSDCMorphoBlueMarketsScript is AbstractDeployScript("043_DeployUSDCMorphoBlueMarketsScript") {
@@ -36,35 +36,16 @@ contract $043_DeployUSDCMorphoBlueMarketsScript is AbstractDeployScript("043_Dep
     function _execute() internal override {
         address usdcARM = resolver.resolve("USDC_ARM");
 
-        // One implementation is shared by all per-market proxies. Morpho Blue itself is immutable
-        // implementation configuration; the ARM and market parameters are proxy storage.
-        MorphoBlueMarket implementation = new MorphoBlueMarket(Mainnet.MORPHO_BLUE);
-        _recordDeployment("USDC_ARM_MORPHO_BLUE_MARKET_IMPL", address(implementation));
-
-        _deployMarket(
-            "USDC_ARM_MORPHO_BLUE_OETH",
-            address(implementation),
-            usdcARM,
-            _params(Mainnet.OETH, OETH_USDC_ORACLE),
-            OETH_USDC_ID
-        );
-        _deployMarket(
-            "USDC_ARM_MORPHO_BLUE_WBTC",
-            address(implementation),
-            usdcARM,
-            _params(Mainnet.WBTC, WBTC_USDC_ORACLE),
-            WBTC_USDC_ID
-        );
+        _deployMarket("USDC_ARM_MORPHO_BLUE_OETH", usdcARM, _params(Mainnet.OETH, OETH_USDC_ORACLE), OETH_USDC_ID);
+        _deployMarket("USDC_ARM_MORPHO_BLUE_WBTC", usdcARM, _params(Mainnet.WBTC, WBTC_USDC_ORACLE), WBTC_USDC_ID);
         _deployMarket(
             "USDC_ARM_MORPHO_BLUE_CBBTC_BA3BA077",
-            address(implementation),
             usdcARM,
             _params(Mainnet.CBBTC, CBBTC_USDC_C7BE_ORACLE),
             CBBTC_USDC_C7BE_ID
         );
         _deployMarket(
             "USDC_ARM_MORPHO_BLUE_CBBTC_64D65C9A",
-            address(implementation),
             usdcARM,
             _params(Mainnet.CBBTC, CBBTC_USDC_A6D6_ORACLE),
             CBBTC_USDC_A6D6_ID
@@ -95,19 +76,21 @@ contract $043_DeployUSDCMorphoBlueMarketsScript is AbstractDeployScript("043_Dep
 
     function _deployMarket(
         string memory deploymentName,
-        address implementation,
         address usdcARM,
         MorphoMarketParams memory params,
         bytes32 expectedId
     ) internal {
         require(keccak256(abi.encode(params)) == expectedId, "Unexpected Morpho market ID");
 
+        MorphoBlueMarket implementation = new MorphoBlueMarket(Mainnet.MORPHO_BLUE, usdcARM, params);
+        _recordDeployment(string.concat(deploymentName, "_IMPL"), address(implementation));
+
         Proxy marketProxy = new Proxy();
         _recordDeployment(deploymentName, address(marketProxy));
         marketProxy.initialize(
-            implementation,
+            address(implementation),
             OWNER,
-            abi.encodeCall(MorphoBlueMarket.initialize, (usdcARM, params, HARVESTER, Mainnet.MERKLE_DISTRIBUTOR))
+            abi.encodeCall(MorphoBlueMarket.initialize, (HARVESTER, Mainnet.MERKLE_DISTRIBUTOR))
         );
 
         require(
