@@ -99,10 +99,12 @@ contract MorphoBlueMarket is Initializable, Ownable {
     event CollectedRewards(address[] tokens, uint256[] amounts);
 
     error OnlyARM(); // 0x1628bf2a
+    error OnlyHarvester(); // 0xbc4583db
     error InvalidARM(); // 0xc0a9bda4
     error InvalidMarket(); // 0x9db8d5b1
     error InvalidHarvester(); // 0xee486cb6
     error InvalidMerkleDistributor(); // 0xfff74fbb
+    error InvalidRecipient(); // 0x9c8d2cd2
 
     /// @notice Construct the implementation for one Morpho Blue market.
     /// @param _morpho The Morpho Blue singleton contract.
@@ -299,7 +301,7 @@ contract MorphoBlueMarket is Initializable, Ownable {
     /// @param tokens The incentive tokens to collect.
     /// @return amounts The amount of each corresponding token transferred.
     function collectRewards(address[] calldata tokens) external returns (uint256[] memory amounts) {
-        require(msg.sender == harvester, "Only harvester can collect");
+        if (msg.sender != harvester) revert OnlyHarvester();
         amounts = new uint256[](tokens.length);
         for (uint256 i; i < tokens.length; ++i) {
             IERC20 token = IERC20(tokens[i]);
@@ -330,7 +332,7 @@ contract MorphoBlueMarket is Initializable, Ownable {
     /// @param to The owner or harvester receiving the tokens.
     /// @param amount The amount to transfer, or zero to transfer the complete balance.
     function transferTokens(address token, address to, uint256 amount) external onlyOwner {
-        require(to == msg.sender || to == harvester, "Invalid recipient");
+        if (to != msg.sender && to != harvester) revert InvalidRecipient();
         amount = amount == 0 ? IERC20(token).balanceOf(address(this)) : amount;
         IERC20(token).transfer(to, amount);
     }

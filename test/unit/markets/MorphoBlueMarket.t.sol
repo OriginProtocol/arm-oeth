@@ -272,8 +272,14 @@ contract Unit_MorphoBlueMarket_Test is Test {
 
     function test_RevertWhen_NonHarvesterCollectsRewards() external {
         vm.prank(attacker);
-        vm.expectRevert("Only harvester can collect");
+        vm.expectRevert(MorphoBlueMarket.OnlyHarvester.selector);
         wrapper.collectRewards(new address[](0));
+    }
+
+    function test_RevertWhen_TransferTokensRecipientInvalid() external {
+        vm.prank(governor);
+        vm.expectRevert(MorphoBlueMarket.InvalidRecipient.selector);
+        wrapper.transferTokens(address(usdc), attacker, 1);
     }
 
     function test_RevertWhen_InitializingUnknownMarket() external {
