@@ -3,9 +3,9 @@
 # Foundry binaries (forge/cast/anvil) — pulled from the official image
 # at a digest pin instead of curl-pipe-bash from foundry.paradigm.xyz.
 # Replaces the previous `curl … | bash` install (security/M-011).
-# Bump by re-resolving `ghcr.io/foundry-rs/foundry:stable` and updating
+# Bump by resolving the desired immutable Foundry release tag and updating
 # the digest below; review the published Foundry release notes.
-FROM ghcr.io/foundry-rs/foundry@sha256:043752653d5be351c71709091b3db97c4421c907eb40ea294195e7f532aadf46 AS foundry
+FROM ghcr.io/foundry-rs/foundry:v1.8.1@sha256:0c00cb0bda1ab1b91c9a6bf60f4c76c09c1a8870824b6d4718afbabacf6f9a17 AS foundry
 
 FROM oven/bun:1
 
