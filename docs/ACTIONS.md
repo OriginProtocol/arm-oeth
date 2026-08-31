@@ -42,6 +42,10 @@ range, tolerance, and quote-amount flags apply to every selected base.
 | `allocateLido`            | `38,08 * * * *`         | Allocate liquidity for Lido ARM        |
 | `setPricesLido`           | `*/30 * * * *`          | Set prices for Lido ARM                |
 
+`allocateLido` accepts an optional `--threshold` in WETH and defaults to
+`100`. The threshold skips small liquidity deltas; the ARM contract determines
+the actual amount allocated.
+
 ## EtherFi ARM — mainnet
 
 | Action                     | Cron           | Description                                |
