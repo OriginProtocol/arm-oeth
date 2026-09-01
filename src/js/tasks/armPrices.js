@@ -19,8 +19,11 @@ const {
   rangeBuyPrice,
 } = require("../utils/pricing");
 const {
+  exceedsMaxBuyPrice,
+  fallsBelowMinSellPrice,
   haveSwapCapsChanged,
   resolveDexQuoteAmount,
+  shouldUpdatePrices,
 } = require("../utils/priceUpdate");
 
 const log = require("../utils/logger")("task:prices");
@@ -109,6 +112,8 @@ const setPrices = async (options) => {
   let targetBuyPrice;
   let targetSellPrice;
   let offsetSellSpread;
+  let buyPriceWasCappedAtMax = false;
+  let sellPriceWasFlooredAtMin = false;
   // 2. If no buy/sell prices are provided, calculate them using midPrice/1Inch/Curve
   if (!buyPrice && !sellPrice && (midPrice || curve || inch || kyber)) {
     // Set asset options
@@ -333,6 +338,7 @@ const setPrices = async (options) => {
     }
 
     // 2.4 Adjust target buy price based on min/max limits
+    buyPriceWasCappedAtMax = exceedsMaxBuyPrice(targetBuyPrice, maxBuyPrice);
     targetBuyPrice = rangeBuyPrice(targetBuyPrice, minBuyPrice, maxBuyPrice);
 
     // 2.5 Adjust target buy price based on cross price
@@ -365,6 +371,10 @@ const setPrices = async (options) => {
     }
 
     // 2.7 Adjust target sell price based on min/max limits
+    sellPriceWasFlooredAtMin = fallsBelowMinSellPrice(
+      targetSellPrice,
+      minSellPrice,
+    );
     targetSellPrice = rangeSellPrice(
       targetSellPrice,
       minSellPrice,
@@ -421,13 +431,24 @@ const setPrices = async (options) => {
 
   // decide if rates need to be updated
   if (
-    diffSellPrice > toleranceScaled ||
-    diffBuyPrice > toleranceScaled ||
-    swapCapsChanged
+    shouldUpdatePrices({
+      diffSellPrice,
+      diffBuyPrice,
+      toleranceScaled,
+      buyPriceWasCappedAtMax,
+      sellPriceWasFlooredAtMin,
+      swapCapsChanged,
+    })
   ) {
     console.log(`About to update ARM prices`);
     console.log(`sell: ${formatUnits(targetSellPrice, 36)}`);
     console.log(`buy : ${formatUnits(targetBuyPrice, 36)}`);
+    if (buyPriceWasCappedAtMax) {
+      console.log(`Buy price exceeded the maximum and was capped`);
+    }
+    if (sellPriceWasFlooredAtMin) {
+      console.log(`Sell price fell below the minimum and was raised`);
+    }
     if (swapCapsChanged) {
       console.log(`Buy or sell amount has changed`);
     }
