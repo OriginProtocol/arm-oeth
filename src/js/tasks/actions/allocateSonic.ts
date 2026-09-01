@@ -12,12 +12,19 @@ action({
   description: "Allocate liquidity for Origin ARM on Sonic",
   chains: [146],
   params: (t) =>
-    t.addOptionalParam(
-      "threshold",
-      "Liquidity-delta threshold used to skip small allocations, in wS.",
-      10000,
-      types.float,
-    ),
+    t
+      .addOptionalParam(
+        "threshold",
+        "Liquidity-delta threshold used to skip small allocations, in wS.",
+        10000,
+        types.float,
+      )
+      .addOptionalParam(
+        "maxGasPrice",
+        "Maximum gas price at which allocation may execute, in gwei.",
+        500,
+        types.float,
+      ),
   run: async ({ signer, log, args }) => {
     const arm = new ethers.Contract(sonic.OriginARM, armAbi, signer);
 
@@ -26,7 +33,7 @@ action({
       signer,
       arm,
       threshold: args.threshold,
-      maxGasPrice: 500,
+      maxGasPrice: args.maxGasPrice,
       armContractVersion: "v1",
     });
   },

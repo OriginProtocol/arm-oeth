@@ -38,6 +38,10 @@ liquidity asset and defaults to: Lido `100 WETH`, EtherFi `20 WETH`, Ethena
 Sonic `10,000 wS`. The threshold skips small liquidity
 deltas; the ARM contract determines the actual amount allocated.
 
+The allocation actions also accept an optional `--max-gas-price` in gwei. It
+defaults to `5` for Lido, EtherFi, Ethena, USDC, and WETH, and `500` for OETH
+and Sonic.
+
 ## Lido ARM — mainnet
 
 | Action                    | Cron                    | Description                            |

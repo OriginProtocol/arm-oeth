@@ -11,12 +11,19 @@ action({
   description: "Allocate liquidity for EtherFi ARM",
   chains: [1],
   params: (t) =>
-    t.addOptionalParam(
-      "threshold",
-      "Liquidity-delta threshold used to skip small allocations, in WETH.",
-      20,
-      types.float,
-    ),
+    t
+      .addOptionalParam(
+        "threshold",
+        "Liquidity-delta threshold used to skip small allocations, in WETH.",
+        20,
+        types.float,
+      )
+      .addOptionalParam(
+        "maxGasPrice",
+        "Maximum gas price at which allocation may execute, in gwei.",
+        2,
+        types.float,
+      ),
   run: async ({ signer, log, args }) => {
     const arm = new ethers.Contract(mainnet.etherfiARM, etherFiARMAbi, signer);
 
@@ -25,7 +32,7 @@ action({
       signer,
       arm,
       threshold: args.threshold,
-      maxGasPrice: 5,
+      maxGasPrice: args.maxGasPrice,
     });
   },
 });
