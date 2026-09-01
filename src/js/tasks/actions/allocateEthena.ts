@@ -1,4 +1,5 @@
 import { ethers } from "ethers";
+import { types } from "hardhat/config";
 
 import { action } from "../lib/action";
 import { allocate } from "../admin";
@@ -9,14 +10,21 @@ action({
   name: "allocateEthena",
   description: "Allocate liquidity for Ethena ARM",
   chains: [1],
-  run: async ({ signer, log }) => {
+  params: (t) =>
+    t.addOptionalParam(
+      "threshold",
+      "Liquidity-delta threshold used to skip small allocations, in USDe.",
+      30000,
+      types.float,
+    ),
+  run: async ({ signer, log, args }) => {
     const arm = new ethers.Contract(mainnet.ethenaARM, etherFiARMAbi, signer);
 
     log.info("Allocating liquidity for Ethena ARM");
     await allocate({
       signer,
       arm,
-      threshold: 500,
+      threshold: args.threshold,
       maxGasPrice: 5,
     });
   },
