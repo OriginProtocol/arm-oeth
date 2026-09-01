@@ -2,10 +2,14 @@ const assert = require("assert");
 
 const {
   capDexAmountBySwapLiquidity,
+  exceedsMaxBuyPrice,
+  fallsBelowMinSellPrice,
   haveSwapCapsChanged,
   resolveDexQuoteAmount,
+  shouldUpdatePrices,
 } = require("../../src/js/utils/priceUpdate");
 const { parseSwapCap } = require("../../src/js/utils/arm");
+const { parseUnits } = require("ethers");
 
 assert.strictEqual(
   parseSwapCap("1", 18),
@@ -130,6 +134,88 @@ assert.strictEqual(
   }),
   "20.0",
   "an automatic quote amount should use the smallest reserve or price liquidity limit",
+);
+
+const currentBuyPrice = parseUnits("0.99985", 36);
+const cappedBuyPrice = parseUnits("0.99986", 36);
+const currentSellPrice = parseUnits("1.00015", 36);
+const flooredSellPrice = parseUnits("1.00014", 36);
+const tolerance = parseUnits("0.2", 32);
+
+assert.strictEqual(
+  exceedsMaxBuyPrice(parseUnits("0.99991", 36), "0.99986"),
+  true,
+  "a 0.99991 calculated buy price should be capped at the 0.99986 maximum",
+);
+
+assert.strictEqual(
+  exceedsMaxBuyPrice(cappedBuyPrice, "0.99986"),
+  false,
+  "a buy price already at the maximum should not be treated as newly capped",
+);
+
+assert.strictEqual(
+  shouldUpdatePrices({
+    diffSellPrice: 0n,
+    diffBuyPrice: cappedBuyPrice - currentBuyPrice,
+    toleranceScaled: tolerance,
+    buyPriceWasCappedAtMax: false,
+    sellPriceWasFlooredAtMin: false,
+    swapCapsChanged: false,
+  }),
+  false,
+  "a 0.1 bps buy-price change should remain below the 0.2 bps tolerance",
+);
+
+assert.strictEqual(
+  shouldUpdatePrices({
+    diffSellPrice: 0n,
+    diffBuyPrice: cappedBuyPrice - currentBuyPrice,
+    toleranceScaled: tolerance,
+    buyPriceWasCappedAtMax: true,
+    sellPriceWasFlooredAtMin: false,
+    swapCapsChanged: false,
+  }),
+  true,
+  "a buy price capped at the maximum should update despite being within tolerance",
+);
+
+assert.strictEqual(
+  fallsBelowMinSellPrice(parseUnits("1.0001", 36), "1.00014"),
+  true,
+  "a 1.0001 calculated sell price should be raised to the 1.00014 minimum",
+);
+
+assert.strictEqual(
+  fallsBelowMinSellPrice(flooredSellPrice, "1.00014"),
+  false,
+  "a sell price already at the minimum should not be treated as newly floored",
+);
+
+assert.strictEqual(
+  shouldUpdatePrices({
+    diffSellPrice: currentSellPrice - flooredSellPrice,
+    diffBuyPrice: 0n,
+    toleranceScaled: tolerance,
+    buyPriceWasCappedAtMax: false,
+    sellPriceWasFlooredAtMin: false,
+    swapCapsChanged: false,
+  }),
+  false,
+  "a 0.1 bps sell-price change should remain below the 0.2 bps tolerance",
+);
+
+assert.strictEqual(
+  shouldUpdatePrices({
+    diffSellPrice: currentSellPrice - flooredSellPrice,
+    diffBuyPrice: 0n,
+    toleranceScaled: tolerance,
+    buyPriceWasCappedAtMax: false,
+    sellPriceWasFlooredAtMin: true,
+    swapCapsChanged: false,
+  }),
+  true,
+  "a sell price raised to the minimum should update despite being within tolerance",
 );
 
 console.log("ARM price tests passed");
