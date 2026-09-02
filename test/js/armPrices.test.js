@@ -181,6 +181,19 @@ assert.strictEqual(
 );
 
 assert.strictEqual(
+  shouldUpdatePrices({
+    diffSellPrice: currentSellPrice - flooredSellPrice,
+    diffBuyPrice: 0n,
+    toleranceScaled: tolerance,
+    buyPriceWasCappedAtMax: true,
+    sellPriceWasFlooredAtMin: false,
+    swapCapsChanged: false,
+  }),
+  false,
+  "a capped buy price should not bypass tolerance for a sell-only price change",
+);
+
+assert.strictEqual(
   fallsBelowMinSellPrice(parseUnits("1.0001", 36), "1.00014"),
   true,
   "a 1.0001 calculated sell price should be raised to the 1.00014 minimum",
@@ -216,6 +229,19 @@ assert.strictEqual(
   }),
   true,
   "a sell price raised to the minimum should update despite being within tolerance",
+);
+
+assert.strictEqual(
+  shouldUpdatePrices({
+    diffSellPrice: 0n,
+    diffBuyPrice: cappedBuyPrice - currentBuyPrice,
+    toleranceScaled: tolerance,
+    buyPriceWasCappedAtMax: false,
+    sellPriceWasFlooredAtMin: true,
+    swapCapsChanged: false,
+  }),
+  false,
+  "a floored sell price should not bypass tolerance for a buy-only price change",
 );
 
 assert.strictEqual(
