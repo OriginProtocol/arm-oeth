@@ -5,7 +5,7 @@ pragma solidity ^0.8.36;
 import {Proxy} from "contracts/Proxy.sol";
 import {EthenaARM} from "contracts/EthenaARM.sol";
 import {MockMorpho} from "test/invariants/EthenaARM/mocks/MockMorpho.sol";
-import {MorphoMarket} from "src/contracts/markets/MorphoMarket.sol";
+import {Abstract4626MarketWrapper} from "contracts/markets/Abstract4626MarketWrapper.sol";
 import {EthenaUnstaker} from "contracts/EthenaUnstaker.sol";
 import {EthenaAssetAdapter} from "contracts/adapters/EthenaAssetAdapter.sol";
 
@@ -32,7 +32,7 @@ abstract contract Base_Test_ {
     Proxy internal morphoMarketProxy;
     EthenaARM internal arm;
     MockMorpho internal morpho;
-    MorphoMarket internal market;
+    Abstract4626MarketWrapper internal market;
     EthenaAssetAdapter internal ethenaAssetAdapter;
     EthenaUnstaker[] internal unstakers;
     uint256[] internal unstakerIndices;
