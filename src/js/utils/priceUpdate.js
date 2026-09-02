@@ -64,8 +64,8 @@ const shouldUpdatePrices = ({
   swapCapsChanged,
 }) => {
   const boundedPriceChanged =
-    (buyPriceWasCappedAtMax || sellPriceWasFlooredAtMin) &&
-    (diffSellPrice > 0n || diffBuyPrice > 0n);
+    (buyPriceWasCappedAtMax && diffBuyPrice > 0n) ||
+    (sellPriceWasFlooredAtMin && diffSellPrice > 0n);
 
   return (
     diffSellPrice > toleranceScaled ||
