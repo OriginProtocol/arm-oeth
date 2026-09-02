@@ -62,12 +62,18 @@ const shouldUpdatePrices = ({
   buyPriceWasCappedAtMax,
   sellPriceWasFlooredAtMin,
   swapCapsChanged,
-}) =>
-  diffSellPrice > toleranceScaled ||
-  diffBuyPrice > toleranceScaled ||
-  buyPriceWasCappedAtMax ||
-  sellPriceWasFlooredAtMin ||
-  swapCapsChanged;
+}) => {
+  const boundedPriceChanged =
+    (buyPriceWasCappedAtMax || sellPriceWasFlooredAtMin) &&
+    (diffSellPrice > 0n || diffBuyPrice > 0n);
+
+  return (
+    diffSellPrice > toleranceScaled ||
+    diffBuyPrice > toleranceScaled ||
+    boundedPriceChanged ||
+    swapCapsChanged
+  );
+};
 
 module.exports = {
   capDexAmountBySwapLiquidity,

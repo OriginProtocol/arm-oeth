@@ -218,4 +218,30 @@ assert.strictEqual(
   "a sell price raised to the minimum should update despite being within tolerance",
 );
 
+assert.strictEqual(
+  shouldUpdatePrices({
+    diffSellPrice: 0n,
+    diffBuyPrice: 0n,
+    toleranceScaled: tolerance,
+    buyPriceWasCappedAtMax: true,
+    sellPriceWasFlooredAtMin: true,
+    swapCapsChanged: false,
+  }),
+  false,
+  "prices already at their configured bounds should not trigger a no-op update",
+);
+
+assert.strictEqual(
+  shouldUpdatePrices({
+    diffSellPrice: 0n,
+    diffBuyPrice: 0n,
+    toleranceScaled: tolerance,
+    buyPriceWasCappedAtMax: true,
+    sellPriceWasFlooredAtMin: false,
+    swapCapsChanged: true,
+  }),
+  true,
+  "changed swap caps should still update when bounded prices are unchanged",
+);
+
 console.log("ARM price tests passed");
