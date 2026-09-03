@@ -14,8 +14,7 @@ import {AbstractDeployScript} from "script/deploy/helpers/AbstractDeployScript.s
 /// @title Add Origin assets to the WETH ARM
 /// @notice Deploys OETH and wOETH adapters that redeem through the OETH Vault's asynchronous
 ///         withdrawal queue, then registers both tokens as base assets on the existing WETH ARM.
-/// @dev The adapter proxies are owned by the mainnet 2/8 multisig. The same multisig owns the WETH
-///      ARM and performs the base-asset registration actions simulated by `_fork()`.
+/// @dev The adapter proxies are owned by the mainnet Timelock.
 contract $043_AddOriginAssetsToWETHARMScript is AbstractDeployScript("043_AddOriginAssetsToWETHARMScript") {
     /// 1e36 = base asset valued at 1 WETH in totalAssets().
     uint256 internal constant CROSS_PRICE = 1e36;
@@ -33,9 +32,7 @@ contract $043_AddOriginAssetsToWETHARMScript is AbstractDeployScript("043_AddOri
         _recordDeployment("WETH_ARM_OETH_ADAPTER_IMPL", address(oethAdapterImpl));
 
         Proxy oethAdapterProxy = new Proxy();
-        oethAdapterProxy.initialize(
-            address(oethAdapterImpl), Mainnet.MULTISIG_2_OF_8, abi.encodeWithSignature("initialize()")
-        );
+        oethAdapterProxy.initialize(address(oethAdapterImpl), Mainnet.TIMELOCK, abi.encodeWithSignature("initialize()"));
         _recordDeployment("WETH_ARM_OETH_ADAPTER", address(oethAdapterProxy));
 
         // 2. Deploy the adapter that unwraps wOETH before requesting an OETH Vault withdrawal.
@@ -45,21 +42,23 @@ contract $043_AddOriginAssetsToWETHARMScript is AbstractDeployScript("043_AddOri
 
         Proxy woethAdapterProxy = new Proxy();
         woethAdapterProxy.initialize(
-            address(woethAdapterImpl), Mainnet.MULTISIG_2_OF_8, abi.encodeWithSignature("initialize()")
+            address(woethAdapterImpl), Mainnet.TIMELOCK, abi.encodeWithSignature("initialize()")
         );
         _recordDeployment("WETH_ARM_WOETH_ADAPTER", address(woethAdapterProxy));
     }
 
     function _fork() internal override {
         MultiAssetARM wethARM = MultiAssetARM(payable(resolver.resolve("WETH_ARM")));
+        address oethAdapter = resolver.resolve("WETH_ARM_OETH_ADAPTER");
+        address woethAdapter = resolver.resolve("WETH_ARM_WOETH_ADAPTER");
 
-        // Idempotent: the deployment runner can replay pending multisig actions on forks.
-        (,,,,,,,, address oethAdapter) = wethARM.baseAssetConfigs(Mainnet.OETH);
-        if (oethAdapter == address(0)) {
-            vm.prank(Mainnet.MULTISIG_2_OF_8);
+        // Idempotent: the deployment runner can replay pending owner actions on forks.
+        (,,,,,,,, address configuredOethAdapter) = wethARM.baseAssetConfigs(Mainnet.OETH);
+        if (configuredOethAdapter == address(0)) {
+            vm.prank(Mainnet.TIMELOCK);
             wethARM.addBaseAsset(
                 Mainnet.OETH,
-                resolver.resolve("WETH_ARM_OETH_ADAPTER"),
+                oethAdapter,
                 BUY_PRICE,
                 SELL_PRICE,
                 0, // buyAmount: no swaps until the operator sets swap limits.
@@ -69,12 +68,12 @@ contract $043_AddOriginAssetsToWETHARMScript is AbstractDeployScript("043_AddOri
             );
         }
 
-        (,,,,,,,, address woethAdapter) = wethARM.baseAssetConfigs(Mainnet.WOETH);
-        if (woethAdapter == address(0)) {
-            vm.prank(Mainnet.MULTISIG_2_OF_8);
+        (,,,,,,,, address configuredWoethAdapter) = wethARM.baseAssetConfigs(Mainnet.WOETH);
+        if (configuredWoethAdapter == address(0)) {
+            vm.prank(Mainnet.TIMELOCK);
             wethARM.addBaseAsset(
                 Mainnet.WOETH,
-                resolver.resolve("WETH_ARM_WOETH_ADAPTER"),
+                woethAdapter,
                 BUY_PRICE,
                 SELL_PRICE,
                 0, // buyAmount: no swaps until the operator sets swap limits.

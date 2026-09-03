@@ -40,16 +40,28 @@ contract Fork_WETHARM_Smoke_Test is AbstractSmokeTest {
 
     function test_BaseAssetConfigs() external view {
         address[] memory baseAssets = wethARM.getBaseAssets();
-        assertEq(baseAssets.length, 4, "base asset count");
+        assertEq(baseAssets.length, 6, "base asset count");
         assertEq(baseAssets[0], Mainnet.STETH, "stETH order");
         assertEq(baseAssets[1], Mainnet.WSTETH, "wstETH order");
         assertEq(baseAssets[2], Mainnet.EETH, "eETH order");
         assertEq(baseAssets[3], Mainnet.WEETH, "weETH order");
+        assertEq(baseAssets[4], Mainnet.OETH, "OETH order");
+        assertEq(baseAssets[5], Mainnet.WOETH, "wOETH order");
 
         _assertBaseAssetConfig(Mainnet.STETH, "WETH_ARM_STETH_ADAPTER", true);
         _assertBaseAssetConfig(Mainnet.WSTETH, "WETH_ARM_WSTETH_ADAPTER", false);
         _assertBaseAssetConfig(Mainnet.EETH, "WETH_ARM_EETH_ADAPTER", true);
         _assertBaseAssetConfig(Mainnet.WEETH, "WETH_ARM_WEETH_ADAPTER", false);
+        _assertBaseAssetConfig(Mainnet.OETH, "WETH_ARM_OETH_ADAPTER", true);
+        _assertBaseAssetConfig(Mainnet.WOETH, "WETH_ARM_WOETH_ADAPTER", false);
+    }
+
+    function test_OriginAdapterOwnership() external view {
+        Proxy oethAdapter = Proxy(payable(resolver.resolve("WETH_ARM_OETH_ADAPTER")));
+        Proxy woethAdapter = Proxy(payable(resolver.resolve("WETH_ARM_WOETH_ADAPTER")));
+
+        assertEq(oethAdapter.owner(), Mainnet.TIMELOCK, "OETH adapter owner");
+        assertEq(woethAdapter.owner(), Mainnet.TIMELOCK, "wOETH adapter owner");
     }
 
     function test_EtherFiAdapterUpgrades() external view {
