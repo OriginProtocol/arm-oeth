@@ -17,8 +17,8 @@ import {AbstractDeployScript} from "script/deploy/helpers/AbstractDeployScript.s
 /// @dev The adapter proxies are owned by the mainnet 2/8 multisig. The same multisig owns the WETH
 ///      ARM and performs the base-asset registration actions simulated by `_fork()`.
 contract $043_AddOriginAssetsToWETHARMScript is AbstractDeployScript("043_AddOriginAssetsToWETHARMScript") {
-    /// 0.99998e36 = base asset valued at 0.99998 WETH in totalAssets().
-    uint256 internal constant CROSS_PRICE = 0.99998e36;
+    /// 1e36 = base asset valued at 1 WETH in totalAssets().
+    uint256 internal constant CROSS_PRICE = 1e36;
     /// 0.9997e36 = ARM pays 0.9997 WETH per base asset bought from traders.
     uint256 internal constant BUY_PRICE = 0.9997e36;
     /// 1e36 = ARM charges 1 WETH per base asset sold to traders.
