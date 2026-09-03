@@ -32,7 +32,7 @@ const getKyberSwapQuote = async ({
   };
   log("swap API params: ", params);
 
-  let retries = 3;
+  let retries = 5;
 
   while (retries > 0) {
     const url = `${KYBER_API_ENDPOINT}/ethereum/api/v1/routes`;
@@ -58,20 +58,25 @@ const getKyberSwapQuote = async ({
         console.error("Response status: ", err.response.status);
         console.error("Response status: ", err.response.statusText);
       }
-      if (err.response?.status == 429) {
+      // 429 is rate-limiting; 5xx is Kyber shedding load (eg code 50301
+      // "service temporarily overloaded"). Both are transient.
+      const status = err.response?.status;
+      if (status == 429 || status >= 500) {
         retries = retries - 1;
         console.error(
-          `Failed to get a Kyber swap route. Will try again in 2 seconds with ${retries} retries left`,
+          `Failed to get a Kyber swap route (HTTP ${status}). Will try again in 5 seconds with ${retries} retries left`,
         );
-        // Wait for 2s before next try
-        await new Promise((r) => setTimeout(r, 2000));
+        // Wait for 5s before next try
+        await new Promise((r) => setTimeout(r, 5000));
         continue;
       }
       throw Error(`Call to Kyber swap route API failed: ${err.message}`);
     }
   }
 
-  throw Error(`Call to Kyber swap route API failed: Rate-limited`);
+  throw Error(
+    `Call to Kyber swap route API failed: still failing after 5 attempts`,
+  );
 };
 
 // Scale a token amount to 18 decimals so price ratios are 1e18-scaled even

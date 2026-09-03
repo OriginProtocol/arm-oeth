@@ -19,7 +19,7 @@ default:
 	forge build
 
 install:
-	foundryup --version 1.7.1
+	foundryup --install v1.8.1
 	forge soldeer install
 	pnpm install
 

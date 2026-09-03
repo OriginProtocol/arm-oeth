@@ -55,8 +55,8 @@ action({
       )
       .addOptionalParam(
         "amount",
-        "DEX swap amount used to fetch the reference price quote.",
-        20,
+        "Override the automatically detected DEX swap amount used to fetch the reference price quote.",
+        undefined,
         types.float,
       )
       .addOptionalParam(

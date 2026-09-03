@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.36;
 
 import {EthenaUnstaker} from "../EthenaUnstaker.sol";
 import {IAssetAdapter, IERC20, IStakedUSDe, UserCooldown} from "../Interfaces.sol";

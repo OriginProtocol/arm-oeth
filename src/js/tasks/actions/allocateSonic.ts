@@ -1,4 +1,5 @@
 import { ethers } from "ethers";
+import { types } from "hardhat/config";
 
 import { action } from "../lib/action";
 import { allocate } from "../admin";
@@ -10,15 +11,29 @@ action({
   name: "allocateSonic",
   description: "Allocate liquidity for Origin ARM on Sonic",
   chains: [146],
-  run: async ({ signer, log }) => {
+  params: (t) =>
+    t
+      .addOptionalParam(
+        "threshold",
+        "Liquidity-delta threshold used to skip small allocations, in wS.",
+        10000,
+        types.float,
+      )
+      .addOptionalParam(
+        "maxGasPrice",
+        "Maximum gas price at which allocation may execute, in gwei.",
+        500,
+        types.float,
+      ),
+  run: async ({ signer, log, args }) => {
     const arm = new ethers.Contract(sonic.OriginARM, armAbi, signer);
 
     log.info("Allocating liquidity for Origin ARM on Sonic");
     await allocate({
       signer,
       arm,
-      threshold: 10000,
-      maxGasPrice: 500,
+      threshold: args.threshold,
+      maxGasPrice: args.maxGasPrice,
       armContractVersion: "v1",
     });
   },

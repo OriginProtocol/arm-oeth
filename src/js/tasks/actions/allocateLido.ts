@@ -1,4 +1,5 @@
 import { ethers } from "ethers";
+import { types } from "hardhat/config";
 
 import { action } from "../lib/action";
 import { allocate } from "../admin";
@@ -9,15 +10,29 @@ action({
   name: "allocateLido",
   description: "Allocate liquidity for Lido ARM",
   chains: [1],
-  run: async ({ signer, log }) => {
+  params: (t) =>
+    t
+      .addOptionalParam(
+        "threshold",
+        "Liquidity-delta threshold used to skip small allocations, in WETH.",
+        100,
+        types.float,
+      )
+      .addOptionalParam(
+        "maxGasPrice",
+        "Maximum gas price at which allocation may execute, in gwei.",
+        2,
+        types.float,
+      ),
+  run: async ({ signer, log, args }) => {
     const arm = new ethers.Contract(mainnet.lidoARM, lidoARMAbi, signer);
 
     log.info("Allocating liquidity for Lido ARM");
     await allocate({
       signer,
       arm,
-      threshold: 100,
-      maxGasPrice: 5,
+      threshold: args.threshold,
+      maxGasPrice: args.maxGasPrice,
     });
   },
 });

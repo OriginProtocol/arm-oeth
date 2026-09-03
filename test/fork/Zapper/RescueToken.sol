@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.36;
 
 // Test imports
 import {Fork_Shared_Test_} from "test/fork/shared/Shared.sol";

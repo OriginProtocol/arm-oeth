@@ -7,6 +7,7 @@ const {
   requestBaseAssetWithdrawal,
   resolveArmBase,
 } = require("../utils/arm");
+const { parseRequestIds } = require("../utils/requestIds");
 const { logTxDetails } = require("../utils/txLogger");
 
 const log = require("../utils/logger")("task:lidoQueue");
@@ -83,9 +84,10 @@ const requestLidoWithdrawals = async (options) => {
 };
 
 const claimLidoWithdrawals = async (options) => {
-  const { signer, id, withdrawalQueue } = options;
+  const { signer, withdrawalQueue } = options;
   const baseContext = await resolveArmBase(options);
   const { config } = baseContext;
+  const selectedRequestIds = parseRequestIds(options);
 
   if (baseContext.version === "legacy") {
     if (!withdrawalQueue) {
@@ -93,8 +95,8 @@ const claimLidoWithdrawals = async (options) => {
     }
 
     const finalizedIds = [];
-    if (id) {
-      finalizedIds.push(id);
+    if (selectedRequestIds) {
+      finalizedIds.push(...selectedRequestIds);
     } else {
       const requestIds = await withdrawalQueue.getWithdrawalRequests(
         await baseContext.arm.getAddress(),
@@ -150,11 +152,21 @@ const claimLidoWithdrawals = async (options) => {
   const adapter = await adapterContract(config.adapter, signer);
 
   let shares;
-  if (id) {
-    shares = await adapter["requestShares(uint256)"](id);
+  if (selectedRequestIds) {
+    shares = 0n;
+    for (const requestId of selectedRequestIds) {
+      const requestShares = await adapter["requestShares(uint256)"](requestId);
+      if (requestShares === 0n) {
+        log(
+          `Withdrawal request ${requestId} does not belong to the ${baseContext.baseSymbol} adapter`,
+        );
+        continue;
+      }
+      shares += requestShares;
+    }
     if (shares === 0n) {
       log(
-        `Withdrawal request ${id} does not belong to the ${baseContext.baseSymbol} adapter`,
+        `No selected withdrawal requests belong to the ${baseContext.baseSymbol} adapter`,
       );
       return;
     }

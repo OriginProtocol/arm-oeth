@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.8.23;
+pragma solidity ^0.8.36;
 
 import {State, Execution, Contract, Position} from "script/deploy/helpers/DeploymentTypes.sol";
 

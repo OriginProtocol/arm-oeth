@@ -1,5 +1,5 @@
 /// SPDX-License-Identifier: MIT
-pragma solidity 0.8.23;
+pragma solidity ^0.8.36;
 
 import {Sonic} from "contracts/utils/Addresses.sol";
 import {SonicHarvester} from "contracts/SonicHarvester.sol";
