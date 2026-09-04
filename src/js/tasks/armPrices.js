@@ -51,6 +51,7 @@ const scaleTo18 = (value, decimals) => value * 10n ** BigInt(18 - decimals);
  * dryrun - if true, will not actually call setPrices on the ARM, just log the target prices
  * base - base asset symbol. eg STETH, WSTETH, EETH, WEETH, SUSDE, OETH, WOETH, OS
  * wrapped - adjust market prices by the adapter conversion rate
+ * buyCapToleranceBps - optional, share of the buy liquidity limit (2500 = 25%) that must be consumed before the limit alone triggers an update
  * @returns
  */
 const setPrices = async (options) => {
@@ -421,6 +422,7 @@ const setPrices = async (options) => {
     baseContext,
     targetBuyAmount,
     targetSellAmount,
+    { buyCapToleranceBps: options.buyCapToleranceBps },
   );
   if (baseContext.version === "multiBase") {
     log(`current buy amount : ${config.buyLiquidityRemaining}`);

@@ -27,6 +27,22 @@ An explicit `--amount` is used unchanged.
 `--buy-price` and `--sell-price` bypass DEX-derived pricing and set an exact
 pair. Both must be supplied together; `--amount` is not used in this mode.
 
+`setPricesEthena --tranche true` enables tranche pricing on the Ethena ARM:
+the buy-side liquidity limit and the aggregator quote size are one tranche of
+the available liquidity (`--tranche-pct` of `getReserves`, rounded to
+`--tranche-step`, at least `--tranche-min`, or the whole liquidity below it),
+and the maximum buy price follows a utilisation ladder. Utilisation is
+`1 - available liquidity / total assets`; `--ladder` lists the minimum discount
+below NAV in basis points at each utilisation level (`50:2.5,70:3.5,85:5` =
+2.5 bps below 50% deployed, 3.5 bps at 70%, 5 bps from 85%), linearly
+interpolated and quantised to `--ladder-step`. The aggregator quote can only
+widen the discount beyond the ladder; `--max-buy-price` stays as an absolute
+guard and must be looser than the ladder floor or the ladder is inert.
+`--buy-amount` and `--amount` are ignored in this mode. The buy limit alone only
+triggers a transaction once `--cap-tolerance` of the tranche has been consumed
+or the tranche shrank; an uncapped sell limit decremented by swaps is left
+alone. `--dryrun true` logs the targets without sending the transaction.
+
 `setPricesWETH` uses the Lido pricing profile and 1Inch for `STETH,WSTETH`, and
 the EtherFi pricing profile and Kyber for `EETH,WEETH`. It processes all four
 bases unless `--bases` is supplied. Explicit price, liquidity, aggregator,
@@ -63,13 +79,13 @@ and Sonic.
 
 ## Ethena ARM — mainnet
 
-| Action                      | Cron          | Description                                |
-| --------------------------- | ------------- | ------------------------------------------ |
-| `autoRequestEthenaWithdraw` | `12 * * * *`  | Request Ethena withdrawals from Ethena ARM |
-| `autoClaimEthenaWithdraw`   | `40 * * * *`  | Claim Ethena withdrawals from Ethena ARM   |
-| `collectEthenaFees`         | `45 23 * * *` | Collect fees from Ethena ARM               |
-| `allocateEthena`            | `28 * * * *`  | Allocate liquidity for Ethena ARM          |
-| `setPricesEthena`           | `4 * * * *`   | Set prices for Ethena ARM                  |
+| Action                      | Cron           | Description                                 |
+| --------------------------- | -------------- | ------------------------------------------- |
+| `autoRequestEthenaWithdraw` | `12 * * * *`   | Request Ethena withdrawals from Ethena ARM  |
+| `autoClaimEthenaWithdraw`   | `40 * * * *`   | Claim Ethena withdrawals from Ethena ARM    |
+| `collectEthenaFees`         | `45 23 * * *`  | Collect fees from Ethena ARM                |
+| `allocateEthena`            | `28 * * * *`   | Allocate liquidity for Ethena ARM           |
+| `setPricesEthena`           | `*/10 * * * *` | Set prices for Ethena ARM (tranche pricing) |
 
 ## USDC ARM — mainnet
 
