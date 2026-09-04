@@ -42,7 +42,7 @@ INSERT INTO schedules (product, name, command, cron_expr, timezone, enabled, not
 ('arm-oeth', 'mainnet_allocate_usdc',                'cd /app && pnpm hardhat allocateUSDC --network mainnet',                    '26 * * * *',            'UTC', false, NULL),
 ('arm-oeth', 'mainnet_set_prices_lido',              'cd /app && pnpm hardhat setPricesLido --network mainnet',                   '*/30 * * * *',          'UTC', false, NULL),
 ('arm-oeth', 'mainnet_set_prices_etherfi',           'cd /app && pnpm hardhat setPricesEtherFi --network mainnet',                '2,32 * * * *',          'UTC', false, NULL),
-('arm-oeth', 'mainnet_set_prices_ethena',            'cd /app && pnpm hardhat setPricesEthena --network mainnet',                 '4 * * * *',             'UTC', false, NULL),
+('arm-oeth', 'mainnet_set_prices_ethena',            'cd /app && pnpm hardhat setPricesEthena --network mainnet --tranche true --tolerance 0.3 --max-sell-price 0.99996 --offset 0.6 --fee 0.5 --kyber true', '*/10 * * * *',          'UTC', false, NULL),
 ('arm-oeth', 'mainnet_set_prices_usdc_pyusd',        'cd /app && pnpm hardhat setPricesUSDCPYUSD --network mainnet',              '6 * * * *',             'UTC', false, NULL),
 ('arm-oeth', 'mainnet_set_prices_usdc_usdg',         'cd /app && pnpm hardhat setPricesUSDCUSDG --network mainnet',               '6 * * * *',             'UTC', false, NULL),
 ('arm-oeth', 'mainnet_auto_request_weth_lido_withdraw',   'cd /app && pnpm hardhat autoRequestWETHLidoWithdraw --network mainnet',    '29,58 12-23,0-8 * * *', 'UTC', false, NULL),
