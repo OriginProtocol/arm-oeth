@@ -42,6 +42,11 @@ guard and must be looser than the ladder floor or the ladder is inert.
 triggers a transaction once `--cap-tolerance` of the tranche has been consumed
 or the tranche shrank; an uncapped sell limit decremented by swaps is left
 alone. `--dryrun true` logs the targets without sending the transaction.
+The schedule runs every 2 minutes: there is no on-chain watcher yet, so the
+cron is what reopens a consumed tranche and moves the ladder after a burst of
+fills (39% of the historical volume lands within 10 minutes of the previous
+fill, 22% within 2). The cadence does not drive the number of transactions;
+the price tolerance, the ladder quantisation and `--cap-tolerance` do.
 
 `setPricesWETH` uses the Lido pricing profile and 1Inch for `STETH,WSTETH`, and
 the EtherFi pricing profile and Kyber for `EETH,WEETH`. It processes all four
@@ -79,13 +84,13 @@ and Sonic.
 
 ## Ethena ARM — mainnet
 
-| Action                      | Cron           | Description                                 |
-| --------------------------- | -------------- | ------------------------------------------- |
-| `autoRequestEthenaWithdraw` | `12 * * * *`   | Request Ethena withdrawals from Ethena ARM  |
-| `autoClaimEthenaWithdraw`   | `40 * * * *`   | Claim Ethena withdrawals from Ethena ARM    |
-| `collectEthenaFees`         | `45 23 * * *`  | Collect fees from Ethena ARM                |
-| `allocateEthena`            | `28 * * * *`   | Allocate liquidity for Ethena ARM           |
-| `setPricesEthena`           | `*/10 * * * *` | Set prices for Ethena ARM (tranche pricing) |
+| Action                      | Cron          | Description                                 |
+| --------------------------- | ------------- | ------------------------------------------- |
+| `autoRequestEthenaWithdraw` | `12 * * * *`  | Request Ethena withdrawals from Ethena ARM  |
+| `autoClaimEthenaWithdraw`   | `40 * * * *`  | Claim Ethena withdrawals from Ethena ARM    |
+| `collectEthenaFees`         | `45 23 * * *` | Collect fees from Ethena ARM                |
+| `allocateEthena`            | `28 * * * *`  | Allocate liquidity for Ethena ARM           |
+| `setPricesEthena`           | `*/2 * * * *` | Set prices for Ethena ARM (tranche pricing) |
 
 ## USDC ARM — mainnet
 
