@@ -7,14 +7,19 @@ import {Unit_MultiAssetARM_Shared_Test} from "../Shared.t.sol";
 // Contracts
 import {AbstractARM} from "contracts/AbstractARM.sol";
 import {Ownable} from "contracts/Ownable.sol";
-import {OwnableOperable} from "contracts/OwnableOperable.sol";
 
-/// @notice Coverage for `pause()` (operator or owner) and `unpause()` (owner only).
+/// @notice Coverage for `pause()` (owner, operator, guardian or adminMultisig), `unpause()`
+///         (owner or adminMultisig only) and `setPauseRoles()` (owner only).
 ///         The downstream `whenNotPaused` reverts on user-facing functions are
 ///         already covered in the per-function test files (Deposit, ClaimRedeem,
 ///         RequestRedeem, Swap*). Here we focus on the access control, the
 ///         `paused` state flip, and the events.
 contract Unit_MultiAssetARM_Pause_Test is Unit_MultiAssetARM_Shared_Test {
+    /// @dev The 2/8 Guardian multisig: can pause, must never unpause.
+    address public guardian = makeAddr("guardian");
+    /// @dev The 5/8 Admin multisig: can pause and unpause.
+    address public adminMultisig = makeAddr("adminMultisig");
+
     //////////////////////////////////////////////////////
     /// --- pause
     //////////////////////////////////////////////////////
@@ -42,9 +47,43 @@ contract Unit_MultiAssetARM_Pause_Test is Unit_MultiAssetARM_Shared_Test {
         assertEq(arm.paused(), true, "paused post");
     }
 
+    function test_Pause_ByGuardian() public {
+        assertEq(arm.paused(), false, "paused pre");
+
+        vm.expectEmit(address(arm));
+        emit AbstractARM.Paused(guardian);
+
+        vm.prank(guardian);
+        arm.pause();
+
+        assertEq(arm.paused(), true, "paused post");
+    }
+
+    function test_Pause_ByAdminMultisig() public {
+        assertEq(arm.paused(), false, "paused pre");
+
+        vm.expectEmit(address(arm));
+        emit AbstractARM.Paused(adminMultisig);
+
+        vm.prank(adminMultisig);
+        arm.pause();
+
+        assertEq(arm.paused(), true, "paused post");
+    }
+
     function test_Pause_RevertWhen_NotAuthorized() public {
         vm.prank(alice);
-        vm.expectRevert(OwnableOperable.OnlyOperatorOrOwner.selector);
+        vm.expectRevert(AbstractARM.OnlyPauser.selector);
+        arm.pause();
+    }
+
+    /// @notice Clearing a role revokes its pause rights.
+    function test_Pause_RevertWhen_GuardianCleared() public {
+        vm.prank(governor);
+        arm.setPauseRoles(address(0), adminMultisig);
+
+        vm.prank(guardian);
+        vm.expectRevert(AbstractARM.OnlyPauser.selector);
         arm.pause();
     }
 
@@ -65,14 +104,42 @@ contract Unit_MultiAssetARM_Pause_Test is Unit_MultiAssetARM_Shared_Test {
         assertEq(arm.paused(), false, "paused post");
     }
 
+    function test_Unpause_ByAdminMultisig() public {
+        vm.prank(guardian);
+        arm.pause();
+        assertEq(arm.paused(), true, "paused pre");
+
+        vm.expectEmit(address(arm));
+        emit AbstractARM.Unpaused(adminMultisig);
+
+        vm.prank(adminMultisig);
+        arm.unpause();
+
+        assertEq(arm.paused(), false, "paused post");
+    }
+
     function test_Unpause_RevertWhen_Operator() public {
-        // The operator can pause but cannot unpause — that's reserved for the owner.
+        // The operator is a hot key. It can trip the pause but must never lift it.
         vm.prank(operator);
         arm.pause();
 
         vm.prank(operator);
-        vm.expectRevert(Ownable.OnlyOwner.selector);
+        vm.expectRevert(AbstractARM.OnlyUnpauser.selector);
         arm.unpause();
+
+        assertEq(arm.paused(), true, "must stay paused");
+    }
+
+    /// @notice The whole point of the split: the 2/8 guardian can pause but cannot re-open the ARM.
+    function test_Unpause_RevertWhen_Guardian() public {
+        vm.prank(guardian);
+        arm.pause();
+
+        vm.prank(guardian);
+        vm.expectRevert(AbstractARM.OnlyUnpauser.selector);
+        arm.unpause();
+
+        assertEq(arm.paused(), true, "must stay paused");
     }
 
     function test_Unpause_RevertWhen_NotAuthorized() public {
@@ -80,8 +147,48 @@ contract Unit_MultiAssetARM_Pause_Test is Unit_MultiAssetARM_Shared_Test {
         arm.pause();
 
         vm.prank(alice);
-        vm.expectRevert(Ownable.OnlyOwner.selector);
+        vm.expectRevert(AbstractARM.OnlyUnpauser.selector);
         arm.unpause();
+    }
+
+    //////////////////////////////////////////////////////
+    /// --- setPauseRoles
+    //////////////////////////////////////////////////////
+    function test_SetPauseRoles_ByOwner() public {
+        address newGuardian = makeAddr("newGuardian");
+        address newAdminMultisig = makeAddr("newAdminMultisig");
+
+        vm.expectEmit(address(arm));
+        emit AbstractARM.GuardianChanged(newGuardian);
+        vm.expectEmit(address(arm));
+        emit AbstractARM.AdminMultisigChanged(newAdminMultisig);
+
+        vm.prank(governor);
+        arm.setPauseRoles(newGuardian, newAdminMultisig);
+
+        assertEq(arm.guardian(), newGuardian, "guardian");
+        assertEq(arm.adminMultisig(), newAdminMultisig, "adminMultisig");
+    }
+
+    function test_SetPauseRoles_RevertWhen_NotOwner() public {
+        vm.prank(alice);
+        vm.expectRevert(Ownable.OnlyOwner.selector);
+        arm.setPauseRoles(alice, alice);
+    }
+
+    /// @notice Neither the operator nor the roles themselves can reassign the roles.
+    function test_SetPauseRoles_RevertWhen_Operator() public {
+        vm.prank(operator);
+        vm.expectRevert(Ownable.OnlyOwner.selector);
+        arm.setPauseRoles(alice, alice);
+
+        vm.prank(guardian);
+        vm.expectRevert(Ownable.OnlyOwner.selector);
+        arm.setPauseRoles(alice, alice);
+
+        vm.prank(adminMultisig);
+        vm.expectRevert(Ownable.OnlyOwner.selector);
+        arm.setPauseRoles(alice, alice);
     }
 
     /// @notice Pausing an already-paused ARM is a no-op state-wise but still emits the event.
@@ -171,9 +278,13 @@ contract Unit_MultiAssetARM_Pause_Test is Unit_MultiAssetARM_Shared_Test {
 
     /// @dev Give alice liquidity for the deposit/redeem gating tests. Approvals are set by the shared harness.
     ///      Caps are disabled so deposits are only gated by the pause state under test.
+    ///      The guardian and adminMultisig roles are wired here; deployments set them at upgrade time.
     function setUp() public virtual override {
         super.setUp();
         desactiveCapManager();
         deal(address(liquidity), alice, 1_000 * DEFAULT_AMOUNT());
+
+        vm.prank(governor);
+        arm.setPauseRoles(guardian, adminMultisig);
     }
 }
