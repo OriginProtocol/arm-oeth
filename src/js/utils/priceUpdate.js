@@ -1,5 +1,7 @@
 const { formatUnits, parseUnits } = require("ethers");
 
+const { MAX_SWAP_LIQUIDITY } = require("./arm");
+
 const capDexAmountBySwapLiquidity = ({
   amount,
   buyLiquidity,
@@ -42,8 +44,10 @@ const resolveDexQuoteAmount = ({
 
 const haveSwapCapsChanged = (baseContext, buyAmount, sellAmount) =>
   baseContext.version === "multiBase" &&
-  (buyAmount !== baseContext.config.buyLiquidityRemaining ||
-    sellAmount !== baseContext.config.sellLiquidityRemaining);
+  ((buyAmount !== MAX_SWAP_LIQUIDITY &&
+    buyAmount !== baseContext.config.buyLiquidityRemaining) ||
+    (sellAmount !== MAX_SWAP_LIQUIDITY &&
+      sellAmount !== baseContext.config.sellLiquidityRemaining));
 
 const exceedsMaxBuyPrice = (targetBuyPrice, maxBuyPrice) =>
   maxBuyPrice !== undefined &&
