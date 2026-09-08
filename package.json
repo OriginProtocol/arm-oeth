@@ -39,7 +39,7 @@
     "typescript": "^5.7.0"
   },
   "peerDependencies": {
-    "@oplabs/talos-client": "0.0.28"
+    "@oplabs/talos-client": "0.0.29"
   },
   "peerDependenciesMeta": {
     "@oplabs/talos-client": {
