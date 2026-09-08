@@ -18,7 +18,7 @@ import {SonicHarvester} from "contracts/SonicHarvester.sol";
 import {CapManager} from "contracts/CapManager.sol";
 import {SiloMarket} from "contracts/markets/SiloMarket.sol";
 import {ZapperLidoARM} from "contracts/ZapperLidoARM.sol";
-import {MorphoMarket} from "contracts/markets/MorphoMarket.sol";
+import {Abstract4626MarketWrapper} from "contracts/markets/Abstract4626MarketWrapper.sol";
 
 // Interfaces
 import {IERC20} from "contracts/Interfaces.sol";
@@ -56,7 +56,7 @@ abstract contract Base_Test_ is Test {
     WrappedOriginAssetAdapter public wrappedOriginAssetAdapter;
     CapManager public capManager;
     SiloMarket public siloMarket;
-    MorphoMarket public morphoMarket;
+    Abstract4626MarketWrapper public morphoMarket;
     ZapperLidoARM public zapperLidoARM;
 
     IERC20 public ws;

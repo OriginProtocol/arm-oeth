@@ -7,7 +7,6 @@ import {Base_Test_} from "./Base.sol";
 // Contracts
 import {Proxy} from "contracts/Proxy.sol";
 import {EthenaARM} from "contracts/EthenaARM.sol";
-import {MorphoMarket} from "src/contracts/markets/MorphoMarket.sol";
 import {EthenaUnstaker} from "contracts/EthenaUnstaker.sol";
 import {EthenaAssetAdapter} from "contracts/adapters/EthenaAssetAdapter.sol";
 import {Abstract4626MarketWrapper} from "contracts/markets/Abstract4626MarketWrapper.sol";
@@ -159,14 +158,14 @@ abstract contract Setup is Base_Test_ {
         morphoMarketProxy = new Proxy();
 
         // Deploy Morpho Market implementation.
-        market = new MorphoMarket(address(arm), address(morpho));
+        market = new Abstract4626MarketWrapper(address(arm), address(morpho));
 
         // Initialize Morpho Market proxy.
         data = abi.encodeWithSelector(Abstract4626MarketWrapper.initialize.selector, address(0x1), address(0x1));
         morphoMarketProxy.initialize(address(market), governor, data);
 
-        // Cast proxy address to MorphoMarket type for easier interaction.
-        market = MorphoMarket(address(morphoMarketProxy));
+        // Cast the proxy address to the market wrapper type for easier interaction.
+        market = Abstract4626MarketWrapper(address(morphoMarketProxy));
 
         vm.stopPrank();
     }

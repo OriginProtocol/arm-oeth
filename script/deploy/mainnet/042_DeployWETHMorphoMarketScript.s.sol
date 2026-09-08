@@ -5,14 +5,14 @@ pragma solidity ^0.8.36;
 import {Proxy} from "contracts/Proxy.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
 import {MultiAssetARM} from "contracts/MultiAssetARM.sol";
-import {MorphoMarket} from "contracts/markets/MorphoMarket.sol";
+import {MetaMorphoV1_1Market} from "contracts/markets/MetaMorphoV1_1Market.sol";
 import {Abstract4626MarketWrapper} from "contracts/markets/Abstract4626MarketWrapper.sol";
 
 // Deployment
 import {AbstractDeployScript} from "script/deploy/helpers/AbstractDeployScript.s.sol";
 
 /// @title Deploy the WETH ARM Morpho market
-/// @notice Deploys a MorphoMarket wrapper for the WETH ARM using the same Morpho vault as the
+/// @notice Deploys a MetaMorpho V1.1 wrapper for the WETH ARM using the same Morpho vault as the
 ///         LidoARM and EtherFiARM wrappers. The mainnet 2/8 multisig owns the wrapper and acts as
 ///         its harvester. It also adds and activates the wrapper on the WETH ARM.
 /// @dev The multisig actions are simulated in _fork(); on mainnet they are executed separately by
@@ -26,7 +26,7 @@ contract $042_DeployWETHMorphoMarketScript is AbstractDeployScript("042_DeployWE
         _recordDeployment("MORPHO_MARKET_WETH_ARM", address(morphoMarketProxy));
 
         // 2. Deploy the implementation for the WETH ARM and the shared Morpho vault.
-        MorphoMarket morphoMarketImpl = new MorphoMarket(wethARM, Mainnet.MORPHO_WETH_VAULT);
+        MetaMorphoV1_1Market morphoMarketImpl = new MetaMorphoV1_1Market(wethARM, Mainnet.MORPHO_WETH_VAULT);
         _recordDeployment("MORPHO_MARKET_WETH_ARM_IMPL", address(morphoMarketImpl));
 
         // 3. Initialize the wrapper and hand ownership to the WETH ARM's 2/8 multisig.

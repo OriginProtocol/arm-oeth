@@ -195,7 +195,7 @@ contract Abstract4626MarketWrapper is Initializable, Ownable {
     /// @notice The amount of assets that would be exchanged for the amount of shares provided.
     /// @param shares The amount of lending market shares to convert to assets.
     /// @return assets The amount of asset tokens that would be received.
-    function convertToAssets(uint256 shares) external view returns (uint256 assets) {
+    function convertToAssets(uint256 shares) external view virtual returns (uint256 assets) {
         assets = IERC4626(market).convertToAssets(shares);
     }
 

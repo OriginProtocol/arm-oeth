@@ -50,7 +50,7 @@ Concrete implementations (`LidoARM.sol`, `EtherFiARM.sol`, `EthenaARM.sol`, `Ori
 
 ### Market Adapters (`src/contracts/markets/`)
 
-`Abstract4626MarketWrapper.sol` wraps ERC-4626 lending markets (Morpho, Silo) so the ARM can deposit idle liquidity. Concrete: `MorphoMarket.sol`, `SiloMarket.sol`.
+`Abstract4626MarketWrapper.sol` wraps ERC-4626 lending markets (Morpho, Silo) so the ARM can deposit idle liquidity. Concrete: `MetaMorphoV1_1Market.sol`, `SiloMarket.sol`.
 
 ### Proxy Pattern
 
