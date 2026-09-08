@@ -8,7 +8,7 @@ const {
   resolveDexQuoteAmount,
   shouldUpdatePrices,
 } = require("../../src/js/utils/priceUpdate");
-const { parseSwapCap } = require("../../src/js/utils/arm");
+const { MAX_SWAP_LIQUIDITY, parseSwapCap } = require("../../src/js/utils/arm");
 const { parseUnits } = require("ethers");
 
 assert.strictEqual(
@@ -53,6 +53,36 @@ assert.strictEqual(
   haveSwapCapsChanged(multiBaseContext(10n, 19n), 10n, 20n),
   true,
   "a changed sell amount should trigger an update",
+);
+
+assert.strictEqual(
+  haveSwapCapsChanged(
+    multiBaseContext(MAX_SWAP_LIQUIDITY - 10n, MAX_SWAP_LIQUIDITY - 20n),
+    MAX_SWAP_LIQUIDITY,
+    MAX_SWAP_LIQUIDITY,
+  ),
+  false,
+  "consuming unlimited swap liquidity should not trigger an update",
+);
+
+assert.strictEqual(
+  haveSwapCapsChanged(
+    multiBaseContext(9n, MAX_SWAP_LIQUIDITY - 20n),
+    10n,
+    MAX_SWAP_LIQUIDITY,
+  ),
+  true,
+  "a changed finite cap should still trigger an update when the other cap is unlimited",
+);
+
+assert.strictEqual(
+  haveSwapCapsChanged(
+    multiBaseContext(10n, MAX_SWAP_LIQUIDITY - 20n),
+    10n,
+    MAX_SWAP_LIQUIDITY,
+  ),
+  false,
+  "an unchanged finite cap and consumed unlimited cap should not trigger an update",
 );
 
 assert.strictEqual(
