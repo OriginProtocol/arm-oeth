@@ -134,6 +134,14 @@ contract MockAssetAdapter is IAssetAdapter {
         return pendingRequestIds[index];
     }
 
+    function requestMint(uint256) external pure returns (uint256, uint256) {
+        revert MintNotSupported();
+    }
+
+    function claimMint(uint256) external pure returns (uint256, uint256, uint256) {
+        revert MintNotSupported();
+    }
+
     /// @dev Mirror of AbstractARM._scaleBaseToLiquidity: base-native -> liquidity-native decimals.
     function _scaleBaseToLiquidity(uint256 amount) internal view returns (uint256) {
         if (baseDecimals == liquidityDecimals) return amount;

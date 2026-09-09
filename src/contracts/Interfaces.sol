@@ -37,6 +37,8 @@ interface ICapManager {
 /// @notice Adapter interface for assets that require protocol-specific redemption flows.
 /// @dev ARM calls adapters when a base asset cannot be redeemed synchronously into the ARM liquidity asset.
 interface IAssetAdapter {
+    error MintNotSupported(); // 0x6b24007b
+
     /// @notice Returns the liquidity asset received by the ARM after adapter redemptions.
     function asset() external view returns (address);
 
@@ -67,6 +69,21 @@ interface IAssetAdapter {
     function redeem(uint256 shares)
         external
         returns (uint256 sharesClaimed, uint256 assetsExpected, uint256 assetsReceived);
+
+    /// @notice Pulls liquidity assets from the ARM and queues them for an asynchronous base-asset mint.
+    /// @param assets Liquidity assets to commit to the mint.
+    /// @return assetsRequested Liquidity assets accepted into the mint queue.
+    /// @return sharesExpected Base-asset shares expected from settlement.
+    function requestMint(uint256 assets) external returns (uint256 assetsRequested, uint256 sharesExpected);
+
+    /// @notice Claims base shares from a previously requested mint and transfers them to the ARM.
+    /// @param shares Base-asset shares represented by pending mint requests.
+    /// @return sharesClaimed Base-asset shares removed from the pending mint queue.
+    /// @return assetsExpected Liquidity assets committed for those shares.
+    /// @return sharesReceived Base-asset shares transferred to the ARM.
+    function claimMint(uint256 shares)
+        external
+        returns (uint256 sharesClaimed, uint256 assetsExpected, uint256 sharesReceived);
 }
 
 interface LegacyAMM {

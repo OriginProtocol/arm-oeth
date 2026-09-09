@@ -1,33 +1,42 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.36;
 
-// Contract
-import {LidoARM} from "contracts/LidoARM.sol";
-import {Mainnet} from "contracts/utils/Addresses.sol";
+// The original contract and governance imports are retained as comments with the implementation
+// below. This script was superseded before execution and is permanently skipped. DeployManager must
+// still deploy the script artifact to read skip(), so active LidoARM creation code would introduce
+// an unresolved ARMAdapterLib link and prevent the deployment runner from loading this skip marker.
+// import {LidoARM} from "contracts/LidoARM.sol";
+// import {Mainnet} from "contracts/utils/Addresses.sol";
+// import {GovHelper, GovProposal} from "script/deploy/helpers/GovHelper.sol";
 
 // Deployment
 import {AbstractDeployScript} from "script/deploy/helpers/AbstractDeployScript.s.sol";
-import {GovHelper, GovProposal} from "script/deploy/helpers/GovHelper.sol";
 
+/// @dev Legacy deployment retained as an inert skip marker. It was superseded before execution.
 contract $025_UpgradeLidoARMDepositScript is AbstractDeployScript("025_UpgradeLidoARMDepositScript") {
-    using GovHelper for GovProposal;
-
     bool public constant override skip = true;
 
-    function _execute() internal override {
-        // 1. Deploy new LidoARM implementation
-        uint256 claimDelay = 10 minutes;
-        uint256 minSharesToRedeem = 1e7;
-        int256 allocateThreshold = 1e18;
-        LidoARM lidoARMImpl = new LidoARM(Mainnet.WETH, claimDelay, minSharesToRedeem, allocateThreshold);
-        _recordDeployment("LIDO_ARM_IMPL", address(lidoARMImpl));
-    }
-
-    function _buildGovernanceProposal() internal override {
-        govProposal.setDescription("Upgrade Lido ARM to restrict deposits during insolvency");
-
-        govProposal.action(
-            resolver.resolve("LIDO_ARM"), "upgradeTo(address)", abi.encode(resolver.resolve("LIDO_ARM_IMPL"))
-        );
-    }
+    // The original deployment logic is commented out for the same linking reason documented above.
+    // It remains here as historical context for why this deployment file exists.
+    //
+    // using GovHelper for GovProposal;
+    //
+    // function _execute() internal override {
+    //     // 1. Deploy new LidoARM implementation
+    //     uint256 claimDelay = 10 minutes;
+    //     uint256 minSharesToRedeem = 1e7;
+    //     int256 allocateThreshold = 1e18;
+    //     LidoARM lidoARMImpl = new LidoARM(Mainnet.WETH, claimDelay, minSharesToRedeem, allocateThreshold);
+    //     _recordDeployment("LIDO_ARM_IMPL", address(lidoARMImpl));
+    // }
+    //
+    // function _buildGovernanceProposal() internal override {
+    //     govProposal.setDescription("Upgrade Lido ARM to restrict deposits during insolvency");
+    //
+    //     govProposal.action(
+    //         resolver.resolve("LIDO_ARM"),
+    //         "upgradeTo(address)",
+    //         abi.encode(resolver.resolve("LIDO_ARM_IMPL"))
+    //     );
+    // }
 }
