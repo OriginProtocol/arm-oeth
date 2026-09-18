@@ -91,6 +91,95 @@ assert.strictEqual(
   "legacy ARMs do not support buy and sell amounts",
 );
 
+// With a buy cap tolerance, the buy limit is only refreshed once the tranche
+// shrank or more than the tolerance was consumed.
+const buyCapTolerance = { buyCapToleranceBps: 2500 };
+
+assert.strictEqual(
+  haveSwapCapsChanged(multiBaseContext(100n, 20n), 100n, 20n, buyCapTolerance),
+  false,
+  "unchanged limits with a buyCapTolerance should not trigger an update",
+);
+
+assert.strictEqual(
+  haveSwapCapsChanged(multiBaseContext(80n, 20n), 100n, 20n, buyCapTolerance),
+  false,
+  "a buy limit consumed within the buyCapTolerance should not trigger an update",
+);
+
+assert.strictEqual(
+  haveSwapCapsChanged(multiBaseContext(74n, 20n), 100n, 20n, buyCapTolerance),
+  true,
+  "a buy limit consumed beyond the buyCapTolerance should trigger an update",
+);
+
+assert.strictEqual(
+  haveSwapCapsChanged(multiBaseContext(100n, 20n), 90n, 20n, buyCapTolerance),
+  true,
+  "a tranche smaller than the on-chain buy limit should trigger an update",
+);
+
+assert.strictEqual(
+  haveSwapCapsChanged(
+    multiBaseContext(100n, MAX_SWAP_LIQUIDITY - 5n),
+    100n,
+    MAX_SWAP_LIQUIDITY,
+    buyCapTolerance,
+  ),
+  false,
+  "an uncapped sell limit decremented by swaps should not trigger an update",
+);
+
+assert.strictEqual(
+  haveSwapCapsChanged(
+    multiBaseContext(100n, MAX_SWAP_LIQUIDITY - 5n),
+    100n,
+    MAX_SWAP_LIQUIDITY,
+  ),
+  false,
+  "unlimited sell caps are ignored without a buyCapTolerance too",
+);
+
+assert.strictEqual(
+  haveSwapCapsChanged(multiBaseContext(100n, 19n), 100n, 20n, buyCapTolerance),
+  true,
+  "a capped sell limit is still compared strictly",
+);
+
+assert.strictEqual(
+  haveSwapCapsChanged(
+    multiBaseContext(100n, 20n),
+    100n,
+    MAX_SWAP_LIQUIDITY,
+    buyCapTolerance,
+  ),
+  false,
+  "an unlimited sell target alone should not trigger an update",
+);
+
+assert.strictEqual(
+  haveSwapCapsChanged(
+    multiBaseContext(0n, 20n),
+    MAX_SWAP_LIQUIDITY,
+    20n,
+    buyCapTolerance,
+  ),
+  false,
+  "an unlimited buy target is ignored even with tranche tolerance",
+);
+
+assert.strictEqual(
+  haveSwapCapsChanged(multiBaseContext(75n, 20n), 100n, 20n, buyCapTolerance),
+  false,
+  "consumption exactly at the tolerance should not trigger an update",
+);
+
+assert.strictEqual(
+  haveSwapCapsChanged({ version: "legacy" }, 10n, 20n, buyCapTolerance),
+  false,
+  "legacy ARMs ignore the buyCapTolerance too",
+);
+
 assert.strictEqual(
   capDexAmountBySwapLiquidity({
     amount: 100,
@@ -170,7 +259,7 @@ const currentBuyPrice = parseUnits("0.99985", 36);
 const cappedBuyPrice = parseUnits("0.99986", 36);
 const currentSellPrice = parseUnits("1.00015", 36);
 const flooredSellPrice = parseUnits("1.00014", 36);
-const tolerance = parseUnits("0.2", 32);
+const capTolerance = parseUnits("0.2", 32);
 
 assert.strictEqual(
   exceedsMaxBuyPrice(parseUnits("0.99991", 36), "0.99986"),
@@ -188,39 +277,39 @@ assert.strictEqual(
   shouldUpdatePrices({
     diffSellPrice: 0n,
     diffBuyPrice: cappedBuyPrice - currentBuyPrice,
-    toleranceScaled: tolerance,
+    toleranceScaled: capTolerance,
     buyPriceWasCappedAtMax: false,
     sellPriceWasFlooredAtMin: false,
     swapCapsChanged: false,
   }),
   false,
-  "a 0.1 bps buy-price change should remain below the 0.2 bps tolerance",
+  "a 0.1 bps buy-price change should remain below the 0.2 bps capTolerance",
 );
 
 assert.strictEqual(
   shouldUpdatePrices({
     diffSellPrice: 0n,
     diffBuyPrice: cappedBuyPrice - currentBuyPrice,
-    toleranceScaled: tolerance,
+    toleranceScaled: capTolerance,
     buyPriceWasCappedAtMax: true,
     sellPriceWasFlooredAtMin: false,
     swapCapsChanged: false,
   }),
   true,
-  "a buy price capped at the maximum should update despite being within tolerance",
+  "a buy price capped at the maximum should update despite being within capTolerance",
 );
 
 assert.strictEqual(
   shouldUpdatePrices({
     diffSellPrice: currentSellPrice - flooredSellPrice,
     diffBuyPrice: 0n,
-    toleranceScaled: tolerance,
+    toleranceScaled: capTolerance,
     buyPriceWasCappedAtMax: true,
     sellPriceWasFlooredAtMin: false,
     swapCapsChanged: false,
   }),
   false,
-  "a capped buy price should not bypass tolerance for a sell-only price change",
+  "a capped buy price should not bypass capTolerance for a sell-only price change",
 );
 
 assert.strictEqual(
@@ -239,46 +328,46 @@ assert.strictEqual(
   shouldUpdatePrices({
     diffSellPrice: currentSellPrice - flooredSellPrice,
     diffBuyPrice: 0n,
-    toleranceScaled: tolerance,
+    toleranceScaled: capTolerance,
     buyPriceWasCappedAtMax: false,
     sellPriceWasFlooredAtMin: false,
     swapCapsChanged: false,
   }),
   false,
-  "a 0.1 bps sell-price change should remain below the 0.2 bps tolerance",
+  "a 0.1 bps sell-price change should remain below the 0.2 bps capTolerance",
 );
 
 assert.strictEqual(
   shouldUpdatePrices({
     diffSellPrice: currentSellPrice - flooredSellPrice,
     diffBuyPrice: 0n,
-    toleranceScaled: tolerance,
+    toleranceScaled: capTolerance,
     buyPriceWasCappedAtMax: false,
     sellPriceWasFlooredAtMin: true,
     swapCapsChanged: false,
   }),
   true,
-  "a sell price raised to the minimum should update despite being within tolerance",
+  "a sell price raised to the minimum should update despite being within capTolerance",
 );
 
 assert.strictEqual(
   shouldUpdatePrices({
     diffSellPrice: 0n,
     diffBuyPrice: cappedBuyPrice - currentBuyPrice,
-    toleranceScaled: tolerance,
+    toleranceScaled: capTolerance,
     buyPriceWasCappedAtMax: false,
     sellPriceWasFlooredAtMin: true,
     swapCapsChanged: false,
   }),
   false,
-  "a floored sell price should not bypass tolerance for a buy-only price change",
+  "a floored sell price should not bypass capTolerance for a buy-only price change",
 );
 
 assert.strictEqual(
   shouldUpdatePrices({
     diffSellPrice: 0n,
     diffBuyPrice: 0n,
-    toleranceScaled: tolerance,
+    toleranceScaled: capTolerance,
     buyPriceWasCappedAtMax: true,
     sellPriceWasFlooredAtMin: true,
     swapCapsChanged: false,
@@ -291,7 +380,7 @@ assert.strictEqual(
   shouldUpdatePrices({
     diffSellPrice: 0n,
     diffBuyPrice: 0n,
-    toleranceScaled: tolerance,
+    toleranceScaled: capTolerance,
     buyPriceWasCappedAtMax: true,
     sellPriceWasFlooredAtMin: false,
     swapCapsChanged: true,

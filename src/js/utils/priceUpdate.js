@@ -1,6 +1,7 @@
 const { formatUnits, parseUnits } = require("ethers");
 
 const { MAX_SWAP_LIQUIDITY } = require("./arm");
+const { shouldRefreshBuyCap } = require("./tranchePricing");
 
 const capDexAmountBySwapLiquidity = ({
   amount,
@@ -42,12 +43,35 @@ const resolveDexQuoteAmount = ({
   });
 };
 
-const haveSwapCapsChanged = (baseContext, buyAmount, sellAmount) =>
-  baseContext.version === "multiBase" &&
-  ((buyAmount !== MAX_SWAP_LIQUIDITY &&
-    buyAmount !== baseContext.config.buyLiquidityRemaining) ||
-    (sellAmount !== MAX_SWAP_LIQUIDITY &&
-      sellAmount !== baseContext.config.sellLiquidityRemaining));
+/**
+ * Unlimited target caps never trigger an update by themselves, even after swaps.
+ * Finite caps use strict comparison unless `buyCapToleranceBps` is set (2500 =
+ * 25%): the buy cap then refreshes when the tranche shrinks or consumption
+ * exceeds the tolerance. Finite sell caps always use strict comparison.
+ */
+const haveSwapCapsChanged = (
+  baseContext,
+  buyAmount,
+  sellAmount,
+  { buyCapToleranceBps } = {},
+) => {
+  if (baseContext.version !== "multiBase") return false;
+  const { buyLiquidityRemaining, sellLiquidityRemaining } = baseContext.config;
+
+  const buyChanged =
+    buyAmount !== MAX_SWAP_LIQUIDITY &&
+    (buyCapToleranceBps === undefined || buyCapToleranceBps === null
+      ? buyAmount !== buyLiquidityRemaining
+      : shouldRefreshBuyCap({
+          remaining: buyLiquidityRemaining,
+          target: buyAmount,
+          toleranceBps: buyCapToleranceBps,
+        }));
+  const sellChanged =
+    sellAmount !== MAX_SWAP_LIQUIDITY && sellAmount !== sellLiquidityRemaining;
+
+  return buyChanged || sellChanged;
+};
 
 const exceedsMaxBuyPrice = (targetBuyPrice, maxBuyPrice) =>
   maxBuyPrice !== undefined &&
