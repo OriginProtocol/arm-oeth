@@ -8,7 +8,7 @@ const {
   resolveDexQuoteAmount,
   shouldUpdatePrices,
 } = require("../../src/js/utils/priceUpdate");
-const { parseSwapCap } = require("../../src/js/utils/arm");
+const { MAX_SWAP_LIQUIDITY, parseSwapCap } = require("../../src/js/utils/arm");
 const { parseUnits } = require("ethers");
 
 assert.strictEqual(
@@ -56,6 +56,36 @@ assert.strictEqual(
 );
 
 assert.strictEqual(
+  haveSwapCapsChanged(
+    multiBaseContext(MAX_SWAP_LIQUIDITY - 10n, MAX_SWAP_LIQUIDITY - 20n),
+    MAX_SWAP_LIQUIDITY,
+    MAX_SWAP_LIQUIDITY,
+  ),
+  false,
+  "consuming unlimited swap liquidity should not trigger an update",
+);
+
+assert.strictEqual(
+  haveSwapCapsChanged(
+    multiBaseContext(9n, MAX_SWAP_LIQUIDITY - 20n),
+    10n,
+    MAX_SWAP_LIQUIDITY,
+  ),
+  true,
+  "a changed finite cap should still trigger an update when the other cap is unlimited",
+);
+
+assert.strictEqual(
+  haveSwapCapsChanged(
+    multiBaseContext(10n, MAX_SWAP_LIQUIDITY - 20n),
+    10n,
+    MAX_SWAP_LIQUIDITY,
+  ),
+  false,
+  "an unchanged finite cap and consumed unlimited cap should not trigger an update",
+);
+
+assert.strictEqual(
   haveSwapCapsChanged({ version: "legacy" }, 10n, 20n),
   false,
   "legacy ARMs do not support buy and sell amounts",
@@ -63,7 +93,6 @@ assert.strictEqual(
 
 // With a buy cap tolerance, the buy limit is only refreshed once the tranche
 // shrank or more than the tolerance was consumed.
-const MAX_SWAP_LIQUIDITY = (1n << 128n) - 1n;
 const buyCapTolerance = { buyCapToleranceBps: 2500 };
 
 assert.strictEqual(
@@ -107,8 +136,8 @@ assert.strictEqual(
     100n,
     MAX_SWAP_LIQUIDITY,
   ),
-  true,
-  "without a buyCapTolerance the sell limit comparison stays strict",
+  false,
+  "unlimited sell caps are ignored without a buyCapTolerance too",
 );
 
 assert.strictEqual(
@@ -124,8 +153,25 @@ assert.strictEqual(
     MAX_SWAP_LIQUIDITY,
     buyCapTolerance,
   ),
-  true,
-  "moving a capped sell limit to uncapped should trigger an update",
+  false,
+  "an unlimited sell target alone should not trigger an update",
+);
+
+assert.strictEqual(
+  haveSwapCapsChanged(
+    multiBaseContext(0n, 20n),
+    MAX_SWAP_LIQUIDITY,
+    20n,
+    buyCapTolerance,
+  ),
+  false,
+  "an unlimited buy target is ignored even with tranche tolerance",
+);
+
+assert.strictEqual(
+  haveSwapCapsChanged(multiBaseContext(75n, 20n), 100n, 20n, buyCapTolerance),
+  false,
+  "consumption exactly at the tolerance should not trigger an update",
 );
 
 assert.strictEqual(

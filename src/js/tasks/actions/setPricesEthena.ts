@@ -180,7 +180,11 @@ action({
           trancheMinWei: ethers.parseUnits(args.trancheMin.toString(), 18),
           ladder: args.ladder,
           ladderStepBps100: scaledInt(args.ladderStep, 100, "ladder step"),
-          buyCapToleranceBps: scaledInt(args.capTolerance, 10000, "cap tolerance"),
+          buyCapToleranceBps: scaledInt(
+            args.capTolerance,
+            10000,
+            "cap tolerance",
+          ),
         }
       : undefined;
 
