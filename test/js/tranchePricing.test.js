@@ -107,16 +107,41 @@ for (let bps100 = 50; bps100 <= 1000; bps100 += 25) {
 }
 
 // computeUtilisationBps
-assert.strictEqual(computeUtilisationBps(usde(0), usde(100)), 10000);
-assert.strictEqual(computeUtilisationBps(usde(100), usde(0)), 10000);
-assert.strictEqual(computeUtilisationBps(usde(100), usde(100)), 0);
+assert.strictEqual(computeUtilisationBps(usde(0), usde(100), 0n), 10000);
+assert.strictEqual(computeUtilisationBps(usde(100), usde(0), 0n), 10000);
+assert.strictEqual(computeUtilisationBps(usde(100), usde(100), 0n), 0);
 assert.strictEqual(
-  computeUtilisationBps(usde(101), usde(100)),
+  computeUtilisationBps(usde(101), usde(100), 0n),
   0,
   "liquidity above total assets (rounding noise) clamps to 0",
 );
-assert.strictEqual(computeUtilisationBps(usde(30), usde(100)), 7000);
-assert.strictEqual(computeUtilisationBps(usde(30), usde(101)), 7030);
+assert.strictEqual(computeUtilisationBps(usde(30), usde(100), 0n), 7000);
+assert.strictEqual(computeUtilisationBps(usde(30), usde(101), 0n), 7030);
+assert.strictEqual(
+  computeUtilisationBps(usde(500), usde(1000), usde(500)),
+  0,
+  "a redeem request alone does not deploy capital: net assets are all liquid",
+);
+assert.strictEqual(
+  computeUtilisationBps(usde(200), usde(1000), usde(100)),
+  7778,
+  "200 liquid of 900 net, utilisation rounds up",
+);
+assert.strictEqual(
+  computeUtilisationBps(usde(0), usde(100), usde(100)),
+  10000,
+  "everything queued for withdrawal: no net assets left",
+);
+assert.strictEqual(
+  computeUtilisationBps(usde(0), usde(100), usde(150)),
+  10000,
+  "negative net assets clamp to fully deployed",
+);
+assert.strictEqual(
+  computeUtilisationBps(usde(60), usde(100), usde(50)),
+  0,
+  "liquidity above the net assets clamps to 0",
+);
 
 // computeTranche
 const tranche = (liquidity, pctBps = 3500) =>

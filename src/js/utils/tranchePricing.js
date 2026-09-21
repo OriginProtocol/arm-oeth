@@ -4,10 +4,12 @@
  * The ARM quotes one buy price for a tranche S of its liquidity: S is both the
  * on-chain `buyLiquidityRemaining` cap and the size of the aggregator quote.
  * The ladder gives the minimum discount below NAV the ARM charges as a function
- * of utilisation u = 1 - available liquidity / total assets.
+ * of utilisation u = 1 - available liquidity / (total assets - outstanding LP
+ * withdrawals).
  *
  * Units used throughout (integers only, no floats for on-chain values):
- * - utilisation in basis points of total assets: 0 = idle, 10000 = fully deployed
+ * - utilisation in basis points of total assets net of outstanding withdrawals:
+ *   0 = idle, 10000 = fully deployed
  * - discount in hundredths of a basis point (bps100): 250 = 2.5 bps, 500 = 5 bps
  * - token amounts as BigInt in the token's smallest unit (wei)
  * - prices as BigInt scaled to 1e36 (ARM PRICE_SCALE)
@@ -131,16 +133,33 @@ const ladderMaxBuyPrice = (bps100) =>
   PRICE_SCALE - BigInt(bps100) * BPS100_PRICE_UNIT;
 
 /**
- * Utilisation in basis points: share of total assets that is not available as
- * liquidity right now (in cooldown, reserved for LP withdrawals, ...).
- * @param {bigint} liquidityAssets withdrawable liquidity asset (getReserves)
- * @param {bigint} totalAssets ARM total assets
- * @returns {number} 0..10000; 10000 when totalAssets is 0, 0 when liquidity >= total
+ * Utilisation in basis points: share of the assets still owned by the LPs that
+ * is not available as liquidity right now (in cooldown, lent out, ...).
+ *
+ * `getReserves` already subtracts the liquidity reserved for outstanding LP
+ * withdrawal requests from `liquidityAssets`, while `totalAssets` is gross of
+ * them, so the same amount is subtracted from the denominator: a redeem request
+ * on its own does not move the ladder.
+ *
+ * @param {bigint} liquidityAssets withdrawable liquidity asset (getReserves),
+ *   already net of the reserved LP withdrawals
+ * @param {bigint} totalAssets ARM total assets, gross of LP withdrawal requests
+ * @param {bigint} outstandingWithdrawals liquidity reserved for LP withdrawal
+ *   requests that have not been claimed yet (`reservedWithdrawLiquidity`)
+ * @returns {number} 0..10000; 10000 when the net total assets are <= 0, 0 when
+ *   liquidity >= net total assets
+ * @example 500k liquid, 1M total, 500k queued -> net 500k, all liquid -> 0 bps
+ * @example 200k liquid, 1M total, 100k queued -> net 900k -> 7778 bps
  */
-const computeUtilisationBps = (liquidityAssets, totalAssets) => {
-  if (totalAssets <= 0n) return Number(UTILISATION_SCALE);
-  if (liquidityAssets >= totalAssets) return 0;
-  const availableBps = (liquidityAssets * UTILISATION_SCALE) / totalAssets;
+const computeUtilisationBps = (
+  liquidityAssets,
+  totalAssets,
+  outstandingWithdrawals,
+) => {
+  const netAssets = totalAssets - outstandingWithdrawals;
+  if (netAssets <= 0n) return Number(UTILISATION_SCALE);
+  if (liquidityAssets >= netAssets) return 0;
+  const availableBps = (liquidityAssets * UTILISATION_SCALE) / netAssets;
   return Number(UTILISATION_SCALE - availableBps);
 };
 

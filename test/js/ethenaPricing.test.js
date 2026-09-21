@@ -20,7 +20,7 @@ const defaults = {
   ladderStepBps100: 25,
 };
 
-const makeArm = ({ liquidity, total, calls = {} }) => ({
+const makeArm = ({ liquidity, total, outstanding = 0n, calls = {} }) => ({
   runner: "runner",
   getReserves: async (baseAddress, overrides) => {
     calls.getReserves = { baseAddress, overrides };
@@ -29,6 +29,10 @@ const makeArm = ({ liquidity, total, calls = {} }) => ({
   totalAssets: async (overrides) => {
     calls.totalAssets = { overrides };
     return total;
+  },
+  reservedWithdrawLiquidity: async (overrides) => {
+    calls.reservedWithdrawLiquidity = { overrides };
+    return outstanding;
   },
 });
 
@@ -88,6 +92,9 @@ const run = async () => {
     assert.strictEqual(calls.getReserves.baseAddress, sUSDe);
     assert.deepStrictEqual(calls.getReserves.overrides, { blockTag: 123 });
     assert.deepStrictEqual(calls.totalAssets.overrides, { blockTag: 123 });
+    assert.deepStrictEqual(calls.reservedWithdrawLiquidity.overrides, {
+      blockTag: 123,
+    });
     assert.deepStrictEqual(calls.convertToShares.overrides, { blockTag: 123 });
     assert.strictEqual(calls.convertToShares.assets, usde(75000));
     assert.deepStrictEqual(calls.adapter, {
@@ -108,6 +115,50 @@ const run = async () => {
     assert.strictEqual(result.utilisationBps, 0);
     assert.strictEqual(result.maxBuyPrice, "0.99975");
     assert.strictEqual(result.buyAmount, usde(350000));
+  }
+
+  {
+    // half the ARM is queued for redemption: the remaining LP capital is fully
+    // liquid, so u = 0 and the tranche is 35% of the 500k available liquidity
+    const result = await resolveEthenaTranche({
+      arm: makeArm({
+        liquidity: usde(500000),
+        total: usde(1000000),
+        outstanding: usde(500000),
+      }),
+      maxBuyPrice: 0.99985,
+      resolveArmBaseFn: resolver,
+      adapterContractFn: adapterFactory(),
+      ...defaults,
+    });
+    assert.strictEqual(result.utilisationBps, 0);
+    assert.strictEqual(result.maxBuyPrice, "0.99975");
+    assert.strictEqual(result.buyAmount, usde(175000));
+    assert.strictEqual(result.outstandingWithdrawals, usde(500000));
+    assert.strictEqual(
+      result.totalAssets,
+      usde(1000000),
+      "the returned total assets stay gross of the withdrawal requests",
+    );
+  }
+
+  {
+    // 200k liquid, 1M total, 100k queued: u = 1 - 200/900 = 77.78%,
+    // ladder interpolates 3.5 -> 5 bps and quantises to 4.25 bps
+    const result = await resolveEthenaTranche({
+      arm: makeArm({
+        liquidity: usde(200000),
+        total: usde(1000000),
+        outstanding: usde(100000),
+      }),
+      resolveArmBaseFn: resolver,
+      adapterContractFn: adapterFactory(),
+      ...defaults,
+    });
+    assert.strictEqual(result.utilisationBps, 7778);
+    assert.strictEqual(result.ladderBps100, 425);
+    assert.strictEqual(result.maxBuyPrice, "0.999575");
+    assert.strictEqual(result.buyAmount, usde(75000));
   }
 
   {
@@ -177,6 +228,7 @@ const run = async () => {
           baseAssetReserve: 0n,
         }),
         totalAssets: async () => usde(1000000),
+        reservedWithdrawLiquidity: async () => 0n,
       },
       resolveArmBaseFn: resolver,
       adapterContractFn: adapterFactory(),
@@ -211,6 +263,10 @@ const run = async () => {
             return [0n, 0n];
           },
           totalAssets: async () => 0n,
+          reservedWithdrawLiquidity: async () => {
+            read = true;
+            return 0n;
+          },
         },
         resolveArmBaseFn: resolver,
         adapterContractFn: adapterFactory(),
