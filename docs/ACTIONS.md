@@ -32,7 +32,9 @@ the buy-side liquidity limit and the aggregator quote size are one tranche of
 the available liquidity (`--tranche-pct` of `getReserves`, rounded to
 `--tranche-step`, at least `--tranche-min`, or the whole liquidity below it),
 and the maximum buy price follows a utilisation ladder. Utilisation is
-`1 - available liquidity / total assets`; `--ladder` lists the minimum discount
+`1 - available liquidity / (total assets - outstanding LP withdrawal requests)`:
+both sides are net of `reservedWithdrawLiquidity`, so a redeem request alone
+does not move the ladder. `--ladder` lists the minimum discount
 below NAV in basis points at each utilisation level (`50:2.5,70:3.5,85:5` =
 2.5 bps below 50% deployed, 3.5 bps at 70%, 5 bps from 85%), linearly
 interpolated and quantised to `--ladder-step`. The aggregator quote can only

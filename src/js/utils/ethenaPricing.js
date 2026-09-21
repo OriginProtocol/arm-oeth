@@ -38,8 +38,10 @@ const MIN_ETHENA_AGGREGATOR_AMOUNT = parseUnits("1000", 18); // 1,000 USDe
  * @param {function} [params.adapterContractFn] test hook
  * @returns {Promise<{buyAmount: bigint, amount: string, maxBuyPrice: string,
  *   utilisationBps: number, ladderBps100: number, tranche: bigint,
- *   liquidityAssets: bigint, totalAssets: bigint}>}
+ *   liquidityAssets: bigint, totalAssets: bigint,
+ *   outstandingWithdrawals: bigint}>}
  *   `buyAmount`, `amount` and `maxBuyPrice` are in the shapes setPrices expects.
+ *   `totalAssets` is gross of the outstanding LP withdrawal requests.
  */
 const resolveEthenaTranche = async ({
   arm,
@@ -68,8 +70,17 @@ const resolveEthenaTranche = async ({
   const reserves = await arm.getReserves(baseAddress, { blockTag });
   const liquidityAssets = reserves.liquidityAssets ?? reserves[0];
   const totalAssets = await arm.totalAssets({ blockTag });
+  // `liquidityAssets` is already net of the LP withdrawals waiting to be
+  // claimed, `totalAssets` is not: net them out of the denominator too.
+  const outstandingWithdrawals = await arm.reservedWithdrawLiquidity({
+    blockTag,
+  });
 
-  const utilisationBps = computeUtilisationBps(liquidityAssets, totalAssets);
+  const utilisationBps = computeUtilisationBps(
+    liquidityAssets,
+    totalAssets,
+    outstandingWithdrawals,
+  );
   const ladderBps100 = ladderDiscountBps100(
     utilisationBps,
     knots,
@@ -99,6 +110,10 @@ const resolveEthenaTranche = async ({
   log(`Tranche pricing at block ${blockTag}:`);
   log(`liquidity assets   : ${formatUnits(liquidityAssets, 18)}`);
   log(`total assets       : ${formatUnits(totalAssets, 18)}`);
+  log(`queued withdrawals : ${formatUnits(outstandingWithdrawals, 18)}`);
+  log(
+    `net total assets   : ${formatUnits(totalAssets - outstandingWithdrawals, 18)}`,
+  );
   log(`utilisation        : ${(utilisationBps / 100).toFixed(2)}%`);
   log(`ladder discount    : ${(ladderBps100 / 100).toFixed(2)} bps`);
   log(`ladder max price   : ${formatUnits(ladderPrice, 36)}`);
@@ -127,6 +142,7 @@ const resolveEthenaTranche = async ({
     tranche,
     liquidityAssets,
     totalAssets,
+    outstandingWithdrawals,
   };
 };
 
