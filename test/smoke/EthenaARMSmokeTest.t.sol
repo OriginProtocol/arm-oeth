@@ -259,7 +259,8 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
         _swapExactTokensForTokens(usde, susde, 0.99996e36, 1_000 ether);
 
         vm.prank(operator);
-        ethenaARM.setARMBuffer(5000); // 50%
+        ethenaARM.setARMBuffer(0); // 0%, so all free USDe is allocated
+        _fundReservedWithdrawLiquidity();
         address activeMarket = ethenaARM.activeMarket();
 
         uint256 balanceBefore = IERC20(activeMarket).balanceOf(address(ethenaARM));
@@ -273,7 +274,8 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
         _swapExactTokensForTokens(usde, susde, 0.99996e36, 1_000 ether);
 
         vm.prank(operator);
-        ethenaARM.setARMBuffer(5000); // 50%
+        ethenaARM.setARMBuffer(0); // 0%, so all free USDe is allocated
+        _fundReservedWithdrawLiquidity();
 
         // Allocate
         uint256 balanceBefore = usde.balanceOf(address(ethenaARM));
@@ -292,6 +294,14 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
         uint256 balanceAfter = usde.balanceOf(address(ethenaARM));
 
         assertGt(balanceAfter, balanceBefore, "Allocated amount with yield");
+    }
+
+    /// @dev Top up the ARM's USDe so its free liquidity is positive regardless of live fork state.
+    ///      Outstanding LP withdrawals can leave the balance below `reservedWithdrawLiquidity`,
+    ///      in which case `allocate()` tries to withdraw from the market instead of depositing.
+    function _fundReservedWithdrawLiquidity() internal {
+        uint256 balance = usde.balanceOf(address(ethenaARM));
+        deal(address(usde), address(ethenaARM), balance + ethenaARM.reservedWithdrawLiquidity() + 1_000 ether);
     }
 
     /// @dev Advance the adapter's FIFO claim cursor (`nextPendingIndex`) past every pre-existing
