@@ -61,13 +61,15 @@ const getKyberSwapQuote = async ({
       // 429 is rate-limiting; 5xx is Kyber shedding load (eg code 50301
       // "service temporarily overloaded"). Both are transient.
       const status = err.response?.status;
-      if (status == 429 || status >= 500) {
+      const kyberCode = err.response?.data?.code;
+      // 4003 "invalid swap" is Kyber's route validation failing intermittently
+      if (status == 429 || status >= 500 || kyberCode == 4003) {
         retries = retries - 1;
+        const delay = kyberCode == 4003 ? 1000 : 5000;
         console.error(
-          `Failed to get a Kyber swap route (HTTP ${status}). Will try again in 5 seconds with ${retries} retries left`,
+          `Failed to get a Kyber swap route (HTTP ${status}, code ${kyberCode}). Will try again in ${delay / 1000}s with ${retries} retries left`,
         );
-        // Wait for 5s before next try
-        await new Promise((r) => setTimeout(r, 5000));
+        await new Promise((r) => setTimeout(r, delay));
         continue;
       }
       throw Error(`Call to Kyber swap route API failed: ${err.message}`);
