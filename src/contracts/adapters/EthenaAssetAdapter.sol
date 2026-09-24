@@ -180,4 +180,12 @@ contract EthenaAssetAdapter is IAssetAdapter, Ownable {
     function unstakerIndexAt(uint256 requestIndex) public pure returns (uint8) {
         return uint8(requestIndex % MAX_UNSTAKERS);
     }
+
+    function requestMint(uint256) external pure returns (uint256, uint256) {
+        revert MintNotSupported();
+    }
+
+    function claimMint(uint256) external pure returns (uint256, uint256, uint256) {
+        revert MintNotSupported();
+    }
 }

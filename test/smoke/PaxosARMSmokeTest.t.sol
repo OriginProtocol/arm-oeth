@@ -4,6 +4,7 @@ pragma solidity ^0.8.36;
 import {AbstractSmokeTest} from "./AbstractSmokeTest.sol";
 
 import {IERC20} from "contracts/Interfaces.sol";
+import {AbstractARM} from "contracts/AbstractARM.sol";
 import {MultiAssetARM} from "contracts/MultiAssetARM.sol";
 import {PaxosAssetAdapter} from "contracts/adapters/PaxosAssetAdapter.sol";
 import {CapManager} from "contracts/CapManager.sol";
@@ -57,6 +58,7 @@ contract Fork_PaxosARM_Smoke_Test is AbstractSmokeTest {
         assertEq(pyusdAdapter.owner(), Mainnet.MULTISIG_5_OF_8, "PYUSD adapter owner");
         assertEq(pyusdAdapter.operator(), operator, "PYUSD adapter operator");
         assertNotEq(pyusdAdapter.paxosRecipient(), address(0), "PYUSD adapter paxos recipient");
+        assertEq(pyusdAdapter.paxosMintRecipient(), pyusdAdapter.paxosRecipient(), "PYUSD adapter paxos mint recipient");
         assertEq(
             address(pyusdAdapter), resolver.resolve("USDC_ARM_PYUSD_ADAPTER"), "PYUSD adapter proxy used by USDC ARM"
         );
@@ -68,6 +70,7 @@ contract Fork_PaxosARM_Smoke_Test is AbstractSmokeTest {
         assertEq(usdgAdapter.owner(), Mainnet.MULTISIG_5_OF_8, "USDG adapter owner");
         assertEq(usdgAdapter.operator(), operator, "USDG adapter operator");
         assertNotEq(usdgAdapter.paxosRecipient(), address(0), "USDG adapter paxos recipient");
+        assertEq(usdgAdapter.paxosMintRecipient(), usdgAdapter.paxosRecipient(), "USDG adapter paxos mint recipient");
         assertEq(address(usdgAdapter), resolver.resolve("USDC_ARM_USDG_ADAPTER"), "USDG adapter proxy used by USDC ARM");
 
         address[] memory baseAssets = usdcARM.getBaseAssets();
@@ -232,6 +235,53 @@ contract Fork_PaxosARM_Smoke_Test is AbstractSmokeTest {
         // Implementation's restricted methods.
         vm.expectRevert(onlyOwnerError);
         usdcARM.setOwner(RANDOM_ADDRESS);
+    }
+
+    //////////////////////////////////////////////////////
+    /// --- pause roles
+    //////////////////////////////////////////////////////
+
+    /// @notice The 043 upgrade wires the 2/8 as guardian and the 5/8 as adminMultisig.
+    function test_PauseRolesConfigured() external view {
+        assertEq(usdcARM.guardian(), Mainnet.MULTISIG_2_OF_8, "guardian is the 2/8");
+        assertEq(usdcARM.adminMultisig(), Mainnet.MULTISIG_5_OF_8, "adminMultisig is the 5/8");
+    }
+
+    /// @notice The 2/8 gets a no-delay pause but must never be able to re-open the ARM.
+    function test_GuardianCanPauseButNotUnpause() external {
+        vm.prank(Mainnet.MULTISIG_2_OF_8);
+        usdcARM.pause();
+        assertTrue(usdcARM.paused(), "guardian paused");
+
+        vm.prank(Mainnet.MULTISIG_2_OF_8);
+        vm.expectRevert(AbstractARM.OnlyUnpauser.selector);
+        usdcARM.unpause();
+        assertTrue(usdcARM.paused(), "still paused after guardian tried to unpause");
+
+        vm.prank(Mainnet.MULTISIG_5_OF_8);
+        usdcARM.unpause();
+        assertFalse(usdcARM.paused(), "adminMultisig unpaused");
+    }
+
+    /// @notice Storage-layout proof: the roles landed in the gap at slots 62/63 and the live
+    ///         variables bracketing them still read back sane.
+    function test_StorageLayoutPreservedAcrossUpgrade() external view {
+        assertEq(usdcARM.feeCollector(), Mainnet.BUYBACK_OPERATOR, "feeCollector (slot 59) intact");
+        assertGe(usdcARM.withdrawsQueuedShares(), usdcARM.withdrawsClaimedShares(), "slot 60 queue invariant");
+
+        assertEq(
+            uint256(vm.load(address(usdcARM), bytes32(uint256(62)))),
+            uint256(uint160(Mainnet.MULTISIG_2_OF_8)),
+            "guardian at slot 62"
+        );
+        assertEq(
+            uint256(vm.load(address(usdcARM), bytes32(uint256(63)))),
+            uint256(uint160(Mainnet.MULTISIG_5_OF_8)),
+            "adminMultisig at slot 63"
+        );
+
+        assertGt(usdcARM.totalAssets(), 0, "totalAssets intact");
+        assertEq(usdcARM.liquidityAsset(), Mainnet.USDC, "liquidityAsset intact");
     }
 
     /// @dev Assert `expected` appears in the ARM's `getBaseAssets()` list. A membership check

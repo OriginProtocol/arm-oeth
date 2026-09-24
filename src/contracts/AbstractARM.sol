@@ -8,6 +8,31 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 import {OwnableOperable} from "./OwnableOperable.sol";
 import {IAssetAdapter, IERC20, ICapManager} from "./Interfaces.sol";
+import {ARMAdapterLib} from "./libraries/ARMAdapterLib.sol";
+
+/// @notice Per-base-asset swap, valuation, and adapter configuration.
+/// @dev Packed into four storage slots. `adapter != address(0)` is the supported-asset flag.
+struct BaseAssetConfig {
+    /// @notice Price the ARM pays in liquidity-asset terms when buying this base asset from traders.
+    uint128 buyPrice;
+    /// @notice Price the ARM charges in liquidity-asset terms when selling this base asset to traders.
+    uint128 sellPrice;
+    /// @notice Remaining liquidity asset the ARM can pay out at the current buy price.
+    uint128 buyLiquidityRemaining;
+    /// @notice Remaining base asset the ARM can sell at the current sell price.
+    uint128 sellLiquidityRemaining;
+    /// @notice Valuation price used by totalAssets(), scaled to 36 decimals.
+    uint128 crossPrice;
+    /// @notice Liquidity-denominated value expected from adapter redemption queues.
+    uint128 pendingRedeemAssets;
+    /// @notice If true, conversions bypass the adapter and use a 1:1 value (decimal-scaled) amount.
+    /// Packed with `baseAssetDecimals` and `adapter` in the same slot as all three are read on conversions.
+    bool peggedToLiquidityAsset;
+    /// @notice Decimals of this base asset. Must be 6 or 18.
+    uint8 baseAssetDecimals;
+    /// @notice Adapter that owns protocol-specific redemption logic for this base asset.
+    address adapter;
+}
 
 /**
  * @title Generic Automated Redemption Manager (ARM)
@@ -70,30 +95,6 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
         uint128 queued;
     }
 
-    /// @notice Per-base-asset swap, valuation, and adapter configuration.
-    /// @dev Packed into four storage slots. `adapter != address(0)` is the supported-asset flag.
-    struct BaseAssetConfig {
-        /// @notice Price the ARM pays in liquidity-asset terms when buying this base asset from traders.
-        uint128 buyPrice;
-        /// @notice Price the ARM charges in liquidity-asset terms when selling this base asset to traders.
-        uint128 sellPrice;
-        /// @notice Remaining liquidity asset the ARM can pay out at the current buy price.
-        uint128 buyLiquidityRemaining;
-        /// @notice Remaining base asset the ARM can sell at the current sell price.
-        uint128 sellLiquidityRemaining;
-        /// @notice Valuation price used by totalAssets(), scaled to 36 decimals.
-        uint128 crossPrice;
-        /// @notice Liquidity-denominated value expected from adapter redemption queues.
-        uint128 pendingRedeemAssets;
-        /// @notice If true, conversions bypass the adapter and use a 1:1 value (decimal-scaled) amount.
-        /// Packed with `baseAssetDecimals` and `adapter` in the same slot as all three are read on conversions.
-        bool peggedToLiquidityAsset;
-        /// @notice Decimals of this base asset. Must be 6 or 18.
-        uint8 baseAssetDecimals;
-        /// @notice Adapter that owns protocol-specific redemption logic for this base asset.
-        address adapter;
-    }
-
     ////////////////////////////////////////////////////
     ///                 Storage
     ////////////////////////////////////////////////////
@@ -135,7 +136,19 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
     /// @notice Maximum liquidity assets reserved for outstanding LP withdrawal requests.
     uint128 public reservedWithdrawLiquidity;
 
-    uint256[50] private _gap;
+    /// @notice Account that can pause but never unpause. Held by the 2/8 Guardian multisig,
+    /// which hosts the threat-detection module that trips the pause automatically.
+    address public guardian;
+    /// @notice Account that can pause and unpause. Held by the 5/8 Admin multisig.
+    /// @dev Named `adminMultisig` rather than `admin` on purpose. `Proxy` inherits `Ownable` and
+    /// declares its own `admin()` returning the proxy owner, so a variable named `admin` would
+    /// generate a getter the proxy permanently shadows and it could never be read through the proxy.
+    address public adminMultisig;
+
+    /// @notice Base-asset shares expected from asynchronous liquidity-to-base mint queues.
+    mapping(address asset => uint256 shares) public pendingMintShares;
+
+    uint256[47] private _gap;
 
     ////////////////////////////////////////////////////
     ///                 Errors
@@ -162,6 +175,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
     error MarketActive(); // 0xaeb31949
     error InvalidARMBuffer(); // 0x06f77af9
     error ContractPaused(); // 0xab35696f
+    error OnlyPauser(); // 0x75df51dc
+    error OnlyUnpauser(); // 0x794821ff
     error Insolvent(); // 0xfc220038
     error ZeroShares(); // 0x9811e0c7
     error ClaimDelayNotMet(); // 0x4a1eec28
@@ -214,6 +229,8 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
     event Allocated(address indexed market, int256 targetLiquidityDelta, int256 actualLiquidityDelta);
     event Paused(address indexed account);
     event Unpaused(address indexed account);
+    event GuardianChanged(address newGuardian);
+    event AdminMultisigChanged(address newAdminMultisig);
 
     ////////////////////////////////////////////////////
     ///                 Modifiers
@@ -221,6 +238,23 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
 
     modifier whenNotPaused() {
         if (paused) revert ContractPaused();
+        _;
+    }
+
+    /// @dev Restricts to the owner, operator, guardian or adminMultisig. Pausing is the safe
+    /// direction, so the caller list is deliberately wide: any of them can trip the circuit breaker.
+    modifier onlyPauser() {
+        if (msg.sender != _owner() && msg.sender != operator && msg.sender != guardian && msg.sender != adminMultisig) {
+            revert OnlyPauser();
+        }
+        _;
+    }
+
+    /// @dev Restricts to the owner or adminMultisig. The operator and guardian can pause but must
+    /// never unpause, so that no single hot key or 2/8 key can both re-open a paused ARM and, where
+    /// it is also the owner, change its code.
+    modifier onlyUnpauser() {
+        if (msg.sender != _owner() && msg.sender != adminMultisig) revert OnlyUnpauser();
         _;
     }
 
@@ -621,32 +655,19 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
         uint256 newCrossPrice,
         bool peggedToLiquidityAsset
     ) external onlyOwner {
-        if (newBaseAsset == address(0)) revert InvalidAsset();
-        if (adapter == address(0)) revert InvalidAdapter();
-        if (baseAssetConfigs[newBaseAsset].adapter != address(0)) revert AssetAlreadySupported();
-        uint8 baseDecimals = IERC20(newBaseAsset).decimals();
-        if (baseDecimals != 6 && baseDecimals != 18) revert InvalidAssetDecimals();
-        if (IAssetAdapter(adapter).asset() != liquidityAsset) revert InvalidAdapterAsset();
-        if (newCrossPrice < PRICE_SCALE - MAX_CROSS_PRICE_DEVIATION) revert CrossPriceTooLow();
-        if (newCrossPrice > PRICE_SCALE) revert CrossPriceTooHigh();
-        _validatePrices(buyPrice, sellPrice, newCrossPrice);
-
-        baseAssets.push(newBaseAsset);
-        // Allow the adapter to pull base assets when requesting protocol redemptions.
-        IERC20(newBaseAsset).approve(adapter, type(uint256).max);
-        baseAssetConfigs[newBaseAsset] = BaseAssetConfig({
-            buyPrice: SafeCast.toUint128(buyPrice),
-            sellPrice: SafeCast.toUint128(sellPrice),
-            buyLiquidityRemaining: SafeCast.toUint128(buyAmount),
-            sellLiquidityRemaining: SafeCast.toUint128(sellAmount),
-            crossPrice: SafeCast.toUint128(newCrossPrice),
-            pendingRedeemAssets: 0,
-            peggedToLiquidityAsset: peggedToLiquidityAsset,
-            baseAssetDecimals: baseDecimals,
-            adapter: adapter
-        });
-
-        emit BaseAssetAdded(newBaseAsset, adapter, buyPrice, sellPrice, newCrossPrice, peggedToLiquidityAsset);
+        ARMAdapterLib.addBaseAsset(
+            baseAssets,
+            baseAssetConfigs,
+            liquidityAsset,
+            newBaseAsset,
+            adapter,
+            buyPrice,
+            sellPrice,
+            buyAmount,
+            sellAmount,
+            newCrossPrice,
+            peggedToLiquidityAsset
+        );
     }
 
     /// @notice Set buy/sell prices and per-price liquidity limits for a supported base asset.
@@ -693,13 +714,14 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
         BaseAssetConfig storage config = baseAssetConfigs[priceBaseAsset];
         if (config.adapter == address(0)) revert UnsupportedAsset();
         if (newCrossPrice < PRICE_SCALE - MAX_CROSS_PRICE_DEVIATION) revert CrossPriceTooLow();
-        if (newCrossPrice > PRICE_SCALE) revert CrossPriceTooHigh();
+        if (newCrossPrice > PRICE_SCALE + MAX_CROSS_PRICE_DEVIATION) revert CrossPriceTooHigh();
         if (config.sellPrice < newCrossPrice) revert SellPriceTooLow();
         if (config.buyPrice >= newCrossPrice) revert InvalidBuyPrice();
 
         if (newCrossPrice < config.crossPrice) {
-            uint256 baseAssetExposure =
-                _convertToAssets(config, IERC20(priceBaseAsset).balanceOf(address(this))) + config.pendingRedeemAssets;
+            uint256 baseAssetExposure = _convertToAssets(
+                config, IERC20(priceBaseAsset).balanceOf(address(this)) + pendingMintShares[priceBaseAsset]
+            ) + config.pendingRedeemAssets;
             if (baseAssetExposure >= MIN_LIQUIDITY) revert TooManyBaseAssets();
         }
 
@@ -722,12 +744,7 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
         onlyOperatorOrOwner
         returns (uint256 sharesRequested, uint256 assetsExpected)
     {
-        BaseAssetConfig storage config = baseAssetConfigs[redeemBaseAsset];
-        if (config.adapter == address(0)) revert UnsupportedAsset();
-
-        (sharesRequested, assetsExpected) = IAssetAdapter(config.adapter).requestRedeem(shares);
-        // Track the liquidity-denominated value expected back from the adapter queue.
-        config.pendingRedeemAssets = SafeCast.toUint128(uint256(config.pendingRedeemAssets) + assetsExpected);
+        return ARMAdapterLib.requestRedeem(baseAssetConfigs, redeemBaseAsset, shares);
     }
 
     /// @notice Claim protocol redemptions through a base asset adapter.
@@ -743,12 +760,49 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
         onlyOperatorOrOwner
         returns (uint256 sharesClaimed, uint256 assetsExpected, uint256 assetsReceived)
     {
-        BaseAssetConfig storage config = baseAssetConfigs[redeemBaseAsset];
-        if (config.adapter == address(0)) revert UnsupportedAsset();
+        return ARMAdapterLib.claimRedeem(baseAssetConfigs, redeemBaseAsset, shares);
+    }
 
-        (sharesClaimed, assetsExpected, assetsReceived) = IAssetAdapter(config.adapter).redeem(shares);
-        // Remove expected queue value. Any received shortfall remains reflected in totalAssets().
-        config.pendingRedeemAssets = SafeCast.toUint128(uint256(config.pendingRedeemAssets) - assetsExpected);
+    ////////////////////////////////////////////////////
+    ///                 Adapter Mints
+    ////////////////////////////////////////////////////
+
+    /// @notice Commit liquidity assets to an asynchronous base-asset mint through an adapter.
+    /// @dev Keeps liquidity reserved for outstanding LP withdrawals in the ARM and records expected base shares so
+    ///      totalAssets() continues to value the in-flight mint at the configured cross price.
+    /// @param mintBaseAsset Base asset expected from the adapter.
+    /// @param assets Liquidity assets to commit, in native liquidity-asset decimals.
+    /// eg 100e6 commits 100 USDC when the liquidity asset has 6 decimals.
+    /// @return assetsRequested Liquidity assets accepted by the adapter.
+    /// @return sharesExpected Base-asset shares expected from settlement.
+    function requestBaseAssetMint(address mintBaseAsset, uint256 assets)
+        external
+        onlyOperatorOrOwner
+        returns (uint256 assetsRequested, uint256 sharesExpected)
+    {
+        return ARMAdapterLib.requestMint(
+            baseAssetConfigs,
+            pendingMintShares,
+            liquidityAsset,
+            activeMarket,
+            reservedWithdrawLiquidity,
+            mintBaseAsset,
+            assets
+        );
+    }
+
+    /// @notice Claim asynchronously minted base shares from an adapter into the ARM.
+    /// @param mintBaseAsset Base asset being claimed.
+    /// @param shares Base-asset shares represented by pending mint requests.
+    /// @return sharesClaimed Base shares removed from the adapter queue.
+    /// @return assetsExpected Liquidity assets committed for the claimed shares.
+    /// @return sharesReceived Base shares transferred into the ARM.
+    function claimBaseAssetMint(address mintBaseAsset, uint256 shares)
+        external
+        onlyOperatorOrOwner
+        returns (uint256 sharesClaimed, uint256 assetsExpected, uint256 sharesReceived)
+    {
+        return ARMAdapterLib.claimMint(baseAssetConfigs, pendingMintShares, mintBaseAsset, shares);
     }
 
     ////////////////////////////////////////////////////
@@ -1005,17 +1059,17 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
         for (uint256 i = 0; i < length; ++i) {
             address supportedBaseAsset = baseAssets[i];
             BaseAssetConfig memory config = baseAssetConfigs[supportedBaseAsset];
-            // Base assets in the ARM are converted to liquidity assets and then the cross price is applied.
-            // The cross price is the discounted price for the redemption time delay. This ensures the ARM's
-            // assets per share does not decrease if the ARM sells base assets at a discount, because the base
-            // sell price is greater than or equal to the cross price.
-            uint256 baseConvertedToLiquid =
-                _convertToAssets(config, IERC20(supportedBaseAsset).balanceOf(address(this)));
-            availableAssets += baseConvertedToLiquid * config.crossPrice / PRICE_SCALE;
+            // Convert settled and pending-mint base shares to liquidity assets together, then value them at
+            // the cross price. This ensures assets per share does not decrease if the ARM sells base assets
+            // at a discount, because the base sell price is greater than or equal to the cross price.
+            uint256 baseConvertedToLiquid = _convertToAssets(
+                config, IERC20(supportedBaseAsset).balanceOf(address(this)) + pendingMintShares[supportedBaseAsset]
+            );
             // Pending adapter redemptions are already tracked in liquidity terms and represent assets
             // expected back from protocol withdrawal queues. Value them at the live cross price so moving
             // base assets into a withdrawal queue does not create an immediate assets-per-share increase.
-            availableAssets += uint256(config.pendingRedeemAssets) * config.crossPrice / PRICE_SCALE;
+            availableAssets += (baseConvertedToLiquid + uint256(config.pendingRedeemAssets)) * config.crossPrice
+                / PRICE_SCALE;
         }
 
         address activeMarketMem = activeMarket;
@@ -1223,16 +1277,32 @@ abstract contract AbstractARM is OwnableOperable, ERC20Upgradeable, ReentrancyGu
     ///                 Admin Functions
     ////////////////////////////////////////////////////
 
-    /// @notice Pause user-facing ARM actions.
-    function pause() external onlyOperatorOrOwner {
+    /// @notice Pause user-facing ARM actions. Callable by the owner, operator, guardian or
+    /// adminMultisig.
+    function pause() external onlyPauser {
         paused = true;
         emit Paused(msg.sender);
     }
 
-    /// @notice Unpause user-facing ARM actions.
-    function unpause() external onlyOwner {
+    /// @notice Unpause user-facing ARM actions. Callable by the owner or adminMultisig only.
+    function unpause() external onlyUnpauser {
         paused = false;
         emit Unpaused(msg.sender);
+    }
+
+    /// @notice Set the accounts that can pause and unpause.
+    /// @dev Both roles are set in one call so that an upgrade and its role configuration fit in a
+    /// single governance action. Setting them separately would leave a window where the slots are
+    /// still address(0) and unpause has silently narrowed to owner-only.
+    /// @param _guardian The 2/8 Guardian multisig, which can pause but not unpause.
+    /// address(0) disables the role.
+    /// @param _adminMultisig The 5/8 Admin multisig, which can pause and unpause.
+    /// address(0) disables the role.
+    function setPauseRoles(address _guardian, address _adminMultisig) external onlyOwner {
+        guardian = _guardian;
+        adminMultisig = _adminMultisig;
+        emit GuardianChanged(_guardian);
+        emit AdminMultisigChanged(_adminMultisig);
     }
 
     /// @notice Set the CapManager contract.

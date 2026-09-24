@@ -189,4 +189,12 @@ contract WeETHAssetAdapter is Initializable, IAssetAdapter, IERC721Receiver {
     function onERC721Received(address, address, uint256, bytes calldata) external pure returns (bytes4) {
         return IERC721Receiver.onERC721Received.selector;
     }
+
+    function requestMint(uint256) external pure returns (uint256, uint256) {
+        revert MintNotSupported();
+    }
+
+    function claimMint(uint256) external pure returns (uint256, uint256, uint256) {
+        revert MintNotSupported();
+    }
 }
