@@ -1,10 +1,6 @@
 const assert = require("assert");
-const {
-  ApolloClient,
-  HttpLink,
-  InMemoryCache,
-} = require("@apollo/client/core");
 const { Request, Response } = require("node-fetch");
+const { createApolloClient } = require("../../src/js/utils/apollo");
 
 const { AbiCoder, Contract, id, parseUnits } = require("ethers");
 
@@ -25,28 +21,22 @@ const run = async () => {
   const lookup = async (responses) => {
     let calls = 0;
     const waits = [];
-    const client = new ApolloClient({
-      link: new HttpLink({
-        uri: "https://example.com/graphql",
-        fetch: async (url, options) => {
-          // Verify the query options reach node-fetch through Apollo's link.
-          const request = new Request(url, options);
-          assert.strictEqual(
-            request.headers.get("accept-encoding"),
-            "identity",
-          );
-          assert.strictEqual(request.compress, false);
-          const response = responses[calls++];
-          if (response instanceof Error) throw response;
-          assert.ok(response, "unexpected query attempt");
-          return new Response(JSON.stringify(response.body), {
-            status: response.status,
-            headers: { "content-type": "application/json" },
-          });
-        },
-      }),
-      cache: new InMemoryCache(),
-    });
+    const client = createApolloClient(
+      "https://example.com/graphql",
+      async (url, options) => {
+        // Verify the shared client disables compression at the HTTP link.
+        const request = new Request(url, options);
+        assert.strictEqual(request.headers.get("accept-encoding"), "identity");
+        assert.strictEqual(request.compress, false);
+        const response = responses[calls++];
+        if (response instanceof Error) throw response;
+        assert.ok(response, "unexpected query attempt");
+        return new Response(JSON.stringify(response.body), {
+          status: response.status,
+          headers: { "content-type": "application/json" },
+        });
+      },
+    );
     try {
       const ids = await queryEtherFiWithdrawalRequests(client, async (ms) => {
         waits.push(ms);

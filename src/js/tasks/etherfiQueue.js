@@ -173,12 +173,6 @@ const queryEtherFiWithdrawalRequests = async (
       const { data } = await client.query({
         query,
         fetchPolicy: "network-only",
-        // Debian's HTTP-agent security backport can trigger node-fetch@2's
-        // false premature-close error while reading chunked gzip responses.
-        context: {
-          headers: { "Accept-Encoding": "identity" },
-          fetchOptions: { compress: false },
-        },
       });
       return data.etherfiWithdrawalRequests.map((request) => request.requestId);
     } catch (error) {
