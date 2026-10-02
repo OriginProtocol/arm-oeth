@@ -151,11 +151,11 @@ const selectClaimableEtherFiRequests = (statuses) =>
     .filter(({ isFinalized, isValid }) => isFinalized && isValid)
     .map(({ requestId }) => requestId);
 
-const claimableEtherFiRequests = async (signer) => {
-  const client = createApolloClient(uri);
-
-  log(`About to get claimable EtherFi withdrawal requests`);
-
+// Retry only the read-only subgraph lookup, never a claim transaction.
+const queryEtherFiWithdrawalRequests = async (
+  client,
+  wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+) => {
   const query = gql`
     query ClaimableEtherFiRequestsQuery {
       etherfiWithdrawalRequests(
@@ -167,19 +167,50 @@ const claimableEtherFiRequests = async (signer) => {
     }
   `;
 
-  let candidateIds;
-  try {
-    const { data } = await client.query({
-      query,
-    });
-    candidateIds = data.etherfiWithdrawalRequests.map(
-      (request) => request.requestId,
-    );
-  } catch (error) {
-    const msg = `Failed to get claimable EtherFi withdrawal requests`;
-    console.error(msg);
-    throw Error(msg, { cause: error });
+  const maxAttempts = 3;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const { data } = await client.query({
+        query,
+        fetchPolicy: "network-only",
+        // Debian's HTTP-agent security backport can trigger node-fetch@2's
+        // false premature-close error while reading chunked gzip responses.
+        context: {
+          headers: { "Accept-Encoding": "identity" },
+          fetchOptions: { compress: false },
+        },
+      });
+      return data.etherfiWithdrawalRequests.map((request) => request.requestId);
+    } catch (error) {
+      const networkError = error.networkError;
+      const statusCode = networkError?.statusCode;
+      const details = [
+        statusCode && `HTTP ${statusCode}`,
+        error.message,
+        networkError?.message,
+        ...(error.graphQLErrors ?? []).map((item) => item.message),
+        ...(networkError?.result?.errors ?? []).map((item) => item.message),
+      ].filter(Boolean);
+      const msg = `Failed to get claimable EtherFi withdrawal requests from ${uri} (attempt ${attempt}/${maxAttempts}): ${[...new Set(details)].join("; ")}`;
+      const retryable =
+        networkError &&
+        (statusCode == null ||
+          statusCode === 408 ||
+          statusCode === 429 ||
+          statusCode >= 500);
+      if (!retryable || attempt === maxAttempts) {
+        throw new Error(msg, { cause: error });
+      }
+      log(`${msg}. Retrying...`);
+      await wait(1000 * 2 ** (attempt - 1));
+    }
   }
+};
+
+const claimableEtherFiRequests = async (signer) => {
+  const client = createApolloClient(uri);
+  log(`About to get claimable EtherFi withdrawal requests`);
+  const candidateIds = await queryEtherFiWithdrawalRequests(client);
 
   const withdrawalNFT = new Contract(
     addresses.mainnet.etherfiWithdrawalQueue,
@@ -208,6 +239,7 @@ const claimableEtherFiRequests = async (signer) => {
 module.exports = {
   requestEtherFiWithdrawals,
   claimEtherFiWithdrawals,
+  queryEtherFiWithdrawalRequests,
   etherFiRequestStatuses,
   selectClaimableEtherFiRequests,
   splitEtherFiWithdrawAmount,

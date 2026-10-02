@@ -1,8 +1,15 @@
 const assert = require("assert");
+const {
+  ApolloClient,
+  HttpLink,
+  InMemoryCache,
+} = require("@apollo/client/core");
+const { Request, Response } = require("node-fetch");
 
 const { AbiCoder, Contract, id, parseUnits } = require("ethers");
 
 const {
+  queryEtherFiWithdrawalRequests,
   etherFiRequestStatuses,
   selectClaimableEtherFiRequests,
   splitEtherFiWithdrawAmount,
@@ -13,6 +20,99 @@ const coder = AbiCoder.defaultAbiCoder();
 const selector = (signature) => id(signature).slice(0, 10);
 
 const run = async () => {
+  // Exercise the lookup through Apollo's real HTTP link to verify its error
+  // shapes and that a failed query can actually be retried on the same client.
+  const lookup = async (responses) => {
+    let calls = 0;
+    const waits = [];
+    const client = new ApolloClient({
+      link: new HttpLink({
+        uri: "https://example.com/graphql",
+        fetch: async (url, options) => {
+          // Verify the query options reach node-fetch through Apollo's link.
+          const request = new Request(url, options);
+          assert.strictEqual(
+            request.headers.get("accept-encoding"),
+            "identity",
+          );
+          assert.strictEqual(request.compress, false);
+          const response = responses[calls++];
+          if (response instanceof Error) throw response;
+          assert.ok(response, "unexpected query attempt");
+          return new Response(JSON.stringify(response.body), {
+            status: response.status,
+            headers: { "content-type": "application/json" },
+          });
+        },
+      }),
+      cache: new InMemoryCache(),
+    });
+    try {
+      const ids = await queryEtherFiWithdrawalRequests(client, async (ms) => {
+        waits.push(ms);
+      });
+      return { ids, calls, waits };
+    } catch (error) {
+      return { error, calls, waits };
+    }
+  };
+  const success = {
+    status: 200,
+    body: { data: { etherfiWithdrawalRequests: [{ requestId: "83121" }] } },
+  };
+  const unavailable = {
+    status: 503,
+    body: { errors: [{ message: "Service unavailable" }] },
+  };
+  {
+    const result = await lookup([unavailable, success]);
+    assert.deepStrictEqual(result, { ids: ["83121"], calls: 2, waits: [1000] });
+  }
+  {
+    const result = await lookup([new Error("connection reset"), success]);
+    assert.deepStrictEqual(result, { ids: ["83121"], calls: 2, waits: [1000] });
+  }
+  {
+    const rateLimited = {
+      status: 429,
+      body: { errors: [{ message: "Too many requests" }] },
+    };
+    const result = await lookup([rateLimited, rateLimited, rateLimited]);
+    assert.strictEqual(result.calls, 3);
+    assert.deepStrictEqual(result.waits, [1000, 2000]);
+    assert.match(
+      result.error.message,
+      /attempt 3\/3.*HTTP 429.*Too many requests/,
+    );
+    assert.strictEqual(result.error.cause.networkError.statusCode, 429);
+  }
+  {
+    const result = await lookup([
+      {
+        status: 200,
+        body: { errors: [{ message: "Unknown field claimable" }] },
+      },
+    ]);
+    assert.strictEqual(result.calls, 1);
+    assert.deepStrictEqual(result.waits, []);
+    assert.match(result.error.message, /Unknown field claimable/);
+    assert.ok(result.error.cause);
+  }
+  {
+    const result = await lookup([
+      { status: 401, body: { errors: [{ message: "Unauthorized" }] } },
+    ]);
+    assert.strictEqual(result.calls, 1);
+    assert.deepStrictEqual(result.waits, []);
+    assert.match(result.error.message, /HTTP 401.*Unauthorized/);
+  }
+  {
+    const result = await lookup([
+      { status: 200, body: { data: { etherfiWithdrawalRequests: [] } } },
+    ]);
+    assert.deepStrictEqual(result, { ids: [], calls: 1, waits: [] });
+  }
+
   // Ether.fi rejects individual withdrawal requests above 1,000 eETH.
   assert.deepStrictEqual(splitEtherFiWithdrawAmount(parseUnits("1000")), [
     parseUnits("1000"),
