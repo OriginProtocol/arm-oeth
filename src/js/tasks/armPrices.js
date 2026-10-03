@@ -496,45 +496,8 @@ const getLendingMarketAPY = async (market) => {
       address: "${underlyingMorphoMarket}"
       chainId: 1
     ) {
-      address
-      asset {
-        yield {
-          apr
-        }
-      }
       state {
-        apy
-        netApy
-        netApyWithoutRewards
-        dailyApy
-        dailyNetApy
-        weeklyApy
-        weeklyNetApy
-        monthlyApy
-        monthlyNetApy
-        rewards {
-          asset {
-            address
-          }
-          supplyApr
-          yearlySupplyTokens
-        }
-        allocation {
-          supplyAssets
-          supplyAssetsUsd
-          market {
-            uniqueKey
-            state {
-              rewards {
-                asset {
-                  address
-                }
-                supplyApr
-                borrowApr
-              }
-            }
-          }
-        }
+        avgNetApy(lookback: SEVEN_DAYS)
       }
     }
   }`;
@@ -555,7 +518,7 @@ const getLendingMarketAPY = async (market) => {
   // APR scaled to 1e6
   const apr = Number(
     (1000000n *
-      BigInt(Math.floor(data.data.vaultByAddress.state.weeklyNetApy * 1e18))) /
+      BigInt(Math.floor(data.data.vaultByAddress.state.avgNetApy * 1e18))) /
       BigInt(1e18),
   );
   log(
