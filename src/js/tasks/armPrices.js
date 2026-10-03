@@ -544,6 +544,7 @@ const getLendingMarketAPY = async (market) => {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      "Accept-Encoding": "identity",
     },
     body: JSON.stringify({
       query,
