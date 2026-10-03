@@ -101,6 +101,19 @@
   },
   {
     "type": "function",
+    "name": "adminMultisig",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "allocate",
     "inputs": [],
     "outputs": [
@@ -559,6 +572,19 @@
   },
   {
     "type": "function",
+    "name": "guardian",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "initialize",
     "inputs": [
       {
@@ -925,6 +951,24 @@
     "inputs": [
       {
         "name": "newOwner",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setPauseRoles",
+    "inputs": [
+      {
+        "name": "_guardian",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "_adminMultisig",
         "type": "address",
         "internalType": "address"
       }
@@ -1370,6 +1414,19 @@
   },
   {
     "type": "event",
+    "name": "AdminMultisigChanged",
+    "inputs": [
+      {
+        "name": "newAdminMultisig",
+        "type": "address",
+        "indexed": false,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
     "name": "Allocated",
     "inputs": [
       {
@@ -1559,6 +1616,19 @@
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "GuardianChanged",
+    "inputs": [
+      {
+        "name": "newGuardian",
+        "type": "address",
+        "indexed": false,
+        "internalType": "address"
       }
     ],
     "anonymous": false
@@ -2024,6 +2094,16 @@
   {
     "type": "error",
     "name": "OnlyOwner",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "OnlyPauser",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "OnlyUnpauser",
     "inputs": []
   },
   {
