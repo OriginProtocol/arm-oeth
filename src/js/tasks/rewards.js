@@ -38,7 +38,7 @@ async function collectMorphoRewards({ arm, signer }) {
         ? await parseDeployedAddress("MORPHO_MARKET_ETHERFI")
         : undefined;
   const market = await ethers.getContractAt(
-    "MorphoMarket",
+    "MetaMorphoV1_1Market",
     marketAddress,
     signer,
   );

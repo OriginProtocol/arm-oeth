@@ -7,7 +7,7 @@ import {Base_Test_} from "test/Base.sol";
 // Contracts
 import {Proxy} from "contracts/Proxy.sol";
 import {IERC20} from "contracts/Interfaces.sol";
-import {MorphoMarket} from "contracts/markets/MorphoMarket.sol";
+import {MetaMorphoV1_1Market} from "contracts/markets/MetaMorphoV1_1Market.sol";
 
 // Interfaces
 import {Mainnet} from "src/contracts/utils/Addresses.sol";
@@ -59,13 +59,13 @@ abstract contract Fork_Shared_Test is Base_Test_ {
 
         // --- Deploy MorphoMarket implementation ---
         // Deploy MorphoMarket implementation.
-        MorphoMarket morphoMarketImpl = new MorphoMarket(address(0), targetedAddress);
+        MetaMorphoV1_1Market morphoMarketImpl = new MetaMorphoV1_1Market(address(0), targetedAddress);
 
         // Initialize Proxy with MorphoMarket implementation.
         morphoMarketProxy.upgradeTo(address(morphoMarketImpl));
 
-        // Set the Proxy as the MorphoMarket.
-        morphoMarket = MorphoMarket(address(morphoMarketProxy));
+        // Set the proxy as the market wrapper.
+        morphoMarket = MetaMorphoV1_1Market(address(morphoMarketProxy));
 
         // Set harvester and merkle distributor
         morphoMarket.setHarvester(address(this));
