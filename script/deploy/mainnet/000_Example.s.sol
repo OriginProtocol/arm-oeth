@@ -24,7 +24,6 @@ pragma solidity ^0.8.36;
 
 // Contracts to deploy/upgrade
 import {Proxy} from "contracts/Proxy.sol";
-import {LidoARM} from "contracts/LidoARM.sol";
 import {CapManager} from "contracts/CapManager.sol";
 import {ZapperLidoARM} from "contracts/ZapperLidoARM.sol";
 
@@ -63,7 +62,7 @@ contract $000_Example is AbstractDeployScript("000_Example") {
 
     // Declare variables here for contracts deployed in _execute()
     // that need to be referenced in _buildGovernanceProposal() or _fork()
-    LidoARM public newImplementation;
+    address public newImplementation;
 
     // ==================== Main Deployment Logic ==================== //
 
@@ -92,8 +91,11 @@ contract $000_Example is AbstractDeployScript("000_Example") {
         // Deploy your contracts here. The deployer address is already set via
         // vm.broadcast (real) or vm.prank (fork).
 
-        // Example: Deploy a new implementation contract
-        newImplementation = new LidoARM(weth, 10 minutes, 0, 0);
+        // Example: Deploy a new implementation contract. Keep concrete deployment imports and code
+        // in the copied script so this permanently skipped template remains safe to load even when
+        // an implementation requires external library linking.
+        // MyImplementation implementation = new MyImplementation(constructorArgs);
+        // newImplementation = address(implementation);
 
         // Example: Deploy a proxy with implementation
         // Proxy proxy = new Proxy();
@@ -105,7 +107,7 @@ contract $000_Example is AbstractDeployScript("000_Example") {
         // - Available to subsequent scripts via resolver.resolve()
         // - Logged for visibility
 
-        _recordDeployment("LIDO_ARM_IMPL", address(newImplementation));
+        _recordDeployment("LIDO_ARM_IMPL", newImplementation);
 
         // Note: You can register multiple contracts
         // _recordDeployment("MY_PROXY", address(proxy));
@@ -140,7 +142,7 @@ contract $000_Example is AbstractDeployScript("000_Example") {
 
         // Example 1: Upgrade a proxy to new implementation
         address lidoArmProxy = resolver.resolve("LIDO_ARM");
-        govProposal.action(lidoArmProxy, "upgradeTo(address)", abi.encode(address(newImplementation)));
+        govProposal.action(lidoArmProxy, "upgradeTo(address)", abi.encode(newImplementation));
 
         // Example 2: Set a configuration value
         // address capManager = resolver.resolve("CAP_MANAGER");

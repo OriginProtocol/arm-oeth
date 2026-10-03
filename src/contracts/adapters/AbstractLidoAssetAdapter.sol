@@ -243,5 +243,13 @@ abstract contract AbstractLidoAssetAdapter is Initializable, IAssetAdapter {
     /// @return sharesOut Concrete adapter share amount.
     function _assetsToShares(uint256 assets) internal view virtual returns (uint256 sharesOut);
 
+    function requestMint(uint256) external pure returns (uint256, uint256) {
+        revert MintNotSupported();
+    }
+
+    function claimMint(uint256) external pure returns (uint256, uint256, uint256) {
+        revert MintNotSupported();
+    }
+
     receive() external payable {}
 }
