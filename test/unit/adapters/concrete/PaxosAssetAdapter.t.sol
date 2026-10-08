@@ -30,12 +30,18 @@ contract Unit_PaxosAssetAdapter_Test is Test {
     address internal paxosRecipient = makeAddr("paxosRecipient");
 
     uint256 internal constant ARM_PYUSD_BALANCE = 5_000e6;
+    uint256 internal constant ARM_USDC_BALANCE = 5_000e6;
 
     event PaxosRecipientUpdated(address indexed paxosRecipient);
     event PaxosRedeemRequested(uint256 shares, uint256 assetsExpected);
     event PaxosRedeemSubmitted(bytes32 indexed paxosRedemptionId, uint256 shares, address indexed paxosRecipient);
     event PaxosRedeemClaimed(uint256 shares, uint256 assetsExpected, uint256 assetsReceived);
     event ExcessLiquidityRecovered(address indexed to, uint256 amount);
+    event PaxosMintRecipientUpdated(address indexed paxosMintRecipient);
+    event PaxosMintRequested(uint256 assets, uint256 sharesExpected);
+    event PaxosMintSubmitted(bytes32 indexed paxosMintId, uint256 assets, address indexed paxosMintRecipient);
+    event PaxosMintClaimed(uint256 shares, uint256 assetsExpected, uint256 sharesReceived);
+    event ExcessBaseAssetRecovered(address indexed to, uint256 amount);
 
     function setUp() public {
         usdc = new MockERC20("USD Coin", "USDC", 6);
@@ -47,6 +53,8 @@ contract Unit_PaxosAssetAdapter_Test is Test {
         pyusd.mint(arm, ARM_PYUSD_BALANCE);
         vm.prank(arm);
         pyusd.approve(address(adapter), type(uint256).max);
+        vm.prank(arm);
+        usdc.approve(address(adapter), type(uint256).max);
     }
 
     /// @dev Deploys the adapter behind a proxy owned by `governor` and initialized with `operator`.
@@ -106,6 +114,7 @@ contract Unit_PaxosAssetAdapter_Test is Test {
         PaxosAssetAdapter fresh = PaxosAssetAdapter(address(proxy));
         assertEq(fresh.operator(), operator, "operator");
         assertEq(fresh.paxosRecipient(), paxosRecipient, "paxosRecipient");
+        assertEq(fresh.paxosMintRecipient(), paxosRecipient, "paxosMintRecipient");
         assertEq(fresh.owner(), governor, "proxy owner");
     }
 
@@ -211,6 +220,55 @@ contract Unit_PaxosAssetAdapter_Test is Test {
         adapter.setPaxosRecipient(newRecipient);
 
         assertEq(adapter.paxosRecipient(), newRecipient, "paxosRecipient updated");
+    }
+
+    function test_SetPaxosMintRecipient_UpdatesAndEmits() public {
+        address newRecipient = makeAddr("newMintRecipient");
+
+        vm.expectEmit(true, false, false, true, address(adapter));
+        emit PaxosMintRecipientUpdated(newRecipient);
+        vm.prank(governor);
+        adapter.setPaxosMintRecipient(newRecipient);
+
+        assertEq(adapter.paxosMintRecipient(), newRecipient, "paxosMintRecipient updated");
+    }
+
+    function test_SetPaxosMintRecipient_RevertWhen_NotOwnerOrZero() public {
+        vm.prank(operator);
+        vm.expectRevert(Ownable.OnlyOwner.selector);
+        adapter.setPaxosMintRecipient(alice);
+
+        vm.prank(governor);
+        vm.expectRevert(PaxosAssetAdapter.InvalidPaxosRecipient.selector);
+        adapter.setPaxosMintRecipient(address(0));
+    }
+
+    function test_RequestMint_RevertWhen_NotARM() public {
+        vm.prank(alice);
+        vm.expectRevert(PaxosAssetAdapter.OnlyARM.selector);
+        adapter.requestMint(100e6);
+    }
+
+    function test_RequestMint_RevertWhen_ZeroAssets() public {
+        vm.prank(arm);
+        vm.expectRevert(PaxosAssetAdapter.ZeroAssets.selector);
+        adapter.requestMint(0);
+    }
+
+    function test_ClaimMint_RevertWhen_NotARMOrZeroShares() public {
+        vm.prank(alice);
+        vm.expectRevert(PaxosAssetAdapter.OnlyARM.selector);
+        adapter.claimMint(100e6);
+
+        vm.prank(arm);
+        vm.expectRevert(PaxosAssetAdapter.ZeroShares.selector);
+        adapter.claimMint(0);
+    }
+
+    function test_SubmitPaxosMint_RevertWhen_NotOperatorOrOwner() public {
+        vm.prank(alice);
+        vm.expectRevert(OwnableOperable.OnlyOperatorOrOwner.selector);
+        adapter.submitPaxosMint(100e6, bytes32("mint"));
     }
 
     //////////////////////////////////////////////////////
@@ -492,5 +550,186 @@ contract Unit_PaxosAssetAdapter_Test is Test {
 
         assertEq(usdc.balanceOf(arm), 0, "nothing to recover");
         assertEq(usdc.balanceOf(address(adapter)), 100e6, "adapter balance untouched");
+    }
+
+    //////////////////////////////////////////////////////
+    /// --- Paxos mint lifecycle
+    //////////////////////////////////////////////////////
+    function test_MintLifecycle_FullFlow() public {
+        uint256 assets = 500e6;
+        bytes32 mintId = keccak256("paxos-mint-1");
+        usdc.mint(arm, ARM_USDC_BALANCE);
+
+        vm.expectEmit(false, false, false, true, address(adapter));
+        emit PaxosMintRequested(assets, assets);
+        vm.prank(arm);
+        (uint256 assetsRequested, uint256 sharesExpected) = adapter.requestMint(assets);
+
+        assertEq(assetsRequested, assets, "assetsRequested");
+        assertEq(sharesExpected, assets, "sharesExpected");
+        assertEq(usdc.balanceOf(arm), ARM_USDC_BALANCE - assets, "ARM USDC post request");
+        assertEq(usdc.balanceOf(address(adapter)), assets, "adapter USDC post request");
+        assertEq(adapter.pendingMintAssets(), assets, "pendingMintAssets");
+
+        vm.expectEmit(true, true, false, true, address(adapter));
+        emit PaxosMintSubmitted(mintId, assets, paxosRecipient);
+        vm.prank(operator);
+        adapter.submitPaxosMint(assets, mintId);
+
+        assertEq(adapter.pendingMintAssets(), 0, "pending mint cleared");
+        assertEq(adapter.settlingMintAssets(), assets, "mint settling");
+        assertEq(usdc.balanceOf(paxosRecipient), assets, "Paxos funded with USDC");
+
+        // Simulate Paxos minting PYUSD to the adapter.
+        pyusd.mint(address(adapter), assets);
+
+        vm.expectEmit(false, false, false, true, address(adapter));
+        emit PaxosMintClaimed(assets, assets, assets);
+        vm.prank(arm);
+        (uint256 sharesClaimed, uint256 assetsExpected, uint256 sharesReceived) = adapter.claimMint(assets);
+
+        assertEq(sharesClaimed, assets, "sharesClaimed");
+        assertEq(assetsExpected, assets, "assetsExpected");
+        assertEq(sharesReceived, assets, "sharesReceived");
+        assertEq(adapter.settlingMintAssets(), 0, "mint settling cleared");
+        assertEq(pyusd.balanceOf(arm), ARM_PYUSD_BALANCE + assets, "minted PYUSD in ARM");
+    }
+
+    function test_MintLifecycle_PartialFlow() public {
+        usdc.mint(arm, ARM_USDC_BALANCE);
+        vm.prank(arm);
+        adapter.requestMint(500e6);
+        vm.prank(operator);
+        adapter.submitPaxosMint(200e6, bytes32("mint-1"));
+
+        pyusd.mint(address(adapter), 150e6);
+        vm.prank(arm);
+        adapter.claimMint(150e6);
+
+        assertEq(adapter.pendingMintAssets(), 300e6, "unsubmitted mint assets");
+        assertEq(adapter.settlingMintAssets(), 50e6, "unsettled mint assets");
+        assertEq(pyusd.balanceOf(arm), ARM_PYUSD_BALANCE + 150e6, "partial mint claimed");
+    }
+
+    function test_SubmitPaxosMint_RevertWhen_ZeroOrMoreThanPending() public {
+        usdc.mint(arm, ARM_USDC_BALANCE);
+        vm.prank(arm);
+        adapter.requestMint(100e6);
+
+        vm.prank(operator);
+        vm.expectRevert(PaxosAssetAdapter.ZeroAssets.selector);
+        adapter.submitPaxosMint(0, bytes32("zero"));
+
+        vm.prank(operator);
+        vm.expectRevert(PaxosAssetAdapter.MintAmountTooHigh.selector);
+        adapter.submitPaxosMint(100e6 + 1, bytes32("too-high"));
+
+        assertEq(adapter.pendingMintAssets(), 100e6, "pending mint unchanged");
+        assertEq(adapter.settlingMintAssets(), 0, "nothing submitted");
+    }
+
+    function test_SubmitPaxosMint_RevertWhen_RecipientNotConfigured() public {
+        PaxosAssetAdapter impl = new PaxosAssetAdapter(arm, address(pyusd), address(usdc));
+        Proxy proxy = new Proxy();
+        // Simulate an existing proxy upgraded from the pre-mint implementation: the appended
+        // paxosMintRecipient storage slot is zero until governance configures it.
+        proxy.initialize(address(impl), governor, "");
+        PaxosAssetAdapter upgradedAdapter = PaxosAssetAdapter(address(proxy));
+
+        vm.prank(arm);
+        usdc.approve(address(upgradedAdapter), type(uint256).max);
+        usdc.mint(arm, 100e6);
+        vm.prank(arm);
+        upgradedAdapter.requestMint(100e6);
+
+        vm.prank(governor);
+        vm.expectRevert(PaxosAssetAdapter.PaxosRecipientNotConfigured.selector);
+        upgradedAdapter.submitPaxosMint(100e6, bytes32("mint"));
+
+        assertEq(upgradedAdapter.pendingMintAssets(), 100e6, "pending mint preserved");
+    }
+
+    function test_ClaimMint_RevertWhen_MoreThanSettlingOrSettledBalance() public {
+        usdc.mint(arm, ARM_USDC_BALANCE);
+        vm.prank(arm);
+        adapter.requestMint(100e6);
+        vm.prank(operator);
+        adapter.submitPaxosMint(100e6, bytes32("mint"));
+
+        vm.prank(arm);
+        vm.expectRevert(PaxosAssetAdapter.MintAmountTooHigh.selector);
+        adapter.claimMint(100e6 + 1);
+
+        vm.prank(arm);
+        vm.expectRevert(abi.encodeWithSelector(PaxosAssetAdapter.InsufficientMintedShares.selector, 100e6, 0));
+        adapter.claimMint(100e6);
+
+        assertEq(adapter.settlingMintAssets(), 100e6, "settling mint preserved");
+    }
+
+    function test_Redeem_CannotConsumePendingMintUsdc() public {
+        usdc.mint(arm, ARM_USDC_BALANCE);
+        vm.prank(arm);
+        adapter.requestRedeem(100e6);
+        vm.prank(operator);
+        adapter.submitPaxosRedeem(100e6, bytes32("redeem"));
+
+        // This USDC belongs to a pending mint, not to the redemption settlement.
+        vm.prank(arm);
+        adapter.requestMint(100e6);
+
+        vm.prank(arm);
+        vm.expectRevert(abi.encodeWithSelector(PaxosAssetAdapter.InsufficientSettledAssets.selector, 100e6, 0));
+        adapter.redeem(100e6);
+    }
+
+    function test_ClaimMint_CannotConsumePendingRedeemBase() public {
+        usdc.mint(arm, ARM_USDC_BALANCE);
+        vm.prank(arm);
+        adapter.requestMint(100e6);
+        vm.prank(operator);
+        adapter.submitPaxosMint(100e6, bytes32("mint"));
+
+        // These PYUSD shares belong to a pending redemption, not to mint settlement.
+        vm.prank(arm);
+        adapter.requestRedeem(100e6);
+
+        vm.prank(arm);
+        vm.expectRevert(abi.encodeWithSelector(PaxosAssetAdapter.InsufficientMintedShares.selector, 100e6, 0));
+        adapter.claimMint(100e6);
+    }
+
+    function test_RecoverExcessLiquidity_PreservesPendingMintAssets() public {
+        usdc.mint(arm, ARM_USDC_BALANCE);
+        vm.prank(arm);
+        adapter.requestMint(100e6);
+        usdc.mint(address(adapter), 20e6);
+
+        vm.prank(governor);
+        adapter.recoverExcessLiquidity();
+
+        assertEq(usdc.balanceOf(arm), ARM_USDC_BALANCE - 100e6 + 20e6, "only excess returned");
+        assertEq(usdc.balanceOf(address(adapter)), 100e6, "pending mint USDC preserved");
+    }
+
+    function test_RecoverExcessBaseAsset_PreservesMintAndRedeemObligations() public {
+        usdc.mint(arm, ARM_USDC_BALANCE);
+        vm.prank(arm);
+        adapter.requestMint(100e6);
+        vm.prank(operator);
+        adapter.submitPaxosMint(100e6, bytes32("mint"));
+        vm.prank(arm);
+        adapter.requestRedeem(50e6);
+
+        // 50 is queued for redemption, 100 settles the mint, and 20 is excess.
+        pyusd.mint(address(adapter), 120e6);
+
+        vm.expectEmit(true, false, false, true, address(adapter));
+        emit ExcessBaseAssetRecovered(arm, 20e6);
+        vm.prank(governor);
+        adapter.recoverExcessBaseAsset();
+
+        assertEq(pyusd.balanceOf(address(adapter)), 150e6, "all obligations preserved");
+        assertEq(pyusd.balanceOf(arm), ARM_PYUSD_BALANCE - 50e6 + 20e6, "only excess returned");
     }
 }
