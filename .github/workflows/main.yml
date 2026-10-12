@@ -92,7 +92,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       MAINNET_URL: ${{ secrets.MAINNET_URL }}
-      FLY_API_KEY: ${{ secrets.FLY_API_KEY }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -110,7 +109,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       MAINNET_URL: ${{ secrets.MAINNET_URL }}
-      FLY_API_KEY: ${{ secrets.FLY_API_KEY }}
     steps:
       - uses: actions/checkout@v4
         with:
