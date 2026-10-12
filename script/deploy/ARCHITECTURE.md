@@ -1,6 +1,6 @@
 # Deployment Framework
 
-A Foundry-based deployment framework that orchestrates smart contract deployments across Ethereum Mainnet and Sonic. It tracks deployment history in JSON, resolves cross-script contract addresses via an in-memory registry, builds and simulates governance proposals end-to-end on forks, and produces ready-to-submit calldata for real deployments — all driven by numbered scripts that are automatically discovered, ordered, and replayed.
+A Foundry-based deployment framework that orchestrates smart contract deployments on Ethereum Mainnet. It tracks deployment history in JSON, resolves cross-script contract addresses via an in-memory registry, builds and simulates governance proposals end-to-end on forks, and produces ready-to-submit calldata for real deployments — all driven by numbered scripts that are automatically discovered, ordered, and replayed.
 
 ## Table of Contents
 
@@ -53,9 +53,8 @@ script/deploy/
 │   ├── GovHelper.sol                    # Governance proposal building, encoding, simulation
 │   ├── Logger.sol                       # ANSI-styled console logging
 │   ├── Resolver.sol                     # Contract address registry (vm.etched singleton)
-├── mainnet/                             # Ethereum Mainnet scripts (001_, 002_, ...)
-│   └── 000_Example.s.sol               # Reference template (skip = true)
-└── sonic/                               # Sonic chain scripts
+└── mainnet/                             # Ethereum Mainnet scripts (001_, 002_, ...)
+    └── 000_Example.s.sol               # Reference template (skip = true)
 ```
 
 **High-level flow:**
@@ -214,7 +213,6 @@ This filtering enables **historical fork replay**: set `FORK_BLOCK_NUMBER_MAINNE
 
 Determines the script folder based on chain ID:
 - Chain `1` → `script/deploy/mainnet/`
-- Chain `146` → `script/deploy/sonic/`
 
 Reads all files via `vm.readDir()`, which returns entries in alphabetical order. This is why scripts use numeric prefixes (`001_`, `002_`, ...) — it guarantees execution order.
 
@@ -567,7 +565,7 @@ Fork tests (`test/fork/`) are **independent** of the deployment framework. They 
 
 ### Pinned-Block Testing
 
-Set `FORK_BLOCK_NUMBER_MAINNET` (or `FORK_BLOCK_NUMBER_SONIC`) to pin smoke tests to a specific block. The framework's timestamp filtering in `_preDeployment()` automatically excludes deployments and governance executions that happened after that block, producing a historically accurate state.
+Set `FORK_BLOCK_NUMBER_MAINNET` to pin smoke tests to a specific block. The framework's timestamp filtering in `_preDeployment()` automatically excludes deployments and governance executions that happened after that block, producing a historically accurate state.
 
 ---
 
@@ -578,9 +576,6 @@ Set `FORK_BLOCK_NUMBER_MAINNET` (or `FORK_BLOCK_NUMBER_SONIC`) to pin smoke test
 ```bash
 # Mainnet simulation (FORK_DEPLOYING state)
 make simulate
-
-# Sonic simulation
-make simulate NETWORK=sonic
 ```
 
 Simulation runs the full pipeline with `vm.prank` instead of `vm.broadcast`. Governance proposals are simulated end-to-end. Writes go to a temporary fork file.
@@ -590,9 +585,6 @@ Simulation runs the full pipeline with `vm.prank` instead of `vm.broadcast`. Gov
 ```bash
 # Ethereum Mainnet (requires deployerKey wallet, DEPLOYER_ADDRESS, MAINNET_URL, ETHERSCAN_API_KEY)
 make deploy-mainnet
-
-# Sonic (requires deployerKey wallet, DEPLOYER_ADDRESS, SONIC_URL)
-make deploy-sonic
 
 # Local Anvil node
 make deploy-local
@@ -627,11 +619,9 @@ Copy `.env.example` to `.env` and fill in the required values.
 | Variable | Required For | Purpose |
 |----------|-------------|---------|
 | `MAINNET_URL` | Fork tests, smoke tests, mainnet deploy, simulate | Ethereum RPC endpoint |
-| `SONIC_URL` | Sonic fork tests, Sonic deploy | Sonic RPC endpoint |
 | `DEPLOYER_ADDRESS` | All real deployments | Must match the `deployerKey` wallet |
 | `ETHERSCAN_API_KEY` | Mainnet deploy (`--verify`) | Contract verification on Etherscan |
 | `FORK_BLOCK_NUMBER_MAINNET` | Optional | Pin fork to specific block for deterministic testing |
-| `FORK_BLOCK_NUMBER_SONIC` | Optional | Pin Sonic fork to specific block |
 | `TESTNET_URL` | Tenderly testnet deploy | Tenderly RPC endpoint |
 | `LOCAL_URL` | Local Anvil deploy | Local node endpoint |
 

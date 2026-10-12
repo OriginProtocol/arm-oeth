@@ -37,7 +37,6 @@ At a minimum, set:
 | Variable | Purpose |
 |----------|---------|
 | `MAINNET_URL` | Ethereum RPC endpoint (required for fork tests, smoke tests, simulation, and mainnet deploys) |
-| `SONIC_URL` | Sonic RPC endpoint (required for Sonic deploys) |
 | `DEPLOYER_ADDRESS` | Address corresponding to your deployer private key |
 | `ETHERSCAN_API_KEY` | Needed for contract verification on mainnet (`--verify` flag) |
 
@@ -67,7 +66,6 @@ All three identifiers **must match exactly** — if they drift, the script will 
 
 Place the file in the correct network folder:
 - Ethereum Mainnet → `script/deploy/mainnet/`
-- Sonic → `script/deploy/sonic/`
 
 ### Minimal template
 
@@ -144,9 +142,6 @@ What to look for:
 ```bash
 # Mainnet simulation
 make simulate
-
-# Sonic simulation
-make simulate NETWORK=sonic
 ```
 
 Simulation runs the full deployment pipeline on a fork using `vm.prank` instead of `vm.broadcast`. No real transactions are sent. Governance proposals are simulated through the entire Governor lifecycle (propose → vote → queue → execute).
@@ -160,12 +155,9 @@ This is identical to a real deployment except nothing goes on-chain. Check the l
 ```bash
 # Ethereum Mainnet
 make deploy-mainnet
-
-# Sonic
-make deploy-sonic
 ```
 
-This broadcasts real transactions and verifies contracts on Etherscan (mainnet) or the block explorer (Sonic).
+This broadcasts real transactions and verifies contracts on Etherscan.
 
 **If your script includes governance actions:**
 - The deploy command will print the `propose()` calldata.

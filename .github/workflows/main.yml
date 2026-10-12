@@ -93,7 +93,6 @@ jobs:
     env:
       MAINNET_URL: ${{ secrets.MAINNET_URL }}
       FLY_API_KEY: ${{ secrets.FLY_API_KEY }}
-      SONIC_URL: ${{ secrets.SONIC_URL }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -112,7 +111,6 @@ jobs:
     env:
       MAINNET_URL: ${{ secrets.MAINNET_URL }}
       FLY_API_KEY: ${{ secrets.FLY_API_KEY }}
-      SONIC_URL: ${{ secrets.SONIC_URL }}
     steps:
       - uses: actions/checkout@v4
         with:

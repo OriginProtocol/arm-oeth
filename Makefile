@@ -123,19 +123,14 @@ deploy-testnet:
 	forge build
 	@forge script $(DEPLOY_SCRIPT) --rpc-url $(TESTNET_URL) --broadcast --slow --unlocked -vvvv
 
-deploy-sonic:
-	forge build
-	@forge script $(DEPLOY_SCRIPT) --rpc-url $(SONIC_URL) $(DEPLOY_BASE) --verify -vvv
-
 # ╔══════════════════════════════════════════════════════════════════════════════╗
 # ║                                 SIMULATE                                     ║
 # ╚══════════════════════════════════════════════════════════════════════════════╝
 
-# Simulate deployment: make simulate (mainnet) or make simulate NETWORK=sonic
-NETWORK ?= mainnet
+# Simulate deployment on a fork of mainnet
 simulate:
 	forge build
-	@forge script $(DEPLOY_SCRIPT) --fork-url $(if $(filter sonic,$(NETWORK)),$(SONIC_URL),$(MAINNET_URL)) -vvvv
+	@forge script $(DEPLOY_SCRIPT) --fork-url $(MAINNET_URL) -vvvv
 
 # ╔══════════════════════════════════════════════════════════════════════════════╗
 # ║                            UPDATE DEPLOYMENTS                                ║
@@ -184,5 +179,5 @@ frame:
 
 .PHONY: test test-base test-unit test-fork test-smoke test-invariants \
         coverage coverage-html gas snapshot \
-        deploy-mainnet deploy-local deploy-testnet deploy-sonic simulate \
+        deploy-mainnet deploy-local deploy-testnet simulate \
         update-deployments match clean clean-crytic clean-all install frame

@@ -1,4 +1,3 @@
-const { parseUnits } = require("ethers");
 const { subtask, task, types } = require("hardhat/config");
 
 const { mainnet } = require("../utils/addresses");
@@ -15,11 +14,6 @@ const {
 } = require("./lido");
 const { setPrices } = require("./armPrices");
 const { allocate, collectFees, setARMBuffer } = require("./admin");
-const {
-  collectRewards,
-  harvestRewards,
-  setHarvester,
-} = require("./sonicHarvest");
 const { claimMerklRewards, collectMorphoRewards } = require("./rewards");
 const { requestLidoWithdrawals, claimLidoWithdrawals } = require("./lidoQueue");
 const {
@@ -66,11 +60,8 @@ const {
   redeemAll,
 } = require("./vault");
 const { upgradeProxy } = require("./proxy");
-const { flyTradeQuote, flyTradeTx } = require("../utils/fly");
 const { setOperator } = require("./governance");
 const { tenderlySync, tenderlyUpload } = require("./tenderly");
-
-const { setOSSiloPrice } = require("./osSiloPrice");
 
 const log = require("../utils/logger")("task");
 
@@ -872,97 +863,18 @@ task("collectFees").setAction(async (_, __, runSuper) => {
 });
 
 subtask("collectRewards", "Collect rewards")
-  .addOptionalParam(
+  .addParam(
     "arm",
-    "The name of the ARM to collect rewards for. eg Lido or Origin",
-    "Origin",
+    "The name of the ARM to collect rewards for. eg Lido or EtherFi",
+    undefined,
     types.string,
   )
   .setAction(async ({ arm }) => {
     const signer = await getSigner();
 
-    if (arm === "Origin") {
-      const siloMarketAddress = await parseDeployedAddress(
-        "SILO_VARLAMORE_S_MARKET",
-      );
-
-      const harvesterAddress =
-        arm === "Origin" ? await parseDeployedAddress("HARVESTER") : undefined;
-      const harvester = await ethers.getContractAt(
-        "SonicHarvester",
-        harvesterAddress,
-      );
-
-      await collectRewards({
-        signer,
-        harvester,
-        strategies: [siloMarketAddress],
-      });
-
-      return;
-    }
-
     await collectMorphoRewards({ arm, signer });
   });
 task("collectRewards").setAction(async (_, __, runSuper) => {
-  return runSuper();
-});
-
-subtask("harvestRewards", "harvest rewards")
-  .addOptionalParam(
-    "arm",
-    "The name of the ARM. eg Lido or Origin",
-    "Origin",
-    types.string,
-  )
-  .addOptionalParam(
-    "token",
-    "The symbol of the reward token. eg Silo, beS, OS",
-    "Silo",
-    types.string,
-  )
-  .setAction(async ({ token }) => {
-    const signer = await getSigner();
-
-    const harvesterAddress = await parseDeployedAddress("HARVESTER");
-    const harvester = await ethers.getContractAt(
-      "SonicHarvester",
-      harvesterAddress,
-    );
-
-    await harvestRewards({ signer, harvester, symbol: token });
-  });
-task("harvestRewards").setAction(async (_, __, runSuper) => {
-  return runSuper();
-});
-
-subtask("setHarvester", "Set the harvester on a lending market")
-  .addOptionalParam(
-    "arm",
-    "The name of the ARM. eg Lido, Origin or EtherFi",
-    "Origin",
-    types.string,
-  )
-  .addParam("harvester", "Address of the harvester.", undefined, types.string)
-  .setAction(async ({ arm, harvester }) => {
-    const signer = await getSigner();
-
-    const lendingMarketName =
-      arm === "Origin"
-        ? "SILO_VARLAMORE_S_MARKET"
-        : arm === "Lido"
-          ? "MORPHO_MARKET_MEVCAPITAL"
-          : `MORPHO_MARKET_${arm.toUpperCase()}`;
-    const lendingMarketWrapperAddress =
-      await parseDeployedAddress(lendingMarketName);
-    const lendingMarketWrapper = await ethers.getContractAt(
-      "SiloMarket",
-      lendingMarketWrapperAddress,
-    );
-
-    await setHarvester({ signer, lendingMarketWrapper, harvester });
-  });
-task("setHarvester").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
 
@@ -1345,174 +1257,6 @@ subtask("tenderlyUpload", "Uploads a contract to Tenderly.")
   .addParam("name", "The contract's name", undefined, types.string)
   .setAction(tenderlyUpload);
 task("tenderlyUpload").setAction(async (_, __, runSuper) => {
-  return runSuper();
-});
-
-// FlyTrade
-subtask("flyTradeQuote", "Get a Fly quote for a swap")
-  .addOptionalParam("from", "Token symbol to swap from.", "SILO", types.string)
-  .addOptionalParam("to", "Token symbol to swap to.", "WS", types.string)
-  .addOptionalParam("amount", "Amount of tokens to sell", 1, types.float)
-  .addOptionalParam("slippage", "Max allowed slippage", 0.005, types.float)
-  .addOptionalParam(
-    "swapper",
-    "Account or contract swapping the from tokens",
-    "0x08876C0F5a80c1a43A6396b13A881A26F4b6Adfe",
-    types.string,
-  )
-  .addOptionalParam(
-    "recipient",
-    "Where the swapped tokens are sent",
-    "0x2F872623d1E1Af5835b08b0E49aAd2d81d649D30",
-    types.string,
-  )
-  .setAction(async (taskArgs) => {
-    const amount = parseUnits(taskArgs.amount.toString(), 18);
-
-    try {
-      await flyTradeQuote({ ...taskArgs, amount });
-    } catch (err) {
-      // If the upstream FlyTrade API returned Cloudflare error 525 (SSL
-      // handshake failure between Cloudflare and the origin server), emit a
-      // sentinel hex so the FFI caller in Solidity can vm.skip the test
-      // rather than fail on flaky external infrastructure. Any other error
-      // is rethrown unchanged.
-      let cur = err;
-      while (cur) {
-        if (cur?.response?.status === 525) {
-          // Sentinel must match the constant in test/fork/Harvester/shared/Helpers.sol
-          console.log("0xc10ad11ae525");
-          return;
-        }
-        cur = cur.cause;
-      }
-      throw err;
-    }
-  });
-task("flyTradeQuote").setAction(async (_, __, runSuper) => {
-  return runSuper();
-});
-
-subtask("flyTradeTx", "Get a Fly swap tx based on a previous quote")
-  .addParam(
-    "id",
-    "Identifier returned from a previous quote.",
-    undefined,
-    types.string,
-  )
-  .setAction(async (taskArgs) => {
-    await flyTradeTx(taskArgs);
-  });
-task("flyTradeTx").setAction(async (_, __, runSuper) => {
-  return runSuper();
-});
-
-// OS Silo Prices
-subtask(
-  "setOSSiloPrice",
-  "Update Origin ARM's swap prices based on lending APY and market pricing",
-)
-  .addOptionalParam(
-    "arm",
-    "Name of the ARM. currently only Origin",
-    "Origin",
-    types.string,
-  )
-  .addOptionalParam(
-    "marketPremium",
-    "Basis points to add to the market buy price. eg 0.3 = 0.003%",
-    0.3,
-    types.string,
-  )
-  .addOptionalParam(
-    "lendPremium",
-    "Basis points to add to the annual lending rate. eg 0.3 = 0.003%",
-    0.3,
-    types.string,
-  )
-  .addOptionalParam(
-    "tolerance",
-    "Allowed difference in basis points. eg 1 = 0.0001%",
-    0.1,
-    types.float,
-  )
-  .addOptionalParam("execute", "Execute the transaction", false, types.boolean)
-  .addOptionalParam("block", "Block number or latest", "latest", types.string)
-  .addOptionalParam(
-    "market",
-    "Aggregator to get market pricing",
-    "1inch",
-    types.string,
-  )
-  .addOptionalParam(
-    "minSellPrice",
-    "The min sell price when pricing off market. eg 1Inch or Curve",
-    undefined,
-    types.float,
-  )
-  .addOptionalParam(
-    "maxSellPrice",
-    "The max sell price when pricing off market. eg 1Inch or Curve",
-    undefined,
-    types.float,
-  )
-  .addOptionalParam(
-    "maxBuyPrice",
-    "The max buy price when pricing off market. eg 1Inch or Curve",
-    undefined,
-    types.float,
-  )
-  .addOptionalParam(
-    "minBuyPrice",
-    "The min buy price when pricing off market. eg 1Inch or Curve",
-    undefined,
-    types.float,
-  )
-  .setAction(async (taskArgs) => {
-    const signer = await getSigner();
-
-    const armContract = await resolveArmContract(taskArgs.arm);
-
-    // Get the SiloMarketWrapper contract
-    const activeMarket = await armContract.activeMarket();
-    const siloMarketWrapper =
-      activeMarket === ethers.ZeroAddress
-        ? undefined
-        : await hre.ethers.getContractAt(
-            ["function market() external view returns (address)"],
-            activeMarket,
-            signer,
-          );
-
-    // Get the WS and OS token contracts
-    const wSAddress = await parseAddress("WS");
-    const wS = await hre.ethers.getContractAt(
-      [`function balanceOf(address owner) external view returns (uint256)`],
-      wSAddress,
-    );
-
-    const oSAddress = await parseAddress("OS");
-    const oS = await hre.ethers.getContractAt(
-      [`function balanceOf(address owner) external view returns (uint256)`],
-      oSAddress,
-    );
-
-    // Get the Vault contract
-    const vaultAddress = await armContract.vault();
-    const vault = await ethers.getContractAt("IOriginVault", vaultAddress);
-
-    await setOSSiloPrice({
-      ...taskArgs,
-      signer,
-      arm: armContract,
-      siloMarketWrapper,
-      wS,
-      oS,
-      vault,
-      blockTag: taskArgs.block,
-    });
-  });
-task("setOSSiloPrice").setAction(async (_, __, runSuper) => {
   return runSuper();
 });
 

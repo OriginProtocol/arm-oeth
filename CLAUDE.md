@@ -32,7 +32,7 @@ Linting: `forge fmt --check` (Solidity), `pnpm lint` (JS), `pnpm prettier:check`
 
 ## Environment Setup
 
-Copy `.env.example` to `.env` and set `PROVIDER_URL` (Ethereum RPC) and `SONIC_URL` (Sonic RPC). Fork tests require these RPC endpoints.
+Copy `.env.example` to `.env` and set `PROVIDER_URL` (Ethereum RPC). Fork tests require this RPC endpoint.
 
 ## Architecture
 
@@ -50,7 +50,7 @@ Concrete implementations (`LidoARM.sol`, `EtherFiARM.sol`, `EthenaARM.sol`, `Ori
 
 ### Market Adapters (`src/contracts/markets/`)
 
-`Abstract4626MarketWrapper.sol` wraps ERC-4626 lending markets (Morpho, Silo) so the ARM can deposit idle liquidity. Concrete: `MorphoMarket.sol`, `SiloMarket.sol`.
+`Abstract4626MarketWrapper.sol` wraps ERC-4626 lending markets (Morpho) so the ARM can deposit idle liquidity. Concrete: `MorphoMarket.sol`.
 
 ### Proxy Pattern
 
@@ -69,13 +69,11 @@ All ARMs are deployed behind `Proxy.sol` (EIP-1967) for upgradeability.
 
 ## Deployment
 
-Deployment scripts are in `script/deploy/` organized by chain (`mainnet/`, `sonic/`). `DeployManager.sol` orchestrates execution based on chain ID.
+Deployment scripts are in `script/deploy/mainnet/`. `DeployManager.sol` orchestrates execution based on chain ID.
 
 ```bash
 make deploy              # Mainnet with verification
-make deploy-sonic        # Sonic chain
 make simulate-deploys    # Dry run mainnet
-make simulate-sonic-deploys  # Dry run Sonic
 ```
 
 ## Key Conventions

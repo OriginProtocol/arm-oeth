@@ -14,7 +14,7 @@ import {State, Execution, Contract, Root, NO_GOVERNANCE} from "script/deploy/hel
 import {Base} from "script/deploy/Base.s.sol";
 
 /// @title DeployManager
-/// @notice Manages the deployment of contracts across multiple chains (Mainnet, Sonic).
+/// @notice Manages the deployment of contracts on Ethereum Mainnet.
 /// @dev This contract orchestrates the deployment process by:
 ///      1. Reading deployment scripts from chain-specific folders
 ///      2. Dynamically loading and executing only the most recent scripts
@@ -103,14 +103,11 @@ contract DeployManager is Base {
 
         // Determine the deployment scripts folder path based on chain ID
         // - Chain ID 1 = Ethereum Mainnet -> use mainnet folder
-        // - Chain ID 146 = Sonic -> use sonic folder
-        // - Other chains = empty string (will revert)
+        // - Other chains = revert
         uint256 chainId = block.chainid;
         string memory path;
         if (chainId == 1) {
             path = string(abi.encodePacked(projectRoot, "/script/deploy/mainnet/"));
-        } else if (chainId == 146) {
-            path = string(abi.encodePacked(projectRoot, "/script/deploy/sonic/"));
         } else {
             revert("Unsupported chain");
         }

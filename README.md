@@ -269,14 +269,7 @@ In the `.env` file, set `DEPLOYER_ADDRESS` (should match the privateKey you regi
 make deploy-mainnet
 ```
 
-### Sonic
-
-In the `.env` file, set `DEPLOYER_ADDRESS` (should match the privateKey you registered wit `cast wallet import deployerKey`) and `SONIC_URL` to the mainnet values.
-
-```bash
-make deploy-sonic
-```
-
+## Contract Verification
 ## Contract Verification
 
 If the verification doesn't work with the deployment, it can be done separately with forge `verify-contract`.
@@ -303,10 +296,9 @@ environment.
 ```bash
 # Sync all deployment aliases from the current chain's deployment file
 yarn hardhat tenderlySync --network mainnet
-yarn hardhat tenderlySync --network sonic
 
 # Upload a deployment alias from the current chain's deployment file
-yarn hardhat tenderlyUpload --network sonic --name ORIGIN_ARM
+yarn hardhat tenderlyUpload --network mainnet --name ETH_ARM
 ```
 
 ## Automated Actions (Talos)
