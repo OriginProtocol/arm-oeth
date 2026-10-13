@@ -129,14 +129,14 @@ jobs:
   # ║                              INVARIANT TESTS                                 ║
   # ╚══════════════════════════════════════════════════════════════════════════════╝
   # Profile selection:
-  #   - ci:   schedule, workflow_dispatch, push to main
-  #   - lite: pull_request, push to feature branches
+  #   - ci:   schedule, workflow_dispatch (full runs; Medusa fuzzing only runs here)
+  #   - lite: pull_request, push (including main; the nightly schedule already runs ci on main daily)
 
   invariant-tests-LidoARM:
     name: Invariant Tests - LidoARM
     runs-on: ubuntu-latest
     env:
-      FOUNDRY_PROFILE: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'ci' || 'lite' }}
+      FOUNDRY_PROFILE: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && 'ci' || 'lite' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -154,7 +154,7 @@ jobs:
     name: Invariant Tests - EthenaARM
     runs-on: ubuntu-latest
     env:
-      FOUNDRY_PROFILE: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'ci' || 'lite' }}
+      FOUNDRY_PROFILE: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && 'ci' || 'lite' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -169,12 +169,6 @@ jobs:
           forge test --summary --fail-fast --show-progress
 
       # Medusa fuzzing (only on full runs)
-      - name: Setup Go
-        if: env.FOUNDRY_PROFILE == 'ci'
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.21'
-
       - name: Set up Python
         if: env.FOUNDRY_PROFILE == 'ci'
         uses: actions/setup-python@v5
@@ -183,11 +177,30 @@ jobs:
 
       - name: Install Crytic Compile
         if: env.FOUNDRY_PROFILE == 'ci'
-        run: pip install crytic-compile
+        # Pinned so a new PyPI release cannot change the compiler Medusa drives.
+        # To bump: take the latest version from https://pypi.org/project/crytic-compile/
+        # and re-check test/invariants/EthenaARM/medusa.json against the Medusa release used below.
+        run: pip install crytic-compile==0.4.2
 
-      - name: Install Medusa from Source
+      - name: Install Medusa (pinned release binary)
         if: env.FOUNDRY_PROFILE == 'ci'
-        run: go install github.com/crytic/medusa@latest
+        env:
+          # To bump: pick the newest non-prerelease tag (`gh release list -R crytic/medusa --limit 5`),
+          # then set MEDUSA_SHA256 to the `digest` of its medusa-linux-x64.tar.gz asset
+          # (`gh release view <tag> -R crytic/medusa --json assets`). Change both together.
+          MEDUSA_VERSION: v1.5.1
+          MEDUSA_SHA256: ddfe1517ae9028ef9fc331b00f5a6a9d5406f3fcd11a715d60c6b6fb3e4546d3
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/medusa-linux-x64.tar.gz"
+          curl -fsSL --retry 3 -o "$archive" \
+            "https://github.com/crytic/medusa/releases/download/${MEDUSA_VERSION}/medusa-linux-x64.tar.gz"
+          echo "${MEDUSA_SHA256}  ${archive}" | sha256sum -c -
+          tar -xzf "$archive" -C "$RUNNER_TEMP" medusa
+          mkdir -p "$HOME/.local/bin"
+          install -m 0755 "$RUNNER_TEMP/medusa" "$HOME/.local/bin/medusa"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          "$HOME/.local/bin/medusa" --version
 
       - name: Run Medusa
         if: env.FOUNDRY_PROFILE == 'ci'
