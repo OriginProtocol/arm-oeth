@@ -23,7 +23,7 @@ import {MockAssetAdapter} from "../mocks/MockAssetAdapter.sol";
 ///         the happy-path test asserts that side effect explicitly so the test
 ///         catches removal of any of those behaviors.
 contract Unit_MultiAssetARM_Admin_Test is Unit_MultiAssetARM_Shared_Test {
-    // Valid price defaults inside the [PRICE_SCALE - MAX_CROSS_PRICE_DEVIATION, PRICE_SCALE] band.
+    // Valid price defaults with cross price above the configured lower bound.
     uint256 internal constant CROSS_PRICE_DEFAULT = 1e36;
     uint256 internal constant BUY_PRICE_DEFAULT = 992 * 1e33; // 0.992e36
     uint256 internal constant SELL_PRICE_DEFAULT = 1001 * 1e33; // 1.001e36
@@ -259,18 +259,35 @@ contract Unit_MultiAssetARM_Admin_Test is Unit_MultiAssetARM_Shared_Test {
         );
     }
 
+    function test_AddBaseAsset_CrossPriceAtUpperBound() public {
+        uint256 upperBound = PRICE_SCALE + MAX_CROSS_PRICE_DEVIATION;
+        vm.prank(governor);
+        arm.addBaseAsset(
+            address(peg18),
+            address(adapterPeg18),
+            BUY_PRICE_DEFAULT,
+            upperBound,
+            LIQUIDITY_DEFAULT,
+            LIQUIDITY_DEFAULT,
+            upperBound,
+            true
+        );
+
+        assertEq(crossPrice(peg18), upperBound, "crossPrice at upper bound");
+    }
+
     function test_AddBaseAsset_RevertWhen_CrossPriceTooHigh() public {
-        // Cross price strictly above PRICE_SCALE (= 1e36) reverts. Equality is allowed.
+        uint256 tooHigh = PRICE_SCALE + MAX_CROSS_PRICE_DEVIATION + 1;
         vm.prank(governor);
         vm.expectRevert(AbstractARM.CrossPriceTooHigh.selector);
         arm.addBaseAsset(
             address(peg18),
             address(adapterPeg18),
             BUY_PRICE_DEFAULT,
-            SELL_PRICE_DEFAULT,
+            tooHigh,
             LIQUIDITY_DEFAULT,
             LIQUIDITY_DEFAULT,
-            PRICE_SCALE + 1,
+            tooHigh,
             true
         );
     }
@@ -473,11 +490,23 @@ contract Unit_MultiAssetARM_Admin_Test is Unit_MultiAssetARM_Shared_Test {
         arm.setCrossPrice(address(peg18), PRICE_SCALE - MAX_CROSS_PRICE_DEVIATION - 1);
     }
 
+    function test_SetCrossPrice_AtUpperBound() public {
+        addBaseAsset(peg18);
+        uint256 upperBound = PRICE_SCALE + MAX_CROSS_PRICE_DEVIATION;
+
+        vm.prank(governor);
+        arm.setPrices(address(peg18), BUY_PRICE_DEFAULT, upperBound, 1 ether, 1 ether);
+        vm.prank(governor);
+        arm.setCrossPrice(address(peg18), upperBound);
+
+        assertEq(crossPrice(peg18), upperBound, "crossPrice at upper bound");
+    }
+
     function test_SetCrossPrice_RevertWhen_TooHigh() public {
         addBaseAsset(peg18);
         vm.prank(governor);
         vm.expectRevert(AbstractARM.CrossPriceTooHigh.selector);
-        arm.setCrossPrice(address(peg18), PRICE_SCALE + 1);
+        arm.setCrossPrice(address(peg18), PRICE_SCALE + MAX_CROSS_PRICE_DEVIATION + 1);
     }
 
     function test_SetCrossPrice_RevertWhen_SellBelowNewCross() public {
