@@ -14,9 +14,7 @@ import {EthenaAssetAdapter} from "contracts/adapters/EthenaAssetAdapter.sol";
 import {EtherFiAssetAdapter} from "contracts/adapters/EtherFiAssetAdapter.sol";
 import {OriginAssetAdapter} from "contracts/adapters/OriginAssetAdapter.sol";
 import {WrappedOriginAssetAdapter} from "contracts/adapters/WrappedOriginAssetAdapter.sol";
-import {SonicHarvester} from "contracts/SonicHarvester.sol";
 import {CapManager} from "contracts/CapManager.sol";
-import {SiloMarket} from "contracts/markets/SiloMarket.sol";
 import {ZapperLidoARM} from "contracts/ZapperLidoARM.sol";
 import {MorphoMarket} from "contracts/markets/MorphoMarket.sol";
 
@@ -43,25 +41,19 @@ abstract contract Base_Test_ is Test {
     Proxy public ethenaProxy;
     Proxy public etherfiProxy;
     Proxy public originARMProxy;
-    Proxy public harvesterProxy;
     Proxy public morphoMarketProxy;
     LidoARM public lidoARM;
     EthenaARM public ethenaARM;
     EtherFiARM public etherfiARM;
-    SonicHarvester public harvester;
     OriginARM public originARM;
     EthenaAssetAdapter public ethenaAssetAdapter;
     EtherFiAssetAdapter public etherfiAssetAdapter;
     OriginAssetAdapter public originAssetAdapter;
     WrappedOriginAssetAdapter public wrappedOriginAssetAdapter;
     CapManager public capManager;
-    SiloMarket public siloMarket;
     MorphoMarket public morphoMarket;
     ZapperLidoARM public zapperLidoARM;
 
-    IERC20 public ws;
-    IERC20 public os;
-    IERC20 public wos;
     IERC20 public usde;
     IERC20 public oeth;
     IERC4626 public woeth;
@@ -124,12 +116,8 @@ abstract contract Base_Test_ is Test {
         _labelNotNull(address(lidoARM), "LIDO ARM");
         _labelNotNull(address(originARM), "ORIGIN ARM");
         _labelNotNull(address(capManager), "CAP MANAGER");
-        _labelNotNull(address(siloMarket), "SILO MARKET ADAPTER");
         _labelNotNull(address(morphoMarket), "MORPHO MARKET ADAPTER");
 
-        _labelNotNull(address(ws), "WS");
-        _labelNotNull(address(os), "OS");
-        _labelNotNull(address(wos), "WOS");
         _labelNotNull(address(usde), "USDE");
         _labelNotNull(address(oeth), "OETH");
         _labelNotNull(address(woeth), "WOETH");

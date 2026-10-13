@@ -57,13 +57,11 @@ range, tolerance, and quote-amount flags apply to every selected base.
 
 Every `allocate*` action accepts an optional `--threshold` in the ARM's
 liquidity asset and defaults to: Lido `100 WETH`, EtherFi `20 WETH`, Ethena
-`30,000 USDe`, USDC `15,000 USDC`, WETH `100 WETH`, OETH `100 WETH`, and
-Sonic `10,000 wS`. The threshold skips small liquidity
+`30,000 USDe`, USDC `15,000 USDC`, WETH `100 WETH`, OETH `100 WETH`. The threshold skips small liquidity
 deltas; the ARM contract determines the actual amount allocated.
 
 The allocation actions also accept an optional `--max-gas-price` in gwei. It
-defaults to `5` for Lido, EtherFi, Ethena, USDC, and WETH, and `500` for OETH
-and Sonic.
+defaults to `5` for Lido, EtherFi, Ethena, USDC, and WETH, and `500` for OETH.
 
 ## Lido ARM — mainnet
 
@@ -117,17 +115,6 @@ and Sonic.
 | `allocateWETH`                                                                                                                                                     | `38,08 * * * *`         | Allocate liquidity for WETH ARM                |
 | `setPricesWETH --bases STETH,WSTETH --fee 0.6 --inch false --kyber true --tolerance 0.1 --amount 30 --offset 0.3 --max-buy-price 0.99996 --min-sell-price 0.99998` | `*/10 * * * *`          | Set WETH ARM prices for Lido base assets       |
 | `setPricesWETH --bases EETH,WEETH --fee 0.6 --inch false --kyber true --tolerance 0.1 --amount 30 --offset 0.3 --max-buy-price 0.99996 --min-sell-price 0.99998`   | `2-59/10 * * * *`       | Set WETH ARM prices for Ether.fi base assets   |
-
-## Origin ARM — Sonic
-
-| Action                     | Cron            | Description                                             |
-| -------------------------- | --------------- | ------------------------------------------------------- |
-| `autoRequestWithdrawSonic` | `48,18 * * * *` | Request withdrawals from Origin ARM on Sonic            |
-| `autoClaimWithdrawSonic`   | `10 * * * *`    | Claim withdrawals from Origin ARM on Sonic and allocate |
-| `collectFeesSonic`         | `55 23 * * *`   | Collect fees from Origin ARM on Sonic                   |
-| `allocateSonic`            | `1,31 * * * *`  | Allocate liquidity for Origin ARM on Sonic              |
-| `setOSSiloPriceAction`     | `*/30 * * * *`  | Set prices on Sonic ARM                                 |
-| `collectRewardsSonic`      | `45 23 * * *`   | Collect rewards from the Sonic harvester                |
 
 ## System
 

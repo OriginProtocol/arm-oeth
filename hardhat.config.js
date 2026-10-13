@@ -100,10 +100,6 @@ module.exports = {
       url: `${process.env.HOLESKY_URL}`,
       chainId: 17000,
     },
-    sonic: {
-      url: `${process.env.SONIC_URL}`,
-      chainId: 146,
-    },
     testnet: {
       url: `${process.env.TESTNET_URL}`,
       chainId: 1,

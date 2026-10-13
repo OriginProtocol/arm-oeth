@@ -27,7 +27,6 @@ services:
     environment:
       - DATABASE_URL=${DATABASE_URL:-postgresql://nonce:nonce@postgres:5432/nonce_queue}
       - MAINNET_URL=${MAINNET_URL:-}
-      - SONIC_URL=${SONIC_URL:-}
       - HOLESKY_URL=${HOLESKY_URL:-}
       - ACTION_API_BEARER_TOKEN=${ACTION_API_BEARER_TOKEN:-test-token}
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}

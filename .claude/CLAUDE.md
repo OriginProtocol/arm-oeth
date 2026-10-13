@@ -32,7 +32,7 @@ Linting: `forge fmt --check` (Solidity), `pnpm lint` (JS), `pnpm prettier:check`
 
 ## Environment Setup
 
-Copy `.env.example` to `.env` and set `MAINNET_URL` (Ethereum RPC) and `SONIC_URL` (Sonic RPC). Fork tests require these RPC endpoints.
+Copy `.env.example` to `.env` and set `MAINNET_URL` (Ethereum RPC). Fork tests require this RPC endpoint.
 
 ## Architecture
 
@@ -53,14 +53,13 @@ Concrete implementations (`LidoARM.sol`, `EtherFiARM.sol`, `EthenaARM.sol`, `Ori
 - **CapManager.sol** - Manages capital limits (total assets cap and per-LP caps)
 - **EthenaUnstaker.sol** - Helper allowing multiple parallel sUSDe cooldowns for EthenaARM
 - **ZapperARM.sol / ZapperLidoARM.sol** - Convenience wrappers for depositing native ETH
-- **SonicHarvester.sol** - Collects rewards from strategies and swaps them for ARM liquidity tokens on Sonic
 - **PendleOriginARMSY.sol** (`src/contracts/pendle/`) - Pendle SY adapter for ARM integration
 - **Interfaces.sol** - Shared interface definitions
 - **Addresses.sol** (`src/contracts/utils/`) - On-chain address registry
 
 ### Market Adapters (`src/contracts/markets/`)
 
-`Abstract4626MarketWrapper.sol` wraps ERC-4626 lending markets (Morpho, Silo) so the ARM can deposit idle liquidity. Concrete: `MorphoMarket.sol`, `SiloMarket.sol`.
+`Abstract4626MarketWrapper.sol` wraps ERC-4626 lending markets (Morpho) so the ARM can deposit idle liquidity. Concrete: `MorphoMarket.sol`.
 
 ### Proxy Pattern
 
@@ -80,13 +79,11 @@ All ARMs are deployed behind `Proxy.sol` (EIP-1967) for upgradeability.
 
 ## Deployment
 
-Deployment scripts are in `script/deploy/` organized by chain (`mainnet/`, `sonic/`). Numbered scripts (e.g. `011_DeployEtherFiARMScript.s.sol`) are auto-discovered and ordered by `DeployManager.s.sol`. See `script/deploy/ARCHITECTURE.md` for the full deployment framework documentation.
+Deployment scripts are in `script/deploy/` organized by chain (`mainnet/`). Numbered scripts (e.g. `011_DeployEtherFiARMScript.s.sol`) are auto-discovered and ordered by `DeployManager.s.sol`. See `script/deploy/ARCHITECTURE.md` for the full deployment framework documentation.
 
 ```bash
 make deploy-mainnet       # Mainnet with verification
-make deploy-sonic         # Sonic chain
 make simulate             # Dry run mainnet (default)
-make simulate NETWORK=sonic  # Dry run Sonic
 ```
 
 ## Key Conventions

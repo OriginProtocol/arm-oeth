@@ -73,7 +73,6 @@ RUN cd /app \
 RUN chown -R runner:runner /app
 
 ENV MAINNET_URL="" \
-  SONIC_URL="" \
   HOLESKY_URL=""
 
 # Git commit this image was built from. CI passes
