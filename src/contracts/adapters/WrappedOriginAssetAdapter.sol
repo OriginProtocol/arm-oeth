@@ -153,4 +153,12 @@ contract WrappedOriginAssetAdapter is Initializable, IAssetAdapter {
     function pendingRequestId(uint256 index) external view returns (uint256) {
         return pendingRequestIds[index];
     }
+
+    function requestMint(uint256) external pure returns (uint256, uint256) {
+        revert MintNotSupported();
+    }
+
+    function claimMint(uint256) external pure returns (uint256, uint256, uint256) {
+        revert MintNotSupported();
+    }
 }

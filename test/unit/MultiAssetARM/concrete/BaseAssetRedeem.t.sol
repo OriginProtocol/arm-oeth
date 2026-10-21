@@ -4,7 +4,7 @@ pragma solidity ^0.8.36;
 import {Unit_MultiAssetARM_Shared_Test} from "../Shared.t.sol";
 import {AbstractARM} from "contracts/AbstractARM.sol";
 import {OwnableOperable} from "contracts/OwnableOperable.sol";
-import {IERC20} from "contracts/Interfaces.sol";
+import {IAssetAdapter, IERC20} from "contracts/Interfaces.sol";
 
 /// @notice Adapter redemption flow (request/claim) through MockAssetAdapter, run at both 18 and 6 decimal
 ///         liquidity, across 6 and 18 decimal base assets. `assetsExpected` / `pendingRedeemAssets` are tracked
@@ -73,6 +73,16 @@ abstract contract BaseAssetRedeem_Test is Unit_MultiAssetARM_Shared_Test {
         vm.prank(operator);
         vm.expectRevert(AbstractARM.UnsupportedAsset.selector);
         arm.requestBaseAssetRedeem(makeAddr("random"), 1e18);
+    }
+
+    function test_BaseAssetMint_RevertWhen_AdapterDoesNotSupportMinting() public {
+        vm.prank(operator);
+        vm.expectRevert(IAssetAdapter.MintNotSupported.selector);
+        arm.requestBaseAssetMint(address(adp18), 1);
+
+        vm.prank(operator);
+        vm.expectRevert(IAssetAdapter.MintNotSupported.selector);
+        arm.claimBaseAssetMint(address(adp18), 1);
     }
 }
 
