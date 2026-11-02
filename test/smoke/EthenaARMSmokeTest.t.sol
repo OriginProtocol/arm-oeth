@@ -3,7 +3,7 @@ pragma solidity ^0.8.36;
 
 import {AbstractSmokeTest} from "./AbstractSmokeTest.sol";
 
-import {IERC20} from "contracts/Interfaces.sol";
+import {IERC20, IFeeSplitter} from "contracts/Interfaces.sol";
 import {EthenaARM} from "contracts/EthenaARM.sol";
 import {EthenaAssetAdapter} from "contracts/adapters/EthenaAssetAdapter.sol";
 import {CapManager} from "contracts/CapManager.sol";
@@ -52,7 +52,10 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
         assertEq(ethenaARM.symbol(), "ARM-sUSDe-USDe", "Symbol");
         assertEq(ethenaARM.owner(), Mainnet.TIMELOCK, "Owner");
         assertEq(ethenaARM.operator(), operator, "Operator");
-        assertEq(ethenaARM.feeCollector(), Mainnet.BUYBACK_OPERATOR, "Fee collector");
+        assertEq(ethenaARM.feeCollector(), Mainnet.FEE_SPLITTER, "Fee collector");
+        assertTrue(
+            IFeeSplitter(Mainnet.FEE_SPLITTER).isSupported(ethenaARM.liquidityAsset()), "fee asset on FeeSplitter"
+        );
         assertEq((100 * uint256(ethenaARM.fee())) / FEE_SCALE, 20, "Performance fee as a percentage");
 
         assertEq(ethenaARM.liquidityAsset(), Mainnet.USDE, "liquidity asset");
@@ -337,5 +340,24 @@ contract Fork_EthenaARM_Smoke_Test is AbstractSmokeTest {
             }
         }
         assertTrue(found, label);
+    }
+
+    function test_collectFees_toFeeSplitter() external {
+        uint256 fees = ethenaARM.feesAccrued();
+        vm.skip(fees == 0);
+
+        // Top up so the collect can't hit InsufficientLiquidity.
+        IERC20 asset = IERC20(ethenaARM.liquidityAsset());
+        deal(
+            address(asset),
+            address(ethenaARM),
+            asset.balanceOf(address(ethenaARM)) + fees + ethenaARM.reservedWithdrawLiquidity()
+        );
+
+        uint256 splitterBefore = asset.balanceOf(Mainnet.FEE_SPLITTER);
+        ethenaARM.collectFees();
+
+        assertEq(asset.balanceOf(Mainnet.FEE_SPLITTER), splitterBefore + fees, "FeeSplitter received fees");
+        assertEq(ethenaARM.feesAccrued(), 0, "fees accrued reset");
     }
 }

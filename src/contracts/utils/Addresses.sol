@@ -41,6 +41,7 @@ library Mainnet {
 
     // Origin
     address public constant OETH_VAULT = 0x39254033945AA2E4809Cc2977E7087BEE48bd7Ab;
+    address public constant FEE_SPLITTER = 0xbbE561181D831e2a0fAd54C2c27F159a20B60464;
 
     // Lido
     address public constant LIDO_WITHDRAWAL = 0x889edC2eDab5f40e902b864aD4d7AdE8E412F9B1;

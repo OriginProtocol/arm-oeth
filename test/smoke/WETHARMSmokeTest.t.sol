@@ -6,6 +6,7 @@ import {AbstractSmokeTest} from "./AbstractSmokeTest.sol";
 import {MultiAssetARM} from "contracts/MultiAssetARM.sol";
 import {CapManager} from "contracts/CapManager.sol";
 import {Proxy} from "contracts/Proxy.sol";
+import {IERC20, IFeeSplitter} from "contracts/Interfaces.sol";
 import {Mainnet} from "contracts/utils/Addresses.sol";
 import {Abstract4626MarketWrapper} from "contracts/markets/Abstract4626MarketWrapper.sol";
 
@@ -25,7 +26,8 @@ contract Fork_WETHARM_Smoke_Test is AbstractSmokeTest {
         assertEq(wethARM.symbol(), "ARM-WETH", "symbol");
         assertEq(wethARM.owner(), Mainnet.TIMELOCK, "owner");
         assertEq(wethARM.operator(), Mainnet.ARM_TALOS_RELAYER, "operator");
-        assertEq(wethARM.feeCollector(), Mainnet.BUYBACK_OPERATOR, "fee collector");
+        assertEq(wethARM.feeCollector(), Mainnet.FEE_SPLITTER, "fee collector");
+        assertTrue(IFeeSplitter(Mainnet.FEE_SPLITTER).isSupported(wethARM.liquidityAsset()), "fee asset on FeeSplitter");
         assertEq(wethARM.fee(), 2000, "performance fee");
         assertEq(wethARM.liquidityAsset(), Mainnet.WETH, "liquidity asset");
         assertEq(wethARM.claimDelay(), 10 minutes, "claim delay");
@@ -93,5 +95,24 @@ contract Fork_WETHARM_Smoke_Test is AbstractSmokeTest {
         assertEq(peggedToLiquidityAsset, pegged, "pegged");
         assertEq(baseAssetDecimals, 18, "base asset decimals");
         assertEq(adapter, resolver.resolve(adapterName), "adapter");
+    }
+
+    function test_collectFees_toFeeSplitter() external {
+        uint256 fees = wethARM.feesAccrued();
+        vm.skip(fees == 0);
+
+        // Top up so the collect can't hit InsufficientLiquidity.
+        IERC20 asset = IERC20(wethARM.liquidityAsset());
+        deal(
+            address(asset),
+            address(wethARM),
+            asset.balanceOf(address(wethARM)) + fees + wethARM.reservedWithdrawLiquidity()
+        );
+
+        uint256 splitterBefore = asset.balanceOf(Mainnet.FEE_SPLITTER);
+        wethARM.collectFees();
+
+        assertEq(asset.balanceOf(Mainnet.FEE_SPLITTER), splitterBefore + fees, "FeeSplitter received fees");
+        assertEq(wethARM.feesAccrued(), 0, "fees accrued reset");
     }
 }

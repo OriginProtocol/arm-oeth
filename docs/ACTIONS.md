@@ -63,6 +63,8 @@ deltas; the ARM contract determines the actual amount allocated.
 The allocation actions also accept an optional `--max-gas-price` in gwei. It
 defaults to `5` for Lido, EtherFi, Ethena, USDC, and WETH, and `500` for OETH.
 
+Fee collection: the `collect*Fees` actions call `collectFees()`, which pays the ARM's `feeCollector`. For the Lido, WETH, Ethena and USDC ARMs that is the Origin FeeSplitter (`0xbbE5…0464`), which `feeSplitterDistribute` forwards to the OGN buyback. The EtherFi ARM still pays the old buyback Safe.
+
 ## Lido ARM — mainnet
 
 | Action                    | Cron                    | Description                            |

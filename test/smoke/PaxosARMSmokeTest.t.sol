@@ -3,7 +3,7 @@ pragma solidity ^0.8.36;
 
 import {AbstractSmokeTest} from "./AbstractSmokeTest.sol";
 
-import {IERC20} from "contracts/Interfaces.sol";
+import {IERC20, IFeeSplitter} from "contracts/Interfaces.sol";
 import {MultiAssetARM} from "contracts/MultiAssetARM.sol";
 import {PaxosAssetAdapter} from "contracts/adapters/PaxosAssetAdapter.sol";
 import {CapManager} from "contracts/CapManager.sol";
@@ -45,7 +45,8 @@ contract Fork_PaxosARM_Smoke_Test is AbstractSmokeTest {
         assertEq(usdcARM.symbol(), "ARM-USDC", "Symbol");
         assertEq(usdcARM.owner(), Mainnet.MULTISIG_5_OF_8, "Owner");
         assertEq(usdcARM.operator(), operator, "Operator");
-        assertEq(usdcARM.feeCollector(), Mainnet.BUYBACK_OPERATOR, "Fee collector");
+        assertEq(usdcARM.feeCollector(), Mainnet.FEE_SPLITTER, "Fee collector");
+        assertTrue(IFeeSplitter(Mainnet.FEE_SPLITTER).isSupported(usdcARM.liquidityAsset()), "fee asset on FeeSplitter");
         assertEq(usdcARM.fee(), 2000, "Performance fee");
         assertEq(usdcARM.liquidityAsset(), Mainnet.USDC, "liquidity asset");
         assertEq(usdcARM.claimDelay(), 10 minutes, "claim delay");
@@ -246,5 +247,24 @@ contract Fork_PaxosARM_Smoke_Test is AbstractSmokeTest {
             }
         }
         assertTrue(found, label);
+    }
+
+    function test_collectFees_toFeeSplitter() external {
+        uint256 fees = usdcARM.feesAccrued();
+        vm.skip(fees == 0);
+
+        // Top up so the collect can't hit InsufficientLiquidity.
+        IERC20 asset = IERC20(usdcARM.liquidityAsset());
+        deal(
+            address(asset),
+            address(usdcARM),
+            asset.balanceOf(address(usdcARM)) + fees + usdcARM.reservedWithdrawLiquidity()
+        );
+
+        uint256 splitterBefore = asset.balanceOf(Mainnet.FEE_SPLITTER);
+        usdcARM.collectFees();
+
+        assertEq(asset.balanceOf(Mainnet.FEE_SPLITTER), splitterBefore + fees, "FeeSplitter received fees");
+        assertEq(usdcARM.feesAccrued(), 0, "fees accrued reset");
     }
 }
