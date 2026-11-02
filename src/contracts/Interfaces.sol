@@ -316,3 +316,11 @@ interface IStakedUSDe is IERC4626 {
 
     function transferInRewards(uint256 amount) external;
 }
+
+// Origin FeeSplitter (origin-dollar)
+
+interface IFeeSplitter {
+    function isSupported(address asset) external view returns (bool);
+
+    function addAsset(address asset, uint256 minAmount) external;
+}

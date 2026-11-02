@@ -3,7 +3,7 @@ pragma solidity ^0.8.36;
 
 import {AbstractSmokeTest} from "./AbstractSmokeTest.sol";
 
-import {IERC20, IERC4626} from "contracts/Interfaces.sol";
+import {IERC20, IERC4626, IFeeSplitter} from "contracts/Interfaces.sol";
 import {LidoARM} from "contracts/LidoARM.sol";
 import {CapManager} from "contracts/CapManager.sol";
 import {Proxy} from "contracts/Proxy.sol";
@@ -54,7 +54,8 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
         assertEq(lidoARM.symbol(), "ARM-WETH-stETH", "Symbol");
         assertEq(lidoARM.owner(), Mainnet.TIMELOCK, "Owner");
         assertEq(lidoARM.operator(), Mainnet.ARM_TALOS_RELAYER, "Operator");
-        assertEq(lidoARM.feeCollector(), Mainnet.BUYBACK_OPERATOR, "Fee collector");
+        assertEq(lidoARM.feeCollector(), Mainnet.FEE_SPLITTER, "Fee collector");
+        assertTrue(IFeeSplitter(Mainnet.FEE_SPLITTER).isSupported(lidoARM.liquidityAsset()), "fee asset on FeeSplitter");
         assertEq((100 * uint256(lidoARM.fee())) / FEE_SCALE, 20, "Performance fee as a percentage");
         assertEq(lidoARM.liquidityAsset(), Mainnet.WETH, "liquidity asset");
         assertEq(lidoARM.asset(), Mainnet.WETH, "ERC-4626 asset");
@@ -248,5 +249,22 @@ contract Fork_LidoARM_Smoke_Test is AbstractSmokeTest {
         assertLt(actualDelta, 0, "Actual delta should be negative (withdrawn from market)");
         assertGt(armWethAfter, armWethBefore, "ARM WETH balance should increase");
         assertLe(marketBalanceAfter, marketBalanceBefore, "Market balance should decrease or stay same");
+    }
+
+    function test_collectFees_toFeeSplitter() external {
+        uint256 accrued = lidoARM.feesAccrued();
+        vm.skip(accrued == 0);
+
+        // Top up so the collect can't hit InsufficientLiquidity. The legacy implementation charges its
+        // performance fee on asset growth, so this top-up raises the fee too. Assert on what collectFees() returns.
+        IERC20 asset = IERC20(lidoARM.liquidityAsset());
+        deal(address(asset), address(lidoARM), asset.balanceOf(address(lidoARM)) + accrued + _outstandingWithdrawals());
+
+        uint256 splitterBefore = asset.balanceOf(Mainnet.FEE_SPLITTER);
+        uint256 fees = lidoARM.collectFees();
+
+        assertGe(fees, accrued, "collected at least the accrued fees");
+        assertEq(asset.balanceOf(Mainnet.FEE_SPLITTER), splitterBefore + fees, "FeeSplitter received fees");
+        assertEq(lidoARM.feesAccrued(), 0, "fees accrued reset");
     }
 }
