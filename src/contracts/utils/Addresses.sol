@@ -18,6 +18,8 @@ library Mainnet {
     // ETH - Tokens
     address public constant OETH = 0x856c4Efb76C1D1AE02e20CEB03A2A6a08b0b8dC3;
     address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    address public constant WBTC = 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599;
+    address public constant CBBTC = 0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf;
     address public constant EETH = 0x35fA164735182de50811E8e2E824cFb9B6118ac2;
     address public constant RETH = 0xae78736Cd615f374D3085123A210448E74Fc6393;
     address public constant WEETH = 0xCd5fE23C85820F7B72D0926FC9b05b43E359b7ee;
@@ -35,6 +37,7 @@ library Mainnet {
     address public constant PYUSD = 0x6c3ea9036406852006290770BEdFcAbA0e23A0e8;
     // Tokens
     address public constant MORPHO = 0x58D97B57BB95320F9a05dC918Aef65434969c2B2;
+    address public constant MORPHO_BLUE = 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb;
 
     // Morpho Vaults
     address public constant MORPHO_WETH_VAULT = 0x3Dfe70B05657949A5dB340754aD664810ac63b21;
