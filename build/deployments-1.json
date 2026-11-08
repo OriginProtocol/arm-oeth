@@ -477,6 +477,12 @@
       "proposalId": 1,
       "tsDeployment": 1785160163,
       "tsGovernance": 1
+    },
+    {
+      "name": "043_SetFeeSplitterFeeCollectorScript",
+      "proposalId": 0,
+      "tsDeployment": 1793948927,
+      "tsGovernance": 0
     }
   ]
 }
