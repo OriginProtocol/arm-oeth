@@ -28,7 +28,14 @@ contract $043_SetFeeSplitterFeeCollectorScript is AbstractDeployScript("043_SetF
     uint256 internal constant USDE_MIN_DISTRIBUTE = 20e18;
 
     function _buildGovernanceProposal() internal override {
-        govProposal.setDescription("Send Lido, WETH and Ethena ARM fees to the FeeSplitter");
+        govProposal.setDescription(
+            "Forward ARM fees to the FeeSplitter\n\n"
+            "This proposal brings the Lido, WETH and Ethena ARMs in line with the OETH and OUSD fee forwarding. "
+            "ARM protocol fees are currently sent to a Safe with three owners and a threshold of one. "
+            "This proposal makes the FeeSplitter contract the fee collector instead, so the routing is fixed in code "
+            "and no human holds the protocol fees. The FeeSplitter will send the net protocol fees to the OGN CoW "
+            "Harvester, so that they are automatically bought back for xOGN stakers."
+        );
 
         bytes memory data = abi.encode(Mainnet.FEE_SPLITTER);
         govProposal.action(resolver.resolve("LIDO_ARM"), "setFeeCollector(address)", data);
