@@ -18,8 +18,11 @@ contract $044_UpgradeEthenaAssetAdapterScript is AbstractDeployScript("044_Upgra
         govProposal.setDescription("Upgrade Ethena redemptions and set the sUSDe cross price to parity");
         govProposal.action(
             resolver.resolve("ETHENA_ARM_SUSDE_ADAPTER"),
-            "upgradeTo(address)",
-            abi.encode(resolver.resolve("ETHENA_ARM_SUSDE_ADAPTER_IMPL"))
+            "upgradeToAndCall(address,bytes)",
+            abi.encode(
+                resolver.resolve("ETHENA_ARM_SUSDE_ADAPTER_IMPL"),
+                abi.encodeCall(EthenaAssetAdapter.checkQueueEmpty, ())
+            )
         );
         // Before execution, the operator must keep the normalized sell price at or above parity.
         govProposal.action(

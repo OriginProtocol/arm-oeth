@@ -41,6 +41,11 @@ contract EthenaAssetAdapter is IAssetAdapter, Ownable {
     /// @notice True when the adapter holds the USDe for this pending FIFO slot.
     mapping(address unstaker => bool) public isPrefunded;
 
+    /// @notice Reverts if any native or prefunded FIFO request remains outstanding.
+    function checkQueueEmpty() external view {
+        require(nextPendingIndex == totalRequests, "Adapter: pending requests");
+    }
+
     modifier onlyARM() {
         require(msg.sender == arm, "Adapter: only ARM");
         _;

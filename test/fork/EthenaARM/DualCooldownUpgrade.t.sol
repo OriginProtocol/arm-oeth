@@ -43,7 +43,7 @@ contract Fork_EthenaDualCooldownUpgrade_Test is Test {
         assertEq(Proxy(payable(address(adapter))).implementation(), resolver.resolve("ETHENA_ARM_SUSDE_ADAPTER_IMPL"));
     }
 
-    function test_UpgradeWithTwoOutstandingNativeRequests() public {
+    function test_UpgradeRequiresDrainingTwoOutstandingNativeRequests() public {
         vm.createSelectFork("mainnet", 26_502_548);
         EthenaAssetAdapter adapter = EthenaAssetAdapter(0xE620aFB67223AE03C260112aE21A717Af94C90f0);
         EthenaARM arm = EthenaARM(payable(adapter.arm()));
@@ -61,7 +61,12 @@ contract Fork_EthenaDualCooldownUpgrade_Test is Test {
         assertEq(pending, 2);
         assertEq(proxy.owner(), Mainnet.TIMELOCK);
         assertEq(_pendingAssets(arm), expected);
-        _runUpgrade(adapter, arm);
+        address oldImplementation = proxy.implementation();
+        EthenaAssetAdapter next = new EthenaAssetAdapter(address(arm), Mainnet.USDE, Mainnet.SUSDE);
+        vm.prank(Mainnet.TIMELOCK);
+        vm.expectRevert();
+        proxy.upgradeToAndCall(address(next), abi.encodeCall(EthenaAssetAdapter.checkQueueEmpty, ()));
+        assertEq(proxy.implementation(), oldImplementation);
         assertEq(_pendingAssets(arm), expected);
         assertEq(proxy.owner(), Mainnet.TIMELOCK);
         assertEq(adapter.susde().cooldownDuration(), 0);
@@ -76,12 +81,16 @@ contract Fork_EthenaDualCooldownUpgrade_Test is Test {
         assertApproxEqAbs(received, 45_068.25 ether, 0.005 ether);
         assertEq(adapter.usde().balanceOf(address(arm)), beforeClaim + received);
 
+        _runUpgrade(adapter, arm);
+        adapter.checkQueueEmpty();
         skip(adapter.DELAY_REQUEST());
         deal(Mainnet.SUSDE, address(arm), 1 ether);
         address nextSlot = adapter.unstakers(adapter.nextUnstakerIndex());
         vm.startPrank(operator);
         (, uint256 funded) = arm.requestBaseAssetRedeem(Mainnet.SUSDE, 1 ether);
         assertTrue(adapter.isPrefunded(nextSlot));
+        vm.expectRevert(bytes("Adapter: pending requests"));
+        adapter.checkQueueEmpty();
         assertEq(_pendingAssets(arm), funded);
         (,, received) = arm.claimBaseAssetRedeem(Mainnet.SUSDE, 1 ether);
         vm.stopPrank();
