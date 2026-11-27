@@ -62,6 +62,59 @@ contract Unit_EthenaAssetAdapter_Test is Test {
     //////////////////////////////////////////////////////
     /// --- view / conversions
     //////////////////////////////////////////////////////
+    function test_PrefundedSlotCanBeReusedForNativeCooldown() public {
+        susde.setCooldownDuration(0);
+        uint256 capacity = adapter.MAX_UNSTAKERS();
+        for (uint256 i; i < capacity; ++i) {
+            vm.warp(block.timestamp + DELAY_REQUEST);
+            vm.prank(arm);
+            adapter.requestRedeem(1 ether);
+        }
+        vm.prank(arm);
+        adapter.redeem(capacity * 1 ether);
+        vm.prank(arm);
+        vm.expectRevert("Adapter: redeem exceeds claimable");
+        adapter.redeem(1 ether);
+        susde.setCooldownDuration(1 days);
+        vm.warp(block.timestamp + DELAY_REQUEST);
+        vm.prank(arm);
+        adapter.requestRedeem(1 ether);
+        assertFalse(adapter.isPrefunded(adapter.unstakers(0)));
+        vm.warp(block.timestamp + 1 days);
+        vm.prank(arm);
+        (,, uint256 received) = adapter.redeem(1 ether);
+        assertEq(received, 1 ether);
+    }
+
+    function test_MixedQueuePreservesPrefundedTailAcrossModeChanges() public {
+        vm.prank(arm);
+        adapter.requestRedeem(10 ether);
+        susde.setCooldownDuration(0);
+        for (uint256 i = 1; i <= 2; ++i) {
+            vm.warp(block.timestamp + DELAY_REQUEST);
+            vm.prank(arm);
+            adapter.requestRedeem(i * 20 ether);
+            assertTrue(adapter.isPrefunded(adapter.unstakers(i)));
+        }
+        usde.mint(address(adapter), 1 ether);
+        susde.setCooldownDuration(1 days);
+        vm.prank(arm);
+        vm.expectRevert("MockSUSDe: invalid cooldown");
+        adapter.redeem(30 ether);
+        susde.setCooldownDuration(0);
+        vm.prank(arm);
+        (, uint256 expected, uint256 received) = adapter.redeem(30 ether);
+        assertEq(expected, 30 ether);
+        assertEq(received, expected);
+        assertEq(usde.balanceOf(address(adapter)), 41 ether);
+        assertFalse(adapter.isPrefunded(adapter.unstakers(1)));
+        susde.setCooldownDuration(1 days);
+        vm.prank(arm);
+        adapter.redeem(40 ether);
+        assertEq(usde.balanceOf(arm), 70 ether);
+        assertEq(usde.balanceOf(address(adapter)), 1 ether);
+    }
+
     function test_Asset_ReturnsUsde() public view {
         assertEq(adapter.asset(), address(usde), "asset");
     }

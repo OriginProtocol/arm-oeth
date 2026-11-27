@@ -15,7 +15,7 @@ contract MockSUSDE is ERC4626, Owned {
     //////////////////////////////////////////////////////
     address public immutable SILO;
     uint256 public immutable VESTING_DURATION;
-    uint256 public immutable COOLDOWN_DURATION;
+    uint24 public constant cooldownDuration = 7 days;
 
     //////////////////////////////////////////////////////
     /// --- STATE VARIABLES
@@ -39,7 +39,6 @@ contract MockSUSDE is ERC4626, Owned {
     {
         SILO = address(new MockSilo(asset));
         VESTING_DURATION = 8 hours;
-        COOLDOWN_DURATION = 7 days;
     }
 
     //////////////////////////////////////////////////////
@@ -84,7 +83,7 @@ contract MockSUSDE is ERC4626, Owned {
 
         shares = previewWithdraw(assets);
 
-        cooldowns[msg.sender].cooldownEnd = uint104(block.timestamp + COOLDOWN_DURATION);
+        cooldowns[msg.sender].cooldownEnd = uint104(block.timestamp + cooldownDuration);
         cooldowns[msg.sender].underlyingAmount += uint152(assets);
 
         super.withdraw(assets, SILO, msg.sender);
@@ -95,7 +94,7 @@ contract MockSUSDE is ERC4626, Owned {
 
         assets = previewRedeem(shares);
 
-        cooldowns[msg.sender].cooldownEnd = uint104(block.timestamp + COOLDOWN_DURATION);
+        cooldowns[msg.sender].cooldownEnd = uint104(block.timestamp + cooldownDuration);
         cooldowns[msg.sender].underlyingAmount += uint152(assets);
 
         super.withdraw(assets, SILO, msg.sender);

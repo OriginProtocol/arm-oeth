@@ -1,6 +1,7 @@
 const assert = require("assert");
 
 const {
+  isEthenaRequestReady,
   orderPendingUnstakerStates,
   selectClaimableFifoPrefix,
 } = require("../../src/js/utils/ethenaQueue");
@@ -12,6 +13,11 @@ const state = (index, isReady = false) => ({
 });
 
 const run = async () => {
+  assert.strictEqual(isEthenaRequestReady(false, 1n, 101n, 100), false);
+  assert.strictEqual(isEthenaRequestReady(false, 1n, 100n, 100), true);
+  assert.strictEqual(isEthenaRequestReady(false, 0n, 101n, 100), true);
+  assert.strictEqual(isEthenaRequestReady(true, 1n, 101n, 100), true);
+
   {
     const states = [state(39, true), state(40, false)];
     const ordered = orderPendingUnstakerStates(states, 41n, 42n);

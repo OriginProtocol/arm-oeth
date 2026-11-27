@@ -62,6 +62,23 @@ const adapterFactory =
   };
 
 const run = async () => {
+  for (const [discount, price] of [
+    ["0.10", "0.99999"],
+    ["0.05", "0.999995"],
+  ]) {
+    const result = await resolveEthenaTranche({
+      ...defaults,
+      arm: makeArm({ liquidity: usde(200000), total: usde(1000000) }),
+      blockTag: 123,
+      ladder: `50:${discount},85:${discount}`,
+      ladderStepBps100: 1,
+      maxBuyPrice: price,
+      resolveArmBaseFn: resolver,
+      adapterContractFn: adapterFactory(),
+    });
+    assert.strictEqual(result.maxBuyPrice, price);
+  }
+
   {
     // 200k liquid of 1M total: u = 80%, ladder 4.5 bps, tranche 75k
     const calls = {};

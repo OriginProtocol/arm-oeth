@@ -38,6 +38,13 @@ contract EthenaAssetAdapter is IAssetAdapter, Ownable {
     /// @notice Total number of unstaker cooldown requests queued by the adapter.
     uint256 public totalRequests;
     uint256 internal nextPendingIndex;
+    /// @notice True when the adapter holds the USDe for this pending FIFO slot.
+    mapping(address unstaker => bool) public isPrefunded;
+
+    /// @notice Reverts if any native or prefunded FIFO request remains outstanding.
+    function checkQueueEmpty() external view {
+        require(nextPendingIndex == totalRequests, "Adapter: pending requests");
+    }
 
     modifier onlyARM() {
         require(msg.sender == arm, "Adapter: only ARM");
@@ -79,7 +86,7 @@ contract EthenaAssetAdapter is IAssetAdapter, Ownable {
         return susde.convertToShares(assets);
     }
 
-    /// @notice Transfers sUSDe to the next available unstaker and starts an Ethena cooldown.
+    /// @notice Queues a redemption, holding USDe in the adapter when Ethena disables cooldowns.
     /// @dev Requires the per-request delay to have passed and the selected unstaker to have no pending cooldown.
     /// @param shares Amount of sUSDe shares to request for redemption.
     /// @return sharesRequested Amount of sUSDe shares accepted into the cooldown request.
@@ -103,8 +110,19 @@ contract EthenaAssetAdapter is IAssetAdapter, Ownable {
         totalRequests++;
         nextUnstakerIndex = uint8((nextUnstakerIndex + 1) % MAX_UNSTAKERS);
 
-        susde.transferFrom(arm, unstaker, shares);
-        assetsExpected = EthenaUnstaker(unstaker).requestUnstake(shares);
+        if (susde.cooldownDuration() == 0) {
+            susde.transferFrom(arm, address(this), shares);
+            uint256 balanceBefore = usde.balanceOf(address(this));
+
+            susde.redeem(shares, address(this), address(this));
+
+            assetsExpected = usde.balanceOf(address(this)) - balanceBefore;
+            isPrefunded[unstaker] = true;
+        } else {
+            susde.transferFrom(arm, unstaker, shares);
+            assetsExpected = EthenaUnstaker(unstaker).requestUnstake(shares);
+        }
+
         requestShares[unstaker] = shares;
         requestAssets[unstaker] = assetsExpected;
         sharesRequested = shares;
@@ -142,13 +160,19 @@ contract EthenaAssetAdapter is IAssetAdapter, Ownable {
         uint256 balanceBefore = usde.balanceOf(address(this));
         for (uint256 i = 0; i < claimCount; ++i) {
             address unstaker = unstakers[unstakerIndexAt(cursor + i)];
+            if (isPrefunded[unstaker]) {
+                assetsReceived += requestAssets[unstaker];
+                delete isPrefunded[unstaker];
+            } else {
+                EthenaUnstaker(unstaker).claimUnstake();
+            }
             delete requestShares[unstaker];
             delete requestAssets[unstaker];
-            EthenaUnstaker(unstaker).claimUnstake();
         }
         nextPendingIndex = cursor + claimCount;
 
-        assetsReceived = usde.balanceOf(address(this)) - balanceBefore;
+        // Add USDe received from unstakers to the prefunded amounts already counted for this batch.
+        assetsReceived += usde.balanceOf(address(this)) - balanceBefore;
         usde.transfer(arm, assetsReceived);
     }
 

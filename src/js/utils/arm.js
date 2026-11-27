@@ -569,6 +569,7 @@ const adapterContract = async (adapterAddress, signerOrProvider) =>
       "function totalRequests() view returns (uint256)",
       "function unstakerIndexAt(uint256) view returns (uint8)",
       "function unstakers(uint256) view returns (address)",
+      "function isPrefunded(address) view returns (bool)",
       "function requestShares(address) view returns (uint256)",
       "function requestAssets(address) view returns (uint256)",
     ],

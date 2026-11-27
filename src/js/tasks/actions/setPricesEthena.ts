@@ -160,6 +160,30 @@ action({
         types.float,
       )
       .addOptionalParam(
+        "zeroMaxBuyPrice",
+        "Zero-cooldown maximum buy price",
+        undefined,
+        types.float,
+      )
+      .addOptionalParam(
+        "zeroLadder",
+        "Zero-cooldown utilisation ladder",
+        undefined,
+        types.string,
+      )
+      .addOptionalParam(
+        "zeroLadderStep",
+        "Zero-cooldown ladder step in basis points",
+        undefined,
+        types.float,
+      )
+      .addOptionalParam(
+        "zeroTolerance",
+        "Zero-cooldown price update tolerance in basis points",
+        undefined,
+        types.float,
+      )
+      .addOptionalParam(
         "dryrun",
         "Compute and log the target prices without sending the transaction.",
         false,
@@ -173,13 +197,30 @@ action({
 
     log.info("Setting prices for Ethena ARM");
 
+    const susde = new ethers.Contract(
+      mainnet.sUSDe,
+      ["function cooldownDuration() view returns (uint24)"],
+      signer,
+    );
+    const duration = await susde.cooldownDuration({ blockTag });
+    const zero = duration === 0n;
+    const maxBuyPrice =
+      (zero ? args.zeroMaxBuyPrice : undefined) ?? args.maxBuyPrice;
+    const ladder = (zero ? args.zeroLadder : undefined) ?? args.ladder;
+    const ladderStep =
+      (zero ? args.zeroLadderStep : undefined) ?? args.ladderStep;
+    const tolerance = (zero ? args.zeroTolerance : undefined) ?? args.tolerance;
+    log.info(
+      `Cooldown ${duration}s: max buy ${maxBuyPrice}, tolerance ${tolerance} bps`,
+    );
+
     const trancheParams = args.tranche
       ? {
           tranchePctBps: scaledInt(args.tranchePct, 100, "tranche percentage"),
           trancheStepWei: ethers.parseUnits(args.trancheStep.toString(), 18),
           trancheMinWei: ethers.parseUnits(args.trancheMin.toString(), 18),
-          ladder: args.ladder,
-          ladderStepBps100: scaledInt(args.ladderStep, 100, "ladder step"),
+          ladder,
+          ladderStepBps100: scaledInt(ladderStep, 100, "ladder step"),
           buyCapToleranceBps: scaledInt(
             args.capTolerance,
             10000,
@@ -195,7 +236,7 @@ action({
         );
       }
       log.info(
-        `Tranche pricing: ${args.tranchePct}% of liquidity (step ${args.trancheStep}, min ${args.trancheMin}), ladder ${args.ladder} quantised to ${args.ladderStep} bps, cap tolerance ${args.capTolerance}`,
+        `Tranche pricing: ${args.tranchePct}% of liquidity (step ${args.trancheStep}, min ${args.trancheMin}), ladder ${ladder} quantised to ${ladderStep} bps, cap tolerance ${args.capTolerance}`,
       );
     }
 
@@ -231,12 +272,12 @@ action({
         sellAmount: args.sellAmount,
         maxSellPrice: args.maxSellPrice,
         minSellPrice: args.minSellPrice,
-        maxBuyPrice: args.maxBuyPrice,
+        maxBuyPrice,
         minBuyPrice: args.minBuyPrice,
         kyber: args.kyber,
         inch: args.inch,
         amount: args.amount,
-        tolerance: args.tolerance,
+        tolerance,
         fee: args.fee,
         offset: args.offset,
         dynamicOffset: args.dynamicOffset,

@@ -27,6 +27,17 @@ An explicit `--amount` is used unchanged.
 `--buy-price` and `--sell-price` bypass DEX-derived pricing and set an exact
 pair. Both must be supplied together; `--amount` is not used in this mode.
 
+Ethena withdrawals retain their request and FIFO claim steps at zero cooldown.
+The adapter holds redeemed USDe until claim. Activate the updated claim and
+status tasks after upgrading the adapter proxy.
+
+For zero-cooldown pricing the scheduled command may override `--zero-max-buy-price`,
+`--zero-ladder`, `--zero-ladder-step` and `--zero-tolerance`. Omitted options
+inherit the corresponding normal setting. For a dry run of a flat 0.10 bp
+discount, use `--tranche true --zero-max-buy-price 0.99999 --zero-ladder "50:0.10,85:0.10" --zero-ladder-step 0.01 --zero-tolerance 0.01 --dryrun true`.
+For 0.05 bp use 0.999995 and 0.05 at both ladder points. Check the effective
+price against the live cross price, quote offset and sell bounds before rollout.
+
 `setPricesEthena --tranche true` enables tranche pricing on the Ethena ARM:
 the buy-side liquidity limit and the aggregator quote size are one tranche of
 the available liquidity (`--tranche-pct` of `getReserves`, rounded to

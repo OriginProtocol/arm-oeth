@@ -44,6 +44,7 @@ build/deployments-fork*.json
 
 # Other
 .DS_Store
+tmp
 
 # Cursor solidity plugin
 remappings.txt
