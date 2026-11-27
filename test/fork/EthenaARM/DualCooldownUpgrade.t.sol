@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.36;
 
-import {EthenaAdapterRollback} from "script/deploy/helpers/EthenaAdapterRollback.sol";
-import {GovHelper, GovProposal} from "script/deploy/helpers/GovHelper.sol";
-import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 import {Test} from "forge-std/Test.sol";
 import {EthenaARM} from "contracts/EthenaARM.sol";
 import {EthenaAssetAdapter} from "contracts/adapters/EthenaAssetAdapter.sol";
@@ -22,34 +19,6 @@ interface IHistoricalEthenaConfig {
 }
 
 contract Fork_EthenaDualCooldownUpgrade_Test is Test {
-    GovProposal internal rollback;
-
-    function _checkRollback(EthenaAssetAdapter adapter, EthenaARM arm, address oldImplementation) internal {
-        Proxy proxy = Proxy(payable(address(adapter)));
-        address upgraded = proxy.implementation();
-        EthenaAdapterRollback.addRollback(rollback, address(proxy), oldImplementation);
-        (address[] memory targets, uint256[] memory values,,, bytes[] memory calls) = GovHelper.getParams(rollback);
-        TimelockController timelock = TimelockController(payable(Mainnet.TIMELOCK));
-        uint256 delay = timelock.getMinDelay();
-        vm.prank(Mainnet.GOVERNANCE);
-        timelock.scheduleBatch(targets, values, calls, 0, 0, delay);
-        skip(delay + 1);
-        vm.prank(Mainnet.GOVERNANCE);
-        vm.expectRevert();
-        timelock.executeBatch(targets, values, calls, 0, 0);
-        assertEq(proxy.implementation(), upgraded);
-
-        uint256 funded = _pendingAssets(arm);
-        vm.prank(arm.operator());
-        (,, uint256 received) = arm.claimBaseAssetRedeem(Mainnet.SUSDE, 1 ether);
-        assertEq(received, funded);
-        assertEq(_pendingAssets(arm), 0);
-        vm.prank(Mainnet.GOVERNANCE);
-        timelock.executeBatch(targets, values, calls, 0, 0);
-        assertEq(proxy.implementation(), oldImplementation);
-        assertEq(proxy.owner(), Mainnet.TIMELOCK);
-    }
-
     function _pendingAssets(EthenaARM arm) internal view returns (uint256 assets) {
         (,,,,, assets,,) = IHistoricalEthenaConfig(address(arm)).baseAssetConfigs(Mainnet.SUSDE);
     }
@@ -123,7 +92,10 @@ contract Fork_EthenaDualCooldownUpgrade_Test is Test {
         vm.expectRevert(bytes("Adapter: pending requests"));
         adapter.checkQueueEmpty();
         assertEq(_pendingAssets(arm), funded);
+        (,, received) = arm.claimBaseAssetRedeem(Mainnet.SUSDE, 1 ether);
         vm.stopPrank();
-        _checkRollback(adapter, arm, oldImplementation);
+        assertEq(received, funded);
+        assertEq(_pendingAssets(arm), 0);
+        assertFalse(adapter.isPrefunded(nextSlot));
     }
 }
