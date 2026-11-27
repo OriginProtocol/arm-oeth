@@ -8,7 +8,8 @@ import {Mainnet} from "contracts/utils/Addresses.sol";
 
 // Deployment
 import {AbstractDeployScript} from "script/deploy/helpers/AbstractDeployScript.s.sol";
-import {GovHelper, GovProposal} from "script/deploy/helpers/GovHelper.sol";
+import {State} from "script/deploy/helpers/DeploymentTypes.sol";
+import {GovHelper, GovProposal, IGovernance} from "script/deploy/helpers/GovHelper.sol";
 
 /// @title Send active ARM fees to the FeeSplitter
 /// @notice Points the active ARMs' fee collector at the Origin FeeSplitter, so ARM fees follow
@@ -34,6 +35,15 @@ contract $043_SetFeeSplitterFeeCollectorScript is AbstractDeployScript("043_SetF
         govProposal.action(resolver.resolve("LIDO_ARM"), "setFeeCollector(address)", data);
         govProposal.action(resolver.resolve("WETH_ARM"), "setFeeCollector(address)", data);
         govProposal.action(resolver.resolve("ETHENA_ARM"), "setFeeCollector(address)", data);
+
+        // The original vote was defeated. Smoke tests rehearse the actions under a fresh proposal ID.
+        if (state == State.FORK_TEST) {
+            IGovernance governor = IGovernance(Mainnet.GOVERNANCE);
+            uint256 id = GovHelper.id(govProposal);
+            if (governor.proposalSnapshot(id) != 0 && governor.state(id) == IGovernance.ProposalState.Defeated) {
+                govProposal.setDescription("Fork test: send Lido, WETH and Ethena ARM fees to the FeeSplitter");
+            }
+        }
     }
 
     function _fork() internal override {
