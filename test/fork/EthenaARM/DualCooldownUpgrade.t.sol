@@ -30,7 +30,16 @@ contract Fork_EthenaDualCooldownUpgrade_Test is Test {
         resolver.addContract("ETHENA_ARM", address(arm));
         resolver.addContract("ETHENA_ARM_SUSDE_ADAPTER", address(adapter));
         $044_UpgradeEthenaAssetAdapterScript script = new $044_UpgradeEthenaAssetAdapterScript();
+        // Rehearse operator preparation at the historical quote, preserving buy price and remaining limits.
+        (uint128 buy, uint128 sell, uint128 buyLimit, uint128 sellLimit,,,,) =
+            IHistoricalEthenaConfig(address(arm)).baseAssetConfigs(Mainnet.SUSDE);
+        if (sell < 1e36) {
+            vm.prank(arm.operator());
+            arm.setPrices(Mainnet.SUSDE, buy, 1e36, buyLimit, sellLimit);
+        }
         script.run();
+        (,,,, uint128 crossPrice,,,) = IHistoricalEthenaConfig(address(arm)).baseAssetConfigs(Mainnet.SUSDE);
+        assertEq(crossPrice, 1e36);
         assertEq(Proxy(payable(address(adapter))).implementation(), resolver.resolve("ETHENA_ARM_SUSDE_ADAPTER_IMPL"));
     }
 

@@ -15,11 +15,15 @@ contract $044_UpgradeEthenaAssetAdapterScript is AbstractDeployScript("044_Upgra
     }
 
     function _buildGovernanceProposal() internal override {
-        govProposal.setDescription("Support Ethena redemptions with and without a cooldown");
+        govProposal.setDescription("Upgrade Ethena redemptions and set the sUSDe cross price to parity");
         govProposal.action(
             resolver.resolve("ETHENA_ARM_SUSDE_ADAPTER"),
             "upgradeTo(address)",
             abi.encode(resolver.resolve("ETHENA_ARM_SUSDE_ADAPTER_IMPL"))
+        );
+        // Before execution, the operator must keep the normalized sell price at or above parity.
+        govProposal.action(
+            resolver.resolve("ETHENA_ARM"), "setCrossPrice(address,uint256)", abi.encode(Mainnet.SUSDE, 1e36)
         );
     }
 }
