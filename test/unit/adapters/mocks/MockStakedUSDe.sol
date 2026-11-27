@@ -16,7 +16,7 @@ contract MockStakedUSDe is ERC20 {
     /// @notice USDe paid out when a cooldown is claimed.
     ERC20 public immutable usde;
     /// @notice Cooldown duration before `unstake` can release USDe.
-    uint256 public constant COOLDOWN_DURATION = 7 days;
+    uint24 public cooldownDuration = 7 days;
     /// @notice USDe per sUSDe scaled to 1e18. 1e18 = 1:1.
     uint256 public rate = 1e18;
 
@@ -45,11 +45,23 @@ contract MockStakedUSDe is ERC20 {
         return assets * 1e18 / rate;
     }
 
+    function setCooldownDuration(uint24 duration) external {
+        cooldownDuration = duration;
+    }
+
+    function redeem(uint256 shares, address receiver, address owner) external returns (uint256 assets) {
+        require(cooldownDuration == 0 && owner == msg.sender);
+        assets = convertToAssets(shares);
+        _burn(owner, shares);
+        usde.transfer(receiver, assets);
+    }
+
     /// @dev Burns the caller's sUSDe and records a cooldown for the equivalent USDe.
     function cooldownShares(uint256 shares) external returns (uint256 assets) {
+        require(cooldownDuration != 0);
         assets = convertToAssets(shares);
         _burn(msg.sender, shares);
-        cooldowns[msg.sender].cooldownEnd = uint104(block.timestamp + COOLDOWN_DURATION);
+        cooldowns[msg.sender].cooldownEnd = uint104(block.timestamp + cooldownDuration);
         cooldowns[msg.sender].underlyingAmount += uint152(assets);
     }
 
@@ -57,14 +69,14 @@ contract MockStakedUSDe is ERC20 {
     function cooldownAssets(uint256 assets) external returns (uint256 shares) {
         shares = convertToShares(assets);
         _burn(msg.sender, shares);
-        cooldowns[msg.sender].cooldownEnd = uint104(block.timestamp + COOLDOWN_DURATION);
+        cooldowns[msg.sender].cooldownEnd = uint104(block.timestamp + cooldownDuration);
         cooldowns[msg.sender].underlyingAmount += uint152(assets);
     }
 
     /// @dev Releases the caller's cooled-down USDe to `receiver` once the cooldown has elapsed.
     function unstake(address receiver) external {
         UserCooldown memory cooldown = cooldowns[msg.sender];
-        require(block.timestamp >= cooldown.cooldownEnd, "MockSUSDe: invalid cooldown");
+        require(cooldownDuration == 0 || block.timestamp >= cooldown.cooldownEnd, "MockSUSDe: invalid cooldown");
         delete cooldowns[msg.sender];
         usde.transfer(receiver, cooldown.underlyingAmount);
     }

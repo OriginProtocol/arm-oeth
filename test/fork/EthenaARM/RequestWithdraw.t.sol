@@ -28,7 +28,7 @@ contract Fork_Concrete_EthenaARM_RequestWithdraw_Test_ is Fork_Shared_Test {
         assertEq(assetsExpected, expectedAssets, "assets expected incorrect");
         assertEq(susdeBalanceAfter, susdeBalanceBefore - AMOUNT_IN, "sUSDe balance after request incorrect");
         assertEq(ethenaAssetAdapter.nextUnstakerIndex(), nextUnstakerIndex + 1, "nextUnstakerIndex not incremented");
-        assertEq(cooldown.underlyingAmount, expectedAssets, "unstaker cooldown amount incorrect");
+        assertEq(cooldown.underlyingAmount, ethenaAssetAdapter.isPrefunded(address(unstaker)) ? 0 : expectedAssets);
     }
 
     function test_RequestWithdraw_SecondRequest() public {
@@ -48,7 +48,12 @@ contract Fork_Concrete_EthenaARM_RequestWithdraw_Test_ is Fork_Shared_Test {
         uint256 susdeBalanceAfter = susde.balanceOf(address(ethenaARM));
         assertEq(ethenaAssetAdapter.nextUnstakerIndex(), 2, "nextUnstakerIndex not incremented");
         assertEq(susdeBalanceAfter, susdeBalanceBefore - (2 * AMOUNT_IN), "sUSDe balance after requests incorrect");
-        assertEq(cooldown.underlyingAmount, susde.convertToAssets(AMOUNT_IN * 2), "second unstaker cooldown incorrect");
+        assertEq(
+            cooldown.underlyingAmount,
+            ethenaAssetAdapter.isPrefunded(ethenaAssetAdapter.unstakers(nextUnstakerIndex))
+                ? 0
+                : susde.convertToAssets(AMOUNT_IN * 2)
+        );
     }
 
     function test_RequestWithdraw_MaxRequest() public {
@@ -132,8 +137,9 @@ contract Fork_Concrete_EthenaARM_RequestWithdraw_Test_ is Fork_Shared_Test {
             skip(delay);
         }
 
+        bool prefunded = ethenaAssetAdapter.isPrefunded(ethenaAssetAdapter.unstakers(0));
         vm.prank(operator);
-        vm.expectRevert("Adapter: unstaker in cooldown");
+        vm.expectRevert(prefunded ? bytes("Adapter: unstaker pending") : bytes("Adapter: unstaker in cooldown"));
         ethenaARM.requestBaseAssetRedeem(address(susde), AMOUNT_IN);
     }
 

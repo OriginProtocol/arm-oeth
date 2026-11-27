@@ -9,6 +9,7 @@ const {
   resolveArmBase,
 } = require("../utils/arm");
 const {
+  isEthenaRequestReady,
   orderPendingUnstakerStates,
   selectClaimableFifoPrefix,
 } = require("../utils/ethenaQueue");
@@ -55,14 +56,15 @@ const requestEthenaWithdrawals = async (options) => {
 // --- CONSTANTS ---
 const SUSDE_ADDRESS = "0x9D39A5DE30e57443BfF2A8307A4256c8797A3497";
 const SUSDE_ABI = [
+  "function cooldownDuration() view returns (uint24)",
   "function cooldowns(address) view returns (uint104,uint152)",
 ];
 
-const legacyEthenaUnstakers = async (legacyArm) => {
+const legacyEthenaUnstakers = async (legacyArm, blockTag) => {
   const unstakers = [];
   for (let i = 0; ; i++) {
     try {
-      const unstaker = await legacyArm.unstakers(i);
+      const unstaker = await legacyArm.unstakers(i, blockTag);
       if (unstaker === ethers.ZeroAddress) break;
       unstakers.push({ address: unstaker, index: i });
     } catch {
@@ -74,7 +76,7 @@ const legacyEthenaUnstakers = async (legacyArm) => {
 
 // --- HELPER: CORE LOGIC ---
 // Fetches data for a list of addresses in PARALLEL (much faster)
-const fetchUnstakerStates = async (signer, adapter, addresses) => {
+const fetchUnstakerStates = async (signer, adapter, legacyArm) => {
   const contract = new ethers.Contract(SUSDE_ADDRESS, SUSDE_ABI, signer);
   // Pin all queue reads to one block. Reading each value at `latest` can mix
   // state from a concurrent request or claim and produce an impossible FIFO
@@ -86,7 +88,9 @@ const fetchUnstakerStates = async (signer, adapter, addresses) => {
   let requestCount;
   let maxUnstakers;
 
-  if (!addresses) {
+  const duration = await contract.cooldownDuration(blockTag);
+  let addresses;
+  if (adapter) {
     [requestCount, maxUnstakers] = await Promise.all([
       adapter.totalRequests(blockTag),
       adapter.MAX_UNSTAKERS(blockTag),
@@ -101,14 +105,7 @@ const fetchUnstakerStates = async (signer, adapter, addresses) => {
       }),
     );
   } else {
-    // Callers pass { address, index } objects already (legacy path via
-    // legacyEthenaUnstakers); keep them as-is so the real unstaker index is
-    // preserved for the FIFO uint8 claim. Tolerate plain address strings too.
-    addresses = addresses.map((entry) =>
-      typeof entry === "string"
-        ? { address: entry, index: Number.MAX_SAFE_INTEGER }
-        : entry,
-    );
+    addresses = await legacyEthenaUnstakers(legacyArm, blockTag);
   }
 
   // Promise.all executes all RPC calls simultaneously
@@ -124,14 +121,26 @@ const fetchUnstakerStates = async (signer, adapter, addresses) => {
       const expectedAssets = adapter
         ? await adapter["requestAssets(address)"](address, blockTag)
         : underlyingAmount;
-      const amountStr = formatUnits(underlyingAmount, 18);
+      const prefunded =
+        adapter &&
+        shares > 0n &&
+        (await adapter.isPrefunded(address, blockTag));
+      const rawAmount = prefunded ? expectedAssets : underlyingAmount;
+      const amountStr = formatUnits(rawAmount, 18);
       const isBalancePositive = underlyingAmount > 0 || shares > 0;
 
       let timeLeft = "None";
       let isReady = false;
 
       if (isBalancePositive) {
-        if (cooldownEnd < currentTimestamp) {
+        if (
+          isEthenaRequestReady(
+            prefunded,
+            duration,
+            cooldownEnd,
+            currentTimestamp,
+          )
+        ) {
           isReady = true;
           timeLeft = "Ready to Claim";
         } else {
@@ -144,7 +153,8 @@ const fetchUnstakerStates = async (signer, adapter, addresses) => {
       return {
         address,
         index, // Index in the unstakers array
-        rawAmount: underlyingAmount, // Keep BigNumber for calculations
+        rawAmount,
+        prefunded,
         shares,
         expectedAssets,
         amount: amountStr, // String for display
@@ -178,9 +188,7 @@ const ethenaWithdrawStatus = async (options) => {
   const allStates = await fetchUnstakerStates(
     signer,
     adapter,
-    baseContext.version === "legacy"
-      ? await legacyEthenaUnstakers(baseContext.compatibleArm)
-      : undefined,
+    baseContext.version === "legacy" ? baseContext.compatibleArm : undefined,
   );
 
   // Filter and Log
@@ -199,7 +207,7 @@ const ethenaWithdrawStatus = async (options) => {
     log(
       ` - index ${u.index}, ${u.address}: ${formatUnits(
         u.shares,
-      )} shares, ${formatUnits(u.expectedAssets)} expected USDe, ${u.amount} cooldown USDe\t| Status: ${fifoStatus}`,
+      )} shares, ${formatUnits(u.expectedAssets)} expected USDe, ${u.amount} ${u.prefunded ? "prefunded" : "cooldown"} USDe\t| Status: ${fifoStatus}`,
     );
   });
 
@@ -220,9 +228,7 @@ const claimEthenaWithdrawals = async (options) => {
   const states = await fetchUnstakerStates(
     signer,
     adapter,
-    baseContext.version === "legacy"
-      ? await legacyEthenaUnstakers(baseContext.compatibleArm)
-      : undefined,
+    baseContext.version === "legacy" ? baseContext.compatibleArm : undefined,
   );
 
   // 2. Log status for everyone

@@ -129,7 +129,7 @@ const resolveEthenaTranche = async ({
   }
   if (maxPrice >= config.crossPrice) {
     console.warn(
-      `Ladder max buy price ${formatUnits(maxPrice, 36)} is not below the cross price ${formatUnits(config.crossPrice, 36)}; setPrices will clamp it`,
+      `Ladder max buy price ${formatUnits(maxPrice, 36)} is not below the cross price ${formatUnits(config.crossPrice, 36)}; the cross price limits the highest attainable bid`,
     );
   }
 

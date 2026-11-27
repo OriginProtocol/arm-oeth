@@ -339,6 +339,7 @@ const setPrices = async (options) => {
     }
 
     // 2.4 Adjust target buy price based on min/max limits
+    const requestedBuyPrice = targetBuyPrice;
     buyPriceWasCappedAtMax = exceedsMaxBuyPrice(targetBuyPrice, maxBuyPrice);
     targetBuyPrice = rangeBuyPrice(targetBuyPrice, minBuyPrice, maxBuyPrice);
 
@@ -346,7 +347,8 @@ const setPrices = async (options) => {
     const crossPrice = config.crossPrice;
     log(`\nAdjusting target prices based on cross price:`);
     log(`cross price        : ${formatUnits(crossPrice, 36)}`);
-    if (targetBuyPrice >= crossPrice) {
+    const crossesValuation = targetBuyPrice >= crossPrice;
+    if (crossesValuation) {
       log(
         `target buy price  ${formatUnits(
           targetBuyPrice,
@@ -357,6 +359,16 @@ const setPrices = async (options) => {
         )} so will use cross price`,
       );
       targetBuyPrice = crossPrice - 1n;
+    }
+
+    if (dryrun && options.armName === "Ethena") {
+      let source = "reference quote";
+      if (crossesValuation) source = "cross price";
+      else if (buyPriceWasCappedAtMax) source = "maximum buy price";
+      else if (targetBuyPrice > requestedBuyPrice) source = "minimum buy price";
+      console.log(
+        `Buy target ${formatUnits(requestedBuyPrice, 36)}, final ${formatUnits(targetBuyPrice, 36)} (${source})`,
+      );
     }
 
     // 2.6 For offset pricing, preserve the configured spread from the final

@@ -40,7 +40,11 @@ const selectClaimableFifoPrefix = (states) => {
   return states.slice(0, firstUnreadyIndex);
 };
 
+const isEthenaRequestReady = (prefunded, duration, deadline, timestamp) =>
+  prefunded || duration === 0n || deadline <= timestamp;
+
 module.exports = {
+  isEthenaRequestReady,
   orderPendingUnstakerStates,
   selectClaimableFifoPrefix,
 };
