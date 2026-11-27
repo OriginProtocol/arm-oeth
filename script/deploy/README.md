@@ -195,3 +195,19 @@ If your deployment includes a governance proposal, the JSON file will initially 
 | Governance simulation reverts | Proposal actions are invalid (wrong target, signature, or parameters) | Debug the `_buildGovernanceProposal()` function; check targets and signatures |
 | `make deploy-mainnet` asks for password | Normal behavior — Foundry prompts for the `deployerKey` keystore password | Enter the password you chose during `cast wallet import` |
 | Contract verification fails | Missing or invalid `ETHERSCAN_API_KEY` | Set `ETHERSCAN_API_KEY` in `.env` |
+
+### Ethena adapter rollback
+
+Keep the Timelock as direct owner of the adapter proxy. For any rollback from
+the dual-cooldown adapter, use `EthenaAdapterRollback.addRollback` to append
+two adjacent actions to the same governance proposal. Both target the adapter
+proxy with zero ETH. First call `checkQueueEmpty()` on the active implementation,
+then call `upgradeTo(previousImplementation)` with the verified previous address.
+Review the generated batch before submission. The proxy itself still permits
+its owner to call `upgradeTo` directly, so this requirement is enforced by
+the rollback proposal.
+
+Stop new withdrawal requests and keep claims running until the FIFO is empty.
+A pending native or prefunded request makes the batch revert at execution.
+After draining the queue, the same scheduled batch can be retried. The old
+implementation can resume new native requests when the sUSDe cooldown is positive.
