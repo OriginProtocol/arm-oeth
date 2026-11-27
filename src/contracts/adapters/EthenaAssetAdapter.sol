@@ -122,7 +122,7 @@ contract EthenaAssetAdapter is IAssetAdapter, Ownable {
             susde.transferFrom(arm, unstaker, shares);
             assetsExpected = EthenaUnstaker(unstaker).requestUnstake(shares);
         }
-        
+
         requestShares[unstaker] = shares;
         requestAssets[unstaker] = assetsExpected;
         sharesRequested = shares;
