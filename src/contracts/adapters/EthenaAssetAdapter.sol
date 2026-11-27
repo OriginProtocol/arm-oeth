@@ -113,13 +113,16 @@ contract EthenaAssetAdapter is IAssetAdapter, Ownable {
         if (susde.cooldownDuration() == 0) {
             susde.transferFrom(arm, address(this), shares);
             uint256 balanceBefore = usde.balanceOf(address(this));
+
             susde.redeem(shares, address(this), address(this));
+
             assetsExpected = usde.balanceOf(address(this)) - balanceBefore;
             isPrefunded[unstaker] = true;
         } else {
             susde.transferFrom(arm, unstaker, shares);
             assetsExpected = EthenaUnstaker(unstaker).requestUnstake(shares);
         }
+        
         requestShares[unstaker] = shares;
         requestAssets[unstaker] = assetsExpected;
         sharesRequested = shares;
@@ -168,6 +171,7 @@ contract EthenaAssetAdapter is IAssetAdapter, Ownable {
         }
         nextPendingIndex = cursor + claimCount;
 
+        // Add USDe received from unstakers to the prefunded amounts already counted for this batch.
         assetsReceived += usde.balanceOf(address(this)) - balanceBefore;
         usde.transfer(arm, assetsReceived);
     }
